@@ -1,0 +1,591 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 1. ADMIN ACCOUNTS — 4 role types (dd_admin, staycation_admin, owner, developer)
+// ═══════════════════════════════════════════════════════════════
+model AdminAccount {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  displayName  String    @map("display_name") @db.VarChar(150)
+  role         String    @db.VarChar(30) // dd_admin, staycation_admin, owner, developer
+  avatarUrl    String?   @map("avatar_url")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  auditLogs         AuditLog[]
+  blockedDates      BlockedDate[]
+  ddBookingsCreated DdBooking[]       @relation("DdBookingCreator")
+  stayBookingsCreated StaycationBooking[] @relation("StayBookingCreator")
+  extraGuestsAdded  ExtraGuest[]
+  guestIdsUploaded  GuestId[]
+  paymentsCollected BookingPayment[]
+  couponsCreated    Coupon[]
+
+  @@map("admin_accounts")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 2. USERS — Customer / Guest Accounts
+// ═══════════════════════════════════════════════════════════════
+model User {
+  id           Int       @id @default(autoincrement())
+  cognitoSub   String?   @unique @map("cognito_sub") @db.VarChar(255)
+  fullName     String    @map("full_name") @db.VarChar(200)
+  email        String?   @unique @db.VarChar(255)
+  phone        String    @db.VarChar(255)
+  passwordHash String?   @map("password_hash") @db.VarChar(255)
+  idProofUrl   String?   @map("id_proof_url")
+  idProofType  String?   @map("id_proof_type") @db.VarChar(50)
+  isVerified   Boolean   @default(false) @map("is_verified")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  ddBookings        DdBooking[]
+  stayBookings      StaycationBooking[]
+  reviews           Review[]
+
+  @@index([phone])
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3. PROPERTIES — 6 Staycation Properties
+// ═══════════════════════════════════════════════════════════════
+model Property {
+  id              Int       @id @default(autoincrement())
+  slug            String    @unique @db.VarChar(50)
+  name            String    @db.VarChar(100)
+  subtitle        String?   @db.VarChar(200)
+  type            String    @db.VarChar(20) // standalone, resort
+  description     String?
+  longDescription String?   @map("long_description")
+  checkInTime     String    @map("check_in_time") @db.VarChar(20)
+  checkOutTime    String    @map("check_out_time") @db.VarChar(20)
+  maxPersons      Int       @map("max_persons")
+  gstPercent      Decimal   @default(5.00) @map("gst_percent") @db.Decimal(5, 2)
+  securityDeposit Int       @map("security_deposit")
+  securityRefund  String?   @map("security_refund") @db.VarChar(100)
+  bookingPolicy   String?   @map("booking_policy")
+  foodIncluded    Boolean   @default(false) @map("food_included")
+  foodDetails     String?   @map("food_details")
+  foodType        String?   @map("food_type") @db.VarChar(100)
+  menuFileUrl     String?   @map("menu_file_url")
+  instagramUrl    String?   @map("instagram_url")
+  googleMapUrl    String?   @map("google_map_url")
+  location        String    @default("Karjat, Maharashtra, India") @db.VarChar(200)
+  images          Json?     // Array of image URLs
+  configuration   Json?     // Array of config strings
+  isActive        Boolean   @default(true) @map("is_active")
+  displayOrder    Int       @default(0) @map("display_order")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  subProperties    SubProperty[]
+  pricing          PropertyPricing[]
+  amenities        PropertyAmenity[]
+  blockedDates     BlockedDate[]
+  stayBookings     StaycationBooking[]
+  employees        Employee[]
+  reviews          Review[]
+
+  @@map("properties")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 4. SUB-PROPERTIES — Ambrose Villas / Amstel Cottages
+// ═══════════════════════════════════════════════════════════════
+model SubProperty {
+  id            Int       @id @default(autoincrement())
+  propertyId    Int       @map("property_id")
+  slug          String    @db.VarChar(50)
+  name          String    @db.VarChar(100)
+  theme         String?   @db.VarChar(100)
+  description   String?
+  imageUrl      String?   @map("image_url")
+  maxPersons    Int?      @map("max_persons")
+  configuration Json?
+  isActive      Boolean   @default(true) @map("is_active")
+  displayOrder  Int       @default(0) @map("display_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  pricing       PropertyPricing[]
+  stayBookings  StaycationBooking[]
+  blockedDates  BlockedDate[]
+
+  @@unique([propertyId, slug])
+  @@map("sub_properties")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 5. PROPERTY PRICING — Dynamic weekday/weekend/prime/special
+// ═══════════════════════════════════════════════════════════════
+model PropertyPricing {
+  id              Int       @id @default(autoincrement())
+  propertyId      Int?      @map("property_id")
+  subPropertyId   Int?      @map("sub_property_id")
+  dayType         String    @map("day_type") @db.VarChar(20) // weekday, weekend, saturday, prime, special
+  personsLabel    String?   @map("persons_label") @db.VarChar(50)
+  basePrice       Int       @map("base_price")
+  extraAdultPrice Int       @default(0) @map("extra_adult_price")
+  kidsPrice       Int       @default(0) @map("kids_price")
+  kidsAgeRange    String?   @map("kids_age_range") @db.VarChar(50)
+  specialLabel    String?   @map("special_label") @db.VarChar(100)
+  overrideDate    DateTime? @map("override_date") @db.Date
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  property    Property?    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  subProperty SubProperty? @relation(fields: [subPropertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([subPropertyId])
+  @@map("property_pricing")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 6. PROPERTY AMENITIES
+// ═══════════════════════════════════════════════════════════════
+model PropertyAmenity {
+  id           Int    @id @default(autoincrement())
+  propertyId   Int    @map("property_id")
+  iconName     String @map("icon_name") @db.VarChar(50)
+  name         String @db.VarChar(100)
+  displayOrder Int    @default(0) @map("display_order")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_amenities")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 7. BLOCKED DATES — Maintenance / Unavailable
+// ═══════════════════════════════════════════════════════════════
+model BlockedDate {
+  id              Int       @id @default(autoincrement())
+  propertyId      Int?      @map("property_id")
+  subPropertyId   Int?      @map("sub_property_id")
+  screenId        Int?      @map("screen_id")
+  blockedDate     DateTime  @map("blocked_date") @db.Date
+  startHour       Int?      @map("start_hour")
+  endHour         Int?      @map("end_hour")
+  reason          String?   @db.VarChar(200)
+  blockedBy       Int?      @map("blocked_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  property    Property?     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  subProperty SubProperty?  @relation(fields: [subPropertyId], references: [id], onDelete: Cascade)
+  screen      DdScreen?     @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  admin       AdminAccount? @relation(fields: [blockedBy], references: [id])
+
+  @@map("blocked_dates")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 8. DD SCREENS — 4 Digital Diaries Screens
+// ═══════════════════════════════════════════════════════════════
+model DdScreen {
+  id           Int       @id @default(autoincrement())
+  slug         String    @unique @db.VarChar(50)
+  name         String    @db.VarChar(100)
+  theme        String    @db.VarChar(100)
+  tagline      String?   @db.VarChar(200)
+  description  String?
+  imageUrl     String?   @map("image_url")
+  gallery      Json?     // Array of image URLs
+  capacity     String?   @db.VarChar(50)
+  isActive     Boolean   @default(true) @map("is_active")
+  displayOrder Int       @default(0) @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  bookings     DdBooking[]
+  blockedDates BlockedDate[]
+
+  @@map("dd_screens")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 9. DD PACKAGES — Movie Time / Celebration
+// ═══════════════════════════════════════════════════════════════
+model DdPackage {
+  id               Int       @id @default(autoincrement())
+  slug             String    @unique @db.VarChar(50)
+  name             String    @db.VarChar(100)
+  tagline          String?   @db.VarChar(200)
+  description      String?
+  imageUrl         String?   @map("image_url")
+  extraPersonPrice Int       @map("extra_person_price")
+  extraHourRate    Int?      @map("extra_hour_rate")
+  minHours         Int       @default(1) @map("min_hours")
+  inclusions       Json      // [{icon, label}, ...]
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  pricing  DdPackagePricing[]
+  bookings DdBooking[]
+
+  @@map("dd_packages")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 10. DD PACKAGE PRICING — Hourly tiers
+// ═══════════════════════════════════════════════════════════════
+model DdPackagePricing {
+  id           Int      @id @default(autoincrement())
+  packageId    Int      @map("package_id")
+  hours        Int
+  label        String   @db.VarChar(20)
+  weekdayPrice Int      @map("weekday_price")
+  weekendPrice Int      @map("weekend_price")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  package DdPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("dd_package_pricing")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 11. DD BOOKINGS — Digital Diaries Booking Events
+// ═══════════════════════════════════════════════════════════════
+model DdBooking {
+  id               Int       @id @default(autoincrement())
+  bookingRef       String    @unique @map("booking_ref") @db.VarChar(20)
+  userId           Int?      @map("user_id")
+  screenId         Int       @map("screen_id")
+  packageId        Int       @map("package_id")
+  bookingDate      DateTime  @map("booking_date") @db.Date
+  startHour        Int       @map("start_hour")
+  durationHours    Int       @map("duration_hours")
+  customerName     String    @map("customer_name") @db.VarChar(200)
+  customerPhone    String    @map("customer_phone") @db.VarChar(255)
+  customerEmail    String?   @map("customer_email") @db.VarChar(255)
+  occasion         String?   @db.VarChar(100)
+  cakeMessage      String?   @map("cake_message") @db.VarChar(200)
+  numGuests        Int       @default(2) @map("num_guests")
+  basePrice        Int       @map("base_price")
+  extraPersonCharge Int      @default(0) @map("extra_person_charge")
+  gstAmount        Int       @default(0) @map("gst_amount")
+  totalAmount      Int       @map("total_amount")
+  amountPaid       Int       @default(0) @map("amount_paid")
+  amountToCollect  Int       @default(0) @map("amount_to_collect")
+  paymentStatus    String    @default("pending") @map("payment_status") @db.VarChar(30)
+  paymentMethod    String?   @map("payment_method") @db.VarChar(30)
+  paymentDetails   String?   @map("payment_details")
+  status           String    @default("confirmed") @db.VarChar(30)
+  isMaintenance    Boolean   @default(false) @map("is_maintenance")
+  isAdminBooking   Boolean   @default(false) @map("is_admin_booking")
+  source           String    @default("website") @db.VarChar(30)
+  couponId         Int?      @map("coupon_id")
+  discountAmount   Int       @default(0) @map("discount_amount")
+  bookedAt         DateTime  @default(now()) @map("booked_at")
+  createdBy        Int?      @map("created_by")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user     User?         @relation(fields: [userId], references: [id])
+  screen   DdScreen      @relation(fields: [screenId], references: [id])
+  package  DdPackage     @relation(fields: [packageId], references: [id])
+  coupon   Coupon?       @relation(fields: [couponId], references: [id])
+  creator  AdminAccount? @relation("DdBookingCreator", fields: [createdBy], references: [id])
+  addons   DdBookingAddon[]
+  payments BookingPayment[]
+  guestIds GuestId[]
+
+  @@index([bookingDate])
+  @@index([screenId, bookingDate])
+  @@index([userId])
+  @@map("dd_bookings")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 12. DD BOOKING ADD-ONS — Balloons, LED, Cake
+// ═══════════════════════════════════════════════════════════════
+model DdBookingAddon {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int      @map("booking_id")
+  addonType  String   @map("addon_type") @db.VarChar(50)
+  addonValue String?  @map("addon_value") @db.VarChar(200)
+  price      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  booking DdBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("dd_booking_addons")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 13. STAYCATION BOOKINGS — Full booking lifecycle
+// ═══════════════════════════════════════════════════════════════
+model StaycationBooking {
+  id                  Int       @id @default(autoincrement())
+  bookingRef          String    @unique @map("booking_ref") @db.VarChar(20)
+  userId              Int?      @map("user_id")
+  propertyId          Int       @map("property_id")
+  subPropertyId       Int?      @map("sub_property_id")
+  customerName        String    @map("customer_name") @db.VarChar(200)
+  customerPhone       String    @map("customer_phone") @db.VarChar(255)
+  customerEmail       String?   @map("customer_email") @db.VarChar(255)
+  numGuests           Int       @default(2) @map("num_guests")
+  checkInDate         DateTime  @map("check_in_date") @db.Date
+  checkOutDate        DateTime  @map("check_out_date") @db.Date
+  checkInTime         DateTime? @map("check_in_time") @db.Time
+  checkOutTime        DateTime? @map("check_out_time") @db.Time
+  numNights           Int       @map("num_nights")
+  nightlyRate         Int       @map("nightly_rate")
+  basePrice           Int       @map("base_price")
+  extraPersonCharge   Int       @default(0) @map("extra_person_charge")
+  gstAmount           Int       @default(0) @map("gst_amount")
+  totalAmount         Int       @map("total_amount")
+  advanceAmount       Int       @default(0) @map("advance_amount")
+  balanceAmount       Int       @default(0) @map("balance_amount")
+  securityDeposit     Int       @default(0) @map("security_deposit")
+  advancePaid         Boolean   @default(false) @map("advance_paid")
+  advanceMethod       String?   @map("advance_method") @db.VarChar(30)
+  advancePaidAt       DateTime? @map("advance_paid_at")
+  balanceCollected    Boolean   @default(false) @map("balance_collected")
+  balanceMethod       String?   @map("balance_method") @db.VarChar(30)
+  balanceCollectedAt  DateTime? @map("balance_collected_at")
+  depositCollected    Boolean   @default(false) @map("deposit_collected")
+  depositMethod       String?   @map("deposit_method") @db.VarChar(30)
+  depositCollectedAt  DateTime? @map("deposit_collected_at")
+  depositRefunded     Boolean   @default(false) @map("deposit_refunded")
+  depositRefundedAt   DateTime? @map("deposit_refunded_at")
+  status              String    @default("confirmed") @db.VarChar(30)
+  source              String    @default("website") @db.VarChar(30)
+  isAdminBooking      Boolean   @default(false) @map("is_admin_booking")
+  couponId            Int?      @map("coupon_id")
+  discountAmount      Int       @default(0) @map("discount_amount")
+  bookedAt            DateTime  @default(now()) @map("booked_at")
+  createdBy           Int?      @map("created_by")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user        User?         @relation(fields: [userId], references: [id])
+  property    Property      @relation(fields: [propertyId], references: [id])
+  subProperty SubProperty?  @relation(fields: [subPropertyId], references: [id])
+  coupon      Coupon?       @relation(fields: [couponId], references: [id])
+  creator     AdminAccount? @relation("StayBookingCreator", fields: [createdBy], references: [id])
+  extraGuests ExtraGuest[]
+  guestIds    GuestId[]
+  payments    BookingPayment[]
+
+  @@index([checkInDate, checkOutDate])
+  @@index([propertyId])
+  @@index([status])
+  @@index([userId])
+  @@map("staycation_bookings")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 14. EXTRA GUESTS
+// ═══════════════════════════════════════════════════════════════
+model ExtraGuest {
+  id            Int       @id @default(autoincrement())
+  bookingId     Int       @map("booking_id")
+  guestName     String    @map("guest_name") @db.VarChar(200)
+  idProofType   String?   @map("id_proof_type") @db.VarChar(50)
+  idProofUrl    String?   @map("id_proof_url")
+  chargeAmount  Int       @map("charge_amount")
+  paymentMethod String?   @map("payment_method") @db.VarChar(30)
+  addedAt       DateTime  @default(now()) @map("added_at")
+  addedBy       Int?      @map("added_by")
+
+  booking StaycationBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  admin   AdminAccount?     @relation(fields: [addedBy], references: [id])
+
+  @@map("extra_guests")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 15. GUEST IDS — Uploaded ID Proofs
+// ═══════════════════════════════════════════════════════════════
+model GuestId {
+  id            Int       @id @default(autoincrement())
+  bookingId     Int?      @map("booking_id")
+  ddBookingId   Int?      @map("dd_booking_id")
+  fileUrl       String    @map("file_url")
+  fileName      String?   @map("file_name") @db.VarChar(255)
+  fileType      String?   @map("file_type") @db.VarChar(50)
+  uploadedAt    DateTime  @default(now()) @map("uploaded_at")
+  uploadedBy    Int?      @map("uploaded_by")
+
+  stayBooking StaycationBooking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  ddBooking   DdBooking?         @relation(fields: [ddBookingId], references: [id], onDelete: Cascade)
+  admin       AdminAccount?      @relation(fields: [uploadedBy], references: [id])
+
+  @@map("guest_ids")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 16. BOOKING PAYMENTS — Transaction Ledger
+// ═══════════════════════════════════════════════════════════════
+model BookingPayment {
+  id                  Int       @id @default(autoincrement())
+  staycationBookingId Int?      @map("staycation_booking_id")
+  ddBookingId         Int?      @map("dd_booking_id")
+  paymentType         String    @map("payment_type") @db.VarChar(30)
+  amount              Int
+  method              String    @db.VarChar(30)
+  status              String    @default("completed") @db.VarChar(20)
+  notes               String?
+  collectedBy         Int?      @map("collected_by")
+  collectedAt         DateTime  @default(now()) @map("collected_at")
+
+  stayBooking StaycationBooking? @relation(fields: [staycationBookingId], references: [id])
+  ddBooking   DdBooking?         @relation(fields: [ddBookingId], references: [id])
+  admin       AdminAccount?      @relation(fields: [collectedBy], references: [id])
+
+  @@map("booking_payments")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 17. COUPONS
+// ═══════════════════════════════════════════════════════════════
+model Coupon {
+  id            Int       @id @default(autoincrement())
+  code          String    @unique @db.VarChar(50)
+  discountType  String    @map("discount_type") @db.VarChar(10) // percent, flat
+  discountValue Decimal   @map("discount_value") @db.Decimal(10, 2)
+  maxUses       Int       @map("max_uses")
+  currentUses   Int       @default(0) @map("current_uses")
+  expiryDate    DateTime  @map("expiry_date") @db.Date
+  isActive      Boolean   @default(true) @map("is_active")
+  createdBy     Int?      @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  admin        AdminAccount?      @relation(fields: [createdBy], references: [id])
+  usageLogs    CouponUsage[]
+  ddBookings   DdBooking[]
+  stayBookings StaycationBooking[]
+
+  @@map("coupons")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 18. COUPON USAGE — Redemption Log
+// ═══════════════════════════════════════════════════════════════
+model CouponUsage {
+  id            Int      @id @default(autoincrement())
+  couponId      Int      @map("coupon_id")
+  bookingRef    String   @map("booking_ref") @db.VarChar(20)
+  customerName  String   @map("customer_name") @db.VarChar(200)
+  discountSaved Int      @map("discount_saved")
+  usedAt        DateTime @default(now()) @map("used_at")
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@map("coupon_usage")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 19. EMPLOYEES
+// ═══════════════════════════════════════════════════════════════
+model Employee {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(200)
+  role            String    @db.VarChar(100)
+  propertyId      Int       @map("property_id")
+  phone           String?   @db.VarChar(20)
+  cashCollected   Int       @default(0) @map("cash_collected")
+  lastCollectedAt DateTime? @map("last_collected_at")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  property     Property          @relation(fields: [propertyId], references: [id])
+  transactions CashTransaction[]
+
+  @@map("employees")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 20. CASH TRANSACTIONS — Employee Collection Logs
+// ═══════════════════════════════════════════════════════════════
+model CashTransaction {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int      @map("employee_id")
+  bookingRef      String?  @map("booking_ref") @db.VarChar(20)
+  guestName       String?  @map("guest_name") @db.VarChar(200)
+  amount          Int
+  transactionType String   @default("collection") @map("transaction_type") @db.VarChar(30)
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("cash_transactions")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 21. AUDIT LOG — Admin Actions
+// ═══════════════════════════════════════════════════════════════
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  adminId     Int?     @map("admin_id")
+  action      String   @db.VarChar(50)
+  entityType  String   @map("entity_type") @db.VarChar(50)
+  entityId    Int?     @map("entity_id")
+  details     Json?
+  isDeveloper Boolean  @default(false) @map("is_developer")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin AdminAccount? @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@map("audit_log")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 22. NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════
+model Notification {
+  id        Int      @id @default(autoincrement())
+  adminId   Int?     @map("admin_id")
+  title     String   @db.VarChar(200)
+  message   String
+  type      String   @default("info") @db.VarChar(30)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 23. REVIEWS
+// ═══════════════════════════════════════════════════════════════
+model Review {
+  id         Int      @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  propertyId Int?     @map("property_id")
+  rating     Int
+  reviewText String?  @map("review_text")
+  guestName  String   @map("guest_name") @db.VarChar(200)
+  isApproved Boolean  @default(false) @map("is_approved")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User?     @relation(fields: [userId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+
+  @@map("reviews")
+}

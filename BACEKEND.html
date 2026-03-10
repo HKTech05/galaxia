@@ -1,0 +1,352 @@
+
+
+---
+
+# 🚀 FULL PRODUCTION BACKEND BUILD PROMPT
+
+## Project: Galaxia Resorts
+
+Build a production-grade backend with strong security, booking locks, distributed rate limiting, encryption, and SQL injection prevention.
+
+---
+
+# 1️⃣ ARCHITECTURE
+
+System flow must be:
+
+User
+→ Cloudflare (WAF + Rate Limiting + Bot Protection)
+→ Cloudflare Pages (Frontend)
+→ Supabase Edge Functions (Secure API Layer)
+→ Valkey (Booking Locks + Distributed Rate Limiting)
+→ Supabase PostgreSQL (RLS Enabled)
+
+Frontend must NEVER directly insert into bookings table.
+
+All sensitive operations must go through Edge Functions.
+
+---
+
+# 2️⃣ CORE SECURITY REQUIREMENTS
+
+System must enforce:
+
+* HTTPS only (Cloudflare TLS)
+* Supabase JWT authentication
+* Row Level Security on all tables
+* No service role key in frontend
+* No raw SQL string concatenation
+* Parameterized queries only
+* Server-side validation only
+* Booking race condition prevention
+* Distributed rate limiting
+* SQL injection prevention
+* Input sanitization
+* Strict type validation
+
+---
+
+# 3️⃣ SUPABASE SETUP
+
+Create production Supabase project.
+
+Enable extensions:
+
+* uuid-ossp
+* pgcrypto
+
+Store securely:
+
+* SUPABASE_URL
+* SUPABASE_ANON_KEY (frontend only)
+* SUPABASE_SERVICE_ROLE_KEY (edge only)
+* ENCRYPTION_SECRET (edge only)
+* VALKEY_REDIS_URL
+* VALKEY_REDIS_TOKEN
+
+Service role key must only exist inside Edge Functions.
+
+---
+
+# 4️⃣ DATABASE SCHEMA
+
+Create tables:
+
+## businesses
+
+* id (uuid primary key default uuid_generate_v4())
+* name (text not null)
+* created_at (timestamp default now())
+
+---
+
+## villas
+
+* id (uuid primary key default uuid_generate_v4())
+* business_id (uuid references businesses(id))
+* name (text not null)
+* price_per_night (numeric not null)
+* is_active (boolean default true)
+
+Add index on business_id.
+
+---
+
+## bookings
+
+* id (uuid primary key default uuid_generate_v4())
+* user_id (uuid references auth.users(id))
+* villa_id (uuid references villas(id))
+* check_in (date not null)
+* check_out (date not null)
+* status (text default 'confirmed')
+* created_at (timestamp default now())
+
+Add indexes on:
+
+* villa_id
+* check_in
+* check_out
+
+---
+
+# 5️⃣ ROW LEVEL SECURITY
+
+Enable RLS on:
+
+* businesses
+* villas
+* bookings
+
+Bookings policies:
+
+Users can SELECT only where:
+auth.uid() = user_id
+
+Users can INSERT only where:
+auth.uid() = user_id
+
+No public insert access.
+
+Admin access handled through separate admins table.
+
+---
+
+# 6️⃣ SQL INJECTION PREVENTION (MANDATORY)
+
+The system must:
+
+* NEVER use raw SQL string concatenation.
+* NEVER interpolate user input directly into SQL.
+* Use Supabase query builder OR parameterized SQL only.
+* Validate and sanitize all request inputs.
+* Enforce strict schema validation before DB operations.
+
+Example of forbidden pattern:
+
+❌ `select * from bookings where villa_id = '${userInput}'`
+
+Allowed pattern:
+
+✔ Use Supabase query builder:
+`.eq("villa_id", villaId)`
+
+✔ Or parameterized SQL:
+`where villa_id = $1`
+
+All inputs must be validated for:
+
+* UUID format
+* Date format
+* Numeric format
+* String length limits
+
+Reject malformed inputs before any DB interaction.
+
+---
+
+# 7️⃣ VALKEY SETUP
+
+Use Upstash (Valkey-compatible).
+
+Valkey must handle:
+
+* Distributed rate limiting
+* Booking lock system
+
+---
+
+# 8️⃣ EDGE FUNCTION: create-booking
+
+All booking creation must go through this function.
+
+---
+
+## EDGE FUNCTION SECURITY FLOW
+
+### Step 1 — Authenticate User
+
+* Extract JWT
+* Validate session
+* Reject if unauthenticated
+
+---
+
+### Step 2 — Validate Inputs
+
+Validate:
+
+* villa_id must be valid UUID
+* check_in and check_out must be valid ISO dates
+* check_in < check_out
+* check_in must not be in the past
+
+Reject invalid inputs before DB queries.
+
+---
+
+### Step 3 — Rate Limit (Valkey)
+
+Key:
+rate:<ip>
+
+Allow:
+20 requests per minute.
+
+If exceeded:
+Return HTTP 429.
+
+---
+
+### Step 4 — Booking Lock (Race Prevention)
+
+Key:
+lock:<villa_id>
+
+If exists:
+Return 409 conflict.
+
+If not:
+Set lock with expiration 60 seconds.
+
+---
+
+### Step 5 — Prevent Double Booking (SQL Safe)
+
+Use parameterized query or Supabase builder.
+
+Condition:
+
+Existing booking where:
+
+villa_id matches
+AND
+(check_in < requested_check_out)
+AND
+(check_out > requested_check_in)
+
+If conflict exists:
+Delete lock
+Return 400.
+
+---
+
+### Step 6 — Insert Booking
+
+Insert booking using safe query builder:
+
+Insert:
+
+* user_id from JWT
+* villa_id
+* check_in
+* check_out
+
+No raw SQL.
+No dynamic query strings.
+
+After successful insert:
+Delete lock.
+
+---
+
+### Step 7 — Error Handling
+
+On ANY error:
+
+* Delete lock
+* Return safe error response
+* Do not leak internal DB errors
+
+---
+
+# 9️⃣ ENCRYPTION FOR SENSITIVE DATA
+
+If storing:
+
+* Phone numbers
+* Government IDs
+* Sensitive personal identifiers
+
+Use pgcrypto:
+
+pgp_sym_encrypt(value, ENCRYPTION_SECRET)
+
+Store ENCRYPTION_SECRET in Edge environment variables only.
+
+Never expose encryption key to frontend.
+
+---
+
+# 🔟 CLOUDFARE CONFIGURATION
+
+Enable:
+
+WAF rules:
+
+* Block known malicious IPs
+* Bot fight mode ON
+
+Rate limiting:
+
+* 100 requests per minute global
+* 10 login attempts per minute
+* 20 booking attempts per minute
+
+---
+
+# 11️⃣ INPUT SANITIZATION REQUIREMENTS
+
+Before processing:
+
+* Strip unexpected fields
+* Reject overly long strings
+* Reject invalid UUIDs
+* Reject invalid dates
+* Reject negative pricing values
+* Use strict JSON schema validation
+
+Never trust frontend.
+
+---
+
+# 12️⃣ FINAL EXPECTED RESULT
+
+Backend must provide:
+
+* Secure authenticated booking system
+* SQL injection resistant queries
+* Race-condition-safe villa locking
+* Distributed rate limiting
+* Encrypted sensitive storage
+* Proper RLS enforcement
+* Clean separation between public and service roles
+* Production-grade security
+
+No shortcuts.
+No raw SQL injection risk.
+No client-side trust.
+
+---
+
+

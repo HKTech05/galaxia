@@ -1,0 +1,334 @@
+
+
+Admin:
+Can edit all website content, manage businesses, villas, bookings, users, payments, and view analytics.
+
+Admin panels MAIN INFO: , IF THERE IS ANY CONTRADICTION IN THE REST OF THE SPECS, THIS MAIN INFO WILL BE TAKEN AS FINAL AND REST OF THE SPECS WILL BE MODIFIED TO FIT THIS MAIN INFO:
+
+3 separate accounts with different levels of access
+Account 1 – Digital diaries, only digital diaries related booking information can be viewed:
+includes calendar per day display containing slots and bookings for the day.
+Admin can add a slot if customer walks and books. – Does not need to do payment if customer scans UPI code on the spot or pays in cash. Admin must only update the Amount collected and any packages included/ add ons.
+Can view all previous bookings, and all future bookings, can remove / edit / modify a booking if needed. Can view amount paid by customer in previous booking. 
+can block a room or label as under maintaince during specific hours, due to which the customer would be viewing room is unavailable
+If admin adds a booking or removes a booking, it will be marked as admin edit / admin addition / admin removal
+
+Account 2 – Staycation
+Similar to above, only related to hotels
+Main functionality is for the receptionist sitting there to be able to fetch all booking details correctly in a nice manner
+Account 3 – Dipesh
+Set pricing for all properties - 
+God mode
+Can edit images of all properties
+Can view  and edit all bookings of each business via a drop down menu
+Can view detailed insights of all businesses via an insights panel, showing monthly booking information, shows statistics of how many times a particular room was booked, basically should get as much information as possible from our databases in a good graphical representation and tables of revenue and bookings and which villas aren’t getting booked etc. 
+can select date range of insights / year wise / last 6 months / last 3 months / last 1 month 
+Account 4 – (backdoor for developer)
+Super god mode
+Can make any changes such as if he adds a booking or removes a booking, it will NOT be marked as admin edit / admin addition / admin removal, can pretend to be customer and live updates to the database will be done.
+Any changes done will only be visible to the developer.
+(this is strictly for testing and debugging, client will not receive id of this)
+Add functionality to download all database content into a zip file and reset the database in case of full storage
+Show stats such as how much storage is used
+
+mAIN INFO END
+-----
+
+# 🛠 ADMIN PANEL – FULL SPECIFICATION
+
+## 1️⃣ Admin Authentication
+
+### Features:
+
+* Secure Login (Email + Password Not google based login / account / apple / etc)
+* Role-based Access:
+  * Super Admin (Full Access developer mode)
+  * Business Admin (Access to all business)
+  * Support Staff (Limited access)
+* JWT-based authentication
+* Login activity logs on developer account
+* Session management (logout all devices)
+
+---
+
+## 2️⃣ Dashboard (Main Overview Page)
+
+### Must Show:
+
+* 📊 Total Bookings (Today / This Week / This Month)
+* 💰 Total Revenue
+* 👥 Total Users
+* 🏢 Total Businesses
+* 📈 Booking Trends (Graph)
+* ❌ Failed Bookings
+* ⚠ Pending Payments
+
+### Widgets:
+
+* Recent bookings table
+* Recent chatbot conversations
+* Notifications panel
+
+---
+
+## 3️⃣ Business Management Module
+
+### Admin Should Be Able To:
+
+* Edit Business / villa Details
+* Disable/Enable Business / villa 
+* Delete and Add Business / villa
+
+
+### Business Fields:
+
+* Business Name
+* Description
+* Contact Number
+* WhatsApp Number
+* Instagram Handle
+* Address
+* Location (Google Maps)
+* Business Type (Villa / Salon / Service / etc)
+* Working Hours
+* Booking Slot Duration
+* Pricing Structure
+* Images
+* Policies (Cancellation, Refund)
+
+---
+
+## 4️⃣ Booking Management
+
+### View:
+
+* All Bookings
+* Filter by:
+
+  * Date
+  * Business
+  * Status (Confirmed / Pending / Cancelled)
+  * Payment Status
+  * User Name
+
+### Actions:
+
+* Confirm Booking
+* Cancel Booking
+* Modify Booking
+* Reschedule Booking
+* Issue Refund
+* Mark Payment as Received
+* Assign Resource (Room / Staff / Villa)
+
+### Booking Details Page:
+
+* User Info
+* Payment Info
+* Booking History
+* Chat history with bot
+
+---
+
+## 5️⃣ User Management
+
+### Admin Can:
+
+* View all users
+* Search user
+* View booking history
+* Disable account
+* Reset password
+* Assign user to business (if needed)
+* View chatbot interaction history
+
+### User Profile Must Show:
+
+* Name
+* Email
+* Phone
+* Total Bookings
+* Total Spend
+* Account Status
+* Signup Date
+* Last Active
+
+---
+
+## 6️⃣ Chatbot Management (Very Important for You)
+
+Since your system includes IG + WhatsApp chatbot:
+
+### Features:
+
+* View live conversations
+* Take over chat manually
+* Edit bot responses
+* Edit business selection menu
+* Add FAQ responses
+* Add booking flows
+* Set fallback message
+* AI prompt editor
+* Train chatbot per business
+* Message templates
+
+### Advanced:
+
+* Conversation analytics
+* Most asked questions
+* Drop-off rate
+* Failed intent detection
+* Broadcast message feature
+
+---
+
+## 7️⃣ Payment & Revenue Module
+
+### Must Include:
+
+* View all transactions
+* Filter by business
+* Export CSV
+* Refund system
+* Payment gateway logs
+* Failed transaction logs
+
+### Reports:
+
+* Revenue by business
+* Revenue by date
+* Monthly profit
+* Payment method breakdown
+
+---
+
+## 8️⃣ Slot & Resource Management
+
+For Villas / Appointments / Services:
+
+### Admin Can:
+
+* Create time slots
+* Block dates
+* Mark holidays
+* Set surge pricing
+* Assign staff to slots
+* View availability calendar
+
+---
+
+## 9️⃣ Analytics & Reports
+
+### Graphs:
+
+* Booking growth
+* Revenue growth
+* Chatbot usage
+* User acquisition
+* Cancellation rate
+* Peak booking times
+
+### Export:
+
+* PDF reports
+* CSV reports
+
+---
+
+## 🔟 Notification System
+
+Admin can:
+
+* Send push notification
+* Send WhatsApp broadcast
+* Send email campaigns
+* Create automated reminders
+* Configure booking reminders
+
+---
+
+## 1️⃣1️⃣ CMS (Content Management)
+
+Admin should manage:
+
+* Homepage content
+* About section
+* Business descriptions
+* Blog posts
+* FAQs
+* Terms & Conditions
+* Privacy Policy
+
+---
+
+## 1️⃣2️⃣ Settings Module
+
+### Includes:
+
+* Change admin password
+* API Keys (WhatsApp / Instagram / Payment)
+* Rate limiting settings
+* Booking deposit settings
+* Commission percentage
+* Currency settings
+* Tax settings
+
+---
+
+## 1️⃣3️⃣ Logs & Security
+
+* Admin activity logs
+* Failed login attempts
+* API logs
+* Webhook logs
+* System error logs
+
+---
+
+# 🧠 SYSTEM STRUCTURE (HIGH LEVEL)
+
+Admin Panel connects to:
+
+* Website Frontend
+* MongoDB / RDS Database
+* WhatsApp Business API
+* Instagram API
+* Payment Gateway
+* AWS Backend
+
+---
+
+# 🔥 If You Want It To Look Professional
+
+Use:
+
+* Next.js (Admin Frontend)
+* Tailwind
+* ShadCN UI
+* Chart.js
+* Role-based middleware
+* AWS EC2 / AWS RDS
+* Rate limiting at API level
+
+---
+
+# 🚀 Final Architecture Vision
+
+You are building:
+
+> A centralized SaaS-style admin control panel
+> That manages multi-business booking system
+> Integrated with website + WhatsApp + Instagram bot
+> With revenue tracking and automation.
+
+---
+
+If you want, I can now give you:
+
+* 🔥 Exact database schema structure
+* 🔥 Exact folder structure for backend
+* 🔥 Full API route structure
+* 🔥 Full AWS deployment architecture
+* 🔥 UI wireframe layout
+
+Tell me which one you want next.
