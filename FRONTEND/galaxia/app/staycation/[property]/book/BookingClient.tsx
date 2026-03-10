@@ -26,6 +26,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string; price: number; type: string; maxPersons: number } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
     // DB IDs for property and sub-property
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
@@ -100,6 +101,25 @@ export default function BookingClient({ property }: BookingClientProps) {
         agreedToTerms: false
     });
     const [idProofError, setIdProofError] = useState("");
+
+    // Load user data if logged in
+    useEffect(() => {
+        const token = localStorage.getItem("galaxia_token");
+        const userStr = localStorage.getItem("galaxia_user");
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                const nameParts = user.fullName?.split(" ") || [""];
+                setFormData(prev => ({
+                    ...prev,
+                    firstName: nameParts[0] || "",
+                    lastName: nameParts.slice(1).join(" ") || "",
+                    email: user.email || "",
+                    phone: user.phone || ""
+                }));
+            } catch (e) {}
+        }
+    }, []);
 
     // Coupon state
     const [couponCode, setCouponCode] = useState("");
@@ -180,6 +200,13 @@ export default function BookingClient({ property }: BookingClientProps) {
         if (!nights) setNights(1);
         setAdults(1);
         setKids(0);
+        
+        const token = localStorage.getItem("galaxia_token");
+        if (!token) {
+            setShowLoginPrompt(true);
+        } else {
+            setShowLoginPrompt(false);
+        }
         setCurrentStep(2);
     };
 
@@ -283,18 +310,6 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     return (
         <div className="min-h-screen bg-[#FDFCF9] pb-24">
-            {/* Header */}
-            <header className="border-b border-border-light bg-white sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                    <Link href={`/staycation/${property.id}`} className="flex items-center gap-2 text-text-secondary hover:text-antique-gold transition-colors font-inter text-sm">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                        Back to Property
-                    </Link>
-                    <div className="text-center absolute left-1/2 -translate-x-1/2">
-                        <span className="font-cinzel font-semibold text-gold-gradient text-lg">GALAXIA</span>
-                    </div>
-                </div>
-            </header>
 
             <main className={`mx-auto px-4 sm:px-6 pt-10 sm:pt-14 ${currentStep === 3 ? 'max-w-7xl' : 'max-w-[1100px]'}`}>
                 {/* Steps */}
@@ -365,7 +380,23 @@ export default function BookingClient({ property }: BookingClientProps) {
                         )}
 
                         {/* STEP 2: PERSONAL DETAILS */}
-                        {currentStep === 2 && (
+                        {currentStep === 2 && showLoginPrompt && (
+                            <div className="bg-white border border-border-light p-8 sm:p-12 text-center shadow-sm flex flex-col items-center justify-center">
+                                <div className="w-16 h-16 rounded-full bg-soft-gray flex items-center justify-center mb-6">
+                                    <svg className="w-8 h-8 text-antique-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                </div>
+                                <h2 className="font-cinzel text-xl sm:text-2xl text-text-primary uppercase mb-3">Sign In Required</h2>
+                                <p className="font-inter text-sm text-text-secondary mb-8 max-w-sm mx-auto">Please sign in or create a Galaxia account to proceed with your luxury booking.</p>
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-sm">
+                                    <button onClick={() => window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.href)}`} className="bg-gradient-to-r from-antique-gold to-dark-gold text-white px-8 py-3.5 rounded-md text-xs font-inter uppercase tracking-widest hover:shadow-lg hover:shadow-antique-gold/20 transition-all w-full">Sign In / Register</button>
+                                </div>
+                                <div className="mt-8 border-t border-border-light pt-6 w-full max-w-sm">
+                                    <button onClick={() => setCurrentStep(1)} className="font-inter text-xs tracking-wider uppercase text-text-secondary hover:text-text-primary py-2">← Back to Rooms</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentStep === 2 && !showLoginPrompt && (
                             <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm">
                                 <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
                                 <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">Please fill all relevant fields to proceed further.</p>

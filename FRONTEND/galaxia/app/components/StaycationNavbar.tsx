@@ -24,8 +24,7 @@ export default function StaycationNavbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const pathname = usePathname();
 
-    // Hide navbar on checkout/booking pages
-    if (pathname.endsWith("/book")) return null;
+    // Navbar stays visible on all pages including booking
 
     return (
         <>

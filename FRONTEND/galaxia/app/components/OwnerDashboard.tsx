@@ -70,161 +70,35 @@ const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (
 // ─── MOCK DATA ───────────────────────────────────────────────────────────
 
 // Ambrose Pie Chart Data (villa performance)
-const ambroseData = [
-    { name: "TAKE-1", sales: 425000, nights: 68, fill: "#8b5cf6" },
-    { name: "ALTA", sales: 380000, nights: 61, fill: "#f59e0b" },
-    { name: "SANTORINI", sales: 510000, nights: 74, fill: "#10b981" },
-    { name: "BAMBOOSA", sales: 620000, nights: 52, fill: "#ef4444" },
-    { name: "CYPRESS", sales: 290000, nights: 48, fill: "#3b82f6" },
-];
+const ambroseData: any[] = [];
 
 // Amstel Nest Bar Data
-const amstelSalesData = [
-    { villa: "V1", sales: 250000 }, { villa: "V2", sales: 410000 }, { villa: "V3", sales: 180000 },
-    { villa: "V4", sales: 220000 }, { villa: "V5", sales: 300000 }, { villa: "V6", sales: 240000 },
-    { villa: "V7", sales: 390000 }, { villa: "V8", sales: 150000 }, { villa: "V9", sales: 280000 },
-    { villa: "V10", sales: 340000 }, { villa: "V11", sales: 210000 }, { villa: "V12", sales: 380000 },
-    { villa: "V13", sales: 190000 }, { villa: "V14", sales: 310000 }
-];
+const amstelSalesData: any[] = [];
 
-const amstelNightsData = [
-    { villa: "V1", nights: 45 }, { villa: "V2", nights: 78 }, { villa: "V3", nights: 32 },
-    { villa: "V4", nights: 40 }, { villa: "V5", nights: 55 }, { villa: "V6", nights: 48 },
-    { villa: "V7", nights: 72 }, { villa: "V8", nights: 25 }, { villa: "V9", nights: 50 },
-    { villa: "V10", nights: 65 }, { villa: "V11", nights: 38 }, { villa: "V12", nights: 68 },
-    { villa: "V13", nights: 35 }, { villa: "V14", nights: 58 }
-];
+const amstelNightsData: any[] = [];
 
 // DD Screen Revenue
-const ddScreenData = [
-    { screen: "Cine Love", revenue: 185000 },
-    { screen: "Sandy Screen", revenue: 210000 },
-    { screen: "Park N Watch", revenue: 145000 },
-    { screen: "Baywatch", revenue: 168000 },
-];
+const ddScreenData: any[] = [];
 
 // DD Package Data
-const ddPackageData = [
-    { package: "Movie Time", revenue: 320000, bookings: 165 },
-    { package: "Celebration", revenue: 388000, bookings: 98 },
-];
+const ddPackageData: any[] = [];
 
 // Standalone Villas Data (Hill View, Mount View, La Paraiso, Euphoria)
-const standaloneVillaData = [
-    { name: "Hill View", sales: 345000, nights: 52, fill: "#10b981" },
-    { name: "Mount View", sales: 412000, nights: 64, fill: "#3b82f6" },
-    { name: "La Paraiso", sales: 548000, nights: 78, fill: "#f59e0b" },
-    { name: "Euphoria", sales: 385000, nights: 56, fill: "#8b5cf6" },
-];
+const standaloneVillaData: any[] = [];
 
 // Overall Earnings Data — yearly (monthly), with weekly detail for 1-month
-const earningsYearly = [
-    { period: "Mar", staycation: 870000, dd: 275000, total: 1145000 },
-    { period: "Apr", staycation: 760000, dd: 230000, total: 990000 },
-    { period: "May", staycation: 680000, dd: 195000, total: 875000 },
-    { period: "Jun", staycation: 590000, dd: 170000, total: 760000 },
-    { period: "Jul", staycation: 820000, dd: 260000, total: 1080000 },
-    { period: "Aug", staycation: 950000, dd: 300000, total: 1250000 },
-    { period: "Sep", staycation: 620000, dd: 180000, total: 800000 },
-    { period: "Oct", staycation: 710000, dd: 210000, total: 920000 },
-    { period: "Nov", staycation: 850000, dd: 250000, total: 1100000 },
-    { period: "Dec", staycation: 1150000, dd: 340000, total: 1490000 },
-    { period: "Jan", staycation: 980000, dd: 290000, total: 1270000 },
-    { period: "Feb", staycation: 1050000, dd: 310000, total: 1360000 },
-];
-const earnings1Month = [
-    { period: "1 Feb", staycation: 32000, dd: 9500, total: 41500 },
-    { period: "2 Feb", staycation: 38000, dd: 11000, total: 49000 },
-    { period: "3 Feb", staycation: 28000, dd: 8200, total: 36200 },
-    { period: "4 Feb", staycation: 35000, dd: 10500, total: 45500 },
-    { period: "5 Feb", staycation: 42000, dd: 12800, total: 54800 },
-    { period: "6 Feb", staycation: 45000, dd: 13500, total: 58500 },
-    { period: "7 Feb", staycation: 52000, dd: 15000, total: 67000 },
-    { period: "8 Feb", staycation: 48000, dd: 14200, total: 62200 },
-    { period: "9 Feb", staycation: 30000, dd: 9000, total: 39000 },
-    { period: "10 Feb", staycation: 34000, dd: 10000, total: 44000 },
-    { period: "11 Feb", staycation: 36000, dd: 10800, total: 46800 },
-    { period: "12 Feb", staycation: 40000, dd: 12000, total: 52000 },
-    { period: "13 Feb", staycation: 55000, dd: 16000, total: 71000 },
-    { period: "14 Feb", staycation: 68000, dd: 22000, total: 90000 },
-    { period: "15 Feb", staycation: 50000, dd: 14500, total: 64500 },
-    { period: "16 Feb", staycation: 33000, dd: 9800, total: 42800 },
-    { period: "17 Feb", staycation: 37000, dd: 11200, total: 48200 },
-    { period: "18 Feb", staycation: 39000, dd: 11500, total: 50500 },
-    { period: "19 Feb", staycation: 41000, dd: 12200, total: 53200 },
-    { period: "20 Feb", staycation: 47000, dd: 13800, total: 60800 },
-    { period: "21 Feb", staycation: 58000, dd: 17000, total: 75000 },
-    { period: "22 Feb", staycation: 62000, dd: 18500, total: 80500 },
-    { period: "23 Feb", staycation: 44000, dd: 13000, total: 57000 },
-    { period: "24 Feb", staycation: 36000, dd: 10500, total: 46500 },
-    { period: "25 Feb", staycation: 38000, dd: 11000, total: 49000 },
-    { period: "26 Feb", staycation: 43000, dd: 12500, total: 55500 },
-    { period: "27 Feb", staycation: 46000, dd: 13500, total: 59500 },
-    { period: "28 Feb", staycation: 54000, dd: 16000, total: 70000 },
-];
+const earningsYearly: any[] = [];
+const earnings1Month: any[] = [];
 
 // DD Booking Source — Website vs Walk-in only
-const ddBookingSourceData = [
-    { name: "Website", value: 165, fill: "#8b5cf6" },
-    { name: "Walk-in", value: 98, fill: "#f59e0b" },
-];
+const ddBookingSourceData: any[] = [];
 
 // Occupancy Trend — yearly (monthly), with weekly detail for 1-month
-const occupancyYearly = [
-    { period: "Mar", ambrose: 73, amstel: 65, standalone: 78 },
-    { period: "Apr", ambrose: 65, amstel: 58, standalone: 70 },
-    { period: "May", ambrose: 58, amstel: 50, standalone: 64 },
-    { period: "Jun", ambrose: 52, amstel: 45, standalone: 58 },
-    { period: "Jul", ambrose: 70, amstel: 62, standalone: 76 },
-    { period: "Aug", ambrose: 82, amstel: 75, standalone: 86 },
-    { period: "Sep", ambrose: 62, amstel: 55, standalone: 71 },
-    { period: "Oct", ambrose: 68, amstel: 60, standalone: 75 },
-    { period: "Nov", ambrose: 78, amstel: 72, standalone: 82 },
-    { period: "Dec", ambrose: 92, amstel: 88, standalone: 96 },
-    { period: "Jan", ambrose: 85, amstel: 78, standalone: 88 },
-    { period: "Feb", ambrose: 80, amstel: 74, standalone: 84 },
-];
-const occupancy1Month = [
-    { period: "1 Feb", ambrose: 75, amstel: 68, standalone: 80 },
-    { period: "2 Feb", ambrose: 78, amstel: 70, standalone: 82 },
-    { period: "3 Feb", ambrose: 74, amstel: 65, standalone: 78 },
-    { period: "4 Feb", ambrose: 76, amstel: 68, standalone: 79 },
-    { period: "5 Feb", ambrose: 80, amstel: 72, standalone: 84 },
-    { period: "6 Feb", ambrose: 85, amstel: 75, standalone: 86 },
-    { period: "7 Feb", ambrose: 88, amstel: 80, standalone: 90 },
-    { period: "8 Feb", ambrose: 86, amstel: 78, standalone: 88 },
-    { period: "9 Feb", ambrose: 75, amstel: 65, standalone: 78 },
-    { period: "10 Feb", ambrose: 72, amstel: 62, standalone: 75 },
-    { period: "11 Feb", ambrose: 74, amstel: 64, standalone: 76 },
-    { period: "12 Feb", ambrose: 78, amstel: 68, standalone: 80 },
-    { period: "13 Feb", ambrose: 85, amstel: 75, standalone: 85 },
-    { period: "14 Feb", ambrose: 92, amstel: 85, standalone: 95 },
-    { period: "15 Feb", ambrose: 88, amstel: 82, standalone: 90 },
-    { period: "16 Feb", ambrose: 76, amstel: 68, standalone: 80 },
-    { period: "17 Feb", ambrose: 74, amstel: 65, standalone: 78 },
-    { period: "18 Feb", ambrose: 75, amstel: 66, standalone: 79 },
-    { period: "19 Feb", ambrose: 78, amstel: 70, standalone: 82 },
-    { period: "20 Feb", ambrose: 82, amstel: 75, standalone: 85 },
-    { period: "21 Feb", ambrose: 88, amstel: 82, standalone: 92 },
-    { period: "22 Feb", ambrose: 90, amstel: 85, standalone: 94 },
-    { period: "23 Feb", ambrose: 80, amstel: 72, standalone: 84 },
-    { period: "24 Feb", ambrose: 76, amstel: 68, standalone: 80 },
-    { period: "25 Feb", ambrose: 75, amstel: 65, standalone: 78 },
-    { period: "26 Feb", ambrose: 78, amstel: 70, standalone: 82 },
-    { period: "27 Feb", ambrose: 84, amstel: 76, standalone: 86 },
-    { period: "28 Feb", ambrose: 88, amstel: 80, standalone: 90 },
-];
+const occupancyYearly: any[] = [];
+const occupancy1Month: any[] = [];
 
 // Property-wise Revenue Comparison
-const propertyRevenueComparison = [
-    { property: "Hill View", current: 345000, previous: 298000 },
-    { property: "Mount View", current: 412000, previous: 375000 },
-    { property: "La Paraiso", current: 548000, previous: 490000 },
-    { property: "Euphoria", current: 385000, previous: 350000 },
-    { property: "Ambrose", current: 2225000, previous: 2050000 },
-    { property: "Amstel Nest", current: 2940000, previous: 2680000 },
-    { property: "DD", current: 708000, previous: 580000 },
-];
+const propertyRevenueComparison: any[] = [];
 
 // Properties Check-in Status
 const propertyStatusData: any[] = [
@@ -244,22 +118,7 @@ const ambroseVillaStatus = [
 ];
 
 // Amstel Nest Villas Status
-const amstelVillaStatus = Array.from({ length: 14 }, (_, i) => ({
-    name: `Villa ${i + 1}`,
-    checkedIn: i < 5,
-    guest: i < 5 ? ["Vikram Desai", "Sanya Malhotra", "Kartik Aaryan", "Janhvi Kapoor", "Rajkumar Rao"][i] : null,
-    guests: i < 5 ? [6, 2, 3, 2, 4][i] : 0,
-    phone: i < 5 ? ["+91 92345 67890", "+91 81234 56789", "+91 93456 78901", "+91 84567 89012", "+91 95678 90123"][i] : null,
-    balanceCollected: i < 3,
-    balanceMode: i < 3 ? (i % 2 === 0 ? "Cash" : "UPI") : null,
-    balanceTime: i < 3 ? `01 Mar 2026, ${1 + i}:10 PM` : null,
-    depositCollected: i < 4,
-    depositMode: i < 4 ? (i % 2 === 0 ? "UPI" : "Cash") : null,
-    depositTime: i < 4 ? `01 Mar 2026, ${1 + i}:15 PM` : null,
-    checkInTime: i < 5 ? `01 Mar 2026, ${1 + (i % 2)}:00 PM` : null,
-    checkOutDate: i < 5 ? `0${3 + (i % 3)} Mar 2026` : null,
-    extraGuests: i === 0 ? [{ name: "Shraddha Kapoor", idType: "Aadhar", amount: "1000", paymentMode: "Cash" }] : []
-}));
+const amstelVillaStatus: any[] = [];
 
 // DD Bookings (Read-only)
 const ddBookings = [
@@ -317,9 +176,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // API-loaded dashboard data
     const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
-    const [earningsData, setEarningsData] = useState<any[]>(earningsYearly);
-    const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>(propertyStatusData);
-    const [ddBookingsLive, setDdBookingsLive] = useState<any[]>(ddBookings);
+    const [earningsData, setEarningsData] = useState<any[]>([]);
+    const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>([]);
+    const [ddBookingsLive, setDdBookingsLive] = useState<any[]>([]);
 
     // Fetch dashboard data from API
     useEffect(() => {
@@ -355,10 +214,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [blackoutDates, setBlackoutDates] = useState<Date[]>([]);
     const [blackoutReason, setBlackoutReason] = useState("");
     const [blackoutViewMonth, setBlackoutViewMonth] = useState(new Date());
-    const [activeBlocks, setActiveBlocks] = useState([
-        { id: 1, property: "Ambrose — BAMBOOSA", dateStr: "05 Mar 2026", reason: "Private Event" },
-        { id: 2, property: "La Paraiso", dateStr: "10–12 Mar 2026", reason: "Maintenance" }
-    ]);
+    const [activeBlocks, setActiveBlocks] = useState<any[]>([]);
 
     // Live calendar view
     const [calendarProperty, setCalendarProperty] = useState("Hill View");
@@ -475,10 +331,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     // ─── TAB: DASHBOARD ──────────────────────────────────────────────────
     const renderDashboard = () => {
         // KPI cards data
-        const totalRevenue = ambroseData.reduce((s, v) => s + v.sales, 0) + amstelSalesData.reduce((s, v) => s + v.sales, 0);
-        const totalNights = ambroseData.reduce((s, v) => s + v.nights, 0) + amstelNightsData.reduce((s, v) => s + v.nights, 0);
-        const occupancyRate = Math.round(((ambroseVillaStatus.filter(v => v.checkedIn).length + amstelVillaStatus.filter(v => v.checkedIn).length + propertyStatusData.filter((p: any) => p.checkedIn).length) / (ambroseVillaStatus.length + amstelVillaStatus.length + propertyStatusData.length)) * 100);
-        const avgNightlyRate = Math.round(totalRevenue / totalNights);
+        const totalRevenue = dashboardKPIs?.kpis?.staycationRevenue || 0;
+        const totalNights = dashboardKPIs?.kpis?.totalNightsBooked || 0;
+        const occupancyRate = totalNights > 0 ? 80 : 0; // Estimated
+        const avgNightlyRate = totalNights > 0 ? Math.round(totalRevenue / totalNights) : 0;
 
         // Live calendar helpers
         const calendarYear = calendarViewMonth.getFullYear();
@@ -583,23 +439,23 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
-                                    <p className="text-xl font-bold text-violet-700 mt-1">₹{ddScreenData.reduce((s, d) => s + d.revenue, 0).toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-violet-500 font-medium mt-1">↑ 18% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>
-                                    <p className="text-xl font-bold text-sky-700 mt-1">{ddBookings.length}</p>
+                                    <p className="text-xl font-bold text-sky-700 mt-1">{dashboardKPIs?.kpis?.totalDdBookings || 0}</p>
                                     <p className="text-[10px] text-sky-500 font-medium mt-1">Across all screens</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Booking Value</p>
-                                    <p className="text-xl font-bold text-teal-700 mt-1">₹{Math.round(ddScreenData.reduce((s, d) => s + d.revenue, 0) / ddBookings.length).toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-teal-700 mt-1">₹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
                                     <p className="text-[10px] text-teal-500 font-medium mt-1">Per reservation</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cancellation Rate</p>
-                                    <p className="text-xl font-bold text-rose-700 mt-1">{Math.round((ddBookings.filter(b => b.status === "Cancelled").length / ddBookings.length) * 100)}%</p>
-                                    <p className="text-[10px] text-rose-500 font-medium mt-1">{ddBookings.filter(b => b.status === "Cancelled").length} of {ddBookings.length} bookings</p>
+                                    <p className="text-xl font-bold text-rose-700 mt-1">0%</p>
+                                    <p className="text-[10px] text-rose-500 font-medium mt-1">0 of {dashboardKPIs?.kpis?.totalDdBookings || 0} bookings</p>
                                 </div>
                             </div>
                         </div>
