@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const propertyLinks = [
     { name: "Hill View", href: "/staycation/hill-view" },
@@ -23,6 +23,7 @@ const menuItems = [
 export default function StaycationNavbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
 
     // Navbar stays visible on all pages including booking
 
@@ -71,11 +72,41 @@ export default function StaycationNavbar() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
                         </Link>
-                        <Link href="/dashboard?source=staycation" className="w-8 h-8 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group">
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                if (typeof window !== "undefined") {
+                                    if (!localStorage.getItem("galaxia_token")) {
+                                        const redirectUri = window.location.origin.includes('localhost')
+                                            ? "http://localhost:3000/auth/callback"
+                                            : "https://galaxia-dusky.vercel.app/auth/callback";
+                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+                                        const width = 500;
+                                        const height = 650;
+                                        const left = window.screenX + (window.outerWidth - width) / 2;
+                                        const top = window.screenY + (window.outerHeight - height) / 2;
+
+                                        window.open(cognitoUrl, "CognitoLogin", `width=${width},height=${height},left=${left},top=${top}`);
+
+                                        const handleMsg = (event: MessageEvent) => {
+                                            if (event.data === "COGNITO_LOGIN_SUCCESS") {
+                                                window.removeEventListener("message", handleMsg);
+                                                router.push("/dashboard?source=staycation");
+                                            }
+                                        };
+                                        window.addEventListener("message", handleMsg);
+                                    } else {
+                                        router.push("/dashboard?source=staycation");
+                                    }
+                                }
+                            }}
+                            className="w-8 h-8 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group"
+                        >
                             <svg className="w-4 h-4 text-text-secondary group-hover:text-antique-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                        </Link>
+                        </button>
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
                             className="w-8 h-8 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group relative"
