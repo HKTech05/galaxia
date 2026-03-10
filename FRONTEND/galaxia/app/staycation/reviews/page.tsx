@@ -24,7 +24,7 @@ export default function ReviewsPage() {
     const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/reviews`)
+        fetch(`/api/reviews`)
             .then(r => {
                 if (!r.ok) throw new Error("API error");
                 return r.json();
@@ -37,7 +37,7 @@ export default function ReviewsPage() {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/reviews`, {
+            const res = await fetch(`/api/reviews`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
