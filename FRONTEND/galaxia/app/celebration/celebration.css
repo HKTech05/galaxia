@@ -1,0 +1,280 @@
+/* ========================================
+   CELEBRATION (DIGITAL DIARIES) THEME
+   Standalone CSS — does NOT affect staycation
+   ======================================== */
+
+/* --- Color Variables --- */
+:root {
+    --cel-rose-light: #f1b1b3;
+    --cel-rose-medium: #d87f82;
+    --cel-rose-dark: #9f353a;
+    --cel-bg: #0D0D0D;
+    --cel-card: #1A1A1A;
+    --cel-card-hover: #222222;
+    --cel-border: #2A2A2A;
+    --cel-border-light: #333333;
+    --cel-text: #F2F2F2;
+    --cel-text-secondary: #AAAAAA;
+    --cel-text-muted: #777777;
+}
+
+/* --- Text Colors --- */
+.text-rose-light {
+    color: var(--cel-rose-light) !important;
+}
+
+.text-rose-medium {
+    color: var(--cel-rose-medium) !important;
+}
+
+.text-rose-dark {
+    color: var(--cel-rose-dark) !important;
+}
+
+.text-cel-text {
+    color: var(--cel-text) !important;
+}
+
+.text-cel-text-secondary {
+    color: var(--cel-text-secondary) !important;
+}
+
+.text-cel-text-muted {
+    color: var(--cel-text-muted) !important;
+}
+
+/* --- Background Colors --- */
+.bg-cel-bg {
+    background-color: var(--cel-bg) !important;
+}
+
+.bg-cel-card {
+    background-color: var(--cel-card) !important;
+}
+
+.bg-cel-card-hover {
+    background-color: var(--cel-card-hover) !important;
+}
+
+.bg-rose-light {
+    background-color: var(--cel-rose-light) !important;
+}
+
+.bg-rose-medium {
+    background-color: var(--cel-rose-medium) !important;
+}
+
+.bg-rose-dark {
+    background-color: var(--cel-rose-dark) !important;
+}
+
+/* Background with opacity */
+.bg-rose-dark\/5 {
+    background-color: rgba(159, 53, 58, 0.05) !important;
+}
+
+.bg-rose-dark\/10 {
+    background-color: rgba(159, 53, 58, 0.10) !important;
+}
+
+.bg-rose-dark\/15 {
+    background-color: rgba(159, 53, 58, 0.15) !important;
+}
+
+.bg-rose-dark\/20 {
+    background-color: rgba(159, 53, 58, 0.20) !important;
+}
+
+.bg-cel-bg\/95 {
+    background-color: rgba(13, 13, 13, 0.95) !important;
+}
+
+.bg-cel-bg\/98 {
+    background-color: rgba(13, 13, 13, 0.98) !important;
+}
+
+/* --- Border Colors --- */
+.border-cel-border {
+    border-color: var(--cel-border) !important;
+}
+
+.border-cel-border-light {
+    border-color: var(--cel-border-light) !important;
+}
+
+.border-rose-dark\/30 {
+    border-color: rgba(159, 53, 58, 0.30) !important;
+}
+
+.border-rose-dark\/40 {
+    border-color: rgba(159, 53, 58, 0.40) !important;
+}
+
+.border-rose-medium\/30 {
+    border-color: rgba(216, 127, 130, 0.30) !important;
+}
+
+.border-rose-medium\/40 {
+    border-color: rgba(216, 127, 130, 0.40) !important;
+}
+
+.border-rose-medium\/50 {
+    border-color: rgba(216, 127, 130, 0.50) !important;
+}
+
+/* --- Gradient helpers --- */
+.from-rose-medium {
+    --tw-gradient-from: var(--cel-rose-medium);
+}
+
+.to-rose-dark {
+    --tw-gradient-to: var(--cel-rose-dark);
+}
+
+.from-rose-dark {
+    --tw-gradient-from: var(--cel-rose-dark);
+}
+
+/* Full gradient buttons */
+.bg-gradient-to-r.from-rose-medium.to-rose-dark {
+    background: linear-gradient(to right, var(--cel-rose-medium), var(--cel-rose-dark)) !important;
+}
+
+.bg-gradient-to-b.from-rose-medium.to-rose-dark {
+    background: linear-gradient(to bottom, var(--cel-rose-medium), var(--cel-rose-dark)) !important;
+}
+
+.bg-gradient-to-br.from-rose-medium.to-rose-dark {
+    background: linear-gradient(to bottom right, var(--cel-rose-medium), var(--cel-rose-dark)) !important;
+}
+
+.bg-gradient-to-b.from-cel-bg.to-cel-card {
+    background: linear-gradient(to bottom, var(--cel-bg), var(--cel-card)) !important;
+}
+
+.bg-gradient-to-b.from-cel-card.to-rose-dark\/5 {
+    background: linear-gradient(to bottom, var(--cel-card), rgba(159, 53, 58, 0.05)) !important;
+}
+
+/* --- Shadow helpers --- */
+.hover\:shadow-rose-dark\/20:hover {
+    --tw-shadow-color: rgba(159, 53, 58, 0.20);
+}
+
+.hover\:shadow-rose-dark\/30:hover {
+    --tw-shadow-color: rgba(159, 53, 58, 0.30);
+}
+
+.shadow-rose-dark\/20 {
+    --tw-shadow-color: rgba(159, 53, 58, 0.20);
+}
+
+/* --- Hover states --- */
+.hover\:text-rose-light:hover {
+    color: var(--cel-rose-light) !important;
+}
+
+.hover\:text-rose-medium:hover {
+    color: var(--cel-rose-medium) !important;
+}
+
+.hover\:border-rose-medium:hover {
+    border-color: var(--cel-rose-medium) !important;
+}
+
+.hover\:border-rose-medium\/30:hover {
+    border-color: rgba(216, 127, 130, 0.30) !important;
+}
+
+.hover\:bg-rose-dark\/10:hover {
+    background-color: rgba(159, 53, 58, 0.10) !important;
+}
+
+.hover\:bg-cel-card:hover {
+    background-color: var(--cel-card) !important;
+}
+
+.hover\:bg-cel-card-hover:hover {
+    background-color: var(--cel-card-hover) !important;
+}
+
+.hover\:border-cel-border:hover {
+    border-color: var(--cel-border) !important;
+}
+
+.hover\:border-cel-border-light:hover {
+    border-color: var(--cel-border-light) !important;
+}
+
+.hover\:border-rose-dark\/30:hover {
+    border-color: rgba(159, 53, 58, 0.30) !important;
+}
+
+.hover\:border-rose-dark\/40:hover {
+    border-color: rgba(159, 53, 58, 0.40) !important;
+}
+
+.hover\:border-rose-medium\/40:hover {
+    border-color: rgba(216, 127, 130, 0.40) !important;
+}
+
+/* --- Group hover states --- */
+.group:hover .group-hover\:text-rose-light {
+    color: var(--cel-rose-light) !important;
+}
+
+.group:hover .group-hover\:text-rose-medium {
+    color: var(--cel-rose-medium) !important;
+}
+
+/* --- Focus states --- */
+.focus\:border-rose-medium:focus {
+    border-color: var(--cel-rose-medium) !important;
+}
+
+/* --- Accent color --- */
+.accent-rose-dark {
+    accent-color: var(--cel-rose-dark);
+}
+
+/* --- Rose gradient text --- */
+.text-rose-gradient {
+    background: linear-gradient(135deg, var(--cel-rose-medium), var(--cel-rose-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* --- Celebration Scrollbar --- */
+.min-h-screen[style*="0D0D0D"] ::-webkit-scrollbar-track {
+    background: #1A1A1A;
+}
+
+.min-h-screen[style*="0D0D0D"] ::-webkit-scrollbar-thumb {
+    background: var(--cel-rose-dark);
+}
+
+.min-h-screen[style*="0D0D0D"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--cel-rose-medium);
+}
+
+/* --- Glass morphism dark variant --- */
+.glass-dark {
+    background: rgba(13, 13, 13, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--cel-border);
+}
+
+/* --- Celebration-specific hover shadow --- */
+.hover\:shadow-\[0_8px_40px_rgba\(159\,53\,58\,0\.15\)\]:hover {
+    box-shadow: 0 8px 40px rgba(159, 53, 58, 0.15);
+}
+
+.hover\:shadow-\[0_4px_20px_rgba\(159\,53\,58\,0\.12\)\]:hover {
+    box-shadow: 0 4px 20px rgba(159, 53, 58, 0.12);
+}
+
+.hover\:shadow-\[0_8px_40px_rgba\(159\,53\,58\,0\.12\)\]:hover {
+    box-shadow: 0 8px 40px rgba(159, 53, 58, 0.12);
+}
