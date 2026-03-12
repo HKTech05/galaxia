@@ -38,9 +38,16 @@ function verifyCognitoToken(idToken: string): Promise<any> {
         jwt.verify(
             idToken,
             (header, callback) => {
+                console.log("[DEBUG] JWT Header:", JSON.stringify(header));
+                console.log("[DEBUG] Configured ISSUER:", ISSUER);
+                console.log("[DEBUG] Configured JWKS_URI:", JWKS_URI);
+                
                 getSigningKey(header)
                     .then(key => callback(null, key))
-                    .catch(err => callback(err));
+                    .catch(err => {
+                        console.error("[DEBUG] getSigningKey error:", err.message);
+                        callback(err);
+                    });
             },
             {
                 issuer: ISSUER,
