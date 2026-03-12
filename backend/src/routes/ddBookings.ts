@@ -79,11 +79,26 @@ router.post("/", async (req, res) => {
             }
 
             // Find or create user
-            let user = await tx.user.findFirst({ where: { phone: customerPhone } });
+            let user = null;
+            if (customerEmail) {
+                user = await tx.user.findUnique({ where: { email: customerEmail } });
+            }
+            if (!user && customerPhone) {
+                user = await tx.user.findFirst({ where: { phone: customerPhone } });
+            }
+
             if (!user) {
                 user = await tx.user.create({
-                    data: { fullName: customerName, phone: customerPhone, email: customerEmail },
+                    data: { fullName: customerName, phone: customerPhone, email: customerEmail || null },
                 });
+            } else {
+                // If user exists but is missing phone (e.g. from Cognito login), update it
+                if (!user.phone || user.phone === "") {
+                    user = await tx.user.update({
+                        where: { id: user.id },
+                        data: { phone: customerPhone, fullName: user.fullName === "Guest" ? customerName : user.fullName },
+                    });
+                }
             }
 
             const bookingRef = await generateDdRef();
