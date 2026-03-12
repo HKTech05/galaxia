@@ -389,42 +389,43 @@ export default function BookingClient({ property }: BookingClientProps) {
                                 <p className="font-inter text-sm text-text-secondary mb-8 max-w-sm mx-auto">Please sign in with your Galaxia account or Google to proceed with your luxury booking.</p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-sm">
                                     <button
-                                        onClick={() => {
-                                            const redirectUri = window.location.origin.includes('localhost') 
-                                                ? "http://localhost:3000/auth/callback" 
-                                                : "https://galaxia-dusky.vercel.app/auth/callback";
-                                            const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
-                                            
-                                            const width = 500;
-                                            const height = 650;
-                                            const left = window.screenX + (window.outerWidth - width) / 2;
-                                            const top = window.screenY + (window.outerHeight - height) / 2;
-                                            
-                                            window.open(cognitoUrl, "CognitoLogin", `width=${width},height=${height},left=${left},top=${top}`);
-                                            
-                                            const handleMsg = (event: MessageEvent) => {
-                                                if (event.data === "COGNITO_LOGIN_SUCCESS") {
-                                                    window.removeEventListener("message", handleMsg);
-                                                    
-                                                    // Load user info to auto-fill
-                                                    const u = localStorage.getItem("galaxia_user");
-                                                    if (u) {
-                                                        try {
-                                                            const userData = JSON.parse(u);
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                firstName: userData.firstName || userData.fullName?.split(' ')[0] || prev.firstName,
-                                                                lastName: userData.lastName || userData.fullName?.split(' ').slice(1).join(' ') || prev.lastName,
-                                                                email: userData.email || prev.email,
-                                                                phone: userData.phoneNumber || prev.phone
-                                                            }));
-                                                        } catch (e) {}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (typeof window !== "undefined") {
+                                                const redirectUri = `${window.location.origin}/auth/callback`;
+                                                const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
+                                                
+                                                const width = 500;
+                                                const height = 650;
+                                                const left = window.screenX + (window.outerWidth - width) / 2;
+                                                const top = window.screenY + (window.outerHeight - height) / 2;
+                                                
+                                                window.open(cognitoUrl, "CognitoLogin", `width=${width},height=${height},left=${left},top=${top}`);
+                                                
+                                                const handleMsg = (event: MessageEvent) => {
+                                                    if (event.data === "COGNITO_LOGIN_SUCCESS") {
+                                                        window.removeEventListener("message", handleMsg);
+                                                        
+                                                        // Load user info to auto-fill
+                                                        const u = localStorage.getItem("galaxia_user");
+                                                        if (u) {
+                                                            try {
+                                                                const userData = JSON.parse(u);
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    firstName: userData.firstName || userData.fullName?.split(' ')[0] || prev.firstName,
+                                                                    lastName: userData.lastName || userData.fullName?.split(' ').slice(1).join(' ') || prev.lastName,
+                                                                    email: userData.email || prev.email,
+                                                                    phone: userData.phoneNumber || prev.phone
+                                                                }));
+                                                            } catch (e) {}
+                                                        }
+                                                        
+                                                        setShowLoginPrompt(false);
                                                     }
-                                                    
-                                                    setShowLoginPrompt(false);
-                                                }
-                                            };
-                                            window.addEventListener("message", handleMsg);
+                                                };
+                                                window.addEventListener("message", handleMsg);
+                                            }
                                         }}
                                         className="bg-gradient-to-r from-antique-gold to-dark-gold text-white px-8 py-3.5 rounded-md text-xs font-inter uppercase tracking-widest hover:shadow-lg hover:shadow-antique-gold/20 transition-all w-full"
                                     >
