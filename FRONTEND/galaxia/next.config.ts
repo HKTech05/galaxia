@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    // Determine the backend base URL (remove trailing /api if present, as path* already contains it)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+    // Proxy all /api/* requests to the external backend API
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiUrl.replace(/\/$/, '')}/:path*`, 
+      },
+    ];
+  },
 };
 
 export default nextConfig;

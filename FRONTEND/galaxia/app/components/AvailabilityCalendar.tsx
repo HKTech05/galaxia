@@ -60,7 +60,8 @@ export default function AvailabilityCalendar({ propertyId, weekdayPrice, weekend
             try {
                 const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
                 const endDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/bookings/staycation/booked-dates?propertyId=${propertyId}&startDate=${startDate}&endDate=${endDate}`);
+                const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                const res = await fetch(`${baseUrl}/bookings/staycation/booked-dates?propertyId=${propertyId}&startDate=${startDate}&endDate=${endDate}`);
                 if (res.ok) {
                     const data = await res.json();
                     setBookedDates(new Set(data.dates || []));
