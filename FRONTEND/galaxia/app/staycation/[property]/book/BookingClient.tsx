@@ -37,7 +37,12 @@ export default function BookingClient({ property }: BookingClientProps) {
         (async () => {
             try {
                 const props = await api.get("/properties");
-                const dbProp = props.find((p: any) => p.slug === property.id);
+                let dbProp = props.find((p: any) => p.slug === property.id);
+                // If it's a sub-property (e.g. standard-cottage), find its parent
+                if (!dbProp) {
+                    dbProp = props.find((p: any) => p.subProperties?.some((sp: any) => sp.slug === property.id));
+                }
+
                 if (dbProp) {
                     setDbPropertyId(dbProp.id);
                     if (dbProp.subProperties) {
