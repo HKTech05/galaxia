@@ -55,21 +55,22 @@ function verifyCognitoToken(idToken: string): Promise<any> {
 }
 
 // ── POST /api/auth/cognito/callback ────────────────────────────
-// Frontend sends { code } → we exchange for tokens → verify → upsert user → return app JWT
+// Frontend sends { code, redirectUri } → we exchange for tokens → verify → upsert user → return app JWT
 router.post("/callback", async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code, redirectUri } = req.body;
         if (!code) {
             return res.status(400).json({ error: "Authorization code required" });
         }
 
-        // Step 1: Exchange code for tokens
+        // Step 1: Exchange code for tokens. 
+        // We must use the exact redirect_uri that was used by the frontend to initiate the login.
         const tokenUrl = `https://${COGNITO_DOMAIN}/oauth2/token`;
         const params = new URLSearchParams({
             grant_type: "authorization_code",
             code,
             client_id: COGNITO_CLIENT_ID,
-            redirect_uri: COGNITO_REDIRECT_URI,
+            redirect_uri: redirectUri || COGNITO_REDIRECT_URI,
         });
 
         const headers: Record<string, string> = {

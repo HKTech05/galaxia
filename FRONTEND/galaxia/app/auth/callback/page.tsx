@@ -33,10 +33,11 @@ function CallbackContent() {
 
     async function exchangeCode(code: string) {
         try {
+            const redirectUri = `${window.location.origin}/auth/callback`;
             const res = await fetch(`${API_BASE}/auth/cognito/callback`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code }),
+                body: JSON.stringify({ code, redirectUri }),
             });
 
             if (!res.ok) {
