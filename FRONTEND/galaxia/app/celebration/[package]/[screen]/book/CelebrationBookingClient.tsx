@@ -753,10 +753,10 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                 </button>
                                 <button
                                     onClick={handleBooking}
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || !dbScreenId || !dbPackageId}
                                     className="flex-1 bg-gradient-to-r from-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-3.5 rounded-lg hover:shadow-lg hover:shadow-rose-dark/30 transition-all disabled:opacity-60"
                                 >
-                                    {isSubmitting ? "Processing..." : "Make Payment"}
+                                    {isSubmitting ? "Processing..." : (!(dbScreenId && dbPackageId) ? "Loading System..." : "Make Payment")}
                                 </button>
                             </div>
                             {bookingError && (

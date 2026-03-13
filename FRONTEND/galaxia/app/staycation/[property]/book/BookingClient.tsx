@@ -27,6 +27,15 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    
+    // Auth Modes
+    const [emailMode, setEmailMode] = useState<"login" | "register" | false>(false);
+    const [authEmail, setAuthEmail] = useState("");
+    const [authPassword, setAuthPassword] = useState("");
+    const [authName, setAuthName] = useState("");
+    const [authPhone, setAuthPhone] = useState("");
+    const [authError, setAuthError] = useState("");
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
 
     // DB IDs for property and sub-property
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
@@ -127,7 +136,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         }
     }, []);
 
-    // Restore booking state if returning from Auth Callback
+    // Restore booking state if returning from Auth Callback (fallback for old flow)
     useEffect(() => {
         const saved = localStorage.getItem("galaxia_booking_state");
         if (saved) {
@@ -147,6 +156,87 @@ export default function BookingClient({ property }: BookingClientProps) {
             } catch (e) {}
         }
     }, []);
+
+    // Listen for Cognito popup success
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data === "COGNITO_LOGIN_SUCCESS") {
+                setShowLoginPrompt(false);
+                // Reload user data
+                const userStr = localStorage.getItem("galaxia_user");
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        const nameParts = user.fullName?.split(" ") || [""];
+                        setFormData(prev => ({
+                            ...prev,
+                            firstName: nameParts[0] || "",
+                            lastName: nameParts.slice(1).join(" ") || "",
+                            email: user.email || "",
+                            phone: user.phone || ""
+                        }));
+                    } catch (e) {}
+                }
+            }
+        };
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
+    }, []);
+
+    const handleGuestLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsAuthenticating(true);
+        setAuthError("");
+        try {
+            const data = await api.post("/auth/login-guest", { email: authEmail, password: authPassword });
+            localStorage.setItem("galaxia_token", data.token);
+            localStorage.setItem("galaxia_user", JSON.stringify(data.user));
+            const nameParts = data.user.fullName?.split(" ") || [""];
+            setFormData(prev => ({
+                ...prev,
+                firstName: nameParts[0] || "",
+                lastName: nameParts.slice(1).join(" ") || "",
+                email: data.user.email || "",
+                phone: data.user.phone || ""
+            }));
+            setShowLoginPrompt(false);
+        } catch (err: any) {
+            setAuthError(err.message || "Invalid email or password");
+        } finally {
+            setIsAuthenticating(false);
+        }
+    };
+
+    const handleGuestRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsAuthenticating(true);
+        setAuthError("");
+        try {
+            await api.post("/auth/register-guest", {
+                fullName: authName,
+                email: authEmail,
+                phone: authPhone,
+                password: authPassword
+            });
+            // Auto login after register
+            const data = await api.post("/auth/login-guest", { email: authEmail, password: authPassword });
+            localStorage.setItem("galaxia_token", data.token);
+            localStorage.setItem("galaxia_user", JSON.stringify(data.user));
+            const nameParts = authName.split(" ");
+            setFormData(prev => ({
+                ...prev,
+                firstName: nameParts[0] || "",
+                lastName: nameParts.slice(1).join(" ") || "",
+                email: authEmail,
+                phone: authPhone
+            }));
+            setShowLoginPrompt(false);
+        } catch (err: any) {
+            setAuthError(err.message || "Registration failed");
+        } finally {
+            setIsAuthenticating(false);
+        }
+    };
 
     // Coupon state
     const [couponCode, setCouponCode] = useState("");
@@ -418,64 +508,108 @@ export default function BookingClient({ property }: BookingClientProps) {
                                 {/* ChatGPT-style Dark Auth Modal */}
                                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
                                     <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 xs:p-10 relative transform transition-all">
-                                        <button onClick={() => { setShowLoginPrompt(false); setCurrentStep(1); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                                        <button onClick={() => { setShowLoginPrompt(false); setEmailMode(false); setCurrentStep(1); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                         
-                                        <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
-                                        <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
-                                            Sign in to securely manage your booking and confirm your luxury stay.
-                                        </p>
-                                        
-                                        <div className="w-full space-y-3">
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (typeof window !== "undefined") {
-                                                        const bookingState = {
-                                                            checkInDate, checkOutDate, nights, nightlyRate, adults, kids, selectedRoom, currentStep: 2
-                                                        };
-                                                        localStorage.setItem("galaxia_booking_state", JSON.stringify(bookingState));
-                                                        
-                                                        const redirectUri = `${window.location.origin}/auth/callback`;
-                                                        const currentUrl = window.location.pathname + window.location.search;
-                                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}&identity_provider=Google`;
-                                                        window.location.href = cognitoUrl;
-                                                    }
-                                                }}
-                                                className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
-                                            >
-                                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
-                                                Continue with Google
-                                            </button>
-                                            
-                                            <div className="flex items-center gap-4 py-2 opacity-60">
-                                                <div className="h-[1px] bg-white/20 flex-1"></div>
-                                                <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
-                                                <div className="h-[1px] bg-white/20 flex-1"></div>
-                                            </div>
+                                        {!emailMode && (
+                                            <>
+                                                <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
+                                                <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
+                                                    Sign in to securely manage your booking and confirm your luxury stay.
+                                                </p>
+                                                
+                                                <div className="w-full space-y-3">
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            const redirectUri = `${window.location.origin}/auth/callback`;
+                                                            const currentUrl = window.location.pathname + window.location.search;
+                                                            const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}&identity_provider=Google`;
+                                                            window.open(cognitoUrl, "Cognito Login", "width=500,height=600");
+                                                        }}
+                                                        className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
+                                                    >
+                                                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                                        Continue with Google
+                                                    </button>
+                                                    
+                                                    <div className="flex items-center gap-4 py-2 opacity-60">
+                                                        <div className="h-[1px] bg-white/20 flex-1"></div>
+                                                        <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
+                                                        <div className="h-[1px] bg-white/20 flex-1"></div>
+                                                    </div>
 
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (typeof window !== "undefined") {
-                                                        const bookingState = {
-                                                            checkInDate, checkOutDate, nights, nightlyRate, adults, kids, selectedRoom, currentStep: 2
-                                                        };
-                                                        localStorage.setItem("galaxia_booking_state", JSON.stringify(bookingState));
-                                                        
-                                                        const redirectUri = `${window.location.origin}/auth/callback`;
-                                                        const currentUrl = window.location.pathname + window.location.search;
-                                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}`;
-                                                        window.location.href = cognitoUrl;
-                                                    }
-                                                }}
-                                                className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
-                                            >
-                                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                                Continue with Email
-                                            </button>
-                                        </div>
+                                                    <button 
+                                                        onClick={() => setEmailMode("login")}
+                                                        className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                                                    >
+                                                        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                                        Continue with Email
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {emailMode === "login" && (
+                                            <form onSubmit={handleGuestLogin} className="w-full animate-fade-in">
+                                                <h2 className="font-inter text-2xl font-semibold text-white mb-6 text-center">Welcome Back</h2>
+                                                
+                                                <div className="space-y-4 mb-6">
+                                                    <div>
+                                                        <label className="text-white/70 text-xs mb-1.5 block">Email address</label>
+                                                        <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="user@example.com" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-white/70 text-xs mb-1.5 block">Password</label>
+                                                        <input type="password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="••••••••" />
+                                                    </div>
+                                                </div>
+                                                
+                                                {authError && <p className="text-red-400 text-xs mb-4 text-center">{authError}</p>}
+                                                
+                                                <button disabled={isAuthenticating} type="submit" className="w-full bg-white text-black hover:bg-gray-100 py-[12px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors mb-4 disabled:opacity-50">
+                                                    {isAuthenticating ? "Logging in..." : "Continue"}
+                                                </button>
+                                                
+                                                <p className="text-[#C5C5D2] text-sm text-center">Don't have an account? <button type="button" onClick={() => setEmailMode("register")} className="text-white hover:underline">Sign up</button></p>
+                                                <button type="button" onClick={() => setEmailMode(false)} className="mx-auto block mt-4 text-white/50 text-xs hover:text-white transition-colors">Back to options</button>
+                                            </form>
+                                        )}
+
+                                        {emailMode === "register" && (
+                                            <form onSubmit={handleGuestRegister} className="w-full animate-fade-in">
+                                                <h2 className="font-inter text-2xl font-semibold text-white mb-6 text-center">Create Account</h2>
+                                                
+                                                <div className="space-y-3 mb-6">
+                                                    <div>
+                                                        <label className="text-white/70 text-xs mb-1 block">Full Name</label>
+                                                        <input type="text" required value={authName} onChange={e => setAuthName(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="John Doe" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-white/70 text-xs mb-1 block">Email address</label>
+                                                        <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="user@example.com" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-white/70 text-xs mb-1 block">Phone Number</label>
+                                                        <input type="tel" required value={authPhone} onChange={e => setAuthPhone(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="9876543210" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-white/70 text-xs mb-1 block">Password</label>
+                                                        <input type="password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="••••••••" />
+                                                    </div>
+                                                </div>
+                                                
+                                                {authError && <p className="text-red-400 text-xs mb-4 text-center">{authError}</p>}
+                                                
+                                                <button disabled={isAuthenticating} type="submit" className="w-full bg-[#10A37F] text-white hover:bg-[#0E906F] py-[12px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors mb-4 disabled:opacity-50">
+                                                    {isAuthenticating ? "Creating..." : "Sign Up"}
+                                                </button>
+                                                
+                                                <p className="text-[#C5C5D2] text-sm text-center">Already have an account? <button type="button" onClick={() => setEmailMode("login")} className="text-white hover:underline">Log in</button></p>
+                                                <button type="button" onClick={() => setEmailMode(false)} className="mx-auto block mt-4 text-white/50 text-xs hover:text-white transition-colors">Back to options</button>
+                                            </form>
+                                        )}
                                     </div>
                                 </div>
                             </>
@@ -851,8 +985,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                                 <span className="font-cinzel text-xl font-semibold text-text-secondary">{formatPrice(payAtVenue)}</span>
                             </div>
 
-                            <button onClick={handlePayment} disabled={isSubmitting} className="w-full bg-gradient-to-r from-antique-gold to-dark-gold text-white py-3.5 text-xs font-inter uppercase tracking-widest hover:shadow-lg hover:shadow-antique-gold/20 transition-all rounded-lg disabled:opacity-60">
-                                {isSubmitting ? "Processing..." : "Make Payment"}
+                            <button onClick={handlePayment} disabled={isSubmitting || !dbPropertyId} className="w-full bg-gradient-to-r from-antique-gold to-dark-gold text-white py-3.5 text-xs font-inter uppercase tracking-widest hover:shadow-lg hover:shadow-antique-gold/20 transition-all rounded-lg disabled:opacity-60">
+                                {isSubmitting ? "Processing..." : (!dbPropertyId ? "Loading System..." : "Make Payment")}
                             </button>
                             {bookingError && (
                                 <p className="text-red-500 text-xs font-inter mt-2 text-center">{bookingError}</p>
