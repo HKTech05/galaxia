@@ -471,6 +471,24 @@ function DashboardContent() {
                             </div>
                             <button className={`mt-6 border border-current ${accentText} font-inter text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-80 transition-all`}>Update Password</button>
                         </div>
+
+                        {/* Logout Section */}
+                        <div className={`${bgCard} rounded-xl border ${borderMain} p-6 sm:p-8 transition-colors`}>
+                            <h3 className={`font-cinzel text-lg font-semibold text-red-500 mb-6`}>Account Actions</h3>
+                            <p className={`${textMuted} font-inter text-xs mb-5 max-w-sm`}>
+                                Log out of your account on this device. You will need to sign in again to view your bookings.
+                            </p>
+                            <button 
+                                onClick={() => {
+                                    localStorage.removeItem("galaxia_token");
+                                    localStorage.removeItem("galaxia_user");
+                                    window.location.href = "/";
+                                }}
+                                className="border border-red-500 text-red-500 hover:bg-red-500/10 font-inter text-sm font-medium px-6 py-2.5 rounded-full transition-all"
+                            >
+                                Log Out
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -483,7 +501,7 @@ function DashboardContent() {
                             <div className="mb-4">
                                 <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Select Booking</label>
                                 <select className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive}`}>
-                                    {mockBookings.filter(b => b.time === 'past' && (categoryFilter === 'all' || b.type === categoryFilter)).map(b => (
+                                    {bookings.filter(b => b.time === 'past' && (categoryFilter === 'all' || b.type === categoryFilter)).map(b => (
                                         <option key={b.id}>{b.property} — {b.dates}</option>
                                     ))}
                                 </select>
@@ -500,7 +518,7 @@ function DashboardContent() {
                         </div>
                         <h3 className={`font-cinzel text-base font-semibold ${textPrimary} mb-4`}>Your Past Reviews</h3>
                         <div className="space-y-4">
-                            {mockBookings.filter(b => b.rating && (categoryFilter === 'all' || b.type === categoryFilter)).map((b) => (
+                            {bookings.filter(b => b.rating && (categoryFilter === 'all' || b.type === categoryFilter)).map((b) => (
                                 <div key={b.id} className={`${bgCard} rounded-xl border ${borderMain} p-5 transition-colors`}>
                                     <div className="flex items-center justify-between mb-2">
                                         <h4 className={`font-cinzel text-sm font-semibold ${textPrimary}`}>{b.property}</h4>
