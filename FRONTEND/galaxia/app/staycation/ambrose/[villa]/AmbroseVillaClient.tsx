@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PropertyData } from "../../../data/properties";
@@ -29,6 +29,22 @@ interface AmbroseVillaClientProps {
 export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClientProps) {
     const [calCheckIn, setCalCheckIn] = useState<Date | null>(null);
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
+    const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+
+    // Fetch DB property ID for parent property (Ambrose)
+    useEffect(() => {
+        (async () => {
+            try {
+                const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                const res = await fetch(`${baseUrl}/properties`);
+                if (res.ok) {
+                    const props = await res.json();
+                    const dbProp = props.find((p: any) => p.slug === 'ambrose');
+                    if (dbProp) setDbPropertyId(dbProp.id);
+                }
+            } catch (err) { /* silently fail */ }
+        })();
+    }, []);
 
     const images = [villa.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = villa.pricing?.weekday.price || "5,500";
@@ -123,7 +139,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         <div>
                             <AvailabilityCalendar
-                                propertyId={villa.id}
+                                propertyId={dbPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}

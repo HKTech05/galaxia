@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 
 interface CalendarProps {
-    propertyId: string;
+    propertyId: number | null;
     weekdayPrice: string;
     weekendPrice: string;
     primeDatePrice?: string;
@@ -54,8 +54,9 @@ export default function AvailabilityCalendar({ propertyId, weekdayPrice, weekend
     const [selectingCheckOut, setSelectingCheckOut] = useState(false);
     const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
 
-    // Fetch booked dates from API
+    // Fetch booked dates from API (only when we have a valid numeric property ID)
     useEffect(() => {
+        if (!propertyId || propertyId <= 0) return; // Skip fetch if no valid DB ID
         (async () => {
             try {
                 const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];

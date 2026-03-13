@@ -783,7 +783,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             {/* Calendar in sidebar */}
                             {selectedRoom && (
                                 <AvailabilityCalendar
-                                    propertyId={selectedRoom.id}
+                                    propertyId={dbPropertyId}
                                     weekdayPrice={property.pricing.weekday.price}
                                     weekendPrice={property.pricing.weekend.price}
                                     primeDatePrice={property.pricing.primeDates}

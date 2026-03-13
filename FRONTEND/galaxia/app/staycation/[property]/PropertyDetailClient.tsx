@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PropertyData } from "../../data/properties";
@@ -38,6 +38,22 @@ function getAmenityIcon(iconName: string) {
 export default function PropertyDetailClient({ property }: { property: PropertyData }) {
     const [calCheckIn, setCalCheckIn] = useState<Date | null>(null);
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
+    const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+
+    // Fetch DB property ID on mount
+    useEffect(() => {
+        (async () => {
+            try {
+                const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                const res = await fetch(`${baseUrl}/properties`);
+                if (res.ok) {
+                    const props = await res.json();
+                    const dbProp = props.find((p: any) => p.slug === property.id);
+                    if (dbProp) setDbPropertyId(dbProp.id);
+                }
+            } catch (err) { /* silently fail */ }
+        })();
+    }, [property.id]);
 
     const bookNowUrl = `/staycation/${property.id}/book${calCheckIn ? `?checkIn=${calCheckIn.toISOString().split('T')[0]}` : ''}${calCheckOut ? `&checkOut=${calCheckOut.toISOString().split('T')[0]}` : ''}`;
 
@@ -286,7 +302,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                             <div>
                                 <AvailabilityCalendar
-                                    propertyId={property.id}
+                                    propertyId={dbPropertyId}
                                     weekdayPrice={property.pricing.weekday.price}
                                     weekendPrice={property.pricing.weekend.price}
                                     primeDatePrice={property.pricing.primeDates}

@@ -221,9 +221,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             const durationHours = slotHours.length;
 
             // Build add-ons array
-            const addons: { type: string; value?: string; price: number }[] = [];
+            const addons: { type: string; value?: string; message?: string; price: number }[] = [];
             if (addBalloons) addons.push({ type: "balloons", price: 400 });
-            if (addLedBanner) addons.push({ type: "ledBanner", price: 400, message: ledBannerType === 'personalized' ? ledBannerMessage : 'Happy Birthday' });
+            if (addLedBanner) addons.push({ type: "ledBanner", price: 400, message: ledBannerType });
             if (addCake) addons.push({ type: "cake", value: cakeMessage, price: 400 });
 
             const payload = {
