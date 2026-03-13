@@ -52,6 +52,34 @@ function DashboardContent() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [personalReviews, setPersonalReviews] = useState<any[]>([]);
+    const [reviewFormData, setReviewFormData] = useState({ rating: 5, reviewText: "", propertyId: "" });
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    const [reviewSuccess, setReviewSuccess] = useState(false);
+
+    useEffect(() => {
+        if (activeTab === "reviews" && localStorage.getItem("galaxia_token")) {
+            api.get("/reviews/me").then(res => setPersonalReviews(Array.isArray(res) ? res : [])).catch(console.error);
+        }
+    }, [activeTab]);
+
+    const handleReviewSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setReviewSubmitting(true);
+        setReviewSuccess(false);
+        try {
+            await api.post("/reviews", reviewFormData);
+            setReviewSuccess(true);
+            setReviewFormData({ rating: 5, reviewText: "", propertyId: "" });
+            const res = await api.get("/reviews/me");
+            setPersonalReviews(Array.isArray(res) ? res : []);
+        } catch (err: any) {
+            alert(err.message || "Failed to submit review");
+        } finally {
+            setReviewSubmitting(false);
+        }
+    };
+
     // Auth guard: redirect to Cognito login if not authenticated
     useEffect(() => {
         const token = localStorage.getItem("galaxia_token");
@@ -511,43 +539,116 @@ function DashboardContent() {
                         </div>
                     </div>
                 )}
-
-                {/* Reviews Tab */}
+                       {/* Reviews Tab */}
                 {activeTab === "reviews" && (
-                    <div className="max-w-2xl">
-                        <div className={`${bgCard} rounded-xl border ${borderMain} p-6 sm:p-8 mb-6 transition-colors`}>
-                            <h3 className={`font-cinzel text-lg font-semibold ${textPrimary} mb-2`}>Write a Review</h3>
-                            <p className={`${textMuted} font-inter text-xs mb-5`}>Share your experience from a past booking</p>
-                            <div className="mb-4">
-                                <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Select Booking</label>
-                                <select className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive}`}>
-                                    {bookings.filter(b => b.time === 'past' && (categoryFilter === 'all' || b.type === categoryFilter)).map(b => (
-                                        <option key={b.id}>{b.property} — {b.dates}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="mb-4">
-                                <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Rating</label>
-                                <StarRating rating={0} interactive />
-                            </div>
-                            <div className="mb-4">
-                                <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Your Review</label>
-                                <textarea rows={4} placeholder="Tell us about your experience..." className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} resize-none`} />
-                            </div>
-                            <button className={`${gradientBrandText} text-white font-inter text-sm font-medium px-6 py-2.5 rounded-full hover:shadow-lg transition-all`}>Submit Review</button>
-                        </div>
-                        <h3 className={`font-cinzel text-base font-semibold ${textPrimary} mb-4`}>Your Past Reviews</h3>
-                        <div className="space-y-4">
-                            {bookings.filter(b => b.rating && (categoryFilter === 'all' || b.type === categoryFilter)).map((b) => (
-                                <div key={b.id} className={`${bgCard} rounded-xl border ${borderMain} p-5 transition-colors`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h4 className={`font-cinzel text-sm font-semibold ${textPrimary}`}>{b.property}</h4>
-                                        <StarRating rating={b.rating!} />
-                                    </div>
-                                    <p className={`${textMuted} font-inter text-xs`}>{b.dates}</p>
-                                    <p className={`${textSecondary} font-inter text-sm mt-2`}>Amazing experience! Highly recommended.</p>
+                    <div className="max-w-2xl animate-fade-in">
+                        <div className={`${bgCard} rounded-xl border ${borderMain} p-6 sm:p-8 mb-8 shadow-sm transition-all`}>
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className={`font-cinzel text-lg font-bold ${textPrimary}`}>Share Your Experience</h3>
+                                    <p className={`${textMuted} font-inter text-xs`}>Help others discover the Galaxia magic</p>
                                 </div>
-                            ))}
+                                <div className={`w-10 h-10 rounded-full ${accentBg}/10 flex items-center justify-center`}>
+                                    <svg className={`w-5 h-5 ${accentText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                </div>
+                            </div>
+                            
+                            {reviewSuccess ? (
+                                <div className="text-center py-6 bg-green-50/50 rounded-2xl border border-green-100 animate-in zoom-in-95 duration-300">
+                                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                    <p className="font-cinzel text-sm font-bold text-green-800">Review Submitted!</p>
+                                    <p className="text-green-700/70 font-inter text-[11px] mt-1">Thank you for your valuable feedback.</p>
+                                    <button onClick={() => setReviewSuccess(false)} className="mt-4 text-green-700 text-xs font-bold hover:underline">Write another</button>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleReviewSubmit} className="space-y-5">
+                                    <div>
+                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Select Staycation Property</label>
+                                        <select 
+                                            required
+                                            value={reviewFormData.propertyId}
+                                            onChange={(e) => setReviewFormData({...reviewFormData, propertyId: e.target.value})}
+                                            className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
+                                        >
+                                            <option value="">Which property did you visit?</option>
+                                            {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.property, b])).values()].map(b => (
+                                                <option key={b.id} value={b.id.split('-').pop()}>{b.property}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Overall Experience</label>
+                                        <div className={`flex justify-between p-2 rounded-xl ${bgInput} border ${borderMain}`}>
+                                            {[1, 2, 3, 4, 5].map(s => (
+                                                <button 
+                                                    key={s} 
+                                                    type="button" 
+                                                    onClick={() => setReviewFormData({...reviewFormData, rating: s})}
+                                                    className={`flex-1 py-1.5 rounded-lg transition-all ${s <= reviewFormData.rating ? `${accentBg} text-white shadow-sm` : `${textMuted} hover:bg-black/5`}`}
+                                                >
+                                                    <span className="text-xs font-bold">{s}★</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Your Review</label>
+                                        <textarea 
+                                            required
+                                            value={reviewFormData.reviewText}
+                                            onChange={(e) => setReviewFormData({...reviewFormData, reviewText: e.target.value})}
+                                            rows={4} 
+                                            placeholder="What did you love about your stay?" 
+                                            className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} resize-none transition-all placeholder:opacity-50`} 
+                                        />
+                                    </div>
+                                    <button 
+                                        type="submit" 
+                                        disabled={reviewSubmitting}
+                                        className={`w-full ${accentBg} text-white font-inter text-sm font-bold py-3.5 rounded-xl hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2`}
+                                    >
+                                        {reviewSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Post My Review"}
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+
+                        <h3 className={`font-cinzel text-base font-bold ${textPrimary} mb-5 flex items-center gap-2`}>
+                            Your Review History
+                            <span className={`text-[10px] font-inter px-2 py-0.5 rounded-full ${isDark ? "bg-white/10" : "bg-black/5"}`}>{personalReviews.length}</span>
+                        </h3>
+                        
+                        <div className="space-y-4">
+                            {personalReviews.length === 0 ? (
+                                <div className={`text-center py-10 border border-dashed ${borderMain} rounded-2xl`}>
+                                    <p className={`${textMuted} font-inter text-xs italic`}>You haven&apos;t shared any reviews yet.</p>
+                                </div>
+                            ) : (
+                                personalReviews.map((review: any) => (
+                                    <div key={review.id} className={`${bgCard} rounded-2xl border ${borderMain} p-5 shadow-sm transition-all hover:border-antique-gold/30 hover:shadow-md`}>
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                                <h4 className={`font-cinzel text-sm font-bold ${textPrimary}`}>{review.property?.name || "Staycation Stay"}</h4>
+                                                <p className={`${textMuted} font-inter text-[10px] uppercase tracking-wider`}>
+                                                    {new Date(review.createdAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                            <StarRating rating={review.rating} />
+                                        </div>
+                                        <p className={`${textSecondary} font-inter text-sm italic leading-relaxed`}>&ldquo;{review.reviewText}&rdquo;</p>
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <span className={`text-[9px] font-inter font-bold uppercase tracking-widest ${review.rating > 3 ? "text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded" : "text-amber-600 bg-amber-50 px-2 py-0.5 rounded"}`}>
+                                                {review.rating > 3 ? "Publicly Visible" : "Private Feedback"}
+                                            </span>
+                                            {review.rating > 3 && (
+                                                <Link href="/staycation/reviews" className={`${accentText} text-[9px] font-inter font-bold uppercase hover:underline`}>View on site</Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 )}

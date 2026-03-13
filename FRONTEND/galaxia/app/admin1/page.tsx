@@ -215,7 +215,7 @@ export default function Admin1Dashboard() {
     }
 
     const extraGuestFee = guestsCount > 2 ? (guestsCount - 2) * 300 : 0;
-    const addOnsCharge = (addBalloons ? 200 : 0) + (addLedBanner ? 200 : 0) + (addCake ? 400 : 0);
+    const addOnsCharge = (addBalloons ? 400 : 0) + (addLedBanner ? 400 : 0) + (addCake ? 400 : 0);
     const totalPrice = basePrice + extraGuestFee + addOnsCharge;
 
     const handleSlotClick = (screenIndex: number, hourIndex: number) => {
@@ -277,8 +277,8 @@ export default function Admin1Dashboard() {
             const packageId = packageType === "Celebration" ? 2 : 1;
 
             const addons: any[] = [];
-            if (addBalloons) addons.push({ type: "balloons", price: 200 });
-            if (addLedBanner) addons.push({ type: "led_banner", value: ledBannerType, price: 200 });
+            if (addBalloons) addons.push({ type: "balloons", price: 400 });
+            if (addLedBanner) addons.push({ type: "led_banner", value: ledBannerType, price: 400 });
             if (addCake) addons.push({ type: "cake", value: addOnCakeMessage, price: 400 });
 
             await api.post("/bookings/dd", {
@@ -456,7 +456,7 @@ export default function Admin1Dashboard() {
                                                     <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
                                                         <div className="flex items-center gap-2">
                                                             <span>🎈</span>
-                                                            <span className="text-sm font-medium text-slate-700">Balloons (₹200)</span>
+                                                            <span className="text-sm font-medium text-slate-700">Balloons (₹400)</span>
                                                         </div>
                                                         <input type="checkbox" defaultChecked={activeEvent.addOns?.balloons} className="accent-indigo-600 w-4 h-4"
                                                             onChange={(e) => {
@@ -532,7 +532,7 @@ export default function Admin1Dashboard() {
                                     <div className="flex justify-between items-center bg-rose-50 p-3 rounded-lg border border-rose-100 mt-2">
                                         <span className="text-xs text-rose-600 font-bold">Amount to Collect (Cash/UPI)</span>
                                         {(() => {
-                                            const addOnTotal = (activeEvent.addOns?.balloons ? 200 : 0) + (activeEvent.addOns?.ledBanner ? 200 : 0) + (activeEvent.addOns?.cake ? 400 : 0);
+                                            const addOnTotal = (activeEvent.addOns?.balloons ? 400 : 0) + (activeEvent.addOns?.ledBanner ? 400 : 0) + (activeEvent.addOns?.cake ? 400 : 0);
                                             const baseCollect = activeEvent.amountToCollect.match(/₹([\d,]+)/);
                                             const baseAmount = baseCollect ? parseInt(baseCollect[1].replace(/,/g, '')) : 0;
                                             const totalCollect = baseAmount + addOnTotal;
@@ -906,14 +906,14 @@ export default function Admin1Dashboard() {
                                         <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:bg-violet-50 transition-colors">
                                             <div className="flex items-center gap-2">
                                                 <span>🎈</span>
-                                                <span className="text-sm font-medium text-slate-700">Balloons (₹200)</span>
+                                                <span className="text-sm font-medium text-slate-700">Balloons (₹400)</span>
                                             </div>
                                             <input type="checkbox" checked={addBalloons} onChange={(e) => setAddBalloons(e.target.checked)} className="accent-indigo-600 w-4 h-4" />
                                         </label>
                                         <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:bg-violet-50 transition-colors">
                                             <div className="flex items-center gap-2">
                                                 <span>💡</span>
-                                                <span className="text-sm font-medium text-slate-700">LED Banner (₹200)</span>
+                                                <span className="text-sm font-medium text-slate-700">LED Banner (₹400)</span>
                                             </div>
                                             <input type="checkbox" checked={addLedBanner} onChange={(e) => setAddLedBanner(e.target.checked)} className="accent-indigo-600 w-4 h-4" />
                                         </label>

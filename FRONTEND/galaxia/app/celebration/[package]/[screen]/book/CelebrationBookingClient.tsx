@@ -131,8 +131,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
     // Add-on charges (only for Movie Time)
     const isMovieTime = pkg.id === "movie-time";
-    const balloonsCharge = isMovieTime && addBalloons ? 200 : 0;
-    const ledBannerCharge = isMovieTime && addLedBanner ? 200 : 0;
+    const balloonsCharge = isMovieTime && addBalloons ? 400 : 0;
+    const ledBannerCharge = isMovieTime && addLedBanner ? 400 : 0;
     const cakeCharge = isMovieTime && addCake ? 400 : 0;
     const addOnsTotal = balloonsCharge + ledBannerCharge + cakeCharge;
 
@@ -222,8 +222,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
             // Build add-ons array
             const addons: { type: string; value?: string; price: number }[] = [];
-            if (addBalloons) addons.push({ type: "balloons", price: 200 });
-            if (addLedBanner) addons.push({ type: "led_banner", value: ledBannerType, price: 200 });
+            if (addBalloons) addons.push({ type: "balloons", price: 400 });
+            if (addLedBanner) addons.push({ type: "ledBanner", price: 400, message: ledBannerType === 'personalized' ? ledBannerMessage : 'Happy Birthday' });
             if (addCake) addons.push({ type: "cake", value: cakeMessage, price: 400 });
 
             const payload = {
@@ -437,13 +437,13 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">🎈</span>
-                                            <div>
+                                            <div className="flex flex-col">
                                                 <span className="font-inter text-sm text-cel-text">Balloons</span>
-                                                <p className="font-inter text-[10px] text-cel-text-muted">Colorful balloon decoration</p>
+                                                <span className="text-[10px] text-cel-text-muted">₹400 (Colorful balloon decoration)</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(200)}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(400)}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addBalloons ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addBalloons ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -461,13 +461,13 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">💡</span>
-                                            <div>
+                                            <div className="flex flex-col">
                                                 <span className="font-inter text-sm text-cel-text">LED Banner</span>
-                                                <p className="font-inter text-[10px] text-cel-text-muted">Neon-style LED message banner</p>
+                                                <span className="text-[10px] text-cel-text-muted">₹400 (Neon-style LED message banner)</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(200)}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(400)}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addLedBanner ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addLedBanner ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>

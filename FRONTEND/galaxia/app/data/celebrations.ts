@@ -54,11 +54,10 @@ export const packages: Record<string, CelebrationPackage> = {
         name: "Movie Time",
         tagline: "Private Screening Experience",
         description:
-            "Enjoy a premium private movie screening with your loved ones. Sink into the atmosphere with your favourite film on the big screen, accompanied by a complimentary hamper of snacks and drinks.",
+            "Enjoy a premium private movie screening with your loved ones. Sink into the atmosphere with your favourite film on the big screen, accompanied by snacks and drinks.",
         image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80",
         inclusions: [
             { icon: "film", label: "Private Movie Screening" },
-            { icon: "gift", label: "Complimentary Hamper" },
             { icon: "popcorn", label: "Popcorn & Dry Snacks" },
             { icon: "drink", label: "Juice & Mineral Water" },
             { icon: "chocolate", label: "Chocolates" },
@@ -74,14 +73,13 @@ export const packages: Record<string, CelebrationPackage> = {
     },
     celebration: {
         id: "celebration",
-        name: "Celebration",
-        tagline: "Movie Time + Decoration",
+        name: "Decoration + Movie Time",
+        tagline: "Decoration + Movie Time",
         description:
             "Transform your private screening into an unforgettable celebration. Whether it's a birthday, anniversary, proposal, or bachelorette — we set the stage with dreamy décor, fog effects, candlelight, and a personalized LED message tag.",
         image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&q=80",
         inclusions: [
             { icon: "film", label: "Private Movie Screening" },
-            { icon: "gift", label: "Complimentary Hamper" },
             { icon: "cake", label: "Celebration Cake (250g)" },
             { icon: "led", label: "LED Message Tag" },
             { icon: "fog", label: "Walking on Cloud (Fog Effect)" },

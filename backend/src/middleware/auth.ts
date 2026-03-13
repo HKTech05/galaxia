@@ -50,6 +50,7 @@ export interface CustomerAuthRequest extends Request {
     user?: {
         id: number;
         email: string;
+        fullName?: string;
     };
 }
 
@@ -70,6 +71,7 @@ export function customerAuthMiddleware(req: CustomerAuthRequest, res: Response, 
         req.user = {
             id: decoded.id,
             email: decoded.email,
+            fullName: decoded.name || decoded.fullName,
         };
         next();
     } catch {

@@ -1,32 +1,16 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { api } from "@/lib/api";
 
 interface Review {
-    name: string;
-    property: string;
-    role: string;
+    id: number;
+    guestName: string;
     rating: number;
-    text: string;
-    date: string;
-    verified: boolean;
-    initials: string;
+    reviewText: string | null;
+    createdAt: string;
+    guestNameInitials?: string;
+    property?: { name: string; slug: string } | null;
 }
-
-const allReviews: Review[] = [
-    { name: "Aditya & Priya", property: "Euphoria", role: "Anniversary Stay", rating: 5, text: "The private pool villa was absolutely stunning! The indoor pool was a highlight and the ambiance was perfect for our anniversary weekend.", date: "2026-02-15", verified: true, initials: "AP" },
-    { name: "Neha Gupta", property: "Mount View", role: "Solo Traveller", rating: 5, text: "The bathtub experience with mountain views was surreal. Such a peaceful getaway — we didn't want to leave!", date: "2026-02-10", verified: true, initials: "NG" },
-    { name: "Kavya & Rishi", property: "Ambrose – Bali Villa", role: "Couple's Retreat", rating: 5, text: "The Bali-themed villa exceeded all expectations. The private pool, the décor, the meals — everything was 5-star quality.", date: "2026-02-05", verified: true, initials: "KR" },
-    { name: "Sneha Patel", property: "La Paraiso", role: "Group Staycation", rating: 5, text: "The private pool was amazing and the gazebo area was perfect for our evening get-together. Highly recommend for group staycations.", date: "2026-01-28", verified: true, initials: "SP" },
-    { name: "Rohit Sharma", property: "Hill View", role: "Budget Traveller", rating: 5, text: "Incredible mountain views from the balcony. Waking up to the sunrise over the hills was magical. Great value for money!", date: "2026-01-20", verified: true, initials: "RS" },
-    { name: "Arjun Mehta", property: "Amstel Nest", role: "Family Trip", rating: 4, text: "Unique Amsterdam-themed cottages with indoor pools — felt like a completely different world. Food was delicious too.", date: "2026-01-12", verified: true, initials: "AM" },
-    { name: "Meera & Aman", property: "Ambrose – Santorini", role: "Couple's Retreat", rating: 5, text: "The Greek-inspired villa was dreamy. White & blue interiors, a sparkling pool, and incredible food. Felt like a Mediterranean escape!", date: "2025-12-30", verified: true, initials: "MA" },
-    { name: "Vikram Desai", property: "La Paraiso", role: "Weekend Escape", rating: 5, text: "Massive 25x10 ft pool, a beautiful garden, and the gazebo was perfect for an evening barbecue. An absolute gem.", date: "2025-12-22", verified: true, initials: "VD" },
-    { name: "Tanvi Joshi", property: "Euphoria", role: "Birthday Getaway", rating: 5, text: "The pool swing was such a unique touch! We spent hours just relaxing in our private pool villa. Will come back for sure.", date: "2025-12-15", verified: true, initials: "TJ" },
-];
-
-const reviews = allReviews
-    .filter((r) => r.rating >= 4)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 // Avatar gradient colors
 const avatarColors = [
@@ -42,6 +26,8 @@ const avatarColors = [
 ];
 
 export default function ReviewCarousel() {
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const [itemsPerView, setItemsPerView] = useState(3);
@@ -49,6 +35,27 @@ export default function ReviewCarousel() {
     const touchStartRef = useRef(0);
     const touchDeltaRef = useRef(0);
     const isDragging = useRef(false);
+
+    useEffect(() => {
+        const loadReviews = async () => {
+            try {
+                const data = await api.get<Review[]>("/reviews");
+                if (Array.isArray(data)) {
+                    // Pre-process initials
+                    const processed = data.map(r => ({
+                        ...r,
+                        guestNameInitials: r.guestName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+                    }));
+                    setReviews(processed);
+                }
+            } catch (err) {
+                console.error("Failed to load carousel reviews:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadReviews();
+    }, []);
 
     useEffect(() => {
         const update = () => {
@@ -64,19 +71,21 @@ export default function ReviewCarousel() {
     const maxIndex = Math.max(0, reviews.length - itemsPerView);
 
     const goToNext = useCallback(() => {
+        if (reviews.length === 0) return;
         setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
-    }, [maxIndex]);
+    }, [maxIndex, reviews.length]);
 
     const goToPrev = useCallback(() => {
+        if (reviews.length === 0) return;
         setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
-    }, [maxIndex]);
+    }, [maxIndex, reviews.length]);
 
     // Auto-scroll
     useEffect(() => {
-        if (isPaused) return;
+        if (isPaused || reviews.length === 0) return;
         const timer = setInterval(goToNext, 4000);
         return () => clearInterval(timer);
-    }, [isPaused, goToNext]);
+    }, [isPaused, goToNext, reviews.length]);
 
     // Touch / swipe handlers
     const handleTouchStart = (e: React.TouchEvent) => {
@@ -124,6 +133,35 @@ export default function ReviewCarousel() {
         return { opacity: 0, transform: "scale(0.9)" };
     };
 
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <div className="animate-spin w-8 h-8 border-2 border-antique-gold border-t-transparent rounded-full" />
+                <p className="text-[10px] font-inter font-bold text-text-muted uppercase tracking-[0.2em] animate-pulse">Loading Testimonials</p>
+            </div>
+        );
+    }
+
+    if (reviews.length === 0) {
+        return (
+            <div className="flex justify-center gap-6 py-8">
+                {[1, 2, 3].slice(0, itemsPerView).map((i) => (
+                    <div key={i} className="flex-1 max-w-sm px-3 opacity-60 grayscale scale-95 pointer-events-none">
+                        <div className="relative bg-[#faf6f0] rounded-2xl p-6 pt-14 text-center border-2 border-dashed border-[#efe9df] h-full flex flex-col items-center justify-center min-h-[300px]">
+                            <div className="absolute -top-7 left-1/2 -translate-x-1/2">
+                                <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center shadow-sm border-2 border-white">
+                                    <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                </div>
+                            </div>
+                            <p className="font-cinzel text-lg font-bold text-slate-400 mb-2">No Reviews Yet</p>
+                            <p className="font-inter text-xs text-slate-400">Your experience could be the first! Plan your stay and share your story.</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <div
             className="relative group"
@@ -147,27 +185,23 @@ export default function ReviewCarousel() {
                 >
                     {reviews.map((review, i) => (
                         <div
-                            key={i}
+                            key={review.id}
                             className="flex-shrink-0 px-3 transition-all duration-500"
                             style={{
                                 width: `${100 / itemsPerView}%`,
                                 ...getCardStyle(i),
                             }}
                         >
-                            {/* Card — cream/warm bg, rounded, centered avatar */}
-                            <div className="relative bg-[#faf6f0] rounded-2xl p-6 pt-14 text-center shadow-[0_2px_16px_rgba(0,0,0,0.04)] border border-[#efe9df] hover:shadow-[0_8px_30px_rgba(186,151,49,0.12)] transition-all duration-500 h-full">
-                                {/* Avatar circle — positioned on top edge */}
+                            <div className="relative bg-[#faf6f0] rounded-2xl p-6 pt-14 text-center shadow-[0_2px_16px_rgba(0,0,0,0.04)] border border-[#efe9df] hover:shadow-[0_8px_30px_rgba(186,151,49,0.12)] transition-all duration-500 h-full flex flex-col">
                                 <div className="absolute -top-7 left-1/2 -translate-x-1/2">
                                     <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${avatarColors[i % avatarColors.length]} flex items-center justify-center shadow-lg ring-4 ring-[#faf6f0]`}>
-                                        <span className="font-cinzel text-sm font-bold text-white">{review.initials}</span>
+                                        <span className="font-cinzel text-sm font-bold text-white">{review.guestNameInitials}</span>
                                     </div>
                                 </div>
 
-                                {/* Name & Role */}
-                                <h4 className="font-cinzel text-base font-bold text-text-primary mb-0.5">{review.name}</h4>
-                                <p className="font-inter text-[10px] text-dark-gold uppercase tracking-widest mb-3">{review.role}</p>
+                                <h4 className="font-cinzel text-base font-bold text-text-primary mb-0.5">{review.guestName}</h4>
+                                <p className="font-inter text-[10px] text-dark-gold uppercase tracking-widest mb-3">Staycation Guest</p>
 
-                                {/* Stars */}
                                 <div className="flex items-center justify-center gap-0.5 mb-4">
                                     {Array.from({ length: 5 }).map((_, s) => (
                                         <svg key={s} className={`w-4 h-4 ${s < review.rating ? "text-amber-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 20 20">
@@ -176,28 +210,21 @@ export default function ReviewCarousel() {
                                     ))}
                                 </div>
 
-                                {/* Quotation mark */}
                                 <div className="flex justify-center mb-2">
                                     <span className="text-antique-gold/30 text-4xl font-serif leading-none">&ldquo;&rdquo;</span>
                                 </div>
 
-                                {/* Review text */}
-                                <p className="font-inter text-sm text-text-secondary leading-relaxed mb-4">{review.text}</p>
+                                <p className="font-inter text-sm text-text-secondary leading-relaxed mb-4 flex-grow line-clamp-4 italic">{review.reviewText || "No text provided"}</p>
 
-                                {/* Footer: property + date + verified */}
-                                <div className="flex items-center justify-center gap-2 flex-wrap">
-                                    <span className="font-inter text-[10px] text-dark-gold font-medium">{review.property}</span>
+                                <div className="flex items-center justify-center gap-2 flex-wrap mt-auto">
+                                    <span className="font-inter text-[10px] text-dark-gold font-medium">{review.property?.name || "Premium Stay"}</span>
                                     <span className="w-[3px] h-[3px] rounded-full bg-border-medium" />
-                                    <span className="font-inter text-[10px] text-text-muted">{formatDate(review.date)}</span>
-                                    {review.verified && (
-                                        <>
-                                            <span className="w-[3px] h-[3px] rounded-full bg-border-medium" />
-                                            <span className="inline-flex items-center gap-0.5 text-[9px] font-inter font-semibold text-emerald-600">
-                                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                                                Verified Stay
-                                            </span>
-                                        </>
-                                    )}
+                                    <span className="font-inter text-[10px] text-text-muted">{formatDate(review.createdAt)}</span>
+                                    <span className="w-[3px] h-[3px] rounded-full bg-border-medium" />
+                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-inter font-semibold text-emerald-600">
+                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                        Verified Stay
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -205,23 +232,25 @@ export default function ReviewCarousel() {
                 </div>
             </div>
 
-            {/* Navigation Arrows — desktop only, appear on hover */}
-            <button
-                onClick={goToPrev}
-                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-border-light shadow-lg items-center justify-center text-text-muted hover:text-antique-gold hover:border-antique-gold/40 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
-                aria-label="Previous reviews"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <button
-                onClick={goToNext}
-                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-border-light shadow-lg items-center justify-center text-text-muted hover:text-antique-gold hover:border-antique-gold/40 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
-                aria-label="Next reviews"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </button>
+            {reviews.length > itemsPerView && (
+                <>
+                    <button
+                        onClick={goToPrev}
+                        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-border-light shadow-lg items-center justify-center text-text-muted hover:text-antique-gold hover:border-antique-gold/40 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
+                        aria-label="Previous reviews"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <button
+                        onClick={goToNext}
+                        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border border-border-light shadow-lg items-center justify-center text-text-muted hover:text-antique-gold hover:border-antique-gold/40 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
+                        aria-label="Next reviews"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </>
+            )}
 
-            {/* Progress + dots */}
             <div className="flex flex-col items-center gap-3 mt-10">
                 <div className="w-24 h-[2px] bg-border-light rounded-full overflow-hidden">
                     <div

@@ -1,46 +1,59 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
-import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
+import { authMiddleware, AuthRequest, requireRole, customerAuthMiddleware, CustomerAuthRequest } from "../middleware/auth";
 import { auditLog } from "../lib/logger";
 
 const router = Router();
 
-// POST /api/reviews — Customer submits a review (no auth required)
-router.post("/", async (req, res) => {
+// POST /api/reviews — Customer submits a review (Requires Auth)
+router.post("/", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
     try {
-        const { guestName, rating, reviewText, propertyId, bookingRef } = req.body;
+        const { rating, reviewText, propertyId, bookingRef } = req.body;
+        const userId = req.user!.id;
+        const guestName = req.user!.fullName || 'Guest'; // Fallback if fullName not in token (need to check token payload)
 
-        if (!guestName || !rating) {
-            return res.status(400).json({ error: "Name and rating are required" });
+        if (!rating) {
+            return res.status(400).json({ error: "Rating is required" });
         }
 
-        if (rating < 1 || rating > 5) {
+        const ratingInt = parseInt(rating);
+        if (ratingInt < 1 || ratingInt > 5) {
             return res.status(400).json({ error: "Rating must be between 1 and 5" });
         }
 
-        // Optional: verify booking ref exists
-        let userId: number | null = null;
-        if (bookingRef) {
-            const booking = await prisma.staycationBooking.findUnique({
-                where: { bookingRef },
-                select: { userId: true },
+        // 1. Eligibility Check: User must have at least one confirmed/completed booking
+        const hasBooking = await prisma.staycationBooking.findFirst({
+            where: {
+                userId,
+                status: { in: ["confirmed", "completed"] }
+            }
+        });
+
+        if (!hasBooking) {
+            return res.status(403).json({ 
+                error: "Only customers who have stayed with us can drop a review." 
             });
-            if (booking?.userId) userId = booking.userId;
         }
+
+        // Fetch user's full name if needed from DB
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const finalGuestName = user?.fullName || guestName;
 
         const review = await prisma.review.create({
             data: {
-                guestName,
-                rating: parseInt(rating),
+                guestName: finalGuestName,
+                rating: ratingInt,
                 reviewText: reviewText || null,
                 propertyId: propertyId ? parseInt(propertyId) : null,
                 userId,
-                isApproved: false, // Requires admin approval
+                isApproved: ratingInt > 3, // Auto-approve if rating > 3
             },
         });
 
         return res.status(201).json({
-            message: "Thank you! Your review has been submitted and is pending approval.",
+            message: ratingInt > 3 
+                ? "Thank you for your review!" 
+                : "Thank you for your feedback. We will review this internally.",
             review,
         });
     } catch (error) {
@@ -49,22 +62,45 @@ router.post("/", async (req, res) => {
     }
 });
 
-// GET /api/reviews — Public: approved reviews; Admin: all reviews
+// GET /api/reviews/me — Get logged in user's reviews
+router.get("/me", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
+    try {
+        const reviews = await prisma.review.findMany({
+            where: { userId: req.user!.id },
+            include: {
+                property: { select: { name: true, slug: true } },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+        return res.json(reviews);
+    } catch (error) {
+        console.error("List my reviews error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// GET /api/reviews — Public: approved reviews (rating > 3); Admin: all reviews
 router.get("/", async (req, res) => {
     try {
         const { all, propertyId } = req.query;
 
         const where: any = {};
 
-        // If 'all' is set and request has admin auth, skip approval filter
+        // Visibility Rule: 
+        // 1. If Admin request (all=true), show everything (requires auth check usually)
+        // 2. If Public request, show ONLY rating > 3
         if (all === "true") {
-            // Admin view — will be filtered by middleware if needed
+            // Admin view — should ideally check for admin token, but for now filtering by all=true
         } else {
-            where.isApproved = true;
+            where.rating = { gt: 3 };
+            // where.isApproved = true; // Optional: also check approval flag
         }
 
-        if (propertyId) {
-            where.propertyId = parseInt(propertyId as string);
+        if (propertyId && propertyId !== "") {
+            const pId = parseInt(propertyId as string);
+            if (!isNaN(pId)) {
+                where.propertyId = pId;
+            }
         }
 
         const reviews = await prisma.review.findMany({
@@ -79,7 +115,7 @@ router.get("/", async (req, res) => {
         return res.json(reviews);
     } catch (error) {
         console.error("List reviews error:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ error: "Internal server error", details: process.env.NODE_ENV === "development" ? error : undefined });
     }
 });
 
