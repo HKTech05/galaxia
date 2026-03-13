@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { api } from "../../lib/api";
 
-const COGNITO_LOGIN_URL = "https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback";
 type Tab = "bookings" | "profile" | "reviews";
 type Category = "all" | "staycation" | "celebration";
 
@@ -38,42 +38,6 @@ interface Booking {
     taxes?: string;
 }
 
-const mockBookings: Booking[] = [
-    {
-        id: "BK-2026-001", property: "Euphoria", dates: "Mar 15-16, 2026", status: "Completed", amount: "₹4,950", guests: 2,
-        image: "https://images.unsplash.com/photo-1615571022219-eb45cf7faa36?w=400&q=80", type: "staycation", time: "past",
-        rating: 5, hasReview: true, totalPaid: "₹4,950", payNow: "₹3,960", payAtVenue: "₹990",
-        securityDeposit: "₹3,000", depositRefunded: true, checkIn: "Mar 15, 2026 · 2:00 PM", checkOut: "Mar 16, 2026 · 11:00 AM",
-        roomType: "Private Pool Villa", taxes: "₹248",
-    },
-    {
-        id: "BK-2026-002", property: "Ambrose — Take-1", dates: "Apr 5-6, 2026", status: "Confirmed", amount: "₹5,500", guests: 4,
-        image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80", type: "staycation", time: "upcoming",
-        totalPaid: "₹5,500", payNow: "₹4,400", payAtVenue: "₹1,100",
-        securityDeposit: "₹5,000", checkIn: "Apr 5, 2026 · 2:00 PM", checkOut: "Apr 6, 2026 · 11:00 AM",
-        roomType: "Bali Villa", taxes: "₹275",
-    },
-    {
-        id: "BK-2025-042", property: "La Paraiso", dates: "Dec 20-21, 2025", status: "Completed", amount: "₹4,950", guests: 2,
-        image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&q=80", type: "staycation", time: "past",
-        hasReview: false, totalPaid: "₹4,950", payNow: "₹3,960", payAtVenue: "₹990",
-        securityDeposit: "₹3,000", depositRefunded: true, checkIn: "Dec 20, 2025 · 2:00 PM", checkOut: "Dec 21, 2025 · 11:00 AM",
-        roomType: "Pool Villa with Gazebo", taxes: "₹248",
-    },
-    {
-        id: "CEL-2026-015", property: "Movie Time", dates: "Feb 28, 2026", status: "Confirmed", amount: "₹3,835", guests: 3,
-        image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&q=80", type: "celebration", time: "upcoming",
-        totalPaid: "₹3,835", payNow: "₹1,918", payAtVenue: "₹1,917",
-        screen: "Sandy Screen", package: "Movie Time", duration: "3 hours", timeSlot: "6:00 PM – 9:00 PM",
-    },
-    {
-        id: "CEL-2025-099", property: "Celebration", dates: "Jan 15, 2026", status: "Completed", amount: "₹6,490", guests: 2,
-        image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80", type: "celebration", time: "past",
-        rating: 5, hasReview: true, totalPaid: "₹6,490", payNow: "₹3,245", payAtVenue: "₹3,245",
-        screen: "Cine Love", package: "Celebration", duration: "3 hours", timeSlot: "7:00 PM – 10:00 PM",
-    },
-];
-
 function DashboardContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -83,6 +47,8 @@ function DashboardContent() {
     const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
     const [userName, setUserName] = useState("Guest");
     const [userInitial, setUserInitial] = useState("G");
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Auth guard: redirect to Cognito login if not authenticated
     useEffect(() => {
@@ -101,6 +67,73 @@ function DashboardContent() {
                 setUserInitial((user.fullName || user.email || "G").charAt(0).toUpperCase());
             } catch { }
         }
+
+        // Fetch real user bookings
+        (async () => {
+            try {
+                setIsLoading(true);
+                const res = await api.get("/users/me/bookings");
+                
+                const formattedStay = (res.stayBookings || []).map((b: any): Booking => {
+                    const ci = new Date(b.checkInDate);
+                    const co = new Date(b.checkOutDate);
+                    const isUpcoming = ci > new Date();
+                    
+                    const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
+                    
+                    return {
+                        id: b.bookingId,
+                        property: b.property?.name || "Staycation Property",
+                        dates: `${ci.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}-${co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}`,
+                        status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+                        amount: formatPrice(b.totalAmount),
+                        guests: b.numGuests,
+                        image: b.property?.images?.[0] || "https://images.unsplash.com/photo-1615571022219-eb45cf7faa36?w=400&q=80",
+                        type: "staycation",
+                        time: isUpcoming ? "upcoming" : "past",
+                        totalPaid: formatPrice(b.totalAmount),
+                        payNow: formatPrice(Math.round(b.totalAmount * 0.5)),
+                        payAtVenue: formatPrice(Math.round(b.totalAmount * 0.5)),
+                        securityDeposit: "—",
+                        checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · 2:00 PM",
+                        checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · 11:00 AM",
+                        roomType: b.subProperty?.name || "Entire Property",
+                        taxes: "Included"
+                    };
+                });
+                
+                const formattedDd = (res.ddBookings || []).map((b: any): Booking => {
+                    const date = new Date(b.date);
+                    const isUpcoming = date > new Date();
+                    const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
+                    
+                    return {
+                        id: b.bookingId,
+                        property: "Celebration",
+                        dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
+                        status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+                        amount: formatPrice(b.totalAmount),
+                        guests: b.numGuests,
+                        image: b.screen?.images?.[0] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80",
+                        type: "celebration",
+                        time: isUpcoming ? "upcoming" : "past",
+                        totalPaid: formatPrice(b.totalAmount),
+                        payNow: formatPrice(Math.round(b.totalAmount * 0.5)),
+                        payAtVenue: formatPrice(Math.round(b.totalAmount * 0.5)),
+                        screen: b.screen?.name || "Private Screen",
+                        package: b.packageType ? b.packageType.replace("-", " ") : "Private Screening",
+                        duration: "3 hours",
+                        timeSlot: b.timeSlot
+                    };
+                });
+                
+                setBookings([...formattedStay, ...formattedDd].sort((a, b) => b.id.localeCompare(a.id)));
+            } catch (err) {
+                console.error("Error fetching my bookings:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        })();
     }, []);
 
     useEffect(() => {
@@ -119,11 +152,11 @@ function DashboardContent() {
     ];
 
     const filteredBookings = useMemo(() => {
-        return mockBookings.filter(b =>
+        return bookings.filter(b =>
             (b.time === bookingView) &&
             (categoryFilter === "all" || b.type === categoryFilter)
         );
-    }, [bookingView, categoryFilter]);
+    }, [bookings, bookingView, categoryFilter]);
 
     // Theme Variables
     const bgApp = isDark ? "bg-[#0D0D0D]" : "bg-cream-white";

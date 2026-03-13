@@ -1,10 +1,43 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
-import { authMiddleware, requireRole } from "../middleware/auth";
+import { authMiddleware, requireRole, customerAuthMiddleware, CustomerAuthRequest } from "../middleware/auth";
 
 const router = Router();
 
-// All routes require owner/developer
+// User's own bookings
+router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
+    try {
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email: req.user.email },
+            include: {
+                stayBookings: {
+                    include: { property: true, subProperty: true }
+                },
+                ddBookings: {
+                    include: { screen: true }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.json({ stayBookings: [], ddBookings: [] });
+        }
+
+        return res.json({
+            stayBookings: user.stayBookings,
+            ddBookings: user.ddBookings
+        });
+    } catch (error) {
+        console.error("Fetch me bookings error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// All routes below require owner/developer
 router.use(authMiddleware);
 router.use(requireRole("owner", "developer"));
 

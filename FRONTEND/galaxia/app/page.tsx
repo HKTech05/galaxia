@@ -1,10 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+      setIsLoggedIn(!!localStorage.getItem("galaxia_token"));
+  }, []);
 
   return (
     <div className="min-h-screen bg-cream-white flex flex-col">
@@ -25,14 +33,71 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
             </Link>
-            <Link href="/dashboard?source=all" className="w-10 h-10 rounded-full border border-border-medium flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group">
+            <button 
+              onClick={() => isLoggedIn ? router.push("/dashboard?source=all") : setShowAuthModal(true)} 
+              className="w-10 h-10 rounded-full border border-border-medium flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group"
+            >
               <svg className="w-5 h-5 text-text-secondary group-hover:text-antique-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
+
+      {/* ChatGPT-style Dark Auth Modal */}
+      {showAuthModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 xs:p-10 relative transform transition-all">
+                  <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                  
+                  <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
+                  <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
+                      Sign in to your account or create a new one to access your premium reservations.
+                  </p>
+                  
+                  <div className="w-full space-y-3">
+                      <button 
+                          onClick={(e) => {
+                              e.preventDefault();
+                              if (typeof window !== "undefined") {
+                                  const redirectUri = `${window.location.origin}/auth/callback`;
+                                  const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&identity_provider=Google`;
+                                  window.location.href = cognitoUrl;
+                              }
+                          }}
+                          className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
+                      >
+                          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                          Continue with Google
+                      </button>
+                      
+                      <div className="flex items-center gap-4 py-2 opacity-60">
+                          <div className="h-[1px] bg-white/20 flex-1"></div>
+                          <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
+                          <div className="h-[1px] bg-white/20 flex-1"></div>
+                      </div>
+
+                      <button 
+                          onClick={(e) => {
+                              e.preventDefault();
+                              if (typeof window !== "undefined") {
+                                  const redirectUri = `${window.location.origin}/auth/callback`;
+                                  const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
+                                  window.location.href = cognitoUrl;
+                              }
+                          }}
+                          className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                      >
+                          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          Continue with Email
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pt-24">

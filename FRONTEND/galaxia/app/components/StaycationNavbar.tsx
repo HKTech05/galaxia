@@ -22,6 +22,7 @@ const menuItems = [
 
 export default function StaycationNavbar() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
 
@@ -77,23 +78,7 @@ export default function StaycationNavbar() {
                                 e.preventDefault();
                                 if (typeof window !== "undefined") {
                                     if (!localStorage.getItem("galaxia_token")) {
-                                        const redirectUri = `${window.location.origin}/auth/callback`;
-                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-                                        const width = 500;
-                                        const height = 650;
-                                        const left = window.screenX + (window.outerWidth - width) / 2;
-                                        const top = window.screenY + (window.outerHeight - height) / 2;
-
-                                        window.open(cognitoUrl, "CognitoLogin", `width=${width},height=${height},left=${left},top=${top}`);
-
-                                        const handleMsg = (event: MessageEvent) => {
-                                            if (event.data === "COGNITO_LOGIN_SUCCESS") {
-                                                window.removeEventListener("message", handleMsg);
-                                                router.push("/dashboard?source=staycation");
-                                            }
-                                        };
-                                        window.addEventListener("message", handleMsg);
+                                        setShowAuthModal(true);
                                     } else {
                                         router.push("/dashboard?source=staycation");
                                     }
@@ -119,6 +104,62 @@ export default function StaycationNavbar() {
                     </div>
                 </div>
             </nav>
+
+            {/* ChatGPT-style Dark Auth Modal */}
+            {showAuthModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 xs:p-10 relative transform transition-all">
+                        <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        
+                        <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
+                        <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
+                            Sign in to your account or create a new one to access your premium reservations.
+                        </p>
+                        
+                        <div className="w-full space-y-3">
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (typeof window !== "undefined") {
+                                        const redirectUri = `${window.location.origin}/auth/callback`;
+                                        const currentUrl = window.location.pathname + window.location.search;
+                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}&identity_provider=Google`;
+                                        window.location.href = cognitoUrl;
+                                    }
+                                }}
+                                className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
+                            >
+                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                Continue with Google
+                            </button>
+                            
+                            <div className="flex items-center gap-4 py-2 opacity-60">
+                                <div className="h-[1px] bg-white/20 flex-1"></div>
+                                <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
+                                <div className="h-[1px] bg-white/20 flex-1"></div>
+                            </div>
+
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (typeof window !== "undefined") {
+                                        const redirectUri = `${window.location.origin}/auth/callback`;
+                                        const currentUrl = window.location.pathname + window.location.search;
+                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}`;
+                                        window.location.href = cognitoUrl;
+                                    }
+                                }}
+                                className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                            >
+                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                Continue with Email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Overlay — always rendered, visibility toggled via opacity + pointer-events */}
             <div

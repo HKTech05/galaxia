@@ -46,8 +46,10 @@ async function request<T = any>(
 
     if (res.status === 401) {
         clearToken();
-        if (typeof window !== "undefined" && !window.location.pathname.includes("admin-login")) {
-            window.location.href = "/admin-login";
+        if (typeof window !== "undefined") {
+            if (window.location.pathname.startsWith("/admin") && !window.location.pathname.includes("admin-login")) {
+                window.location.href = "/admin-login";
+            }
         }
         throw new Error("Unauthorized");
     }
