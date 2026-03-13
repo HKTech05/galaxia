@@ -1,4 +1,4 @@
-const BASE_URL = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || "http://3.108.193.168:4000/api");
+const BASE_URL = typeof window !== "undefined" ? "/api" : "http://3.108.193.168:4000/api";
 
 /* ─── Token helpers ─────────────────────────────────────── */
 
