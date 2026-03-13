@@ -67,68 +67,7 @@ const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (
     );
 };
 
-// ─── MOCK DATA ───────────────────────────────────────────────────────────
 
-// Ambrose Pie Chart Data (villa performance)
-const ambroseData: any[] = [];
-
-// Amstel Nest Bar Data
-const amstelSalesData: any[] = [];
-
-const amstelNightsData: any[] = [];
-
-// DD Screen Revenue
-const ddScreenData: any[] = [];
-
-// DD Package Data
-const ddPackageData: any[] = [];
-
-// Standalone Villas Data (Hill View, Mount View, La Paraiso, Euphoria)
-const standaloneVillaData: any[] = [];
-
-// Overall Earnings Data — yearly (monthly), with weekly detail for 1-month
-const earningsYearly: any[] = [];
-const earnings1Month: any[] = [];
-
-// DD Booking Source — Website vs Walk-in only
-const ddBookingSourceData: any[] = [];
-
-// Occupancy Trend — yearly (monthly), with weekly detail for 1-month
-const occupancyYearly: any[] = [];
-const occupancy1Month: any[] = [];
-
-// Property-wise Revenue Comparison
-const propertyRevenueComparison: any[] = [];
-
-// Properties Check-in Status
-const propertyStatusData: any[] = [
-    { name: "Hill View", checkedIn: true, guest: "Anjali Mehta", guests: 3, phone: "+91 98765 43210", balanceCollected: true, balanceMode: "Cash", balanceTime: "01 Mar 2026, 1:15 PM", depositCollected: true, depositMode: "UPI", depositTime: "01 Mar 2026, 1:20 PM", checkInTime: "01 Mar 2026, 1:00 PM", checkOutDate: "03 Mar 2026", extraGuests: [{ name: "Rohan Mehta", idType: "Passport", amount: "1500", paymentMode: "Cash" }] },
-    { name: "Mount View", checkedIn: true, guest: "Alia Bhatt", guests: 2, phone: "+91 87654 32109", balanceCollected: false, balanceMode: null, balanceTime: null, depositCollected: false, depositMode: null, depositTime: null, checkInTime: "01 Mar 2026, 2:00 PM", checkOutDate: "05 Mar 2026" },
-    { name: "La Paraiso", checkedIn: true, guest: "Deepika R", guests: 4, phone: "+91 99887 76655", balanceCollected: true, balanceMode: "UPI", balanceTime: "01 Mar 2026, 2:10 PM", depositCollected: true, depositMode: "Cash", depositTime: "01 Mar 2026, 2:15 PM", checkInTime: "01 Mar 2026, 2:00 PM", checkOutDate: "03 Mar 2026", extraGuests: [{ name: "Ranveer S", idType: "Aadhar", amount: "1500", paymentMode: "UPI" }, { name: "Kabir", idType: "Aadhar", amount: "1500", paymentMode: "UPI" }] },
-    { name: "Euphoria", checkedIn: false, guest: null, guests: 0, phone: null, balanceCollected: false, balanceMode: null, balanceTime: null, depositCollected: false, depositMode: null, depositTime: null, checkInTime: null, checkOutDate: null },
-];
-
-// Ambrose Villas Status
-const ambroseVillaStatus = [
-    { name: "TAKE-1", checkedIn: true, guest: "Ranveer Singh", guests: 8, phone: "+91 91234 56780", balanceCollected: true, balanceMode: "UPI", balanceTime: "01 Mar 2026, 2:30 PM", depositCollected: true, depositMode: "Cash", depositTime: "01 Mar 2026, 2:35 PM", checkInTime: "01 Mar 2026, 2:00 PM", checkOutDate: "04 Mar 2026", extraGuests: [{ name: "Deepika", idType: "Passport", amount: "2000", paymentMode: "UPI" }] },
-    { name: "ALTA", checkedIn: false, guest: null, guests: 0, phone: null, balanceCollected: false, balanceMode: null, balanceTime: null, depositCollected: false, depositMode: null, depositTime: null, checkInTime: null, checkOutDate: null },
-    { name: "SANTORINI", checkedIn: true, guest: "Varun Dhawan", guests: 4, phone: "+91 88776 65544", balanceCollected: true, balanceMode: "Cash", balanceTime: "01 Mar 2026, 1:45 PM", depositCollected: false, depositMode: null, depositTime: null, checkInTime: "01 Mar 2026, 1:30 PM", checkOutDate: "02 Mar 2026" },
-    { name: "BAMBOOSA", checkedIn: false, guest: null, guests: 0, phone: null, balanceCollected: false, balanceMode: null, balanceTime: null, depositCollected: false, depositMode: null, depositTime: null, checkInTime: null, checkOutDate: null },
-    { name: "CYPRESS", checkedIn: false, guest: null, guests: 0, phone: null, balanceCollected: false, balanceMode: null, balanceTime: null, depositCollected: false, depositMode: null, depositTime: null, checkInTime: null, checkOutDate: null },
-];
-
-// Amstel Nest Villas Status
-const amstelVillaStatus: any[] = [];
-
-// DD Bookings (Read-only)
-const ddBookings = [
-    { id: "#DD-1024", customer: "Rahul Sharma", phone: "+91 98765 43210", screen: "Cine Love", date: "28 Feb, 2026", slot: "7:00 PM - 10:00 PM", source: "Online", upfrontAmt: "₹1,750", upfrontMode: "Online", remainingAmt: "₹1,750", remainingStatus: "Pending", status: "Confirmed" },
-    { id: "#DD-1025", customer: "Priya Patel", phone: "+91 87654 32109", screen: "Sandy Screen", date: "28 Feb, 2026", slot: "4:00 PM - 7:00 PM", source: "Walk-in", upfrontAmt: "₹4,200", upfrontMode: "Cash", remainingAmt: "₹0", remainingStatus: "Paid", status: "Confirmed" },
-    { id: "#DD-1026", customer: "Amit Singh", phone: "+91 91234 56780", screen: "Park N Watch", date: "01 Mar, 2026", slot: "11:00 AM - 1:00 PM", source: "Online", upfrontAmt: "₹1,400", upfrontMode: "Online", remainingAmt: "₹1,400", remainingStatus: "Pending", status: "Confirmed" },
-    { id: "#DD-1027", customer: "Neha Gupta", phone: "+91 99887 76655", screen: "Cine Love", date: "27 Feb, 2026", slot: "11:00 AM - 2:00 PM", source: "Walk-in", upfrontAmt: "₹3,500", upfrontMode: "UPI", remainingAmt: "₹0", remainingStatus: "Paid", status: "Cancelled" },
-    { id: "#DD-1028", customer: "Karan Johar", phone: "+91 99999 88888", screen: "Baywatch", date: "02 Mar, 2026", slot: "2:00 PM - 5:00 PM", source: "Online", upfrontAmt: "₹2,500", upfrontMode: "Online", remainingAmt: "₹2,500", remainingStatus: "Pending", status: "Confirmed" },
-    { id: "#DD-1029", customer: "Sara Ali Khan", phone: "+91 77766 55544", screen: "Sandy Screen", date: "03 Mar, 2026", slot: "6:00 PM - 9:00 PM", source: "Online", upfrontAmt: "₹1,950", upfrontMode: "Online", remainingAmt: "₹1,475", remainingStatus: "Pending", status: "Confirmed" },
-];
 
 // Website Photo Sections
 const websiteSections = [
@@ -206,7 +145,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [expandedVilla, setExpandedVilla] = useState<string | null>(null);
 
     // DD tab
-    const [ddSelectedBooking, setDdSelectedBooking] = useState<typeof ddBookings[0] | null>(null);
+    const [ddSelectedBooking, setDdSelectedBooking] = useState<any | null>(null);
     const [ddViewDate, setDdViewDate] = useState(new Date());
 
     // Website tab
@@ -330,10 +269,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // ─── TAB: DASHBOARD ──────────────────────────────────────────────────
     const renderDashboard = () => {
+        const liveProperties = propertyStatusLive.length > 0 ? propertyStatusLive : [];
+        const liveAmbrose = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Ambrose')?.villas || [] : [];
+        const liveAmstel = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Amstel Nest')?.villas || [] : [];
+        const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest'].includes(p.name));
+
+        const occupiedAmbroseCount = liveAmbrose.filter((v: any) => v.checkedIn).length;
+        const occupiedAmstelCount = liveAmstel.filter((v: any) => v.checkedIn).length;
+        const occupiedStandaloneCount = liveStandalone.filter((p: any) => p.checkedIn).length;
+
+        const totalOccupied = occupiedAmbroseCount + occupiedAmstelCount + occupiedStandaloneCount;
+        const totalUnits = liveAmbrose.length + liveAmstel.length + liveStandalone.length;
+
         // KPI cards data
         const totalRevenue = dashboardKPIs?.kpis?.staycationRevenue || 0;
         const totalNights = dashboardKPIs?.kpis?.totalNightsBooked || 0;
-        const occupancyRate = totalNights > 0 ? 80 : 0; // Estimated
+        const occupancyRate = totalUnits > 0 ? Math.round((totalOccupied / totalUnits) * 100) : 0;
         const avgNightlyRate = totalNights > 0 ? Math.round(totalRevenue / totalNights) : 0;
 
         // Live calendar helpers
@@ -341,8 +292,45 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const calendarMonth = calendarViewMonth.getMonth();
         const calFirstDay = new Date(calendarYear, calendarMonth, 1).getDay();
         const calDaysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
-        // Mock booked dates for the selected property
-        const mockBookedDays = [1, 2, 3, 4, 8, 9, 15, 16, 22, 23, 25, 28, 29];
+        
+        // Calculate dynamic booked dates for the selected property
+        const bookedDaysSet = new Set<number>();
+        
+        if (calendarProperty.startsWith("Ambrose")) {
+            const propName = calendarProperty.split("—")[1]?.trim();
+            const villa = liveAmbrose.find((v: any) => v.name === propName);
+            if (villa && villa.checkedIn) {
+                // Approximate booking length or use actual checkIn/checkOut bounds
+                const inDate = new Date(villa.checkInTime);
+                const outDate = new Date(villa.checkOutDate);
+                for (let d = 1; d <= calDaysInMonth; d++) {
+                    const current = new Date(calendarYear, calendarMonth, d);
+                    if (current >= inDate && current <= outDate) bookedDaysSet.add(d);
+                }
+            }
+        } else if (calendarProperty.startsWith("Amstel Nest")) {
+            const propName = calendarProperty.split("—")[1]?.trim();
+            const villa = liveAmstel.find((v: any) => v.name === propName);
+            if (villa && villa.checkedIn) {
+                const inDate = new Date(villa.checkInTime);
+                const outDate = new Date(villa.checkOutDate);
+                for (let d = 1; d <= calDaysInMonth; d++) {
+                    const current = new Date(calendarYear, calendarMonth, d);
+                    if (current >= inDate && current <= outDate) bookedDaysSet.add(d);
+                }
+            }
+        } else {
+            // Standalone
+            const prop = liveStandalone.find((p: any) => p.name === calendarProperty);
+            if (prop && prop.checkedIn) {
+                const inDate = new Date(prop.checkInTime);
+                const outDate = new Date(prop.checkOutDate);
+                for (let d = 1; d <= calDaysInMonth; d++) {
+                    const current = new Date(calendarYear, calendarMonth, d);
+                    if (current >= inDate && current <= outDate) bookedDaysSet.add(d);
+                }
+            }
+        }
 
         return (
             <div className="space-y-8">
@@ -380,8 +368,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {dashboardSubTab === "insights" && (
                     <>
                         {/* Occupancy Alerts  */}
-                        {(ambroseVillaStatus.filter(v => v.checkedIn).length === ambroseVillaStatus.length ||
-                            amstelVillaStatus.filter(v => v.checkedIn).length === amstelVillaStatus.length) && (
+                        {(occupiedAmbroseCount === liveAmbrose.length ||
+                            occupiedAmstelCount === liveAmstel.length) && (
                                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm flex items-start gap-3 animate-in fade-in zoom-in-95 duration-300">
                                     <span className="bg-amber-100 text-amber-600 p-1.5 rounded-lg shrink-0 mt-0.5">
                                         <CheckCircle size={18} className="text-amber-600" />
@@ -389,16 +377,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <div>
                                         <h4 className="text-sm font-bold text-amber-800 tracking-tight">Fully Booked Properties Alert</h4>
                                         <div className="mt-1 space-y-1">
-                                            {ambroseVillaStatus.filter(v => v.checkedIn).length === ambroseVillaStatus.length && (
+                                            {occupiedAmbroseCount === liveAmbrose.length && (
                                                 <p className="text-xs text-amber-700 font-medium font-semibold flex flex-wrap items-center gap-1.5">
                                                     <span>Ambrose is <span className="underline decoration-amber-400 underline-offset-2">100% occupied</span> today.</span>
-                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">5/5 VILLAS FULL</span>
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">{liveAmbrose.length}/{liveAmbrose.length} VILLAS FULL</span>
                                                 </p>
                                             )}
-                                            {amstelVillaStatus.filter(v => v.checkedIn).length === amstelVillaStatus.length && (
+                                            {occupiedAmstelCount === liveAmstel.length && (
                                                 <p className="text-xs text-amber-700 font-medium font-semibold flex flex-wrap items-center gap-1.5">
                                                     <span>Amstel Nest is <span className="underline decoration-amber-400 underline-offset-2">100% occupied</span> today.</span>
-                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">14/14 VILLAS FULL</span>
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">{liveAmstel.length}/{liveAmstel.length} VILLAS FULL</span>
                                                 </p>
                                             )}
                                         </div>
@@ -418,7 +406,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Occupancy Rate</p>
                                     <p className="text-xl font-bold text-purple-700 mt-1">{occupancyRate}%</p>
-                                    <p className="text-[10px] text-purple-500 font-medium mt-1">{ambroseVillaStatus.filter(v => v.checkedIn).length + amstelVillaStatus.filter(v => v.checkedIn).length + propertyStatusData.filter((p: any) => p.checkedIn).length} / {ambroseVillaStatus.length + amstelVillaStatus.length + propertyStatusData.length} units occupied</p>
+                                    <p className="text-[10px] text-purple-500 font-medium mt-1">{totalOccupied} / {totalUnits} units occupied</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Nightly Rate</p>
@@ -471,8 +459,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <p className="text-xs text-slate-400 font-medium mb-4">Hover to see total sales & nights booked</p>
                                     <ResponsiveContainer width="100%" height={280}>
                                         <PieChart>
-                                            <Pie data={ambroseData} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="sales" nameKey="name" stroke="none">
-                                                {ambroseData.map((entry, index) => (
+                                            <Pie data={dashboardKPIs?.charts?.ambrose || []} cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={3} dataKey="sales" nameKey="name" stroke="none">
+                                                {(dashboardKPIs?.charts?.ambrose || []).map((entry: any, index: number) => (
                                                     <Cell key={`cell-${index}`} fill={entry.fill} />
                                                 ))}
                                             </Pie>
@@ -487,7 +475,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <div>
                                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest — Total Sales by Villa</h3>
                                         <ResponsiveContainer width="100%" height={180}>
-                                            <BarChart data={amstelSalesData}>
+                                            <BarChart data={dashboardKPIs?.charts?.amstelSales || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="villa" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
                                                 <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
@@ -499,7 +487,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <div>
                                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest — Total Nights by Villa</h3>
                                         <ResponsiveContainer width="100%" height={180}>
-                                            <BarChart data={amstelNightsData}>
+                                            <BarChart data={dashboardKPIs?.charts?.amstelNights || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="villa" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
                                                 <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
@@ -520,7 +508,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Total Sales by Villa</h3>
                                 <p className="text-xs text-slate-400 font-medium mb-4">Hover to see nights spent at each villa</p>
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={standaloneVillaData} barCategoryGap="20%">
+                                    <BarChart data={dashboardKPIs?.charts?.standaloneVillas || []} barCategoryGap="20%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 700, fill: "#475569" }} />
                                         <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
@@ -540,7 +528,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             }}
                                         />
                                         <Bar dataKey="sales" radius={[6, 6, 0, 0]}>
-                                            {standaloneVillaData.map((entry, index) => (
+                                            {(dashboardKPIs?.charts?.standaloneVillas || []).map((entry: any, index: number) => (
                                                 <Cell key={`standalone-${index}`} fill={entry.fill} />
                                             ))}
                                         </Bar>
@@ -559,7 +547,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <span className="text-xs text-slate-400 font-medium">Showing: {timeRange === '1m' ? 'Last 1 Month (Daily)' : timeRange === '3m' ? 'Last 3 Months' : timeRange === '6m' ? 'Last 6 Months' : 'Full Year'}</span>
                                 </div>
                                 <ResponsiveContainer width="100%" height={320}>
-                                    <LineChart data={timeRange === '1m' ? earnings1Month : earningsYearly.slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
+                                    <LineChart data={timeRange === '1m' ? (dashboardKPIs?.charts?.earnings1Month || []) : (dashboardKPIs?.charts?.earningsYearly || []).slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="period" tick={{ fontSize: 11, fontWeight: 700, fill: "#475569" }} />
                                         <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
@@ -598,7 +586,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue by Screen</h3>
                                     <ResponsiveContainer width="100%" height={250}>
-                                        <BarChart data={ddScreenData}>
+                                        <BarChart data={dashboardKPIs?.charts?.ddScreen || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis dataKey="screen" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
                                             <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
@@ -611,7 +599,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue by Package</h3>
                                     <ResponsiveContainer width="100%" height={250}>
-                                        <BarChart data={ddPackageData}>
+                                        <BarChart data={dashboardKPIs?.charts?.ddPackage || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis dataKey="package" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748b" }} />
                                             <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
@@ -635,8 +623,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source — Website vs Walk-in</h3>
                                 <ResponsiveContainer width="100%" height={260}>
                                     <PieChart>
-                                        <Pie data={ddBookingSourceData} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={6} dataKey="value" nameKey="name" stroke="none">
-                                            {ddBookingSourceData.map((entry, index) => (
+                                        <Pie data={dashboardKPIs?.charts?.ddSource || []} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={6} dataKey="value" nameKey="name" stroke="none">
+                                            {(dashboardKPIs?.charts?.ddSource || []).map((entry: any, index: number) => (
                                                 <Cell key={`ddsrc-${index}`} fill={entry.fill} />
                                             ))}
                                         </Pie>
@@ -644,7 +632,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             content={({ active, payload }: any) => {
                                                 if (active && payload && payload.length) {
                                                     const d = payload[0].payload;
-                                                    const total = ddBookingSourceData.reduce((s, e) => s + e.value, 0);
+                                                    const total = (dashboardKPIs?.charts?.ddSource || []).reduce((s: number, e: any) => s + e.value, 0);
                                                     return (
                                                         <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-lg">
                                                             <p className="font-bold text-slate-800 text-sm">{d.name}</p>
@@ -670,7 +658,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Occupancy Trend (%)</h3>
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <AreaChart data={timeRange === '1m' ? occupancy1Month : occupancyYearly.slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
+                                    <AreaChart data={timeRange === '1m' ? (dashboardKPIs?.charts?.occupancy1Month || []) : (dashboardKPIs?.charts?.occupancyYearly || []).slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="period" tick={{ fontSize: 11, fontWeight: 700, fill: "#475569" }} />
                                         <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
@@ -701,7 +689,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue Comparison — Current vs Previous Period</h3>
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={propertyRevenueComparison} barCategoryGap="15%">
+                                    <BarChart data={dashboardKPIs?.charts?.propertyRevenue || []} barCategoryGap="15%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="property" tick={{ fontSize: 10, fontWeight: 700, fill: "#475569" }} />
                                         <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
@@ -817,7 +805,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 onChange={setCalendarProperty}
                                 options={[
                                     "Hill View", "Mount View", "La Paraiso", "Euphoria",
-                                    ...ambroseData.map(v => `Ambrose — ${v.name}`),
+                                    ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose — ${v.name}`),
                                     ...Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`)
                                 ]}
                             />
@@ -846,7 +834,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     const d = i + 1;
                                     const date = new Date(calendarYear, calendarMonth, d);
                                     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                    const isBooked = mockBookedDays.includes(d);
+                                    const isBooked = bookedDaysSet.has(d);
                                     const isToday = new Date().getDate() === d && new Date().getMonth() === calendarMonth && new Date().getFullYear() === calendarYear;
                                     return (
                                         <div
@@ -879,31 +867,38 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     };
 
     // ─── TAB: PROPERTIES ─────────────────────────────────────────────────
-    const renderProperties = () => (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h2 className="text-lg font-bold text-slate-800 tracking-tight">Live Property Check-in Status</h2>
-                    <p className="text-sm text-slate-500 font-medium mt-1">Click a property to view guest details and payment status.</p>
+    const renderProperties = () => {
+        // Group live properties by cluster
+        const liveProperties = propertyStatusLive.length > 0 ? propertyStatusLive : [];
+        const liveAmbrose = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Ambrose')?.villas || [] : [];
+        const liveAmstel = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Amstel Nest')?.villas || [] : [];
+        const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest'].includes(p.name));
+
+        return (
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Live Property Check-in Status</h2>
+                        <p className="text-sm text-slate-500 font-medium mt-1">Click a property to view guest details and payment status.</p>
+                    </div>
+                    <CustomDatePicker date={propertyDate} onDateChange={setPropertyDate} />
                 </div>
-                <CustomDatePicker date={propertyDate} onDateChange={setPropertyDate} />
-            </div>
 
-            <div className="space-y-3">
-                {propertyStatusData.map(item => (
-                    <StatusRow key={item.name} item={item} />
-                ))}
+                <div className="space-y-3">
+                    {liveStandalone.map((item: any) => (
+                        <StatusRow key={item.name} item={item} />
+                    ))}
 
-                {/* Ambrose (opens modal) */}
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <button
-                        onClick={() => setVillaModal({ type: "ambrose", open: true })}
+                    {/* Ambrose (opens modal) */}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <button
+                            onClick={() => setVillaModal({ type: "ambrose", open: true })}
                         className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
                     >
                         <div className="flex items-center gap-3">
                             <span className="font-bold text-slate-800 text-sm">Ambrose</span>
                             <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase">
-                                {ambroseVillaStatus.filter(v => v.checkedIn).length}/{ambroseVillaStatus.length} Occupied
+                                {liveAmbrose.filter((v: any) => v.checkedIn).length}/{liveAmbrose.length} Occupied
                             </span>
                         </div>
                         <ChevronRight size={16} className="text-slate-400" />
@@ -919,7 +914,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="flex items-center gap-3">
                             <span className="font-bold text-slate-800 text-sm">Amstel Nest</span>
                             <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase">
-                                {amstelVillaStatus.filter(v => v.checkedIn).length}/{amstelVillaStatus.length} Occupied
+                                {liveAmstel.filter((v: any) => v.checkedIn).length}/{liveAmstel.length} Occupied
                             </span>
                         </div>
                         <ChevronRight size={16} className="text-slate-400" />
@@ -940,7 +935,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </button>
                         </div>
                         <div className="p-6 space-y-3">
-                            {(villaModal.type === "ambrose" ? ambroseVillaStatus : amstelVillaStatus).map(villa => (
+                            {(villaModal.type === "ambrose" ? liveAmbrose : liveAmstel).map((villa: any) => (
                                 <div key={villa.name} className="border border-slate-200 rounded-xl overflow-hidden">
                                     <button
                                         onClick={() => setExpandedVilla(expandedVilla === villa.name ? null : villa.name)}
@@ -1030,13 +1025,32 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 </div>
             )}
         </div>
-    );
+        );
+    };
 
     // ─── TAB: DD (Read-only) ─────────────────────────────────────────────
     const renderDD = () => {
         // Group bookings by screen
-        const screenGroups: Record<string, typeof ddBookings> = {};
-        ddBookings.forEach(b => {
+        const screenGroups: Record<string, any[]> = {};
+        
+        // Use live DD bookings
+        const bookingsToDisplay = ddBookingsLive.length > 0 ? ddBookingsLive.map(b => ({
+            id: b.bookingRef || `#DD-${b.id}`,
+            customer: b.customerName,
+            phone: b.customerPhone,
+            screen: b.screen?.name || "Unknown Screen",
+            date: new Date(b.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+            slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
+            source: b.source === 'website' ? 'Online' : 'Walk-in',
+            upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
+            upfrontMode: b.paymentMethod || "Online",
+            remainingAmt: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
+            remainingStatus: b.amountToCollect <= 0 ? "Paid" : "Pending",
+            status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
+            raw: b
+        })) : []; // fallback to mock if API fails/empty
+
+        bookingsToDisplay.forEach(b => {
             if (!screenGroups[b.screen]) screenGroups[b.screen] = [];
             screenGroups[b.screen].push(b);
         });

@@ -80,7 +80,7 @@ router.post("/login-guest", async (req, res) => {
 
         const secret = process.env.JWT_SECRET || "fallback-secret";
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: "guest" },
+            { id: user.id, email: user.email, type: "customer" },
             secret,
             { expiresIn: "7d" }
         );

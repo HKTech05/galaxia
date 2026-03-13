@@ -49,13 +49,12 @@ type Event = {
     };
 };
 
-const events: Event[] = [
-    { id: "EV-01", day: 0, startHour: 10, duration: 3, title: "Cine Love - Neha G.", color: "bg-pink-100 text-pink-700 border-pink-200", screen: "Cine Love", customerName: "Neha Gupta", phone: "+91 99887 76655", email: "neha@example.com", dateBooked: "25 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Better Together", cakeMessage: "Happy Anniversary!", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 25 Feb 2026 14:30" },
-    { id: "EV-02", day: 0, startHour: 16, duration: 3, title: "Sandy Screen - Priya P.", color: "bg-yellow-100 text-yellow-700 border-yellow-200", screen: "Sandy Screen", customerName: "Priya Patel", phone: "+91 87654 32109", email: "priya@example.com", dateBooked: "26 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Movie Time", amountPaid: "₹4,200 (100%)", amountToCollect: "₹0", paymentDetails: "Paid via Card on 26 Feb 2026 10:15", addOns: { balloons: true, cake: true, cakeMessage: "Happy Birthday Priya!" } },
-    { id: "EV-03", day: 0, startHour: 19, duration: 3, title: "Cine Love - Rahul S.", color: "bg-pink-100 text-pink-700 border-pink-200", screen: "Cine Love", customerName: "Rahul Sharma", phone: "+91 98765 43210", email: "rahul@example.com", dateBooked: "20 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Proposal", cakeMessage: "Marry Me?", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 20 Feb 2026 09:00" },
-    { id: "EV-04", day: 1, startHour: 11, duration: 2, title: "Park N Watch - Amit S.", color: "bg-orange-100 text-orange-700 border-orange-200", screen: "Park N Watch", customerName: "Amit Singh", phone: "+91 91234 56780", email: "amit.s@example.com", dateBooked: "27 Feb, 2026", reservationDate: "01 Mar, 2026", packageType: "Movie Time", amountPaid: "₹1,400 (50%)", amountToCollect: "₹1,400", paymentDetails: "Paid via UPI on 27 Feb 2026 16:45", addOns: { ledBanner: true, ledBannerType: "Better Together" } },
-    { id: "EV-05", day: 2, startHour: 14, duration: 3, title: "Baywatch - Karan J.", color: "bg-sky-100 text-sky-700 border-sky-200", screen: "Baywatch", customerName: "Karan Johar", phone: "+91 99999 88888", email: "kj@example.com", dateBooked: "21 Feb, 2026", reservationDate: "02 Mar, 2026", packageType: "Celebration", occasion: "Happy Birthday", cakeMessage: "Happy Birthday Karan!", amountPaid: "₹2,500 (50%)", amountToCollect: "₹2,500", paymentDetails: "Paid via UPI on 21 Feb 2026 11:20" },
-];
+const screenColorMap: Record<string, string> = {
+    "Cine Love": "bg-pink-100 text-pink-700 border-pink-200",
+    "Sandy Screen": "bg-yellow-100 text-yellow-700 border-yellow-200",
+    "Park N Watch": "bg-orange-100 text-orange-700 border-orange-200",
+    "Baywatch": "bg-sky-100 text-sky-700 border-sky-200",
+};
 
 export default function Admin1Dashboard() {
     const [eventsList, setEventsList] = useState<Event[]>([]);
@@ -70,10 +69,45 @@ export default function Admin1Dashboard() {
     // Fetch DD calendar events from API
     const fetchEvents = useCallback(async (date: Date) => {
         try {
+            setLoading(true);
             const dateStr = date.toISOString().split('T')[0];
-            const data = await api.get(`/bookings/dd?dateFrom=${dateStr}`);
+            const data = await api.get(`/bookings/dd?date=${dateStr}`);
             if (Array.isArray(data)) {
-                setEventsList(data);
+                const mapped: Event[] = data.map((b: any) => {
+                    const screenName = b.screen?.name || "Unknown";
+                    const color = screenColorMap[screenName] || "bg-slate-100 text-slate-700 border-slate-200";
+                    const bDate = new Date(b.bookingDate);
+                    const bookedDate = new Date(b.bookedAt || b.createdAt || b.bookingDate);
+                    return {
+                        id: String(b.id),
+                        day: 0,
+                        startHour: b.startHour,
+                        duration: b.durationHours,
+                        title: `${screenName} - ${b.customerName?.split(' ')[0] || 'Guest'}`,
+                        color,
+                        screen: screenName as any,
+                        customerName: b.customerName || "Guest",
+                        phone: b.customerPhone || "",
+                        email: b.customerEmail || "",
+                        dateBooked: bookedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+                        reservationDate: bDate.toISOString(),
+                        packageType: b.package?.name === "Celebration" ? "Celebration" : b.package?.name === "Movie Time" ? "Movie Time" : (b.isMaintenance ? "Maintenance" : "Movie Time"),
+                        occasion: b.occasion || undefined,
+                        cakeMessage: b.cakeMessage || undefined,
+                        amountPaid: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
+                        amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
+                        paymentDetails: b.paymentDetails || `Paid via ${b.paymentMethod || 'Online'}`,
+                        isMaintenance: b.isMaintenance || false,
+                        addOns: b.addons ? {
+                            balloons: b.addons.some((a: any) => a.addonType === 'balloons'),
+                            ledBanner: b.addons.some((a: any) => a.addonType === 'led_banner'),
+                            ledBannerType: b.addons.find((a: any) => a.addonType === 'led_banner')?.addonValue,
+                            cake: b.addons.some((a: any) => a.addonType === 'cake'),
+                            cakeMessage: b.addons.find((a: any) => a.addonType === 'cake')?.addonValue,
+                        } : undefined,
+                    };
+                });
+                setEventsList(mapped);
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);
@@ -113,7 +147,14 @@ export default function Admin1Dashboard() {
     const [duration, setDuration] = useState("3");
     const [selectedScreen, setSelectedScreen] = useState<"Cine Love" | "Sandy Screen" | "Park N Watch" | "Baywatch">("Cine Love");
 
-    // UI warnings
+    // Walk-in form customer fields
+    const [walkinName, setWalkinName] = useState("");
+    const [walkinPhone, setWalkinPhone] = useState("");
+    const [walkinEmail, setWalkinEmail] = useState("");
+    const [walkinPayMode, setWalkinPayMode] = useState("Cash");
+    const [walkinOccasion, setWalkinOccasion] = useState<Occasion>("Happy Birthday");
+    const [walkinCakeMsg, setWalkinCakeMsg] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const [showOverlapWarning, setShowOverlapWarning] = useState(false);
 
     // Add-on state for walk-in booking
@@ -217,44 +258,84 @@ export default function Admin1Dashboard() {
         });
     };
 
-    const handleSubmitDraft = () => {
+    const handleSubmitDraft = async () => {
         if (checkOverlap()) {
             setShowOverlapWarning(true);
             return;
         }
+        if (!walkinName.trim()) {
+            alert("Please enter customer name");
+            return;
+        }
 
-        // Success payload goes here (omitted for mocked front end unless saving to events array is desired)
-        setDraftSlot(null);
+        setSubmitting(true);
+        try {
+            // Find the screen ID from DB — we use the screen name to index, screen IDs in DB start at 1
+            const screenMap: Record<string, number> = { "Cine Love": 1, "Sandy Screen": 2, "Park N Watch": 3, "Baywatch": 4 };
+            const screenId = screenMap[selectedScreen] || 1;
+            // Package: Movie Time = 1, Celebration = 2 (assumed DB IDs)
+            const packageId = packageType === "Celebration" ? 2 : 1;
+
+            const addons: any[] = [];
+            if (addBalloons) addons.push({ type: "balloons", price: 200 });
+            if (addLedBanner) addons.push({ type: "led_banner", value: ledBannerType, price: 200 });
+            if (addCake) addons.push({ type: "cake", value: addOnCakeMessage, price: 400 });
+
+            await api.post("/bookings/dd", {
+                screenId,
+                packageId,
+                bookingDate: startDate.toISOString().split('T')[0],
+                startHour: draftSlot!.hour,
+                durationHours: parseInt(duration),
+                customerName: walkinName,
+                customerPhone: walkinPhone || "0000000000",
+                customerEmail: walkinEmail || undefined,
+                occasion: packageType === "Celebration" ? walkinOccasion : undefined,
+                cakeMessage: packageType === "Celebration" ? walkinCakeMsg : undefined,
+                numGuests: guestsCount,
+                basePrice,
+                extraPersonCharge: extraGuestFee,
+                gstAmount: 0,
+                totalAmount: totalPrice,
+                amountPaid: totalPrice,
+                paymentMethod: walkinPayMode.toLowerCase(),
+                paymentDetails: `Walk-in, full payment via ${walkinPayMode}`,
+                addons,
+                source: "walkin",
+            });
+
+            // Reset form and refresh
+            setDraftSlot(null);
+            setWalkinName(""); setWalkinPhone(""); setWalkinEmail("");
+            setAddBalloons(false); setAddLedBanner(false); setAddCake(false); setAddOnCakeMessage("");
+            fetchEvents(startDate);
+        } catch (err: any) {
+            console.error("Walk-in booking error:", err);
+            alert(err.message || "Failed to create booking");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleCollectPayment = (mode: "Cash" | "UPI") => {
+    const handleCollectPayment = async (mode: "Cash" | "UPI") => {
         if (!activeEvent) return;
 
-        const now = new Date();
-        const dateStr = `${now.getDate()} ${now.toLocaleString('en-us', { month: 'short' })} ${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+        try {
+            const toCollectMatch = activeEvent.amountToCollect.match(/[\d,]+/);
+            const amount = toCollectMatch ? parseInt(toCollectMatch[0].replace(/,/g, '')) : 0;
+            if (amount <= 0) return;
 
-        const updatedEvents = eventsList.map(ev => {
-            if (ev.id === activeEvent.id) {
-                // Extract numeric part from amountPaid and amountToCollect
-                const paidAmountMatch = ev.amountPaid.match(/₹([\d,]+)/);
-                const toCollectAmountMatch = ev.amountToCollect.match(/₹([\d,]+)/);
+            await api.post(`/bookings/dd/${activeEvent.id}/payment`, {
+                amount,
+                method: mode.toLowerCase(),
+            });
 
-                let currentPaid = paidAmountMatch ? parseInt(paidAmountMatch[1].replace(/,/g, '')) : 0;
-                let currentToCollect = toCollectAmountMatch ? parseInt(toCollectAmountMatch[1].replace(/,/g, '')) : 0;
-
-                const newTotalPaid = currentPaid + currentToCollect;
-
-                return {
-                    ...ev,
-                    amountPaid: `₹${newTotalPaid.toLocaleString()} (100%)`,
-                    amountToCollect: "₹0",
-                    paymentDetails: `${ev.paymentDetails} | Remaining paid via ${mode} on ${dateStr}`
-                };
-            }
-            return ev;
-        });
-
-        setEventsList(updatedEvents);
+            // Refresh from API
+            fetchEvents(startDate);
+        } catch (err) {
+            console.error("Collect payment error:", err);
+            alert("Failed to record payment");
+        }
     };
 
     // 1. EVENT DETAIL VIEW
@@ -781,21 +862,21 @@ export default function Admin1Dashboard() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-700 uppercase">Customer Name</label>
-                                    <input type="text" placeholder="John Doe" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
-                                </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700 uppercase">Customer Name</label>
+                                        <input type="text" placeholder="Customer Name" value={walkinName} onChange={(e) => setWalkinName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
+                                    </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase">Phone Number (Optional)</label>
-                                        <input type="tel" placeholder="+91" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-700 uppercase">Phone Number (Optional)</label>
+                                            <input type="tel" placeholder="+91" value={walkinPhone} onChange={(e) => setWalkinPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-700 uppercase">Email (Optional)</label>
+                                            <input type="email" placeholder="email@example.com" value={walkinEmail} onChange={(e) => setWalkinEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase">Email (Optional)</label>
-                                        <input type="email" placeholder="john@example.com" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
-                                    </div>
-                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-1">
@@ -811,7 +892,7 @@ export default function Admin1Dashboard() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment (100% Amount)</label>
-                                        <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                        <select value={walkinPayMode} onChange={(e) => setWalkinPayMode(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
                                             <option>Cash</option>
                                             <option>UPI</option>
                                         </select>
@@ -883,9 +964,10 @@ export default function Admin1Dashboard() {
                                 <div className="pt-4 border-t border-slate-100 flex justify-end">
                                     <button
                                         onClick={handleSubmitDraft}
-                                        className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-colors"
+                                        disabled={submitting}
+                                        className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-colors disabled:opacity-50"
                                     >
-                                        Submit to Database
+                                        {submitting ? "Submitting..." : "Submit to Database"}
                                     </button>
                                 </div>
                             </div>

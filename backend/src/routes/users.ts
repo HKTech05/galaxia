@@ -7,18 +7,20 @@ const router = Router();
 // User's own bookings
 router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
     try {
-        if (!req.user || !req.user.email) {
+        if (!req.user || !req.user.id) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
         const user = await prisma.user.findUnique({
-            where: { email: req.user.email },
+            where: { id: req.user.id },
             include: {
                 stayBookings: {
-                    include: { property: true, subProperty: true }
+                    include: { property: true, subProperty: true },
+                    orderBy: { checkInDate: "desc" }
                 },
                 ddBookings: {
-                    include: { screen: true }
+                    include: { screen: true, package: true },
+                    orderBy: { bookingDate: "desc" }
                 }
             }
         });

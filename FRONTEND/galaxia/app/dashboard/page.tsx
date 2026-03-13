@@ -47,6 +47,8 @@ function DashboardContent() {
     const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
     const [userName, setUserName] = useState("Guest");
     const [userInitial, setUserInitial] = useState("G");
+    const [userEmail, setUserEmail] = useState("");
+    const [userPhone, setUserPhone] = useState("");
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -65,6 +67,8 @@ function DashboardContent() {
                 const user = JSON.parse(storedUser);
                 setUserName(user.fullName || user.email?.split("@")[0] || "Guest");
                 setUserInitial((user.fullName || user.email || "G").charAt(0).toUpperCase());
+                setUserEmail(user.email || "");
+                setUserPhone(user.phone || "");
             } catch { }
         }
 
@@ -87,7 +91,7 @@ function DashboardContent() {
                     const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
                     
                     return {
-                        id: b.bookingId,
+                        id: b.bookingRef || `#S-${b.id}`,
                         property: b.property?.name || "Staycation Property",
                         dates: `${ci.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}-${co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}`,
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
@@ -97,13 +101,14 @@ function DashboardContent() {
                         type: "staycation",
                         time: isUpcoming ? "upcoming" : "past",
                         totalPaid: formatPrice(b.totalAmount),
-                        payNow: formatPrice(Math.round(b.totalAmount * 0.5)),
-                        payAtVenue: formatPrice(Math.round(b.totalAmount * 0.5)),
-                        securityDeposit: "—",
-                        checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · 2:00 PM",
-                        checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · 11:00 AM",
+                        payNow: formatPrice(b.advanceAmount || Math.round(b.totalAmount * 0.2)),
+                        payAtVenue: formatPrice(b.balanceAmount || Math.round(b.totalAmount * 0.8)),
+                        securityDeposit: b.securityDeposit ? formatPrice(b.securityDeposit) : "—",
+                        depositRefunded: b.depositRefunded || false,
+                        checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkInTime || "2:00 PM"),
+                        checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkOutTime || "11:00 AM"),
                         roomType: b.subProperty?.name || "Entire Property",
-                        taxes: "Included"
+                        taxes: formatPrice(b.gstAmount || 0)
                     };
                 });
                 
@@ -117,23 +122,28 @@ function DashboardContent() {
                     const isUpcoming = bookingDateOnly >= today;
                     const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
                     
+                    const fmtHour = (h: number) => {
+                        const ampm = h >= 12 ? "PM" : "AM";
+                        const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
+                        return `${hr}:00 ${ampm}`;
+                    };
                     return {
-                        id: b.bookingId,
+                        id: b.bookingRef || `#DD-${b.id}`,
                         property: "Celebration",
                         dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),
                         guests: b.numGuests,
-                        image: b.screen?.images?.[0] || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80",
+                        image: b.screen?.imageUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80",
                         type: "celebration",
                         time: isUpcoming ? "upcoming" : "past",
                         totalPaid: formatPrice(b.totalAmount),
-                        payNow: formatPrice(Math.round(b.totalAmount * 0.5)),
-                        payAtVenue: formatPrice(Math.round(b.totalAmount * 0.5)),
+                        payNow: formatPrice(b.amountPaid || Math.round(b.totalAmount * 0.5)),
+                        payAtVenue: formatPrice(b.amountToCollect || Math.round(b.totalAmount * 0.5)),
                         screen: b.screen?.name || "Private Screen",
-                        package: b.packageType ? b.packageType.replace("-", " ") : "Private Screening",
-                        duration: "3 hours",
-                        timeSlot: b.timeSlot
+                        package: b.package?.name || "Private Screening",
+                        duration: `${b.durationHours || 3} hours`,
+                        timeSlot: b.startHour != null ? `${fmtHour(b.startHour)} - ${fmtHour(b.startHour + (b.durationHours || 3))}` : b.timeSlot
                     };
                 });
                 
@@ -456,10 +466,10 @@ function DashboardContent() {
                             <h3 className={`font-cinzel text-lg font-semibold ${textPrimary} mb-6`}>Personal Information</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                                 {[
-                                    { label: "First Name", value: "John", type: "text" },
-                                    { label: "Last Name", value: "Doe", type: "text" },
-                                    { label: "Email", value: "john@example.com", type: "email" },
-                                    { label: "Phone", value: "+91 98765 43210", type: "tel" },
+                                    { label: "First Name", value: userName.split(" ")[0] || "", type: "text" },
+                                    { label: "Last Name", value: userName.split(" ").slice(1).join(" ") || "", type: "text" },
+                                    { label: "Email", value: userEmail, type: "email" },
+                                    { label: "Phone", value: userPhone, type: "tel" },
                                 ].map((field) => (
                                     <div key={field.label}>
                                         <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>{field.label}</label>
