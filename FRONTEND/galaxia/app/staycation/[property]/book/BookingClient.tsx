@@ -37,10 +37,11 @@ export default function BookingClient({ property }: BookingClientProps) {
         (async () => {
             try {
                 const props = await api.get("/properties");
-                let dbProp = props.find((p: any) => p.slug === property.id);
+                const searchSlug = property.id.includes('/') ? property.id.split('/').pop() : property.id;
+                let dbProp = props.find((p: any) => p.slug === searchSlug);
                 // If it's a sub-property (e.g. standard-cottage), find its parent
                 if (!dbProp) {
-                    dbProp = props.find((p: any) => p.subProperties?.some((sp: any) => sp.slug === property.id));
+                    dbProp = props.find((p: any) => p.subProperties?.some((sp: any) => sp.slug === searchSlug));
                 }
 
                 if (dbProp) {
@@ -122,6 +123,27 @@ export default function BookingClient({ property }: BookingClientProps) {
                     email: user.email || "",
                     phone: user.phone || ""
                 }));
+            } catch (e) {}
+        }
+    }, []);
+
+    // Restore booking state if returning from Auth Callback
+    useEffect(() => {
+        const saved = localStorage.getItem("galaxia_booking_state");
+        if (saved) {
+            try {
+                const st = JSON.parse(saved);
+                if (st.checkInDate) setCheckInDate(new Date(st.checkInDate));
+                if (st.checkOutDate) setCheckOutDate(new Date(st.checkOutDate));
+                if (st.nights) setNights(st.nights);
+                if (st.nightlyRate) setNightlyRate(st.nightlyRate);
+                if (st.adults) setAdults(st.adults);
+                if (st.kids) setKids(st.kids);
+                if (st.selectedRoom) setSelectedRoom(st.selectedRoom);
+                if (st.currentStep) setCurrentStep(st.currentStep);
+                
+                // Clear it so it doesn't persistently load on future visits
+                localStorage.removeItem("galaxia_booking_state");
             } catch (e) {}
         }
     }, []);
@@ -386,61 +408,77 @@ export default function BookingClient({ property }: BookingClientProps) {
 
                         {/* STEP 2: PERSONAL DETAILS */}
                         {currentStep === 2 && showLoginPrompt && (
-                            <div className="bg-white border border-border-light p-8 sm:p-12 text-center shadow-sm flex flex-col items-center justify-center">
-                                <div className="w-16 h-16 rounded-full bg-soft-gray flex items-center justify-center mb-6">
-                                    <svg className="w-8 h-8 text-antique-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            <>
+                                {/* Background Form (Faded out) */}
+                                <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm opacity-30 pointer-events-none">
+                                    <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
+                                    <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">Please fill all relevant fields to proceed further.</p>
                                 </div>
-                                <h2 className="font-cinzel text-xl sm:text-2xl text-text-primary uppercase mb-3">Sign In Required</h2>
-                                <p className="font-inter text-sm text-text-secondary mb-8 max-w-sm mx-auto">Please sign in with your Galaxia account or Google to proceed with your luxury booking.</p>
-                                <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-sm">
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            if (typeof window !== "undefined") {
-                                                const redirectUri = `${window.location.origin}/auth/callback`;
-                                                const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
-                                                
-                                                const width = 500;
-                                                const height = 650;
-                                                const left = window.screenX + (window.outerWidth - width) / 2;
-                                                const top = window.screenY + (window.outerHeight - height) / 2;
-                                                
-                                                window.open(cognitoUrl, "CognitoLogin", `width=${width},height=${height},left=${left},top=${top}`);
-                                                
-                                                const handleMsg = (event: MessageEvent) => {
-                                                    if (event.data === "COGNITO_LOGIN_SUCCESS") {
-                                                        window.removeEventListener("message", handleMsg);
+                                
+                                {/* ChatGPT-style Dark Auth Modal */}
+                                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                                    <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 xs:p-10 relative transform transition-all">
+                                        <button onClick={() => { setShowLoginPrompt(false); setCurrentStep(1); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                        
+                                        <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
+                                        <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
+                                            Sign in to securely manage your booking and confirm your luxury stay.
+                                        </p>
+                                        
+                                        <div className="w-full space-y-3">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (typeof window !== "undefined") {
+                                                        const bookingState = {
+                                                            checkInDate, checkOutDate, nights, nightlyRate, adults, kids, selectedRoom, currentStep: 2
+                                                        };
+                                                        localStorage.setItem("galaxia_booking_state", JSON.stringify(bookingState));
                                                         
-                                                        // Load user info to auto-fill
-                                                        const u = localStorage.getItem("galaxia_user");
-                                                        if (u) {
-                                                            try {
-                                                                const userData = JSON.parse(u);
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    firstName: userData.firstName || userData.fullName?.split(' ')[0] || prev.firstName,
-                                                                    lastName: userData.lastName || userData.fullName?.split(' ').slice(1).join(' ') || prev.lastName,
-                                                                    email: userData.email || prev.email,
-                                                                    phone: userData.phoneNumber || prev.phone
-                                                                }));
-                                                            } catch (e) {}
-                                                        }
-                                                        
-                                                        setShowLoginPrompt(false);
+                                                        const redirectUri = `${window.location.origin}/auth/callback`;
+                                                        const currentUrl = window.location.pathname + window.location.search;
+                                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}&identity_provider=Google`;
+                                                        window.location.href = cognitoUrl;
                                                     }
-                                                };
-                                                window.addEventListener("message", handleMsg);
-                                            }
-                                        }}
-                                        className="bg-gradient-to-r from-antique-gold to-dark-gold text-white px-8 py-3.5 rounded-md text-xs font-inter uppercase tracking-widest hover:shadow-lg hover:shadow-antique-gold/20 transition-all w-full"
-                                    >
-                                        Sign In / Register
-                                    </button>
+                                                }}
+                                                className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
+                                            >
+                                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                                Continue with Google
+                                            </button>
+                                            
+                                            <div className="flex items-center gap-4 py-2 opacity-60">
+                                                <div className="h-[1px] bg-white/20 flex-1"></div>
+                                                <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
+                                                <div className="h-[1px] bg-white/20 flex-1"></div>
+                                            </div>
+
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (typeof window !== "undefined") {
+                                                        const bookingState = {
+                                                            checkInDate, checkOutDate, nights, nightlyRate, adults, kids, selectedRoom, currentStep: 2
+                                                        };
+                                                        localStorage.setItem("galaxia_booking_state", JSON.stringify(bookingState));
+                                                        
+                                                        const redirectUri = `${window.location.origin}/auth/callback`;
+                                                        const currentUrl = window.location.pathname + window.location.search;
+                                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}`;
+                                                        window.location.href = cognitoUrl;
+                                                    }
+                                                }}
+                                                className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                                            >
+                                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                                Continue with Email
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="mt-8 border-t border-border-light pt-6 w-full max-w-sm">
-                                    <button onClick={() => setCurrentStep(1)} className="font-inter text-xs tracking-wider uppercase text-text-secondary hover:text-text-primary py-2">← Back to Rooms</button>
-                                </div>
-                            </div>
+                            </>
                         )}
 
                         {currentStep === 2 && !showLoginPrompt && (

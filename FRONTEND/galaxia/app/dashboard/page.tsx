@@ -88,7 +88,9 @@ function DashboardContent() {
     useEffect(() => {
         const token = localStorage.getItem("galaxia_token");
         if (!token) {
-            window.location.href = COGNITO_LOGIN_URL;
+            const redirectUri = `${window.location.origin}/auth/callback`;
+            const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}`;
+            window.location.href = cognitoUrl;
             return;
         }
         const storedUser = localStorage.getItem("galaxia_user");

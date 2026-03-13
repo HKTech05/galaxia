@@ -51,13 +51,14 @@ function CallbackContent() {
             localStorage.setItem("galaxia_token", data.token);
             localStorage.setItem("galaxia_user", JSON.stringify(data.user));
 
+            const state = searchParams.get("state");
             if (window.opener) {
                 // We are inside a popup! Notify the opener window to continue
                 window.opener.postMessage("COGNITO_LOGIN_SUCCESS", "*");
                 window.close();
             } else {
                 // Full page redirect
-                router.replace("/dashboard");
+                router.replace(state || "/dashboard");
             }
         } catch (err: any) {
             console.error("Auth callback error:", err);
