@@ -77,7 +77,12 @@ function DashboardContent() {
                 const formattedStay = (res.stayBookings || []).map((b: any): Booking => {
                     const ci = new Date(b.checkInDate);
                     const co = new Date(b.checkOutDate);
-                    const isUpcoming = ci > new Date();
+                    
+                    const ciDate = new Date(ci);
+                    ciDate.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isUpcoming = ciDate >= today;
                     
                     const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
                     
@@ -103,8 +108,13 @@ function DashboardContent() {
                 });
                 
                 const formattedDd = (res.ddBookings || []).map((b: any): Booking => {
-                    const date = new Date(b.date);
-                    const isUpcoming = date > new Date();
+                    const date = new Date(b.bookingDate);
+                    
+                    const bookingDateOnly = new Date(date);
+                    bookingDateOnly.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isUpcoming = bookingDateOnly >= today;
                     const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
                     
                     return {

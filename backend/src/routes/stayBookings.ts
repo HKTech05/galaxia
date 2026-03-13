@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
+import jwt from "jsonwebtoken";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
@@ -43,6 +44,21 @@ router.post("/", async (req, res) => {
         const checkOut = new Date(checkOutDate);
         const numNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
 
+        // Extract logged-in user ID from token
+        let loggedInUserId: number | null = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+                const token = authHeader.split(" ")[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as any;
+                if (decoded.type === "customer" && decoded.id) {
+                    loggedInUserId = decoded.id;
+                }
+            } catch (err) {
+                // Token invalid or expired, proceed lightly
+            }
+        }
+
         // Use serializable transaction to prevent double-booking
         const booking = await prisma.$transaction(async (tx) => {
             // Overlap check: same property/sub-property on overlapping dates
@@ -81,7 +97,10 @@ router.post("/", async (req, res) => {
 
             // Find or create user
             let user = null;
-            if (customerEmail) {
+            if (loggedInUserId) {
+                user = await tx.user.findUnique({ where: { id: loggedInUserId } });
+            }
+            if (!user && customerEmail) {
                 user = await tx.user.findUnique({ where: { email: customerEmail } });
             }
             if (!user && customerPhone) {

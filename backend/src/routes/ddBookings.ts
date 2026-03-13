@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
+import jwt from "jsonwebtoken";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
@@ -35,6 +36,21 @@ router.post("/", async (req, res) => {
 
         if (!screenId || !packageId || !bookingDate || startHour === undefined || !customerName || !customerPhone) {
             return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Extract logged-in user ID from token
+        let loggedInUserId: number | null = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+                const token = authHeader.split(" ")[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as any;
+                if (decoded.type === "customer" && decoded.id) {
+                    loggedInUserId = decoded.id;
+                }
+            } catch (err) {
+                // Token invalid or expired, proceed lightly
+            }
         }
 
         // Use serializable transaction to prevent double-booking
@@ -80,7 +96,10 @@ router.post("/", async (req, res) => {
 
             // Find or create user
             let user = null;
-            if (customerEmail) {
+            if (loggedInUserId) {
+                user = await tx.user.findUnique({ where: { id: loggedInUserId } });
+            }
+            if (!user && customerEmail) {
                 user = await tx.user.findUnique({ where: { email: customerEmail } });
             }
             if (!user && customerPhone) {
