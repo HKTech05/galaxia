@@ -20,7 +20,13 @@ export type AuditAction =
     | "review_approved"
     | "review_rejected"
     | "review_deleted"
-    | "update_status";
+    | "update_status"
+    | "register_success"
+    | "register_failure"
+    | "fetch_profile_success"
+    | "fetch_profile_failure"
+    | "update_profile_success"
+    | "update_profile_failure";
 
 interface LogOptions {
     adminId?: number;
