@@ -267,8 +267,16 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
         }
         if (startDate || endDate) {
             where.checkInDate = {};
-            if (startDate) where.checkInDate.gte = new Date(startDate as string);
-            if (endDate) where.checkInDate.lte = new Date(endDate as string);
+            if (startDate) {
+                const s = new Date(startDate as string);
+                s.setHours(0, 0, 0, 0);
+                where.checkInDate.gte = s;
+            }
+            if (endDate) {
+                const e = new Date(endDate as string);
+                e.setHours(23, 59, 59, 999);
+                where.checkInDate.lte = e;
+            }
         }
 
         // Role-based filtering

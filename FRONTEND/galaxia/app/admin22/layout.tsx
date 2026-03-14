@@ -1,8 +1,8 @@
 import StaycationSidebar from "../components/StaycationSidebar";
 
 export const metadata = {
-    title: 'Euphoria Admin | Galaxia',
-    description: 'Staycation Receptionist Portal for Euphoria',
+    title: 'Heavenly Villa Admin | Galaxia',
+    description: 'Staycation Receptionist Portal for Heavenly Villa',
 }
 
 export default function Admin22Layout({
@@ -12,7 +12,7 @@ export default function Admin22Layout({
 }) {
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50 admin-theme" style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-            <StaycationSidebar basePath="/admin22" propertyName="Euphoria" />
+            <StaycationSidebar basePath="/admin22" propertyName="Heavenly Villa" />
             <main className="flex-1 lg:ml-72 flex flex-col h-screen overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-4 md:p-8">
                     {children}

@@ -5,12 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 const propertyLinks = [
-    { name: "Hill View", href: "/staycation/hill-view" },
-    { name: "Mount View", href: "/staycation/mount-view" },
-    { name: "Euphoria", href: "/staycation/euphoria" },
-    { name: "La Paraiso", href: "/staycation/la-paraiso" },
-    { name: "Amstel Nest", href: "/staycation/amstel-nest" },
     { name: "Ambrose", href: "/staycation/ambrose" },
+    { name: "Amstel Nest", href: "/staycation/amstel-nest" },
+    { name: "La Paraiso", href: "/staycation/la-paraiso" },
+    { name: "Heavenly Villa", href: "/staycation/heavenly-villa" },
+    { name: "Mount View", href: "/staycation/mount-view" },
+    { name: "Hill View", href: "/staycation/hill-view" },
 ];
 
 const menuItems = [

@@ -25,12 +25,12 @@ export default function StaycationFooter() {
                         <h3 className="font-cinzel text-sm font-semibold text-text-primary tracking-wider mb-4">PROPERTIES</h3>
                         <ul className="space-y-2.5">
                             {[
-                                { name: "Hill View", href: "/staycation/hill-view" },
-                                { name: "Mount View", href: "/staycation/mount-view" },
-                                { name: "Euphoria", href: "/staycation/euphoria" },
-                                { name: "La Paraiso", href: "/staycation/la-paraiso" },
-                                { name: "Amstel Nest", href: "/staycation/amstel-nest" },
                                 { name: "Ambrose Villas", href: "/staycation/ambrose" },
+                                { name: "Amstel Nest", href: "/staycation/amstel-nest" },
+                                { name: "La Paraiso", href: "/staycation/la-paraiso" },
+                                { name: "Heavenly Villa", href: "/staycation/heavenly-villa" },
+                                { name: "Mount View", href: "/staycation/mount-view" },
+                                { name: "Hill View", href: "/staycation/hill-view" },
                             ].map((link) => (
                                 <li key={link.href}>
                                     <Link href={link.href} className="text-text-secondary hover:text-antique-gold text-sm font-inter transition-colors">{link.name}</Link>

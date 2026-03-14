@@ -74,7 +74,7 @@ const websiteSections = [
     { section: "Hero / Landing Page", photos: ["hero_1.jpg", "hero_2.jpg", "hero_3.jpg"] },
     { section: "Hill View", photos: ["hv_1.jpg", "hv_2.jpg"] },
     { section: "Mount View", photos: ["mv_1.jpg", "mv_2.jpg", "mv_3.jpg"] },
-    { section: "Euphoria", photos: ["eu_1.jpg", "eu_2.jpg"] },
+    { section: "Heavenly Villa", photos: ["eu_1.jpg", "eu_2.jpg"] },
     { section: "La Paraiso", photos: ["lp_1.jpg", "lp_2.jpg", "lp_3.jpg"] },
     { section: "Amstel Nest", photos: ["an_1.jpg", "an_2.jpg"] },
     { section: "Ambrose", photos: ["am_1.jpg", "am_2.jpg", "am_3.jpg", "am_4.jpg"] },
@@ -149,14 +149,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [ddViewDate, setDdViewDate] = useState(new Date());
 
     // Website tab
-    const [blackoutProperty, setBlackoutProperty] = useState("Hill View");
+    const [blackoutProperty, setBlackoutProperty] = useState("Heavenly Villa");
     const [blackoutDates, setBlackoutDates] = useState<Date[]>([]);
     const [blackoutReason, setBlackoutReason] = useState("");
     const [blackoutViewMonth, setBlackoutViewMonth] = useState(new Date());
     const [activeBlocks, setActiveBlocks] = useState<any[]>([]);
 
     // Live calendar view
-    const [calendarProperty, setCalendarProperty] = useState("Hill View");
+    const [calendarProperty, setCalendarProperty] = useState("Heavenly Villa");
     const [calendarViewMonth, setCalendarViewMonth] = useState(new Date());
 
 
@@ -503,7 +503,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         {/* STANDALONE VILLAS INSIGHTS */}
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Standalone Villas — Performance</h2>
-                            <p className="text-sm text-slate-500 font-medium mb-6">Total sales and nights booked for Hill View, Mount View, La Paraiso & Euphoria.</p>
+                            <p className="text-sm text-slate-500 font-medium mb-6">Total sales and nights booked for Hill View, Mount View, La Paraiso & Heavenly Villa.</p>
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Total Sales by Villa</h3>
                                 <p className="text-xs text-slate-400 font-medium mb-4">Hover to see nights spent at each villa</p>
@@ -744,7 +744,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <option>Amstel Nest</option>
                                         <option>Hill View</option>
                                         <option>Mount View</option>
-                                        <option>Euphoria</option>
+                                        <option>Heavenly Villa</option>
                                         <option>La Paraiso</option>
                                         <option>Digital Diaries</option>
                                     </select>
@@ -804,7 +804,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 value={calendarProperty}
                                 onChange={setCalendarProperty}
                                 options={[
-                                    "Hill View", "Mount View", "La Paraiso", "Euphoria",
+                                    "Hill View", "Mount View", "La Paraiso", "Heavenly Villa",
                                     ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose — ${v.name}`),
                                     ...Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`)
                                 ]}
@@ -925,7 +925,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             {/* Villa Modal */}
             {villaModal.open && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setVillaModal({ ...villaModal, open: false }); setExpandedVilla(null); }}>
-                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
                             <h3 className="text-lg font-bold text-slate-800">
                                 {villaModal.type === "ambrose" ? "Ambrose — Villa Status" : "Amstel Nest — Villa Status"}
@@ -934,7 +934,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <X size={20} className="text-slate-500" />
                             </button>
                         </div>
-                        <div className="p-6 space-y-3">
+                        <div className="p-6 space-y-3 overflow-y-auto max-h-[70vh]">
                             {(villaModal.type === "ambrose" ? liveAmbrose : liveAmstel).map((villa: any) => (
                                 <div key={villa.name} className="border border-slate-200 rounded-xl overflow-hidden">
                                     <button
@@ -1208,7 +1208,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     value={blackoutProperty}
                                     onChange={setBlackoutProperty}
                                     options={[
-                                        { label: "Standalone Properties", options: ["Hill View", "Mount View", "Euphoria", "La Paraiso"] },
+                                        { label: "Standalone Properties", options: ["Hill View", "Mount View", "Heavenly Villa", "La Paraiso"] },
                                         { label: "Ambrose Villas", options: ["Ambrose — TAKE-1", "Ambrose — ALTA", "Ambrose — SANTORINI", "Ambrose — BAMBOOSA", "Ambrose — CYPRESS"] },
                                         { label: "Amstel Nest", options: Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`) }
                                     ]}

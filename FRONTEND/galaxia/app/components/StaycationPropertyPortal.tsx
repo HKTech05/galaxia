@@ -75,7 +75,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         const prop = selectedBooking.property;
         if (prop.includes("Hill View")) extraAdultPrice = 600;
         else if (prop.includes("Mount View")) extraAdultPrice = 800;
-        else if (prop.includes("Euphoria")) extraAdultPrice = 800;
+        else if (prop.includes("Heavenly Villa")) extraAdultPrice = 800;
         else if (prop.includes("La Paraiso")) extraAdultPrice = 1200;
         else if (prop.includes("Amstel")) extraAdultPrice = 1000;
         else if (prop.includes("Ambrose")) extraAdultPrice = 2000;
@@ -84,21 +84,21 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         return Math.round(total + (total * 0.05));
     };
 
-    const handleAddExtraGuestSubmit = () => {
+    const handleAddExtraGuestSubmit = async () => {
         if (!selectedBooking) return;
         const extraCharge = calculateExtraGuestPrice();
-        setBookings(prev => prev.map(b => {
-            if (b.id === selectedBooking.id) {
-                return {
-                    ...b,
-                    guests: b.guests + extraGuestForm.guests,
-                    extraGuestCharge: (b.extraGuestCharge || 0) + extraCharge,
-                    extraGuestPayment: extraGuestForm.paymentMethod
-                };
-            }
-            return b;
-        }));
-        setIsAddGuestModalOpen(false);
+        try {
+            await api.post(`/bookings/staycation/${selectedBooking.id.replace('#ST-', '')}/extra-guest`, {
+                guestName: "Extra Guest",
+                idProofType: "Uploaded",
+                chargeAmount: extraCharge,
+                paymentMethod: extraGuestForm.paymentMethod
+            });
+            fetchBookings();
+            setIsAddGuestModalOpen(false);
+        } catch (err) {
+            alert("Failed to add extra guest");
+        }
     };
 
     // Manual Booking states
@@ -140,7 +140,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             } else if (prop.includes("Mount View")) {
                 basePrice = isWeekend ? 4950 : 3500;
                 extraAdultPrice = 800;
-            } else if (prop.includes("Euphoria")) {
+            } else if (prop.includes("Heavenly Villa")) {
                 basePrice = isWeekend ? 4950 : 3950;
                 extraAdultPrice = 800;
             } else if (prop.includes("La Paraiso")) {
@@ -194,23 +194,36 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         return Math.round(total);
     };
 
-    const handleManualBookingSubmit = () => {
+    const handleManualBookingSubmit = async () => {
         const calculatedTotal = calculatePrice();
-        const newBooking = {
-            id: `#ST-${Math.floor(Math.random() * 9000) + 1000}`,
-            customer: manualForm.name,
-            property: manualForm.property.includes("Ambrose") ? `Ambrose (${manualForm.villa})` : manualForm.property,
-            guests: manualForm.guests,
-            checkInDate: manualForm.checkInDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            checkOutDate: manualForm.checkOutDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            checkInTime: "2:00 PM",
-            checkOutTime: "10:00 AM",
-            depositAmt: "Collected",
-            remainingAmt: "Full Paid (" + manualForm.paymentMethod + ")",
-            status: "Checked In" // Can stay checked in since it's walkin/same day
-        };
-        setBookings(prev => [newBooking, ...prev]);
-        setIsManualBookingOpen(false);
+        const property = properties.find(p => portalName.includes(p)) || manualForm.property;
+        // Find property ID (hacky for now, ideally passed in)
+        // For now, let's just assume the API can handle name or we use a map
+        
+        try {
+            // Need to find propertyId and subPropertyId
+            // Simpler: Just refresh bookings after creation
+            await api.post("/bookings/staycation", {
+                customerName: manualForm.name,
+                customerPhone: manualForm.phone,
+                propertyId: manualForm.property.includes("Hill View") ? 1 : 
+                           manualForm.property.includes("Heavenly Villa") ? 3 : 
+                           manualForm.property.includes("Ambrose") ? 6 : 1,
+                numGuests: manualForm.guests,
+                checkInDate: manualForm.checkInDate.toISOString(),
+                checkOutDate: manualForm.checkOutDate.toISOString(),
+                totalAmount: calculatedTotal,
+                advanceAmount: calculatedTotal,
+                advancePaid: true,
+                advanceMethod: manualForm.paymentMethod,
+                source: "reception",
+                status: "checked_in"
+            });
+            fetchBookings();
+            setIsManualBookingOpen(false);
+        } catch (err) {
+            alert("Failed to create manual booking");
+        }
     };
 
     useEffect(() => {
@@ -244,8 +257,33 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         return overlaps || b.status === "Checked In";
     });
 
-    const handleAction = (id: string, newStatus: string) => {
-        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
+    const handleAction = async (id: string, newStatus: string) => {
+        try {
+            const numericId = id.replace('#ST-', '');
+            await api.patch(`/bookings/staycation/${numericId}/status`, { 
+                status: newStatus === "Checked In" ? "checked_in" : 
+                        newStatus === "Cancelled" ? "cancelled" : 
+                        newStatus === "Checked Out" ? "checked_out" : "confirmed"
+            });
+            
+            // Record payment if checking in
+            if (newStatus === "Checked In" && selectedBooking) {
+                await api.post(`/bookings/staycation/${numericId}/payment`, {
+                    paymentType: "balance",
+                    amount: parseInt(selectedBooking.remainingAmt.replace('₹', '').replace(',', '')),
+                    method: collected20
+                });
+                await api.post(`/bookings/staycation/${numericId}/payment`, {
+                    paymentType: "deposit",
+                    amount: parseInt(selectedBooking.depositAmt.replace('₹', '').replace(',', '')),
+                    method: collectedSec
+                });
+            }
+
+            fetchBookings();
+        } catch (err) {
+            alert("Failed to update booking status");
+        }
     };
 
     return (

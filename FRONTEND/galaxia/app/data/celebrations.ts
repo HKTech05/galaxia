@@ -27,6 +27,7 @@ export interface ScreenData {
     image: string;
     gallery: string[];
     capacity: string;
+    size?: string;
 }
 
 // Time slots from 10:00 AM to 10:00 PM
@@ -112,7 +113,8 @@ export const screens: Record<string, ScreenData> = {
             "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=800&q=80",
             "https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=800&q=80",
         ],
-        capacity: "Up to 10 guests",
+        capacity: "3 Guests",
+        size: "15 x 8 sq foot",
     },
     "cine-love": {
         id: "cine-love",
@@ -128,7 +130,8 @@ export const screens: Record<string, ScreenData> = {
             "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
             "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
         ],
-        capacity: "Up to 6 guests",
+        capacity: "8 Guests",
+        size: "15 x 8 sq foot",
     },
     "park-n-watch": {
         id: "park-n-watch",
@@ -144,7 +147,8 @@ export const screens: Record<string, ScreenData> = {
             "https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?w=800&q=80",
             "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&q=80",
         ],
-        capacity: "Up to 8 guests",
+        capacity: "3 Guests",
+        size: "15 x 8 sq foot",
     },
     baywatch: {
         id: "baywatch",
@@ -160,7 +164,8 @@ export const screens: Record<string, ScreenData> = {
             "https://images.unsplash.com/photo-1504512485720-7d83a16ee930?w=800&q=80",
             "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=800&q=80",
         ],
-        capacity: "Up to 8 guests",
+        capacity: "3 Guests",
+        size: "15 x 8 sq foot",
     },
 };
 

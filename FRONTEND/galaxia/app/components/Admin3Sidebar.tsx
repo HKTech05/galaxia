@@ -10,7 +10,7 @@ export default function Admin3Sidebar() {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const navItems = [
-        { name: "EUPHORIA", href: "/admin3/euphoria" },
+        { name: "HEAVENLY VILLA", href: "/admin3/heavenly-villa" },
         { name: "VIEWS & LA PARAISO", href: "/admin3/views-paraiso" },
         { name: "AMBROSE", href: "/admin3/ambrose" },
         { name: "AMSTEL NEST", href: "/admin3/amstel" },

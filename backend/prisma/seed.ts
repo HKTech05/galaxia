@@ -67,7 +67,7 @@ async function main() {
             foodIncluded: false, foodDetails: "Society restaurant available (Veg & Non-Veg)",
             foodType: "Veg & Non-Veg", location: "Karjat, Maharashtra, India",
             instagramUrl: "https://www.instagram.com/hill_view101",
-            description: "A comfortable apartment with a stunning mountain view balcony.", displayOrder: 1,
+            description: "A comfortable apartment with a stunning mountain view balcony.", displayOrder: 6,
         },
         {
             slug: "mount-view", name: "Mount View", subtitle: "Bathtub Mountain Apartment",
@@ -77,17 +77,16 @@ async function main() {
             foodIncluded: false, foodDetails: "Veg & Non-Veg restaurant available nearby",
             foodType: "Veg & Non-Veg", location: "Karjat, Maharashtra, India",
             googleMapUrl: "https://maps.app.goo.gl/1v6azy4nLhHe7Hzq6",
-            description: "Premium apartment with a private bathtub and enormous mountain-facing balcony.", displayOrder: 2,
+            description: "Premium apartment with a private bathtub and enormous mountain-facing balcony.", displayOrder: 5,
         },
-        {
-            slug: "euphoria", name: "Euphoria", subtitle: "Heavenly Villa — Private Indoor Pool",
-            type: "standalone", checkInTime: "2:00 PM", checkOutTime: "10:00 AM",
+            slug: "heavenly-villa", name: "Heavenly Villa", subtitle: "Heavenly Villa — Private Indoor Pool",
+            type: "standalone", checkInTime: "1:00 PM", checkOutTime: "10:00 AM",
             maxPersons: 4, securityDeposit: 3000, securityRefund: "Refund at checkout",
             bookingPolicy: "80% payable online at booking · 20% payable at the venue",
             foodIncluded: false, foodDetails: "Restaurant available nearby",
             foodType: "Veg & Non-Veg", location: "Karjat, Maharashtra, India",
             instagramUrl: "https://www.instagram.com/heavenly_villa01",
-            description: "A heavenly studio villa with a private indoor swimming pool.", displayOrder: 3,
+            description: "A heavenly studio villa with a private indoor swimming pool.", displayOrder: 4,
         },
         {
             slug: "la-paraiso", name: "La Paraiso", subtitle: "Premium Private Pool Villa",
@@ -97,7 +96,7 @@ async function main() {
             foodIncluded: false, foodDetails: "Restaurant 10 steps away. Veg allowed inside villa.",
             foodType: "Veg in villa, Non-Veg in restaurant", location: "Karjat, Maharashtra, India",
             instagramUrl: "https://instagram.com/la_paraiso001",
-            description: "Luxurious villa with a 25x10 ft private pool and 600 sq ft garden.", displayOrder: 4,
+            description: "Luxurious villa with a 25x10 ft private pool and 600 sq ft garden.", displayOrder: 3,
         },
         {
             slug: "amstel-nest", name: "Amstel Nest", subtitle: "Mini Amsterdam — Indoor Pool Cottages",
@@ -106,7 +105,7 @@ async function main() {
             bookingPolicy: "80% payable online at booking · 20% payable at the venue",
             foodIncluded: true, foodDetails: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.",
             foodType: "Veg Only (Jain on request)", location: "Karjat, Maharashtra, India",
-            description: "14 unique cottages with private indoor pools. Meals included.", displayOrder: 5,
+            description: "14 unique cottages with private indoor pools. Meals included.", displayOrder: 2,
         },
         {
             slug: "ambrose", name: "Ambrose", subtitle: "Themed Villa Resort",
@@ -116,7 +115,7 @@ async function main() {
             foodIncluded: true, foodDetails: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.",
             foodType: "Veg Only", location: "Karjat, Maharashtra, India",
             instagramUrl: "https://instagram.com/ambrose_villas",
-            description: "Five themed villas — Bollywood, Rustic, Greek, Bali, Machan.", displayOrder: 6,
+            description: "Five themed villas — Bollywood, Rustic, Greek, Bali, Machan.", displayOrder: 1,
         },
     ];
 
@@ -232,10 +231,10 @@ async function main() {
 
     // ─── 5. DD SCREENS ───────────────────────────────────────────
     const screensData = [
-        { slug: "sandy-screen", name: "Sandy Screen", theme: "Beach Theme", tagline: "Feel the sand between your toes", capacity: "Up to 10 guests", displayOrder: 1 },
-        { slug: "cine-love", name: "Cine Love", theme: "Romantic Theme", tagline: "The perfect date night screen", capacity: "Up to 6 guests", displayOrder: 2 },
-        { slug: "park-n-watch", name: "Park N Watch", theme: "Car / Drive-In Theme", tagline: "Your own drive-in cinema", capacity: "Up to 8 guests", displayOrder: 3 },
-        { slug: "baywatch", name: "Baywatch", theme: "Greece Theme", tagline: "Mediterranean cinema under the stars", capacity: "Up to 8 guests", displayOrder: 4 },
+        { slug: "sandy-screen", name: "Sandy Screen (15 x 8 sq ft)", theme: "Beach Theme", tagline: "Feel the sand between your toes", capacity: "Up to 3 guests", displayOrder: 1 },
+        { slug: "cine-love", name: "Cine Love (15 x 8 sq ft)", theme: "Romantic Theme", tagline: "The perfect date night screen", capacity: "Up to 8 guests", displayOrder: 2 },
+        { slug: "park-n-watch", name: "Park N Watch (15 x 8 sq ft)", theme: "Car / Drive-In Theme", tagline: "Your own drive-in cinema", capacity: "Up to 3 guests", displayOrder: 3 },
+        { slug: "baywatch", name: "Baywatch (15 x 8 sq ft)", theme: "Greece Theme", tagline: "Mediterranean cinema under the stars", capacity: "Up to 3 guests", displayOrder: 4 },
     ];
     for (const s of screensData) {
         await prisma.ddScreen.upsert({

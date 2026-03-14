@@ -79,21 +79,62 @@ router.get("/me", customerAuthMiddleware, async (req: CustomerAuthRequest, res) 
     }
 });
 
-// GET /api/reviews — Public: approved reviews (rating > 3); Admin: all reviews
+// GET /api/reviews — Public: approved reviews (rating > 3); Admin: all reviews; Customer: own + public
 router.get("/", async (req, res) => {
     try {
         const { all, propertyId } = req.query;
 
-        const where: any = {};
-
         // Visibility Rule: 
         // 1. If Admin request (all=true), show everything (requires auth check usually)
-        // 2. If Public request, show ONLY rating > 3
-        if (all === "true") {
-            // Admin view — should ideally check for admin token, but for now filtering by all=true
-        } else {
+        // 2. If Customer is logged in, show ONLY rating > 3 OR their own reviews
+        // 3. If Public request, show ONLY rating > 3
+
+        let loggedInUserId: number | null = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+                const token = authHeader.split(" ")[1];
+                const jwt = require("jsonwebtoken");
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as any;
+                
+                // If it's a customer token
+                if (decoded.type === "customer" && decoded.id) {
+                    loggedInUserId = decoded.id;
+                }
+                
+                // If it's an admin token and all=true is requested, we show everything
+                if (decoded.role && all === "true") {
+                    const reviews = await prisma.review.findMany({
+                        where: propertyId ? { propertyId: parseInt(propertyId as string) } : {},
+                        include: { 
+                            property: { select: { name: true, slug: true } },
+                            user: { select: { email: true, phone: true } }
+                        },
+                        orderBy: { createdAt: "desc" },
+                        take: 100,
+                    });
+                    return res.json(reviews);
+                }
+            } catch (err) {
+                // Token invalid or expired — treat as public
+            }
+        }
+
+        const where: any = {};
+        if (loggedInUserId) {
+            // Logged-in customer: Public reviews (>3) OR their own
+            where.OR = [
+                { rating: { gt: 3 } },
+                { userId: loggedInUserId }
+            ];
+        } else if (all === "true") {
+            // This case handles the "all=true" for admins who might not have had a Bearer token in the above block 
+            // OR if we want to allow dev-mode viewing. Given the user request, we should stick to auth.
+            // For now, if no auth but all=true, we still only show public to be safe unless we are sure it's admin.
             where.rating = { gt: 3 };
-            // where.isApproved = true; // Optional: also check approval flag
+        } else {
+            // Public Guest
+            where.rating = { gt: 3 };
         }
 
         if (propertyId && propertyId !== "") {
@@ -115,7 +156,7 @@ router.get("/", async (req, res) => {
         return res.json(reviews);
     } catch (error) {
         console.error("List reviews error:", error);
-        return res.status(500).json({ error: "Internal server error", details: process.env.NODE_ENV === "development" ? error : undefined });
+        return res.status(500).json({ error: "Internal server error" });
     }
 });
 

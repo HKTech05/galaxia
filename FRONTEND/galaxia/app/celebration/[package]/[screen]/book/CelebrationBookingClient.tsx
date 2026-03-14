@@ -26,6 +26,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [phone, setPhone] = useState("");
     const [specialRequests, setSpecialRequests] = useState("");
     const [agreed, setAgreed] = useState(false);
+    const [idVerificationMethod, setIdVerificationMethod] = useState<"online" | "venue">("venue");
     const [idProofs, setIdProofs] = useState<(File | null)[]>([null, null]);
 
     // Add-ons (Movie Time only)
@@ -138,6 +139,10 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
     const subtotal = basePrice + extraPersonCharge + addOnsTotal;
     const total = subtotal;
+
+    // Original Pricing for Movie Time (₹1000/hr)
+    const originalPrice = totalHours * 1000;
+    const discount = originalPrice > subtotal ? originalPrice - subtotal : 0;
 
     // 50-50 Payment Split
     const payNow = Math.round(total * 0.5);
@@ -402,7 +407,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         )}
                                         <p className="font-inter text-[10px] text-cel-text-muted mt-2 flex items-center gap-1.5">
                                             <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            Minimum booking: 2 hours
+                                            Minimum booking: {isMovieTime ? '1 hour' : '2 hours'}
                                         </p>
                                     </div>
                                 ))}
@@ -530,7 +535,25 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Date</span><span className="text-cel-text">{selectedDate.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Duration</span><span className="text-cel-text">{totalHours} hour{totalHours > 1 ? "s" : ""}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Guests</span><span className="text-cel-text">{guestCount} person{guestCount > 1 ? "s" : ""}</span></div>
-                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Base Price</span><span className="text-cel-text">{formatPrice(basePrice)}</span></div>
+                                    
+                                    {isMovieTime && originalPrice > 0 && (
+                                        <>
+                                            <div className="flex justify-between font-inter text-sm pt-2 border-t border-cel-border/30">
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹1000)</span>
+                                                <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
+                                            </div>
+                                            {discount > 0 && (
+                                                <div className="flex justify-between text-green-500 font-medium">
+                                                    <span>Discount ({totalHours} hour{totalHours > 1 ? 's' : ''} booking)</span>
+                                                    <span>-{formatPrice(discount)}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {!isMovieTime && (
+                                        <div className="flex justify-between"><span className="text-cel-text-secondary">Base Price</span><span className="text-cel-text">{formatPrice(basePrice)}</span></div>
+                                    )}
                                     {extraPersonCharge > 0 && (
                                         <div className="flex justify-between"><span className="text-cel-text-secondary">Extra Person ({guestCount - 2}×{formatPrice(pkg.extraPerson)})</span><span className="text-cel-text">{formatPrice(extraPersonCharge)}</span></div>
                                     )}
@@ -558,11 +581,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => totalHours >= 2 && setCurrentStep(2)}
-                                    disabled={totalHours < 2}
-                                    className={`w-full font-cinzel font-semibold text-sm py-3.5 rounded-lg transition-all duration-300 ${totalHours >= 2 ? 'bg-gradient-to-r from-rose-medium to-rose-dark text-white hover:shadow-lg hover:shadow-rose-dark/30' : 'bg-cel-border text-cel-text-muted cursor-not-allowed'}`}
+                                    onClick={() => (totalHours >= (isMovieTime ? 1 : 2)) && setCurrentStep(2)}
+                                    disabled={totalHours < (isMovieTime ? 1 : 2)}
+                                    className={`w-full font-cinzel font-semibold text-sm py-3.5 rounded-lg transition-all duration-300 ${(totalHours >= (isMovieTime ? 1 : 2)) ? 'bg-gradient-to-r from-rose-medium to-rose-dark text-white hover:shadow-lg hover:shadow-rose-dark/30' : 'bg-cel-border text-cel-text-muted cursor-not-allowed'}`}
                                 >
-                                    {totalHours < 2 ? `Select at least ${2 - totalHours} more hour${2 - totalHours > 1 ? 's' : ''}` : 'BOOK NOW'}
+                                    {totalHours < (isMovieTime ? 1 : 2) ? `Select at least ${(isMovieTime ? 1 : 2) - totalHours} more hour${(isMovieTime ? 1 : 2) - totalHours > 1 ? 's' : ''}` : 'BOOK NOW'}
                                 </button>
                             </div>
                         )}
@@ -617,52 +640,75 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <p className="text-right text-[10px] text-cel-text-muted font-inter mt-1">{specialRequests.length}/500</p>
                                 </div>
 
-                                {/* ID Proof Uploads — one per guest */}
-                                <div>
-                                    <label className="block font-inter text-xs text-cel-text-secondary mb-3">Valid ID Proof Upload* — All {guestCount} Guest{guestCount > 1 ? 's' : ''} (Aadhaar/DL/PAN)</label>
-                                    <div className="space-y-3">
-                                        {Array.from({ length: guestCount }).map((_, idx) => (
-                                            <div key={idx}>
-                                                <p className="font-inter text-[10px] text-cel-text-muted mb-1.5">Guest {idx + 1}{idx === 0 ? ' (Primary)' : ''}</p>
-                                                <div className={`border border-dashed ${idProofErrors[idx] ? 'border-red-500/50 bg-red-500/5' : 'border-cel-border bg-cel-bg/50'} rounded-lg p-3 text-center hover:border-rose-medium/50 transition-colors cursor-pointer relative`}>
-                                                    <input
-                                                        type="file"
-                                                        accept=".jpg,.jpeg,.png,.pdf"
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            const newProofs = [...idProofs];
-                                                            const newErrors = [...idProofErrors];
-                                                            if (file) {
-                                                                if (file.size > 2 * 1024 * 1024) {
-                                                                    newErrors[idx] = "File size must be less than 2MB";
-                                                                    newProofs[idx] = null;
-                                                                } else {
-                                                                    newErrors[idx] = "";
-                                                                    newProofs[idx] = file;
-                                                                }
-                                                            } else {
-                                                                newProofs[idx] = null;
-                                                                newErrors[idx] = "";
-                                                            }
-                                                            setIdProofs(newProofs);
-                                                            setIdProofErrors(newErrors);
-                                                        }}
-                                                    />
-                                                    {idProofs[idx] ? (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <svg className="w-4 h-4 text-rose-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                            <span className="font-inter text-xs text-cel-text truncate max-w-[180px]">{idProofs[idx]!.name}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <p className="font-inter text-xs text-cel-text-muted">Click to upload · JPG, PNG, PDF (Max 2MB)</p>
-                                                    )}
-                                                </div>
-                                                {idProofErrors[idx] && <p className="text-red-400 text-[10px] font-inter mt-1">* {idProofErrors[idx]}</p>}
-                                            </div>
-                                        ))}
+                                {/* ID Verification Choice */}
+                                <div className="space-y-4">
+                                    <label className="block font-inter text-xs text-cel-text-secondary">ID Verification*</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div
+                                            onClick={() => setIdVerificationMethod("venue")}
+                                            className={`p-4 rounded-xl border cursor-pointer transition-all ${idVerificationMethod === "venue" ? "border-rose-medium bg-rose-dark/10" : "border-cel-border bg-cel-bg hover:border-cel-border-light"}`}
+                                        >
+                                            <p className="font-cinzel text-xs font-semibold text-cel-text mb-1">Present at Venue</p>
+                                            <p className="font-inter text-[10px] text-cel-text-muted leading-tight">Bring physical ID to the screen location.</p>
+                                        </div>
+                                        <div
+                                            onClick={() => setIdVerificationMethod("online")}
+                                            className={`p-4 rounded-xl border cursor-pointer transition-all ${idVerificationMethod === "online" ? "border-rose-medium bg-rose-dark/10" : "border-cel-border bg-cel-bg hover:border-cel-border-light"}`}
+                                        >
+                                            <p className="font-cinzel text-xs font-semibold text-cel-text mb-1">Upload Online</p>
+                                            <p className="font-inter text-[10px] text-cel-text-muted leading-tight">Fast-track your check-in by uploading IDs now.</p>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* ID Proof Uploads (Conditional) */}
+                                {idVerificationMethod === "online" && (
+                                    <div className="animate-in fade-in slide-in-from-top-2">
+                                        <label className="block font-inter text-xs text-cel-text-secondary mb-3">Upload Valid ID Proof* — All {guestCount} Guest{guestCount > 1 ? 's' : ''}</label>
+                                        <div className="space-y-3">
+                                            {Array.from({ length: guestCount }).map((_, idx) => (
+                                                <div key={idx}>
+                                                    <p className="font-inter text-[10px] text-cel-text-muted mb-1.5">Guest {idx + 1}{idx === 0 ? ' (Primary)' : ''}</p>
+                                                    <div className={`border border-dashed ${idProofErrors[idx] ? 'border-red-500/50 bg-red-500/5' : 'border-cel-border bg-cel-bg/50'} rounded-lg p-3 text-center hover:border-rose-medium/50 transition-colors cursor-pointer relative`}>
+                                                        <input
+                                                            type="file"
+                                                            accept=".jpg,.jpeg,.png,.pdf"
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                const newProofs = [...idProofs];
+                                                                const newErrors = [...idProofErrors];
+                                                                if (file) {
+                                                                    if (file.size > 2 * 1024 * 1024) {
+                                                                        newErrors[idx] = "File size must be less than 2MB";
+                                                                        newProofs[idx] = null;
+                                                                    } else {
+                                                                        newErrors[idx] = "";
+                                                                        newProofs[idx] = file;
+                                                                    }
+                                                                } else {
+                                                                    newProofs[idx] = null;
+                                                                    newErrors[idx] = "";
+                                                                }
+                                                                setIdProofs(newProofs);
+                                                                setIdProofErrors(newErrors);
+                                                            }}
+                                                        />
+                                                        {idProofs[idx] ? (
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <svg className="w-4 h-4 text-rose-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                                <span className="font-inter text-xs text-cel-text truncate max-w-[180px]">{idProofs[idx]!.name}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="font-inter text-xs text-cel-text-muted">Click to upload · JPG, PNG, PDF (Max 2MB)</p>
+                                                        )}
+                                                    </div>
+                                                    {idProofErrors[idx] && <p className="text-red-400 text-[10px] font-inter mt-1">* {idProofErrors[idx]}</p>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <label className="flex items-start gap-2 cursor-pointer">
                                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-rose-dark" />
@@ -675,7 +721,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     </button>
                                     <button
                                         onClick={() => setCurrentStep(3)}
-                                        disabled={!firstName || !lastName || !email || !phone || !agreed || idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)}
+                                        disabled={!firstName || !lastName || !email || !phone || !agreed || (idVerificationMethod === "online" && (idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)))}
                                         className="flex-1 bg-gradient-to-r from-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-3 rounded-lg hover:shadow-lg hover:shadow-rose-dark/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         Continue
@@ -735,7 +781,25 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <div className="flex justify-between items-start gap-4"><span className="text-cel-text-secondary shrink-0">Time</span><span className="text-cel-text text-right max-w-[70%]">{formattedTime}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Guests</span><span className="text-cel-text">{guestCount}</span></div>
                                     <div className="pt-3 border-t border-cel-border" />
-                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Subtotal</span><span className="text-cel-text">{formatPrice(subtotal)}</span></div>
+                                    
+                                    {isMovieTime && originalPrice > 0 && (
+                                        <>
+                                            <div className="flex justify-between">
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹1000)</span>
+                                                <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
+                                            </div>
+                                            {discount > 0 && (
+                                                <div className="flex justify-between text-green-500 font-medium">
+                                                    <span>Discount ({totalHours} hour{totalHours > 1 ? 's' : ''} booking)</span>
+                                                    <span>-{formatPrice(discount)}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {!isMovieTime && (
+                                        <div className="flex justify-between"><span className="text-cel-text-secondary">Subtotal</span><span className="text-cel-text">{formatPrice(subtotal)}</span></div>
+                                    )}
                                     {balloonsCharge > 0 && <div className="flex justify-between"><span className="text-cel-text-secondary">🎈 Balloons</span><span className="text-cel-text">{formatPrice(balloonsCharge)}</span></div>}
                                     {ledBannerCharge > 0 && <div className="flex justify-between"><span className="text-cel-text-secondary">💡 LED Banner ({ledBannerType})</span><span className="text-cel-text">{formatPrice(ledBannerCharge)}</span></div>}
                                     {cakeCharge > 0 && <div className="flex justify-between"><span className="text-cel-text-secondary">🎂 Cake{cakeMessage ? ` — "${cakeMessage}"` : ''}</span><span className="text-cel-text">{formatPrice(cakeCharge)}</span></div>}

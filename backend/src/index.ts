@@ -23,11 +23,14 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // trust proxy is required for express-rate-limit to work correctly behind AWS ALB/Vercel
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: [
+        process.env.FRONTEND_URL || "http://localhost:3000",
+        "https://galaxia-dusky.vercel.app"
+    ],
     credentials: true,
 }));
 app.use(express.json());

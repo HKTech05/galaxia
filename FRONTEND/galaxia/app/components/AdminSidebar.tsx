@@ -47,7 +47,7 @@ const admin3DailyCheckinItems = [
 // Admin3 receptionist desk items (grouped)
 const admin3ReceptionistItems = [
     { name: "Digital Diaries", href: "/admin3/digital-diaries", icon: Film },
-    { name: "Euphoria & Hill View", href: "/admin3/euphoria", icon: Hotel },
+    { name: "Heavenly Villa & Hill View", href: "/admin3/heavenly-villa", icon: Hotel },
     { name: "Mount View & La Paraiso", href: "/admin3/views-paraiso", icon: Hotel },
     { name: "Ambrose", href: "/admin3/ambrose", icon: Hotel },
     { name: "Amstel Nest", href: "/admin3/amstel", icon: Hotel },

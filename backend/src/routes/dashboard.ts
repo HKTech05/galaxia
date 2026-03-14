@@ -20,14 +20,14 @@ router.get("/", authMiddleware, requireRole("owner", "developer"), async (req, r
             _sum: { totalAmount: true },
             where: {
                 bookedAt: { gte: startDate },
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { in: ["confirmed", "checked_in", "checked_out"] },
             },
         });
         const ddRevenue = await prisma.ddBooking.aggregate({
             _sum: { totalAmount: true },
             where: {
                 bookedAt: { gte: startDate },
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { in: ["confirmed", "checked_in"] }, // or "paid" if DD has different statuses
             },
         });
 
@@ -162,7 +162,6 @@ router.get("/earnings", authMiddleware, requireRole("owner", "developer"), async
     }
 });
 
-// GET /api/admin/dashboard/property-status — Live property check-in status
 router.get("/property-status", authMiddleware, async (_req, res) => {
     try {
         const todayStart = new Date();
@@ -187,7 +186,53 @@ router.get("/property-status", authMiddleware, async (_req, res) => {
             },
         });
 
-        return res.json({ properties, activeBookings });
+        // Decorate properties with check-in info for frontend
+        const decoratedProperties = properties.map(p => {
+            const propBookings = activeBookings.filter(b => b.propertyId === p.id && !b.subPropertyId);
+            const isBooked = propBookings.length > 0;
+            const booking = propBookings[0];
+
+            return {
+                ...p,
+                villas: (p.subProperties || []).map(sp => {
+                    const spBookings = activeBookings.filter(b => b.subPropertyId === sp.id);
+                    const isSpBooked = spBookings.length > 0;
+                    const spBooking = spBookings[0];
+
+                    return {
+                        ...sp,
+                        checkedIn: isSpBooked,
+                        guest: spBooking?.customerName || null,
+                        guests: spBooking?.numGuests || 0,
+                        phone: spBooking?.customerPhone || null,
+                        checkInTime: spBooking?.checkInDate || null,
+                        checkOutDate: spBooking?.checkOutDate || null,
+                        balanceCollected: spBooking?.status === "checked_in" || spBooking?.status === "checked_out",
+                        balanceMode: "Online", // Fallback
+                        balanceTime: spBooking?.checkInDate || null,
+                        depositCollected: !!spBooking?.advanceAmount,
+                        depositMode: "UPI",
+                        depositTime: spBooking?.checkInDate || null,
+                        extraGuests: spBooking?.extraGuests || [],
+                    };
+                }),
+                checkedIn: isBooked,
+                guest: booking?.customerName || null,
+                guests: booking?.numGuests || 0,
+                phone: booking?.customerPhone || null,
+                checkInTime: booking?.checkInDate || null,
+                checkOutDate: booking?.checkOutDate || null,
+                balanceCollected: booking?.status === "checked_in" || booking?.status === "checked_out",
+                balanceMode: "Online",
+                balanceTime: booking?.checkInDate || null,
+                depositCollected: !!booking?.advanceAmount,
+                depositMode: "UPI",
+                depositTime: booking?.checkInDate || null,
+                extraGuests: booking?.extraGuests || [],
+            };
+        });
+
+        return res.json({ properties: decoratedProperties, activeBookings });
     } catch (error) {
         console.error("Property status error:", error);
         return res.status(500).json({ error: "Internal server error" });

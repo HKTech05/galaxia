@@ -54,7 +54,7 @@ export default function EmployeesClient() {
     useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
 
     // 2. Filters
-    const ALL_PROPERTIES = ["Digital Diaries", "Ambrose", "Amstel Nest", "La Paraiso", "Mount View", "Hill View", "Euphoria"];
+    const ALL_PROPERTIES = ["Digital Diaries", "Ambrose", "Amstel Nest", "La Paraiso", "Mount View", "Hill View", "Heavenly Villa"];
     const [selectedProperties, setSelectedProperties] = useState<string[]>(ALL_PROPERTIES);
 
     // 3. UI State
