@@ -41,7 +41,7 @@ router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthReque
 
 // All routes below require owner/developer
 router.use(authMiddleware);
-router.use(requireRole("owner", "developer"));
+router.use(requireRole("owner", "developer", "manager"));
 
 // GET /api/users — List all registered guest users
 router.get("/", async (_req, res) => {

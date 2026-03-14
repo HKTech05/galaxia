@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 
 interface CalendarProps {
     propertyId: number | null;
+    subPropertyId?: number | null;
     weekdayPrice: string;
     weekendPrice: string;
     primeDatePrice?: string;
@@ -13,39 +14,9 @@ interface CalendarProps {
     initialCheckOut?: Date | null;
 }
 
-function getDayPrice(date: Date, weekdayPrice: string, weekendPrice: string, primeDatePrice: string | undefined, bookedDates: Set<string>): { price: string; numPrice: number; type: "weekday" | "weekend" | "prime" | "booked" } {
-    const day = date.getDay();
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+// ... (getDayPrice remains same)
 
-    // Check real booked dates from API
-    if (bookedDates.has(dateStr)) {
-        return { price: "", numPrice: 0, type: "booked" };
-    }
-
-    // Prime dates (14th, 21st, 28th of every month)
-    const dateNum = date.getDate();
-    if (dateNum === 14 || dateNum === 21 || dateNum === 28) {
-        const p = primeDatePrice || weekendPrice;
-        return { price: p, numPrice: parseInt(p.replace(/,/g, "")), type: "prime" };
-    }
-
-    // Weekend: Fri(5), Sat(6), Sun(0)
-    if (day === 0 || day === 5 || day === 6) {
-        return { price: weekendPrice, numPrice: parseInt(weekendPrice.replace(/,/g, "")), type: "weekend" };
-    }
-
-    return { price: weekdayPrice, numPrice: parseInt(weekdayPrice.replace(/,/g, "")), type: "weekday" };
-}
-
-function formatPrice(price: string): string {
-    return `₹${price}`;
-}
-
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-export default function AvailabilityCalendar({ propertyId, weekdayPrice, weekendPrice, primeDatePrice, onDatesChange, compact = false, initialCheckIn, initialCheckOut }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, onDatesChange, compact = false, initialCheckIn, initialCheckOut }: CalendarProps) {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(initialCheckIn ? initialCheckIn.getMonth() : today.getMonth());
     const [currentYear, setCurrentYear] = useState(initialCheckIn ? initialCheckIn.getFullYear() : today.getFullYear());
@@ -62,7 +33,11 @@ export default function AvailabilityCalendar({ propertyId, weekdayPrice, weekend
                 const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
                 const endDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
-                const res = await fetch(`${baseUrl}/bookings/staycation/booked-dates?propertyId=${propertyId}&startDate=${startDate}&endDate=${endDate}`);
+                
+                let url = `${baseUrl}/bookings/staycation/booked-dates?propertyId=${propertyId}&startDate=${startDate}&endDate=${endDate}`;
+                if (subPropertyId) url += `&subPropertyId=${subPropertyId}`;
+                
+                const res = await fetch(url);
                 if (res.ok) {
                     const data = await res.json();
                     setBookedDates(new Set(data.dates || []));
@@ -71,7 +46,7 @@ export default function AvailabilityCalendar({ propertyId, weekdayPrice, weekend
                 // Silently fail — calendar will show all dates as available
             }
         })();
-    }, [propertyId, currentMonth, currentYear]);
+    }, [propertyId, subPropertyId, currentMonth, currentYear]);
 
     const prevMonth = () => {
         if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }

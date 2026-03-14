@@ -422,10 +422,21 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
                                 </button>
                                 <span className="font-cinzel text-lg font-semibold text-cel-text w-8 text-center">{guestCount}</span>
-                                <button onClick={() => { const c = Math.min(10, guestCount + 1); setGuestCount(c); syncIdProofs(c); }} className="w-9 h-9 rounded-full border border-cel-border flex items-center justify-center text-cel-text-secondary hover:text-rose-medium hover:border-rose-medium/30 transition-all">
+                                <button
+                                    onClick={() => {
+                                        const capacityNum = parseInt(screen.capacity) || 3;
+                                        const c = Math.min(capacityNum, guestCount + 1);
+                                        setGuestCount(c);
+                                        syncIdProofs(c);
+                                    }}
+                                    className="w-9 h-9 rounded-full border border-cel-border flex items-center justify-center text-cel-text-secondary hover:text-rose-medium hover:border-rose-medium/30 transition-all"
+                                >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                                 </button>
-                                <span className="font-inter text-xs text-cel-text-muted">Extra person above 2: {formatPrice(pkg.extraPerson)}</span>
+                                <div className="flex flex-col">
+                                    <span className="font-inter text-xs text-cel-text-muted">Max Capacity: {screen.capacity}</span>
+                                    <span className="font-inter text-[10px] text-rose-medium">Extra guest above 2: {formatPrice(pkg.extraPerson)}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -535,6 +546,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Date</span><span className="text-cel-text">{selectedDate.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Duration</span><span className="text-cel-text">{totalHours} hour{totalHours > 1 ? "s" : ""}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Guests</span><span className="text-cel-text">{guestCount} person{guestCount > 1 ? "s" : ""}</span></div>
+                                    {screen.size && (
+                                        <div className="flex justify-between"><span className="text-cel-text-secondary">Screen Size</span><span className="text-cel-text">{screen.size}</span></div>
+                                    )}
                                     
                                     {isMovieTime && originalPrice > 0 && (
                                         <>

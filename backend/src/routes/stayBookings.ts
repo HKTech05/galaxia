@@ -412,14 +412,15 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
 // GET /api/bookings/staycation/booked-dates — Public: get booked/fully-booked dates for a property
 router.get("/booked-dates", async (req, res) => {
     try {
-        const { propertyId, startDate, endDate } = req.query;
+        const { propertyId, subPropertyId, startDate, endDate } = req.query;
         if (!propertyId) return res.status(400).json({ error: "propertyId required" });
 
         const parsedPropertyId = parseInt(propertyId as string);
-        if (isNaN(parsedPropertyId)) {
-            console.error("Invalid propertyId received in booked-dates:", propertyId);
-            return res.status(400).json({ error: "Invalid propertyId" });
-        }
+        const parsedSubPropertyId = subPropertyId ? parseInt(subPropertyId as string) : null;
+        if (isNaN(parsedPropertyId)) return res.status(400).json({ error: "Invalid propertyId" });
+
+        const start = new Date(startDate as string || "2000-01-01");
+        const end = new Date(endDate as string || "2099-12-31");
 
         // Determine property capacity from sub-properties
         const subProperties = await prisma.subProperty.findMany({
@@ -428,35 +429,63 @@ router.get("/booked-dates", async (req, res) => {
         });
         const totalCapacity = subProperties.length > 0 ? subProperties.length : 1;
 
+        // 1. Get bookings
         const bookings = await prisma.staycationBooking.findMany({
             where: {
                 propertyId: parsedPropertyId,
+                ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
                 status: { notIn: ["cancelled", "no_show"] },
-                checkInDate: { lte: new Date(endDate as string || "2099-12-31") },
-                checkOutDate: { gte: new Date(startDate as string || "2000-01-01") },
+                checkInDate: { lte: end },
+                checkOutDate: { gte: start },
             },
             select: { checkInDate: true, checkOutDate: true, subPropertyId: true },
         });
 
-        // Count bookings per date
-        const dateBookingCount: Record<string, Set<number | null>> = {};
+        // 2. Get blocked dates
+        const blockedEntries = await prisma.blockedDate.findMany({
+            where: {
+                propertyId: parsedPropertyId,
+                ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
+                blockedDate: { gte: start, lte: end },
+            },
+            select: { blockedDate: true, subPropertyId: true },
+        });
+
+        // Count bookings/blocks per date
+        const dateOccurrences: Record<string, Set<number | null>> = {};
+        
+        // Add bookings
         for (const b of bookings) {
-            const start = new Date(b.checkInDate);
-            const end = new Date(b.checkOutDate);
-            for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+            const bStart = new Date(b.checkInDate);
+            const bEnd = new Date(b.checkOutDate);
+            for (let d = new Date(bStart); d < bEnd; d.setDate(d.getDate() + 1)) {
                 const dateStr = d.toISOString().split("T")[0];
-                if (!dateBookingCount[dateStr]) {
-                    dateBookingCount[dateStr] = new Set();
-                }
-                // Use subPropertyId (or null for standalone) as the unique booking unit
-                dateBookingCount[dateStr].add(b.subPropertyId);
+                if (!dateOccurrences[dateStr]) dateOccurrences[dateStr] = new Set();
+                dateOccurrences[dateStr].add(b.subPropertyId);
             }
         }
 
-        // A date is fully booked when booking count >= capacity
+        // Add blocks
+        for (const bl of blockedEntries) {
+            const dateStr = new Date(bl.blockedDate).toISOString().split("T")[0];
+            if (!dateOccurrences[dateStr]) dateOccurrences[dateStr] = new Set();
+            // If subPropertyId is null, it blocks ALL units (effectively)
+            if (bl.subPropertyId === null) {
+                // Mark as fully blocked by adding "fake" entries up to capacity
+                for (let i = 0; i < totalCapacity; i++) {
+                    dateOccurrences[dateStr].add(-100 - i); // Unique IDs to fill capacity
+                }
+            } else {
+                dateOccurrences[dateStr].add(bl.subPropertyId);
+            }
+        }
+
+        // A date is fully booked when capacity is reached
         const fullyBookedDates: string[] = [];
-        for (const [dateStr, bookedUnits] of Object.entries(dateBookingCount)) {
-            if (bookedUnits.size >= totalCapacity) {
+        const capacityToTarget = parsedSubPropertyId ? 1 : totalCapacity;
+
+        for (const [dateStr, units] of Object.entries(dateOccurrences)) {
+            if (units.size >= capacityToTarget) {
                 fullyBookedDates.push(dateStr);
             }
         }

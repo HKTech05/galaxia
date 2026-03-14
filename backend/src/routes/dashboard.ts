@@ -1,52 +1,99 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
+import { encrypt, decrypt } from "../lib/encryption";
 import { authMiddleware, requireRole } from "../middleware/auth";
 
 const router = Router();
 
 // GET /api/admin/dashboard — Dashboard KPIs and chart data
-router.get("/", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), async (req, res) => {
     try {
         const { period } = req.query; // 'month', '3months', '6months', 'year'
         const now = new Date();
-        let startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Default: last month
+        // Default to the first day of the CURRENT month for a "live" feel
+        let startDate = new Date(now.getFullYear(), now.getMonth(), 1); 
 
-        if (period === "3months") startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        else if (period === "6months") startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        else if (period === "year") startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        if (period === "3months") startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        else if (period === "6months") startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        else if (period === "year") startDate = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1);
 
-        // Total revenue
+        // Revenue based on realized stay (check-in date) for Staycation
         const stayRevenue = await prisma.staycationBooking.aggregate({
             _sum: { totalAmount: true },
             where: {
-                bookedAt: { gte: startDate },
+                checkInDate: { gte: startDate },
                 status: { in: ["confirmed", "checked_in", "checked_out"] },
             },
         });
+        
+        // Revenue based on booking date for DD
         const ddRevenue = await prisma.ddBooking.aggregate({
             _sum: { totalAmount: true },
             where: {
-                bookedAt: { gte: startDate },
-                status: { in: ["confirmed", "checked_in"] }, // or "paid" if DD has different statuses
+                bookingDate: { gte: startDate },
+                status: { in: ["confirmed", "checked_in", "paid"] }, 
             },
         });
 
-        // Booking counts
+        // Booking counts for the same period
         const totalStayBookings = await prisma.staycationBooking.count({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
         });
         const totalDdBookings = await prisma.ddBooking.count({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookingDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
         });
 
         // Total nights booked
         const stayBookingsForNights = await prisma.staycationBooking.findMany({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
             select: { numNights: true },
         });
-        const totalNightsBooked = stayBookingsForNights.reduce((sum: number, b: { numNights: number }) => sum + b.numNights, 0);
+        const totalNightsBooked = stayBookingsForNights.reduce((sum: number, b) => sum + b.numNights, 0);
 
-        // Today's check-ins
+        const totalRevenue = (stayRevenue._sum.totalAmount || 0) + (ddRevenue._sum.totalAmount || 0);
+
+        // Latest bookings with decrypted info
+        const stayBookings = await prisma.staycationBooking.findMany({
+            take: 10,
+            orderBy: { createdAt: "desc" },
+            include: { property: true },
+        });
+        const ddBookings = await prisma.ddBooking.findMany({
+            take: 10,
+            orderBy: { createdAt: "desc" },
+            include: { screen: true },
+        });
+
+        const stayLive = stayBookings.map(b => ({
+            id: b.bookingRef,
+            guest: b.customerName,
+            property: b.property.name,
+            total: b.totalAmount,
+            status: b.status,
+            phone: b.customerPhone ? decrypt(b.customerPhone) : "—",
+        }));
+
+        const ddLive = ddBookings.map(b => ({
+            id: b.bookingRef,
+            guest: b.customerName,
+            screen: b.screen.name,
+            total: b.totalAmount,
+            status: b.status,
+            phone: b.customerPhone ? decrypt(b.customerPhone) : "—",
+        }));
+
+        return res.json({
+            kpis: {
+                totalReservations: totalStayBookings + totalDdBookings,
+                totalRevenue,
+                staycationRevenue: stayRevenue._sum.totalAmount || 0,
+                ddRevenue: ddRevenue._sum.totalAmount || 0,
+                totalNightsBooked,
+                occupancyRate: 0, // Placeholder
+            },
+            recentStayBookings: stayLive,
+            recentDdBookings: ddLive,
+        });
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const todayEnd = new Date(todayStart.getTime() + 86400000);
 
@@ -162,15 +209,18 @@ router.get("/earnings", authMiddleware, requireRole("owner", "developer"), async
     }
 });
 
-router.get("/property-status", authMiddleware, async (_req, res) => {
+router.get("/property-status", authMiddleware, async (req, res) => {
     try {
-        const todayStart = new Date();
+        const { date } = req.query;
+        const targetDate = date ? new Date(date as string) : new Date();
+        const todayStart = new Date(targetDate);
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date(todayStart.getTime() + 86400000);
 
         const properties = await prisma.property.findMany({
             where: { isActive: true },
-            include: { subProperties: { where: { isActive: true } } },
+            include: { subProperties: { where: { isActive: true }, orderBy: { displayOrder: 'asc' } } },
+            orderBy: { displayOrder: 'asc' }
         });
 
         const activeBookings = await prisma.staycationBooking.findMany({
@@ -204,30 +254,30 @@ router.get("/property-status", authMiddleware, async (_req, res) => {
                         checkedIn: isSpBooked,
                         guest: spBooking?.customerName || null,
                         guests: spBooking?.numGuests || 0,
-                        phone: spBooking?.customerPhone || null,
+                        phone: spBooking?.customerPhone ? decrypt(spBooking.customerPhone) : null,
                         checkInTime: spBooking?.checkInDate || null,
-                        checkOutDate: spBooking?.checkOutDate || null,
-                        balanceCollected: spBooking?.status === "checked_in" || spBooking?.status === "checked_out",
-                        balanceMode: "Online", // Fallback
-                        balanceTime: spBooking?.checkInDate || null,
-                        depositCollected: !!spBooking?.advanceAmount,
-                        depositMode: "UPI",
-                        depositTime: spBooking?.checkInDate || null,
+                        checkOutDate: spBooking?.checkOutDate ? new Date(spBooking.checkOutDate).toLocaleDateString('en-IN') : null,
+                        balanceCollected: spBooking?.balanceCollected || false,
+                        balanceMode: spBooking?.balanceMethod || "Online",
+                        balanceTime: spBooking?.balanceCollectedAt ? new Date(spBooking.balanceCollectedAt).toLocaleString('en-IN') : null,
+                        depositCollected: spBooking?.depositCollected || false,
+                        depositMode: spBooking?.depositMethod || "UPI",
+                        depositTime: spBooking?.depositCollectedAt ? new Date(spBooking.depositCollectedAt).toLocaleString('en-IN') : null,
                         extraGuests: spBooking?.extraGuests || [],
                     };
                 }),
                 checkedIn: isBooked,
                 guest: booking?.customerName || null,
                 guests: booking?.numGuests || 0,
-                phone: booking?.customerPhone || null,
+                phone: booking?.customerPhone ? decrypt(booking.customerPhone) : null,
                 checkInTime: booking?.checkInDate || null,
-                checkOutDate: booking?.checkOutDate || null,
-                balanceCollected: booking?.status === "checked_in" || booking?.status === "checked_out",
-                balanceMode: "Online",
-                balanceTime: booking?.checkInDate || null,
-                depositCollected: !!booking?.advanceAmount,
-                depositMode: "UPI",
-                depositTime: booking?.checkInDate || null,
+                checkOutDate: booking?.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString('en-IN') : null,
+                balanceCollected: booking?.balanceCollected || false,
+                balanceMode: booking?.balanceMethod || "Online",
+                balanceTime: booking?.balanceCollectedAt ? new Date(booking.balanceCollectedAt).toLocaleString('en-IN') : null,
+                depositCollected: booking?.depositCollected || false,
+                depositMode: booking?.depositMethod || "UPI",
+                depositTime: booking?.depositCollectedAt ? new Date(booking.depositCollectedAt).toLocaleString('en-IN') : null,
                 extraGuests: booking?.extraGuests || [],
             };
         });

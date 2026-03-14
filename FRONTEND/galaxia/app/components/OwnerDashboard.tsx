@@ -113,11 +113,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [timeRange, setTimeRange] = useState("1m");
     const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar">("insights");
 
-    // API-loaded dashboard data
-    const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
-    const [earningsData, setEarningsData] = useState<any[]>([]);
-    const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>([]);
-    const [ddBookingsLive, setDdBookingsLive] = useState<any[]>([]);
+    // Properties tab
+    const [propertyDate, setPropertyDate] = useState(new Date());
+    const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
+    const [villaModal, setVillaModal] = useState<{ type: "ambrose" | "amstel"; open: boolean }>({ type: "ambrose", open: false });
+    const [expandedVilla, setExpandedVilla] = useState<string | null>(null);
+
+    // DD tab
+    const [ddSelectedBooking, setDdSelectedBooking] = useState<any | null>(null);
+    const [ddViewDate, setDdViewDate] = useState(new Date());
 
     // Fetch dashboard data from API
     useEffect(() => {
@@ -129,24 +133,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             if (Array.isArray(data) && data.length > 0) setEarningsData(data);
         }).catch(err => console.error("Earnings:", err));
 
-        api.get("/admin/dashboard/property-status").then(data => {
+        api.get(`/admin/dashboard/property-status?date=${propertyDate.toISOString()}`).then(data => {
             if (data?.properties && data.properties.length > 0) setPropertyStatusLive(data.properties);
         }).catch(err => console.error("Property status:", err));
 
         api.get("/bookings/dd").then(data => {
             if (Array.isArray(data) && data.length > 0) setDdBookingsLive(data);
         }).catch(err => console.error("DD bookings:", err));
-    }, []);
+    }, [propertyDate]);
 
-    // Properties tab
-    const [propertyDate, setPropertyDate] = useState(new Date());
-    const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
-    const [villaModal, setVillaModal] = useState<{ type: "ambrose" | "amstel"; open: boolean }>({ type: "ambrose", open: false });
-    const [expandedVilla, setExpandedVilla] = useState<string | null>(null);
-
-    // DD tab
-    const [ddSelectedBooking, setDdSelectedBooking] = useState<any | null>(null);
-    const [ddViewDate, setDdViewDate] = useState(new Date());
+    // API-loaded dashboard data
+    const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
+    const [earningsData, setEarningsData] = useState<any[]>([]);
+    const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>([]);
+    const [ddBookingsLive, setDdBookingsLive] = useState<any[]>([]);
 
     // Website tab
     const [blackoutProperty, setBlackoutProperty] = useState("Heavenly Villa");
@@ -282,7 +282,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const totalUnits = liveAmbrose.length + liveAmstel.length + liveStandalone.length;
 
         // KPI cards data
-        const totalRevenue = dashboardKPIs?.kpis?.staycationRevenue || 0;
+        const totalRevenue = dashboardKPIs?.kpis?.totalRevenue || 0;
         const totalNights = dashboardKPIs?.kpis?.totalNightsBooked || 0;
         const occupancyRate = totalUnits > 0 ? Math.round((totalOccupied / totalUnits) * 100) : 0;
         const avgNightlyRate = totalNights > 0 ? Math.round(totalRevenue / totalNights) : 0;
@@ -951,9 +951,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         </div>
                                         <ChevronRight size={16} className={`text-slate-400 transition-transform ${expandedVilla === villa.name ? "rotate-90" : ""}`} />
                                     </button>
-                                    {expandedVilla === villa.name && villa.checkedIn && (
                                         <div className="p-4 pt-0 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <div className="grid grid-cols-2 gap-4 mt-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guest</p>
                                                     <p className="text-sm font-bold text-slate-800 mt-0.5">{villa.guest}</p>

@@ -185,7 +185,7 @@ router.patch("/:id/approve", authMiddleware, requireRole("owner", "developer", "
 });
 
 // DELETE /api/reviews/:id — Admin deletes a review
-router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+router.delete("/:id", authMiddleware, requireRole("owner", "developer", "manager"), async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
 

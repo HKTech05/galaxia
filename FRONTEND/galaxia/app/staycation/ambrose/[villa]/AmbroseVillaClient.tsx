@@ -30,21 +30,25 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     const [calCheckIn, setCalCheckIn] = useState<Date | null>(null);
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+    const [dbSubPropertyId, setDbSubPropertyId] = useState<number | null>(null);
 
-    // Fetch DB property ID for parent property (Ambrose)
+    // Fetch DB property IDs
     useEffect(() => {
         (async () => {
             try {
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
-                const res = await fetch(`${baseUrl}/properties`);
+                const res = await fetch(`${baseUrl}/properties/ambrose`);
                 if (res.ok) {
-                    const props = await res.json();
-                    const dbProp = props.find((p: any) => p.slug === 'ambrose');
-                    if (dbProp) setDbPropertyId(dbProp.id);
+                    const dbProp = await res.json();
+                    if (dbProp) {
+                        setDbPropertyId(dbProp.id);
+                        const sub = (dbProp.subProperties || []).find((sp: any) => sp.slug === villa.id);
+                        if (sub) setDbSubPropertyId(sub.id);
+                    }
                 }
             } catch (err) { /* silently fail */ }
         })();
-    }, []);
+    }, [villa.id]);
 
     const images = [villa.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = villa.pricing?.weekday.price || "5,500";
@@ -140,6 +144,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                         <div>
                             <AvailabilityCalendar
                                 propertyId={dbPropertyId}
+                                subPropertyId={dbSubPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
