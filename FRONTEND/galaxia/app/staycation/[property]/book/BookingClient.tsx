@@ -784,9 +784,9 @@ export default function BookingClient({ property }: BookingClientProps) {
                             {selectedRoom && (
                                 <AvailabilityCalendar
                                     propertyId={dbPropertyId}
-                                    weekdayPrice={property.pricing.weekday.price}
-                                    weekendPrice={property.pricing.weekend.price}
-                                    primeDatePrice={property.pricing.primeDates}
+                                    weekdayPrice={selectedRoom.weekdayPrice}
+                                    weekendPrice={selectedRoom.weekendPrice}
+                                    primeDatePrice={selectedRoom.primeDatePrice}
                                     onDatesChange={handleDatesChange}
                                     initialCheckIn={checkInDate}
                                     initialCheckOut={checkOutDate}

@@ -44,6 +44,7 @@ router.post("/", async (req, res) => {
         const checkOut = new Date(checkOutDate);
         const numNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
         const parsedPropertyId = parseInt(propertyId);
+        if (isNaN(parsedPropertyId)) return res.status(400).json({ error: "Invalid property ID" });
 
         // Extract logged-in user ID from token (JWT verification)
         let loggedInUserId: number | null = null;
@@ -82,7 +83,11 @@ router.post("/", async (req, res) => {
                 select: { id: true, subPropertyId: true, checkInDate: true, checkOutDate: true },
             });
 
-            let assignedSubPropertyId: number | null = subPropertyId ? parseInt(subPropertyId) : null;
+            let assignedSubPropertyId: number | null = null;
+            if (subPropertyId) {
+                const parsed = parseInt(subPropertyId);
+                if (!isNaN(parsed)) assignedSubPropertyId = parsed;
+            }
 
             if (isMultiUnit) {
                 // ── Multi-unit property (e.g. Amstel Nest with 14 cottages) ──
@@ -254,7 +259,12 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 
         const where: any = {};
         if (status) where.status = status;
-        if (propertyId) where.propertyId = parseInt(propertyId as string);
+        if (propertyId) {
+            const parsed = parseInt(propertyId as string);
+            if (!isNaN(parsed)) {
+                where.propertyId = parsed;
+            }
+        }
         if (startDate || endDate) {
             where.checkInDate = {};
             if (startDate) where.checkInDate.gte = new Date(startDate as string);
@@ -295,8 +305,11 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     try {
         const { status } = req.body;
+        const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
+
         const booking = await prisma.staycationBooking.update({
-            where: { id: parseInt(req.params.id as string) },
+            where: { id: bookingId },
             data: {
                 status,
                 ...(status === "checked_in" ? { checkInTime: new Date() } : {}),
@@ -319,6 +332,7 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
     try {
         const { paymentType, amount, method } = req.body;
         const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
         const payment = await prisma.bookingPayment.create({
             data: {
@@ -361,6 +375,7 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
     try {
         const { guestName, idProofType, chargeAmount, paymentMethod } = req.body;
         const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
         const extraGuest = await prisma.extraGuest.create({
             data: {
@@ -393,7 +408,10 @@ router.get("/booked-dates", async (req, res) => {
         if (!propertyId) return res.status(400).json({ error: "propertyId required" });
 
         const parsedPropertyId = parseInt(propertyId as string);
-        if (isNaN(parsedPropertyId)) return res.status(400).json({ error: "Invalid propertyId" });
+        if (isNaN(parsedPropertyId)) {
+            console.error("Invalid propertyId received in booked-dates:", propertyId);
+            return res.status(400).json({ error: "Invalid propertyId" });
+        }
 
         // Determine property capacity from sub-properties
         const subProperties = await prisma.subProperty.findMany({

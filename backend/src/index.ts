@@ -22,6 +22,9 @@ import { apiLimiter } from "./middleware/rateLimiter";
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// trust proxy is required for express-rate-limit to work correctly behind AWS ALB/Vercel
+app.set("trust proxy", 1);
+
 // Middleware
 app.use(cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
@@ -60,8 +63,8 @@ app.use((_req, res) => {
 
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error("Unhandled error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Unhandled error:", err?.message || err, err?.stack || "");
+    res.status(err?.status || 500).json({ error: err?.message || "Internal server error" });
 });
 
 app.listen(PORT, () => {
