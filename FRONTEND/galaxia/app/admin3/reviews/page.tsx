@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, Check, X, Trash2, Clock, Eye } from "lucide-react";
+import { Star, Check, X, Trash2, Clock, Eye, Mail, Phone } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface Review {
