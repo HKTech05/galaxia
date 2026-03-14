@@ -23,7 +23,16 @@ export default function BookingClient({ property }: BookingClientProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-    const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string; price: number; type: string; maxPersons: number } | null>(null);
+    const [selectedRoom, setSelectedRoom] = useState<{ 
+        id: string; 
+        name: string; 
+        price: number; 
+        type: string; 
+        maxPersons: number;
+        weekdayPrice: string;
+        weekendPrice: string;
+        primeDatePrice: string;
+    } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -250,6 +259,9 @@ export default function BookingClient({ property }: BookingClientProps) {
             image: sub.image,
             description: sub.description,
             price: parseInt(sub.pricing?.weekday.price.replace(/,/g, "") || "0"),
+            weekdayPrice: sub.pricing?.weekday.price || property.pricing.weekday.price,
+            weekendPrice: sub.pricing?.weekend.price || property.pricing.weekend.price,
+            primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
             details: sub.configuration?.slice(0, 3) || [],
             persons: sub.pricing?.weekday.persons || "2 guests",
             maxPersons: sub.maxPersons || property.maxPersons || 4
@@ -261,6 +273,9 @@ export default function BookingClient({ property }: BookingClientProps) {
             image: property.images[0],
             description: property.description,
             price: parseInt(property.pricing.weekday.price.replace(/,/g, "")),
+            weekdayPrice: property.pricing.weekday.price,
+            weekendPrice: property.pricing.weekend.price,
+            primeDatePrice: property.pricing.primeDates || "",
             details: property.configuration.slice(0, 3),
             persons: property.pricing.weekday.persons,
             maxPersons: property.maxPersons || 4
@@ -311,7 +326,10 @@ export default function BookingClient({ property }: BookingClientProps) {
             name: room.name,
             price: room.price,
             type: room.theme,
-            maxPersons: room.maxPersons
+            maxPersons: room.maxPersons,
+            weekdayPrice: room.weekdayPrice,
+            weekendPrice: room.weekendPrice,
+            primeDatePrice: room.primeDatePrice
         });
         setNightlyRate(room.price);
         if (!nights) setNights(1);
