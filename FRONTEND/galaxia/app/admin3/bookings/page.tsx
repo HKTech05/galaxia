@@ -42,7 +42,7 @@ export default function Admin3BookingsPage() {
                     id: b.bookingRef || `#DD-${b.id}`,
                     customer: b.customerName || "Unknown",
                     phone: b.customerPhone || "",
-                    screen: b.screen?.name || "Unknown",
+                    screen: b.screen?.name ? `${b.screen.name} (Digital Diaries)` : "Unknown",
                     date: b.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     slot: `${fmtHour(startHr)} - ${fmtHour(endHr)}`,
                     source: b.source === "website" ? "Online" : "Walk-in",

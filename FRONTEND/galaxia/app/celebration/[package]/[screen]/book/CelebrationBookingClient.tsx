@@ -42,6 +42,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     // DB IDs for screen and package (fetched by slug)
     const [dbScreenId, setDbScreenId] = useState<number | null>(null);
     const [dbPackageId, setDbPackageId] = useState<number | null>(null);
+    const [isScreenDisabled, setIsScreenDisabled] = useState(false);
+    const [isPackageDisabled, setIsPackageDisabled] = useState(false);
 
     // Fetch DB IDs on mount
     useEffect(() => {
@@ -53,13 +55,21 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 ]);
                 const dbScreen = screens.find((s: any) => s.slug === screen.id);
                 const dbPackage = packages.find((p: any) => p.slug === pkg.id);
-                if (dbScreen) setDbScreenId(dbScreen.id);
-                if (dbPackage) setDbPackageId(dbPackage.id);
+                if (dbScreen) {
+                    setDbScreenId(dbScreen.id);
+                    if (dbScreen.isActive === false) setIsScreenDisabled(true);
+                }
+                if (dbPackage) {
+                    setDbPackageId(dbPackage.id);
+                    if (dbPackage.isActive === false) setIsPackageDisabled(true);
+                }
             } catch (err) {
                 console.error("Failed to fetch DD data:", err);
             }
         })();
     }, [screen.id, pkg.id]);
+
+    const isMaintenance = isScreenDisabled || isPackageDisabled;
 
     // Sync ID proof array length with guest count
     const syncIdProofs = (count: number) => {
@@ -280,7 +290,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                     <span className="text-cel-border">/</span>
                     <Link href={`/celebration/${pkg.id}`} className="hover:text-rose-light transition-colors">{pkg.name}</Link>
                     <span className="text-cel-border">/</span>
-                    <Link href={`/celebration/${pkg.id}/${screen.id}`} className="hover:text-rose-light transition-colors">{screen.name}</Link>
+                    <Link href={`/celebration/${pkg.id}/${screen.id}`} className="hover:text-rose-light transition-colors">{screen.name} (Digital Diaries)</Link>
                     <span className="text-cel-border">/</span>
                     <span className="text-rose-medium">Book</span>
                 </nav>
@@ -311,9 +321,20 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                     <div>
                         {/* Screen Name Header */}
                         <div className="text-center mb-8">
-                            <h1 className="font-cinzel text-xl sm:text-2xl font-bold text-cel-text">{screen.name}</h1>
+                            <h1 className="font-cinzel text-xl sm:text-2xl font-bold text-cel-text">{screen.name} (Digital Diaries)</h1>
                             <p className="font-inter text-cel-text-secondary text-xs mt-1">{pkg.name} Package</p>
                         </div>
+
+                        {isMaintenance && (
+                            <div className="max-w-md mx-auto mb-8 bg-red-900/20 border border-red-500/30 rounded-xl p-6 text-center animate-in fade-in zoom-in duration-500">
+                                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                </div>
+                                <h3 className="font-cinzel text-lg font-bold text-white mb-2 uppercase tracking-wider">Under Maintenance</h3>
+                                <p className="font-inter text-sm text-red-200/70 mb-5">This screening area is currently undergoing maintenance and is temporarily unavailable for bookings. Please check back later or select another screen.</p>
+                                <Link href="/celebration" className="inline-block bg-white/10 hover:bg-white/20 text-white font-inter text-xs px-6 py-2.5 rounded-full transition-all border border-white/20">Back to Digital Diaries</Link>
+                            </div>
+                        )}
 
                         {/* Date Selector */}
                         <div className="rounded-xl border border-cel-border bg-cel-card p-5 sm:p-6 mb-6">
@@ -332,11 +353,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                 {weekDays.map((d) => (
                                     <button
                                         key={d.toISOString()}
-                                        onClick={() => !isPast(d) && setSelectedDate(d)}
-                                        disabled={isPast(d)}
+                                        onClick={() => !isPast(d) && !isMaintenance && setSelectedDate(d)}
+                                        disabled={isPast(d) || isMaintenance}
                                         className={`flex flex-col items-center py-3 rounded-lg transition-all text-center ${isSelected(d)
                                             ? "bg-gradient-to-b from-rose-medium to-rose-dark text-white shadow-lg shadow-rose-dark/20"
-                                            : isPast(d)
+                                            : (isPast(d) || isMaintenance)
                                                 ? "text-cel-text-muted/40 cursor-not-allowed"
                                                 : isToday(d)
                                                     ? "border border-rose-medium/40 text-cel-text hover:bg-rose-dark/10"
@@ -371,11 +392,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                 return (
                                                     <div
                                                         key={slot.id}
-                                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${isSlotSelected
+                                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isSlotSelected
                                                             ? "border-rose-medium/50 bg-rose-dark/15"
-                                                            : "border-cel-border hover:border-cel-border-light"
+                                                            : isMaintenance ? "border-cel-border opacity-30 cursor-not-allowed" : "border-cel-border hover:border-cel-border-light cursor-pointer"
                                                             }`}
-                                                        onClick={() => toggleSlot(slot.id)}
+                                                        onClick={() => !isMaintenance && toggleSlot(slot.id)}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <span className="font-inter text-sm text-cel-text">{slot.label}</span>
@@ -748,7 +769,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                         <div className="rounded-xl border border-cel-border bg-cel-card p-5 sm:p-6 h-fit sticky top-20">
                             <h3 className="font-cinzel text-sm font-semibold text-cel-text uppercase tracking-wider mb-4">Your Booking</h3>
                             <div className="space-y-3 text-sm font-inter">
-                                <div className="flex justify-between"><span className="text-cel-text-secondary">Screen</span><span className="text-cel-text">{screen.name}</span></div>
+                                <div className="flex justify-between"><span className="text-cel-text-secondary">Screen</span><span className="text-cel-text">{screen.name} (Digital Diaries)</span></div>
                                 <div className="flex justify-between"><span className="text-cel-text-secondary">Package</span><span className="text-cel-text">{pkg.name}</span></div>
                                 <div className="flex justify-between"><span className="text-cel-text-secondary">Date</span><span className="text-cel-text">{selectedDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></div>
                                 <div className="flex justify-between"><span className="text-cel-text-secondary">Duration</span><span className="text-cel-text">{totalHours}h</span></div>
@@ -789,7 +810,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Email</span><span className="text-cel-text">{email}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Phone</span><span className="text-cel-text">+91 {phone}</span></div>
                                     <div className="pt-3 border-t border-cel-border" />
-                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Screen</span><span className="text-cel-text">{screen.name}</span></div>
+                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Screen</span><span className="text-cel-text">{screen.name} (Digital Diaries)</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Package</span><span className="text-cel-text">{pkg.name}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Date</span><span className="text-cel-text">{selectedDate.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span></div>
                                     <div className="flex justify-between items-start gap-4"><span className="text-cel-text-secondary shrink-0">Time</span><span className="text-cel-text text-right max-w-[70%]">{formattedTime}</span></div>

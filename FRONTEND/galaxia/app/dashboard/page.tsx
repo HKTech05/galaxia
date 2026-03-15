@@ -10,7 +10,7 @@ type Category = "all" | "staycation" | "celebration";
 
 interface Booking {
     id: string;
-    property: string;
+    propertyDbId?: number;
     dates: string;
     status: string;
     amount: string;
@@ -89,16 +89,29 @@ function DashboardContent() {
             window.location.href = cognitoUrl;
             return;
         }
-        const storedUser = localStorage.getItem("galaxia_user");
-        if (storedUser) {
-            try {
+
+        // Fetch user profile from API instead of just localStorage
+        api.get("/users/me").then(user => {
+            if (user) {
+                setUserName(user.fullName || user.email?.split("@")[0] || "Guest");
+                setUserInitial((user.fullName || user.email || "G").charAt(0).toUpperCase());
+                setUserEmail(user.email || "");
+                setUserPhone(user.phone || "");
+                localStorage.setItem("galaxia_user", JSON.stringify(user));
+            }
+        }).catch(err => {
+            console.error("Error fetching user profile:", err);
+            // Fallback to localStorage if API fails
+            const storedUser = localStorage.getItem("galaxia_user");
+            if (storedUser) {
                 const user = JSON.parse(storedUser);
                 setUserName(user.fullName || user.email?.split("@")[0] || "Guest");
                 setUserInitial((user.fullName || user.email || "G").charAt(0).toUpperCase());
                 setUserEmail(user.email || "");
                 setUserPhone(user.phone || "");
-            } catch { }
-        }
+            }
+        });
+    }, [router, searchParams]);
 
         // Fetch real user bookings
         (async () => {
@@ -121,6 +134,7 @@ function DashboardContent() {
                     return {
                         id: b.bookingRef || `#S-${b.id}`,
                         property: b.property?.name || "Staycation Property",
+                        propertyDbId: b.propertyId,
                         dates: `${ci.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}-${co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}`,
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),
@@ -573,8 +587,8 @@ function DashboardContent() {
                                             className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
                                         >
                                             <option value="">Which property did you visit?</option>
-                                            {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.property, b])).values()].map(b => (
-                                                <option key={b.id} value={b.id.split('-').pop()}>{b.property}</option>
+                                            {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.propertyDbId, b])).values()].map(b => (
+                                                <option key={b.propertyDbId} value={b.propertyDbId?.toString()}>{b.property}</option>
                                             ))}
                                         </select>
                                     </div>

@@ -29,12 +29,51 @@ router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthReque
             return res.json({ stayBookings: [], ddBookings: [] });
         }
 
+        const stayBookings = user.stayBookings.map(b => {
+            let standardizedName = b.property?.name || "Staycation Property";
+            if (b.subProperty) {
+                standardizedName = `${b.subProperty.name} (${standardizedName})`;
+            }
+            return {
+                ...b,
+                property: b.property ? { ...b.property, name: standardizedName } : b.property
+            };
+        });
+
+        const ddBookings = user.ddBookings.map(b => {
+            let standardizedName = b.screen?.name || "Digital Diaries";
+            standardizedName = `${standardizedName} (Digital Diaries)`;
+            return {
+                ...b,
+                screen: b.screen ? { ...b.screen, name: standardizedName } : b.screen
+            };
+        });
+
         return res.json({
-            stayBookings: user.stayBookings,
-            ddBookings: user.ddBookings
+            stayBookings,
+            ddBookings
         });
     } catch (error) {
         console.error("Fetch me bookings error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// GET /api/users/me — Get current user profile
+router.get("/me", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id }
+        });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        return res.json(user);
+    } catch (error) {
+        console.error("Fetch me profile error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

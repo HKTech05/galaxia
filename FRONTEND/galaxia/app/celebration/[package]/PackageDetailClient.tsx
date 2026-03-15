@@ -105,7 +105,7 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                                     <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
                                         <span className="inline-block px-2 py-0.5 mb-2 bg-white/10 backdrop-blur-sm rounded text-[9px] font-inter text-white/80 tracking-wider uppercase">{screen.theme}</span>
-                                        <h3 className="font-cinzel text-lg sm:text-xl font-semibold text-white mb-1 group-hover:text-rose-light transition-colors">{screen.name}</h3>
+                                        <h3 className="font-cinzel text-lg sm:text-xl font-semibold text-white mb-1 group-hover:text-rose-light transition-colors">{screen.name} (Digital Diaries)</h3>
                                         <p className="font-inter text-xs text-white/60">{screen.tagline}</p>
                                     </div>
                                 </div>

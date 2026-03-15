@@ -109,6 +109,36 @@ export default function BookingClient({ property }: BookingClientProps) {
         }
     }, [searchParams, property.pricing]);
 
+    // Dynamic Pricing & Status State
+    const [backendData, setBackendData] = useState<any>(null);
+    const [isMaintenance, setIsMaintenance] = useState(false);
+
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            try {
+                const data = await api.get(`/properties/${property.slug}/availability`);
+                setBackendData(data);
+                setIsMaintenance(data.isActive === false);
+                
+                // If dates were in URL, update rate from backend pricing
+                const ciStr = searchParams.get("checkIn");
+                const coStr = searchParams.get("checkOut");
+                if (ciStr && coStr && data.pricing) {
+                    const ci = new Date(ciStr);
+                    const day = ci.getDay();
+                    const isWeekend = day === 0 || day === 5 || day === 6;
+                    const priceData = isWeekend ? data.pricing.weekend : data.pricing.weekday;
+                    if (priceData) {
+                        setNightlyRate(parseInt(priceData.price));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch backend availability:", err);
+            }
+        };
+        fetchAvailability();
+    }, [property.slug, searchParams]);
+
     // Guest state
     const [adults, setAdults] = useState(1);
     const [kids, setKids] = useState(0);
@@ -321,17 +351,36 @@ export default function BookingClient({ property }: BookingClientProps) {
     const payAtVenue = totalAmount - payNow;
 
     const handleRoomSelect = (room: any) => {
+        if (isMaintenance) {
+            alert("This property is currently under maintenance and not accepting bookings.");
+            return;
+        }
+
+        let currentWeekdayPrice = room.weekdayPrice;
+        let currentWeekendPrice = room.weekendPrice;
+        
+        if (backendData?.pricing) {
+             currentWeekdayPrice = backendData.pricing.weekday?.price || room.weekdayPrice;
+             currentWeekendPrice = backendData.pricing.weekend?.price || room.weekendPrice;
+        }
+
+        const ci = checkInDate || new Date();
+        const day = ci.getDay();
+        const isWeekend = day === 0 || day === 5 || day === 6;
+        const initialPriceStr = (isWeekend ? currentWeekendPrice : currentWeekdayPrice).toString();
+        const initialPrice = parseInt(initialPriceStr.replace(/,/g, ""));
+
         setSelectedRoom({
             id: room.id,
             name: room.name,
-            price: room.price,
+            price: initialPrice,
             type: room.theme,
             maxPersons: room.maxPersons,
-            weekdayPrice: room.weekdayPrice,
-            weekendPrice: room.weekendPrice,
+            weekdayPrice: currentWeekdayPrice,
+            weekendPrice: currentWeekendPrice,
             primeDatePrice: room.primeDatePrice
         });
-        setNightlyRate(room.price);
+        setNightlyRate(initialPrice);
         if (!nights) setNights(1);
         setAdults(1);
         setKids(0);
@@ -808,6 +857,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     onDatesChange={handleDatesChange}
                                     initialCheckIn={checkInDate}
                                     initialCheckOut={checkOutDate}
+                                    isDisabled={isMaintenance}
                                     compact
                                 />
                             )}

@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { packages } from "../data/celebrations";
+import { useState, useEffect } from "react";
+import api from "../lib/api";
+import { packages as staticPackages } from "../data/celebrations";
 
 export default function CelebrationPage() {
-    const pkgList = Object.values(packages);
+    const [pkgList, setPkgList] = useState<any[]>(Object.values(staticPackages));
+    const [loading, setLoading] = useState(false); // Set to false if not fetching yet
+
+    // Future-proofing: If celebration packages are added to DB, fetch here.
+    // For now, ensuring static prices are easily updatable or fetched if possible.
 
     return (
         <div>
@@ -33,7 +39,7 @@ export default function CelebrationPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                    {pkgList.map((pkg) => (
+                    {pkgList.filter(pkg => pkg.isActive !== false).map((pkg) => (
                         <Link key={pkg.id} href={`/celebration/${pkg.id}`} className="group block">
                             <div className="relative overflow-hidden rounded-2xl border border-cel-border h-[350px] sm:h-[450px] md:h-[500px] transition-all duration-700 hover:border-rose-medium/40 hover:shadow-[0_8px_40px_rgba(159,53,58,0.15)]">
                                 <div className="absolute inset-0">
@@ -43,7 +49,7 @@ export default function CelebrationPage() {
                                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
                                     <p className="font-inter text-rose-light text-[10px] tracking-[0.3em] uppercase mb-2">{pkg.tagline}</p>
                                     <h3 className="font-cinzel text-2xl sm:text-3xl font-bold text-white mb-2">{pkg.name.toUpperCase()}</h3>
-                                    <p className="font-inter text-white/70 text-xs sm:text-sm leading-relaxed mb-4 max-w-sm">{pkg.description.slice(0, 120)}...</p>
+                                    <p className="font-inter text-white/70 text-xs sm:text-sm leading-relaxed mb-4 line-clamp-2">{pkg.description}</p>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-baseline gap-1">
                                             <span className="font-cinzel text-lg text-white font-semibold">₹{pkg.pricing[0].weekday}</span>

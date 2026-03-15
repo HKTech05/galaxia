@@ -21,7 +21,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 const mapped = data.map((b: any) => ({
                     id: b.bookingRef || `#ST-${b.id}`,
                     customer: b.customerName || "Unknown",
-                    property: b.property?.name || b.subProperty?.name || "Unknown",
+                    customer: b.customerName || "Unknown",
+                    property: b.subProperty 
+                        ? `${b.subProperty.name} (${b.property?.name || 'Unknown'})` 
+                        : (b.property?.name || "Unknown"),
                     guests: b.numGuests || 0,
                     checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",

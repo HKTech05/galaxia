@@ -48,6 +48,14 @@ type Event = {
         cake?: boolean;
         cakeMessage?: string;
     };
+    rawAddons?: Array<{
+        id: number;
+        addonType: string;
+        addonValue: string | null;
+        price: number;
+        isPaid: boolean;
+        paymentMethod: string | null;
+    }>;
 };
 
 const events: Event[] = [
@@ -94,7 +102,15 @@ export default function Admin1Dashboard() {
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
                     paymentDetails: b.paymentDetails || "N/A",
                     isMaintenance: b.customerName.toLowerCase().includes("maintenance") || b.status === "maintenance",
-                    dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                    dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+                    rawAddons: b.addons || [],
+                    addOns: {
+                        balloons: b.addons?.some((a: any) => a.addonType === "balloons"),
+                        ledBanner: b.addons?.some((a: any) => a.addonType === "led_banner"),
+                        ledBannerType: b.addons?.find((a: any) => a.addonType === "led_banner")?.addonValue || "Happy Birthday",
+                        cake: b.addons?.some((a: any) => a.addonType === "cake"),
+                        cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || ""
+                    }
                 }));
                 setEventsList(mapped);
             }
@@ -263,34 +279,44 @@ export default function Admin1Dashboard() {
         }
     };
 
-    const handleCollectPayment = (mode: "Cash" | "UPI") => {
+    const handleCollectPayment = async (mode: "Cash" | "UPI") => {
         if (!activeEvent) return;
-
-        const now = new Date();
-        const dateStr = `${now.getDate()} ${now.toLocaleString('en-us', { month: 'short' })} ${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-        const updatedEvents = eventsList.map(ev => {
-            if (ev.id === activeEvent.id) {
-                // Extract numeric part from amountPaid and amountToCollect
-                const paidAmountMatch = ev.amountPaid.match(/₹([\d,]+)/);
-                const toCollectAmountMatch = ev.amountToCollect.match(/₹([\d,]+)/);
-
-                let currentPaid = paidAmountMatch ? parseInt(paidAmountMatch[1].replace(/,/g, '')) : 0;
-                let currentToCollect = toCollectAmountMatch ? parseInt(toCollectAmountMatch[1].replace(/,/g, '')) : 0;
-
-                const newTotalPaid = currentPaid + currentToCollect;
-
-                return {
-                    ...ev,
-                    amountPaid: `₹${newTotalPaid.toLocaleString()} (100%)`,
-                    amountToCollect: "₹0",
-                    paymentDetails: `${ev.paymentDetails} | Remaining paid via ${mode} on ${dateStr}`
-                };
+        try {
+            const balanceStr = activeEvent.amountToCollect.replace(/[₹,]/g, '');
+            const balanceInt = parseInt(balanceStr);
+            if (balanceInt > 0) {
+                await api.post(`/bookings/dd/${activeEvent.id}/payment`, {
+                    amount: balanceInt,
+                    method: mode
+                });
             }
-            return ev;
-        });
+            alert(`Collected ₹${balanceInt.toLocaleString()} via ${mode}`);
+            fetchEvents(startDate);
+            setSelectedEventId(null);
+        } catch (err: any) {
+            console.error("Failed to collect payment:", err);
+            alert(err.response?.data?.error || "Failed to collect payment");
+        }
+    };
 
-        setEventsList(updatedEvents);
+    const handleCollectAddonsPayment = async (mode: "Cash" | "UPI") => {
+        if (!activeEvent || !activeEvent.rawAddons) return;
+        const unpaidAddons = activeEvent.rawAddons.filter(a => !a.isPaid);
+        if (unpaidAddons.length === 0) {
+            alert("All add-ons are already marked as paid.");
+            return;
+        }
+
+        try {
+            for (const addon of unpaidAddons) {
+                await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: mode });
+            }
+            alert(`Collected payment for ${unpaidAddons.length} add-ons via ${mode}`);
+            fetchEvents(startDate);
+        } catch (err: any) {
+            console.error("Failed to collect addon payment:", err);
+            alert(err.response?.data?.error || "Failed to collect addon payment");
+        }
     };
 
     // 1. EVENT DETAIL VIEW
@@ -406,6 +432,28 @@ export default function Admin1Dashboard() {
                                             >
                                                 {editingAddOns ? '✕ Close' : '+ Add / Edit Add-Ons'}
                                             </button>
+                                            
+                                            {/* Add-on Collection Buttons */}
+                                            {activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake) && (
+                                                <div className="mt-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">Add-on Payment Status</p>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => handleCollectAddonsPayment('Cash')}
+                                                            className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+                                                        >
+                                                            Add-ons: Cash
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleCollectAddonsPayment('UPI')}
+                                                            className="flex-1 bg-white border border-indigo-600 text-indigo-600 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
+                                                        >
+                                                            Add-ons: UPI
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {editingAddOns && (
                                                 <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-2">
                                                     {/* Balloons toggle */}
