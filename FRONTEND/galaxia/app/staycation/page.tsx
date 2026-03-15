@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import api from "../lib/api";
-import ReviewCarousel from "../components/ReviewCarousel";
+import { api } from "@/lib/api";
+import ReviewCarousel from "@/app/components/ReviewCarousel";
 
 export default function StaycationPage() {
     const [properties, setProperties] = useState<any[]>([]);
