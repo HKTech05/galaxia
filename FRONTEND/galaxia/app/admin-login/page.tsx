@@ -20,8 +20,8 @@ export default function AdminLoginPage() {
         try {
             const res = await api.post("/auth/login", { username, password });
             if (res.token) {
-                // Store admin token specifically
-                localStorage.setItem("galaxia_admin_token", res.token);
+                // Store token consistently
+                localStorage.setItem("galaxia_token", res.token);
                 // Also set a secure cookie so the Next.js Middleware can read it
                 document.cookie = `admin_token=${res.token}; path=/; max-age=604800; samesite=strict`;
                 
