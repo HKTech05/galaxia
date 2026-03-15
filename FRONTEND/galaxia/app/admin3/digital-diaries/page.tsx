@@ -207,6 +207,12 @@ export default function Admin1Dashboard() {
         });
     };
 
+    const handleSubmitDraft = async () => {
+        if (checkOverlap()) {
+            setShowOverlapWarning(true);
+            return;
+        }
+
         const screenMap: Record<string, number> = {
             "Sandy Screen": 1,
             "Cine Love": 2,
@@ -243,7 +249,7 @@ export default function Admin1Dashboard() {
                     ...(addCake ? [{ type: "cake", value: addOnCakeMessage || "Yes", price: 400 }] : [])
                 ]
             });
-            
+
             fetchEvents(startDate);
             setDraftSlot(null);
             alert("Booking created successfully!");
@@ -251,6 +257,7 @@ export default function Admin1Dashboard() {
             console.error("Failed to create manual booking:", err);
             alert(err.response?.data?.error || "Failed to create manual booking");
         }
+    };
 
     const handleCollectPayment = (mode: "Cash" | "UPI") => {
         if (!activeEvent) return;

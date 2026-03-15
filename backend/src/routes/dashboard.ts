@@ -55,12 +55,12 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         // Latest bookings with decrypted info
         const stayBookings = await prisma.staycationBooking.findMany({
             take: 10,
-            orderBy: { createdAt: "desc" },
+            orderBy: { bookedAt: "desc" },
             include: { property: true },
         });
         const ddBookings = await prisma.ddBooking.findMany({
             take: 10,
-            orderBy: { createdAt: "desc" },
+            orderBy: { bookedAt: "desc" },
             include: { screen: true },
         });
 

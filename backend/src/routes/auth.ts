@@ -17,7 +17,13 @@ router.post("/login", loginLimiter, async (req, res) => {
         }
 
         const admin = await prisma.adminAccount.findUnique({ where: { username } });
-        if (!admin || !admin.isActive) {
+        console.log(`[DEBUG] Login attempt for username: ${username}`);
+        if (!admin) {
+            console.log(`[DEBUG] Admin NOT FOUND for username: ${username}`);
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+        console.log(`[DEBUG] Admin found: ${admin.username}, status: ${admin.isActive}`);
+        if (!admin.isActive) {
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
