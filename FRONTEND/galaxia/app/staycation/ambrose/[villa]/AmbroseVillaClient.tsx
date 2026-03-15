@@ -153,6 +153,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                             <AvailabilityCalendar
                                 propertyId={dbPropertyId}
                                 subPropertyId={dbSubPropertyId}
+                                weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                 isDisabled={isVillaDisabled}

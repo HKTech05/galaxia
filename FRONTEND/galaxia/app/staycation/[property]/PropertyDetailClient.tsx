@@ -324,6 +324,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                 <AvailabilityCalendar
                                     propertyId={dbPropertyId}
                                     weekdayPrice={property.pricing.weekday.price}
+                                    weekendPrice={property.pricing.weekend.price}
                                     primeDatePrice={property.pricing.primeDates}
                                     onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                     isDisabled={isPropertyDisabled}
