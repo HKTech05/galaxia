@@ -111,6 +111,8 @@ function DashboardContent() {
                 setUserPhone(user.phone || "");
             }
         });
+    }, [router, searchParams]);
+
     useEffect(() => {
         (async () => {
             try {
