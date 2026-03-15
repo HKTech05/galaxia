@@ -1009,12 +1009,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         ))}
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
                                     {expandedVilla === villa.name && !villa.checkedIn && (
                                         <div className="p-4 pt-0 border-t border-slate-100">
-                                            <p className="text-sm text-slate-400 font-medium py-4 text-center">No active check-in.</p>
+                                            <p className="text-sm text-slate-400 font-medium py-4 text-center">No active check-in at this property.</p>
                                         </div>
                                     )}
                                 </div>

@@ -79,6 +79,7 @@ async function main() {
             googleMapUrl: "https://maps.app.goo.gl/1v6azy4nLhHe7Hzq6",
             description: "Premium apartment with a private bathtub and enormous mountain-facing balcony.", displayOrder: 5,
         },
+        {
             slug: "heavenly-villa", name: "Heavenly Villa", subtitle: "Heavenly Villa — Private Indoor Pool",
             type: "standalone", checkInTime: "1:00 PM", checkOutTime: "10:00 AM",
             maxPersons: 4, securityDeposit: 3000, securityRefund: "Refund at checkout",
@@ -187,7 +188,7 @@ async function main() {
             ],
         },
         {
-            slug: "euphoria",
+            slug: "heavenly-villa",
             entries: [
                 { dayType: "weekday", basePrice: 3950, personsLabel: "2 persons", extraAdultPrice: 800, kidsPrice: 500, kidsAgeRange: "5-12 yrs" },
                 { dayType: "weekend", basePrice: 4950, personsLabel: "2 persons", extraAdultPrice: 800, kidsPrice: 500, kidsAgeRange: "5-12 yrs" },
@@ -311,7 +312,7 @@ async function main() {
         { name: "Suresh Pillai", role: "Reception", propertySlug: "amstel-nest", phone: "+91 91234 56780" },
         { name: "Neha Desai", role: "Host", propertySlug: "la-paraiso", phone: "+91 99887 76655" },
         { name: "Ravi Shankar", role: "Caretaker", propertySlug: "mount-view", phone: "+91 88776 65544" },
-        { name: "Rahul Sharma", role: "Reception", propertySlug: "euphoria", phone: "+91 93456 78901" },
+        { name: "Rahul Sharma", role: "Reception", propertySlug: "heavenly-villa", phone: "+91 93456 78901" },
     ];
 
     for (const e of employeesData) {
