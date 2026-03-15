@@ -74,7 +74,27 @@ export default function Admin1Dashboard() {
             const dateStr = date.toISOString().split('T')[0];
             const data = await api.get(`/bookings/dd?dateFrom=${dateStr}`);
             if (Array.isArray(data)) {
-                setEventsList(data);
+                const mapped: Event[] = data.map((b: any) => ({
+                    id: b.id.toString(),
+                    customerName: b.customerName,
+                    phone: b.customerPhone || "—",
+                    email: b.customerEmail || "—",
+                    screen: b.screen?.name || "Sandy Screen",
+                    startHour: b.startHour,
+                    duration: b.durationHours,
+                    reservationDate: b.bookingDate,
+                    packageType: b.package?.name || "Movie Time",
+                    color: b.screen?.name === "Cine Love" ? "bg-pink-100 text-pink-700 border-pink-200" :
+                           b.screen?.name === "Sandy Screen" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                           b.screen?.name === "Park N Watch" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                           "bg-sky-100 text-sky-700 border-sky-200",
+                    amountPaid: `₹${(b.amountPaid || 0).toLocaleString()}`,
+                    amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
+                    paymentDetails: b.paymentDetails || "N/A",
+                    isMaintenance: b.customerName.toLowerCase().includes("maintenance") || b.status === "maintenance",
+                    dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                }));
+                setEventsList(mapped);
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);
@@ -187,15 +207,50 @@ export default function Admin1Dashboard() {
         });
     };
 
-    const handleSubmitDraft = () => {
-        if (checkOverlap()) {
-            setShowOverlapWarning(true);
-            return;
-        }
+        const screenMap: Record<string, number> = {
+            "Sandy Screen": 1,
+            "Cine Love": 2,
+            "Park N Watch": 3,
+            "Baywatch": 4
+        };
+        const packageMap: Record<string, number> = {
+            "Movie Time": 1,
+            "Celebration": 2
+        };
 
-        // Success payload goes here (omitted for mocked front end unless saving to events array is desired)
-        setDraftSlot(null);
-    };
+        const screenId = screenMap[selectedScreen] || 1;
+        const packageId = packageMap[packageType] || 1;
+
+        try {
+            await api.post("/bookings/dd", {
+                screenId,
+                packageId,
+                bookingDate: startDate.toISOString().split('T')[0],
+                startHour: draftSlot.hour,
+                durationHours: durNum,
+                customerName: (document.querySelector('input[placeholder="John Doe"]') as HTMLInputElement)?.value || "Walk-in Guest",
+                customerPhone: (document.querySelector('input[placeholder="+91"]') as HTMLInputElement)?.value || "0000000000",
+                customerEmail: (document.querySelector('input[placeholder="john@example.com"]') as HTMLInputElement)?.value || "",
+                numGuests: guestsCount,
+                totalAmount: totalPrice,
+                amountPaid: totalPrice, // Walk-in usually pays full
+                paymentMethod: (document.querySelector('select:last-of-type') as HTMLSelectElement)?.value || "Cash",
+                paymentDetails: "Manual booking from receptionist view",
+                source: "reception",
+                addons: [
+                    ...(addBalloons ? [{ type: "balloons", value: "yes", price: 400 }] : []),
+                    ...(addLedBanner ? [{ type: "led_banner", value: ledBannerType, price: 400 }] : []),
+                    ...(addCake ? [{ type: "cake", value: addOnCakeMessage || "Yes", price: 400 }] : [])
+                ]
+            });
+            
+            fetchEvents(startDate);
+            setDraftSlot(null);
+            alert("Booking created successfully!");
+        } catch (err: any) {
+            console.error("Failed to create manual booking:", err);
+            alert(err.response?.data?.error || "Failed to create manual booking");
+        }
 
     const handleCollectPayment = (mode: "Cash" | "UPI") => {
         if (!activeEvent) return;

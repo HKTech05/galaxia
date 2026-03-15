@@ -72,18 +72,13 @@ export default function AdminReviewsPage() {
                     <p className="text-sm font-medium text-slate-500 mt-1">Approve, reject, or delete guest reviews.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
-                        {pendingCount} Pending
-                    </span>
-                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-                        {approvedCount} Approved
-                    </span>
+                    {/* Status badges removed as per request */}
                 </div>
             </div>
 
             {/* Filters */}
             <div className="flex gap-2">
-                {(["all", "pending", "approved"] as const).map(f => (
+                {(["all"] as const).map(f => (
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
@@ -92,7 +87,7 @@ export default function AdminReviewsPage() {
                             : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                             }`}
                     >
-                        {f === "all" ? `All (${reviews.length})` : f === "pending" ? `Pending (${pendingCount})` : `Approved (${approvedCount})`}
+                        {f === "all" ? `All (${reviews.length})` : f}
                     </button>
                 ))}
             </div>
@@ -107,7 +102,7 @@ export default function AdminReviewsPage() {
                     <Star size={40} className="mx-auto text-slate-300 mb-4" />
                     <h3 className="text-lg font-bold text-slate-700 mb-2">No Reviews</h3>
                     <p className="text-sm text-slate-500">
-                        {filter === "pending" ? "No pending reviews." : filter === "approved" ? "No approved reviews yet." : "No reviews submitted yet."}
+                        {filter === "all" ? "No reviews submitted yet." : "No reviews found for this filter."}
                     </p>
                 </div>
             ) : (
@@ -132,12 +127,7 @@ export default function AdminReviewsPage() {
                                                 <Star key={s} size={14} className={s <= review.rating ? "text-amber-400 fill-amber-400" : "text-slate-200"} />
                                             ))}
                                         </div>
-                                        <span className={`ml-auto text-xs font-bold px-2.5 py-1 rounded-full ${review.isApproved
-                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                            : "bg-amber-50 text-amber-700 border border-amber-200"
-                                            }`}>
-                                            {review.isApproved ? "Approved" : "Pending"}
-                                        </span>
+                                        {/* Status badge removed */}
                                     </div>
                                     {review.reviewText && (
                                         <p className="text-sm text-slate-600 leading-relaxed pl-[52px]">"{review.reviewText}"</p>

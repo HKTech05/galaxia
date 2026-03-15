@@ -29,7 +29,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     checkOutTime: "10:00 AM",
                     depositAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
                     remainingAmt: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
-                    status: b.status === "confirmed" ? "Pending Arrival" : b.status === "checked_in" ? "Checked In" : b.status === "checked_out" ? "Checked Out" : b.status || "Pending Arrival",
+                    idProofUrl: b.idProofUrl || (b.guestIds && b.guestIds.length > 0 ? b.guestIds[0].fileUrl : null),
+                    status: (b.status === "checked_out" || new Date(b.checkOutDate) < new Date()) ? "Completed" : 
+                            b.status === "confirmed" ? "Pending Arrival" : 
+                            b.status === "checked_in" ? "Checked In" : 
+                            b.status || "Pending Arrival",
                 }));
                 setBookings(mapped);
             }
@@ -201,19 +205,28 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         // For now, let's just assume the API can handle name or we use a map
         
         try {
-            // Need to find propertyId and subPropertyId
-            // Simpler: Just refresh bookings after creation
+            const propertyMap: Record<string, number> = {
+                "Hill View": 1,
+                "Mount View": 2,
+                "Heavenly Villa": 3,
+                "La Paraiso": 4,
+                "Amstel Nest": 5,
+                "Ambrose": 6,
+                "Digital Diaries": 7
+            };
+            const propId = Object.entries(propertyMap).find(([name]) => manualForm.property.includes(name))?.[1] || 1;
+
             await api.post("/bookings/staycation", {
                 customerName: manualForm.name,
                 customerPhone: manualForm.phone,
-                propertyId: manualForm.property.includes("Hill View") ? 1 : 
-                           manualForm.property.includes("Heavenly Villa") ? 3 : 
-                           manualForm.property.includes("Ambrose") ? 6 : 1,
+                propertyId: propId,
                 numGuests: manualForm.guests,
                 checkInDate: manualForm.checkInDate.toISOString(),
                 checkOutDate: manualForm.checkOutDate.toISOString(),
                 totalAmount: calculatedTotal,
-                advanceAmount: calculatedTotal,
+                advanceAmount: calculatedTotal, // Full payment for walk-in
+                basePrice: calculatedTotal / 1.05, // Approximation
+                gstAmount: calculatedTotal - (calculatedTotal / 1.05),
                 advancePaid: true,
                 advanceMethod: manualForm.paymentMethod,
                 source: "reception",
@@ -387,7 +400,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     )}
                                 </div>
                                 <div className="mt-6 pt-6 border-t border-slate-100 flex items-center gap-4">
-                                    <button className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors border border-indigo-100">
+                                    <button 
+                                        onClick={() => {
+                                            if (booking.idProofUrl) {
+                                                window.open(booking.idProofUrl, '_blank');
+                                            } else {
+                                                alert("No ID Proof uploaded for this booking.");
+                                            }
+                                        }}
+                                        className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors border border-indigo-100">
                                         <Info size={16} /> View ID Proofs
                                     </button>
                                 </div>

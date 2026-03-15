@@ -640,7 +640,7 @@ function DashboardContent() {
                                         <p className={`${textSecondary} font-inter text-sm italic leading-relaxed`}>&ldquo;{review.reviewText}&rdquo;</p>
                                         <div className="mt-4 flex items-center justify-between">
                                             <span className={`text-[9px] font-inter font-bold uppercase tracking-widest ${review.rating > 3 ? "text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded" : "text-amber-600 bg-amber-50 px-2 py-0.5 rounded"}`}>
-                                                {review.rating > 3 ? "Publicly Visible" : "Private Feedback"}
+                                                {/* Visibility labels removed as per request */}
                                             </span>
                                             {review.rating > 3 && (
                                                 <Link href="/staycation/reviews" className={`${accentText} text-[9px] font-inter font-bold uppercase hover:underline`}>View on site</Link>
