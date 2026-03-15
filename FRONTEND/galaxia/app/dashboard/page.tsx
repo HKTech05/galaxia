@@ -18,6 +18,7 @@ interface Booking {
     image: string;
     type: "staycation" | "celebration";
     time: "upcoming" | "past";
+    property: string;
     rating?: number;
     hasReview?: boolean;
     // Financial details
