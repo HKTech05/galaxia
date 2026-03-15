@@ -14,7 +14,38 @@ interface CalendarProps {
     initialCheckOut?: Date | null;
 }
 
-// ... (getDayPrice remains same)
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const formatPrice = (price: string | number | undefined) => {
+    if (!price) return "N/A";
+    const num = typeof price === "string" ? parseInt(price.replace(/[^0-9]/g, '')) : price;
+    return `₹${num.toLocaleString('en-IN')}`;
+};
+
+const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, primeDatePrice?: string, bookedDates?: Set<string>) => {
+    const dateStr = date.toISOString().split('T')[0];
+    if (bookedDates?.has(dateStr)) {
+        return { price: "Booked", numPrice: 0, type: "booked" as const };
+    }
+
+    const day = date.getDay();
+    const isWeekend = day === 0 || day === 5 || day === 6;
+
+    // Use primeDatePrice if applicable, for now defaulting to weekend/weekday
+    const priceStr = isWeekend ? weekendPrice : weekdayPrice;
+    const numPrice = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+
+    return {
+        price: formatPrice(priceStr),
+        numPrice: numPrice,
+        type: (isWeekend ? "weekend" : "weekday") as "weekday" | "weekend" | "prime" | "booked"
+    };
+};
 
 export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, onDatesChange, compact = false, initialCheckIn, initialCheckOut }: CalendarProps) {
     const today = new Date();
