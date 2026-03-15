@@ -951,6 +951,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         </div>
                                         <ChevronRight size={16} className={`text-slate-400 transition-transform ${expandedVilla === villa.name ? "rotate-90" : ""}`} />
                                     </button>
+                                    {expandedVilla === villa.name && villa.checkedIn && (
                                         <div className="p-4 pt-0 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                                                 <div>
@@ -1009,6 +1010,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         ))}
                                                     </div>
                                                 </div>
+                                            )}
+                                        </div>
+                                    )}
                                     {expandedVilla === villa.name && !villa.checkedIn && (
                                         <div className="p-4 pt-0 border-t border-slate-100">
                                             <p className="text-sm text-slate-400 font-medium py-4 text-center">No active check-in at this property.</p>
