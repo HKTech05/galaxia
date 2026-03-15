@@ -21,7 +21,6 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 const mapped = data.map((b: any) => ({
                     id: b.bookingRef || `#ST-${b.id}`,
                     customer: b.customerName || "Unknown",
-                    customer: b.customerName || "Unknown",
                     property: b.subProperty 
                         ? `${b.subProperty.name} (${b.property?.name || 'Unknown'})` 
                         : (b.property?.name || "Unknown"),
