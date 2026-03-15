@@ -40,6 +40,7 @@ export interface PropertyData {
     location: string;
     subProperties?: {
         id: string;
+        entryDbId?: number;
         name: string;
         theme: string;
         description: string;
