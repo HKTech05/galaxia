@@ -116,7 +116,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     useEffect(() => {
         const fetchAvailability = async () => {
             try {
-                const data = await api.get(`/properties/${property.slug}/availability`);
+                const data = await api.get(`/properties/${property.id}/availability`);
                 setBackendData(data);
                 setIsMaintenance(data.isActive === false);
                 
@@ -137,7 +137,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             }
         };
         fetchAvailability();
-    }, [property.slug, searchParams]);
+    }, [property.id, searchParams]);
 
     // Guest state
     const [adults, setAdults] = useState(1);
