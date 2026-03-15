@@ -76,6 +76,8 @@ export default function Admin1Dashboard() {
             if (Array.isArray(data)) {
                 const mapped: Event[] = data.map((b: any) => ({
                     id: b.id.toString(),
+                    day: 0, // Placeholder as required by type
+                    title: `${b.screen?.name || "Sandy Screen"} - ${b.customerName}`,
                     customerName: b.customerName,
                     phone: b.customerPhone || "—",
                     email: b.customerEmail || "—",
