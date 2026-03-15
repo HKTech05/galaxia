@@ -55,6 +55,15 @@ router.post("/", async (req, res) => {
 
         // Use serializable transaction to prevent double-booking
         const booking = await prisma.$transaction(async (tx) => {
+            // 0. Check if screen is active
+            const screen = await tx.subProperty.findUnique({ 
+                where: { id: parseInt(screenId) },
+                include: { property: true }
+            });
+            if (!screen || !screen.isActive || (screen.property && !screen.property.isActive)) {
+                throw new Error("PROPERTY_INACTIVE");
+            }
+
             // Atomic overlap check inside transaction
             const existingBookings = await tx.ddBooking.findMany({
                 where: {
@@ -236,6 +245,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
         // Decrypt sensitive fields for admin view
         const decrypted = bookings.map(b => ({
             ...b,
+            screen: b.screen ? { ...b.screen, name: `${b.screen.name} (Digital Diaries)` } : b.screen,
             customerPhone: decrypt(b.customerPhone),
             customerEmail: b.customerEmail ? decrypt(b.customerEmail) : null,
         }));
@@ -303,6 +313,49 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
         return res.json(payment);
     } catch (error) {
         console.error("DD payment error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/bookings/dd/addons/:addonId/collect
+router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const addonId = parseInt(req.params.addonId as string);
+        const { method } = req.body;
+
+        const addon = await prisma.ddBookingAddon.update({
+            where: { id: addonId },
+            data: { 
+                isPaid: true,
+                paymentMethod: method 
+            },
+            include: { booking: true }
+        });
+
+        // Record payment in ledger
+        await prisma.bookingPayment.create({
+            data: {
+                ddBookingId: addon.bookingId,
+                paymentType: `addon_${addon.addonType}`,
+                amount: addon.price,
+                method: method || "cash",
+                collectedBy: req.admin!.id,
+                notes: `Addon payment: ${addon.addonType}`
+            }
+        });
+
+        // Update booking's total amount paid and remaining
+        await prisma.ddBooking.update({
+            where: { id: addon.bookingId },
+            data: {
+                amountPaid: { increment: addon.price },
+                amountToCollect: { decrement: addon.price }
+            }
+        });
+
+        return res.json(addon);
+    } catch (error) {
+        console.error("Addon payment collection error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

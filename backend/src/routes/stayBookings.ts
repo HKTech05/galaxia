@@ -63,6 +63,12 @@ router.post("/", async (req, res) => {
 
         // Use serializable transaction to prevent double-booking (race-condition safe)
         const booking = await prisma.$transaction(async (tx) => {
+            // 0. Check if property is active
+            const property = await tx.property.findUnique({ where: { id: parsedPropertyId } });
+            if (!property || !property.isActive) {
+                throw new Error("PROPERTY_INACTIVE");
+            }
+
             // ── Capacity-aware conflict check ──────────────────────────
             // 1. Get all sub-properties for this property (determines capacity)
             const subProperties = await tx.subProperty.findMany({
@@ -247,6 +253,9 @@ router.post("/", async (req, res) => {
         if (error?.message === "DATE_CONFLICT") {
             return res.status(409).json({ error: "Property is already booked for these dates. Please choose different dates." });
         }
+        if (error?.message === "PROPERTY_INACTIVE") {
+            return res.status(403).json({ error: "Property is currently under maintenance" });
+        }
         console.error("Create stay booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
@@ -303,8 +312,11 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
         }));
 
         return res.json(decrypted);
-    } catch (error) {
-        console.error("List stay bookings error:", error);
+    } catch (error: any) {
+        if (error?.message === "PROPERTY_INACTIVE") {
+            return res.status(403).json({ error: "Property is currently under maintenance" });
+        }
+        console.error("Create stay booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

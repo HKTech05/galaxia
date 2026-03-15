@@ -12,6 +12,7 @@ interface CalendarProps {
     compact?: boolean;
     initialCheckIn?: Date | null;
     initialCheckOut?: Date | null;
+    isDisabled?: boolean;
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -35,10 +36,8 @@ const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, pri
 
     const day = date.getDay();
     const isWeekend = day === 0 || day === 5 || day === 6;
-
-    // Use primeDatePrice if applicable, for now defaulting to weekend/weekday
     const priceStr = isWeekend ? weekendPrice : weekdayPrice;
-    const numPrice = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+    const numPrice = parseInt(priceStr.replace(/[^0-9]/g, ''));
 
     return {
         price: formatPrice(priceStr),
@@ -47,7 +46,11 @@ const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, pri
     };
 };
 
-export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, onDatesChange, compact = false, initialCheckIn, initialCheckOut }: CalendarProps) {
+const getMaintenancePrice = (date: Date) => {
+    return { price: "Maintenance", numPrice: 0, type: "booked" as const };
+};
+
+export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled }: CalendarProps) {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(initialCheckIn ? initialCheckIn.getMonth() : today.getMonth());
     const [currentYear, setCurrentYear] = useState(initialCheckIn ? initialCheckIn.getFullYear() : today.getFullYear());
@@ -98,7 +101,7 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
 
         for (let d = 1; d <= daysInMonth; d++) {
             const date = new Date(currentYear, currentMonth, d);
-            const info = getDayPrice(date, weekdayPrice, weekendPrice, primeDatePrice, bookedDates);
+            const info = isDisabled ? getMaintenancePrice(date) : getDayPrice(date, weekdayPrice, weekendPrice, primeDatePrice, bookedDates);
             days.push({ date, ...info });
         }
 
@@ -223,7 +226,9 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
                                         {day.date.getDate()}
                                     </p>
                                     {booked ? (
-                                        <span className={`font-inter text-red-400 ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"}`}>Booked</span>
+                                        <span className={`font-inter ${day.price === 'Maintenance' ? 'text-amber-500' : 'text-red-400'} ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"}`}>
+                                            {day.price}
+                                        </span>
                                     ) : (
                                         <span className={`font-inter ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"} ${day.type === "prime" ? "text-warning" :
                                             day.type === "weekend" ? "text-antique-gold" :

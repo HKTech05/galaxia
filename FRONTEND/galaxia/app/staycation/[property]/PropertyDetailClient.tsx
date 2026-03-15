@@ -39,15 +39,31 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const [calCheckIn, setCalCheckIn] = useState<Date | null>(null);
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+    const [isPropertyDisabled, setIsPropertyDisabled] = useState(false);
+    const [subPropertyStatus, setSubPropertyStatus] = useState<Record<number, boolean>>({});
 
     // Fetch DB property ID on mount
     useEffect(() => {
         (async () => {
             try {
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
-                const res = await fetch(`${baseUrl}/properties`);
+                const res = await fetch(`${baseUrl}/properties/${property.id}/availability`);
                 if (res.ok) {
-                    const props = await res.json();
+                    const data = await res.json();
+                    if (data.isActive === false) setIsPropertyDisabled(true);
+                    if (data.subProperties) {
+                        const status: Record<number, boolean> = {};
+                        data.subProperties.forEach((sp: any) => {
+                            status[sp.id] = sp.isActive === false;
+                        });
+                        setSubPropertyStatus(status);
+                    }
+                }
+                
+                // Still need the numeric ID for the generic properties list for some lookups if needed
+                const resList = await fetch(`${baseUrl}/properties`);
+                if (resList.ok) {
+                    const props = await resList.json();
                     const dbProp = props.find((p: any) => p.slug === property.id);
                     if (dbProp) setDbPropertyId(dbProp.id);
                 }
@@ -129,7 +145,11 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                                 <span className="text-text-muted text-[10px] font-inter">/ {sub.pricing.weekday.persons}</span>
                                             </div>
                                         )}
-                                        <Link href={`/staycation/ambrose/${sub.id}`} className="block w-full text-center bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium py-2.5 rounded-lg hover:bg-antique-gold hover:text-white transition-all duration-300">View Details & Book</Link>
+                                        {subPropertyStatus[sub.entryDbId || 0] ? (
+                                            <div className="block w-full text-center bg-red-50 border border-red-200 text-red-600 text-[10px] font-bold py-2.5 rounded-lg uppercase tracking-widest">Under Maintenance</div>
+                                        ) : (
+                                            <Link href={`/staycation/ambrose/${sub.id}`} className="block w-full text-center bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium py-2.5 rounded-lg hover:bg-antique-gold hover:text-white transition-all duration-300">View Details & Book</Link>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -304,13 +324,17 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                 <AvailabilityCalendar
                                     propertyId={dbPropertyId}
                                     weekdayPrice={property.pricing.weekday.price}
-                                    weekendPrice={property.pricing.weekend.price}
                                     primeDatePrice={property.pricing.primeDates}
                                     onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
+                                    isDisabled={isPropertyDisabled}
                                 />
-                                <Link href={bookNowUrl} className="mt-5 block w-full sm:w-auto sm:inline-block bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
-                                    BOOK NOW
-                                </Link>
+                                {isPropertyDisabled ? (
+                                    <div className="mt-5 w-full bg-red-50 border border-red-200 text-red-600 font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center uppercase tracking-widest">Under Maintenance</div>
+                                ) : (
+                                    <Link href={bookNowUrl} className="mt-5 block w-full sm:w-auto sm:inline-block bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
+                                        BOOK NOW
+                                    </Link>
+                                )}
                             </div>
                             <div className="space-y-5 sm:space-y-6">
                                 <div className="rounded-xl border border-border-light bg-white p-5 sm:p-6 shadow-sm">
@@ -391,7 +415,11 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         <h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-text-primary mb-4">{property.name}</h2>
                         <p className="text-text-secondary font-inter text-sm max-w-lg mx-auto mb-8">{property.description}</p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link href={`/staycation/${property.id}/book`} className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">Book Now — Starting ₹{property.pricing.weekday.price}</Link>
+                            {isPropertyDisabled ? (
+                                <div className="bg-red-50 border border-red-200 text-red-600 font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full uppercase tracking-widest">Under Maintenance</div>
+                            ) : (
+                                <Link href={`/staycation/${property.id}/book`} className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">Book Now — Starting ₹{property.pricing.weekday.price}</Link>
+                            )}
                             <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="border border-antique-gold/30 text-antique-gold font-inter text-sm px-8 py-3.5 rounded-full hover:bg-antique-gold/5 transition-all duration-300">Contact via WhatsApp</a>
                         </div>
                     </div>

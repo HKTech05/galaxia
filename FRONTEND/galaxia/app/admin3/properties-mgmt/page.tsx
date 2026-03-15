@@ -60,9 +60,6 @@ export default function PropertiesMgmtPage() {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Properties Management</h1>
                     <p className="text-sm font-medium text-slate-500 mt-1">Manage villas, apartments, and digital screening rooms.</p>
                 </div>
-                <button className="flex items-center justify-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-purple-600/20 hover:bg-purple-700 transition-colors w-full sm:w-auto">
-                    <Plus size={18} /> Add Property
-                </button>
             </div>
 
             {loading ? (

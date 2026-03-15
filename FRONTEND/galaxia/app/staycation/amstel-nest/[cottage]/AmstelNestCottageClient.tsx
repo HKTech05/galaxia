@@ -30,21 +30,33 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [calCheckIn, setCalCheckIn] = useState<Date | null>(null);
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+    const [dbSubPropertyId, setDbSubPropertyId] = useState<number | null>(null);
+    const [isCottageDisabled, setIsCottageDisabled] = useState(false);
 
     // Fetch DB property ID for parent property (Amstel Nest)
     useEffect(() => {
         (async () => {
             try {
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
-                const res = await fetch(`${baseUrl}/properties`);
+                const res = await fetch(`${baseUrl}/properties/amstel-nest/availability`);
                 if (res.ok) {
-                    const props = await res.json();
-                    const dbProp = props.find((p: any) => p.slug === 'amstel-nest');
-                    if (dbProp) setDbPropertyId(dbProp.id);
+                    const data = await res.json();
+                    if (data.isActive === false) setIsCottageDisabled(true);
+                    const sub = (data.subProperties || []).find((sp: any) => sp.id === parseInt(cottage.id) || sp.slug === cottage.id);
+                    if (sub && sub.isActive === false) setIsCottageDisabled(true);
+                    
+                    // Also get numeric ID
+                    const resMeta = await fetch(`${baseUrl}/properties/amstel-nest`);
+                    if (resMeta.ok) {
+                        const dbProp = await resMeta.json();
+                        setDbPropertyId(dbProp.id);
+                        const subMeta = (dbProp.subProperties || []).find((sp: any) => sp.slug === cottage.id);
+                        if (subMeta) setDbSubPropertyId(subMeta.id);
+                    }
                 }
             } catch (err) { /* silently fail */ }
         })();
-    }, []);
+    }, [cottage.id]);
 
     const images = [cottage.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = cottage.pricing?.weekday.price || parent.pricing.weekday.price;
@@ -78,7 +90,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                         </div>
                         <h1 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary mb-4 tracking-tight flex items-center gap-4">
                             <img src="/logos/amstel-nest.jpeg" alt="Amstel Nest" className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-lg" />
-                            {cottage.name}
+                            {cottage.name} (Amstel Nest)
                         </h1>
                         <p className="font-inter text-base sm:text-lg text-text-secondary leading-relaxed mb-6">{cottage.description}</p>
                         <div className="flex flex-wrap gap-6 text-sm font-inter mb-4">
@@ -150,9 +162,11 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                         <div>
                             <AvailabilityCalendar
                                 propertyId={dbPropertyId}
+                                subPropertyId={dbSubPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
+                                isDisabled={isCottageDisabled}
                             />
                             <Link href={bookNowUrl} className="mt-5 block w-full sm:w-auto sm:inline-block bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
                                 BOOK NOW

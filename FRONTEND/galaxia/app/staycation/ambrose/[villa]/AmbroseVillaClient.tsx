@@ -31,19 +31,27 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
     const [dbSubPropertyId, setDbSubPropertyId] = useState<number | null>(null);
+    const [isVillaDisabled, setIsVillaDisabled] = useState(false);
 
     // Fetch DB property IDs
     useEffect(() => {
         (async () => {
             try {
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
-                const res = await fetch(`${baseUrl}/properties/ambrose`);
+                const res = await fetch(`${baseUrl}/properties/ambrose/availability`);
                 if (res.ok) {
-                    const dbProp = await res.json();
-                    if (dbProp) {
+                    const data = await res.json();
+                    if (data.isActive === false) setIsVillaDisabled(true);
+                    const sub = (data.subProperties || []).find((sp: any) => sp.id === parseInt(villa.id) || sp.slug === villa.id);
+                    if (sub && sub.isActive === false) setIsVillaDisabled(true);
+                    
+                    // Also get the numeric IDs if needed
+                    const resMeta = await fetch(`${baseUrl}/properties/ambrose`);
+                    if (resMeta.ok) {
+                        const dbProp = await resMeta.json();
                         setDbPropertyId(dbProp.id);
-                        const sub = (dbProp.subProperties || []).find((sp: any) => sp.slug === villa.id);
-                        if (sub) setDbSubPropertyId(sub.id);
+                        const subMeta = (dbProp.subProperties || []).find((sp: any) => sp.slug === villa.id);
+                        if (subMeta) setDbSubPropertyId(subMeta.id);
                     }
                 }
             } catch (err) { /* silently fail */ }
@@ -81,7 +89,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                     </div>
                     <h1 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary mb-4 tracking-tight flex items-center gap-4">
                         <img src="/logos/ambrose.png" alt="Ambrose" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
-                        {villa.name}
+                        {villa.name} (Ambrose)
                     </h1>
                     <p className="font-inter text-base sm:text-lg text-text-secondary leading-relaxed mb-6">{villa.description}</p>
                     <div className="flex items-center gap-2 text-text-muted font-inter text-sm">
@@ -145,9 +153,9 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                             <AvailabilityCalendar
                                 propertyId={dbPropertyId}
                                 subPropertyId={dbSubPropertyId}
-                                weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
+                                isDisabled={isVillaDisabled}
                             />
                             <Link href={bookNowUrl} className="mt-5 block w-full sm:w-auto sm:inline-block bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
                                 BOOK NOW

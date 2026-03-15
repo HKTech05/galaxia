@@ -1,17 +1,68 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+import api from "../lib/api";
 import ReviewCarousel from "../components/ReviewCarousel";
 
-const properties = [
-    { id: "ambrose", name: "Ambrose", subtitle: "Theme Villa Resort — 5 Themed Villas", startPrice: "5,500", priceNote: "with meals", description: "Five exquisitely themed villas — Bollywood, Rustic, Greek, Bali, and Machan — each with private pool.", image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80", highlights: ["5 Themes", "Private Pools", "Meals Included", "Garden"] },
-    { id: "amstel-nest", name: "Amstel Nest", subtitle: "Mini Amsterdam — 14 Indoor Pool Cottages", startPrice: "4,950", priceNote: "with meals", description: "Unique cottages inspired by Amsterdam, each with its own private indoor pool. Meals included.", image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800&q=80", highlights: ["Indoor Pool", "Meals Included", "Gaming Zone", "Boating"] },
-    { id: "la-paraiso", name: "La Paraiso", subtitle: "Premium Private Pool Villa", startPrice: "4,950", description: "Luxurious villa with a 25x10 ft private pool, 600 sq ft private garden, and a beautiful gazebo.", image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80", highlights: ["25x10 ft Pool", "Private Garden", "Gazebo", "Self Check-in"] },
-    { id: "heavenly-villa", name: "Heavenly Villa", subtitle: "Heavenly Villa — Private Indoor Pool", startPrice: "3,950", description: "A heavenly studio villa with a private indoor swimming pool and swing. An intimate tropical paradise.", image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80", highlights: ["Indoor Pool", "Pool Swing", "Studio Room", "Free WiFi"] },
-    { id: "mount-view", name: "Mount View", subtitle: "Bathtub Mountain Apartment", startPrice: "3,500", description: "Premium apartment featuring a private bathtub and enormous mountain-facing balcony. Luxury meets nature.", image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80", highlights: ["Private Bathtub", "Mountain Balcony", "Music Player", "2 AC"] },
-    { id: "hill-view", name: "Hill View", subtitle: "Budget Mountain View Apartment", startPrice: "2,500", description: "A cozy apartment with a huge open balcony offering breathtaking mountain views. Perfect for couples seeking a tranquil escape.", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", highlights: ["Mountain View", "Queen Bed", "Smart TV", "Free WiFi"] },
-];
-
 export default function StaycationPage() {
+    const [properties, setProperties] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api.get("/properties").then((data: any[]) => {
+            // Flatten properties: if a property has sub-properties, show sub-properties as individual cards
+            const flattened: any[] = [];
+            data.forEach(p => {
+                if (p.subProperties && p.subProperties.length > 0) {
+                    p.subProperties.forEach((sub: any) => {
+                        let standardizedName = sub.name;
+                        if (p.name.toLowerCase().includes("ambrose")) {
+                            standardizedName = `${sub.name} (Ambrose)`;
+                        } else if (p.name.toLowerCase().includes("amstel")) {
+                            standardizedName = `${sub.name} (Amstel Nest)`;
+                        } else {
+                            standardizedName = `${sub.name} (${p.name})`;
+                        }
+
+                        flattened.push({
+                            ...sub,
+                            id: sub.id,
+                            parentId: p.id,
+                            parentSlug: p.slug,
+                            name: standardizedName,
+                            image: sub.images?.[0] || p.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80",
+                            description: sub.description || p.description,
+                            highlights: sub.amenities?.slice(0, 4) || p.amenities?.slice(0, 4) || [],
+                            isActive: sub.isActive && p.isActive,
+                            pricing: sub.pricing || p.pricing
+                        });
+                    });
+                } else {
+                    flattened.push({
+                        ...p,
+                        id: p.id,
+                        parentSlug: p.slug,
+                        name: p.name,
+                        image: p.images?.[0] || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80",
+                        description: p.description,
+                        highlights: p.amenities?.slice(0, 4) || [],
+                        isActive: p.isActive,
+                        pricing: p.pricing
+                    });
+                }
+            });
+            setProperties(flattened);
+        }).finally(() => setLoading(false));
+    }, []);
+
+    const getStartPrice = (property: any) => {
+        if (!property.pricing) return "2,500";
+        const weekday = property.pricing.find((p: any) => p.dayType === 'weekday');
+        return weekday ? weekday.price.toLocaleString("en-IN") : "2,500";
+    };
+
     return (
         <div>
             {/* Hero */}
@@ -36,53 +87,75 @@ export default function StaycationPage() {
                     <h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-semibold text-text-primary mb-4">Featured Properties</h2>
                     <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-antique-gold to-transparent mx-auto" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 stagger-children">
-                    {properties.map((property) => (
-                        <Link key={property.id} href={`/staycation/${property.id}`} className="group block">
-                            <div className="relative overflow-hidden rounded-xl border border-border-light bg-white transition-all duration-500 hover:border-antique-gold/30 hover:shadow-[0_8px_30px_rgba(186,151,49,0.10)]">
-                                <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden">
-                                    <Image src={property.image} alt={property.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 50vw" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-border-light">
-                                        <div className="flex items-baseline gap-0.5">
-                                            <span className="text-antique-gold font-cinzel font-semibold text-sm">₹{property.startPrice}</span>
-                                            <span className="text-text-muted text-[10px] font-inter">/night</span>
+                
+                {loading ? (
+                    <div className="flex justify-center py-20">
+                        <div className="w-10 h-10 border-4 border-antique-gold/20 border-t-antique-gold rounded-full animate-spin"></div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 stagger-children">
+                        {properties.map((property) => (
+                            <Link key={property.id} href={`/staycation/${property.parentSlug}`} className={`group block ${!property.isActive ? 'grayscale-[0.5]' : ''}`}>
+                                <div className="relative overflow-hidden rounded-xl border border-border-light bg-white transition-all duration-500 hover:border-antique-gold/30 hover:shadow-[0_8px_30px_rgba(186,151,49,0.10)]">
+                                    <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden">
+                                        <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${property.image})` }} />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+                                        
+                                        {!property.isActive && (
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                <div className="bg-red-600 text-white font-cinzel text-xs font-bold px-4 py-2 rounded-full tracking-widest shadow-lg">
+                                                    UNDER MAINTENANCE
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {property.isActive && (
+                                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-border-light">
+                                                <div className="flex items-baseline gap-0.5">
+                                                    <span className="text-antique-gold font-cinzel font-semibold text-sm">₹{getStartPrice(property)}</span>
+                                                    <span className="text-text-muted text-[10px] font-inter">/night</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-5 sm:p-6">
+                                        <h3 className="font-cinzel text-lg sm:text-xl font-semibold text-text-primary mb-1 group-hover:text-antique-gold transition-colors">{property.name}</h3>
+                                        <p className="text-text-secondary font-inter text-sm leading-relaxed mb-4 line-clamp-2">{property.description}</p>
+                                        <div className="flex flex-wrap gap-1.5 mb-5">
+                                            {property.highlights.map((h: string) => (
+                                                <span key={h} className="text-[10px] font-inter text-text-secondary bg-soft-gray border border-border-light rounded-full px-2.5 py-1">{h}</span>
+                                            ))}
                                         </div>
-                                        {property.priceNote && <p className="text-dark-gold text-[9px] font-inter text-center">{property.priceNote}</p>}
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-antique-gold font-inter text-xs font-medium flex items-center gap-1.5 group-hover:gap-3 transition-all">
+                                                View Details
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                                            </span>
+                                            {property.isActive ? (
+                                                <span className="bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium px-4 py-2 rounded-full hover:bg-antique-gold hover:text-white transition-all">Book Now</span>
+                                            ) : (
+                                                <span className="bg-gray-100 text-gray-400 text-[10px] font-inter font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Unavailable</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="p-5 sm:p-6">
-                                    <h3 className="font-cinzel text-lg sm:text-xl font-semibold text-text-primary mb-1 group-hover:text-antique-gold transition-colors">{property.name}</h3>
-                                    <p className="text-dark-gold font-inter text-xs tracking-wide mb-2">{property.subtitle}</p>
-                                    <p className="text-text-secondary font-inter text-sm leading-relaxed mb-4 line-clamp-2">{property.description}</p>
-                                    <div className="flex flex-wrap gap-1.5 mb-5">
-                                        {property.highlights.map((h) => (
-                                            <span key={h} className="text-[10px] font-inter text-text-secondary bg-soft-gray border border-border-light rounded-full px-2.5 py-1">{h}</span>
-                                        ))}
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-antique-gold font-inter text-xs font-medium flex items-center gap-1.5 group-hover:gap-3 transition-all">
-                                            View Details
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                        </span>
-                                        <span className="bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium px-4 py-2 rounded-full hover:bg-antique-gold hover:text-white transition-all">Book Now</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </section>
             {/* Guest Reviews */}
             <section className="relative border-t border-border-light bg-[#fdfbf7] overflow-hidden">
-                {/* Wavy background pattern */}
-                <svg className="absolute top-0 left-0 w-full h-32 text-soft-gray/40 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1440 120" fill="currentColor">
-                    <path d="M0,64 C240,120 480,0 720,64 C960,128 1200,8 1440,64 L1440,0 L0,0 Z" />
-                </svg>
-                <svg className="absolute bottom-0 left-0 w-full h-24 text-soft-gray/30 pointer-events-none rotate-180" preserveAspectRatio="none" viewBox="0 0 1440 120" fill="currentColor">
-                    <path d="M0,64 C240,120 480,0 720,64 C960,128 1200,8 1440,64 L1440,0 L0,0 Z" />
-                </svg>
-                {/* Subtle dot pattern in background */}
+                <div className="absolute top-0 left-0 w-full h-32 text-soft-gray/40 pointer-events-none" style={{ maskImage: 'linear-gradient(to bottom, black, transparent)' }}>
+                    <svg preserveAspectRatio="none" viewBox="0 0 1440 120" fill="currentColor" className="w-full h-full">
+                        <path d="M0,64 C240,120 480,0 720,64 C960,128 1200,8 1440,64 L1440,0 L0,0 Z" />
+                    </svg>
+                </div>
+                <div className="absolute bottom-0 left-0 w-full h-24 text-soft-gray/30 pointer-events-none rotate-180">
+                    <svg preserveAspectRatio="none" viewBox="0 0 1440 120" fill="currentColor" className="w-full h-full">
+                        <path d="M0,64 C240,120 480,0 720,64 C960,128 1200,8 1440,64 L1440,0 L0,0 Z" />
+                    </svg>
+                </div>
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #ba9731 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24 pt-20 sm:pt-28">

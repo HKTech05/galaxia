@@ -33,7 +33,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 <div className="inline-block px-3 py-1 mb-3 bg-rose-dark/15 border border-rose-dark/30 rounded-full">
                     <span className="text-rose-light font-inter text-[10px] tracking-widest uppercase">{screen.theme}</span>
                 </div>
-                <h1 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-bold text-cel-text">{screen.name}</h1>
+                <h1 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-bold text-cel-text">{screen.name} (Digital Diaries)</h1>
             </div>
 
             {/* Image Slideshow */}

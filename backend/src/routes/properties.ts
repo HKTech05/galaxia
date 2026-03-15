@@ -14,17 +14,84 @@ router.get("/all", authMiddleware, requireRole("owner", "developer", "manager"),
                 pricing: { where: { isActive: true }, orderBy: { dayType: "asc" } },
             },
         });
-        return res.json(properties);
+
+        const flattened: any[] = [];
+        for (const p of properties) {
+            if (p.slug === "ambrose" || p.slug === "amstel-nest") {
+                // Return sub-properties as flattened items
+                for (const sp of p.subProperties) {
+                    flattened.push({
+                        ...p,
+                        id: `sp-${sp.id}`,
+                        realId: sp.id,
+                        entityType: 'subProperty',
+                        name: p.slug === 'ambrose' ? `${sp.name} (Ambrose)` : `${sp.name} (Amstelnest)`,
+                        subProperties: [], // already flattened
+                    });
+                }
+            } else {
+                flattened.push({
+                    ...p,
+                    entityType: 'property',
+                    realId: p.id,
+                });
+            }
+        }
+
+        // Add DD Screens
+        const screens = await prisma.ddScreen.findMany({ orderBy: { displayOrder: "asc" } });
+        for (const s of screens) {
+            flattened.push({
+                id: `dd-${s.id}`,
+                realId: s.id,
+                entityType: 'ddScreen',
+                name: `${s.name} (Digital Diaries)`,
+                slug: s.slug,
+                type: 'dd',
+                isActive: s.isActive,
+                location: 'Karjat',
+                image: s.imageUrl,
+            });
+        }
+
+        return res.json(flattened);
     } catch (error) {
         console.error("Properties admin list error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
 
-// PATCH /api/properties/:id — Admin: update property
 router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
+        const idStr = req.params.id as string;
         const { isActive, weekdayPrice, weekendPrice, maxGuests, name, location } = req.body;
+        
+        // Handle flattened IDs: sp-ID or dd-ID or numeric
+        if (idStr.startsWith("sp-")) {
+            const realId = parseInt(idStr.replace("sp-", ""));
+            const data: any = {};
+            if (isActive !== undefined) data.isActive = isActive;
+            if (name !== undefined) data.name = name;
+            
+            const sp = await prisma.subProperty.update({
+                where: { id: realId },
+                data
+            });
+            return res.json(sp);
+        } else if (idStr.startsWith("dd-")) {
+            const realId = parseInt(idStr.replace("dd-", ""));
+            const data: any = {};
+            if (isActive !== undefined) data.isActive = isActive;
+            if (name !== undefined) data.name = name;
+            
+            const dd = await prisma.ddScreen.update({
+                where: { id: realId },
+                data
+            });
+            return res.json(dd);
+        }
+
+        const id = parseInt(idStr);
         const data: any = {};
         if (isActive !== undefined) data.isActive = isActive;
         if (weekdayPrice !== undefined) data.weekdayPrice = parseFloat(weekdayPrice);
@@ -34,7 +101,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (location !== undefined) data.location = location;
 
         const property = await prisma.property.update({
-            where: { id: parseInt(req.params.id as string) },
+            where: { id },
             data,
         });
         return res.json(property);
@@ -91,6 +158,10 @@ router.get("/:slug/availability", async (req, res) => {
     try {
         const property = await prisma.property.findUnique({
             where: { slug: req.params.slug },
+            include: { 
+                pricing: { where: { isActive: true } },
+                subProperties: { select: { id: true, isActive: true } }
+            }
         });
         if (!property) {
             return res.status(404).json({ error: "Property not found" });
@@ -126,15 +197,20 @@ router.get("/:slug/availability", async (req, res) => {
             },
         });
 
-        // Get pricing
-        const pricing = await prisma.propertyPricing.findMany({
-            where: {
-                propertyId: property.id,
-                isActive: true,
-            },
-        });
+        const weekdayPricing = property.pricing.find(p => p.dayType === 'weekday');
+        const weekendPricing = property.pricing.find(p => p.dayType === 'weekend');
 
-        return res.json({ bookings, blocked, pricing });
+        res.json({
+            isActive: property.isActive,
+            pricing: {
+                weekday: weekdayPricing ? { price: weekdayPricing.basePrice.toString(), extraAdult: weekdayPricing.extraAdultPrice } : null,
+                weekend: weekendPricing ? { price: weekendPricing.basePrice.toString(), extraAdult: weekendPricing.extraAdultPrice } : null,
+                all: property.pricing
+            },
+            subProperties: property.subProperties,
+            bookings,
+            blocked: blockedDates
+        });
     } catch (error) {
         console.error("Availability error:", error);
         return res.status(500).json({ error: "Internal server error" });
