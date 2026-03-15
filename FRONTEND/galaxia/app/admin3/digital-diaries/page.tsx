@@ -210,6 +210,8 @@ export default function Admin1Dashboard() {
     };
 
     const handleSubmitDraft = async () => {
+        if (!draftSlot) return;
+
         if (checkOverlap()) {
             setShowOverlapWarning(true);
             return;
