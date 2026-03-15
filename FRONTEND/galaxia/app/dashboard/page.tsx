@@ -111,9 +111,7 @@ function DashboardContent() {
                 setUserPhone(user.phone || "");
             }
         });
-    }, [router, searchParams]);
-
-        // Fetch real user bookings
+    useEffect(() => {
         (async () => {
             try {
                 setIsLoading(true);
