@@ -1,12 +1,12 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import Image from "next/image";
 import ReviewCarousel from "../components/ReviewCarousel";
 
 const properties = [
-    { id: "ambrose", name: "Ambrose", subtitle: "Theme Villa Resort ΓÇö 5 Themed Villas", startPrice: "5,500", priceNote: "with meals", description: "Five exquisitely themed villas ΓÇö Bollywood, Rustic, Greek, Bali, and Machan ΓÇö each with private pool.", image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80", highlights: ["5 Themes", "Private Pools", "Meals Included", "Garden"] },
-    { id: "amstel-nest", name: "Amstel Nest", subtitle: "Mini Amsterdam ΓÇö 14 Indoor Pool Cottages", startPrice: "4,950", priceNote: "with meals", description: "Unique cottages inspired by Amsterdam, each with its own private indoor pool. Meals included.", image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800&q=80", highlights: ["Indoor Pool", "Meals Included", "Gaming Zone", "Boating"] },
+    { id: "ambrose", name: "Ambrose", subtitle: "Theme Villa Resort \u2014 5 Themed Villas", startPrice: "5,500", priceNote: "with meals", description: "Five exquisitely themed villas \u2014 Bollywood, Rustic, Greek, Bali, and Machan \u2014 each with private pool.", image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80", highlights: ["5 Themes", "Private Pools", "Meals Included", "Garden"] },
+    { id: "amstel-nest", name: "Amstel Nest", subtitle: "Mini Amsterdam \u2014 14 Indoor Pool Cottages", startPrice: "4,950", priceNote: "with meals", description: "Unique cottages inspired by Amsterdam, each with its own private indoor pool. Meals included.", image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800&q=80", highlights: ["Indoor Pool", "Meals Included", "Gaming Zone", "Boating"] },
     { id: "la-paraiso", name: "La Paraiso", subtitle: "Premium Private Pool Villa", startPrice: "4,950", description: "Luxurious villa with a 25x10 ft private pool, 600 sq ft private garden, and a beautiful gazebo.", image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80", highlights: ["25x10 ft Pool", "Private Garden", "Gazebo", "Self Check-in"] },
-    { id: "heavenly-villa", name: "Heavenly Villa", subtitle: "Heavenly Villa ΓÇö Private Indoor Pool", startPrice: "3,950", description: "A heavenly studio villa with a private indoor swimming pool and swing. An intimate tropical paradise.", image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80", highlights: ["Indoor Pool", "Pool Swing", "Studio Room", "Free WiFi"] },
+    { id: "heavenly-villa", name: "Heavenly Villa", subtitle: "Heavenly Villa \u2014 Private Indoor Pool", startPrice: "3,950", description: "A heavenly studio villa with a private indoor swimming pool and swing. An intimate tropical paradise.", image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80", highlights: ["Indoor Pool", "Pool Swing", "Studio Room", "Free WiFi"] },
     { id: "mount-view", name: "Mount View", subtitle: "Bathtub Mountain Apartment", startPrice: "3,500", description: "Premium apartment featuring a private bathtub and enormous mountain-facing balcony. Luxury meets nature.", image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80", highlights: ["Private Bathtub", "Mountain Balcony", "Music Player", "2 AC"] },
     { id: "hill-view", name: "Hill View", subtitle: "Budget Mountain View Apartment", startPrice: "2,500", description: "A cozy apartment with a huge open balcony offering breathtaking mountain views. Perfect for couples seeking a tranquil escape.", image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", highlights: ["Mountain View", "Queen Bed", "Smart TV", "Free WiFi"] },
 ];
@@ -45,7 +45,7 @@ export default function StaycationPage() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
                                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-border-light">
                                         <div className="flex items-baseline gap-0.5">
-                                            <span className="text-antique-gold font-cinzel font-semibold text-sm">Γé╣{property.startPrice}</span>
+                                            <span className="text-antique-gold font-cinzel font-semibold text-sm">{"\u20B9"}{property.startPrice}</span>
                                             <span className="text-text-muted text-[10px] font-inter">/night</span>
                                         </div>
                                         {property.priceNote && <p className="text-dark-gold text-[9px] font-inter text-center">{property.priceNote}</p>}
