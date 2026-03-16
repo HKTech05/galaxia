@@ -326,11 +326,11 @@ export const properties: Record<string, PropertyData> = {
             },
         ],
         subProperties: [
-            ...Array.from({ length: 13 }, (_, i) => ({
-                id: `cottage-${i + 1}`,
-                name: `Cottage ${i + 1}`,
-                theme: "Amsterdam-Inspired",
-                description: "Cozy cottage with double bed and private indoor pool — the essence of Amstel Nest.",
+            {
+                id: "standard-cottage",
+                name: "Standard Cottage",
+                theme: "Amsterdam-Inspired · 13 Units",
+                description: "Cozy cottage with double bed and private indoor pool — the essence of Amstel Nest. Auto-assigned from 13 available units.",
                 image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=600&q=80",
                 configuration: ["Double Bed", "Smart TV", "AC", "Washroom", "Indoor Private Pool", "Garden Area"],
                 maxPersons: 4,
@@ -338,11 +338,11 @@ export const properties: Record<string, PropertyData> = {
                     weekday: { price: "4,950", persons: "2 persons with meals" },
                     weekend: { price: "6,950", persons: "2 persons with meals" },
                 },
-            })),
+            },
             {
                 id: "family-cottage",
-                name: "Family Cottage (14)",
-                theme: "Amsterdam-Inspired (Larger)",
+                name: "Family Cottage",
+                theme: "Amsterdam-Inspired · 1 Unit (Larger)",
                 description: "Spacious cottage with 2 double beds — perfect for families or groups of friends.",
                 image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80",
                 configuration: ["2 Double Beds", "Smart TV", "AC", "Washroom", "Indoor Private Pool", "Garden Area"],

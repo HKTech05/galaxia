@@ -19,7 +19,8 @@ import {
     Globe,
     BadgeDollarSign,
     Ticket,
-    Star
+    Star,
+    ClipboardList
 } from "lucide-react";
 import { useState } from "react";
 
@@ -35,6 +36,7 @@ const navigationParams = [
 // Admin3 top-level items (non-receptionist)
 const admin3TopItems = [
     { name: "Dashboard", href: "/admin3", icon: LayoutDashboard },
+    { name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList },
     { name: "Website", href: "/admin3/website-view", icon: Globe },
 ];
 
@@ -147,6 +149,9 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             {/* Dashboard link */}
                             {renderNavItem(admin3TopItems[0])}
 
+                            {/* Bookings link */}
+                            {renderNavItem(admin3TopItems[1])}
+
                             {/* Collapsible Daily Checkins Section */}
                             <button
                                 onClick={() => setDailyCheckinsOpen(!dailyCheckinsOpen)}
@@ -171,7 +176,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             )}
 
                             {/* Website link */}
-                            {renderNavItem(admin3TopItems[1])}
+                            {renderNavItem(admin3TopItems[2])}
 
                             {/* Collapsible Receptionist Section */}
                             <button

@@ -1,0 +1,261 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { api } from "../../../lib/api";
+
+interface StayBooking {
+    id: number;
+    bookingRef: string;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string | null;
+    propertyName: string;
+    subPropertyName: string | null;
+    checkIn: string;
+    checkOut: string;
+    nights: number;
+    guests: number;
+    totalAmount: number;
+    advanceAmount: number;
+    balanceAmount: number;
+    securityDeposit: number;
+    status: string;
+    source: string;
+    bookedAt: string;
+}
+
+const statusColors: Record<string, string> = {
+    confirmed: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    checked_in: "bg-blue-50 border-blue-200 text-blue-700",
+    checked_out: "bg-slate-100 border-slate-300 text-slate-600",
+    completed: "bg-slate-100 border-slate-300 text-slate-600",
+    cancelled: "bg-red-50 border-red-200 text-red-700",
+    no_show: "bg-amber-50 border-amber-200 text-amber-700",
+};
+
+const statusIcons: Record<string, any> = {
+    confirmed: CheckCircle,
+    checked_in: Clock,
+    checked_out: CheckCircle,
+    completed: CheckCircle,
+    cancelled: XCircle,
+    no_show: AlertCircle,
+};
+
+export default function StayBookingsPage() {
+    const [bookings, setBookings] = useState<StayBooking[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [propertyFilter, setPropertyFilter] = useState("All");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+
+    const fetchBookings = useCallback(async () => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams();
+            if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase().replace(" ", "_"));
+            if (dateFrom) params.set("startDate", dateFrom);
+            if (dateTo) params.set("endDate", dateTo);
+            
+            const data = await api.get(`/bookings/staycation?${params.toString()}`);
+            const mapped: StayBooking[] = (Array.isArray(data) ? data : []).map((b: any) => ({
+                id: b.id,
+                bookingRef: b.bookingRef || `ST-${b.id}`,
+                customerName: b.customerName || "Unknown",
+                customerPhone: b.customerPhone || "",
+                customerEmail: b.customerEmail || null,
+                propertyName: b.property?.name || "Unknown",
+                subPropertyName: b.subProperty?.name || null,
+                checkIn: b.checkInDate,
+                checkOut: b.checkOutDate,
+                nights: b.numNights || 1,
+                guests: b.numGuests || 2,
+                totalAmount: b.totalAmount || 0,
+                advanceAmount: b.advanceAmount || 0,
+                balanceAmount: b.balanceAmount || 0,
+                securityDeposit: b.securityDeposit || 0,
+                status: b.status || "confirmed",
+                source: b.source || "website",
+                bookedAt: b.bookedAt || b.createdAt,
+            }));
+            setBookings(mapped);
+        } catch (err) {
+            console.error("Failed to fetch stay bookings:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [statusFilter, dateFrom, dateTo]);
+
+    useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+    const properties = [...new Set(bookings.map(b => b.propertyName))];
+
+    const filteredBookings = bookings.filter(b => {
+        const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase())
+            || b.bookingRef.toLowerCase().includes(searchTerm.toLowerCase())
+            || b.customerPhone.includes(searchTerm);
+        const matchesProperty = propertyFilter === "All" || b.propertyName === propertyFilter;
+        return matchesSearch && matchesProperty;
+    });
+
+    const formatDate = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const formatPrice = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+    const statusLabel = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+    return (
+        <div className="max-w-7xl mx-auto space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Staycation Bookings</h1>
+                <p className="text-sm font-medium text-slate-500 mt-1">All bookings across all properties</p>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+                <div className="relative w-full lg:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search name, ID, or phone"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                    />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                        <select
+                            value={propertyFilter}
+                            onChange={(e) => setPropertyFilter(e.target.value)}
+                            className="pl-9 pr-8 py-2 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        >
+                            <option value="All">All Properties</option>
+                            {properties.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
+                    </div>
+
+                    <div className="flex items-center bg-slate-100 rounded-lg p-1">
+                        {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${statusFilter === status
+                                    ? "bg-white text-indigo-700 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        <span className="text-slate-400 text-xs">to</span>
+                        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                    { label: "Total Bookings", value: filteredBookings.length, color: "text-slate-800" },
+                    { label: "Confirmed", value: filteredBookings.filter(b => b.status === "confirmed").length, color: "text-emerald-600" },
+                    { label: "Total Revenue", value: formatPrice(filteredBookings.reduce((sum, b) => sum + b.totalAmount, 0)), color: "text-indigo-600" },
+                    { label: "Advance Collected", value: formatPrice(filteredBookings.reduce((sum, b) => sum + b.advanceAmount, 0)), color: "text-sky-600" },
+                ].map(stat => (
+                    <div key={stat.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                        <p className={`text-xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Property</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Dates</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Guests</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Payment</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {loading ? (
+                                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-400 font-medium">Loading bookings...</td></tr>
+                            ) : filteredBookings.length === 0 ? (
+                                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
+                            ) : (
+                                filteredBookings.map((b) => {
+                                    const StatusIcon = statusIcons[b.status] || CheckCircle;
+                                    return (
+                                        <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="px-5 py-4">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <span className="text-sm font-bold text-slate-800">{b.bookingRef}</span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${b.source === "website" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
+                                                            {b.source === "website" ? "Online" : "Walk-in"}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-sm font-medium text-slate-600">{b.customerName}</span>
+                                                    <span className="text-[11px] font-bold text-slate-400 mt-0.5">{b.customerPhone}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-bold text-slate-800">{b.propertyName}</span>
+                                                {b.subPropertyName && (
+                                                    <p className="text-[11px] text-slate-500 mt-0.5">{b.subPropertyName}</p>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-bold text-slate-800">{formatDate(b.checkIn)}</span>
+                                                <span className="text-slate-400 mx-1">→</span>
+                                                <span className="text-sm font-medium text-slate-600">{formatDate(b.checkOut)}</span>
+                                                <p className="text-[11px] text-slate-400 mt-0.5">{b.nights} night{b.nights !== 1 ? "s" : ""}</p>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-bold text-slate-800">{b.guests}</span>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-bold text-slate-800">{formatPrice(b.totalAmount)}</span>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-[11px] font-bold text-emerald-600">Advance: {formatPrice(b.advanceAmount)}</span>
+                                                    <span className="text-[11px] font-bold text-amber-600">Balance: {formatPrice(b.balanceAmount)}</span>
+                                                    {b.securityDeposit > 0 && (
+                                                        <span className="text-[11px] font-bold text-sky-600">Deposit: {formatPrice(b.securityDeposit)}</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${statusColors[b.status] || "bg-slate-100 border-slate-300 text-slate-600"}`}>
+                                                    <StatusIcon size={14} />
+                                                    {statusLabel(b.status)}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}

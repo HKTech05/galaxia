@@ -124,11 +124,11 @@ function DashboardContent() {
                     const ci = new Date(b.checkInDate);
                     const co = new Date(b.checkOutDate);
                     
-                    const ciDate = new Date(ci);
-                    ciDate.setHours(0, 0, 0, 0);
+                    const coDate = new Date(co);
+                    coDate.setHours(0, 0, 0, 0);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const isUpcoming = ciDate >= today;
+                    const isUpcoming = coDate >= today;
                     
                     const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
                     
