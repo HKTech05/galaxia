@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface StayBooking {
@@ -23,6 +23,19 @@ interface StayBooking {
     status: string;
     source: string;
     bookedAt: string;
+    nightlyRate: number;
+    basePrice: number;
+    extraPersonCharge: number;
+    gstAmount: number;
+    discountAmount: number;
+    advancePaid: boolean;
+    advanceMethod: string | null;
+    balanceCollected: boolean;
+    balanceMethod: string | null;
+    depositCollected: boolean;
+    depositMethod: string | null;
+    couponCode: string | null;
+    extraGuests: any[];
 }
 
 const statusColors: Record<string, string> = {
@@ -51,6 +64,7 @@ export default function StayBookingsPage() {
     const [propertyFilter, setPropertyFilter] = useState("All");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    const [selectedBooking, setSelectedBooking] = useState<StayBooking | null>(null);
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -80,6 +94,19 @@ export default function StayBookingsPage() {
                 status: b.status || "confirmed",
                 source: b.source || "website",
                 bookedAt: b.bookedAt || b.createdAt,
+                nightlyRate: b.nightlyRate || 0,
+                basePrice: b.basePrice || 0,
+                extraPersonCharge: b.extraPersonCharge || 0,
+                gstAmount: b.gstAmount || 0,
+                discountAmount: b.discountAmount || 0,
+                advancePaid: b.advancePaid || false,
+                advanceMethod: b.advanceMethod || null,
+                balanceCollected: b.balanceCollected || false,
+                balanceMethod: b.balanceMethod || null,
+                depositCollected: b.depositCollected || false,
+                depositMethod: b.depositMethod || null,
+                couponCode: b.coupon?.code || null,
+                extraGuests: b.extraGuests || [],
             }));
             setBookings(mapped);
         } catch (err) {
@@ -101,9 +128,13 @@ export default function StayBookingsPage() {
         return matchesSearch && matchesProperty;
     });
 
-    const formatDate = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
+    const formatDateTime = (d: string) => {
+        if (!d) return "N/A";
+        const dt = new Date(d);
+        return `${dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} · ${dt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
+    };
     const formatPrice = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
     const statusLabel = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
     return (
@@ -186,6 +217,7 @@ export default function StayBookingsPage() {
                             <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Property</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Booked On</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Dates</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Guests</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
@@ -195,14 +227,14 @@ export default function StayBookingsPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-400 font-medium">Loading bookings...</td></tr>
+                                <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-400 font-medium">Loading bookings...</td></tr>
                             ) : filteredBookings.length === 0 ? (
-                                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
+                                <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
                             ) : (
                                 filteredBookings.map((b) => {
                                     const StatusIcon = statusIcons[b.status] || CheckCircle;
                                     return (
-                                        <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                                        <tr key={b.id} onClick={() => setSelectedBooking(b)} className="hover:bg-slate-50/80 transition-colors cursor-pointer">
                                             <td className="px-5 py-4">
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2 mb-0.5">
@@ -220,6 +252,9 @@ export default function StayBookingsPage() {
                                                 {b.subPropertyName && (
                                                     <p className="text-[11px] text-slate-500 mt-0.5">{b.subPropertyName}</p>
                                                 )}
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm font-medium text-slate-700">{formatDateTime(b.bookedAt)}</span>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <span className="text-sm font-bold text-slate-800">{formatDate(b.checkIn)}</span>
@@ -256,6 +291,182 @@ export default function StayBookingsPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Detail Modal */}
+            {selectedBooking && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedBooking(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Booking Details</h3>
+                                <p className="text-xs font-medium text-slate-500 mt-0.5">{selectedBooking.bookingRef}</p>
+                            </div>
+                            <button onClick={() => setSelectedBooking(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            {/* Customer Info */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Customer Information</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center"><Users size={14} className="text-indigo-600" /></div>
+                                        <div>
+                                            <p className="text-xs text-slate-400 font-medium">Name</p>
+                                            <p className="text-sm font-bold text-slate-800">{selectedBooking.customerName}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center"><Phone size={14} className="text-emerald-600" /></div>
+                                        <div>
+                                            <p className="text-xs text-slate-400 font-medium">Phone</p>
+                                            <p className="text-sm font-bold text-slate-800">{selectedBooking.customerPhone || "N/A"}</p>
+                                        </div>
+                                    </div>
+                                    {selectedBooking.customerEmail && (
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center"><Mail size={14} className="text-sky-600" /></div>
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-medium">Email</p>
+                                                <p className="text-sm font-bold text-slate-800">{selectedBooking.customerEmail}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center"><CalendarDays size={14} className="text-amber-600" /></div>
+                                        <div>
+                                            <p className="text-xs text-slate-400 font-medium">Booked On</p>
+                                            <p className="text-sm font-bold text-slate-800">{formatDateTime(selectedBooking.bookedAt)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stay Info */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Stay Information</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-medium">Property</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.propertyName}</p>
+                                        {selectedBooking.subPropertyName && <p className="text-xs text-slate-500">{selectedBooking.subPropertyName}</p>}
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-medium">Check-in</p>
+                                        <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkIn)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-medium">Check-out</p>
+                                        <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkOut)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-medium">Nights</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.nights}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-medium">Guests</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.guests} People</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 font-medium">Source</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.source === "website" ? "Online Booking" : "Walk-in / Reception"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Pricing Breakdown */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Pricing Breakdown</h4>
+                                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-600">Base Price</span>
+                                        <span className="font-bold text-slate-800">{formatPrice(selectedBooking.basePrice)}</span>
+                                    </div>
+                                    {selectedBooking.extraPersonCharge > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-600">Extra Person Charge</span>
+                                            <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraPersonCharge)}</span>
+                                        </div>
+                                    )}
+                                    {selectedBooking.discountAmount > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-emerald-600">Discount {selectedBooking.couponCode ? `(${selectedBooking.couponCode})` : ""}</span>
+                                            <span className="font-bold text-emerald-600">-{formatPrice(selectedBooking.discountAmount)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-600">GST (5%)</span>
+                                        <span className="font-bold text-slate-800">{formatPrice(selectedBooking.gstAmount)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
+                                        <span className="font-bold text-slate-800">Total Amount</span>
+                                        <span className="font-black text-lg text-slate-900">{formatPrice(selectedBooking.totalAmount)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Status */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Payment Status</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className={`p-3 rounded-lg border ${selectedBooking.advancePaid ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"}`}>
+                                        <p className={`text-[10px] font-bold uppercase ${selectedBooking.advancePaid ? "text-emerald-600" : "text-amber-600"}`}>
+                                            Advance {selectedBooking.advancePaid ? "✓ Paid" : "⏳ Pending"}
+                                        </p>
+                                        <p className="text-sm font-bold text-slate-800 mt-1">{formatPrice(selectedBooking.advanceAmount)}</p>
+                                        {selectedBooking.advanceMethod && <p className="text-[10px] text-slate-500">via {selectedBooking.advanceMethod}</p>}
+                                    </div>
+                                    <div className={`p-3 rounded-lg border ${selectedBooking.balanceCollected ? "bg-emerald-50 border-emerald-100" : "bg-amber-50 border-amber-100"}`}>
+                                        <p className={`text-[10px] font-bold uppercase ${selectedBooking.balanceCollected ? "text-emerald-600" : "text-amber-600"}`}>
+                                            Balance {selectedBooking.balanceCollected ? "✓ Collected" : "⏳ Pending"}
+                                        </p>
+                                        <p className="text-sm font-bold text-slate-800 mt-1">{formatPrice(selectedBooking.balanceAmount)}</p>
+                                        {selectedBooking.balanceMethod && <p className="text-[10px] text-slate-500">via {selectedBooking.balanceMethod}</p>}
+                                    </div>
+                                    <div className={`p-3 rounded-lg border ${selectedBooking.depositCollected ? "bg-emerald-50 border-emerald-100" : "bg-sky-50 border-sky-100"}`}>
+                                        <p className={`text-[10px] font-bold uppercase ${selectedBooking.depositCollected ? "text-emerald-600" : "text-sky-600"}`}>
+                                            Security Deposit {selectedBooking.depositCollected ? "✓ Collected" : "⏳ At Check-in"}
+                                        </p>
+                                        <p className="text-sm font-bold text-slate-800 mt-1">{formatPrice(selectedBooking.securityDeposit)}</p>
+                                        {selectedBooking.depositMethod && <p className="text-[10px] text-slate-500">via {selectedBooking.depositMethod}</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Extra Guests */}
+                            {selectedBooking.extraGuests && selectedBooking.extraGuests.length > 0 && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Extra Guests ({selectedBooking.extraGuests.length})</h4>
+                                    <div className="space-y-2">
+                                        {selectedBooking.extraGuests.map((eg: any, idx: number) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 border border-purple-100 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <Users size={14} className="text-purple-600" />
+                                                    <span className="text-sm font-bold text-slate-800">{eg.guestName}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-bold text-purple-600">+{formatPrice(eg.chargeAmount || 0)}</p>
+                                                    <p className="text-[10px] text-slate-400 uppercase">{eg.paymentMethod}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Status */}
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${statusColors[selectedBooking.status] || "bg-slate-100 border-slate-300 text-slate-600"}`}>
+                                    {(() => { const Icon = statusIcons[selectedBooking.status] || CheckCircle; return <Icon size={14} />; })()}
+                                    {statusLabel(selectedBooking.status)}
+                                </div>
+                                <span className="text-xs text-slate-400 font-medium">DB ID: {selectedBooking.id}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

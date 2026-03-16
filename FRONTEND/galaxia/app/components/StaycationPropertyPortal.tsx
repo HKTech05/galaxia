@@ -96,7 +96,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         if (!selectedBooking) return;
         const extraCharge = calculateExtraGuestPrice();
         try {
-            await api.post(`/bookings/staycation/${selectedBooking.id.replace('#ST-', '')}/extra-guest`, {
+            await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
                 guestName: "Extra Guest",
                 idProofType: "Uploaded",
                 chargeAmount: extraCharge,
@@ -275,9 +275,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         return overlaps || b.status === "Checked In";
     });
 
-    const handleAction = async (id: string, newStatus: string) => {
+    const handleAction = async (booking: any, newStatus: string) => {
         try {
-            const numericId = id.replace('#ST-', '').replace(/\D/g, '');
+            const numericId = booking.rawId;
             await api.patch(`/bookings/staycation/${numericId}/status`, { 
                 status: newStatus === "Checked In" ? "checked_in" : 
                         newStatus === "Cancelled" ? "cancelled" : 
@@ -288,12 +288,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             if (newStatus === "Checked In" && selectedBooking) {
                 await api.post(`/bookings/staycation/${numericId}/payment`, {
                     paymentType: "balance",
-                    amount: parseInt(selectedBooking.remainingAmt.replace('₹', '').replace(',', '')),
+                    amount: parseInt(selectedBooking.remainingAmt.replace('₹', '').replace(/,/g, '')) || 0,
                     method: collected20
                 });
                 await api.post(`/bookings/staycation/${numericId}/payment`, {
                     paymentType: "deposit",
-                    amount: parseInt(selectedBooking.depositAmt.replace('₹', '').replace(',', '')),
+                    amount: parseInt(selectedBooking.depositAmt.replace('₹', '').replace(/,/g, '')) || 0,
                     method: collectedSec
                 });
             }
@@ -569,7 +569,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <button
                                             disabled={!collected20 || !collectedSec}
                                             onClick={() => {
-                                                handleAction(selectedBooking.id, "Checked In");
+                                                handleAction(selectedBooking, "Checked In");
                                                 setIsActionModalOpen(false);
                                             }}
                                             className={`w-full font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 ${(!collected20 || !collectedSec)
@@ -595,7 +595,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <div className="grid grid-cols-3 gap-3">
                                             <button
                                                 onClick={() => {
-                                                    handleAction(selectedBooking.id, "Completed");
+                                                    handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}
                                                 className="flex flex-col items-center justify-center gap-1.5 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl transition-colors border border-emerald-200 col-span-1"
@@ -604,7 +604,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    handleAction(selectedBooking.id, "Completed");
+                                                    handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}
                                                 className="flex flex-col items-center justify-center gap-1.5 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors border border-indigo-200 col-span-1"
@@ -613,7 +613,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    handleAction(selectedBooking.id, "Completed");
+                                                    handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}
                                                 className="flex flex-col items-center justify-center gap-1.5 py-3 bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold rounded-xl transition-colors border border-slate-200 hover:border-red-200 col-span-1 text-xs"
@@ -650,7 +650,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             </button>
                             <button
                                 onClick={() => {
-                                    handleAction(cancelModalBooking.id, 'Cancelled');
+                                    handleAction(cancelModalBooking, 'Cancelled');
                                     setCancelModalBooking(null);
                                 }}
                                 className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm shadow-red-600/20"
