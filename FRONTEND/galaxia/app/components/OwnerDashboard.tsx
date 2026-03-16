@@ -140,7 +140,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         api.get("/bookings/dd").then(data => {
             if (Array.isArray(data) && data.length > 0) setDdBookingsLive(data);
         }).catch(err => console.error("DD bookings:", err));
-    }, [propertyDate]);
+    }, [propertyDate, ddViewDate]);
 
     // API-loaded dashboard data
     const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
@@ -1030,16 +1030,18 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // ─── TAB: DD (Read-only) ─────────────────────────────────────────────
     const renderDD = () => {
-        // Group bookings by screen
+        // Group bookings by screen — filtered by selected date
         const screenGroups: Record<string, any[]> = {};
+        const selectedDateStr = ddViewDate.toISOString().split('T')[0];
         
-        // Use live DD bookings
-        const bookingsToDisplay = ddBookingsLive.length > 0 ? ddBookingsLive.map(b => ({
+        // Use live DD bookings, filtered by ddViewDate
+        const allMapped = ddBookingsLive.length > 0 ? ddBookingsLive.map((b: any) => ({
             id: b.bookingRef || `#DD-${b.id}`,
             customer: b.customerName,
             phone: b.customerPhone,
             screen: b.screen?.name || "Unknown Screen",
             date: new Date(b.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+            rawDate: b.bookingDate ? new Date(b.bookingDate).toISOString().split('T')[0] : '',
             slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
             source: b.source === 'website' ? 'Online' : 'Walk-in',
             upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
@@ -1048,9 +1050,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             remainingStatus: b.amountToCollect <= 0 ? "Paid" : "Pending",
             status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
             raw: b
-        })) : []; // fallback to mock if API fails/empty
+        })) : [];
 
-        bookingsToDisplay.forEach(b => {
+        // Filter by selected date
+        const bookingsToDisplay = allMapped.filter((b: any) => b.rawDate === selectedDateStr);
+
+        bookingsToDisplay.forEach((b: any) => {
             if (!screenGroups[b.screen]) screenGroups[b.screen] = [];
             screenGroups[b.screen].push(b);
         });

@@ -20,17 +20,19 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             if (Array.isArray(data) && data.length > 0) {
                 const mapped = data.map((b: any) => ({
                     id: b.bookingRef || `#ST-${b.id}`,
+                    rawId: b.id,
                     customer: b.customerName || "Unknown",
                     property: b.subProperty 
                         ? `${b.subProperty.name} (${b.property?.name || 'Unknown'})` 
                         : (b.property?.name || "Unknown"),
+                    parentProperty: b.property?.name || "Unknown",
                     guests: b.numGuests || 0,
                     checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkInTime: "1:00 PM",
                     checkOutTime: "10:00 AM",
-                    depositAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
-                    remainingAmt: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
+                    depositAmt: `₹${(b.securityDeposit || 3000).toLocaleString('en-IN')}`,
+                    remainingAmt: `₹${(b.balanceAmount || 0).toLocaleString('en-IN')}`,
                     idProofUrl: b.idProofUrl || (b.guestIds && b.guestIds.length > 0 ? b.guestIds[0].fileUrl : null),
                     status: (b.status === "checked_out" || new Date(b.checkOutDate) < new Date()) ? "Completed" : 
                             b.status === "confirmed" ? "Pending Arrival" : 
@@ -251,7 +253,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
     // Filter to logically evaluate if a booking intersects the query date range.
     const todaysBookings = bookings.filter(b => {
-        if (!properties.includes(b.property)) return false;
+        const matchesProperty = properties.some(p => b.property.includes(p) || (b.parentProperty && b.parentProperty === p));
+        if (!matchesProperty) return false;
         if (b.status === "Cancelled") return false;
 
         const rangeStart = new Date(startDate);
@@ -274,7 +277,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
     const handleAction = async (id: string, newStatus: string) => {
         try {
-            const numericId = id.replace('#ST-', '');
+            const numericId = id.replace('#ST-', '').replace(/\D/g, '');
             await api.patch(`/bookings/staycation/${numericId}/status`, { 
                 status: newStatus === "Checked In" ? "checked_in" : 
                         newStatus === "Cancelled" ? "cancelled" : 
@@ -680,23 +683,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             <div className="space-y-4">
                                 <div className="space-y-1.5 border-b border-slate-100 pb-4">
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Number of Extra Guests</label>
-                                    <div className="relative">
-                                        <label className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-emerald-500/20 outline-none flex items-center justify-between cursor-pointer">
-                                            <span className={`truncate text-xs ${extraGuestForm.idFileName ? 'text-slate-700 font-bold' : 'text-slate-400'}`}>
-                                                {extraGuestForm.idFileName || "Upload ID Document"}
-                                            </span>
-                                            <Upload size={14} className="text-slate-400 shrink-0 ml-2" />
-                                            <input
-                                                type="file"
-                                                accept="image/*,.pdf,.doc,.docx"
-                                                onChange={e => {
-                                                    if (e.target.files && e.target.files.length > 0) {
-                                                        setExtraGuestForm({ ...extraGuestForm, idFileName: e.target.files[0].name });
-                                                    }
-                                                }}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                    <div className="flex items-center gap-3 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.max(1, extraGuestForm.guests - 1) })}
+                                            className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                        >−</button>
+                                        <span className="text-lg font-black text-slate-800 w-6 text-center">{extraGuestForm.guests}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.min(10, extraGuestForm.guests + 1) })}
+                                            className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                        >+</button>
                                     </div>
                                     <p className="text-[11px] font-medium text-slate-500 mt-1">Pricing dynamically computed by Property strictly for the booked nights.</p>
                                 </div>
