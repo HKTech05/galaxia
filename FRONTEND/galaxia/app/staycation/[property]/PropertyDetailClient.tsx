@@ -71,7 +71,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
         })();
     }, [property.id]);
 
-    const bookNowUrl = `/staycation/${property.id}/book${calCheckIn ? `?checkIn=${calCheckIn.toISOString().split('T')[0]}` : ''}${calCheckOut ? `&checkOut=${calCheckOut.toISOString().split('T')[0]}` : ''}`;
+    const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const bookNowUrl = `/staycation/${property.id}/book${calCheckIn ? `?checkIn=${fmtDate(calCheckIn)}` : ''}${calCheckOut ? `&checkOut=${fmtDate(calCheckOut)}` : ''}`;
 
     return (
         <div>

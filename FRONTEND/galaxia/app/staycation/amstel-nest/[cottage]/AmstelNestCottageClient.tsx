@@ -62,7 +62,8 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const weekdayPrice = cottage.pricing?.weekday.price || parent.pricing.weekday.price;
     const weekendPrice = cottage.pricing?.weekend.price || parent.pricing.weekend.price;
 
-    const bookNowUrl = `/staycation/amstel-nest/${cottage.id}/book${calCheckIn ? `?checkIn=${calCheckIn.toISOString().split('T')[0]}` : ''}${calCheckOut ? `&checkOut=${calCheckOut.toISOString().split('T')[0]}` : ''}`;
+    const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const bookNowUrl = `/staycation/amstel-nest/${cottage.id}/book${calCheckIn ? `?checkIn=${fmtDate(calCheckIn)}` : ''}${calCheckOut ? `&checkOut=${fmtDate(calCheckOut)}` : ''}`;
 
     return (
         <div>
