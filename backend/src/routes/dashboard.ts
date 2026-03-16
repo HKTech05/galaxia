@@ -213,9 +213,12 @@ router.get("/property-status", authMiddleware, async (req, res) => {
     try {
         const { date } = req.query;
         const targetDate = date ? new Date(date as string) : new Date();
-        const todayStart = new Date(targetDate);
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date(todayStart.getTime() + 86400000);
+        // For @db.Date fields, normalize to UTC midnight
+        const todayStr = date ? (date as string) : targetDate.toISOString().split('T')[0];
+        const todayStart = new Date(todayStr + 'T00:00:00.000Z');
+        const todayEnd = new Date(todayStr + 'T23:59:59.999Z');
+
+        console.log(`[property-status] date param: ${date}, todayStr: ${todayStr}, todayStart: ${todayStart.toISOString()}, todayEnd: ${todayEnd.toISOString()}`);
 
         const properties = await prisma.property.findMany({
             where: { isActive: true },
@@ -234,6 +237,11 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 subProperty: true,
                 extraGuests: true,
             },
+        });
+
+        console.log(`[property-status] Found ${activeBookings.length} active bookings for ${todayStr}`);
+        activeBookings.forEach(b => {
+            console.log(`  booking #${b.id}: ${b.customerName} @ propId=${b.propertyId} subPropId=${b.subPropertyId} status=${b.status} checkIn=${b.checkInDate} checkOut=${b.checkOutDate}`);
         });
 
         // Decorate properties with check-in info for frontend
@@ -259,8 +267,8 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                         phone: spBooking?.customerPhone ? decrypt(spBooking.customerPhone) : null,
                         checkInDate: spBooking?.checkInDate ? new Date(spBooking.checkInDate).toLocaleDateString('en-IN') : null,
                         checkOutDate: spBooking?.checkOutDate ? new Date(spBooking.checkOutDate).toLocaleDateString('en-IN') : null,
-                        isCheckinDay: spBooking ? new Date(spBooking.checkInDate).toDateString() === todayStart.toDateString() : false,
-                        isCheckoutDay: spBooking ? new Date(spBooking.checkOutDate).toDateString() === todayStart.toDateString() : false,
+                        isCheckinDay: spBooking ? new Date(spBooking.checkInDate).toISOString().split('T')[0] === todayStr : false,
+                        isCheckoutDay: spBooking ? new Date(spBooking.checkOutDate).toISOString().split('T')[0] === todayStr : false,
                         balanceCollected: spBooking?.balanceCollected || false,
                         balanceMode: spBooking?.balanceMethod || "Online",
                         balanceTime: spBooking?.balanceCollectedAt ? new Date(spBooking.balanceCollectedAt).toLocaleString('en-IN') : null,
@@ -278,8 +286,8 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 phone: booking?.customerPhone ? decrypt(booking.customerPhone) : null,
                 checkInDate: booking?.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : null,
                 checkOutDate: booking?.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString('en-IN') : null,
-                isCheckinDay: booking ? new Date(booking.checkInDate).toDateString() === todayStart.toDateString() : false,
-                isCheckoutDay: booking ? new Date(booking.checkOutDate).toDateString() === todayStart.toDateString() : false,
+                isCheckinDay: booking ? new Date(booking.checkInDate).toISOString().split('T')[0] === todayStr : false,
+                isCheckoutDay: booking ? new Date(booking.checkOutDate).toISOString().split('T')[0] === todayStr : false,
                 balanceCollected: booking?.balanceCollected || false,
                 balanceMode: booking?.balanceMethod || "Online",
                 balanceTime: booking?.balanceCollectedAt ? new Date(booking.balanceCollectedAt).toLocaleString('en-IN') : null,
