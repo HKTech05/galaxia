@@ -133,7 +133,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             if (Array.isArray(data) && data.length > 0) setEarningsData(data);
         }).catch(err => console.error("Earnings:", err));
 
-        api.get(`/admin/dashboard/property-status?date=${propertyDate.toISOString()}`).then(data => {
+        const fmtLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        api.get(`/admin/dashboard/property-status?date=${fmtLocalDate(propertyDate)}`).then(data => {
             if (data?.properties && data.properties.length > 0) setPropertyStatusLive(data.properties);
         }).catch(err => console.error("Property status:", err));
 
@@ -175,20 +176,40 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             else setExpandedProperty(isExpanded ? null : item.name);
         };
 
+        // Status badges
+        const renderStatusBadges = () => {
+            if (!item.booked) {
+                return <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>;
+            }
+            const badges = [];
+            // Booking status badge
+            if (item.bookingStatus === 'confirmed' && !item.checkedIn) {
+                badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
+                if (item.isCheckinDay) {
+                    badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                }
+            } else if (item.checkedIn) {
+                badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
+                badges.push(<span key="checked-in" className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200 uppercase">Checked In</span>);
+                if (item.isCheckoutDay) {
+                    badges.push(<span key="co-pending" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+                }
+            } else if (item.bookingStatus === 'checked_out') {
+                badges.push(<span key="co" className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Checked Out</span>);
+            }
+            return <div className="flex items-center gap-1.5 flex-wrap">{badges}</div>;
+        };
+
         return (
             <div className="border border-slate-200 rounded-xl overflow-hidden">
                 <button onClick={toggle} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-3">
                         <span className="font-bold text-slate-800 text-sm">{item.name}</span>
-                        {item.checkedIn ? (
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 uppercase">Checked In</span>
-                        ) : (
-                            <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full border border-slate-200 uppercase">Vacant</span>
-                        )}
+                        {renderStatusBadges()}
                     </div>
                     <ChevronRight size={16} className={`text-slate-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                 </button>
-                {isExpanded && item.checkedIn && (
+                {isExpanded && item.booked && (
                     <div className="p-4 pt-0 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
                             <div>
@@ -201,17 +222,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone</p>
-                                <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1"><Phone size={12} /> {item.phone}</p>
+                                <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1 truncate max-w-[180px]"><Phone size={12} /> {item.phone && item.phone.length < 20 ? item.phone : 'On file'}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Check-out</p>
-                                <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1"><CalendarDays size={12} /> {item.checkOutDate}</p>
+                                <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1"><CalendarDays size={12} /> {item.checkOutDate || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                             <div className={`p-3 rounded-lg border ${item.balanceCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                    Balance (80%) {item.balanceCollected ? '✓ Collected' : '⏳ Pending'}
+                                    Balance {item.balanceCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
                                 {item.balanceCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
@@ -243,13 +264,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     <Users size={12} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-bold text-slate-800">{eg.name}</p>
-                                                    <p className="text-[9px] font-medium text-slate-500">{eg.idType}</p>
+                                                    <p className="text-xs font-bold text-slate-800">{eg.guestName || eg.name}</p>
+                                                    <p className="text-[9px] font-medium text-slate-500">{eg.idProofType || eg.idType}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-xs font-bold text-emerald-600">+₹{eg.amount}</p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMode}</p>
+                                                <p className="text-xs font-bold text-emerald-600">+₹{eg.chargeAmount || eg.amount || 0}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMethod || eg.paymentMode}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -258,9 +279,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         )}
                     </div>
                 )}
-                {isExpanded && !item.checkedIn && (
+                {isExpanded && !item.booked && (
                     <div className="p-4 pt-0 border-t border-slate-100">
-                        <p className="text-sm text-slate-400 font-medium py-4 text-center">No active check-in at this property.</p>
+                        <p className="text-sm text-slate-400 font-medium py-4 text-center">No active booking for this property.</p>
                     </div>
                 )}
             </div>
@@ -898,7 +919,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="flex items-center gap-3">
                             <span className="font-bold text-slate-800 text-sm">Ambrose</span>
                             <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase">
-                                {liveAmbrose.filter((v: any) => v.checkedIn).length}/{liveAmbrose.length} Occupied
+                                {liveAmbrose.filter((v: any) => v.booked).length}/{liveAmbrose.length} Occupied
                             </span>
                         </div>
                         <ChevronRight size={16} className="text-slate-400" />
@@ -914,7 +935,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="flex items-center gap-3">
                             <span className="font-bold text-slate-800 text-sm">Amstel Nest</span>
                             <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase">
-                                {liveAmstel.filter((v: any) => v.checkedIn).length}/{liveAmstel.length} Occupied
+                                {liveAmstel.filter((v: any) => v.booked).length}/{liveAmstel.length} Occupied
                             </span>
                         </div>
                         <ChevronRight size={16} className="text-slate-400" />
@@ -935,7 +956,25 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </button>
                         </div>
                         <div className="p-6 space-y-3 overflow-y-auto max-h-[70vh]">
-                            {(villaModal.type === "ambrose" ? liveAmbrose : liveAmstel).map((villa: any) => (
+                            {(villaModal.type === "ambrose" ? liveAmbrose : liveAmstel)
+                                .filter((villa: any) => villa.name !== "Standard Cottage")
+                                .map((villa: any) => {
+                                const villaBadges = () => {
+                                    if (!villa.booked) return <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>;
+                                    const b = [];
+                                    if (villa.bookingStatus === 'confirmed' && !villa.checkedIn) {
+                                        b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
+                                        if (villa.isCheckinDay) b.push(<span key="ci" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                                    } else if (villa.checkedIn) {
+                                        b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
+                                        b.push(<span key="ci" className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200 uppercase">Checked In</span>);
+                                        if (villa.isCheckoutDay) b.push(<span key="co" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+                                    } else if (villa.bookingStatus === 'checked_out') {
+                                        b.push(<span key="co" className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Checked Out</span>);
+                                    }
+                                    return <div className="flex items-center gap-1.5 flex-wrap">{b}</div>;
+                                };
+                                return (
                                 <div key={villa.name} className="border border-slate-200 rounded-xl overflow-hidden">
                                     <button
                                         onClick={() => setExpandedVilla(expandedVilla === villa.name ? null : villa.name)}
@@ -943,15 +982,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="font-bold text-slate-800 text-sm">{villa.name}</span>
-                                            {villa.checkedIn ? (
-                                                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200 uppercase">Checked In</span>
-                                            ) : (
-                                                <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full border border-slate-200 uppercase">Vacant</span>
-                                            )}
+                                            {villaBadges()}
                                         </div>
                                         <ChevronRight size={16} className={`text-slate-400 transition-transform ${expandedVilla === villa.name ? "rotate-90" : ""}`} />
                                     </button>
-                                    {expandedVilla === villa.name && villa.checkedIn && (
+                                    {expandedVilla === villa.name && villa.booked && (
                                         <div className="p-4 pt-0 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                                                 <div>
@@ -964,11 +999,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone</p>
-                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{villa.phone}</p>
+                                                    <p className="text-sm font-bold text-slate-800 mt-0.5 truncate max-w-[180px]">{villa.phone && villa.phone.length < 20 ? villa.phone : 'On file'}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Check-out</p>
-                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{villa.checkOutDate}</p>
+                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{villa.checkOutDate || 'N/A'}</p>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
@@ -989,22 +1024,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             {/* Extra Guests Display */}
                                             {villa.extraGuests && villa.extraGuests.length > 0 && (
                                                 <div className="mt-4 pt-4 border-t border-slate-100">
-                                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Extra Guests Added ({villa.extraGuests.length})</h4>
+                                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Extra Guests ({villa.extraGuests.length})</h4>
                                                     <div className="space-y-2">
                                                         {villa.extraGuests.map((eg: any, idx: number) => (
                                                             <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
-                                                                        <Users size={12} />
-                                                                    </div>
+                                                                    <Users size={12} className="text-slate-400" />
                                                                     <div>
-                                                                        <p className="text-xs font-bold text-slate-800">{eg.name}</p>
-                                                                        <p className="text-[9px] font-medium text-slate-500">{eg.idType}</p>
+                                                                        <p className="text-xs font-bold text-slate-800">{eg.guestName || eg.name}</p>
+                                                                        <p className="text-[9px] font-medium text-slate-500">{eg.idProofType || eg.idType}</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="text-xs font-bold text-emerald-600">+₹{eg.amount}</p>
-                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMode}</p>
+                                                                    <p className="text-xs font-bold text-emerald-600">+₹{eg.chargeAmount || eg.amount || 0}</p>
+                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMethod || eg.paymentMode}</p>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -1013,13 +1046,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             )}
                                         </div>
                                     )}
-                                    {expandedVilla === villa.name && !villa.checkedIn && (
+                                    {expandedVilla === villa.name && !villa.booked && (
                                         <div className="p-4 pt-0 border-t border-slate-100">
-                                            <p className="text-sm text-slate-400 font-medium py-4 text-center">No active check-in at this property.</p>
+                                            <p className="text-sm text-slate-400 font-medium py-4 text-center">No active booking.</p>
                                         </div>
                                     )}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -1032,7 +1066,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const renderDD = () => {
         // Group bookings by screen — filtered by selected date
         const screenGroups: Record<string, any[]> = {};
-        const selectedDateStr = ddViewDate.toISOString().split('T')[0];
+        const selectedDateStr = `${ddViewDate.getFullYear()}-${String(ddViewDate.getMonth()+1).padStart(2,'0')}-${String(ddViewDate.getDate()).padStart(2,'0')}`;
         
         // Use live DD bookings, filtered by ddViewDate
         const allMapped = ddBookingsLive.length > 0 ? ddBookingsLive.map((b: any) => ({
@@ -1041,7 +1075,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             phone: b.customerPhone,
             screen: b.screen?.name || "Unknown Screen",
             date: new Date(b.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-            rawDate: b.bookingDate ? new Date(b.bookingDate).toISOString().split('T')[0] : '',
+            rawDate: b.bookingDate ? (() => { const d = new Date(b.bookingDate); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
             slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
             source: b.source === 'website' ? 'Online' : 'Walk-in',
             upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
