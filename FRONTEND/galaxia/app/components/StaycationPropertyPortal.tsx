@@ -281,7 +281,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             await api.patch(`/bookings/staycation/${numericId}/status`, { 
                 status: newStatus === "Checked In" ? "checked_in" : 
                         newStatus === "Cancelled" ? "cancelled" : 
-                        newStatus === "Checked Out" ? "checked_out" : "confirmed"
+                        (newStatus === "Checked Out" || newStatus === "Completed") ? "checked_out" : "confirmed"
             });
             
             // Record payment if checking in
