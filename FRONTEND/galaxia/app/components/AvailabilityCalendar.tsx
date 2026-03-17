@@ -106,7 +106,7 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
         }
 
         return days;
-    }, [currentMonth, currentYear, weekdayPrice, weekendPrice, primeDatePrice]);
+    }, [currentMonth, currentYear, weekdayPrice, weekendPrice, primeDatePrice, bookedDates]);
 
     const isPast = (date: Date) => {
         const t = new Date();

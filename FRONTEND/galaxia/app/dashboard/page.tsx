@@ -148,7 +148,7 @@ function DashboardContent() {
                         payAtVenue: formatPrice(b.balanceAmount || Math.round(b.totalAmount * 0.8)),
                         securityDeposit: b.securityDeposit ? formatPrice(b.securityDeposit) : "—",
                         depositRefunded: b.depositRefunded || false,
-                        checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkInTime || "2:00 PM"),
+                        checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkInTime || "1:00 PM"),
                         checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkOutTime || "11:00 AM"),
                         roomType: b.subProperty?.name || "Entire Property",
                         taxes: formatPrice(b.gstAmount || 0)

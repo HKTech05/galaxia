@@ -16,12 +16,10 @@ interface DDBooking {
     startHour: number;
     durationHours: number;
     totalAmount: number;
-    advanceAmount: number;
-    balanceAmount: number;
-    advancePaid: boolean;
-    advanceMethod: string;
-    balancePaid: boolean;
-    balanceMethod: string | null;
+    amountPaid: number;
+    amountToCollect: number;
+    paymentMethod: string;
+    paymentStatus: string;
     source: string;
     status: string;
 }
@@ -62,7 +60,7 @@ export default function Admin3DDBookingsPage() {
     const handleCollectPayment = async (booking: DDBooking, method: string) => {
         setActionLoading(true);
         try {
-            await api.patch(`/bookings/dd/${booking.id}/payment`, { balancePaid: true, balanceMethod: method });
+            await api.post(`/bookings/dd/${booking.id}/payment`, { amount: booking.amountToCollect, method: method });
             await fetchBookings();
             setIsActionModalOpen(false);
         } catch (err) {
@@ -183,14 +181,14 @@ export default function Admin3DDBookingsPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-bold text-slate-800">₹{(b.advanceAmount || 0).toLocaleString("en-IN")}</span>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{b.advanceMethod || "—"}</span>
+                                            <span className="text-sm font-bold text-slate-800">₹{(b.amountPaid || 0).toLocaleString("en-IN")}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{b.paymentMethod || "—"}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-bold text-slate-800">₹{(b.balanceAmount || 0).toLocaleString("en-IN")}</span>
-                                            {b.balancePaid ? <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Paid</span> : <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Pending</span>}
+                                            <span className="text-sm font-bold text-slate-800">₹{(b.amountToCollect || 0).toLocaleString("en-IN")}</span>
+                                            {b.amountToCollect <= 0 ? <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Paid</span> : <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Pending</span>}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -231,10 +229,10 @@ export default function Admin3DDBookingsPage() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm font-medium text-slate-500">Remaining</span>
-                                    <span className="text-lg font-bold text-slate-800">₹{(selectedBooking.balanceAmount || 0).toLocaleString("en-IN")}</span>
+                                    <span className="text-lg font-bold text-slate-800">₹{(selectedBooking.amountToCollect || 0).toLocaleString("en-IN")}</span>
                                 </div>
                             </div>
-                            {selectedBooking.status !== 'cancelled' && !selectedBooking.balancePaid ? (
+                            {selectedBooking.status !== 'cancelled' && selectedBooking.amountToCollect > 0 ? (
                                 <div className="space-y-3">
                                     <h4 className="text-sm font-bold text-slate-800">Collect Remaining</h4>
                                     <div className="grid grid-cols-2 gap-3">

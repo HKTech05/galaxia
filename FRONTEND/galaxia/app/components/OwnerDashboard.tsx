@@ -152,6 +152,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             isCheckoutDay: v.isCheckoutDay ?? (villaBooking ? villaBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
                             guest: v.guest ?? (villaBooking?.customerName || null),
                             guests: v.guests || (villaBooking?.numGuests || 0),
+                            balanceAmount: v.balanceAmount ?? (villaBooking?.balanceAmount || null),
+                            depositAmount: v.depositAmount ?? (villaBooking?.securityDeposit || null),
                         };
                     });
                     return {
@@ -160,6 +162,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         bookingStatus: p.bookingStatus ?? (propBooking?.status || null),
                         isCheckinDay: p.isCheckinDay ?? (propBooking ? propBooking.checkInDate?.slice(0, 10) === selectedDateStr : false),
                         isCheckoutDay: p.isCheckoutDay ?? (propBooking ? propBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
+                        balanceAmount: p.balanceAmount ?? (propBooking?.balanceAmount || null),
+                        depositAmount: p.depositAmount ?? (propBooking?.securityDeposit || null),
                         villas: enrichedVillas,
                     };
                 });
@@ -263,6 +267,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
                                     Balance {item.balanceCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
+                                {item.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.balanceAmount).toLocaleString('en-IN')}</p>}
                                 {item.balanceCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
                                         via {item.balanceMode} · {item.balanceTime}
@@ -273,6 +278,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
                                     Security Deposit {item.depositCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
+                                {item.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
                                 {item.depositCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
                                         via {item.depositMode} · {item.depositTime}

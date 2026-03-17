@@ -61,6 +61,74 @@ router.get("/all", authMiddleware, requireRole("owner", "developer", "manager"),
     }
 });
 
+// GET /api/properties/all-nested — Admin: list properties with nested sub-properties
+router.get("/all-nested", authMiddleware, requireRole("owner", "developer", "manager"), async (_req, res) => {
+    try {
+        const properties = await prisma.property.findMany({
+            orderBy: { displayOrder: "asc" },
+            include: {
+                subProperties: { orderBy: { displayOrder: "asc" } },
+                pricing: { where: { isActive: true }, orderBy: { dayType: "asc" } },
+            },
+        });
+        return res.json(properties);
+    } catch (error) {
+        console.error("Properties nested list error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/sub/:id/toggle — Toggle sub-property active status
+router.patch("/sub/:id/toggle", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const sp = await prisma.subProperty.findUnique({ where: { id } });
+        if (!sp) return res.status(404).json({ error: "Sub-property not found" });
+        const updated = await prisma.subProperty.update({
+            where: { id },
+            data: { isActive: !sp.isActive },
+        });
+        return res.json(updated);
+    } catch (error) {
+        console.error("Toggle sub-property error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/:id/pricing — Update property pricing
+router.patch("/:id/pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const { weekday, weekend, saturday, extraGuest } = req.body;
+        
+        const updates = [];
+        if (weekday !== undefined) {
+            updates.push(prisma.propertyPricing.updateMany({
+                where: { propertyId: id, dayType: "weekday", isActive: true },
+                data: { basePrice: weekday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
+            }));
+        }
+        if (weekend !== undefined) {
+            updates.push(prisma.propertyPricing.updateMany({
+                where: { propertyId: id, dayType: "weekend", isActive: true },
+                data: { basePrice: weekend, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
+            }));
+        }
+        if (saturday !== undefined) {
+            updates.push(prisma.propertyPricing.updateMany({
+                where: { propertyId: id, dayType: "saturday", isActive: true },
+                data: { basePrice: saturday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
+            }));
+        }
+        
+        await Promise.all(updates);
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Update pricing error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const idStr = req.params.id as string;

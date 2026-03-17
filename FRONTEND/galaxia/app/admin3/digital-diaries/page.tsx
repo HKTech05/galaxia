@@ -80,7 +80,7 @@ export default function Admin1Dashboard() {
     const fetchEvents = useCallback(async (date: Date) => {
         try {
             const dateStr = date.toISOString().split('T')[0];
-            const data = await api.get(`/bookings/dd?dateFrom=${dateStr}`);
+            const data = await api.get(`/bookings/dd?date=${dateStr}`);
             if (Array.isArray(data)) {
                 const mapped: Event[] = data.map((b: any) => ({
                     id: b.id.toString(),
@@ -89,7 +89,7 @@ export default function Admin1Dashboard() {
                     customerName: b.customerName,
                     phone: b.customerPhone || "—",
                     email: b.customerEmail || "—",
-                    screen: b.screen?.name || "Sandy Screen",
+                    screen: (b.screen?.name || "Sandy Screen").replace(" (Digital Diaries)", "") as any,
                     startHour: b.startHour,
                     duration: b.durationHours,
                     reservationDate: b.bookingDate,
