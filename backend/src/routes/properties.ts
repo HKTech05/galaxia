@@ -145,6 +145,65 @@ router.patch("/:id/pricing", authMiddleware, requireRole("owner", "developer"), 
     }
 });
 
+// POST /api/properties/:id/date-pricing — Set price for a specific date
+router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const propertyId = parseInt(req.params.id as string);
+        const { date, price } = req.body;
+        if (!date || !price) return res.status(400).json({ error: "date and price required" });
+
+        const overrideDate = new Date(date);
+        overrideDate.setUTCHours(0, 0, 0, 0);
+
+        // Check if override already exists for this date
+        const existing = await prisma.propertyPricing.findFirst({
+            where: { propertyId, overrideDate, isActive: true },
+        });
+
+        if (existing) {
+            await prisma.propertyPricing.update({
+                where: { id: existing.id },
+                data: { basePrice: parseInt(price) },
+            });
+        } else {
+            // Determine day type from the date
+            const dow = overrideDate.getUTCDay();
+            const dayType = dow === 6 ? "saturday" : (dow === 0 || dow === 5) ? "weekend" : "weekday";
+            await prisma.propertyPricing.create({
+                data: {
+                    propertyId,
+                    dayType,
+                    basePrice: parseInt(price),
+                    overrideDate,
+                    specialLabel: `Override ${date}`,
+                },
+            });
+        }
+
+        return res.json({ success: true, message: `Price set to ₹${price} for ${date}` });
+    } catch (error) {
+        console.error("Date pricing error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/dd-screen/:id/toggle — Toggle DD screen active status
+router.patch("/dd-screen/:id/toggle", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const screen = await prisma.ddScreen.findUnique({ where: { id } });
+        if (!screen) return res.status(404).json({ error: "Screen not found" });
+        const updated = await prisma.ddScreen.update({
+            where: { id },
+            data: { isActive: !screen.isActive },
+        });
+        return res.json(updated);
+    } catch (error) {
+        console.error("Toggle DD screen error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const idStr = req.params.id as string;
