@@ -134,8 +134,37 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         }).catch(err => console.error("Earnings:", err));
 
         const fmtLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        api.get(`/admin/dashboard/property-status?date=${fmtLocalDate(propertyDate)}`).then(data => {
-            if (data?.properties && data.properties.length > 0) setPropertyStatusLive(data.properties);
+        const selectedDateStr = fmtLocalDate(propertyDate);
+        api.get(`/admin/dashboard/property-status?date=${selectedDateStr}`).then(data => {
+            if (data?.properties && data.properties.length > 0) {
+                const bookings = data.activeBookings || [];
+                // Enrich properties client-side with booked/bookingStatus from activeBookings
+                const enriched = data.properties.map((p: any) => {
+                    // Find bookings for this property (no sub-property)
+                    const propBooking = bookings.find((b: any) => b.propertyId === p.id && !b.subPropertyId);
+                    const enrichedVillas = (p.villas || []).map((v: any) => {
+                        const villaBooking = bookings.find((b: any) => b.subPropertyId === v.id);
+                        return {
+                            ...v,
+                            booked: v.booked ?? (villaBooking ? true : false),
+                            bookingStatus: v.bookingStatus ?? (villaBooking?.status || null),
+                            isCheckinDay: v.isCheckinDay ?? (villaBooking ? villaBooking.checkInDate?.slice(0, 10) === selectedDateStr : false),
+                            isCheckoutDay: v.isCheckoutDay ?? (villaBooking ? villaBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
+                            guest: v.guest ?? (villaBooking?.customerName || null),
+                            guests: v.guests || (villaBooking?.numGuests || 0),
+                        };
+                    });
+                    return {
+                        ...p,
+                        booked: p.booked ?? (propBooking ? true : false),
+                        bookingStatus: p.bookingStatus ?? (propBooking?.status || null),
+                        isCheckinDay: p.isCheckinDay ?? (propBooking ? propBooking.checkInDate?.slice(0, 10) === selectedDateStr : false),
+                        isCheckoutDay: p.isCheckoutDay ?? (propBooking ? propBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
+                        villas: enrichedVillas,
+                    };
+                });
+                setPropertyStatusLive(enriched);
+            }
         }).catch(err => console.error("Property status:", err));
 
         api.get("/bookings/dd").then(data => {
