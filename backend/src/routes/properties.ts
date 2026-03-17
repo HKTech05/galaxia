@@ -67,7 +67,10 @@ router.get("/all-nested", authMiddleware, requireRole("owner", "developer", "man
         const properties = await prisma.property.findMany({
             orderBy: { displayOrder: "asc" },
             include: {
-                subProperties: { orderBy: { displayOrder: "asc" } },
+                subProperties: {
+                    orderBy: { displayOrder: "asc" },
+                    include: { pricing: { where: { isActive: true }, orderBy: { dayType: "asc" } } },
+                },
                 pricing: { where: { isActive: true }, orderBy: { dayType: "asc" } },
             },
         });
@@ -107,6 +110,68 @@ router.patch("/sub/:id/toggle", authMiddleware, requireRole("owner", "developer"
         return res.json(updated);
     } catch (error) {
         console.error("Toggle sub-property error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/sub/:id/pricing — Update/create sub-property pricing
+router.patch("/sub/:id/pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const subId = parseInt(req.params.id as string);
+        const { weekday, weekend, saturday, extraGuest } = req.body;
+        const sp = await prisma.subProperty.findUnique({ where: { id: subId } });
+        if (!sp) return res.status(404).json({ error: "Sub-property not found" });
+
+        for (const [dayType, price] of [["weekday", weekday], ["weekend", weekend], ["saturday", saturday]] as [string, number | undefined][]) {
+            if (price === undefined) continue;
+            const existing = await prisma.propertyPricing.findFirst({
+                where: { subPropertyId: subId, dayType, overrideDate: null, isActive: true },
+            });
+            if (existing) {
+                await prisma.propertyPricing.update({
+                    where: { id: existing.id },
+                    data: { basePrice: price, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
+                });
+            } else {
+                await prisma.propertyPricing.create({
+                    data: { subPropertyId: subId, propertyId: sp.propertyId, dayType, basePrice: price, extraAdultPrice: extraGuest || 0 },
+                });
+            }
+        }
+        if (extraGuest !== undefined && weekday === undefined && weekend === undefined && saturday === undefined) {
+            await prisma.propertyPricing.updateMany({
+                where: { subPropertyId: subId, overrideDate: null, isActive: true },
+                data: { extraAdultPrice: extraGuest },
+            });
+        }
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Sub-property pricing error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// POST /api/properties/sub/:id/date-pricing — Date override for sub-property
+router.post("/sub/:id/date-pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const subId = parseInt(req.params.id as string);
+        const { date, price } = req.body;
+        if (!date || !price) return res.status(400).json({ error: "date and price required" });
+        const overrideDate = new Date(date); overrideDate.setUTCHours(0, 0, 0, 0);
+        const existing = await prisma.propertyPricing.findFirst({ where: { subPropertyId: subId, overrideDate, isActive: true } });
+        if (existing) {
+            await prisma.propertyPricing.update({ where: { id: existing.id }, data: { basePrice: parseInt(price) } });
+        } else {
+            const dow = overrideDate.getUTCDay();
+            const dayType = dow === 6 ? "saturday" : (dow === 0 || dow === 5) ? "weekend" : "weekday";
+            const sp = await prisma.subProperty.findUnique({ where: { id: subId } });
+            await prisma.propertyPricing.create({
+                data: { subPropertyId: subId, propertyId: sp?.propertyId, dayType, basePrice: parseInt(price), overrideDate, specialLabel: `Override ${date}` },
+            });
+        }
+        return res.json({ success: true, message: `Price ₹${price} set for ${date}` });
+    } catch (error) {
+        console.error("Sub date pricing error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
