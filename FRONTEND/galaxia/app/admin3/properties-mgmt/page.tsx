@@ -16,8 +16,8 @@ export default function PropertiesMgmtPage() {
     const [ovPrice, setOvPrice] = useState("");
     const [ovMsg, setOvMsg] = useState("");
     // DD
-    const [ddEdit, setDdEdit] = useState<Record<number, { wd: string; we: string }>>({});
-    const [ddExEdit, setDdExEdit] = useState<Record<number, string>>({});
+    const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string }>>({});
+    const [ddExEdit, setDdExEdit] = useState<Record<string, string>>({});
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -225,68 +225,68 @@ export default function PropertiesMgmtPage() {
         const pkgs = dd.ddPackages || [];
 
         return (<div className="space-y-6">
-            {/* Screens — enable/disable only */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-slate-100 flex justify-between items-start">
-                    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600"><Building size={20} /></div><div><h3 className="font-bold text-slate-800">Screens</h3><p className="text-xs text-slate-500">{screens.length} screens</p></div></div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${dd.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{dd.isActive ? "Active" : "Disabled"}</span>
-                </div>
-                <div className="p-5">
-                    {screens.length === 0 ? <p className="text-sm text-slate-400">No screens in database.</p> : (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{screens.map((s: any) => (
-                            <button key={s.id} onClick={() => toggleScreen(s.id)} className={`flex flex-col items-center gap-1.5 px-4 py-4 rounded-xl text-sm font-bold border transition-colors ${s.isActive ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
-                                <span className="font-bold">{s.name}</span><span className="text-[10px] font-medium opacity-70">{s.theme}</span>{s.isActive ? <Check size={14} /> : <Ban size={14} />}
-                            </button>
-                        ))}</div>
-                    )}
-                </div>
+            {/* 4 Screen Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {screens.map((scr: any) => (
+                    <div key={scr.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600"><Building size={20} /></div>
+                                <div><h3 className="font-bold text-slate-800">{scr.name}</h3><p className="text-xs text-slate-500">{scr.theme}</p></div>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${scr.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{scr.isActive ? "Active" : "Disabled"}</span>
+                        </div>
+
+                        {/* Pricing tables per package */}
+                        {pkgs.map((pkg: any) => {
+                            const rows = Array.isArray(pkg.pricing) ? pkg.pricing : [];
+                            return (<div key={pkg.id} className="border-t border-slate-100">
+                                <div className="px-5 pt-4 pb-2 flex justify-between items-center">
+                                    <p className="text-xs font-bold text-indigo-600 uppercase">{pkg.name}</p>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <span className="text-slate-400">Extra/person:</span>
+                                        {ddExEdit[`${scr.id}-${pkg.id}`] !== undefined ? (<div className="flex items-center gap-1.5">
+                                            <input type="text" inputMode="numeric" value={ddExEdit[`${scr.id}-${pkg.id}`]} onChange={e => setDdExEdit({ ...ddExEdit, [`${scr.id}-${pkg.id}`]: e.target.value.replace(/[^0-9]/g, "") })} className="w-16 px-2 py-1 border rounded text-xs font-bold text-center" />
+                                            <button onClick={() => { const v = ddExEdit[`${scr.id}-${pkg.id}`]; if (v) saveDdEx(pkg.id); setDdExEdit(p => { const n = { ...p }; delete n[`${scr.id}-${pkg.id}`]; return n; }); }} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"><Save size={14} /></button>
+                                            <button onClick={() => setDdExEdit(p => { const n = { ...p }; delete n[`${scr.id}-${pkg.id}`]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded hover:bg-red-200"><X size={14} /></button>
+                                        </div>) : (
+                                            <button onClick={() => setDdExEdit({ ...ddExEdit, [`${scr.id}-${pkg.id}`]: String(pkg.extraPersonPrice || 0) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraPersonPrice || 0}</button>
+                                        )}
+                                    </div>
+                                </div>
+                                <table className="w-full text-sm">
+                                    <thead><tr className="bg-slate-50"><th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">Duration</th><th className="text-center px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Weekday</th><th className="text-center px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Weekend</th><th className="w-20"></th></tr></thead>
+                                    <tbody>{rows.map((pr: any) => {
+                                        const editKey = `${scr.id}-${pr.id}`;
+                                        return (<tr key={pr.id} className="border-t border-slate-100">
+                                            <td className="px-4 py-2.5 font-medium text-slate-700 text-xs">{pr.hours}hr{pr.label ? ` (${pr.label})` : ''}</td>
+                                            {ddEdit[editKey] ? (<>
+                                                <td className="px-2 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].wd} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], wd: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-2 py-1.5 border rounded text-xs font-bold text-center" /></td>
+                                                <td className="px-2 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].we} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], we: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-2 py-1.5 border rounded text-xs font-bold text-center" /></td>
+                                                <td className="px-2 py-1.5 flex gap-1 justify-center">
+                                                    <button onClick={() => saveDdPr(pr.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={16} /></button>
+                                                    <button onClick={() => setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; })} className="p-2 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><X size={16} /></button>
+                                                </td>
+                                            </>) : (<>
+                                                <td className="px-3 py-2.5 text-center font-bold text-slate-800 text-xs">₹{(pr.weekdayPrice || 0).toLocaleString("en-IN")}</td>
+                                                <td className="px-3 py-2.5 text-center font-bold text-slate-800 text-xs">₹{(pr.weekendPrice || 0).toLocaleString("en-IN")}</td>
+                                                <td className="px-2 py-2.5 text-center"><button onClick={() => setDdEdit({ ...ddEdit, [editKey]: { wd: String(pr.weekdayPrice || 0), we: String(pr.weekendPrice || 0) } })} className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"><Edit3 size={16} /></button></td>
+                                            </>)}
+                                        </tr>);
+                                    })}</tbody>
+                                </table>
+                            </div>);
+                        })}
+
+                        {/* Disable Screen button */}
+                        <button onClick={() => toggleScreen(scr.id)} className={`w-full py-3 flex items-center justify-center gap-2 text-sm font-bold border-t ${scr.isActive ? 'text-red-600 border-red-100 hover:bg-red-50' : 'text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}>
+                            <Power size={14} /> {scr.isActive ? "Disable Screen" : "Enable Screen"}
+                        </button>
+                    </div>
+                ))}
             </div>
 
-            {/* Packages — shared pricing, editable */}
-            {pkgs.map((pkg: any) => {
-                const rows = Array.isArray(pkg.pricing) ? pkg.pricing : [];
-                return (<div key={pkg.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                    <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-                        <h3 className="font-bold text-slate-800 text-lg">{pkg.name}</h3>
-                        <div className="flex items-center gap-2 text-sm">
-                            <span className="text-slate-400">Extra/person:</span>
-                            {ddExEdit[pkg.id] !== undefined ? (<div className="flex items-center gap-2">
-                                <input type="text" inputMode="numeric" value={ddExEdit[pkg.id]} onChange={e => setDdExEdit({ ...ddExEdit, [pkg.id]: e.target.value.replace(/[^0-9]/g, "") })} className="w-20 px-2 py-1.5 border rounded-lg text-sm font-bold text-center" />
-                                <button onClick={() => saveDdEx(pkg.id)} className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={14} /></button>
-                                <button onClick={() => setDdExEdit(p => { const n = { ...p }; delete n[pkg.id]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><X size={14} /></button>
-                            </div>) : (
-                                <button onClick={() => setDdExEdit({ ...ddExEdit, [pkg.id]: String(pkg.extraPersonPrice || 0) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraPersonPrice || 0}</button>
-                            )}
-                        </div>
-                    </div>
-                    <div className="p-4">
-                        {/* Inclusions */}
-                        {pkg.inclusions && (() => { const inc = Array.isArray(pkg.inclusions) ? pkg.inclusions : (typeof pkg.inclusions === "object" ? Object.values(pkg.inclusions) : []); return inc.length > 0 ? (<div className="mb-4"><p className="text-[10px] font-bold text-indigo-600 uppercase mb-2">Inclusions</p><div className="flex flex-wrap gap-1.5">{inc.map((i: string, x: number) => <span key={x} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">{String(i)}</span>)}</div></div>) : null; })()}
-                        <table className="w-full text-sm">
-                            <thead><tr className="bg-slate-50"><th className="text-left px-4 py-2 text-xs font-bold text-slate-500 uppercase">Duration</th><th className="text-center px-4 py-2 text-xs font-bold text-slate-500 uppercase">Weekday</th><th className="text-center px-4 py-2 text-xs font-bold text-slate-500 uppercase">Weekend</th><th className="w-24"></th></tr></thead>
-                            <tbody>{rows.map((pr: any) => (
-                                <tr key={pr.id} className="border-t border-slate-100">
-                                    <td className="px-4 py-3 font-medium text-slate-700">{pr.hours} {pr.hours === 1 ? 'Hour' : 'Hours'}{pr.label ? ` (${pr.label})` : ''}</td>
-                                    {ddEdit[pr.id] ? (<>
-                                        <td className="px-2 py-2"><input type="text" inputMode="numeric" value={ddEdit[pr.id].wd} onChange={e => setDdEdit({ ...ddEdit, [pr.id]: { ...ddEdit[pr.id], wd: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-3 py-2 border rounded-lg text-sm font-bold text-center" /></td>
-                                        <td className="px-2 py-2"><input type="text" inputMode="numeric" value={ddEdit[pr.id].we} onChange={e => setDdEdit({ ...ddEdit, [pr.id]: { ...ddEdit[pr.id], we: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-3 py-2 border rounded-lg text-sm font-bold text-center" /></td>
-                                        <td className="px-2 py-2 flex gap-1.5 justify-center">
-                                            <button onClick={() => saveDdPr(pr.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={16} /></button>
-                                            <button onClick={() => setDdEdit(p => { const n = { ...p }; delete n[pr.id]; return n; })} className="p-2 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><X size={16} /></button>
-                                        </td>
-                                    </>) : (<>
-                                        <td className="px-4 py-3 text-center font-bold text-slate-800">₹{(pr.weekdayPrice || 0).toLocaleString("en-IN")}</td>
-                                        <td className="px-4 py-3 text-center font-bold text-slate-800">₹{(pr.weekendPrice || 0).toLocaleString("en-IN")}</td>
-                                        <td className="px-4 py-3 text-center"><button onClick={() => setDdEdit({ ...ddEdit, [pr.id]: { wd: String(pr.weekdayPrice || 0), we: String(pr.weekendPrice || 0) } })} className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"><Edit3 size={16} /></button></td>
-                                    </>)}
-                                </tr>
-                            ))}</tbody>
-                        </table>
-                    </div>
-                </div>);
-            })}
-
-            {/* Add-ons */}
+            {/* Add-ons — editable */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-slate-100"><h3 className="font-bold text-slate-800">Add-ons</h3><p className="text-xs text-slate-500">Extra charges applied during booking</p></div>
                 <div className="p-5 space-y-3">

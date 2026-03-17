@@ -8,6 +8,7 @@ interface CalendarProps {
     weekdayPrice: string;
     weekendPrice: string;
     primeDatePrice?: string;
+    dateOverrides?: Record<string, number>;
     onDatesChange?: (checkIn: Date | null, checkOut: Date | null, nightlyRate: number, nights: number) => void;
     compact?: boolean;
     initialCheckIn?: Date | null;
@@ -28,10 +29,16 @@ const formatPrice = (price: string | number | undefined) => {
     return `₹${num.toLocaleString('en-IN')}`;
 };
 
-const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, primeDatePrice?: string, bookedDates?: Set<string>) => {
+const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, primeDatePrice?: string, bookedDates?: Set<string>, dateOverrides?: Record<string, number>) => {
     const dateStr = date.toISOString().split('T')[0];
     if (bookedDates?.has(dateStr)) {
         return { price: "Booked", numPrice: 0, type: "booked" as const };
+    }
+
+    // Check for date-specific override
+    if (dateOverrides && dateOverrides[dateStr]) {
+        const overridePrice = dateOverrides[dateStr];
+        return { price: formatPrice(overridePrice), numPrice: overridePrice, type: "prime" as "weekday" | "weekend" | "prime" | "booked" };
     }
 
     const day = date.getDay();
@@ -50,7 +57,7 @@ const getMaintenancePrice = (date: Date) => {
     return { price: "Maintenance", numPrice: 0, type: "booked" as const };
 };
 
-export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled }: CalendarProps) {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(initialCheckIn ? initialCheckIn.getMonth() : today.getMonth());
     const [currentYear, setCurrentYear] = useState(initialCheckIn ? initialCheckIn.getFullYear() : today.getFullYear());
@@ -101,12 +108,12 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
 
         for (let d = 1; d <= daysInMonth; d++) {
             const date = new Date(currentYear, currentMonth, d);
-            const info = isDisabled ? getMaintenancePrice(date) : getDayPrice(date, weekdayPrice, weekendPrice, primeDatePrice, bookedDates);
+            const info = isDisabled ? getMaintenancePrice(date) : getDayPrice(date, weekdayPrice, weekendPrice, primeDatePrice, bookedDates, dateOverrides);
             days.push({ date, ...info });
         }
 
         return days;
-    }, [currentMonth, currentYear, weekdayPrice, weekendPrice, primeDatePrice, bookedDates]);
+    }, [currentMonth, currentYear, weekdayPrice, weekendPrice, primeDatePrice, bookedDates, dateOverrides]);
 
     const isPast = (date: Date) => {
         const t = new Date();

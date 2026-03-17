@@ -398,16 +398,17 @@ router.get("/:slug/availability", async (req, res) => {
             where: { slug: req.params.slug },
             include: { 
                 pricing: { where: { isActive: true } },
-                subProperties: { select: { id: true, isActive: true } }
+                subProperties: {
+                    select: { id: true, isActive: true, name: true, slug: true },
+                }
             }
         });
         if (!property) {
             return res.status(404).json({ error: "Property not found" });
         }
 
-        const month = req.query.month as string; // e.g. "2026-03"
+        const month = req.query.month as string;
         let startDate: Date, endDate: Date;
-
         if (month) {
             startDate = new Date(`${month}-01`);
             endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
@@ -435,16 +436,60 @@ router.get("/:slug/availability", async (req, res) => {
             },
         });
 
-        const weekdayPricing = property.pricing.find(p => p.dayType === 'weekday');
-        const weekendPricing = property.pricing.find(p => p.dayType === 'weekend');
+        // Parent-level pricing (non-override rows)
+        const parentPricing = property.pricing.filter(p => !p.overrideDate);
+        const weekdayPricing = parentPricing.find(p => p.dayType === 'weekday');
+        const weekendPricing = parentPricing.find(p => p.dayType === 'weekend');
+
+        // Date overrides (property-level)
+        const overrideRows = property.pricing.filter(p => p.overrideDate);
+        const dateOverrides: Record<string, number> = {};
+        for (const o of overrideRows) {
+            if (o.overrideDate) {
+                const key = o.overrideDate.toISOString().split('T')[0];
+                dateOverrides[key] = o.basePrice;
+            }
+        }
+
+        // Sub-property pricing
+        const subPropertyPricing: Record<number, any> = {};
+        if (property.subProperties.length > 0) {
+            const subIds = property.subProperties.map(sp => sp.id);
+            const subPricing = await prisma.propertyPricing.findMany({
+                where: { subPropertyId: { in: subIds }, isActive: true },
+            });
+            for (const sp of property.subProperties) {
+                const spPricing = subPricing.filter(p => p.subPropertyId === sp.id);
+                const spBase = spPricing.filter(p => !p.overrideDate);
+                const spOverrides = spPricing.filter(p => p.overrideDate);
+                const spWd = spBase.find(p => p.dayType === 'weekday');
+                const spWe = spBase.find(p => p.dayType === 'weekend');
+                const spSa = spBase.find(p => p.dayType === 'saturday');
+                const spDateOverrides: Record<string, number> = {};
+                for (const o of spOverrides) {
+                    if (o.overrideDate) {
+                        const key = o.overrideDate.toISOString().split('T')[0];
+                        spDateOverrides[key] = o.basePrice;
+                    }
+                }
+                subPropertyPricing[sp.id] = {
+                    weekday: spWd ? { price: spWd.basePrice.toString(), extraAdult: spWd.extraAdultPrice } : null,
+                    weekend: spWe ? { price: spWe.basePrice.toString(), extraAdult: spWe.extraAdultPrice } : null,
+                    saturday: spSa ? { price: spSa.basePrice.toString(), extraAdult: spSa.extraAdultPrice } : null,
+                    dateOverrides: spDateOverrides,
+                };
+            }
+        }
 
         res.json({
             isActive: property.isActive,
             pricing: {
                 weekday: weekdayPricing ? { price: weekdayPricing.basePrice.toString(), extraAdult: weekdayPricing.extraAdultPrice } : null,
                 weekend: weekendPricing ? { price: weekendPricing.basePrice.toString(), extraAdult: weekendPricing.extraAdultPrice } : null,
-                all: property.pricing
+                all: parentPricing,
+                dateOverrides,
             },
+            subPropertyPricing,
             subProperties: property.subProperties,
             bookings,
             blocked: blocked
@@ -456,3 +501,4 @@ router.get("/:slug/availability", async (req, res) => {
 });
 
 export default router;
+

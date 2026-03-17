@@ -42,42 +42,41 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const [isPropertyDisabled, setIsPropertyDisabled] = useState(false);
     const [subPropertyStatus, setSubPropertyStatus] = useState<Record<number, boolean>>({});
     const [livePricing, setLivePricing] = useState<{ weekday: string; weekend: string } | null>(null);
+    const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
 
-    // Fetch DB property ID on mount
+    // Fetch DB property ID + live pricing on mount
     useEffect(() => {
         (async () => {
             try {
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                // Use availability endpoint for live pricing (includes sub-property pricing + overrides)
                 const res = await fetch(`${baseUrl}/properties/${property.id}/availability`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.isActive === false) setIsPropertyDisabled(true);
                     if (data.subProperties) {
                         const status: Record<number, boolean> = {};
-                        data.subProperties.forEach((sp: any) => {
-                            status[sp.id] = sp.isActive === false;
-                        });
+                        data.subProperties.forEach((sp: any) => { status[sp.id] = sp.isActive === false; });
                         setSubPropertyStatus(status);
                     }
+                    // Live pricing from DB
+                    if (data.pricing) {
+                        if (data.pricing.weekday || data.pricing.weekend) {
+                            setLivePricing({
+                                weekday: data.pricing.weekday?.price || property.pricing.weekday.price,
+                                weekend: data.pricing.weekend?.price || property.pricing.weekend.price,
+                            });
+                        }
+                        if (data.pricing.dateOverrides) setDateOverrides(data.pricing.dateOverrides);
+                    }
                 }
-                
-                // Still need the numeric ID for the generic properties list for some lookups if needed
+
+                // Get numeric DB ID
                 const resList = await fetch(`${baseUrl}/properties`);
                 if (resList.ok) {
                     const props = await resList.json();
                     const dbProp = props.find((p: any) => p.slug === property.id);
-                    if (dbProp) {
-                        setDbPropertyId(dbProp.id);
-                        // Use live DB pricing for calendar
-                        const weekdayP = dbProp.pricing?.find((pr: any) => pr.dayType === 'weekday');
-                        const weekendP = dbProp.pricing?.find((pr: any) => pr.dayType === 'weekend' || pr.dayType === 'saturday');
-                        if (weekdayP || weekendP) {
-                            setLivePricing({
-                                weekday: weekdayP?.basePrice?.toLocaleString('en-IN') || property.pricing.weekday.price,
-                                weekend: weekendP?.basePrice?.toLocaleString('en-IN') || property.pricing.weekend.price
-                            });
-                        }
-                    }
+                    if (dbProp) setDbPropertyId(dbProp.id);
                 }
             } catch (err) { /* silently fail */ }
         })();
@@ -339,6 +338,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     weekdayPrice={livePricing?.weekday || property.pricing.weekday.price}
                                     weekendPrice={livePricing?.weekend || property.pricing.weekend.price}
                                     primeDatePrice={property.pricing.primeDates}
+                                    dateOverrides={dateOverrides}
                                     onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                     isDisabled={isPropertyDisabled}
                                 />
