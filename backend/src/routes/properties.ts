@@ -191,6 +191,7 @@ router.get("/", async (_req, res) => {
                     orderBy: { displayOrder: "asc" },
                 },
                 amenities: { orderBy: { displayOrder: "asc" } },
+                pricing: { where: { isActive: true }, orderBy: { dayType: "asc" } },
             },
         });
         return res.json(properties);

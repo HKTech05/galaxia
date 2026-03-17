@@ -41,6 +41,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
     const [isPropertyDisabled, setIsPropertyDisabled] = useState(false);
     const [subPropertyStatus, setSubPropertyStatus] = useState<Record<number, boolean>>({});
+    const [livePricing, setLivePricing] = useState<{ weekday: string; weekend: string } | null>(null);
 
     // Fetch DB property ID on mount
     useEffect(() => {
@@ -65,7 +66,18 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                 if (resList.ok) {
                     const props = await resList.json();
                     const dbProp = props.find((p: any) => p.slug === property.id);
-                    if (dbProp) setDbPropertyId(dbProp.id);
+                    if (dbProp) {
+                        setDbPropertyId(dbProp.id);
+                        // Use live DB pricing for calendar
+                        const weekdayP = dbProp.pricing?.find((pr: any) => pr.dayType === 'weekday');
+                        const weekendP = dbProp.pricing?.find((pr: any) => pr.dayType === 'weekend' || pr.dayType === 'saturday');
+                        if (weekdayP || weekendP) {
+                            setLivePricing({
+                                weekday: weekdayP?.basePrice?.toLocaleString('en-IN') || property.pricing.weekday.price,
+                                weekend: weekendP?.basePrice?.toLocaleString('en-IN') || property.pricing.weekend.price
+                            });
+                        }
+                    }
                 }
             } catch (err) { /* silently fail */ }
         })();
@@ -324,8 +336,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                             <div>
                                 <AvailabilityCalendar
                                     propertyId={dbPropertyId}
-                                    weekdayPrice={property.pricing.weekday.price}
-                                    weekendPrice={property.pricing.weekend.price}
+                                    weekdayPrice={livePricing?.weekday || property.pricing.weekday.price}
+                                    weekendPrice={livePricing?.weekend || property.pricing.weekend.price}
                                     primeDatePrice={property.pricing.primeDates}
                                     onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                     isDisabled={isPropertyDisabled}

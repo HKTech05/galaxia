@@ -296,6 +296,172 @@ export default function PropertiesMgmtPage() {
                     <Loader2 className="animate-spin text-purple-500" size={32} />
                     <p className="text-sm text-slate-500 mt-3">Loading properties…</p>
                 </div>
+            ) : activeTab === "amstelnest" ? (
+                /* AMSTEL NEST — 2 Cards: Standard Cottages + Family Cottage */
+                (() => {
+                    const amstel = filteredProps[0];
+                    if (!amstel) return <div className="text-center py-20 text-slate-500 font-medium">No Amstel Nest property found.</div>;
+                    const allSubs = amstel.subProperties || [];
+                    const standardCottages = allSubs.filter(sp => sp.name !== "Standard Cottage" && sp.name !== "Family Cottage");
+                    const familyCottage = allSubs.find(sp => sp.name === "Family Cottage");
+                    const weekday = amstel.pricing?.find((p: any) => p.dayType === "weekday");
+                    const weekend = amstel.pricing?.find((p: any) => p.dayType === "weekend");
+
+                    return (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Card 1: Standard Cottages */}
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="p-5 border-b border-slate-100 flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600">
+                                            <Home size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 leading-tight">Standard Cottages</h3>
+                                            <p className="text-xs font-medium text-slate-500 mt-0.5">Amstel Nest — Cottage 1 to {standardCottages.length}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${amstel.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                        {amstel.isActive ? "Active" : "Disabled"}
+                                    </span>
+                                </div>
+                                <div className="p-5 space-y-3">
+                                    <div className="flex items-center justify-between text-sm"><span className="text-slate-500 font-medium">Mon-Thu</span><span className="text-slate-700 font-bold">₹{(weekday?.basePrice || 0).toLocaleString("en-IN")}</span></div>
+                                    <div className="flex items-center justify-between text-sm"><span className="text-slate-500 font-medium">Fri/Sun</span><span className="text-slate-700 font-bold">₹{(weekend?.basePrice || 0).toLocaleString("en-IN")}</span></div>
+                                    {weekday?.extraAdultPrice > 0 && (
+                                        <div className="flex items-center justify-between text-sm"><span className="text-slate-500 font-medium">Extra Guest</span><span className="text-slate-700 font-bold">₹{weekday.extraAdultPrice.toLocaleString("en-IN")}/person</span></div>
+                                    )}
+                                </div>
+                                <div className="px-5 pb-4 border-t border-slate-100 pt-4">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Cottages ({standardCottages.filter(sp => sp.isActive).length}/{standardCottages.length} active)</p>
+                                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                                        {standardCottages.map(sp => (
+                                            <button key={sp.id} onClick={() => toggleSubPropertyStatus(sp.id)}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${sp.isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
+                                                <span className="truncate">{sp.name}</span>
+                                                {sp.isActive ? <Check size={12} /> : <Ban size={12} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex gap-3">
+                                    <button onClick={() => startEditing(amstel)} className="flex-1 flex items-center justify-center gap-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:text-purple-600 hover:border-purple-200 shadow-sm transition-colors">
+                                        <Edit3 size={14} /> Edit Prices
+                                    </button>
+                                    <button onClick={() => togglePropertyStatus(amstel)} className={`flex-1 flex items-center justify-center gap-2 py-2 border rounded-lg text-sm font-semibold shadow-sm transition-colors ${amstel.isActive ? 'bg-white border-red-200 text-red-600 hover:bg-red-50' : 'bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
+                                        <Power size={14} /> {amstel.isActive ? 'Disable All' : 'Enable All'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Family Cottage */}
+                            {familyCottage && (
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="p-5 border-b border-slate-100 flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 text-amber-600">
+                                                <Home size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800 leading-tight">Family Cottage</h3>
+                                                <p className="text-xs font-medium text-slate-500 mt-0.5">Amstel Nest — Premium Family Unit</p>
+                                            </div>
+                                        </div>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${familyCottage.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                            {familyCottage.isActive ? "Active" : "Disabled"}
+                                        </span>
+                                    </div>
+                                    <div className="p-5 space-y-3">
+                                        <div className="flex items-center justify-between text-sm"><span className="text-slate-500 font-medium">Mon-Thu</span><span className="text-slate-700 font-bold">₹{(weekday?.basePrice || 0).toLocaleString("en-IN")}</span></div>
+                                        <div className="flex items-center justify-between text-sm"><span className="text-slate-500 font-medium">Fri/Sun</span><span className="text-slate-700 font-bold">₹{(weekend?.basePrice || 0).toLocaleString("en-IN")}</span></div>
+                                        <p className="text-xs text-slate-400 italic">Shares pricing with Standard Cottages</p>
+                                    </div>
+                                    <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100">
+                                        <button onClick={() => toggleSubPropertyStatus(familyCottage.id)}
+                                            className={`w-full flex items-center justify-center gap-2 py-2.5 border rounded-lg text-sm font-bold transition-colors ${familyCottage.isActive ? 'bg-white border-red-200 text-red-600 hover:bg-red-50' : 'bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
+                                            <Power size={14} /> {familyCottage.isActive ? 'Disable Family Cottage' : 'Enable Family Cottage'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()
+            ) : activeTab === "digitaldiaries" ? (
+                /* DIGITAL DIARIES — Screen Pricing */
+                (() => {
+                    const ddProp = filteredProps[0];
+                    if (!ddProp) return <div className="text-center py-20 text-slate-500 font-medium">No Digital Diaries property found.</div>;
+                    const screens = ddProp.subProperties || [];
+
+                    return (
+                        <div className="space-y-6">
+                            {/* DD Parent Card */}
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="p-5 border-b border-slate-100 flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600">
+                                            <Building size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 leading-tight">Digital Diaries</h3>
+                                            <p className="text-xs font-medium text-slate-500 mt-0.5">{screens.length} Screens</p>
+                                        </div>
+                                    </div>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${ddProp.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                        {ddProp.isActive ? "Active" : "Disabled"}
+                                    </span>
+                                </div>
+                                <div className="p-5">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Screens ({screens.filter(s => s.isActive).length}/{screens.length} active)</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        {screens.map(s => (
+                                            <button key={s.id} onClick={() => toggleSubPropertyStatus(s.id)}
+                                                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold border transition-colors ${s.isActive ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'}`}>
+                                                <span className="truncate">{s.name}</span>
+                                                {s.isActive ? <Check size={12} /> : <Ban size={12} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100">
+                                    <button onClick={() => togglePropertyStatus(ddProp)}
+                                        className={`w-full flex items-center justify-center gap-2 py-2.5 border rounded-lg text-sm font-bold transition-colors ${ddProp.isActive ? 'bg-white border-red-200 text-red-600 hover:bg-red-50' : 'bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
+                                        <Power size={14} /> {ddProp.isActive ? 'Disable All Screens' : 'Enable All Screens'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* DD Pricing Info */}
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="p-5 border-b border-slate-100">
+                                    <h3 className="font-bold text-slate-800">Pricing Structure</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">Package-based pricing per screen per hour</p>
+                                </div>
+                                <div className="p-5 space-y-4">
+                                    <div className="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100">
+                                        <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Packages</p>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between"><span className="text-slate-600">Basic (2 guests, 1 hr)</span><span className="text-slate-800 font-bold">₹1,999</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Standard (2 guests, 2 hrs)</span><span className="text-slate-800 font-bold">₹2,999</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Premium (2 guests, 3 hrs)</span><span className="text-slate-800 font-bold">₹3,999</span></div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-100">
+                                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2">Add-ons</p>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between"><span className="text-slate-600">Extra Person</span><span className="text-slate-800 font-bold">₹500/person</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Cake (1 kg)</span><span className="text-slate-800 font-bold">₹799</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Photography</span><span className="text-slate-800 font-bold">₹1,499</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-600">Decoration</span><span className="text-slate-800 font-bold">₹999</span></div>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 text-center">To edit DD pricing, update packages in the database directly.</p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()
             ) : filteredProps.length === 0 ? (
                 <div className="text-center py-20 text-slate-500 font-medium">No properties found for this category.</div>
             ) : (
