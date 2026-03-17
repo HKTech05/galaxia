@@ -120,19 +120,19 @@ router.patch("/:id/pricing", authMiddleware, requireRole("owner", "developer"), 
         const updates = [];
         if (weekday !== undefined) {
             updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, dayType: "weekday", isActive: true },
+                where: { propertyId: id, dayType: "weekday", isActive: true, overrideDate: null },
                 data: { basePrice: weekday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
             }));
         }
         if (weekend !== undefined) {
             updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, dayType: "weekend", isActive: true },
+                where: { propertyId: id, dayType: "weekend", isActive: true, overrideDate: null },
                 data: { basePrice: weekend, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
             }));
         }
         if (saturday !== undefined) {
             updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, dayType: "saturday", isActive: true },
+                where: { propertyId: id, dayType: "saturday", isActive: true, overrideDate: null },
                 data: { basePrice: saturday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
             }));
         }
@@ -200,6 +200,35 @@ router.patch("/dd-screen/:id/toggle", authMiddleware, requireRole("owner", "deve
         return res.json(updated);
     } catch (error) {
         console.error("Toggle DD screen error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/dd-package-pricing/:id — Update DD package pricing row
+router.patch("/dd-package-pricing/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const { weekdayPrice, weekendPrice } = req.body;
+        const data: any = {};
+        if (weekdayPrice !== undefined) data.weekdayPrice = parseInt(weekdayPrice);
+        if (weekendPrice !== undefined) data.weekendPrice = parseInt(weekendPrice);
+        const updated = await prisma.ddPackagePricing.update({ where: { id }, data });
+        return res.json(updated);
+    } catch (error) {
+        console.error("Update DD pricing error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/dd-package/:id — Update DD package (extra person price)
+router.patch("/dd-package/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const { extraPersonPrice } = req.body;
+        const updated = await prisma.ddPackage.update({ where: { id }, data: { extraPersonPrice: parseInt(extraPersonPrice) } });
+        return res.json(updated);
+    } catch (error) {
+        console.error("Update DD package error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
