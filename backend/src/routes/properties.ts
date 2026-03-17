@@ -209,7 +209,7 @@ router.get("/:slug/availability", async (req, res) => {
             },
             subProperties: property.subProperties,
             bookings,
-            blocked: blockedDates
+            blocked: blocked
         });
     } catch (error) {
         console.error("Availability error:", error);
