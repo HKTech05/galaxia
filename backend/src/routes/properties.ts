@@ -61,7 +61,7 @@ router.get("/all", authMiddleware, requireRole("owner", "developer", "manager"),
     }
 });
 
-// GET /api/properties/all-nested — Admin: list properties with nested sub-properties
+// GET /api/properties/all-nested — Admin: list properties with nested sub-properties + DD data
 router.get("/all-nested", authMiddleware, requireRole("owner", "developer", "manager"), async (_req, res) => {
     try {
         const properties = await prisma.property.findMany({
@@ -71,7 +71,23 @@ router.get("/all-nested", authMiddleware, requireRole("owner", "developer", "man
                 pricing: { where: { isActive: true }, orderBy: { dayType: "asc" } },
             },
         });
-        return res.json(properties);
+
+        // Fetch DD screens and packages separately
+        const ddScreens = await prisma.ddScreen.findMany({ orderBy: { displayOrder: "asc" } });
+        const ddPackages = await prisma.ddPackage.findMany({
+            where: { isActive: true },
+            include: { pricing: { orderBy: { hours: "asc" } } },
+        });
+
+        // Attach DD data to the Digital Diaries property
+        const enriched = properties.map(p => {
+            if (p.slug === "digital-diaries") {
+                return { ...p, ddScreens, ddPackages };
+            }
+            return p;
+        });
+
+        return res.json(enriched);
     } catch (error) {
         console.error("Properties nested list error:", error);
         return res.status(500).json({ error: "Internal server error" });
