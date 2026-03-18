@@ -48,17 +48,26 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     const sub = (data.subProperties || []).find((sp: any) => sp.id === parseInt(cottage.id) || sp.slug === cottage.id);
                     if (sub && sub.isActive === false) setIsCottageDisabled(true);
 
-                    // Use sub-property pricing if available
+                    // Use sub-property pricing if available, fallback to parent
                     const subId = sub?.id;
                     const spPricing = subId && data.subPropertyPricing ? data.subPropertyPricing[subId] : null;
-                    if (spPricing) {
+                    const hasSubPricing = spPricing && (spPricing.weekday || spPricing.weekend);
+                    if (hasSubPricing) {
                         if (spPricing.weekday) setLiveWeekday(spPricing.weekday.price);
                         if (spPricing.weekend) setLiveWeekend(spPricing.weekend.price);
                         if (spPricing.dateOverrides) setDateOverrides(spPricing.dateOverrides);
-                    } else if (data.pricing) {
-                        if (data.pricing.weekday) setLiveWeekday(data.pricing.weekday.price);
-                        if (data.pricing.weekend) setLiveWeekend(data.pricing.weekend.price);
-                        if (data.pricing.dateOverrides) setDateOverrides(data.pricing.dateOverrides);
+                    }
+                    // Always try parent pricing for anything not set by sub-property
+                    if (data.pricing) {
+                        if (!hasSubPricing || !spPricing?.weekday) {
+                            if (data.pricing.weekday) setLiveWeekday(data.pricing.weekday.price);
+                        }
+                        if (!hasSubPricing || !spPricing?.weekend) {
+                            if (data.pricing.weekend) setLiveWeekend(data.pricing.weekend.price);
+                        }
+                        if (data.pricing.dateOverrides && (!hasSubPricing || !spPricing?.dateOverrides || Object.keys(spPricing.dateOverrides).length === 0)) {
+                            setDateOverrides(data.pricing.dateOverrides);
+                        }
                     }
 
                     // Get numeric ID
