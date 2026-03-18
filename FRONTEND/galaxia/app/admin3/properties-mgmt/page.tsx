@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus } from "lucide-react";
 import { api } from "../../../lib/api";
 type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
@@ -19,12 +19,12 @@ export default function PropertiesMgmtPage() {
     const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string; dwd: string; dwe: string }>>({});
     const [ddExEdit, setDdExEdit] = useState<Record<string, string>>({});
     const [ddHrEdit, setDdHrEdit] = useState<Record<string, string>>({});
-    // DD Override
+    // DD Override — use refs to avoid re-render value loss in nested .map()
     const [ddOvScreen, setDdOvScreen] = useState<number | null>(null);
     const [ddOvPkg, setDdOvPkg] = useState<number | null>(null);
-    const [ddOvDate, setDdOvDate] = useState("");
-    const [ddOvPrices, setDdOvPrices] = useState<Record<number, string>>({});
     const [ddOvMsg, setDdOvMsg] = useState("");
+    const ddOvDateRef = useRef<HTMLInputElement>(null);
+    const ddOvPriceRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -107,27 +107,24 @@ export default function PropertiesMgmtPage() {
         try { await api.patch(`/properties/dd-package/${pkgId}`, { extraHourRate: parseInt(v) }); setDdHrEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
     };
     const saveDdOv = async (pkgRows: any[]) => {
-        console.log("saveDdOv called - date:", ddOvDate, "prices:", JSON.stringify(ddOvPrices), "rows:", pkgRows.length);
-        if (!ddOvDate) return alert("Please select a date first");
-        const entries = Object.entries(ddOvPrices).filter(([, v]) => v && v.trim() !== "");
-        if (entries.length === 0) return alert("Please enter at least one price");
+        const dateVal = ddOvDateRef.current?.value || "";
+        console.log("saveDdOv called - date:", dateVal, "rows:", pkgRows.length);
+        if (!dateVal) return alert("Please select a date first");
         try {
             let saved = 0;
             for (const pr of pkgRows) {
-                const price = ddOvPrices[pr.id];
-                if (price && price.trim() !== "") {
-                    console.log(`Saving override: pricingId=${pr.id}, date=${ddOvDate}, price=${price}`);
-                    const res = await api.post(`/properties/dd-override`, { pricingId: pr.id, date: ddOvDate, price: parseInt(price) });
+                const priceEl = ddOvPriceRefs.current[pr.id];
+                const price = priceEl?.value?.trim() || "";
+                console.log(`Tier ${pr.id}: price input value = "${price}"`);
+                if (price && parseInt(price) > 0) {
+                    const res = await api.post(`/properties/dd-override`, { pricingId: pr.id, date: dateVal, price: parseInt(price) });
                     console.log("DD Override response:", res);
                     saved++;
                 }
             }
-            if (saved === 0) {
-                alert("No tiers matched. This is a bug — please check console.");
-                return;
-            }
+            if (saved === 0) return alert("Please enter at least one price");
             setDdOvMsg(`Override saved! (${saved} tier${saved > 1 ? "s" : ""})`);
-            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); load(); }, 1500);
+            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); ddOvPriceRefs.current = {}; load(); }, 1500);
         } catch (e: any) {
             console.error("DD Override error:", e);
             alert("Override failed: " + (e?.message || JSON.stringify(e)));
@@ -386,21 +383,21 @@ export default function PropertiesMgmtPage() {
                                 {ddOvScreen === scr.id && ddOvPkg === pkg.id ? (
                                     <div className="px-5 py-4 bg-indigo-50 border-t border-indigo-200">
                                         <p className="text-xs font-bold text-indigo-700 mb-3">Override Prices for Specific Date</p>
-                                        <input type="date" value={ddOvDate} onChange={e => setDdOvDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm mb-3" />
+                                        <input type="date" ref={ddOvDateRef} className="w-full px-3 py-2 border rounded-lg text-sm mb-3" />
                                         {rows.map((pr: any) => (
                                             <div key={pr.id} className="flex items-center gap-2 mb-2">
                                                 <span className="text-xs text-slate-600 w-12">{pr.hours}hr{pr.hours > 1 ? 's' : ''}:</span>
-                                                <input type="text" inputMode="numeric" value={ddOvPrices[pr.id] || ""} onChange={e => setDdOvPrices({ ...ddOvPrices, [pr.id]: e.target.value.replace(/[^0-9]/g, "") })} className="flex-1 px-2 py-1.5 border rounded text-xs font-bold text-center" placeholder={`₹${pr.weekdayPrice}`} />
+                                                <input type="text" inputMode="numeric" ref={el => { ddOvPriceRefs.current[pr.id] = el; }} className="flex-1 px-2 py-1.5 border rounded text-xs font-bold text-center" placeholder={`₹${pr.weekdayPrice}`} />
                                             </div>
                                         ))}
                                         {ddOvMsg && <p className="text-xs text-emerald-600 font-bold mb-2">{ddOvMsg}</p>}
                                         <div className="flex gap-2">
                                             <button onClick={() => saveDdOv(rows)} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700"><Plus size={14} className="inline mr-1" />Set Override</button>
-                                            <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="px-3 py-2 bg-white border rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50"><X size={14} /></button>
+                                            <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); ddOvPriceRefs.current = {}; }} className="px-3 py-2 bg-white border rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50"><X size={14} /></button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="w-full py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
+                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvMsg(""); ddOvPriceRefs.current = {}; }} className="w-full py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
                                 )}
                             </div>);
                         })}
