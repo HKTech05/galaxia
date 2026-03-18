@@ -195,6 +195,7 @@ model DdPackage {
   extraHourRate    Int?               @map("extra_hour_rate")
   minHours         Int                @default(1) @map("min_hours")
   inclusions       Json
+  addonPricing     Json?              @map("addon_pricing")
   isActive         Boolean            @default(true) @map("is_active")
   createdAt        DateTime           @default(now()) @map("created_at")
   bookings         DdBooking[]

@@ -74,8 +74,11 @@ export default function PropertiesMgmtPage() {
 
     // DD pricing saves
     const saveDdPr = async (prId: number) => {
-        const e = ddEdit[prId]; if (!e) return;
-        try { await api.patch(`/properties/dd-package-pricing/${prId}`, { weekdayPrice: parseInt(e.wd), weekendPrice: parseInt(e.we) }); setDdEdit(p => { const n = { ...p }; delete n[prId]; return n; }); await load(); } catch { alert("Failed"); }
+        // Edit key is "${screenId}-${prId}", find any matching entry
+        const matchKey = Object.keys(ddEdit).find(k => k.endsWith(`-${prId}`));
+        const e = matchKey ? ddEdit[matchKey] : ddEdit[prId];
+        if (!e) return;
+        try { await api.patch(`/properties/dd-package-pricing/${prId}`, { weekdayPrice: parseInt(e.wd), weekendPrice: parseInt(e.we) }); await load(); } catch { alert("Failed"); }
     };
     const saveDdEx = async (pkgId: number) => {
         const v = ddExEdit[pkgId]; if (!v) return;
@@ -174,14 +177,14 @@ export default function PropertiesMgmtPage() {
                     <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Standard Cottages</h3><p className="text-xs text-slate-500">{std.length} cottages</p></div></div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{a.isActive ? "Active" : "Disabled"}</span>
                 </div>
-                <div className="p-5"><PrShow prop={a} sub={std[0]} /></div>
+                <div className="p-5"><PrShow prop={a} /></div>
                 <div className="px-5 pb-4 border-t border-slate-100 pt-4">
                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-3">Cottages ({std.filter((s: any) => s.isActive).length}/{std.length} active)</p>
                     <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">{std.map((s: any) => <button key={s.id} onClick={() => toggleSub(s.id)} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold border ${s.isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'}`}><span className="truncate">{s.name}</span>{s.isActive ? <Check size={12} /> : <Ban size={12} />}</button>)}</div>
                 </div>
-                <EditForm editKey={std[0] ? `sub-${std[0].id}` : `prop-${a.id}`} />
-                <CardBtns editKey={std[0] ? `sub-${std[0].id}` : `prop-${a.id}`} onToggle={() => toggleProp(a)} />
-                <OverrideUI oKey={std[0] ? `sub-${std[0].id}` : `prop-${a.id}`} />
+                <EditForm editKey={`prop-${a.id}`} />
+                <CardBtns editKey={`prop-${a.id}`} onToggle={() => toggleProp(a)} />
+                <OverrideUI oKey={`prop-${a.id}`} />
             </div>
             {/* Family Cottage card */}
             {fam && (<div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -224,6 +227,43 @@ export default function PropertiesMgmtPage() {
         const screens = dd.ddScreens || [];
         const pkgs = dd.ddPackages || [];
 
+        // Addon state
+        const [addonEdits, setAddonEdits] = useState<Record<string, string>>({});
+        const [addonSaving, setAddonSaving] = useState(false);
+
+        const defaultAddons = [
+            { key: "balloons", label: "Balloons", defaultPrice: 400 },
+            { key: "led_banner", label: "LED Banner", defaultPrice: 400 },
+            { key: "cake", label: "Cake (250g)", defaultPrice: 400 },
+        ];
+
+        // Get addon price from first package's addonPricing JSON, or default
+        const getAddonPrice = (key: string) => {
+            const p = pkgs[0]; // both packages share addons
+            if (p?.addonPricing && typeof p.addonPricing === 'object') {
+                const val = (p.addonPricing as any)[key];
+                if (val !== undefined) return val;
+            }
+            return defaultAddons.find(a => a.key === key)?.defaultPrice || 400;
+        };
+
+        const saveAddons = async () => {
+            setAddonSaving(true);
+            try {
+                const pricing: Record<string, number> = {};
+                for (const a of defaultAddons) {
+                    pricing[a.key] = addonEdits[a.key] ? parseInt(addonEdits[a.key]) : getAddonPrice(a.key);
+                }
+                // Save to all packages
+                for (const pkg of pkgs) {
+                    await api.patch(`/properties/dd-package/${pkg.id}`, { addonPricing: pricing });
+                }
+                setAddonEdits({});
+                await load();
+            } catch { alert("Failed to save add-ons"); }
+            finally { setAddonSaving(false); }
+        };
+
         return (<div className="space-y-6">
             {/* 4 Screen Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -245,12 +285,12 @@ export default function PropertiesMgmtPage() {
                                     <p className="text-xs font-bold text-indigo-600 uppercase">{pkg.name}</p>
                                     <div className="flex items-center gap-2 text-xs">
                                         <span className="text-slate-400">Extra/person:</span>
-                                        {ddExEdit[`${scr.id}-${pkg.id}`] !== undefined ? (<div className="flex items-center gap-1.5">
-                                            <input type="text" inputMode="numeric" value={ddExEdit[`${scr.id}-${pkg.id}`]} onChange={e => setDdExEdit({ ...ddExEdit, [`${scr.id}-${pkg.id}`]: e.target.value.replace(/[^0-9]/g, "") })} className="w-16 px-2 py-1 border rounded text-xs font-bold text-center" />
-                                            <button onClick={() => { const v = ddExEdit[`${scr.id}-${pkg.id}`]; if (v) saveDdEx(pkg.id); setDdExEdit(p => { const n = { ...p }; delete n[`${scr.id}-${pkg.id}`]; return n; }); }} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"><Save size={14} /></button>
-                                            <button onClick={() => setDdExEdit(p => { const n = { ...p }; delete n[`${scr.id}-${pkg.id}`]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded hover:bg-red-200"><X size={14} /></button>
+                                        {ddExEdit[pkg.id] !== undefined ? (<div className="flex items-center gap-1.5">
+                                            <input type="text" inputMode="numeric" value={ddExEdit[pkg.id]} onChange={e => setDdExEdit({ ...ddExEdit, [pkg.id]: e.target.value.replace(/[^0-9]/g, "") })} className="w-16 px-2 py-1 border rounded text-xs font-bold text-center" />
+                                            <button onClick={async () => { await saveDdEx(pkg.id); }} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"><Save size={14} /></button>
+                                            <button onClick={() => setDdExEdit(p => { const n = { ...p }; delete n[pkg.id]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded hover:bg-red-200"><X size={14} /></button>
                                         </div>) : (
-                                            <button onClick={() => setDdExEdit({ ...ddExEdit, [`${scr.id}-${pkg.id}`]: String(pkg.extraPersonPrice || 0) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraPersonPrice || 0}</button>
+                                            <button onClick={() => setDdExEdit({ ...ddExEdit, [pkg.id]: String(pkg.extraPersonPrice || 0) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraPersonPrice || 0}</button>
                                         )}
                                     </div>
                                 </div>
@@ -259,12 +299,12 @@ export default function PropertiesMgmtPage() {
                                     <tbody>{rows.map((pr: any) => {
                                         const editKey = `${scr.id}-${pr.id}`;
                                         return (<tr key={pr.id} className="border-t border-slate-100">
-                                            <td className="px-4 py-2.5 font-medium text-slate-700 text-xs">{pr.hours}hr{pr.label ? ` (${pr.label})` : ''}</td>
+                                            <td className="px-4 py-2.5 font-medium text-slate-700 text-xs">{pr.hours}hr{pr.hours > 1 ? 's' : ''}</td>
                                             {ddEdit[editKey] ? (<>
                                                 <td className="px-2 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].wd} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], wd: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-2 py-1.5 border rounded text-xs font-bold text-center" /></td>
                                                 <td className="px-2 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].we} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], we: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-2 py-1.5 border rounded text-xs font-bold text-center" /></td>
                                                 <td className="px-2 py-1.5 flex gap-1 justify-center">
-                                                    <button onClick={() => saveDdPr(pr.id)} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={16} /></button>
+                                                    <button onClick={async () => { await saveDdPr(pr.id); setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; }); }} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={16} /></button>
                                                     <button onClick={() => setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; })} className="p-2 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><X size={16} /></button>
                                                 </td>
                                             </>) : (<>
@@ -286,21 +326,38 @@ export default function PropertiesMgmtPage() {
                 ))}
             </div>
 
-            {/* Add-ons — editable */}
+            {/* Add-ons — editable from DB */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-slate-100"><h3 className="font-bold text-slate-800">Add-ons</h3><p className="text-xs text-slate-500">Extra charges applied during booking</p></div>
-                <div className="p-5 space-y-3">
-                    {[
-                        { key: "balloons", label: "Balloons", defaultPrice: 500 },
-                        { key: "led_banner", label: "LED Banner", defaultPrice: 300 },
-                        { key: "cake", label: "Cake (250g)", defaultPrice: 450 },
-                    ].map(addon => (
-                        <div key={addon.key} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-amber-50/30">
-                            <span className="text-sm font-medium text-slate-700">{addon.label}</span>
-                            <span className="text-sm font-bold text-slate-800">₹{addon.defaultPrice}</span>
+                <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div><h3 className="font-bold text-slate-800">Add-ons</h3><p className="text-xs text-slate-500">Extra charges applied during booking</p></div>
+                    {Object.keys(addonEdits).length > 0 && (
+                        <div className="flex gap-2">
+                            <button onClick={saveAddons} disabled={addonSaving} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 disabled:opacity-50">
+                                {addonSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+                            </button>
+                            <button onClick={() => setAddonEdits({})} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200">
+                                <X size={14} /> Cancel
+                            </button>
                         </div>
-                    ))}
-                    <p className="text-[10px] text-slate-400 text-center">Add-on pricing is set per booking. Master add-on pricing table coming soon.</p>
+                    )}
+                </div>
+                <div className="p-5 space-y-3">
+                    {defaultAddons.map(addon => {
+                        const currentPrice = getAddonPrice(addon.key);
+                        const isEditing = addonEdits[addon.key] !== undefined;
+                        return (
+                            <div key={addon.key} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-amber-50/30">
+                                <span className="text-sm font-medium text-slate-700">{addon.label}</span>
+                                {isEditing ? (
+                                    <NI value={addonEdits[addon.key]} onChange={v => setAddonEdits({ ...addonEdits, [addon.key]: v })} className="w-28" />
+                                ) : (
+                                    <button onClick={() => setAddonEdits({ ...addonEdits, [addon.key]: String(currentPrice) })} className="text-sm font-bold text-slate-800 hover:text-purple-600 underline decoration-dashed cursor-pointer">
+                                        ₹{currentPrice}
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>);

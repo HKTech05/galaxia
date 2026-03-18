@@ -285,12 +285,15 @@ router.patch("/dd-package-pricing/:id", authMiddleware, requireRole("owner", "de
     }
 });
 
-// PATCH /api/properties/dd-package/:id — Update DD package (extra person price)
+// PATCH /api/properties/dd-package/:id — Update DD package (extra person price, addon pricing)
 router.patch("/dd-package/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
-        const { extraPersonPrice } = req.body;
-        const updated = await prisma.ddPackage.update({ where: { id }, data: { extraPersonPrice: parseInt(extraPersonPrice) } });
+        const { extraPersonPrice, addonPricing } = req.body;
+        const data: any = {};
+        if (extraPersonPrice !== undefined) data.extraPersonPrice = parseInt(extraPersonPrice);
+        if (addonPricing !== undefined) data.addonPricing = addonPricing;
+        const updated = await prisma.ddPackage.update({ where: { id }, data });
         return res.json(updated);
     } catch (error) {
         console.error("Update DD package error:", error);
