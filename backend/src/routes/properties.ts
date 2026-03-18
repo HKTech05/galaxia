@@ -289,10 +289,11 @@ router.patch("/dd-package-pricing/:id", authMiddleware, requireRole("owner", "de
 router.patch("/dd-package/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
-        const { extraPersonPrice, addonPricing } = req.body;
+        const { extraPersonPrice, addonPricing, extraHourRate } = req.body;
         const data: any = {};
         if (extraPersonPrice !== undefined) data.extraPersonPrice = parseInt(extraPersonPrice);
         if (addonPricing !== undefined) data.addonPricing = addonPricing;
+        if (extraHourRate !== undefined) data.extraHourRate = parseInt(extraHourRate);
         const updated = await prisma.ddPackage.update({ where: { id }, data });
         return res.json(updated);
     } catch (error) {

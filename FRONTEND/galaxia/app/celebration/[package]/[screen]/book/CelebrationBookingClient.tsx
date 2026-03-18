@@ -47,6 +47,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [livePricing, setLivePricing] = useState<{ hours: number; weekday: number; weekend: number }[] | null>(null);
     const [liveExtraPerson, setLiveExtraPerson] = useState<number | null>(null);
     const [liveAddonPricing, setLiveAddonPricing] = useState<Record<string, number> | null>(null);
+    const [liveExtraHourRate, setLiveExtraHourRate] = useState<number | null>(null);
 
     // Fetch DB IDs + live pricing on mount
     useEffect(() => {
@@ -78,6 +79,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                     }
                     if (dbPackage.extraPersonPrice != null) setLiveExtraPerson(dbPackage.extraPersonPrice);
                     if (dbPackage.addonPricing && typeof dbPackage.addonPricing === 'object') setLiveAddonPricing(dbPackage.addonPricing as Record<string, number>);
+                    if (dbPackage.extraHourRate != null) setLiveExtraHourRate(dbPackage.extraHourRate);
                 }
             } catch (err) {
                 console.error("Failed to fetch DD data:", err);
@@ -169,13 +171,14 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const subtotal = basePrice + extraPersonCharge + addOnsTotal;
     const total = subtotal;
 
-    // Per-hour rate for display: use 1hr tier if available, else derive from smallest tier
+    // Per-slot display price: use 1hr tier if available
     const oneHrTier = pricingTiers.find((p) => p.hours === 1);
-    const perHourRate = oneHrTier ? (weekend ? oneHrTier.weekend : oneHrTier.weekday) : Math.round((weekend ? pricingTiers[0].weekend : pricingTiers[0].weekday) / pricingTiers[0].hours);
+    const perSlotPrice = oneHrTier ? (weekend ? oneHrTier.weekend : oneHrTier.weekday) : Math.round((weekend ? pricingTiers[0].weekend : pricingTiers[0].weekday) / pricingTiers[0].hours);
 
-    // Original Pricing for discount display: hourly rate × hours
-    const originalPrice = totalHours * perHourRate;
-    const discount = originalPrice > basePrice ? originalPrice - basePrice : 0;
+    // Discount display: use extraHourRate (₹1000/hr) as the "original" per-hour rate
+    const discountHourRate = liveExtraHourRate ?? pkg.extraHourRate ?? 1000;
+    const originalPrice = totalHours * discountHourRate;
+    const discount = totalHours > 1 && originalPrice > basePrice ? originalPrice - basePrice : 0;
 
     // 50-50 Payment Split
     const payNow = Math.round(total * 0.5);
@@ -260,9 +263,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
             // Build add-ons array
             const addons: { type: string; value?: string; message?: string; price: number }[] = [];
-            if (addBalloons) addons.push({ type: "balloons", price: 400 });
-            if (addLedBanner) addons.push({ type: "ledBanner", price: 400, message: ledBannerType });
-            if (addCake) addons.push({ type: "cake", value: cakeMessage, price: 400 });
+            if (addBalloons) addons.push({ type: "balloons", price: getAddonPrice('balloons') });
+            if (addLedBanner) addons.push({ type: "ledBanner", price: getAddonPrice('led_banner'), message: ledBannerType });
+            if (addCake) addons.push({ type: "cake", value: cakeMessage, price: getAddonPrice('cake') });
 
             const payload = {
                 screenId: dbScreenId,
@@ -426,7 +429,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <span className="font-inter text-sm text-cel-text-secondary">
-                                                                {formatPrice(perHourRate)}
+                                                                {formatPrice(perSlotPrice)}
                                                             </span>
                                                             <button className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isSlotSelected
                                                                 ? "bg-rose-dark text-white"
@@ -499,11 +502,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             <span className="text-lg">🎈</span>
                                             <div className="flex flex-col">
                                                 <span className="font-inter text-sm text-cel-text">Balloons</span>
-                                                <span className="text-[10px] text-cel-text-muted">₹400 (Colorful balloon decoration)</span>
+                                                <span className="text-[10px] text-cel-text-muted">{formatPrice(getAddonPrice('balloons'))} (Colorful balloon decoration)</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(400)}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(getAddonPrice('balloons'))}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addBalloons ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addBalloons ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -523,11 +526,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             <span className="text-lg">💡</span>
                                             <div className="flex flex-col">
                                                 <span className="font-inter text-sm text-cel-text">LED Banner</span>
-                                                <span className="text-[10px] text-cel-text-muted">₹400 (Neon-style LED message banner)</span>
+                                                <span className="text-[10px] text-cel-text-muted">{formatPrice(getAddonPrice('led_banner'))} (Neon-style LED message banner)</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(400)}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(getAddonPrice('led_banner'))}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addLedBanner ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addLedBanner ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -561,7 +564,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(400)}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(getAddonPrice('cake'))}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addCake ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addCake ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -597,7 +600,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     {isMovieTime && originalPrice > 0 && (
                                         <>
                                             <div className="flex justify-between font-inter text-sm pt-2 border-t border-cel-border/30">
-                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{perHourRate.toLocaleString("en-IN")})</span>
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{discountHourRate.toLocaleString("en-IN")})</span>
                                                 <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
                                             </div>
                                             {discount > 0 && (
@@ -843,7 +846,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     {isMovieTime && originalPrice > 0 && (
                                         <>
                                             <div className="flex justify-between">
-                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{perHourRate.toLocaleString("en-IN")})</span>
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{discountHourRate.toLocaleString("en-IN")})</span>
                                                 <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
                                             </div>
                                             {discount > 0 && (

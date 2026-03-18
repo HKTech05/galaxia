@@ -18,6 +18,7 @@ export default function PropertiesMgmtPage() {
     // DD
     const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string }>>({});
     const [ddExEdit, setDdExEdit] = useState<Record<string, string>>({});
+    const [ddHrEdit, setDdHrEdit] = useState<Record<string, string>>({});
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -28,9 +29,15 @@ export default function PropertiesMgmtPage() {
     const toggleSub = async (id: number) => { try { await api.patch(`/properties/sub/${id}/toggle`); await load(); } catch { alert("Failed"); } };
     const toggleScreen = async (id: number) => { try { await api.patch(`/properties/dd-screen/${id}/toggle`); await load(); } catch { alert("Failed"); } };
 
-    // Get pricing: prefers sub-property pricing, falls back to parent
+    // Get pricing: prefers sub-property pricing, falls back to parent (filtered by subPropertyId)
     const getPrice = (prop: any, sub?: any) => {
-        const src = (sub?.pricing?.length > 0 ? sub.pricing : prop.pricing) || [];
+        let src: any[];
+        if (sub?.pricing?.length > 0) {
+            src = sub.pricing;
+        } else {
+            // Filter to parent-only rows (subPropertyId is null)
+            src = (prop.pricing || []).filter((t: any) => !t.subPropertyId);
+        }
         const base = src.filter((t: any) => !t.overrideDate);
         return { wd: base.find((t: any) => t.dayType === "weekday"), we: base.find((t: any) => t.dayType === "weekend"), sa: base.find((t: any) => t.dayType === "saturday") };
     };
@@ -83,6 +90,10 @@ export default function PropertiesMgmtPage() {
     const saveDdEx = async (pkgId: number) => {
         const v = ddExEdit[pkgId]; if (!v) return;
         try { await api.patch(`/properties/dd-package/${pkgId}`, { extraPersonPrice: parseInt(v) }); setDdExEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
+    };
+    const saveDdHr = async (pkgId: number) => {
+        const v = ddHrEdit[pkgId]; if (!v) return;
+        try { await api.patch(`/properties/dd-package/${pkgId}`, { extraHourRate: parseInt(v) }); setDdHrEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
     };
 
     const tabs: { key: Tab; label: string }[] = [
@@ -281,17 +292,30 @@ export default function PropertiesMgmtPage() {
                         {pkgs.map((pkg: any) => {
                             const rows = Array.isArray(pkg.pricing) ? pkg.pricing : [];
                             return (<div key={pkg.id} className="border-t border-slate-100">
-                                <div className="px-5 pt-4 pb-2 flex justify-between items-center">
+                                <div className="px-5 pt-4 pb-2 flex justify-between items-center flex-wrap gap-2">
                                     <p className="text-xs font-bold text-indigo-600 uppercase">{pkg.name}</p>
-                                    <div className="flex items-center gap-2 text-xs">
-                                        <span className="text-slate-400">Extra/person:</span>
+                                    <div className="flex items-center gap-4 text-xs flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-400">Discount Rate/hr:</span>
+                                            {ddHrEdit[pkg.id] !== undefined ? (<div className="flex items-center gap-1.5">
+                                                <input type="text" inputMode="numeric" value={ddHrEdit[pkg.id]} onChange={e => setDdHrEdit({ ...ddHrEdit, [pkg.id]: e.target.value.replace(/[^0-9]/g, "") })} className="w-16 px-2 py-1 border rounded text-xs font-bold text-center" />
+                                                <button onClick={async () => { await saveDdHr(pkg.id); }} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"><Save size={14} /></button>
+                                                <button onClick={() => setDdHrEdit(p => { const n = { ...p }; delete n[pkg.id]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded hover:bg-red-200"><X size={14} /></button>
+                                            </div>) : (
+                                                <button onClick={() => setDdHrEdit({ ...ddHrEdit, [pkg.id]: String(pkg.extraHourRate || 1000) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraHourRate || 1000}</button>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-400">Extra/person:</span>
                                         {ddExEdit[pkg.id] !== undefined ? (<div className="flex items-center gap-1.5">
                                             <input type="text" inputMode="numeric" value={ddExEdit[pkg.id]} onChange={e => setDdExEdit({ ...ddExEdit, [pkg.id]: e.target.value.replace(/[^0-9]/g, "") })} className="w-16 px-2 py-1 border rounded text-xs font-bold text-center" />
                                             <button onClick={async () => { await saveDdEx(pkg.id); }} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"><Save size={14} /></button>
                                             <button onClick={() => setDdExEdit(p => { const n = { ...p }; delete n[pkg.id]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded hover:bg-red-200"><X size={14} /></button>
                                         </div>) : (
                                             <button onClick={() => setDdExEdit({ ...ddExEdit, [pkg.id]: String(pkg.extraPersonPrice || 0) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraPersonPrice || 0}</button>
-                                        )}
+                                            )
+                                        }
+                                        </div>
                                     </div>
                                 </div>
                                 <table className="w-full text-sm">
