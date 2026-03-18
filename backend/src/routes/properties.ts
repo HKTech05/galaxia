@@ -288,7 +288,7 @@ router.patch("/dd-package-pricing/:id", authMiddleware, requireRole("owner", "de
 });
 
 // POST /api/properties/dd-override — Create/update DD pricing override for a date
-router.post("/dd-override", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+router.post("/dd-override", authMiddleware, requireRole("owner", "developer", "manager"), async (req: AuthRequest, res) => {
     try {
         const { pricingId, date, price } = req.body;
         if (!pricingId || !date || price === undefined) return res.status(400).json({ error: "pricingId, date and price required" });
