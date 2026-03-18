@@ -116,7 +116,9 @@ export default function BookingClient({ property }: BookingClientProps) {
     useEffect(() => {
         const fetchAvailability = async () => {
             try {
-                const data = await api.get(`/properties/${property.id}/availability`);
+                // For sub-properties like 'amstel-nest/standard-cottage', use parent slug
+                const fetchSlug = property.id.includes('/') ? property.id.split('/')[0] : property.id;
+                const data = await api.get(`/properties/${fetchSlug}/availability`);
                 setBackendData(data);
                 setIsMaintenance(data.isActive === false);
                 
