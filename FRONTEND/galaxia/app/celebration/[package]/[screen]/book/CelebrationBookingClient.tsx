@@ -44,10 +44,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [dbPackageId, setDbPackageId] = useState<number | null>(null);
     const [isScreenDisabled, setIsScreenDisabled] = useState(false);
     const [isPackageDisabled, setIsPackageDisabled] = useState(false);
-    const [livePricing, setLivePricing] = useState<{ hours: number; weekday: number; weekend: number }[] | null>(null);
+    const [livePricing, setLivePricing] = useState<{ hours: number; weekday: number; weekend: number; id?: number }[] | null>(null);
     const [liveExtraPerson, setLiveExtraPerson] = useState<number | null>(null);
     const [liveAddonPricing, setLiveAddonPricing] = useState<Record<string, number> | null>(null);
     const [liveExtraHourRate, setLiveExtraHourRate] = useState<number | null>(null);
+    // DD pricing overrides: key = 'pricingId-YYYY-MM-DD', value = override price
+    const [ddOverrides, setDdOverrides] = useState<Record<string, number>>({});
 
     // Fetch DB IDs + live pricing on mount
     useEffect(() => {
@@ -72,12 +74,24 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                     // Use live pricing from DB
                     if (dbPackage.pricing && dbPackage.pricing.length > 0) {
                         setLivePricing(dbPackage.pricing.map((p: any) => ({
+                            id: p.id,
                             hours: p.hours,
                             weekday: p.weekdayPrice,
                             weekend: p.weekendPrice,
                             weekdayDiscount: p.weekdayDiscount || 0,
                             weekendDiscount: p.weekendDiscount || 0,
                         })));
+                        // Build overrides map: 'pricingId-YYYY-MM-DD' -> price
+                        const ovMap: Record<string, number> = {};
+                        for (const p of dbPackage.pricing) {
+                            if (p.overrides && Array.isArray(p.overrides)) {
+                                for (const ov of p.overrides) {
+                                    const dateKey = new Date(ov.overrideDate).toISOString().split('T')[0];
+                                    ovMap[`${p.id}-${dateKey}`] = ov.price;
+                                }
+                            }
+                        }
+                        setDdOverrides(ovMap);
                     }
                     if (dbPackage.extraPersonPrice != null) setLiveExtraPerson(dbPackage.extraPersonPrice);
                     if (dbPackage.addonPricing && typeof dbPackage.addonPricing === 'object') setLiveAddonPricing(dbPackage.addonPricing as Record<string, number>);
@@ -145,7 +159,14 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const getHourlyRate = () => {
         // Find the matching pricing tier
         const tier = pricingTiers.find((p) => p.hours === totalHours);
-        if (tier) return weekend ? tier.weekend : tier.weekday;
+        if (tier) {
+            // Check for date-specific override
+            if ((tier as any).id && selectedDate) {
+                const dateKey = `${(tier as any).id}-${selectedDate}`;
+                if (ddOverrides[dateKey] !== undefined) return ddOverrides[dateKey];
+            }
+            return weekend ? tier.weekend : tier.weekday;
+        }
         // Overtime: after max tier, add extraHourRate per additional hour
         if (totalHours > 0) {
             const maxTier = pricingTiers[pricingTiers.length - 1];

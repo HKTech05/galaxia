@@ -22,7 +22,9 @@ router.get("/packages", async (_req, res) => {
         const packages = await prisma.ddPackage.findMany({
             where: { isActive: true },
             include: {
-                pricing: true,
+                pricing: {
+                    include: { overrides: true },
+                },
             },
         });
         return res.json(packages);
