@@ -1,8 +1,50 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus } from "lucide-react";
 import { api } from "../../../lib/api";
 type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
+
+// Standalone override form — manages its own state, fully isolated from parent re-renders
+function DdOverrideForm({ rows, onClose, onSaved }: { rows: any[]; onClose: () => void; onSaved: () => void }) {
+    const [date, setDate] = useState("");
+    const [prices, setPrices] = useState<Record<number, string>>({});
+    const [msg, setMsg] = useState("");
+    const [saving, setSaving] = useState(false);
+    const save = async () => {
+        if (!date) return alert("Please select a date");
+        const filled = Object.entries(prices).filter(([, v]) => v && v.trim() !== "");
+        if (filled.length === 0) return alert("Enter at least one price");
+        setSaving(true);
+        try {
+            let saved = 0;
+            for (const [id, price] of filled) {
+                await api.post("/properties/dd-override", { pricingId: parseInt(id), date, price: parseInt(price) });
+                saved++;
+            }
+            setMsg(`Override saved! (${saved} tier${saved > 1 ? "s" : ""})`);
+            setTimeout(() => { onSaved(); onClose(); }, 1200);
+        } catch (e: any) {
+            alert("Override failed: " + (e?.message || "Unknown error"));
+        } finally { setSaving(false); }
+    };
+    return (
+        <div className="px-5 py-4 bg-indigo-50 border-t border-indigo-200">
+            <p className="text-xs font-bold text-indigo-700 mb-3">Override Prices for Specific Date</p>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm mb-3" />
+            {rows.map((pr: any) => (
+                <div key={pr.id} className="flex items-center gap-2 mb-2">
+                    <span className="text-xs text-slate-600 w-12">{pr.hours}hr{pr.hours > 1 ? "s" : ""}:</span>
+                    <input type="text" inputMode="numeric" value={prices[pr.id] || ""} onChange={e => setPrices(p => ({ ...p, [pr.id]: e.target.value.replace(/[^0-9]/g, "") }))} className="flex-1 px-2 py-1.5 border rounded text-xs font-bold text-center" placeholder={`₹${pr.weekdayPrice}`} />
+                </div>
+            ))}
+            {msg && <p className="text-xs text-emerald-600 font-bold mb-2">{msg}</p>}
+            <div className="flex gap-2">
+                <button onClick={save} disabled={saving} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:opacity-50">{saving ? "Saving..." : <><Plus size={14} className="inline mr-1" />Set Override</>}</button>
+                <button onClick={onClose} className="px-3 py-2 bg-white border rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50"><X size={14} /></button>
+            </div>
+        </div>
+    );
+}
 
 export default function PropertiesMgmtPage() {
     const [props, setProps] = useState<any[]>([]);
@@ -19,12 +61,9 @@ export default function PropertiesMgmtPage() {
     const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string; dwd: string; dwe: string }>>({});
     const [ddExEdit, setDdExEdit] = useState<Record<string, string>>({});
     const [ddHrEdit, setDdHrEdit] = useState<Record<string, string>>({});
-    // DD Override — use refs to avoid re-render value loss in nested .map()
+    // DD Override
     const [ddOvScreen, setDdOvScreen] = useState<number | null>(null);
     const [ddOvPkg, setDdOvPkg] = useState<number | null>(null);
-    const [ddOvMsg, setDdOvMsg] = useState("");
-    const ddOvDateRef = useRef<HTMLInputElement>(null);
-    const ddOvPriceRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -106,30 +145,8 @@ export default function PropertiesMgmtPage() {
         const v = ddHrEdit[pkgId]; if (!v) return;
         try { await api.patch(`/properties/dd-package/${pkgId}`, { extraHourRate: parseInt(v) }); setDdHrEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
     };
-    const saveDdOv = async (pkgRows: any[]) => {
-        const dateVal = ddOvDateRef.current?.value || "";
-        console.log("saveDdOv called - date:", dateVal, "rows:", pkgRows.length);
-        if (!dateVal) return alert("Please select a date first");
-        try {
-            let saved = 0;
-            for (const pr of pkgRows) {
-                const priceEl = ddOvPriceRefs.current[pr.id];
-                const price = priceEl?.value?.trim() || "";
-                console.log(`Tier ${pr.id}: price input value = "${price}"`);
-                if (price && parseInt(price) > 0) {
-                    const res = await api.post(`/properties/dd-override`, { pricingId: pr.id, date: dateVal, price: parseInt(price) });
-                    console.log("DD Override response:", res);
-                    saved++;
-                }
-            }
-            if (saved === 0) return alert("Please enter at least one price");
-            setDdOvMsg(`Override saved! (${saved} tier${saved > 1 ? "s" : ""})`);
-            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); ddOvPriceRefs.current = {}; load(); }, 1500);
-        } catch (e: any) {
-            console.error("DD Override error:", e);
-            alert("Override failed: " + (e?.message || JSON.stringify(e)));
-        }
-    };
+
+
 
     const tabs: { key: Tab; label: string }[] = [
         { key: "standalone", label: "Standalone Villas" }, { key: "amstelnest", label: "Amstel Nest" },
@@ -330,16 +347,7 @@ export default function PropertiesMgmtPage() {
                                 <div className="px-5 pt-4 pb-2 flex justify-between items-center flex-wrap gap-2">
                                     <p className="text-xs font-bold text-indigo-600 uppercase">{pkg.name}</p>
                                     <div className="flex items-center gap-4 text-xs flex-wrap">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-400">Discount Rate/hr:</span>
-                                            {ddHrEdit[pkg.id] !== undefined ? (<div className="flex items-center gap-1.5">
-                                                <input type="text" inputMode="numeric" value={ddHrEdit[pkg.id]} onChange={e => setDdHrEdit({ ...ddHrEdit, [pkg.id]: e.target.value.replace(/[^0-9]/g, "") })} className="w-16 px-2 py-1 border rounded text-xs font-bold text-center" />
-                                                <button onClick={async () => { await saveDdHr(pkg.id); }} className="p-1.5 bg-emerald-500 text-white rounded hover:bg-emerald-600"><Save size={14} /></button>
-                                                <button onClick={() => setDdHrEdit(p => { const n = { ...p }; delete n[pkg.id]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded hover:bg-red-200"><X size={14} /></button>
-                                            </div>) : (
-                                                <button onClick={() => setDdHrEdit({ ...ddHrEdit, [pkg.id]: String(pkg.extraHourRate || 1000) })} className="font-bold text-slate-700 hover:text-purple-600 underline decoration-dashed">₹{pkg.extraHourRate || 1000}</button>
-                                            )}
-                                        </div>
+
                                         <div className="flex items-center gap-2">
                                             <span className="text-slate-400">Extra/person:</span>
                                         {ddExEdit[pkg.id] !== undefined ? (<div className="flex items-center gap-1.5">
@@ -381,23 +389,9 @@ export default function PropertiesMgmtPage() {
 
                                 {/* DD Override per package */}
                                 {ddOvScreen === scr.id && ddOvPkg === pkg.id ? (
-                                    <div className="px-5 py-4 bg-indigo-50 border-t border-indigo-200">
-                                        <p className="text-xs font-bold text-indigo-700 mb-3">Override Prices for Specific Date</p>
-                                        <input type="date" ref={ddOvDateRef} className="w-full px-3 py-2 border rounded-lg text-sm mb-3" />
-                                        {rows.map((pr: any) => (
-                                            <div key={pr.id} className="flex items-center gap-2 mb-2">
-                                                <span className="text-xs text-slate-600 w-12">{pr.hours}hr{pr.hours > 1 ? 's' : ''}:</span>
-                                                <input type="text" inputMode="numeric" ref={el => { ddOvPriceRefs.current[pr.id] = el; }} className="flex-1 px-2 py-1.5 border rounded text-xs font-bold text-center" placeholder={`₹${pr.weekdayPrice}`} />
-                                            </div>
-                                        ))}
-                                        {ddOvMsg && <p className="text-xs text-emerald-600 font-bold mb-2">{ddOvMsg}</p>}
-                                        <div className="flex gap-2">
-                                            <button onClick={() => saveDdOv(rows)} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700"><Plus size={14} className="inline mr-1" />Set Override</button>
-                                            <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); ddOvPriceRefs.current = {}; }} className="px-3 py-2 bg-white border rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50"><X size={14} /></button>
-                                        </div>
-                                    </div>
+                                    <DdOverrideForm rows={rows} onClose={() => { setDdOvScreen(null); setDdOvPkg(null); }} onSaved={load} />
                                 ) : (
-                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvMsg(""); ddOvPriceRefs.current = {}; }} className="w-full py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
+                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); }} className="w-full py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
                                 )}
                             </div>);
                         })}
