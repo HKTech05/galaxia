@@ -46,6 +46,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [isPackageDisabled, setIsPackageDisabled] = useState(false);
     const [livePricing, setLivePricing] = useState<{ hours: number; weekday: number; weekend: number }[] | null>(null);
     const [liveExtraPerson, setLiveExtraPerson] = useState<number | null>(null);
+    const [liveAddonPricing, setLiveAddonPricing] = useState<Record<string, number> | null>(null);
 
     // Fetch DB IDs + live pricing on mount
     useEffect(() => {
@@ -76,6 +77,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                         })));
                     }
                     if (dbPackage.extraPersonPrice != null) setLiveExtraPerson(dbPackage.extraPersonPrice);
+                    if (dbPackage.addonPricing && typeof dbPackage.addonPricing === 'object') setLiveAddonPricing(dbPackage.addonPricing as Record<string, number>);
                 }
             } catch (err) {
                 console.error("Failed to fetch DD data:", err);
@@ -156,19 +158,24 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const basePrice = getHourlyRate();
     const extraPersonCharge = Math.max(0, guestCount - 2) * extraPersonPrice;
 
-    // Add-on charges (only for Movie Time)
+    // Add-on charges (only for Movie Time) — read from DB if available
     const isMovieTime = pkg.id === "movie-time";
-    const balloonsCharge = isMovieTime && addBalloons ? 400 : 0;
-    const ledBannerCharge = isMovieTime && addLedBanner ? 400 : 0;
-    const cakeCharge = isMovieTime && addCake ? 400 : 0;
+    const getAddonPrice = (key: string) => liveAddonPricing?.[key] ?? 400;
+    const balloonsCharge = isMovieTime && addBalloons ? getAddonPrice('balloons') : 0;
+    const ledBannerCharge = isMovieTime && addLedBanner ? getAddonPrice('led_banner') : 0;
+    const cakeCharge = isMovieTime && addCake ? getAddonPrice('cake') : 0;
     const addOnsTotal = balloonsCharge + ledBannerCharge + cakeCharge;
 
     const subtotal = basePrice + extraPersonCharge + addOnsTotal;
     const total = subtotal;
 
-    // Original Pricing for Movie Time (₹1000/hr)
-    const originalPrice = totalHours * 1000;
-    const discount = originalPrice > subtotal ? originalPrice - subtotal : 0;
+    // Per-hour rate for display: use 1hr tier if available, else derive from smallest tier
+    const oneHrTier = pricingTiers.find((p) => p.hours === 1);
+    const perHourRate = oneHrTier ? (weekend ? oneHrTier.weekend : oneHrTier.weekday) : Math.round((weekend ? pricingTiers[0].weekend : pricingTiers[0].weekday) / pricingTiers[0].hours);
+
+    // Original Pricing for discount display: hourly rate × hours
+    const originalPrice = totalHours * perHourRate;
+    const discount = originalPrice > basePrice ? originalPrice - basePrice : 0;
 
     // 50-50 Payment Split
     const payNow = Math.round(total * 0.5);
@@ -419,7 +426,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <span className="font-inter text-sm text-cel-text-secondary">
-                                                                {formatPrice(weekend ? (pricingTiers[0].weekend / pricingTiers[0].hours) : (pricingTiers[0].weekday / pricingTiers[0].hours))}
+                                                                {formatPrice(perHourRate)}
                                                             </span>
                                                             <button className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isSlotSelected
                                                                 ? "bg-rose-dark text-white"
@@ -590,7 +597,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     {isMovieTime && originalPrice > 0 && (
                                         <>
                                             <div className="flex justify-between font-inter text-sm pt-2 border-t border-cel-border/30">
-                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹1000)</span>
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{perHourRate.toLocaleString("en-IN")})</span>
                                                 <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
                                             </div>
                                             {discount > 0 && (
@@ -836,7 +843,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     {isMovieTime && originalPrice > 0 && (
                                         <>
                                             <div className="flex justify-between">
-                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹1000)</span>
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{perHourRate.toLocaleString("en-IN")})</span>
                                                 <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
                                             </div>
                                             {discount > 0 && (

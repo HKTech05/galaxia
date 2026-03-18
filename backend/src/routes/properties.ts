@@ -185,19 +185,19 @@ router.patch("/:id/pricing", authMiddleware, requireRole("owner", "developer"), 
         const updates = [];
         if (weekday !== undefined) {
             updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, dayType: "weekday", isActive: true, overrideDate: null },
+                where: { propertyId: id, subPropertyId: null, dayType: "weekday", isActive: true, overrideDate: null },
                 data: { basePrice: weekday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
             }));
         }
         if (weekend !== undefined) {
             updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, dayType: "weekend", isActive: true, overrideDate: null },
+                where: { propertyId: id, subPropertyId: null, dayType: "weekend", isActive: true, overrideDate: null },
                 data: { basePrice: weekend, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
             }));
         }
         if (saturday !== undefined) {
             updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, dayType: "saturday", isActive: true, overrideDate: null },
+                where: { propertyId: id, subPropertyId: null, dayType: "saturday", isActive: true, overrideDate: null },
                 data: { basePrice: saturday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
             }));
         }
