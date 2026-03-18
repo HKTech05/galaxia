@@ -32,8 +32,11 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
     const [dbSubPropertyId, setDbSubPropertyId] = useState<number | null>(null);
     const [isCottageDisabled, setIsCottageDisabled] = useState(false);
+    const [liveWeekday, setLiveWeekday] = useState<string | null>(null);
+    const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
+    const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
 
-    // Fetch DB property ID for parent property (Amstel Nest)
+    // Fetch DB property ID + live pricing for parent property (Amstel Nest)
     useEffect(() => {
         (async () => {
             try {
@@ -44,8 +47,21 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     if (data.isActive === false) setIsCottageDisabled(true);
                     const sub = (data.subProperties || []).find((sp: any) => sp.id === parseInt(cottage.id) || sp.slug === cottage.id);
                     if (sub && sub.isActive === false) setIsCottageDisabled(true);
-                    
-                    // Also get numeric ID
+
+                    // Use sub-property pricing if available
+                    const subId = sub?.id;
+                    const spPricing = subId && data.subPropertyPricing ? data.subPropertyPricing[subId] : null;
+                    if (spPricing) {
+                        if (spPricing.weekday) setLiveWeekday(spPricing.weekday.price);
+                        if (spPricing.weekend) setLiveWeekend(spPricing.weekend.price);
+                        if (spPricing.dateOverrides) setDateOverrides(spPricing.dateOverrides);
+                    } else if (data.pricing) {
+                        if (data.pricing.weekday) setLiveWeekday(data.pricing.weekday.price);
+                        if (data.pricing.weekend) setLiveWeekend(data.pricing.weekend.price);
+                        if (data.pricing.dateOverrides) setDateOverrides(data.pricing.dateOverrides);
+                    }
+
+                    // Get numeric ID
                     const resMeta = await fetch(`${baseUrl}/properties/amstel-nest`);
                     if (resMeta.ok) {
                         const dbProp = await resMeta.json();
@@ -59,8 +75,8 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     }, [cottage.id]);
 
     const images = [cottage.image, ...parent.images.slice(1, 4)];
-    const weekdayPrice = cottage.pricing?.weekday.price || parent.pricing.weekday.price;
-    const weekendPrice = cottage.pricing?.weekend.price || parent.pricing.weekend.price;
+    const weekdayPrice = liveWeekday || cottage.pricing?.weekday.price || parent.pricing.weekday.price;
+    const weekendPrice = liveWeekend || cottage.pricing?.weekend.price || parent.pricing.weekend.price;
 
     const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const bookNowUrl = `/staycation/amstel-nest/${cottage.id}/book${calCheckIn ? `?checkIn=${fmtDate(calCheckIn)}` : ''}${calCheckOut ? `&checkOut=${fmtDate(calCheckOut)}` : ''}`;
@@ -166,6 +182,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 subPropertyId={dbSubPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
+                                dateOverrides={dateOverrides}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                 isDisabled={isCottageDisabled}
                             />

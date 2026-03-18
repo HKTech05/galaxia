@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CelebrationPackage, ScreenData, formatPrice } from "../../data/celebrations";
@@ -28,6 +29,36 @@ interface PackageDetailClientProps {
 }
 
 export default function PackageDetailClient({ pkg, screens }: PackageDetailClientProps) {
+    const [livePricing, setLivePricing] = useState<{ hours: number; label: string; weekday: number; weekend: number }[] | null>(null);
+    const [liveExtraPerson, setLiveExtraPerson] = useState<number | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                const res = await fetch(`${baseUrl}/dd/packages`);
+                if (res.ok) {
+                    const packages = await res.json();
+                    const dbPkg = packages.find((p: any) => p.slug === pkg.id);
+                    if (dbPkg) {
+                        if (dbPkg.pricing && dbPkg.pricing.length > 0) {
+                            setLivePricing(dbPkg.pricing.map((p: any) => ({
+                                hours: p.hours,
+                                label: p.label || `${p.hours} Hour${p.hours > 1 ? 's' : ''}`,
+                                weekday: p.weekdayPrice,
+                                weekend: p.weekendPrice,
+                            })));
+                        }
+                        if (dbPkg.extraPersonPrice != null) setLiveExtraPerson(dbPkg.extraPersonPrice);
+                    }
+                }
+            } catch { /* fail silently */ }
+        })();
+    }, [pkg.id]);
+
+    const pricingTiers = livePricing || pkg.pricing;
+    const extraPersonPrice = liveExtraPerson ?? pkg.extraPerson;
+
     return (
         <div>
             {/* Breadcrumb */}
@@ -72,10 +103,10 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
                     <div className="text-center mb-8">
                         <h2 className="font-cinzel text-lg sm:text-xl font-semibold text-cel-text uppercase tracking-wider mb-2">Pricing</h2>
-                        <p className="font-inter text-cel-text-secondary text-xs">For 2 people | Extra person above 2: {formatPrice(pkg.extraPerson)}</p>
+                        <p className="font-inter text-cel-text-secondary text-xs">For 2 people | Extra person above 2: {formatPrice(extraPersonPrice)}</p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-4 max-w-3xl mx-auto">
-                        {pkg.pricing.map((tier, i) => (
+                        {pricingTiers.map((tier, i) => (
                             <div key={i} className="flex-1 min-w-[200px] max-w-[260px] rounded-xl border border-cel-border bg-cel-card p-5 sm:p-6 text-center hover:border-rose-dark/40 transition-all">
                                 <p className="font-inter text-cel-text-muted text-xs uppercase tracking-wider mb-2">{tier.label}</p>
                                 <p className="font-cinzel text-2xl font-bold text-cel-text mb-1">{formatPrice(tier.weekday)}</p>

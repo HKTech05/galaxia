@@ -44,15 +44,20 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [dbPackageId, setDbPackageId] = useState<number | null>(null);
     const [isScreenDisabled, setIsScreenDisabled] = useState(false);
     const [isPackageDisabled, setIsPackageDisabled] = useState(false);
+    const [livePricing, setLivePricing] = useState<{ hours: number; weekday: number; weekend: number }[] | null>(null);
+    const [liveExtraPerson, setLiveExtraPerson] = useState<number | null>(null);
 
-    // Fetch DB IDs on mount
+    // Fetch DB IDs + live pricing on mount
     useEffect(() => {
         (async () => {
             try {
-                const [screens, packages] = await Promise.all([
-                    api.get("/dd/screens"),
-                    api.get("/dd/packages"),
+                const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                const [screensRes, packagesRes] = await Promise.all([
+                    fetch(`${baseUrl}/dd/screens`),
+                    fetch(`${baseUrl}/dd/packages`),
                 ]);
+                const screens = screensRes.ok ? await screensRes.json() : [];
+                const packages = packagesRes.ok ? await packagesRes.json() : [];
                 const dbScreen = screens.find((s: any) => s.slug === screen.id);
                 const dbPackage = packages.find((p: any) => p.slug === pkg.id);
                 if (dbScreen) {
@@ -62,6 +67,15 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 if (dbPackage) {
                     setDbPackageId(dbPackage.id);
                     if (dbPackage.isActive === false) setIsPackageDisabled(true);
+                    // Use live pricing from DB
+                    if (dbPackage.pricing && dbPackage.pricing.length > 0) {
+                        setLivePricing(dbPackage.pricing.map((p: any) => ({
+                            hours: p.hours,
+                            weekday: p.weekdayPrice,
+                            weekend: p.weekendPrice,
+                        })));
+                    }
+                    if (dbPackage.extraPersonPrice != null) setLiveExtraPerson(dbPackage.extraPersonPrice);
                 }
             } catch (err) {
                 console.error("Failed to fetch DD data:", err);
@@ -116,17 +130,19 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         );
     };
 
-    // Pricing calculation
+    // Pricing calculation - use live DB pricing when available, fallback to hardcoded
     const totalHours = selectedSlots.length;
     const weekend = isWeekend(selectedDate);
+    const pricingTiers = livePricing || pkg.pricing;
+    const extraPersonPrice = liveExtraPerson ?? pkg.extraPerson;
 
     const getHourlyRate = () => {
         // Find the matching pricing tier
-        const tier = pkg.pricing.find((p) => p.hours === totalHours);
+        const tier = pricingTiers.find((p) => p.hours === totalHours);
         if (tier) return weekend ? tier.weekend : tier.weekday;
         // Overtime: after max tier, add extraHourRate per additional hour
         if (totalHours > 0) {
-            const maxTier = pkg.pricing[pkg.pricing.length - 1];
+            const maxTier = pricingTiers[pricingTiers.length - 1];
             const baseRate = weekend ? maxTier.weekend : maxTier.weekday;
             if (totalHours > maxTier.hours && pkg.extraHourRate) {
                 return baseRate + (totalHours - maxTier.hours) * pkg.extraHourRate;
@@ -138,7 +154,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     };
 
     const basePrice = getHourlyRate();
-    const extraPersonCharge = Math.max(0, guestCount - 2) * pkg.extraPerson;
+    const extraPersonCharge = Math.max(0, guestCount - 2) * extraPersonPrice;
 
     // Add-on charges (only for Movie Time)
     const isMovieTime = pkg.id === "movie-time";
@@ -403,7 +419,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <span className="font-inter text-sm text-cel-text-secondary">
-                                                                {formatPrice(weekend ? (pkg.pricing[0].weekend / pkg.pricing[0].hours) : (pkg.pricing[0].weekday / pkg.pricing[0].hours))}
+                                                                {formatPrice(weekend ? (pricingTiers[0].weekend / pricingTiers[0].hours) : (pricingTiers[0].weekday / pricingTiers[0].hours))}
                                                             </span>
                                                             <button className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isSlotSelected
                                                                 ? "bg-rose-dark text-white"

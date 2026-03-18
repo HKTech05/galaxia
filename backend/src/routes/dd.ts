@@ -7,7 +7,6 @@ const router = Router();
 router.get("/screens", async (_req, res) => {
     try {
         const screens = await prisma.ddScreen.findMany({
-            where: { isActive: true },
             orderBy: { displayOrder: "asc" },
         });
         return res.json(screens);
