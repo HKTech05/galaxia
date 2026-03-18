@@ -287,9 +287,16 @@ router.patch("/dd-package-pricing/:id", authMiddleware, requireRole("owner", "de
     }
 });
 
+// GET /api/properties/dd-override-test — debug endpoint
+router.get("/dd-override-test", (req, res) => {
+    console.log("DD override test endpoint hit");
+    return res.json({ ok: true, message: "DD override route is reachable" });
+});
+
 // POST /api/properties/dd-override — Create/update DD pricing override for a date
 router.post("/dd-override", authMiddleware, requireRole("owner", "developer", "manager"), async (req: AuthRequest, res) => {
     try {
+        console.log("DD Override request received:", JSON.stringify(req.body));
         const { pricingId, date, price } = req.body;
         if (!pricingId || !date || price === undefined) return res.status(400).json({ error: "pricingId, date and price required" });
         const overrideDate = new Date(date);
