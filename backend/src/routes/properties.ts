@@ -378,7 +378,7 @@ router.get("/:slug", async (req, res) => {
             include: {
                 subProperties: { where: { isActive: true }, orderBy: { displayOrder: "asc" } },
                 amenities: { orderBy: { displayOrder: "asc" } },
-                pricing: { where: { isActive: true } },
+                pricing: { where: { isActive: true, subPropertyId: null } },
             },
         });
         if (!property) {
@@ -397,7 +397,7 @@ router.get("/:slug/availability", async (req, res) => {
         const property = await prisma.property.findUnique({
             where: { slug: req.params.slug },
             include: { 
-                pricing: { where: { isActive: true } },
+                pricing: { where: { isActive: true, subPropertyId: null } },
                 subProperties: {
                     select: { id: true, isActive: true, name: true, slug: true },
                 }
