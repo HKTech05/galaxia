@@ -107,6 +107,7 @@ export default function PropertiesMgmtPage() {
         try { await api.patch(`/properties/dd-package/${pkgId}`, { extraHourRate: parseInt(v) }); setDdHrEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
     };
     const saveDdOv = async (pkgRows: any[]) => {
+        console.log("saveDdOv called - date:", ddOvDate, "prices:", JSON.stringify(ddOvPrices), "rows:", pkgRows.length);
         if (!ddOvDate) return alert("Please select a date first");
         const entries = Object.entries(ddOvPrices).filter(([, v]) => v && v.trim() !== "");
         if (entries.length === 0) return alert("Please enter at least one price");
@@ -115,14 +116,22 @@ export default function PropertiesMgmtPage() {
             for (const pr of pkgRows) {
                 const price = ddOvPrices[pr.id];
                 if (price && price.trim() !== "") {
+                    console.log(`Saving override: pricingId=${pr.id}, date=${ddOvDate}, price=${price}`);
                     const res = await api.post(`/properties/dd-override`, { pricingId: pr.id, date: ddOvDate, price: parseInt(price) });
                     console.log("DD Override response:", res);
                     saved++;
                 }
             }
+            if (saved === 0) {
+                alert("No tiers matched. This is a bug — please check console.");
+                return;
+            }
             setDdOvMsg(`Override saved! (${saved} tier${saved > 1 ? "s" : ""})`);
             setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); load(); }, 1500);
-        } catch (e: any) { alert("Override failed: " + (e?.message || "Unknown error")); console.error("DD Override error:", e); }
+        } catch (e: any) {
+            console.error("DD Override error:", e);
+            alert("Override failed: " + (e?.message || JSON.stringify(e)));
+        }
     };
 
     const tabs: { key: Tab; label: string }[] = [
