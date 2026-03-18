@@ -107,17 +107,22 @@ export default function PropertiesMgmtPage() {
         try { await api.patch(`/properties/dd-package/${pkgId}`, { extraHourRate: parseInt(v) }); setDdHrEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
     };
     const saveDdOv = async (pkgRows: any[]) => {
-        if (!ddOvDate || Object.keys(ddOvPrices).length === 0) return alert("Enter date and at least one price");
+        if (!ddOvDate) return alert("Please select a date first");
+        const entries = Object.entries(ddOvPrices).filter(([, v]) => v && v.trim() !== "");
+        if (entries.length === 0) return alert("Please enter at least one price");
         try {
+            let saved = 0;
             for (const pr of pkgRows) {
                 const price = ddOvPrices[pr.id];
-                if (price) {
-                    await api.post(`/properties/dd-override`, { pricingId: pr.id, date: ddOvDate, price: parseInt(price) });
+                if (price && price.trim() !== "") {
+                    const res = await api.post(`/properties/dd-override`, { pricingId: pr.id, date: ddOvDate, price: parseInt(price) });
+                    console.log("DD Override response:", res);
+                    saved++;
                 }
             }
-            setDdOvMsg("Override saved!");
-            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); load(); }, 1200);
-        } catch { alert("Failed"); }
+            setDdOvMsg(`Override saved! (${saved} tier${saved > 1 ? "s" : ""})`);
+            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); load(); }, 1500);
+        } catch (e: any) { alert("Override failed: " + (e?.message || "Unknown error")); console.error("DD Override error:", e); }
     };
 
     const tabs: { key: Tab; label: string }[] = [
