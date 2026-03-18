@@ -16,9 +16,15 @@ export default function PropertiesMgmtPage() {
     const [ovPrice, setOvPrice] = useState("");
     const [ovMsg, setOvMsg] = useState("");
     // DD
-    const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string }>>({});
+    const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string; dwd: string; dwe: string }>>({});
     const [ddExEdit, setDdExEdit] = useState<Record<string, string>>({});
     const [ddHrEdit, setDdHrEdit] = useState<Record<string, string>>({});
+    // DD Override
+    const [ddOvScreen, setDdOvScreen] = useState<number | null>(null);
+    const [ddOvPkg, setDdOvPkg] = useState<number | null>(null);
+    const [ddOvDate, setDdOvDate] = useState("");
+    const [ddOvPrices, setDdOvPrices] = useState<Record<number, string>>({});
+    const [ddOvMsg, setDdOvMsg] = useState("");
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -81,11 +87,16 @@ export default function PropertiesMgmtPage() {
 
     // DD pricing saves
     const saveDdPr = async (prId: number) => {
-        // Edit key is "${screenId}-${prId}", find any matching entry
         const matchKey = Object.keys(ddEdit).find(k => k.endsWith(`-${prId}`));
         const e = matchKey ? ddEdit[matchKey] : ddEdit[prId];
         if (!e) return;
-        try { await api.patch(`/properties/dd-package-pricing/${prId}`, { weekdayPrice: parseInt(e.wd), weekendPrice: parseInt(e.we) }); await load(); } catch { alert("Failed"); }
+        try {
+            await api.patch(`/properties/dd-package-pricing/${prId}`, {
+                weekdayPrice: parseInt(e.wd), weekendPrice: parseInt(e.we),
+                weekdayDiscount: parseInt(e.dwd || '0'), weekendDiscount: parseInt(e.dwe || '0'),
+            });
+            await load();
+        } catch { alert("Failed"); }
     };
     const saveDdEx = async (pkgId: number) => {
         const v = ddExEdit[pkgId]; if (!v) return;
@@ -94,6 +105,19 @@ export default function PropertiesMgmtPage() {
     const saveDdHr = async (pkgId: number) => {
         const v = ddHrEdit[pkgId]; if (!v) return;
         try { await api.patch(`/properties/dd-package/${pkgId}`, { extraHourRate: parseInt(v) }); setDdHrEdit(p => { const n = { ...p }; delete n[pkgId]; return n; }); await load(); } catch { alert("Failed"); }
+    };
+    const saveDdOv = async (pkgRows: any[]) => {
+        if (!ddOvDate || Object.keys(ddOvPrices).length === 0) return alert("Enter date and at least one price");
+        try {
+            for (const pr of pkgRows) {
+                const price = ddOvPrices[pr.id];
+                if (price) {
+                    await api.post(`/properties/dd-override`, { pricingId: pr.id, date: ddOvDate, price: parseInt(price) });
+                }
+            }
+            setDdOvMsg("Override saved!");
+            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); load(); }, 1200);
+        } catch { alert("Failed"); }
     };
 
     const tabs: { key: Tab; label: string }[] = [
@@ -319,26 +343,51 @@ export default function PropertiesMgmtPage() {
                                     </div>
                                 </div>
                                 <table className="w-full text-sm">
-                                    <thead><tr className="bg-slate-50"><th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">Duration</th><th className="text-center px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Weekday</th><th className="text-center px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Weekend</th><th className="w-20"></th></tr></thead>
+                                    <thead><tr className="bg-slate-50"><th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Duration</th><th className="text-center px-2 py-2 text-[10px] font-bold text-red-500 uppercase">Discount</th><th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase">Weekday</th><th className="text-center px-2 py-2 text-[10px] font-bold text-red-500 uppercase">Discount</th><th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase">Weekend</th><th className="w-14"></th></tr></thead>
                                     <tbody>{rows.map((pr: any) => {
                                         const editKey = `${scr.id}-${pr.id}`;
                                         return (<tr key={pr.id} className="border-t border-slate-100">
-                                            <td className="px-4 py-2.5 font-medium text-slate-700 text-xs">{pr.hours}hr{pr.hours > 1 ? 's' : ''}</td>
+                                            <td className="px-3 py-2.5 font-medium text-slate-700 text-xs">{pr.hours}hr{pr.hours > 1 ? 's' : ''}</td>
                                             {ddEdit[editKey] ? (<>
-                                                <td className="px-2 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].wd} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], wd: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-2 py-1.5 border rounded text-xs font-bold text-center" /></td>
-                                                <td className="px-2 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].we} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], we: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-2 py-1.5 border rounded text-xs font-bold text-center" /></td>
-                                                <td className="px-2 py-1.5 flex gap-1 justify-center">
-                                                    <button onClick={async () => { await saveDdPr(pr.id); setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; }); }} className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={16} /></button>
-                                                    <button onClick={() => setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; })} className="p-2 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><X size={16} /></button>
+                                                <td className="px-1 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].dwd} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], dwd: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-1 py-1.5 border rounded text-xs font-bold text-center text-red-600" placeholder="0" /></td>
+                                                <td className="px-1 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].wd} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], wd: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-1 py-1.5 border rounded text-xs font-bold text-center" /></td>
+                                                <td className="px-1 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].dwe} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], dwe: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-1 py-1.5 border rounded text-xs font-bold text-center text-red-600" placeholder="0" /></td>
+                                                <td className="px-1 py-1.5"><input type="text" inputMode="numeric" value={ddEdit[editKey].we} onChange={e => setDdEdit({ ...ddEdit, [editKey]: { ...ddEdit[editKey], we: e.target.value.replace(/[^0-9]/g, "") } })} className="w-full px-1 py-1.5 border rounded text-xs font-bold text-center" /></td>
+                                                <td className="px-1 py-1.5 flex gap-1 justify-center">
+                                                    <button onClick={async () => { await saveDdPr(pr.id); setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; }); }} className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"><Save size={14} /></button>
+                                                    <button onClick={() => setDdEdit(p => { const n = { ...p }; delete n[editKey]; return n; })} className="p-1.5 bg-red-100 text-red-500 rounded-lg hover:bg-red-200"><X size={14} /></button>
                                                 </td>
                                             </>) : (<>
-                                                <td className="px-3 py-2.5 text-center font-bold text-slate-800 text-xs">₹{(pr.weekdayPrice || 0).toLocaleString("en-IN")}</td>
-                                                <td className="px-3 py-2.5 text-center font-bold text-slate-800 text-xs">₹{(pr.weekendPrice || 0).toLocaleString("en-IN")}</td>
-                                                <td className="px-2 py-2.5 text-center"><button onClick={() => setDdEdit({ ...ddEdit, [editKey]: { wd: String(pr.weekdayPrice || 0), we: String(pr.weekendPrice || 0) } })} className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"><Edit3 size={16} /></button></td>
+                                                <td className="px-2 py-2.5 text-center font-bold text-red-500 text-xs">{pr.weekdayDiscount || 0}</td>
+                                                <td className="px-2 py-2.5 text-center font-bold text-slate-800 text-xs">₹{(pr.weekdayPrice || 0).toLocaleString("en-IN")}</td>
+                                                <td className="px-2 py-2.5 text-center font-bold text-red-500 text-xs">{pr.weekendDiscount || 0}</td>
+                                                <td className="px-2 py-2.5 text-center font-bold text-slate-800 text-xs">₹{(pr.weekendPrice || 0).toLocaleString("en-IN")}</td>
+                                                <td className="px-1 py-2.5 text-center"><button onClick={() => setDdEdit({ ...ddEdit, [editKey]: { wd: String(pr.weekdayPrice || 0), we: String(pr.weekendPrice || 0), dwd: String(pr.weekdayDiscount || 0), dwe: String(pr.weekendDiscount || 0) } })} className="p-1.5 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"><Edit3 size={14} /></button></td>
                                             </>)}
                                         </tr>);
                                     })}</tbody>
                                 </table>
+
+                                {/* DD Override per package */}
+                                {ddOvScreen === scr.id && ddOvPkg === pkg.id ? (
+                                    <div className="px-5 py-4 bg-indigo-50 border-t border-indigo-200">
+                                        <p className="text-xs font-bold text-indigo-700 mb-3">Override Prices for Specific Date</p>
+                                        <input type="date" value={ddOvDate} onChange={e => setDdOvDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm mb-3" />
+                                        {rows.map((pr: any) => (
+                                            <div key={pr.id} className="flex items-center gap-2 mb-2">
+                                                <span className="text-xs text-slate-600 w-12">{pr.hours}hr{pr.hours > 1 ? 's' : ''}:</span>
+                                                <input type="text" inputMode="numeric" value={ddOvPrices[pr.id] || ""} onChange={e => setDdOvPrices({ ...ddOvPrices, [pr.id]: e.target.value.replace(/[^0-9]/g, "") })} className="flex-1 px-2 py-1.5 border rounded text-xs font-bold text-center" placeholder={`₹${pr.weekdayPrice}`} />
+                                            </div>
+                                        ))}
+                                        {ddOvMsg && <p className="text-xs text-emerald-600 font-bold mb-2">{ddOvMsg}</p>}
+                                        <div className="flex gap-2">
+                                            <button onClick={() => saveDdOv(rows)} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700"><Plus size={14} className="inline mr-1" />Set Override</button>
+                                            <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="px-3 py-2 bg-white border rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50"><X size={14} /></button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="w-full py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
+                                )}
                             </div>);
                         })}
 

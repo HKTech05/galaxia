@@ -273,14 +273,35 @@ router.patch("/dd-screen/:id/toggle", authMiddleware, requireRole("owner", "deve
 router.patch("/dd-package-pricing/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
-        const { weekdayPrice, weekendPrice } = req.body;
+        const { weekdayPrice, weekendPrice, weekdayDiscount, weekendDiscount } = req.body;
         const data: any = {};
         if (weekdayPrice !== undefined) data.weekdayPrice = parseInt(weekdayPrice);
         if (weekendPrice !== undefined) data.weekendPrice = parseInt(weekendPrice);
+        if (weekdayDiscount !== undefined) data.weekdayDiscount = parseInt(weekdayDiscount);
+        if (weekendDiscount !== undefined) data.weekendDiscount = parseInt(weekendDiscount);
         const updated = await prisma.ddPackagePricing.update({ where: { id }, data });
         return res.json(updated);
     } catch (error) {
         console.error("Update DD pricing error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// POST /api/properties/dd-override — Create/update DD pricing override for a date
+router.post("/dd-override", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const { pricingId, date, price } = req.body;
+        if (!pricingId || !date || price === undefined) return res.status(400).json({ error: "pricingId, date and price required" });
+        const overrideDate = new Date(date);
+        overrideDate.setUTCHours(0, 0, 0, 0);
+        const override = await prisma.ddPricingOverride.upsert({
+            where: { pricingId_overrideDate: { pricingId: parseInt(pricingId), overrideDate } },
+            update: { price: parseInt(price) },
+            create: { pricingId: parseInt(pricingId), overrideDate, price: parseInt(price) },
+        });
+        return res.json({ success: true, message: `DD override set to ₹${price} for ${date}`, override });
+    } catch (error) {
+        console.error("DD override error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

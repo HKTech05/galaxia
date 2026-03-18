@@ -205,16 +205,31 @@ model DdPackage {
 }
 
 model DdPackagePricing {
-  id           Int       @id @default(autoincrement())
-  packageId    Int       @map("package_id")
-  hours        Int
-  label        String    @db.VarChar(20)
-  weekdayPrice Int       @map("weekday_price")
-  weekendPrice Int       @map("weekend_price")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  package      DdPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  id              Int       @id @default(autoincrement())
+  packageId       Int       @map("package_id")
+  hours           Int
+  label           String    @db.VarChar(20)
+  weekdayPrice    Int       @map("weekday_price")
+  weekendPrice    Int       @map("weekend_price")
+  weekdayDiscount Int       @default(0) @map("weekday_discount")
+  weekendDiscount Int       @default(0) @map("weekend_discount")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  package         DdPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  overrides       DdPricingOverride[]
 
   @@map("dd_package_pricing")
+}
+
+model DdPricingOverride {
+  id           Int              @id @default(autoincrement())
+  pricingId    Int              @map("pricing_id")
+  overrideDate DateTime         @map("override_date") @db.Date
+  price        Int
+  createdAt    DateTime         @default(now()) @map("created_at")
+  pricing      DdPackagePricing @relation(fields: [pricingId], references: [id], onDelete: Cascade)
+
+  @@unique([pricingId, overrideDate])
+  @@map("dd_pricing_overrides")
 }
 
 model DdBooking {

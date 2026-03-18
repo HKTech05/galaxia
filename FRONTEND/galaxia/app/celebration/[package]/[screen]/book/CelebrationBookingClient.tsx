@@ -75,6 +75,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                             hours: p.hours,
                             weekday: p.weekdayPrice,
                             weekend: p.weekendPrice,
+                            weekdayDiscount: p.weekdayDiscount || 0,
+                            weekendDiscount: p.weekendDiscount || 0,
                         })));
                     }
                     if (dbPackage.extraPersonPrice != null) setLiveExtraPerson(dbPackage.extraPersonPrice);
@@ -175,10 +177,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const oneHrTier = pricingTiers.find((p) => p.hours === 1);
     const perSlotPrice = oneHrTier ? (weekend ? oneHrTier.weekend : oneHrTier.weekday) : Math.round((weekend ? pricingTiers[0].weekend : pricingTiers[0].weekday) / pricingTiers[0].hours);
 
-    // Discount display: use extraHourRate (₹1000/hr) as the "original" per-hour rate
+    // Discount: use per-tier discount from DB if available
+    const matchedTier = pricingTiers.find((p) => p.hours === totalHours);
+    const matchedLive = livePricing?.find((p) => p.hours === totalHours);
+    const discount = totalHours > 1 && matchedLive ? (weekend ? (matchedLive as any).weekendDiscount || 0 : (matchedLive as any).weekdayDiscount || 0) : 0;
     const discountHourRate = liveExtraHourRate ?? pkg.extraHourRate ?? 1000;
-    const originalPrice = totalHours * discountHourRate;
-    const discount = totalHours > 1 && originalPrice > basePrice ? originalPrice - basePrice : 0;
+    const originalPrice = discount > 0 ? basePrice + discount : totalHours * discountHourRate;
 
     // 50-50 Payment Split
     const payNow = Math.round(total * 0.5);
