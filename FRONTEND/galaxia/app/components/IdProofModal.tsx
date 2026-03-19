@@ -16,14 +16,14 @@ function getToken() {
 // Map MIME type to proper file extension and descriptions
 const MIME_TO_EXT: Record<string, string> = {
     "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
-    "image/webp": ".webp", "image/gif": ".gif", "image/bmp": ".bmp",
+    "image/webp": ".jpg", "image/gif": ".gif", "image/bmp": ".bmp",
     "application/pdf": ".pdf", "application/msword": ".doc",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
 };
 
 const MIME_TO_DESCRIPTION: Record<string, string> = {
     "image/jpeg": "JPEG Image", "image/jpg": "JPEG Image", "image/png": "PNG Image",
-    "image/webp": "WebP Image", "image/gif": "GIF Image", "image/bmp": "BMP Image",
+    "image/webp": "JPEG Image", "image/gif": "GIF Image", "image/bmp": "BMP Image",
     "application/pdf": "PDF Document", "application/msword": "Word Document",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word Document",
 };
@@ -89,9 +89,11 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
         // Build file type filter for the Save As dialog
         const ext = MIME_TO_EXT[fileType] || "";
         const description = MIME_TO_DESCRIPTION[fileType] || "File";
+        // For webp→jpg conversion, use image/jpeg as the accept type
+        const acceptMime = fileType === "image/webp" ? "image/jpeg" : fileType;
         const saveTypes = ext ? [{
             description,
-            accept: { [fileType]: [ext] } as Record<string, string[]>,
+            accept: { [acceptMime]: [ext] } as Record<string, string[]>,
         }] : undefined;
 
         // Try File System Access API — shows native "Save As" dialog (Chrome/Edge desktop)
