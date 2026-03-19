@@ -171,7 +171,15 @@ export default function EmployeesClient() {
             }
         });
 
-        doc.save(`${emp.location.replace(/\s+/g, '_')}_${emp.name.replace(/\s+/g, '_')}_transactions.pdf`);
+        const pdfBlob = doc.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${emp.location.replace(/\s+/g, '_')}_${emp.name.replace(/\s+/g, '_')}_transactions.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     // Filter employees based on selected properties
