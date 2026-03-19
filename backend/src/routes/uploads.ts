@@ -176,7 +176,7 @@ router.get("/guest-id/:id/download", authMiddleware, async (req: AuthRequest, re
         const fileName = hasExt ? rawFileName : rawFileName + ext;
 
         res.setHeader("Content-Type", contentType);
-        res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+        res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
         const stream = s3Response.Body as any;
         stream.pipe(res);
