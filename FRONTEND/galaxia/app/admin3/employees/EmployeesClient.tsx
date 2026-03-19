@@ -132,8 +132,8 @@ export default function EmployeesClient() {
         const empLogs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
 
         const { default: jsPDF } = await import("jspdf");
-        await import("jspdf-autotable");
-        const doc = new jsPDF() as any;
+        const { default: autoTable } = await import("jspdf-autotable");
+        const doc = new jsPDF();
 
         doc.setFontSize(18);
         doc.text(`Transaction History: ${emp.location} — ${emp.name}`, 14, 22);
@@ -152,7 +152,7 @@ export default function EmployeesClient() {
             log.note
         ]);
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 45,
