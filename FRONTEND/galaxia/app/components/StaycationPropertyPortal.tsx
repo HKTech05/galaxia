@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Info, Clock, CheckCircle, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload } from "lucide-react";
+import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
 import { api } from "../../lib/api";
 
@@ -33,7 +33,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     checkOutTime: "10:00 AM",
                     depositAmt: `₹${(b.securityDeposit || 3000).toLocaleString('en-IN')}`,
                     remainingAmt: `₹${(b.balanceAmount || 0).toLocaleString('en-IN')}`,
-                    idProofUrl: b.idProofUrl || (b.guestIds && b.guestIds.length > 0 ? b.guestIds[0].fileUrl : null),
+                    idProofUrl: b.idProofUrl || null,
+                    guestIds: (b.guestIds || []).map((g: any) => ({
+                        id: g.id,
+                        fileName: g.fileName,
+                        fileType: g.fileType,
+                    })),
                     status: (b.status === "checked_out" || new Date(b.checkOutDate) < new Date()) ? "Completed" : 
                             b.status === "confirmed" ? "Pending Arrival" : 
                             b.status === "checked_in" ? "Checked In" : 
@@ -404,18 +409,70 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     )}
                                 </div>
-                                <div className="mt-6 pt-6 border-t border-slate-100 flex items-center gap-4">
-                                    <button 
-                                        onClick={() => {
-                                            if (booking.idProofUrl) {
-                                                window.open(booking.idProofUrl, '_blank');
-                                            } else {
-                                                alert("No ID Proof uploaded for this booking.");
-                                            }
-                                        }}
-                                        className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors border border-indigo-100">
-                                        <Info size={16} /> View ID Proofs
-                                    </button>
+                                <div className="mt-6 pt-6 border-t border-slate-100">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Camera size={14} /> ID Proofs</h4>
+                                        <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors">
+                                            <Upload size={12} /> Upload
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+                                                    try {
+                                                        const token = localStorage.getItem("adminToken");
+                                                        const formData = new FormData();
+                                                        formData.append("file", file);
+                                                        formData.append("bookingId", String(booking.rawId));
+                                                        const res = await fetch("/api/uploads/guest-id", {
+                                                            method: "POST",
+                                                            headers: { Authorization: `Bearer ${token}` },
+                                                            body: formData,
+                                                        });
+                                                        if (res.ok) {
+                                                            alert("ID uploaded!");
+                                                            fetchBookings();
+                                                        } else {
+                                                            alert("Upload failed");
+                                                        }
+                                                    } catch { alert("Upload failed"); }
+                                                    e.target.value = "";
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {booking.guestIds && booking.guestIds.length > 0 ? (
+                                            booking.guestIds.map((gid: any) => (
+                                                <button
+                                                    key={gid.id}
+                                                    onClick={async () => {
+                                                        try {
+                                                            const token = localStorage.getItem("adminToken");
+                                                            const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
+                                                                headers: { Authorization: `Bearer ${token}` },
+                                                            });
+                                                            if (res.ok) {
+                                                                const blob = await res.blob();
+                                                                const url = URL.createObjectURL(blob);
+                                                                window.open(url, "_blank");
+                                                            } else {
+                                                                alert("Failed to load ID proof");
+                                                            }
+                                                        } catch { alert("Failed to load ID proof"); }
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 text-xs font-bold transition-colors"
+                                                >
+                                                    <CheckCircle2 size={14} />
+                                                    <span className="truncate max-w-[120px]">{gid.fileName || `ID-${gid.id}`}</span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-400 font-medium py-2">No IDs uploaded yet</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

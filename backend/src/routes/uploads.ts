@@ -81,9 +81,9 @@ router.post("/guest-id", authMiddleware, upload.single("file"), async (req: Auth
 
         const { bookingId, ddBookingId } = req.body;
 
-        // Compress before upload
+        // Compress before upload (aggressive for guest IDs)
         const { buffer, mimetype, fileName } = await compressFile(
-            req.file.buffer, req.file.mimetype, req.file.originalname
+            req.file.buffer, req.file.mimetype, req.file.originalname, true
         );
 
         // Upload to S3 with server-side encryption
@@ -197,9 +197,9 @@ router.post("/guest-id-public", upload.single("file"), async (req, res) => {
             if (!booking) return res.status(404).json({ error: "DD Booking not found" });
         }
 
-        // Compress before upload
+        // Compress before upload (aggressive for guest IDs)
         const { buffer, mimetype, fileName } = await compressFile(
-            req.file.buffer, req.file.mimetype, req.file.originalname
+            req.file.buffer, req.file.mimetype, req.file.originalname, true
         );
 
         // Upload to S3 with server-side encryption
