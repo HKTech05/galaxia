@@ -19,11 +19,29 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
     const [error, setError] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const fileName = guestId.fileName || `ID-${guestId.id}`;
+    const rawFileName = guestId.fileName || `ID-${guestId.id}`;
     const fileType = (guestId.fileType || "").toLowerCase();
     const isImage = fileType.startsWith("image/");
     const isPdf = fileType === "application/pdf";
     const isPreviewable = isImage || isPdf;
+
+    // Map MIME type to proper file extension
+    const mimeToExt: Record<string, string> = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "image/bmp": ".bmp",
+        "application/pdf": ".pdf",
+        "application/msword": ".doc",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    };
+    const ext = mimeToExt[fileType] || (fileType.includes("/") ? "." + fileType.split("/").pop() : "");
+
+    // Ensure filename has the correct extension
+    const hasExt = /\.[a-zA-Z0-9]{2,5}$/.test(rawFileName);
+    const fileName = hasExt ? rawFileName : rawFileName + ext;
 
     // Fetch blob on mount
     useEffect(() => {

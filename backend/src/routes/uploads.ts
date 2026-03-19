@@ -161,8 +161,21 @@ router.get("/guest-id/:id/download", authMiddleware, async (req: AuthRequest, re
 
         const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
 
-        const fileName = decrypt(guestId.fileName || "document");
-        res.setHeader("Content-Type", guestId.fileType || "application/octet-stream");
+        const rawFileName = decrypt(guestId.fileName || "document");
+        const contentType = guestId.fileType || "application/octet-stream";
+
+        // Map MIME type to file extension
+        const mimeToExt: Record<string, string> = {
+            "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
+            "image/webp": ".webp", "image/gif": ".gif", "image/bmp": ".bmp",
+            "application/pdf": ".pdf", "application/msword": ".doc",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+        };
+        const ext = mimeToExt[contentType.toLowerCase()] || "";
+        const hasExt = /\.[a-zA-Z0-9]{2,5}$/.test(rawFileName);
+        const fileName = hasExt ? rawFileName : rawFileName + ext;
+
+        res.setHeader("Content-Type", contentType);
         res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
 
         const stream = s3Response.Body as any;
