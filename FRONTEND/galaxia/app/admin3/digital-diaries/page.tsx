@@ -280,7 +280,7 @@ export default function Admin1Dashboard() {
 
             // Upload walk-in ID files after booking (fire-and-forget)
             if (result?.id) {
-                const token = localStorage.getItem("adminToken");
+                const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
                 for (const file of walkInIdFiles) {
                     if (file) {
                         try {
@@ -602,18 +602,30 @@ export default function Admin1Dashboard() {
                                                 key={gid.id}
                                                 onClick={async () => {
                                                     try {
-                                                        const token = localStorage.getItem("adminToken");
+                                                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken") || localStorage.getItem("ownerToken") || localStorage.getItem("token");
+                                                        if (!token) {
+                                                            alert("Not authenticated. Please log in again.");
+                                                            return;
+                                                        }
                                                         const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
                                                             headers: { Authorization: `Bearer ${token}` },
                                                         });
                                                         if (res.ok) {
                                                             const blob = await res.blob();
                                                             const url = URL.createObjectURL(blob);
-                                                            window.open(url, "_blank");
+                                                            const a = document.createElement("a");
+                                                            a.href = url;
+                                                            a.target = "_blank";
+                                                            a.rel = "noopener noreferrer";
+                                                            document.body.appendChild(a);
+                                                            a.click();
+                                                            document.body.removeChild(a);
                                                         } else {
-                                                            alert("Failed to load ID proof");
+                                                            const errText = await res.text();
+                                                            console.error("ID download failed:", res.status, errText);
+                                                            alert("Failed to load ID proof: " + (res.status === 401 ? "Not authorized" : res.status));
                                                         }
-                                                    } catch { alert("Failed to load ID proof"); }
+                                                    } catch (err) { console.error("ID download error:", err); alert("Failed to load ID proof"); }
                                                 }}
                                                 className="border border-emerald-200 rounded-lg bg-emerald-50 h-24 flex flex-col items-center justify-center text-emerald-700 group cursor-pointer hover:border-emerald-400 hover:bg-emerald-100 transition-colors"
                                             >
@@ -640,7 +652,7 @@ export default function Admin1Dashboard() {
                                                 const file = e.target.files?.[0];
                                                 if (!file || !activeEvent) return;
                                                 try {
-                                                    const token = localStorage.getItem("adminToken");
+                                                    const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
                                                     const formData = new FormData();
                                                     formData.append("file", file);
                                                     formData.append("ddBookingId", activeEvent.id);

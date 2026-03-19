@@ -422,7 +422,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     const file = e.target.files?.[0];
                                                     if (!file) return;
                                                     try {
-                                                        const token = localStorage.getItem("adminToken");
+                                                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
                                                         const formData = new FormData();
                                                         formData.append("file", file);
                                                         formData.append("bookingId", String(booking.rawId));
@@ -450,20 +450,32 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     key={gid.id}
                                                     onClick={async () => {
                                                         try {
-                                                            const token = localStorage.getItem("adminToken");
+                                                            const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken") || localStorage.getItem("ownerToken") || localStorage.getItem("token");
+                                                            if (!token) {
+                                                                alert("Not authenticated. Please log in again.");
+                                                                return;
+                                                            }
                                                             const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
                                                                 headers: { Authorization: `Bearer ${token}` },
                                                             });
                                                             if (res.ok) {
                                                                 const blob = await res.blob();
                                                                 const url = URL.createObjectURL(blob);
-                                                                window.open(url, "_blank");
+                                                                const a = document.createElement("a");
+                                                                a.href = url;
+                                                                a.target = "_blank";
+                                                                a.rel = "noopener noreferrer";
+                                                                document.body.appendChild(a);
+                                                                a.click();
+                                                                document.body.removeChild(a);
                                                             } else {
-                                                                alert("Failed to load ID proof");
+                                                                const errText = await res.text();
+                                                                console.error("ID download failed:", res.status, errText);
+                                                                alert("Failed to load ID proof: " + (res.status === 401 ? "Not authorized" : res.status));
                                                             }
-                                                        } catch { alert("Failed to load ID proof"); }
+                                                        } catch (err) { console.error("ID download error:", err); alert("Failed to load ID proof"); }
                                                     }}
-                                                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 text-xs font-bold transition-colors"
+                                                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
                                                 >
                                                     <CheckCircle2 size={14} />
                                                     <span className="truncate max-w-[120px]">{gid.fileName || `ID-${gid.id}`}</span>
