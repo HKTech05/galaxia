@@ -640,7 +640,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Refund Method</h4>
                                         <div className="grid grid-cols-3 gap-3">
                                             <button
-                                                onClick={() => {
+                                                onClick={async () => {
+                                                    await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { method: "cash" });
                                                     handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}
@@ -649,7 +650,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 <RotateCcw size={16} /> <span className="text-xs">Cash</span>
                                             </button>
                                             <button
-                                                onClick={() => {
+                                                onClick={async () => {
+                                                    await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { method: "upi" });
                                                     handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}

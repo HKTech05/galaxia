@@ -426,6 +426,60 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
+// POST /api/bookings/staycation/:id/refund-deposit — Record deposit refund
+router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const { method } = req.body; // "cash", "upi", or "none"
+        const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
+
+        const booking = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId },
+            include: { property: true },
+        });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+        // Mark deposit as refunded
+        await prisma.staycationBooking.update({
+            where: { id: bookingId },
+            data: {
+                depositRefunded: true,
+                depositRefundedAt: new Date(),
+            },
+        });
+
+        const depositAmount = booking.securityDeposit || 0;
+
+        // If refund method is cash, decrement employee's cashCollected
+        if (method?.toLowerCase() === "cash" && depositAmount > 0) {
+            const employee = await prisma.employee.findFirst({
+                where: { propertyId: booking.propertyId, isActive: true },
+            });
+            if (employee) {
+                await prisma.employee.update({
+                    where: { id: employee.id },
+                    data: { cashCollected: { decrement: depositAmount } },
+                });
+                await prisma.cashTransaction.create({
+                    data: {
+                        employeeId: employee.id,
+                        bookingRef: booking.bookingRef,
+                        guestName: booking.customerName,
+                        amount: -depositAmount,
+                        transactionType: "refund",
+                        note: `Deposit refund (cash) — ${booking.property?.name || "Property"}`,
+                    },
+                });
+            }
+        }
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Refund deposit error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // POST /api/bookings/staycation/:id/extra-guest — Add extra guest
 router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) => {
     try {

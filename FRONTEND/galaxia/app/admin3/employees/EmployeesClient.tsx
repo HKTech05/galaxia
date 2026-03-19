@@ -19,10 +19,12 @@ interface Employee {
 interface CashLog {
     id: number;
     employeeId: number;
-    date: string;
+    createdAt: string;
     amount: number;
     guestName: string;
     note: string;
+    transactionType: string;
+    bookingRef: string;
 }
 
 export default function EmployeesClient() {
@@ -133,18 +135,19 @@ export default function EmployeesClient() {
         const doc = new jsPDF() as any;
 
         doc.setFontSize(18);
-        doc.text(`Transaction History: ${emp.name}`, 14, 22);
+        doc.text(`Transaction History: ${emp.location} — ${emp.name}`, 14, 22);
 
         doc.setFontSize(11);
         doc.setTextColor(100);
-        doc.text(`Property: ${emp.location}`, 14, 30);
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 36);
+        doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
+        doc.text(`Current Pending Cash: Rs. ${emp.cashCollected.toLocaleString('en-IN')}`, 14, 36);
 
-        const tableColumn = ["Date & Time", "Guest", "Amount", "Status"];
+        const tableColumn = ["Date & Time", "Guest", "Booking Ref", "Amount", "Type"];
         const tableRows = empLogs.map(log => [
-            log.date,
-            log.guestName,
-            `Rs. ${log.amount.toLocaleString('en-IN')}`,
+            new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            log.guestName || '—',
+            log.bookingRef || '—',
+            `${log.amount < 0 ? '-' : ''}Rs. ${Math.abs(log.amount).toLocaleString('en-IN')}`,
             log.note
         ]);
 
@@ -153,10 +156,21 @@ export default function EmployeesClient() {
             body: tableRows,
             startY: 45,
             theme: 'striped',
-            headStyles: { fillColor: [124, 58, 237] }, // Purple-600
+            headStyles: { fillColor: [124, 58, 237] },
+            didParseCell: function(data: any) {
+                if (data.section === 'body') {
+                    const note = tableRows[data.row.index]?.[4] || '';
+                    if (note.includes('Owner') || note.includes('owner')) {
+                        data.cell.styles.fillColor = [219, 234, 254];
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (note.includes('refund') || note.includes('Refund')) {
+                        data.cell.styles.fillColor = [254, 226, 226];
+                    }
+                }
+            }
         });
 
-        doc.save(`${emp.name.replace(/\s+/g, '_')}_transactions.pdf`);
+        doc.save(`${emp.location.replace(/\s+/g, '_')}_${emp.name.replace(/\s+/g, '_')}_transactions.pdf`);
     };
 
     // Filter employees based on selected properties
@@ -335,20 +349,34 @@ export default function EmployeesClient() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {activeEmployeeLogs.length > 0 ? (
-                                            activeEmployeeLogs.map(log => (
-                                                <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-5 py-3.5 font-medium text-slate-600">{log.date}</td>
-                                                    <td className="px-5 py-3.5 font-bold text-slate-800">{log.guestName}</td>
-                                                    <td className="px-5 py-3.5 font-black text-emerald-700">₹{log.amount.toLocaleString('en-IN')}</td>
-                                                    <td className="px-5 py-3.5 text-xs font-medium text-slate-500">
-                                                        {log.note.includes('Owner') ? (
-                                                            <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-200 font-bold">{log.note}</span>
-                                                        ) : (
-                                                            <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            activeEmployeeLogs.map(log => {
+                                                const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
+                                                const isRefund = log.transactionType === 'refund' || log.amount < 0;
+                                                return (
+                                                    <tr key={log.id} className={`transition-colors ${
+                                                        isOwnerPickup ? 'bg-blue-50 hover:bg-blue-100/70 border-l-4 border-l-blue-500' :
+                                                        isRefund ? 'bg-red-50 hover:bg-red-100/70 border-l-4 border-l-red-400' :
+                                                        'hover:bg-slate-50/50'
+                                                    }`}>
+                                                        <td className="px-5 py-3.5 font-medium text-slate-600">
+                                                            {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 font-bold text-slate-800">{log.guestName || '—'}</td>
+                                                        <td className={`px-5 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                                                            {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-xs font-medium text-slate-500">
+                                                            {isOwnerPickup ? (
+                                                                <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded border border-blue-300 font-bold">💰 {log.note}</span>
+                                                            ) : isRefund ? (
+                                                                <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">↩ {log.note}</span>
+                                                            ) : (
+                                                                <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         ) : (
                                             <tr>
                                                 <td colSpan={4} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this employee.</td>
