@@ -314,7 +314,26 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 source: "website",
             };
 
-            await api.post("/bookings/dd", payload);
+            const result = await api.post("/bookings/dd", payload);
+
+            // Upload ID proofs to S3 (fire-and-forget)
+            if (result?.id) {
+                for (const proof of idProofs) {
+                    if (proof) {
+                        try {
+                            const uploadForm = new FormData();
+                            uploadForm.append("file", proof);
+                            uploadForm.append("ddBookingId", String(result.id));
+                            await fetch("/api/uploads/guest-id-public", {
+                                method: "POST",
+                                body: uploadForm,
+                            });
+                        } catch (uploadErr) {
+                            console.error("ID upload failed (booking succeeded):", uploadErr);
+                        }
+                    }
+                }
+            }
 
             // Success — redirect to dashboard with success indicator
             router.push("/dashboard?source=celebration&status=success");

@@ -56,6 +56,12 @@ type Event = {
         isPaid: boolean;
         paymentMethod: string | null;
     }>;
+    guestIds?: Array<{
+        id: number;
+        fileName: string | null;
+        fileType: string | null;
+        uploadedAt: string;
+    }>;
 };
 
 const events: Event[] = [
@@ -104,6 +110,7 @@ export default function Admin1Dashboard() {
                     isMaintenance: b.customerName.toLowerCase().includes("maintenance") || b.status === "maintenance",
                     dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
                     rawAddons: b.addons || [],
+                    guestIds: b.guestIds || [],
                     addOns: {
                         balloons: b.addons?.some((a: any) => a.addonType === "balloons"),
                         ledBanner: b.addons?.some((a: any) => a.addonType === "led_banner"),
@@ -161,6 +168,7 @@ export default function Admin1Dashboard() {
     const [ledBannerType, setLedBannerType] = useState("Happy Birthday");
     const [addCake, setAddCake] = useState(false);
     const [addOnCakeMessage, setAddOnCakeMessage] = useState("");
+    const [walkInIdFiles, setWalkInIdFiles] = useState<(File | null)[]>([null, null]);
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
@@ -248,7 +256,7 @@ export default function Admin1Dashboard() {
         const packageId = packageMap[packageType] || 1;
 
         try {
-            await api.post("/bookings/dd", {
+            const result = await api.post("/bookings/dd", {
                 screenId,
                 packageId,
                 bookingDate: startDate.toISOString().split('T')[0],
@@ -270,8 +278,28 @@ export default function Admin1Dashboard() {
                 ]
             });
 
+            // Upload walk-in ID files after booking (fire-and-forget)
+            if (result?.id) {
+                const token = localStorage.getItem("adminToken");
+                for (const file of walkInIdFiles) {
+                    if (file) {
+                        try {
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("ddBookingId", String(result.id));
+                            await fetch("/api/uploads/guest-id", {
+                                method: "POST",
+                                headers: { Authorization: `Bearer ${token}` },
+                                body: formData,
+                            });
+                        } catch (e) { console.error("Walk-in ID upload failed:", e); }
+                    }
+                }
+            }
+
             fetchEvents(startDate);
             setDraftSlot(null);
+            setWalkInIdFiles([null, null]);
             alert("Booking created successfully!");
         } catch (err: any) {
             console.error("Failed to create manual booking:", err);
@@ -568,14 +596,70 @@ export default function Admin1Dashboard() {
                             <div>
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Camera size={16} /> Photo IDs Uploaded</h3>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="border border-slate-200 border-dashed rounded-lg bg-white h-24 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
-                                        <Camera size={20} className="mb-1 group-hover:text-indigo-500" />
-                                        <span className="text-xs font-medium group-hover:text-indigo-600">Primary ID.jpg</span>
-                                    </div>
-                                    <div className="border border-slate-200 border-dashed rounded-lg bg-white h-24 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
-                                        <Camera size={20} className="mb-1 group-hover:text-indigo-500" />
-                                        <span className="text-xs font-medium group-hover:text-indigo-600">Secondary ID.jpg</span>
-                                    </div>
+                                    {activeEvent.guestIds && activeEvent.guestIds.length > 0 ? (
+                                        activeEvent.guestIds.map((gid) => (
+                                            <div
+                                                key={gid.id}
+                                                onClick={async () => {
+                                                    try {
+                                                        const token = localStorage.getItem("adminToken");
+                                                        const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
+                                                            headers: { Authorization: `Bearer ${token}` },
+                                                        });
+                                                        if (res.ok) {
+                                                            const blob = await res.blob();
+                                                            const url = URL.createObjectURL(blob);
+                                                            window.open(url, "_blank");
+                                                        } else {
+                                                            alert("Failed to load ID proof");
+                                                        }
+                                                    } catch { alert("Failed to load ID proof"); }
+                                                }}
+                                                className="border border-emerald-200 rounded-lg bg-emerald-50 h-24 flex flex-col items-center justify-center text-emerald-700 group cursor-pointer hover:border-emerald-400 hover:bg-emerald-100 transition-colors"
+                                            >
+                                                <CheckCircle2 size={20} className="mb-1" />
+                                                <span className="text-xs font-medium truncate max-w-[120px] px-1">{gid.fileName || `ID-${gid.id}`}</span>
+                                                <span className="text-[10px] text-emerald-500 mt-0.5">Click to view</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-2 text-center py-4 text-slate-400">
+                                            <Camera size={24} className="mx-auto mb-2 opacity-50" />
+                                            <span className="text-xs font-medium">No IDs uploaded yet</span>
+                                        </div>
+                                    )}
+                                    {/* Upload button for receptionist */}
+                                    <label className="border border-slate-200 border-dashed rounded-lg bg-white h-24 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
+                                        <Upload size={20} className="mb-1 group-hover:text-indigo-500" />
+                                        <span className="text-xs font-bold group-hover:text-indigo-600">+ Upload ID</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file || !activeEvent) return;
+                                                try {
+                                                    const token = localStorage.getItem("adminToken");
+                                                    const formData = new FormData();
+                                                    formData.append("file", file);
+                                                    formData.append("ddBookingId", activeEvent.id);
+                                                    const res = await fetch("/api/uploads/guest-id", {
+                                                        method: "POST",
+                                                        headers: { Authorization: `Bearer ${token}` },
+                                                        body: formData,
+                                                    });
+                                                    if (res.ok) {
+                                                        alert("ID uploaded successfully!");
+                                                        fetchEvents(startDate);
+                                                    } else {
+                                                        alert("Upload failed");
+                                                    }
+                                                } catch { alert("Upload failed"); }
+                                                e.target.value = "";
+                                            }}
+                                        />
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -807,10 +891,35 @@ export default function Admin1Dashboard() {
                                     </label>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                         {Array.from({ length: guestsCount }).map((_, idx) => (
-                                            <div key={idx} className="border-2 border-slate-200 border-dashed rounded-xl bg-slate-50 h-32 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors">
-                                                <Upload size={20} className="mb-2 group-hover:text-indigo-500" />
-                                                <span className="text-xs font-bold group-hover:text-indigo-600">Upload ID {idx + 1}</span>
-                                            </div>
+                                            <label key={idx} className={`border-2 ${walkInIdFiles[idx] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 border-dashed bg-slate-50'} rounded-xl h-32 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors`}>
+                                                {walkInIdFiles[idx] ? (
+                                                    <>
+                                                        <CheckCircle2 size={20} className="mb-2 text-emerald-600" />
+                                                        <span className="text-xs font-bold text-emerald-700 truncate max-w-[100px] px-1">{walkInIdFiles[idx]!.name}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Upload size={20} className="mb-2 group-hover:text-indigo-500" />
+                                                        <span className="text-xs font-bold group-hover:text-indigo-600">Upload ID {idx + 1}</span>
+                                                    </>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setWalkInIdFiles(prev => {
+                                                                const next = [...prev];
+                                                                while (next.length <= idx) next.push(null);
+                                                                next[idx] = file;
+                                                                return next;
+                                                            });
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
                                         ))}
                                     </div>
                                 </div>

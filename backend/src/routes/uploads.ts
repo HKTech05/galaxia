@@ -173,6 +173,63 @@ router.get("/guest-id/:id/download", authMiddleware, async (req: AuthRequest, re
     }
 });
 
+// ─── Public Guest ID Upload (for customer booking flow, no auth) ─────────
+
+// POST /api/uploads/guest-id-public — Customers upload ID during booking (no admin auth)
+router.post("/guest-id-public", upload.single("file"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { bookingId, ddBookingId } = req.body;
+        if (!bookingId && !ddBookingId) {
+            return res.status(400).json({ error: "bookingId or ddBookingId required" });
+        }
+
+        // Validate booking exists
+        if (bookingId) {
+            const booking = await prisma.staycationBooking.findUnique({ where: { id: parseInt(bookingId) } });
+            if (!booking) return res.status(404).json({ error: "Booking not found" });
+        }
+        if (ddBookingId) {
+            const booking = await prisma.ddBooking.findUnique({ where: { id: parseInt(ddBookingId) } });
+            if (!booking) return res.status(404).json({ error: "DD Booking not found" });
+        }
+
+        // Compress before upload
+        const { buffer, mimetype, fileName } = await compressFile(
+            req.file.buffer, req.file.mimetype, req.file.originalname
+        );
+
+        // Upload to S3 with server-side encryption
+        const fileUrl = await uploadToS3(buffer, fileName, mimetype, "guest-ids");
+
+        // Encrypt file metadata in DB
+        const encryptedUrl = encrypt(fileUrl);
+        const encryptedName = encrypt(fileName);
+
+        const guestId = await prisma.guestId.create({
+            data: {
+                bookingId: bookingId ? parseInt(bookingId) : null,
+                ddBookingId: ddBookingId ? parseInt(ddBookingId) : null,
+                fileUrl: encryptedUrl,
+                fileName: encryptedName,
+                fileType: mimetype,
+                uploadedBy: null, // customer upload, no admin
+            },
+        });
+
+        return res.status(201).json({
+            id: guestId.id,
+            fileName,
+        });
+    } catch (error) {
+        console.error("Public guest ID upload error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // ─── Property Image Uploads ──────────────────────────────────────────────
 
 // POST /api/uploads/property-image — Upload property image to S3 (compressed)

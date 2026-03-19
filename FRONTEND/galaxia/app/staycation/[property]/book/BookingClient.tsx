@@ -480,7 +480,23 @@ export default function BookingClient({ property }: BookingClientProps) {
                 couponCode: appliedCoupon?.code || null,
             };
 
-            await api.post("/bookings/staycation", payload);
+            const result = await api.post("/bookings/staycation", payload);
+
+            // Upload ID proof to S3 (fire-and-forget — booking succeeds even if upload fails)
+            if (formData.aadhaarFile && result?.id) {
+                try {
+                    const uploadForm = new FormData();
+                    uploadForm.append("file", formData.aadhaarFile);
+                    uploadForm.append("bookingId", String(result.id));
+                    await fetch("/api/uploads/guest-id-public", {
+                        method: "POST",
+                        body: uploadForm,
+                    });
+                } catch (uploadErr) {
+                    console.error("ID upload failed (booking succeeded):", uploadErr);
+                }
+            }
+
             router.push("/dashboard?source=staycation&status=success");
         } catch (err: any) {
             if (err?.message?.includes("409")) {

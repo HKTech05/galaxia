@@ -47,6 +47,12 @@ type Event = {
         cake?: boolean;
         cakeMessage?: string;
     };
+    guestIds?: Array<{
+        id: number;
+        fileName: string | null;
+        fileType: string | null;
+        uploadedAt: string;
+    }>;
 };
 
 const screenColorMap: Record<string, string> = {
@@ -105,6 +111,7 @@ export default function Admin1Dashboard() {
                             cake: b.addons.some((a: any) => a.addonType === 'cake'),
                             cakeMessage: b.addons.find((a: any) => a.addonType === 'cake')?.addonValue,
                         } : undefined,
+                        guestIds: b.guestIds || [],
                     };
                 });
                 setEventsList(mapped);
@@ -166,18 +173,6 @@ export default function Admin1Dashboard() {
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
-
-    // New State for IDs and Extra Guests
-    const [uploadedIds, setUploadedIds] = useState([
-        { id: 1, name: "Primary ID.jpg" },
-        { id: 2, name: "Secondary ID.jpg" }
-    ]);
-    const removeId = (idToRemove: number) => setUploadedIds(uploadedIds.filter(id => id.id !== idToRemove));
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            setUploadedIds([...uploadedIds, { id: Date.now(), name: file.name }]);
         }
     };
 
@@ -565,29 +560,66 @@ export default function Admin1Dashboard() {
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2"><Camera size={16} /> Photo IDs Uploaded</h3>
                                 <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors">
                                     <Upload size={14} /> Add ID
-                                    <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden" onChange={handleFileUpload} />
+                                    <input
+                                        type="file"
+                                        accept="image/*,.pdf"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file || !activeEvent) return;
+                                            try {
+                                                const token = localStorage.getItem("adminToken");
+                                                const formData = new FormData();
+                                                formData.append("file", file);
+                                                formData.append("ddBookingId", activeEvent.id);
+                                                const res = await fetch("/api/uploads/guest-id", {
+                                                    method: "POST",
+                                                    headers: { Authorization: `Bearer ${token}` },
+                                                    body: formData,
+                                                });
+                                                if (res.ok) {
+                                                    alert("ID uploaded successfully!");
+                                                    fetchEvents(startDate);
+                                                } else {
+                                                    alert("Upload failed");
+                                                }
+                                            } catch { alert("Upload failed"); }
+                                            e.target.value = "";
+                                        }}
+                                    />
                                 </label>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                {uploadedIds.map(id => (
-                                    <div key={id.id} className="relative border border-slate-200 rounded-lg bg-slate-50 h-24 flex items-center justify-center group overflow-hidden">
-                                        <div className="flex flex-col items-center text-slate-500">
-                                            <Camera size={20} className="mb-1" />
-                                            <span className="text-xs font-medium">{id.name}</span>
+                                {activeEvent.guestIds && activeEvent.guestIds.length > 0 ? (
+                                    activeEvent.guestIds.map((gid) => (
+                                        <div
+                                            key={gid.id}
+                                            onClick={async () => {
+                                                try {
+                                                    const token = localStorage.getItem("adminToken");
+                                                    const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
+                                                        headers: { Authorization: `Bearer ${token}` },
+                                                    });
+                                                    if (res.ok) {
+                                                        const blob = await res.blob();
+                                                        const url = URL.createObjectURL(blob);
+                                                        window.open(url, "_blank");
+                                                    } else {
+                                                        alert("Failed to load ID proof");
+                                                    }
+                                                } catch { alert("Failed to load ID proof"); }
+                                            }}
+                                            className="border border-emerald-200 rounded-lg bg-emerald-50 h-24 flex flex-col items-center justify-center text-emerald-700 group cursor-pointer hover:border-emerald-400 hover:bg-emerald-100 transition-colors"
+                                        >
+                                            <CheckCircle2 size={20} className="mb-1" />
+                                            <span className="text-xs font-medium truncate max-w-[120px] px-1">{gid.fileName || `ID-${gid.id}`}</span>
+                                            <span className="text-[10px] text-emerald-500 mt-0.5">Click to view</span>
                                         </div>
-                                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                                            <button className="p-2 bg-white text-slate-700 hover:text-indigo-600 rounded-full shadow-sm" title="View">
-                                                <Camera size={14} />
-                                            </button>
-                                            <button onClick={() => removeId(id.id)} className="p-2 bg-rose-500 text-white hover:bg-rose-600 rounded-full shadow-sm" title="Delete & Re-upload">
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {uploadedIds.length === 0 && (
+                                    ))
+                                ) : (
                                     <div className="col-span-2 py-6 text-center border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                                        <Camera size={24} className="mx-auto mb-2 opacity-50 text-slate-400" />
                                         <span className="text-xs font-medium text-slate-500">No IDs uploaded yet.</span>
                                     </div>
                                 )}
