@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import path from "path";
 import prisma from "../lib/prisma";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
@@ -145,8 +146,29 @@ router.delete("/guest-id/:id", authMiddleware, async (req: AuthRequest, res) => 
 });
 
 // GET /api/uploads/guest-id/:id/download
-router.get("/guest-id/:id/download", authMiddleware, async (req: AuthRequest, res) => {
+// Accepts auth via Authorization header OR ?token= query param (for native browser downloads)
+router.get("/guest-id/:id/download", async (req, res) => {
     try {
+        // Accept token from header OR query param
+        let token = "";
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.split(" ")[1];
+        } else if (req.query.token) {
+            token = req.query.token as string;
+        }
+
+        if (!token) {
+            return res.status(401).json({ error: "No token provided" });
+        }
+
+        // Verify JWT
+        try {
+            jwt.verify(token, process.env.JWT_SECRET || "fallback-secret");
+        } catch {
+            return res.status(401).json({ error: "Invalid or expired token" });
+        }
+
         const guestId = await prisma.guestId.findUnique({
             where: { id: parseInt(req.params.id as string) },
         });

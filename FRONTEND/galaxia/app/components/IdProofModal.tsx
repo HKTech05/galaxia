@@ -70,26 +70,19 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
     }, [guestId.id]);
 
     const handleDownload = () => {
-        const blob = blobRef.current;
-        if (!blob) return;
+        // Use native browser download — open backend URL directly with token as query param
+        // This lets the browser handle Content-Disposition: attachment natively
+        const token = getToken();
+        if (!token) return;
+        const downloadUrl = `/api/uploads/guest-id/${guestId.id}/download?token=${encodeURIComponent(token)}`;
 
-        // Create a typed blob to ensure proper MIME type
-        const typedBlob = new Blob([blob], { type: fileType || blob.type || "application/octet-stream" });
-
-        // Use FileReader to convert to data URL — this guarantees `a.download` works
-        // because data: URLs are always treated as same-origin by the browser
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            const link = document.createElement("a");
-            link.href = dataUrl;
-            link.download = fileName;
-            link.style.display = "none";
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(() => document.body.removeChild(link), 300);
-        };
-        reader.readAsDataURL(typedBlob);
+        // Use a hidden iframe to trigger download without navigating away from the page
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = downloadUrl;
+        document.body.appendChild(iframe);
+        // Clean up iframe after download starts
+        setTimeout(() => document.body.removeChild(iframe), 10000);
     };
 
     const handleDelete = async () => {
