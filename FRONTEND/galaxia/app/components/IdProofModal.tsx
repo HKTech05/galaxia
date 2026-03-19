@@ -73,22 +73,23 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
         const blob = blobRef.current;
         if (!blob) return;
 
-        // Create a NEW blob with explicit type to force proper download
+        // Create a typed blob to ensure proper MIME type
         const typedBlob = new Blob([blob], { type: fileType || blob.type || "application/octet-stream" });
-        const url = URL.createObjectURL(typedBlob);
 
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-
-        // Cleanup after browser starts download
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 250);
+        // Use FileReader to convert to data URL — this guarantees `a.download` works
+        // because data: URLs are always treated as same-origin by the browser
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = fileName;
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => document.body.removeChild(link), 300);
+        };
+        reader.readAsDataURL(typedBlob);
     };
 
     const handleDelete = async () => {
