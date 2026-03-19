@@ -69,20 +69,46 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
         return () => { cancelled = true; };
     }, [guestId.id]);
 
-    const handleDownload = () => {
-        // Use native browser download — open backend URL directly with token as query param
-        // This lets the browser handle Content-Disposition: attachment natively
-        const token = getToken();
-        if (!token) return;
-        const downloadUrl = `/api/uploads/guest-id/${guestId.id}/download?token=${encodeURIComponent(token)}`;
+    const handleDownload = async () => {
+        const blob = blobRef.current;
+        if (!blob) return;
 
-        // Use a hidden iframe to trigger download without navigating away from the page
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = downloadUrl;
-        document.body.appendChild(iframe);
-        // Clean up iframe after download starts
-        setTimeout(() => document.body.removeChild(iframe), 10000);
+        const typedBlob = new Blob([blob], { type: fileType || blob.type || "application/octet-stream" });
+
+        // Try File System Access API — shows native "Save As" dialog (Chrome/Edge desktop)
+        if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+            try {
+                const extKey = MIME_TO_EXT[fileType] || ".bin";
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: fileType.split("/").pop()?.toUpperCase() + " File",
+                        accept: { [fileType || "application/octet-stream"]: [extKey] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(typedBlob);
+                await writable.close();
+                return;
+            } catch (err: any) {
+                // User cancelled the dialog — do nothing
+                if (err?.name === "AbortError") return;
+                // API not supported or failed — fall through to fallback
+            }
+        }
+
+        // Fallback for mobile / Firefox / Safari: force download via object URL
+        const url = URL.createObjectURL(typedBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 500);
     };
 
     const handleDelete = async () => {
