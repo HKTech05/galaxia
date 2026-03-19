@@ -297,6 +297,12 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
         const { amount, method } = req.body;
         const bookingId = parseInt(req.params.id as string);
 
+        const booking = await prisma.ddBooking.findUnique({
+            where: { id: bookingId },
+            include: { screen: true },
+        });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
         const payment = await prisma.bookingPayment.create({
             data: {
                 ddBookingId: bookingId,
@@ -316,6 +322,33 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
                 paymentMethod: method,
             },
         });
+
+        // Track cash collection for employee
+        if (method?.toLowerCase() === "cash" && amount > 0) {
+            // Find the DD property and its employee
+            const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
+            if (ddProperty) {
+                const employee = await prisma.employee.findFirst({
+                    where: { propertyId: ddProperty.id, isActive: true },
+                });
+                if (employee) {
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: { cashCollected: { increment: amount } },
+                    });
+                    await prisma.cashTransaction.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef: booking.bookingRef,
+                            guestName: booking.customerName,
+                            amount,
+                            transactionType: "collection",
+                            note: `DD balance payment — ${booking.screen?.name || "Screen"}`,
+                        },
+                    });
+                }
+            }
+        }
 
         return res.json(payment);
     } catch (error) {
@@ -339,13 +372,15 @@ router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest
             include: { booking: true }
         });
 
+        const effectiveMethod = method || "cash";
+
         // Record payment in ledger
         await prisma.bookingPayment.create({
             data: {
                 ddBookingId: addon.bookingId,
                 paymentType: `addon_${addon.addonType}`,
                 amount: addon.price,
-                method: method || "cash",
+                method: effectiveMethod,
                 collectedBy: req.admin!.id,
                 notes: `Addon payment: ${addon.addonType}`
             }
@@ -359,6 +394,32 @@ router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest
                 amountToCollect: { decrement: addon.price }
             }
         });
+
+        // Track cash collection for employee
+        if (effectiveMethod.toLowerCase() === "cash" && addon.price > 0) {
+            const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
+            if (ddProperty) {
+                const employee = await prisma.employee.findFirst({
+                    where: { propertyId: ddProperty.id, isActive: true },
+                });
+                if (employee) {
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: { cashCollected: { increment: addon.price } },
+                    });
+                    await prisma.cashTransaction.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef: addon.booking.bookingRef,
+                            guestName: addon.booking.customerName,
+                            amount: addon.price,
+                            transactionType: "collection",
+                            note: `DD addon (${addon.addonType}) — ₹${addon.price}`,
+                        },
+                    });
+                }
+            }
+        }
 
         return res.json(addon);
     } catch (error) {

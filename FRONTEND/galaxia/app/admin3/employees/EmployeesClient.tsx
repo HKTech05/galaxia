@@ -231,7 +231,7 @@ export default function EmployeesClient() {
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2 group/edit" onClick={(e) => startEditing(e, emp)}>
-                                            <p className="text-lg font-bold text-slate-800">{emp.name}</p>
+                                            <p className="text-lg font-bold text-slate-800">{emp.location} — {emp.name}</p>
                                             <Pencil size={12} className="text-slate-300 group-hover/edit:text-purple-600 transition-colors" />
                                         </div>
                                     )}
@@ -245,7 +245,7 @@ export default function EmployeesClient() {
 
                             <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-5 relative overflow-hidden group-hover:bg-purple-50/50 transition-colors">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-50 opacity-50 rounded-bl-full pointer-events-none" />
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider relative z-10">Cash Collected (Pending)</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider relative z-10">Cash to Collect</p>
                                 <p className={`text-3xl font-black mt-1 relative z-10 ${emp.cashCollected > 0 ? 'text-emerald-600' : 'text-slate-300'}`}>
                                     ₹{emp.cashCollected.toLocaleString('en-IN')}
                                 </p>
@@ -289,9 +289,9 @@ export default function EmployeesClient() {
                         <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-start justify-between">
                             <div>
                                 <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                                    {activeEmployee.name} <span className="text-sm font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200">{activeEmployee.location}</span>
+                                    {activeEmployee.location} — {activeEmployee.name}
                                 </h2>
-                                <p className="text-sm text-slate-500 font-medium mt-1">Detailed Transaction & Collection Logs</p>
+                                <p className="text-sm text-slate-500 font-medium mt-1">Cash collection history & transaction logs</p>
                             </div>
                             <div className="flex items-center gap-3">
                                 <button

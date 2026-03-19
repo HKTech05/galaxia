@@ -390,6 +390,35 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
             });
         }
 
+        // Track cash collection for employee
+        if (method?.toLowerCase() === "cash" && amount > 0) {
+            const booking = await prisma.staycationBooking.findUnique({
+                where: { id: bookingId },
+                include: { property: true },
+            });
+            if (booking) {
+                const employee = await prisma.employee.findFirst({
+                    where: { propertyId: booking.propertyId, isActive: true },
+                });
+                if (employee) {
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: { cashCollected: { increment: amount } },
+                    });
+                    await prisma.cashTransaction.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef: booking.bookingRef,
+                            guestName: booking.customerName,
+                            amount,
+                            transactionType: "collection",
+                            note: `${paymentType === "deposit" ? "Security deposit" : "Balance"} — ${booking.property?.name || "Property"}`,
+                        },
+                    });
+                }
+            }
+        }
+
         return res.json(payment);
     } catch (error) {
         console.error("Record payment error:", error);
