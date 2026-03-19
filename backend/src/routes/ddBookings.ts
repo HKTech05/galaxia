@@ -248,6 +248,13 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             screen: b.screen ? { ...b.screen, name: `${b.screen.name} (Digital Diaries)` } : b.screen,
             customerPhone: decrypt(b.customerPhone),
             customerEmail: b.customerEmail ? decrypt(b.customerEmail) : null,
+            guestIds: (b.guestIds || []).map((g: any) => ({
+                id: g.id,
+                fileName: g.fileName ? decrypt(g.fileName) : null,
+                fileType: g.fileType,
+                ddBookingId: g.ddBookingId,
+                createdAt: g.createdAt,
+            })),
         }));
 
         return res.json(decrypted);
