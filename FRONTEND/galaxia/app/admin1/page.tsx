@@ -173,8 +173,6 @@ export default function Admin1Dashboard() {
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
-        }
-    };
 
     const [showExtraGuestForm, setShowExtraGuestForm] = useState(false);
     const [extraGuests, setExtraGuests] = useState<any[]>([]);
