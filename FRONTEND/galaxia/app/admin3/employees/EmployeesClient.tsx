@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Users, CalendarDays, IndianRupee, FileText, Download, CheckCircle, Pencil, X, Filter, Building, Loader2 } from "lucide-react";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import { api } from "../../../lib/api";
 
 // Type definitions
@@ -125,13 +123,16 @@ export default function EmployeesClient() {
     };
 
     // 4. Dedicated PDF Download
-    const downloadEmployeePDF = () => {
+    const downloadEmployeePDF = async () => {
         if (!viewEmployeeId) return;
 
         const emp = employees.find(e => e.id === viewEmployeeId);
         if (!emp) return;
 
         const empLogs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+
+        const { default: jsPDF } = await import("jspdf");
+        await import("jspdf-autotable");
         const doc = new jsPDF() as any;
 
         doc.setFontSize(18);
@@ -367,7 +368,7 @@ export default function EmployeesClient() {
                                                         </td>
                                                         <td className="px-5 py-3.5 text-xs font-medium text-slate-500">
                                                             {isOwnerPickup ? (
-                                                                <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded border border-blue-300 font-bold">💰 {log.note}</span>
+                                                                <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded border border-blue-300 font-bold">{log.note}</span>
                                                             ) : isRefund ? (
                                                                 <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">↩ {log.note}</span>
                                                             ) : (
