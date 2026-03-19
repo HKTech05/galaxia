@@ -78,13 +78,8 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
         // Try File System Access API — shows native "Save As" dialog (Chrome/Edge desktop)
         if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
             try {
-                const extKey = MIME_TO_EXT[fileType] || ".bin";
                 const handle = await (window as any).showSaveFilePicker({
                     suggestedName: fileName,
-                    types: [{
-                        description: fileType.split("/").pop()?.toUpperCase() + " File",
-                        accept: { [fileType || "application/octet-stream"]: [extKey] },
-                    }],
                 });
                 const writable = await handle.createWritable();
                 await writable.write(typedBlob);
