@@ -13,7 +13,7 @@ function getToken() {
     return localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken") || localStorage.getItem("ownerToken") || localStorage.getItem("token");
 }
 
-// Map MIME type to proper file extension
+// Map MIME type to proper file extension and descriptions
 const MIME_TO_EXT: Record<string, string> = {
     "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
     "image/webp": ".webp", "image/gif": ".gif", "image/bmp": ".bmp",
@@ -21,10 +21,21 @@ const MIME_TO_EXT: Record<string, string> = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
 };
 
+const MIME_TO_DESCRIPTION: Record<string, string> = {
+    "image/jpeg": "JPEG Image", "image/jpg": "JPEG Image", "image/png": "PNG Image",
+    "image/webp": "WebP Image", "image/gif": "GIF Image", "image/bmp": "BMP Image",
+    "application/pdf": "PDF Document", "application/msword": "Word Document",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word Document",
+};
+
 function getDownloadName(rawName: string, mimeType: string): string {
     const ext = MIME_TO_EXT[mimeType.toLowerCase()] || "";
-    const hasExt = /\.[a-zA-Z0-9]{2,5}$/.test(rawName);
-    return hasExt ? rawName : rawName + ext;
+    if (!ext) return rawName;
+    // If the file already ends with the correct extension, keep it
+    if (rawName.toLowerCase().endsWith(ext)) return rawName;
+    // Strip any existing extension and add the correct one
+    const stripped = rawName.replace(/\.[a-zA-Z0-9]{2,5}$/, "");
+    return stripped + ext;
 }
 
 export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModalProps) {
@@ -75,11 +86,20 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
 
         const typedBlob = new Blob([blob], { type: fileType || blob.type || "application/octet-stream" });
 
+        // Build file type filter for the Save As dialog
+        const ext = MIME_TO_EXT[fileType] || "";
+        const description = MIME_TO_DESCRIPTION[fileType] || "File";
+        const saveTypes = ext ? [{
+            description,
+            accept: { [fileType]: [ext] } as Record<string, string[]>,
+        }] : undefined;
+
         // Try File System Access API — shows native "Save As" dialog (Chrome/Edge desktop)
         if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
             try {
                 const handle = await (window as any).showSaveFilePicker({
                     suggestedName: fileName,
+                    types: saveTypes,
                 });
                 const writable = await handle.createWritable();
                 await writable.write(typedBlob);
