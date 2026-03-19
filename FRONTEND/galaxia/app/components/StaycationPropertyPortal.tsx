@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
+import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
 
 export default function StaycationPropertyPortal({ properties, portalName }: { properties: string[], portalName: string }) {
@@ -58,6 +59,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [modalType, setModalType] = useState<"checkin" | "checkout">("checkin");
+    const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
 
     // Payment collection states
     const [collected20, setCollected20] = useState<string | null>(null);
@@ -310,6 +312,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     };
 
     return (
+        <>
         <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
             {/* Header Info */}
             <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -448,33 +451,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             booking.guestIds.map((gid: any) => (
                                                 <button
                                                     key={gid.id}
-                                                    onClick={async () => {
-                                                        try {
-                                                            const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken") || localStorage.getItem("ownerToken") || localStorage.getItem("token");
-                                                            if (!token) {
-                                                                alert("Not authenticated. Please log in again.");
-                                                                return;
-                                                            }
-                                                            const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
-                                                                headers: { Authorization: `Bearer ${token}` },
-                                                            });
-                                                            if (res.ok) {
-                                                                const blob = await res.blob();
-                                                                const url = URL.createObjectURL(blob);
-                                                                const a = document.createElement("a");
-                                                                a.href = url;
-                                                                a.target = "_blank";
-                                                                a.rel = "noopener noreferrer";
-                                                                document.body.appendChild(a);
-                                                                a.click();
-                                                                document.body.removeChild(a);
-                                                            } else {
-                                                                const errText = await res.text();
-                                                                console.error("ID download failed:", res.status, errText);
-                                                                alert("Failed to load ID proof: " + (res.status === 401 ? "Not authorized" : res.status));
-                                                            }
-                                                        } catch (err) { console.error("ID download error:", err); alert("Failed to load ID proof"); }
-                                                    }}
+                                                    onClick={() => setPreviewGuestId(gid)}
                                                     className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
                                                 >
                                                     <CheckCircle2 size={14} />
@@ -921,5 +898,22 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             )
             }
         </div >
+
+            {previewGuestId && (
+                <IdProofModal
+                    guestId={previewGuestId}
+                    onClose={() => setPreviewGuestId(null)}
+                    onDelete={async (id) => {
+                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                        const res = await fetch(`/api/uploads/guest-id/${id}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (!res.ok) throw new Error("Delete failed");
+                        fetchBookings();
+                    }}
+                />
+            )}
+        </>
     );
 }

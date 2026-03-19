@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, X, Upload, IndianRupee, Clock, Users, Calendar as CalendarIcon, MoreVertical, CreditCard, Ticket, CheckCircle2, ChevronRight, ChevronLeft, CalendarDays, Search, Camera, ArrowLeft, Ban, User, FileText } from "lucide-react";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import IdProofModal from "../../components/IdProofModal";
 import Link from "next/link";
 import { api } from "../../../lib/api";
 
@@ -79,6 +80,7 @@ export default function Admin1Dashboard() {
 
     // Dynamic Calendar State
     const [startDate, setStartDate] = useState(new Date());
+    const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
 
     const screens = ["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"] as const;
 
@@ -350,6 +352,7 @@ export default function Admin1Dashboard() {
     // 1. EVENT DETAIL VIEW
     if (activeEvent) {
         return (
+            <>
             <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-200">
                 <button
                     onClick={() => setSelectedEventId(null)}
@@ -600,33 +603,7 @@ export default function Admin1Dashboard() {
                                         activeEvent.guestIds.map((gid) => (
                                             <div
                                                 key={gid.id}
-                                                onClick={async () => {
-                                                    try {
-                                                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken") || localStorage.getItem("ownerToken") || localStorage.getItem("token");
-                                                        if (!token) {
-                                                            alert("Not authenticated. Please log in again.");
-                                                            return;
-                                                        }
-                                                        const res = await fetch(`/api/uploads/guest-id/${gid.id}/download`, {
-                                                            headers: { Authorization: `Bearer ${token}` },
-                                                        });
-                                                        if (res.ok) {
-                                                            const blob = await res.blob();
-                                                            const url = URL.createObjectURL(blob);
-                                                            const a = document.createElement("a");
-                                                            a.href = url;
-                                                            a.target = "_blank";
-                                                            a.rel = "noopener noreferrer";
-                                                            document.body.appendChild(a);
-                                                            a.click();
-                                                            document.body.removeChild(a);
-                                                        } else {
-                                                            const errText = await res.text();
-                                                            console.error("ID download failed:", res.status, errText);
-                                                            alert("Failed to load ID proof: " + (res.status === 401 ? "Not authorized" : res.status));
-                                                        }
-                                                    } catch (err) { console.error("ID download error:", err); alert("Failed to load ID proof"); }
-                                                }}
+                                                onClick={() => setPreviewGuestId(gid)}
                                                 className="border border-emerald-200 rounded-lg bg-emerald-50 h-24 flex flex-col items-center justify-center text-emerald-700 group cursor-pointer hover:border-emerald-400 hover:bg-emerald-100 transition-colors"
                                             >
                                                 <CheckCircle2 size={20} className="mb-1" />
@@ -678,6 +655,22 @@ export default function Admin1Dashboard() {
                     </div>
                 </div>
             </div>
+            {previewGuestId && (
+                <IdProofModal
+                    guestId={previewGuestId}
+                    onClose={() => setPreviewGuestId(null)}
+                    onDelete={async (id) => {
+                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                        const res = await fetch(`/api/uploads/guest-id/${id}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (!res.ok) throw new Error("Delete failed");
+                        fetchEvents(startDate);
+                    }}
+                />
+            )}
+            </>
         );
     }
 
@@ -1111,3 +1104,4 @@ export default function Admin1Dashboard() {
         </div>
     );
 }
+
