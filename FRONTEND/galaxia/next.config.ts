@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "picsum.photos",
       },
+      {
+        protocol: "https",
+        hostname: "galaxia-uploads.s3.eu-north-1.amazonaws.com",
+      },
     ],
   },
   async rewrites() {
