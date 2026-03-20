@@ -320,6 +320,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     useEffect(() => { fetchBlockedDates(); }, []);
 
+    // Helper: format local Date as YYYY-MM-DD without timezone shift
+    const formatLocalDate = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
+    // Helper: parse "2026-03-30T00:00:00.000Z" as day 30 (not shifted by timezone)
+    const parseDateDay = (iso: string) => {
+        const parts = iso.split('T')[0].split('-');
+        return { year: parseInt(parts[0]), month: parseInt(parts[1]) - 1, day: parseInt(parts[2]) };
+    };
+
     // Create blocked dates
     const handleBlockDates = async () => {
         if (blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey) {
@@ -333,12 +347,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             await api.post("/blocked-dates", {
                 propertyId,
                 subPropertyId,
-                dates: blackoutDates.map(d => d.toISOString().split("T")[0]),
+                dates: blackoutDates.map(d => formatLocalDate(d)),
                 reason: blackoutReason,
             });
             setBlackoutDates([]);
             setBlackoutReason("");
             fetchBlockedDates();
+            fetchBookedDays();
         } catch (err) {
             alert("Failed to block dates. Please try again.");
         }
@@ -372,11 +387,40 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const month = blackoutViewMonth.getMonth();
         return filteredBlocks
             .filter(b => {
-                const d = new Date(b.blockedDate);
-                return d.getFullYear() === year && d.getMonth() === month;
+                const p = parseDateDay(b.blockedDate);
+                return p.year === year && p.month === month;
             })
-            .map(b => new Date(b.blockedDate).getDate());
+            .map(b => parseDateDay(b.blockedDate).day);
     };
+
+    // Booked days from actual bookings (cannot be blocked, shown as grey/booked)
+    const [bookedDays, setBookedDays] = useState<number[]>([]);
+    const fetchBookedDays = async () => {
+        if (!blackoutPropertyKey) { setBookedDays([]); return; }
+        const { propertyId, subPropertyId } = resolvePropertyIds(blackoutPropertyKey);
+        if (!propertyId) { setBookedDays([]); return; }
+        const year = blackoutViewMonth.getFullYear();
+        const month = String(blackoutViewMonth.getMonth() + 1).padStart(2, '0');
+        try {
+            const bookings = await api.get(`/blocked-dates/bookings?propertyId=${propertyId}${subPropertyId ? `&subPropertyId=${subPropertyId}` : ''}&month=${year}-${month}`);
+            if (!Array.isArray(bookings)) { setBookedDays([]); return; }
+            const days = new Set<number>();
+            const monthStart = new Date(year, blackoutViewMonth.getMonth(), 1);
+            const monthEnd = new Date(year, blackoutViewMonth.getMonth() + 1, 0);
+            for (const b of bookings) {
+                const checkIn = new Date(b.checkInDate);
+                const checkOut = new Date(b.checkOutDate);
+                const start = checkIn < monthStart ? monthStart : checkIn;
+                const end = checkOut > monthEnd ? monthEnd : checkOut;
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    days.add(d.getDate());
+                }
+            }
+            setBookedDays(Array.from(days));
+        } catch { setBookedDays([]); }
+    };
+
+    useEffect(() => { fetchBookedDays(); }, [blackoutPropertyKey, blackoutViewMonth]);
 
     // Site images
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
@@ -1691,12 +1735,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         const date = new Date(year, month, d);
                                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                                         const isBlocked = blockedDays.includes(d);
+                                        const isBooked = bookedDays.includes(d);
                                         const isSelected = blackoutDates.some(bd => bd.getDate() === d && bd.getMonth() === month && bd.getFullYear() === year);
                                         const isToday = new Date().getDate() === d && new Date().getMonth() === month && new Date().getFullYear() === year;
+                                        const isDisabled = isBooked;
                                         cells.push(
                                             <button
                                                 key={d}
+                                                disabled={isDisabled}
                                                 onClick={() => {
+                                                    if (isDisabled) return;
                                                     if (isSelected) {
                                                         setBlackoutDates(blackoutDates.filter(bd => !(bd.getDate() === d && bd.getMonth() === month && bd.getFullYear() === year)));
                                                     } else {
@@ -1705,27 +1753,30 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 }}
                                                 className={`h-10 rounded-lg text-xs font-semibold flex flex-col items-center justify-center transition-all
                                                     ${isSelected ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-300' :
-                                                        isBlocked ? 'bg-red-50 text-red-400 border border-red-200' :
-                                                            isToday ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                                                                isWeekend ? 'bg-amber-50/50 text-amber-700 hover:bg-amber-100' :
-                                                                    'text-slate-700 hover:bg-slate-100'}`}
+                                                        isBooked ? 'bg-teal-50 text-teal-500 border border-teal-200 cursor-not-allowed opacity-70' :
+                                                            isBlocked ? 'bg-red-50 text-red-400 border border-red-200' :
+                                                                isToday ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                                                    isWeekend ? 'bg-amber-50/50 text-amber-700 hover:bg-amber-100' :
+                                                                        'text-slate-700 hover:bg-slate-100'}`}
                                             >
                                                 <span>{d}</span>
-                                                {isBlocked && <span className="text-[8px] text-red-400">Blocked</span>}
+                                                {isBooked && <span className="text-[7px] text-teal-500">Booked</span>}
+                                                {isBlocked && !isBooked && <span className="text-[8px] text-red-400">Blocked</span>}
                                             </button>
                                         );
                                     }
                                     return cells;
                                 })()}
                             </div>
-                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-200">
+                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-200 flex-wrap">
                                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-slate-300" /><span className="text-[10px] font-medium text-slate-500">Weekday</span></div>
                                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-[10px] font-medium text-slate-500">Weekend</span></div>
                                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="text-[10px] font-medium text-slate-500">Blocked</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-teal-400" /><span className="text-[10px] font-medium text-slate-500">Booked</span></div>
                             </div>
                         </div>
 
-                        {/* Right: Active Blocks */}
+                        {/* Right: Active Blocks for selected property */}
                         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
                             <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks {blackoutPropertyKey ? `— ${blackoutPropertyKey}` : '(All Properties)'}</h4>
                             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -1737,7 +1788,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             <div>
                                                 <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
                                                 <p className="text-xs text-slate-500 mt-0.5">
-                                                    {new Date(block.blockedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                                                     {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
                                                 </p>
                                             </div>
@@ -1751,6 +1802,34 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     ))
                                 )}
                             </div>
+                        </div>
+                    </div>
+
+                    {/* All Properties Active Blocks */}
+                    <div className="mt-6 bg-slate-50 rounded-xl border border-slate-100 p-4">
+                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">All Active Blocks (All Properties)</h4>
+                        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                            {activeBlocks.length === 0 ? (
+                                <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks across any property.</p>
+                            ) : (
+                                activeBlocks.map(block => (
+                                    <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">
+                                                {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+                                                {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleUnblockDate(block.id)}
+                                            className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>

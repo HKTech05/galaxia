@@ -80,4 +80,41 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
+// GET /api/blocked-dates/bookings?propertyId=&subPropertyId=&month=2026-03
+// Returns booked date ranges for showing on the admin calendar
+router.get("/bookings", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const { propertyId, subPropertyId, month } = req.query;
+        if (!propertyId) return res.status(400).json({ error: "propertyId required" });
+
+        let startDate: Date, endDate: Date;
+        if (month) {
+            startDate = new Date(`${month}-01T00:00:00`);
+            endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59);
+        } else {
+            startDate = new Date();
+            startDate.setDate(1);
+            endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 2, 0, 23, 59, 59);
+        }
+
+        const where: any = {
+            propertyId: parseInt(propertyId as string),
+            status: { notIn: ["cancelled", "no_show"] },
+            checkInDate: { lte: endDate },
+            checkOutDate: { gte: startDate },
+        };
+        if (subPropertyId) where.subPropertyId = parseInt(subPropertyId as string);
+
+        const bookings = await prisma.staycationBooking.findMany({
+            where,
+            select: { checkInDate: true, checkOutDate: true, subPropertyId: true, guestName: true },
+        });
+
+        return res.json(bookings);
+    } catch (error) {
+        console.error("Get bookings for calendar error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;
