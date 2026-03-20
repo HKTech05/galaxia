@@ -1205,19 +1205,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     }
                                                 }}
                                                 className={`h-16 rounded-xl flex flex-col items-center justify-center text-sm font-semibold border transition-all
-                                                    ${isSelected ? 'border-purple-400 bg-purple-600 text-white ring-2 ring-purple-300 shadow-md' :
-                                                        isToday && !isBlocked && !isBooked ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' :
-                                                            isBooked ? 'bg-teal-50 border-teal-200 text-teal-600 cursor-not-allowed opacity-70' :
-                                                                isBlocked ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 cursor-pointer' :
-                                                                    isWeekend ? 'bg-amber-50/70 border-amber-200 text-amber-700 hover:bg-amber-100 cursor-pointer' :
-                                                                        'bg-emerald-50/50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 cursor-pointer'}`}
+                                                    ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white ring-2 ring-indigo-300 shadow-md' :
+                                                        isToday && !isBlocked && !isBooked ? 'border-indigo-400 bg-white ring-2 ring-indigo-200 text-indigo-700' :
+                                                            isBooked ? 'bg-blue-50 border-blue-300 text-blue-700 cursor-not-allowed' :
+                                                                isBlocked ? 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100 cursor-pointer' :
+                                                                    isWeekend ? 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 cursor-pointer' :
+                                                                        'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
                                             >
-                                                <span className={`font-bold ${isToday && !isSelected ? 'text-purple-700' : ''}`}>{d}</span>
+                                                <span className={`font-bold ${isToday && !isSelected ? 'text-indigo-700' : ''}`}>{d}</span>
                                                 <span className={`text-[9px] font-medium ${
-                                                    isSelected ? 'text-purple-200' :
-                                                    isBooked ? 'text-teal-500' :
-                                                    isBlocked ? 'text-red-500' :
-                                                    isWeekend ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                                    isSelected ? 'text-indigo-200' :
+                                                    isBooked ? 'text-blue-500' :
+                                                    isBlocked ? 'text-rose-500' :
+                                                    isWeekend ? 'text-stone-400' : 'text-slate-400'}`}>
                                                     {isSelected ? 'Selected' : isBooked ? 'Booked' : isBlocked ? 'Blocked' : 'Free'}
                                                 </span>
                                             </button>
@@ -1226,11 +1226,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 })()}
                             </div>
                             <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100 flex-wrap">
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400" /><span className="text-xs font-medium text-slate-500">Free</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-teal-400" /><span className="text-xs font-medium text-slate-500">Booked</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-400" /><span className="text-xs font-medium text-slate-500">Blocked</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400" /><span className="text-xs font-medium text-slate-500">Weekend</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-400" /><span className="text-xs font-medium text-slate-500">Today / Selected</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-300 border border-slate-400" /><span className="text-xs font-medium text-slate-500">Free</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-400" /><span className="text-xs font-medium text-slate-500">Booked</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-400" /><span className="text-xs font-medium text-slate-500">Blocked</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-stone-300" /><span className="text-xs font-medium text-slate-500">Weekend</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-indigo-500" /><span className="text-xs font-medium text-slate-500">Selected</span></div>
                             </div>
                         </div>
 

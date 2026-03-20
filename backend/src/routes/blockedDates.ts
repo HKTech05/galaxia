@@ -54,7 +54,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                 propertyId: propertyId ? parseInt(propertyId) : null,
                 subPropertyId: subPropertyId ? parseInt(subPropertyId) : null,
                 screenId: screenId ? parseInt(screenId) : null,
-                blockedDate: new Date(d),
+                blockedDate: new Date(`${d}T12:00:00Z`),
                 reason,
                 blockedBy: (req as any).adminId || null,
             })),
