@@ -95,7 +95,7 @@ router.post("/", authMiddleware, upload.single("file"), async (req: AuthRequest,
 // DELETE /api/site-images/:id
 router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseInt(req.params.id as string);
         const image = await prisma.siteImage.findUnique({ where: { id } });
         if (!image) return res.status(404).json({ error: "Image not found" });
 
