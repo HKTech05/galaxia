@@ -253,7 +253,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     // Site images
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
     const [uploadingSection, setUploadingSection] = useState<string | null>(null);
-    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+        const allIds = new Set<string>();
+        [...staycationGroups, ...ddGroups].forEach(g => {
+            allIds.add(g.id);
+            g.subSections.forEach(s => allIds.add(s.id));
+        });
+        return allIds;
+    });
 
     const fetchSiteImages = useCallback(() => {
         api.get("/site-images").then(data => {

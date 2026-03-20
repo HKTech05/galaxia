@@ -36,7 +36,6 @@ async function uploadToS3(buffer: Buffer, originalName: string, mimetype: string
         Key: uniqueKey,
         Body: buffer,
         ContentType: mimetype,
-        ACL: "public-read",
     }));
     return `https://${BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${uniqueKey}`;
 }
