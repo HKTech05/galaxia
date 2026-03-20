@@ -71,7 +71,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
 // DELETE /api/blocked-dates/:id
 router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseInt(req.params.id as string);
         await prisma.blockedDate.delete({ where: { id } });
         return res.json({ success: true });
     } catch (error) {
