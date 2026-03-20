@@ -36,9 +36,9 @@ async function uploadToS3(buffer: Buffer, originalName: string, mimetype: string
         Key: uniqueKey,
         Body: buffer,
         ContentType: mimetype,
-        ServerSideEncryption: "AES256",
+        ACL: "public-read",
     }));
-    return `https://${BUCKET}.s3.${process.env.AWS_REGION || "eu-north-1"}.amazonaws.com/${uniqueKey}`;
+    return `https://${BUCKET}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${uniqueKey}`;
 }
 
 // GET /api/site-images — list all, grouped by section
