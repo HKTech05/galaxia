@@ -44,6 +44,35 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const [livePricing, setLivePricing] = useState<{ weekday: string; weekend: string } | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
 
+    // Site images from admin panel
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+
+    // Fetch site images
+    useEffect(() => {
+        const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+        fetch(`${baseUrl}/site-images`).then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+
+    // Derive image arrays from site images
+    const slideshowImages = (siteImages[`${property.id}/slideshow`] || []).map(i => i.url);
+    const thumbnailImages = (siteImages[`${property.id}/thumbnail`] || []).map(i => i.url);
+    const activityImages = (siteImages[`${property.id}/activities`] || []).map(i => i.url);
+
+    // Use site images if available, otherwise fall back to data file
+    const displayImages = slideshowImages.length > 0 ? slideshowImages : property.images.filter(Boolean);
+    const displayActivities = property.activities.map((act, i) => ({
+        ...act,
+        image: activityImages[i] || act.image,
+    }));
+
+    // Build sub-properties with dynamic thumbnails from admin
+    const displaySubProperties = property.subProperties?.map(sub => {
+        const subThumb = (siteImages[`${property.id}/${sub.id}/thumbnail`] || []).map(i => i.url);
+        return { ...sub, image: subThumb[0] || sub.image };
+    });
+
     // Fetch DB property ID + live pricing on mount
     useEffect(() => {
         (async () => {
@@ -87,7 +116,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
 
     return (
         <div>
-            <ImageSlideshow images={property.images} alt={property.name} />
+            <ImageSlideshow images={displayImages} alt={property.name} />
 
             {/* Breadcrumb */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between border-b border-border-light">
@@ -119,13 +148,13 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         </div>
                     </div>
                     <div className="relative h-64 sm:h-80 md:h-96 rounded-xl overflow-hidden shadow-lg">
-                        <Image src={property.images[1] || property.images[0]} alt={property.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                        {displayImages[1] && <Image src={displayImages[1] || displayImages[0]} alt={property.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />}
                     </div>
                 </div>
             </section>
 
             {/* Sub-properties — shown ABOVE experiences for Ambrose */}
-            {property.id === "ambrose" && property.subProperties && property.subProperties.length > 0 && (
+            {property.id === "ambrose" && displaySubProperties && displaySubProperties.length > 0 && (
                 <section className="border-t border-border-light">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
                         <div className="text-center mb-10 sm:mb-12">
@@ -133,10 +162,10 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                             <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-text-primary">Themed Villas</h2>
                         </div>
                         <div className="flex flex-wrap justify-center gap-5 sm:gap-6">
-                            {property.subProperties.map((sub) => (
+                            {displaySubProperties.map((sub) => (
                                 <div key={sub.id} className="group rounded-xl overflow-hidden border border-border-light bg-white hover:shadow-lg hover:border-antique-gold/30 transition-all duration-500 w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
                                     <div className="relative h-48 sm:h-52 overflow-hidden">
-                                        <Image src={sub.image} alt={sub.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
+                                        {sub.image && <Image src={sub.image} alt={sub.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />}
                                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-sm">
                                             <span className="text-dark-gold text-[10px] font-inter tracking-wide">{sub.theme}</span>
                                         </div>
@@ -178,10 +207,10 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-text-primary">Experiences & Activities</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6">
-                        {property.activities.map((activity, i) => (
+                        {displayActivities.map((activity, i) => (
                             <div key={i} className="group rounded-xl overflow-hidden border border-border-light bg-white hover:shadow-lg hover:border-antique-gold/30 transition-all duration-500">
                                 <div className="relative h-44 sm:h-48 overflow-hidden">
-                                    <Image src={activity.image} alt={activity.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
+                                    {activity.image && <Image src={activity.image} alt={activity.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />}
                                 </div>
                                 <div className="p-4 sm:p-5">
                                     <h3 className="font-cinzel text-sm sm:text-base font-semibold text-text-primary mb-2 group-hover:text-antique-gold transition-colors">{activity.title}</h3>
@@ -194,7 +223,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
             </section>
 
             {/* Sub-properties — for NON-ambrose resorts (Amstel Nest) */}
-            {property.id !== "ambrose" && property.subProperties && property.subProperties.length > 0 && (
+            {property.id !== "ambrose" && displaySubProperties && displaySubProperties.length > 0 && (
                 <section className="border-t border-border-light">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
                         <div className="text-center mb-10 sm:mb-12">
@@ -202,10 +231,10 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                             <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-text-primary">Cottage Types</h2>
                         </div>
                         <div className="flex flex-wrap justify-center gap-5 sm:gap-6">
-                            {property.subProperties.map((sub) => (
+                            {displaySubProperties.map((sub) => (
                                 <div key={sub.id} className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] group rounded-xl overflow-hidden border border-border-light bg-white hover:shadow-lg hover:border-antique-gold/30 transition-all duration-500">
                                     <div className="relative h-48 sm:h-52 overflow-hidden">
-                                        <Image src={sub.image} alt={sub.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
+                                        {sub.image && <Image src={sub.image} alt={sub.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />}
                                         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-sm">
                                             <span className="text-dark-gold text-[10px] font-inter tracking-wide">{sub.theme}</span>
                                         </div>

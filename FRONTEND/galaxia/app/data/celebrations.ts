@@ -56,7 +56,7 @@ export const packages: Record<string, CelebrationPackage> = {
         tagline: "Private Screening Experience",
         description:
             "Enjoy a premium private movie screening with your loved ones. Sink into the atmosphere with your favourite film on the big screen, accompanied by snacks and drinks.",
-        image: "/images/Header.jpg",
+        image: "",
         inclusions: [
             { icon: "film", label: "Private Movie Screening" },
             { icon: "popcorn", label: "Popcorn & Dry Snacks" },
@@ -78,7 +78,7 @@ export const packages: Record<string, CelebrationPackage> = {
         tagline: "Decoration + Movie Time",
         description:
             "Transform your private screening into an unforgettable celebration. Whether it's a birthday, anniversary, proposal, or bachelorette — we set the stage with dreamy décor, fog effects, candlelight, and a personalized LED message tag.",
-        image: "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
+        image: "",
         inclusions: [
             { icon: "film", label: "Private Movie Screening" },
             { icon: "cake", label: "Celebration Cake (250g)" },
@@ -106,12 +106,12 @@ export const screens: Record<string, ScreenData> = {
         tagline: "Feel the sand between your toes",
         description:
             "Step onto a sun-kissed beach right in the heart of the city. Sandy Screen is designed with warm tones, real sand textures, and coastal décor to bring the ocean vibes to your private screening. Perfect for a laid-back, tropical movie night.",
-        image: "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
+        image: "",
         gallery: [
-            "/images/villa-de-maris-3.jpg",
-            "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
-            "/images/Unveiling_the_Splendor.jpg",
-            "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
+            "",
+            "",
+            "",
+            "",
         ],
         capacity: "3 Guests",
         size: "15 x 8 sq foot",
@@ -123,12 +123,12 @@ export const screens: Record<string, ScreenData> = {
         tagline: "The perfect date night screen",
         description:
             "Cine Love is crafted for romance — think fairy-light canopies, plush cushions, rose-petal pathways, and intimate seating for two. Whether it's a proposal, anniversary, or simply a date night, this screen sets the mood like no other.",
-        image: "/images/Header.jpg",
+        image: "",
         gallery: [
-            "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
-            "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
-            "/images/villa-de-maris-3.jpg",
-            "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
+            "",
+            "",
+            "",
+            "",
         ],
         capacity: "8 Guests",
         size: "15 x 8 sq foot",
@@ -140,12 +140,12 @@ export const screens: Record<string, ScreenData> = {
         tagline: "Your own drive-in cinema",
         description:
             "Experience the nostalgia of a classic American drive-in cinema. Park N Watch features a retro setting with vintage car elements, neon signage, and a giant outdoor screen — all within a private enclosure. Roll down the windows and enjoy the show.",
-        image: "/images/Unveiling_the_Splendor.jpg",
+        image: "",
         gallery: [
-            "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
-            "/images/Header.jpg",
-            "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
-            "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
+            "",
+            "",
+            "",
+            "",
         ],
         capacity: "3 Guests",
         size: "15 x 8 sq foot",
@@ -157,12 +157,12 @@ export const screens: Record<string, ScreenData> = {
         tagline: "Mediterranean cinema under the stars",
         description:
             "Baywatch brings the whitewashed charm of Santorini to your screening. Blue domes, flowing drapes, and Mediterranean ambiance create a breathtaking backdrop for watching movies under starlit ceilings. A truly Grecian escape.",
-        image: "/images/villa-de-maris-3.jpg",
+        image: "",
         gallery: [
-            "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
-            "/images/Unveiling_the_Splendor.jpg",
-            "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
-            "/images/Header.jpg",
+            "",
+            "",
+            "",
+            "",
         ],
         capacity: "3 Guests",
         size: "15 x 8 sq foot",

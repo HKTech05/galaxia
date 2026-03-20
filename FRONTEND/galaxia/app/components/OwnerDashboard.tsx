@@ -69,32 +69,78 @@ const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (
 
 
 
-// Website Photo Sections — covers every page on the site
-const websiteSections = [
-    { id: "hero", label: "Homepage Hero / Landing", desc: "Main banner images on the homepage" },
-    { id: "about", label: "About Us Page", desc: "About page images" },
-    // Standalone properties
-    { id: "hill-view", label: "Hill View — Gallery", desc: "Hill View property gallery" },
-    { id: "mount-view", label: "Mount View — Gallery", desc: "Mount View property gallery" },
-    { id: "heavenly-villa", label: "Heavenly Villa — Gallery", desc: "Heavenly Villa property gallery" },
-    { id: "la-paraiso", label: "La Paraiso — Gallery", desc: "La Paraiso property gallery" },
-    // Ambrose villas
-    { id: "ambrose", label: "Ambrose — Main Gallery", desc: "Ambrose resort-level images" },
-    { id: "ambrose/take-1", label: "Ambrose — TAKE-1 (Bollywood)", desc: "TAKE-1 villa images" },
-    { id: "ambrose/alta", label: "Ambrose — ALTA (Rustic)", desc: "ALTA villa images" },
-    { id: "ambrose/santorini", label: "Ambrose — SANTORINI (Greek)", desc: "SANTORINI villa images" },
-    { id: "ambrose/bamboosa", label: "Ambrose — BAMBOOSA (Bali)", desc: "BAMBOOSA villa images" },
-    { id: "ambrose/cypress", label: "Ambrose — CYPRESS (Machan)", desc: "CYPRESS villa images" },
-    // Amstel Nest cottages
-    { id: "amstel-nest", label: "Amstel Nest — Main Gallery", desc: "Amstel Nest resort-level images" },
-    { id: "amstel-nest/standard", label: "Amstel Nest — Standard Cottage", desc: "Standard cottage images" },
-    { id: "amstel-nest/family", label: "Amstel Nest — Family Cottage", desc: "Family cottage images" },
-    // Digital Diaries screens
-    { id: "dd/sandy-screen", label: "DD — Sandy Screen (Beach)", desc: "Sandy Screen images" },
-    { id: "dd/cine-love", label: "DD — Cine Love (Romantic)", desc: "Cine Love images" },
-    { id: "dd/park-n-watch", label: "DD — Park N Watch (Drive-In)", desc: "Park N Watch images" },
-    { id: "dd/baywatch", label: "DD — Baywatch (Greece)", desc: "Baywatch images" },
+// Website Photo Sections — hierarchical: group → sub-sections
+interface ImageSubSection { id: string; label: string; maxImages?: number; }
+interface ImageGroup { id: string; label: string; subSections: ImageSubSection[]; }
+
+const staycationGroups: ImageGroup[] = [
+    { id: "staycation-hero", label: "Staycation Landing Page", subSections: [
+        { id: "staycation-hero/banner", label: "Hero Banner", maxImages: 1 },
+    ]},
+    { id: "hill-view", label: "Hill View", subSections: [
+        { id: "hill-view/slideshow", label: "Slideshow Images" },
+        { id: "hill-view/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
+        { id: "hill-view/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+    ]},
+    { id: "mount-view", label: "Mount View", subSections: [
+        { id: "mount-view/slideshow", label: "Slideshow Images" },
+        { id: "mount-view/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
+        { id: "mount-view/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+    ]},
+    { id: "heavenly-villa", label: "Heavenly Villa", subSections: [
+        { id: "heavenly-villa/slideshow", label: "Slideshow Images" },
+        { id: "heavenly-villa/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
+        { id: "heavenly-villa/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+    ]},
+    { id: "la-paraiso", label: "La Paraiso", subSections: [
+        { id: "la-paraiso/slideshow", label: "Slideshow Images" },
+        { id: "la-paraiso/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
+        { id: "la-paraiso/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+    ]},
+    { id: "ambrose", label: "Ambrose", subSections: [
+        { id: "ambrose/slideshow", label: "Slideshow Images" },
+        { id: "ambrose/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
+        { id: "ambrose/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 Villa Thumbnail", maxImages: 1 },
+        { id: "ambrose/alta/thumbnail", label: "ALTA Villa Thumbnail", maxImages: 1 },
+        { id: "ambrose/santorini/thumbnail", label: "SANTORINI Villa Thumbnail", maxImages: 1 },
+        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA Villa Thumbnail", maxImages: 1 },
+        { id: "ambrose/cypress/thumbnail", label: "CYPRESS Villa Thumbnail", maxImages: 1 },
+    ]},
+    { id: "amstel-nest", label: "Amstel Nest", subSections: [
+        { id: "amstel-nest/slideshow", label: "Slideshow Images" },
+        { id: "amstel-nest/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
+        { id: "amstel-nest/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+        { id: "amstel-nest/standard/thumbnail", label: "Standard Cottage Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/family/thumbnail", label: "Family Cottage Thumbnail", maxImages: 1 },
+    ]},
 ];
+
+const ddGroups: ImageGroup[] = [
+    { id: "dd/movie-time", label: "Movie Time (Package)", subSections: [
+        { id: "dd/movie-time/thumbnail", label: "Package Thumbnail", maxImages: 1 },
+    ]},
+    { id: "dd/celebration", label: "Decoration + Movie Time (Package)", subSections: [
+        { id: "dd/celebration/thumbnail", label: "Package Thumbnail", maxImages: 1 },
+    ]},
+    { id: "dd/sandy-screen", label: "Sandy Screen", subSections: [
+        { id: "dd/sandy-screen/gallery", label: "Gallery Images" },
+        { id: "dd/sandy-screen/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+    ]},
+    { id: "dd/cine-love", label: "Cine Love", subSections: [
+        { id: "dd/cine-love/gallery", label: "Gallery Images" },
+        { id: "dd/cine-love/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+    ]},
+    { id: "dd/park-n-watch", label: "Park N Watch", subSections: [
+        { id: "dd/park-n-watch/gallery", label: "Gallery Images" },
+        { id: "dd/park-n-watch/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+    ]},
+    { id: "dd/baywatch", label: "Baywatch", subSections: [
+        { id: "dd/baywatch/gallery", label: "Gallery Images" },
+        { id: "dd/baywatch/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+    ]},
+];
+
 
 // ─── TABS ────────────────────────────────────────────────────────────────
 
@@ -1301,79 +1347,117 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     };
 
     // ─── TAB: WEBSITE ────────────────────────────────────────────────────
+    const renderImageSubSection = (sub: ImageSubSection) => {
+        const images = siteImages[sub.id] || [];
+        const isOpen = !collapsedSections.has(sub.id);
+        const isUploading = uploadingSection === sub.id;
+        const atLimit = sub.maxImages ? images.length >= sub.maxImages : false;
+
+        return (
+            <div key={sub.id} className="border border-slate-100 rounded-xl overflow-hidden bg-slate-50/50">
+                <button
+                    onClick={() => toggleSection(sub.id)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-100/80 transition-colors"
+                >
+                    <div className="flex items-center gap-2">
+                        <ChevronRight size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                        <span className="text-xs font-semibold text-slate-700">{sub.label}</span>
+                        <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${images.length > 0 ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}`}>
+                            {images.length}{sub.maxImages ? `/${sub.maxImages}` : ''}
+                        </span>
+                    </div>
+                </button>
+                {isOpen && (
+                    <div className="px-4 pb-4 border-t border-slate-100">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
+                            {images.map(img => (
+                                <div key={img.id} className="relative group border border-slate-200 rounded-lg aspect-square bg-white overflow-hidden hover:border-purple-300 hover:shadow-sm transition-all">
+                                    <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                    <button
+                                        onClick={() => handleImageDelete(img.id)}
+                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow"
+                                    >
+                                        <Trash2 size={10} />
+                                    </button>
+                                </div>
+                            ))}
+                            {!atLimit && (
+                                <label className={`border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors group ${
+                                    isUploading ? 'border-purple-400 bg-purple-50' : 'border-slate-300 hover:border-purple-400 hover:bg-purple-50/50'
+                                }`}>
+                                    {isUploading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-[8px] font-bold mt-1 text-purple-600">Uploading...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={16} className="text-slate-400 group-hover:text-purple-500" />
+                                            <span className="text-[8px] font-bold mt-0.5 text-slate-400 group-hover:text-purple-600">Upload</span>
+                                        </>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple={!sub.maxImages || sub.maxImages > 1}
+                                        className="hidden"
+                                        onChange={e => handleImageUpload(sub.id, e.target.files)}
+                                        disabled={isUploading}
+                                    />
+                                </label>
+                            )}
+                        </div>
+                        {images.length === 0 && !isUploading && (
+                            <p className="text-[10px] text-slate-400 mt-2 italic">No images uploaded yet. Click upload to add.</p>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderImageGroup = (group: ImageGroup) => {
+        const isOpen = !collapsedSections.has(group.id);
+        const totalImages = group.subSections.reduce((sum, sub) => sum + (siteImages[sub.id]?.length || 0), 0);
+
+        return (
+            <div key={group.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <button
+                    onClick={() => toggleSection(group.id)}
+                    className="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <ChevronRight size={18} className={`text-slate-500 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                        <span className="text-sm font-bold text-slate-800">{group.label}</span>
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-md">{totalImages} photos</span>
+                    </div>
+                </button>
+                {isOpen && (
+                    <div className="px-5 pb-5 border-t border-slate-100 space-y-3 mt-3">
+                        {group.subSections.map(sub => renderImageSubSection(sub))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const renderWebsite = () => (
         <div className="space-y-8">
-            {/* Photo Management */}
+            {/* Staycation Images */}
             <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Website Photo Manager</h2>
-                <p className="text-sm text-slate-500 font-medium mb-6">Upload or delete photos for each section of the website. All uploads auto-compress to WebP.</p>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation — Photo Manager</h2>
+                <p className="text-sm text-slate-500 font-medium mb-4">Manage photos for each staycation property. All uploads auto-compress to WebP.</p>
+                <div className="space-y-3">
+                    {staycationGroups.map(group => renderImageGroup(group))}
+                </div>
+            </div>
 
-                <div className="space-y-4">
-                    {websiteSections.map(sec => {
-                        const images = siteImages[sec.id] || [];
-                        const isCollapsed = collapsedSections.has(sec.id);
-                        const isUploading = uploadingSection === sec.id;
-
-                        return (
-                            <div key={sec.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                                {/* Section Header — click to toggle */}
-                                <button
-                                    onClick={() => toggleSection(sec.id)}
-                                    className="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-sm font-bold text-slate-800">{sec.label}</span>
-                                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-md">{images.length} photos</span>
-                                    </div>
-                                    <ChevronRight size={16} className={`text-slate-400 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
-                                </button>
-
-                                {!isCollapsed && (
-                                    <div className="px-5 pb-5 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-150">
-                                        <p className="text-xs text-slate-400 font-medium mt-3 mb-3">{sec.desc}</p>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                            {/* Existing images */}
-                                            {images.map(img => (
-                                                <div key={img.id} className="relative group border-2 border-slate-200 rounded-xl aspect-square bg-slate-100 overflow-hidden transition-all hover:border-purple-300 hover:shadow-md">
-                                                    <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                                                    <button
-                                                        onClick={() => handleImageDelete(img.id)}
-                                                        className="absolute top-1.5 right-1.5 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-md"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            {/* Upload dropzone */}
-                                            <label className={`border-2 border-dashed rounded-xl aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors group ${
-                                                isUploading ? 'border-purple-400 bg-purple-50' : 'border-slate-300 hover:border-purple-400 hover:bg-purple-50/50'
-                                            }`}>
-                                                {isUploading ? (
-                                                    <>
-                                                        <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                                                        <span className="text-[9px] font-bold mt-1.5 text-purple-600">Uploading...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Upload size={20} className="text-slate-400 group-hover:text-purple-500" />
-                                                        <span className="text-[9px] font-bold mt-1 text-slate-400 group-hover:text-purple-600">Upload</span>
-                                                    </>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    className="hidden"
-                                                    onChange={e => handleImageUpload(sec.id, e.target.files)}
-                                                    disabled={isUploading}
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+            {/* Digital Diaries Images */}
+            <div>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries — Photo Manager</h2>
+                <p className="text-sm text-slate-500 font-medium mb-4">Manage photos for DD screens and packages.</p>
+                <div className="space-y-3">
+                    {ddGroups.map(group => renderImageGroup(group))}
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CelebrationPackage, ScreenData } from "../../../data/celebrations";
@@ -12,6 +12,18 @@ interface ScreenDetailClientProps {
 
 export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientProps) {
     const [currentImage, setCurrentImage] = useState(0);
+
+    // Fetch site images from admin panel
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        fetch("/api/site-images").then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+
+    // Use API gallery if available, otherwise fall back to data file
+    const apiGallery = (siteImages[`dd/${screen.id}/gallery`] || []).map(i => i.url);
+    const displayGallery = apiGallery.length > 0 ? apiGallery : screen.gallery.filter(Boolean);
 
     return (
         <div>
@@ -40,22 +52,22 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
             <section className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
                 <div className="relative h-[300px] sm:h-[400px] md:h-[500px] rounded-2xl overflow-hidden border border-cel-border">
                     <Image
-                        src={screen.gallery[currentImage]}
+                        src={displayGallery[currentImage]}
                         alt={`${screen.name} - Image ${currentImage + 1}`}
                         fill
                         className="object-cover transition-all duration-500"
                         sizes="(max-width: 1024px) 100vw, 80vw"
                     />
                     {/* Navigation arrows */}
-                    <button onClick={() => setCurrentImage(prev => prev === 0 ? screen.gallery.length - 1 : prev - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-rose-dark/60 transition-colors">
+                    <button onClick={() => setCurrentImage(prev => prev === 0 ? displayGallery.length - 1 : prev - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-rose-dark/60 transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <button onClick={() => setCurrentImage(prev => prev === screen.gallery.length - 1 ? 0 : prev + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-rose-dark/60 transition-colors">
+                    <button onClick={() => setCurrentImage(prev => prev === displayGallery.length - 1 ? 0 : prev + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-rose-dark/60 transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
                     {/* Dots */}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                        {screen.gallery.map((_, i) => (
+                        {displayGallery.map((_, i) => (
                             <button key={i} onClick={() => setCurrentImage(i)} className={`w-2 h-2 rounded-full transition-all ${i === currentImage ? "bg-rose-medium w-5" : "bg-white/40 hover:bg-white/60"}`} />
                         ))}
                     </div>
@@ -117,7 +129,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
                     <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-cel-text mb-6">Follow us on Instagram!</h2>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-                        {screen.gallery.concat(screen.gallery).slice(0, 6).map((img, i) => (
+                        {displayGallery.concat(displayGallery).slice(0, 6).map((img, i) => (
                             <a key={i} href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-lg overflow-hidden border border-cel-border hover:border-rose-medium/40 transition-all">
                                 <Image src={img} alt={`Instagram ${i + 1}`} fill className="object-cover transition-transform duration-500 group-hover:scale-110" sizes="(max-width: 768px) 33vw, 16vw" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
