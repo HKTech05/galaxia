@@ -29,8 +29,16 @@ const formatPrice = (price: string | number | undefined) => {
     return `₹${num.toLocaleString('en-IN')}`;
 };
 
+// Format date as YYYY-MM-DD using local time (avoids UTC timezone shift)
+const toLocalDateStr = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+
 const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, primeDatePrice?: string, bookedDates?: Set<string>, dateOverrides?: Record<string, number>) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(date);
     if (bookedDates?.has(dateStr)) {
         return { price: "Booked", numPrice: 0, type: "booked" as const };
     }
@@ -71,8 +79,8 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
         if (!propertyId || propertyId <= 0) return; // Skip fetch if no valid DB ID
         (async () => {
             try {
-                const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-                const endDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+                const startDate = toLocalDateStr(new Date(currentYear, currentMonth, 1));
+                const endDate = toLocalDateStr(new Date(currentYear, currentMonth + 1, 0));
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
                 
                 let url = `${baseUrl}/bookings/staycation/booked-dates?propertyId=${propertyId}&startDate=${startDate}&endDate=${endDate}`;

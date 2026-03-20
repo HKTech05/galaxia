@@ -569,7 +569,7 @@ router.get("/booked-dates", async (req, res) => {
 
         // Add blocks
         for (const bl of blockedEntries) {
-            const dateStr = new Date(bl.blockedDate).toISOString().split("T")[0];
+            const dateStr = bl.blockedDate.toISOString().split("T")[0];
             if (!dateOccurrences[dateStr]) dateOccurrences[dateStr] = new Set();
             // If subPropertyId is null, it blocks ALL units (effectively)
             if (bl.subPropertyId === null) {
