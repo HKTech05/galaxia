@@ -526,3 +526,14 @@ model resort_knowledge {
 
   @@index([embedding])
 }
+
+model SiteImage {
+  id           Int      @id @default(autoincrement())
+  section      String   @db.VarChar(100)
+  url          String
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([section])
+  @@map("site_images")
+}

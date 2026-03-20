@@ -15,6 +15,7 @@ import employeeRoutes from "./routes/employees";
 import dashboardRoutes from "./routes/dashboard";
 import notificationRoutes from "./routes/notifications";
 import uploadRoutes from "./routes/uploads";
+import siteImageRoutes from "./routes/siteImages";
 import userRoutes from "./routes/users";
 import reviewRoutes from "./routes/reviews";
 import { apiLimiter } from "./middleware/rateLimiter";
@@ -56,6 +57,7 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/admin/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/site-images", siteImageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
 

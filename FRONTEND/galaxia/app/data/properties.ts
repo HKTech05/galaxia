@@ -58,17 +58,14 @@ export interface PropertyData {
     }[];
 }
 
-const placeholderImages = [
-    "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80",
-    "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&q=80",
-    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1200&q=80",
-    "https://images.unsplash.com/photo-1615571022219-eb45cf7faa36?w=1200&q=80",
-    "https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=1200&q=80",
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80",
-    "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=80",
-    "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=1200&q=80",
-    "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1200&q=80",
-    "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200&q=80",
+const tempImages = [
+    "/images/Header.jpg",
+    "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
+    "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
+    "/images/villa-de-maris-3.jpg",
+    "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
+    "/images/Unveiling_the_Splendor.jpg",
+    "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
 ];
 
 export const properties: Record<string, PropertyData> = {
@@ -80,7 +77,7 @@ export const properties: Record<string, PropertyData> = {
         description: "Five exquisitely themed villas — Bollywood, Rustic, Greek, Bali, and Machan — each with a private pool.",
         longDescription:
             "Ambrose is where imagination meets luxury. This extraordinary resort features five uniquely themed villas, each designed to transport you to a different world. From the dramatic flair of Bollywood's TAKE-1 to the serene whites of Santorini, the earthy charm of Alta, the tropical grandeur of Bamboosa, and the elevated magic of Cypress's machan — every stay is a new story. All villas include private pools, garden seating, and delicious vegetarian meals.",
-        images: placeholderImages.slice(0, 10),
+        images: tempImages,
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -145,17 +142,17 @@ export const properties: Record<string, PropertyData> = {
             {
                 title: "Themed Villa Experience",
                 description: "Each villa transports you to a different world — Bollywood, Greek, Bali, and more.",
-                image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80",
+                image: "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
             },
             {
                 title: "Private Pool Retreat",
                 description: "Every villa comes with its own private pool for an exclusive swimming experience.",
-                image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+                image: "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
             },
             {
                 title: "Culinary Journey",
                 description: "All meals included — enjoy delicious vegetarian cuisine throughout your stay.",
-                image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80",
+                image: "/images/villa-de-maris-3.jpg",
             },
         ],
         subProperties: [
@@ -164,7 +161,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "TAKE-1",
                 theme: "Bollywood Theme",
                 description: "Film-inspired interiors with vibrant dramatic decor that celebrates Indian cinema.",
-                image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80",
+                image: "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
                 configuration: ["1 King Bedroom", "1 Sofa Cum Bed Room", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
                 pricing: {
@@ -180,7 +177,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "ALTA",
                 theme: "Rustic Theme",
                 description: "Earthy wooden textures with countryside aesthetics for a grounded, cozy escape.",
-                image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=600&q=80",
+                image: "/images/Unveiling_the_Splendor.jpg",
                 configuration: ["2 King Size Beds", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
                 pricing: {
@@ -196,7 +193,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "SANTORINI",
                 theme: "Greek Inspired Theme",
                 description: "White & blue Mediterranean-style interiors that bring Santorini to Karjat.",
-                image: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80",
+                image: "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
                 configuration: ["1 King Size Bed", "1 Queen Size Bed", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
                 pricing: {
@@ -212,7 +209,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "BAMBOOSA",
                 theme: "Bali Theme (Premium)",
                 description: "Premium villa with 2 king bedrooms, spacious living room, and tropical Bali-inspired interiors.",
-                image: "https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=600&q=80",
+                image: "/images/Header.jpg",
                 configuration: ["2 King Bedrooms", "Spacious Living Room", "4 Bathrooms", "4 AC", "Private Pool", "Garden Seating"],
                 maxPersons: 12,
                 pricing: {
@@ -226,7 +223,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "CYPRESS",
                 theme: "Machan Theme",
                 description: "Elevated treehouse-style villa with a glass-bottom pool view and mountain deck.",
-                image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80",
+                image: "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
                 configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Private Pool", "Kids Sleeping Area", "Mountain Deck"],
                 maxPersons: 4,
                 pricing: {
@@ -246,7 +243,7 @@ export const properties: Record<string, PropertyData> = {
         description: "14 unique cottages inspired by Amsterdam, each with a private indoor pool. Meals included.",
         longDescription:
             "Welcome to Amstel Nest — a slice of Amsterdam in the heart of Karjat. This one-of-a-kind resort features 14 charming cottages, each equipped with its own private indoor pool. But the experience goes far beyond just swimming — enjoy the gaming zone with pool tables and table tennis, go boating on the lake, and savor delicious vegetarian meals included in your stay. One special cottage offers extra space with 2 double beds for larger groups.",
-        images: placeholderImages.slice(0, 10),
+        images: tempImages,
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -312,17 +309,17 @@ export const properties: Record<string, PropertyData> = {
             {
                 title: "Private Pool Experience",
                 description: "Each cottage comes with its very own private indoor pool for the ultimate privacy.",
-                image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+                image: "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
             },
             {
                 title: "Gaming Zone",
                 description: "Challenge friends to pool, table tennis, foosball, and more in our gaming area.",
-                image: "https://images.unsplash.com/photo-1511882150382-421056c89033?w=600&q=80",
+                image: "/images/villa-de-maris-3.jpg",
             },
             {
                 title: "Boating Adventure",
                 description: "Take a peaceful boat ride on the lake and enjoy the surrounding natural beauty.",
-                image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&q=80",
+                image: "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
             },
         ],
         subProperties: [
@@ -331,7 +328,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "Standard Cottage",
                 theme: "Amsterdam-Inspired · 13 Units",
                 description: "Cozy cottage with double bed and private indoor pool — the essence of Amstel Nest. Auto-assigned from 13 available units.",
-                image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=600&q=80",
+                image: "/images/Unveiling_the_Splendor.jpg",
                 configuration: ["Double Bed", "Smart TV", "AC", "Washroom", "Indoor Private Pool", "Garden Area"],
                 maxPersons: 4,
                 pricing: {
@@ -344,7 +341,7 @@ export const properties: Record<string, PropertyData> = {
                 name: "Family Cottage",
                 theme: "Amsterdam-Inspired · 1 Unit (Larger)",
                 description: "Spacious cottage with 2 double beds — perfect for families or groups of friends.",
-                image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80",
+                image: "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
                 configuration: ["2 Double Beds", "Smart TV", "AC", "Washroom", "Indoor Private Pool", "Garden Area"],
                 maxPersons: 4,
                 pricing: {
@@ -363,7 +360,7 @@ export const properties: Record<string, PropertyData> = {
         description: "Luxurious villa with a 25x10 ft private pool, 600 sq ft private garden, and beautiful gazebo.",
         longDescription:
             "La Paraiso is the crown jewel of our collection — a premium villa that redefines luxury. Dive into a sprawling 25x10 ft private pool, lounge in your 600 sq ft private garden, or find serenity under the beautiful gazebo. With a self check-in smart lock, Sony music player, and meticulous attention to detail, this villa delivers an experience that rivals five-star resorts. The nearby restaurant is just 10 steps away for when hunger strikes.",
-        images: placeholderImages.slice(0, 8),
+        images: tempImages.slice(0, 7),
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -438,17 +435,17 @@ export const properties: Record<string, PropertyData> = {
             {
                 title: "Pool & Garden Paradise",
                 description: "Swim in your massive 25x10 ft private pool and relax in the sprawling garden.",
-                image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+                image: "/images/Header.jpg",
             },
             {
                 title: "Gazebo Evenings",
                 description: "Spend magical evenings under the private gazebo with music and starlight.",
-                image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80",
+                image: "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
             },
             {
                 title: "Dining Experience",
                 description: "Enjoy delicious meals at the restaurant just 10 steps from your villa.",
-                image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80",
+                image: "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
             },
         ],
         instagram: "https://instagram.com/la_paraiso001",
@@ -462,7 +459,7 @@ export const properties: Record<string, PropertyData> = {
         description: "A heavenly studio villa with a private indoor swimming pool and a charming swing near the pool.",
         longDescription:
             "Heavenly Villa is not just a villa — it's a feeling. Step into this heavenly studio retreat featuring a private indoor swimming pool that's exclusively yours. A charming swing by the pool sets the mood for lazy afternoons, while the studio room with its queen bed and smart TV ensures comfort around the clock. Whether you're planning a romantic getaway or a peaceful solo retreat, Heavenly Villa delivers paradise indoors.",
-        images: placeholderImages.slice(2, 10),
+        images: tempImages.slice(2),
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -528,17 +525,17 @@ export const properties: Record<string, PropertyData> = {
             {
                 title: "Private Pool Bliss",
                 description: "Enjoy your own private indoor pool anytime — no sharing, no schedules.",
-                image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+                image: "/images/villa-de-maris-3.jpg",
             },
             {
                 title: "Poolside Swing",
                 description: "Relax on the charming swing right next to the pool for the perfect lazy afternoon.",
-                image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80",
+                image: "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
             },
             {
                 title: "Explore Karjat",
                 description: "Visit local waterfalls, temples, and scenic spots just minutes away.",
-                image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
+                image: "/images/Unveiling_the_Splendor.jpg",
             },
         ],
         instagram: "https://www.instagram.com/heavenly_villa01",
@@ -552,7 +549,7 @@ export const properties: Record<string, PropertyData> = {
         description: "Premium apartment with a private bathtub and enormous mountain-facing balcony.",
         longDescription:
             "Mount View elevates your staycation with a private bathtub experience set against a stunning mountain backdrop. The spacious apartment features a queen bed, a sofa-cum-bed for extra guests, and a huge balcony that frames the mountains like a living painting. With a music player to set the mood and modern amenities throughout, this is where luxury meets the wild beauty of Karjat.",
-        images: placeholderImages.slice(1, 9),
+        images: tempImages.slice(1),
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -626,17 +623,17 @@ export const properties: Record<string, PropertyData> = {
             {
                 title: "Bathtub & Mountain Views",
                 description: "Indulge in a luxurious bathtub experience while gazing at the mountains.",
-                image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=600&q=80",
+                image: "/images/360_F_335268468_WhuECjWCoOfQOovIMq7VASxI0imSrnTE.jpg",
             },
             {
                 title: "Sunset Watching",
                 description: "Witness spectacular sunsets from your private mountain-facing balcony.",
-                image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
+                image: "/images/Header.jpg",
             },
             {
                 title: "Nature Walks",
                 description: "Take leisurely walks through the surrounding countryside and villages.",
-                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80",
+                image: "/images/5kRwpTdvbQFBYuo1xGhL13wECFZILT.jpg",
             },
         ],
         googleMap: "https://maps.app.goo.gl/1v6azy4nLhHe7Hzq6",
@@ -650,7 +647,7 @@ export const properties: Record<string, PropertyData> = {
         description: "A comfortable apartment with a stunning mountain view balcony — perfect for a peaceful retreat.",
         longDescription:
             "Perched amidst the lush green hills of Karjat, Hill View offers an unmatched mountain panorama from its huge open balcony. This thoughtfully designed apartment blends comfort with nature, featuring a queen-size bedroom, a cozy living room, and a small kitchen — everything you need for a serene getaway. Wake up to birdsong, sip your morning chai with a view, and let the mountains recharge your soul.",
-        images: placeholderImages.slice(0, 8),
+        images: tempImages.slice(0, 7),
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -718,17 +715,17 @@ export const properties: Record<string, PropertyData> = {
             {
                 title: "Mountain Trekking",
                 description: "Explore scenic trails through lush green mountains and discover hidden waterfalls.",
-                image: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=600&q=80",
+                image: "/images/Evergreen-Escape-Villa-6bhk-scaled-1-1.jpg",
             },
             {
                 title: "Pool & Relaxation",
                 description: "Unwind at the society pool and enjoy a refreshing swim amidst nature.",
-                image: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=600&q=80",
+                image: "/images/villa-de-maris-3.jpg",
             },
             {
                 title: "Local Cuisine",
                 description: "Savor authentic local dishes at the nearby restaurant with veg and non-veg options.",
-                image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80",
+                image: "/images/villa-di-polisane-zadar-dalmatia-1716977474706.jpg",
             },
         ],
         instagram: "https://www.instagram.com/hill_view101",

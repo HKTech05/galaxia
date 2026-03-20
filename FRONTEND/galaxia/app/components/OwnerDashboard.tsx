@@ -69,16 +69,31 @@ const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (
 
 
 
-// Website Photo Sections
+// Website Photo Sections — covers every page on the site
 const websiteSections = [
-    { section: "Hero / Landing Page", photos: ["hero_1.jpg", "hero_2.jpg", "hero_3.jpg"] },
-    { section: "Hill View", photos: ["hv_1.jpg", "hv_2.jpg"] },
-    { section: "Mount View", photos: ["mv_1.jpg", "mv_2.jpg", "mv_3.jpg"] },
-    { section: "Heavenly Villa", photos: ["eu_1.jpg", "eu_2.jpg"] },
-    { section: "La Paraiso", photos: ["lp_1.jpg", "lp_2.jpg", "lp_3.jpg"] },
-    { section: "Amstel Nest", photos: ["an_1.jpg", "an_2.jpg"] },
-    { section: "Ambrose", photos: ["am_1.jpg", "am_2.jpg", "am_3.jpg", "am_4.jpg"] },
-    { section: "About Us", photos: ["about_1.jpg", "about_2.jpg"] },
+    { id: "hero", label: "Homepage Hero / Landing", desc: "Main banner images on the homepage" },
+    { id: "about", label: "About Us Page", desc: "About page images" },
+    // Standalone properties
+    { id: "hill-view", label: "Hill View — Gallery", desc: "Hill View property gallery" },
+    { id: "mount-view", label: "Mount View — Gallery", desc: "Mount View property gallery" },
+    { id: "heavenly-villa", label: "Heavenly Villa — Gallery", desc: "Heavenly Villa property gallery" },
+    { id: "la-paraiso", label: "La Paraiso — Gallery", desc: "La Paraiso property gallery" },
+    // Ambrose villas
+    { id: "ambrose", label: "Ambrose — Main Gallery", desc: "Ambrose resort-level images" },
+    { id: "ambrose/take-1", label: "Ambrose — TAKE-1 (Bollywood)", desc: "TAKE-1 villa images" },
+    { id: "ambrose/alta", label: "Ambrose — ALTA (Rustic)", desc: "ALTA villa images" },
+    { id: "ambrose/santorini", label: "Ambrose — SANTORINI (Greek)", desc: "SANTORINI villa images" },
+    { id: "ambrose/bamboosa", label: "Ambrose — BAMBOOSA (Bali)", desc: "BAMBOOSA villa images" },
+    { id: "ambrose/cypress", label: "Ambrose — CYPRESS (Machan)", desc: "CYPRESS villa images" },
+    // Amstel Nest cottages
+    { id: "amstel-nest", label: "Amstel Nest — Main Gallery", desc: "Amstel Nest resort-level images" },
+    { id: "amstel-nest/standard", label: "Amstel Nest — Standard Cottage", desc: "Standard cottage images" },
+    { id: "amstel-nest/family", label: "Amstel Nest — Family Cottage", desc: "Family cottage images" },
+    // Digital Diaries screens
+    { id: "dd/sandy-screen", label: "DD — Sandy Screen (Beach)", desc: "Sandy Screen images" },
+    { id: "dd/cine-love", label: "DD — Cine Love (Romantic)", desc: "Cine Love images" },
+    { id: "dd/park-n-watch", label: "DD — Park N Watch (Drive-In)", desc: "Park N Watch images" },
+    { id: "dd/baywatch", label: "DD — Baywatch (Greece)", desc: "Baywatch images" },
 ];
 
 // ─── TABS ────────────────────────────────────────────────────────────────
@@ -188,6 +203,57 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [blackoutReason, setBlackoutReason] = useState("");
     const [blackoutViewMonth, setBlackoutViewMonth] = useState(new Date());
     const [activeBlocks, setActiveBlocks] = useState<any[]>([]);
+
+    // Site images
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    const [uploadingSection, setUploadingSection] = useState<string | null>(null);
+    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+    const fetchSiteImages = useCallback(() => {
+        api.get("/site-images").then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(err => console.error("Site images:", err));
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === "website") fetchSiteImages();
+    }, [activeTab, fetchSiteImages]);
+
+    const handleImageUpload = async (section: string, files: FileList | null) => {
+        if (!files || files.length === 0) return;
+        setUploadingSection(section);
+        try {
+            for (const file of Array.from(files)) {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("section", section);
+                await api.upload("/site-images", formData);
+            }
+            fetchSiteImages();
+        } catch (err) {
+            console.error("Upload failed:", err);
+        }
+        setUploadingSection(null);
+    };
+
+    const handleImageDelete = async (id: number) => {
+        if (!confirm("Delete this image?")) return;
+        try {
+            await api.delete(`/site-images/${id}`);
+            fetchSiteImages();
+        } catch (err) {
+            console.error("Delete failed:", err);
+        }
+    };
+
+    const toggleSection = (id: string) => {
+        setCollapsedSections(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     // Live calendar view
     const [calendarProperty, setCalendarProperty] = useState("Heavenly Villa");
@@ -1240,30 +1306,74 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             {/* Photo Management */}
             <div>
                 <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Website Photo Manager</h2>
-                <p className="text-sm text-slate-500 font-medium mb-6">Upload, replace, or delete photos for each website section.</p>
+                <p className="text-sm text-slate-500 font-medium mb-6">Upload or delete photos for each section of the website. All uploads auto-compress to WebP.</p>
 
-                <div className="space-y-6">
-                    {websiteSections.map(sec => (
-                        <div key={sec.section} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">{sec.section}</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                {sec.photos.map((photo, idx) => (
-                                    <div key={idx} className="relative group border-2 border-slate-200 rounded-xl aspect-square bg-slate-100 flex items-center justify-center overflow-hidden transition-all hover:border-purple-300 hover:shadow-sm">
-                                        <ImageIcon size={24} className="text-slate-400" />
-                                        <p className="absolute bottom-0 left-0 right-0 bg-slate-800/80 text-white text-[9px] font-semibold px-2 py-1 text-center truncate">{photo}</p>
-                                        <button className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
-                                            <Trash2 size={10} />
-                                        </button>
+                <div className="space-y-4">
+                    {websiteSections.map(sec => {
+                        const images = siteImages[sec.id] || [];
+                        const isCollapsed = collapsedSections.has(sec.id);
+                        const isUploading = uploadingSection === sec.id;
+
+                        return (
+                            <div key={sec.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                                {/* Section Header — click to toggle */}
+                                <button
+                                    onClick={() => toggleSection(sec.id)}
+                                    className="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-bold text-slate-800">{sec.label}</span>
+                                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-md">{images.length} photos</span>
                                     </div>
-                                ))}
-                                {/* Upload placeholder */}
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl aspect-square flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-colors cursor-pointer group">
-                                    <Upload size={20} className="group-hover:text-purple-500" />
-                                    <span className="text-[9px] font-bold mt-1 group-hover:text-purple-600">Upload</span>
-                                </div>
+                                    <ChevronRight size={16} className={`text-slate-400 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                                </button>
+
+                                {!isCollapsed && (
+                                    <div className="px-5 pb-5 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-150">
+                                        <p className="text-xs text-slate-400 font-medium mt-3 mb-3">{sec.desc}</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                            {/* Existing images */}
+                                            {images.map(img => (
+                                                <div key={img.id} className="relative group border-2 border-slate-200 rounded-xl aspect-square bg-slate-100 overflow-hidden transition-all hover:border-purple-300 hover:shadow-md">
+                                                    <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                                    <button
+                                                        onClick={() => handleImageDelete(img.id)}
+                                                        className="absolute top-1.5 right-1.5 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-md"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {/* Upload dropzone */}
+                                            <label className={`border-2 border-dashed rounded-xl aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors group ${
+                                                isUploading ? 'border-purple-400 bg-purple-50' : 'border-slate-300 hover:border-purple-400 hover:bg-purple-50/50'
+                                            }`}>
+                                                {isUploading ? (
+                                                    <>
+                                                        <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                                                        <span className="text-[9px] font-bold mt-1.5 text-purple-600">Uploading...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Upload size={20} className="text-slate-400 group-hover:text-purple-500" />
+                                                        <span className="text-[9px] font-bold mt-1 text-slate-400 group-hover:text-purple-600">Upload</span>
+                                                    </>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    className="hidden"
+                                                    onChange={e => handleImageUpload(sec.id, e.target.files)}
+                                                    disabled={isUploading}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
