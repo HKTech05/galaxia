@@ -352,7 +352,7 @@ export const properties: Record<string, PropertyData> = {
         description: "Luxurious villa with a 25x10 ft private pool, 600 sq ft private garden, and beautiful gazebo.",
         longDescription:
             "La Paraiso is the crown jewel of our collection — a premium villa that redefines luxury. Dive into a sprawling 25x10 ft private pool, lounge in your 600 sq ft private garden, or find serenity under the beautiful gazebo. With a self check-in smart lock, Sony music player, and meticulous attention to detail, this villa delivers an experience that rivals five-star resorts. The nearby restaurant is just 10 steps away for when hunger strikes.",
-        images: [], 7),
+        images: [],
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
@@ -639,7 +639,7 @@ export const properties: Record<string, PropertyData> = {
         description: "A comfortable apartment with a stunning mountain view balcony — perfect for a peaceful retreat.",
         longDescription:
             "Perched amidst the lush green hills of Karjat, Hill View offers an unmatched mountain panorama from its huge open balcony. This thoughtfully designed apartment blends comfort with nature, featuring a queen-size bedroom, a cozy living room, and a small kitchen — everything you need for a serene getaway. Wake up to birdsong, sip your morning chai with a view, and let the mountains recharge your soul.",
-        images: [], 7),
+        images: [],
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
         pricing: {
