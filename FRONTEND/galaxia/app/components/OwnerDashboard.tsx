@@ -258,12 +258,125 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>([]);
     const [ddBookingsLive, setDdBookingsLive] = useState<any[]>([]);
 
-    // Website tab
-    const [blackoutProperty, setBlackoutProperty] = useState("Heavenly Villa");
+    // Website tab — Blackout Calendar
+    const [blackoutPropertyKey, setBlackoutPropertyKey] = useState("");
     const [blackoutDates, setBlackoutDates] = useState<Date[]>([]);
     const [blackoutReason, setBlackoutReason] = useState("");
     const [blackoutViewMonth, setBlackoutViewMonth] = useState(new Date());
     const [activeBlocks, setActiveBlocks] = useState<any[]>([]);
+    const [propertyList, setPropertyList] = useState<any[]>([]);
+    const [blackoutLoading, setBlackoutLoading] = useState(false);
+
+    // Fetch list of properties for dropdown
+    useEffect(() => {
+        api.get("/properties").then(data => {
+            if (Array.isArray(data)) setPropertyList(data);
+        }).catch(() => {});
+    }, []);
+
+    // Build dropdown options from real property data
+    const propertyOptions = (() => {
+        const standalone: string[] = [];
+        const ambroseVillas: string[] = [];
+        const amstelNest: string[] = [];
+        propertyList.forEach(p => {
+            if (p.subProperties && p.subProperties.length > 0) {
+                p.subProperties.forEach((sp: any) => {
+                    const label = `${p.name} — ${sp.name}`;
+                    if (p.slug === 'ambrose') ambroseVillas.push(label);
+                    else if (p.slug === 'amstel-nest') amstelNest.push(label);
+                });
+            } else {
+                standalone.push(p.name);
+            }
+        });
+        const opts: any[] = [];
+        if (standalone.length) opts.push({ label: "Standalone Properties", options: standalone });
+        if (ambroseVillas.length) opts.push({ label: "Ambrose Villas", options: ambroseVillas });
+        if (amstelNest.length) opts.push({ label: "Amstel Nest", options: amstelNest });
+        return opts;
+    })();
+
+    // Resolve selected dropdown label to propertyId + subPropertyId
+    const resolvePropertyIds = (label: string) => {
+        for (const p of propertyList) {
+            if (p.subProperties && p.subProperties.length > 0) {
+                for (const sp of p.subProperties) {
+                    if (`${p.name} — ${sp.name}` === label) return { propertyId: p.id, subPropertyId: sp.id };
+                }
+            }
+            if (p.name === label) return { propertyId: p.id, subPropertyId: null };
+        }
+        return { propertyId: null, subPropertyId: null };
+    };
+
+    // Fetch blocked dates
+    const fetchBlockedDates = async () => {
+        try {
+            const data = await api.get("/blocked-dates");
+            if (Array.isArray(data)) setActiveBlocks(data);
+        } catch {}
+    };
+
+    useEffect(() => { fetchBlockedDates(); }, []);
+
+    // Create blocked dates
+    const handleBlockDates = async () => {
+        if (blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey) {
+            alert("Please select a property, at least one date, and a reason.");
+            return;
+        }
+        const { propertyId, subPropertyId } = resolvePropertyIds(blackoutPropertyKey);
+        if (!propertyId) { alert("Invalid property selected."); return; }
+        setBlackoutLoading(true);
+        try {
+            await api.post("/blocked-dates", {
+                propertyId,
+                subPropertyId,
+                dates: blackoutDates.map(d => d.toISOString().split("T")[0]),
+                reason: blackoutReason,
+            });
+            setBlackoutDates([]);
+            setBlackoutReason("");
+            fetchBlockedDates();
+        } catch (err) {
+            alert("Failed to block dates. Please try again.");
+        }
+        setBlackoutLoading(false);
+    };
+
+    // Delete a blocked date
+    const handleUnblockDate = async (id: number) => {
+        try {
+            await api.delete(`/blocked-dates/${id}`);
+            fetchBlockedDates();
+        } catch {
+            alert("Failed to unblock date.");
+        }
+    };
+
+    // Filter active blocks for the currently selected property
+    const filteredBlocks = (() => {
+        if (!blackoutPropertyKey) return activeBlocks;
+        const { propertyId, subPropertyId } = resolvePropertyIds(blackoutPropertyKey);
+        return activeBlocks.filter(b => {
+            if (subPropertyId) return b.subPropertyId === subPropertyId;
+            if (propertyId) return b.propertyId === propertyId;
+            return true;
+        });
+    })();
+
+    // Get blocked day numbers for the calendar for the current month + selected property
+    const getBlockedDaysForMonth = () => {
+        const year = blackoutViewMonth.getFullYear();
+        const month = blackoutViewMonth.getMonth();
+        return filteredBlocks
+            .filter(b => {
+                const d = new Date(b.blockedDate);
+                return d.getFullYear() === year && d.getMonth() === month;
+            })
+            .map(b => new Date(b.blockedDate).getDate());
+    };
 
     // Site images
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
@@ -1495,13 +1608,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-700 uppercase">Select Property / Villa</label>
                                 <CustomSelect
-                                    value={blackoutProperty}
-                                    onChange={setBlackoutProperty}
-                                    options={[
-                                        { label: "Standalone Properties", options: ["Hill View", "Mount View", "Heavenly Villa", "La Paraiso"] },
-                                        { label: "Ambrose Villas", options: ["Ambrose — TAKE-1", "Ambrose — ALTA", "Ambrose — SANTORINI", "Ambrose — BAMBOOSA", "Ambrose — CYPRESS"] },
-                                        { label: "Amstel Nest", options: Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`) }
-                                    ]}
+                                    value={blackoutPropertyKey}
+                                    onChange={setBlackoutPropertyKey}
+                                    options={propertyOptions}
                                 />
                             </div>
                             <div className="space-y-1">
@@ -1539,25 +1648,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                             )}
                             <button
-                                onClick={() => {
-                                    if (blackoutDates.length > 0 && blackoutReason) {
-                                        const newBlocks = blackoutDates.map((d, i) => ({
-                                            id: Date.now() + i,
-                                            property: blackoutProperty,
-                                            dateStr: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-                                            reason: blackoutReason
-                                        }));
-                                        setActiveBlocks([...newBlocks, ...activeBlocks]);
-                                        setBlackoutDates([]);
-                                        setBlackoutReason("");
-                                    } else {
-                                        alert("Please select at least one date and choose a reason.");
-                                    }
-                                }}
-                                disabled={blackoutDates.length === 0 || !blackoutReason}
+                                onClick={handleBlockDates}
+                                disabled={blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey || blackoutLoading}
                                 className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                             >
-                                <Ban size={16} /> Block Property
+                                {blackoutLoading ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <><Ban size={16} /> Block Property</>
+                                )}
                             </button>
                         </div>
 
@@ -1587,8 +1686,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     const daysInMonth = new Date(year, month + 1, 0).getDate();
                                     const cells: React.ReactNode[] = [];
                                     for (let i = 0; i < firstDay; i++) cells.push(<div key={`e-${i}`} className="h-10" />);
-                                    // Mock blocked dates
-                                    const blockedDays = [5, 10, 11, 12];
+                                    const blockedDays = getBlockedDaysForMonth();
                                     for (let d = 1; d <= daysInMonth; d++) {
                                         const date = new Date(year, month, d);
                                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -1629,19 +1727,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                         {/* Right: Active Blocks */}
                         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks</h4>
+                            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks {blackoutPropertyKey ? `— ${blackoutPropertyKey}` : '(All Properties)'}</h4>
                             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                                {activeBlocks.length === 0 ? (
+                                {filteredBlocks.length === 0 ? (
                                     <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
                                 ) : (
-                                    activeBlocks.map(block => (
+                                    filteredBlocks.map(block => (
                                         <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                             <div>
-                                                <p className="text-sm font-bold text-slate-800">{block.property}</p>
-                                                <p className="text-xs text-slate-500 mt-0.5">{block.dateStr} <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span></p>
+                                                <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                    {new Date(block.blockedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
+                                                </p>
                                             </div>
                                             <button
-                                                onClick={() => setActiveBlocks(activeBlocks.filter(b => b.id !== block.id))}
+                                                onClick={() => handleUnblockDate(block.id)}
                                                 className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0"
                                             >
                                                 <X size={14} />

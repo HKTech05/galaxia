@@ -16,6 +16,7 @@ import dashboardRoutes from "./routes/dashboard";
 import notificationRoutes from "./routes/notifications";
 import uploadRoutes from "./routes/uploads";
 import siteImageRoutes from "./routes/siteImages";
+import blockedDateRoutes from "./routes/blockedDates";
 import userRoutes from "./routes/users";
 import reviewRoutes from "./routes/reviews";
 import { apiLimiter } from "./middleware/rateLimiter";
@@ -58,6 +59,7 @@ app.use("/api/admin/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/site-images", siteImageRoutes);
+app.use("/api/blocked-dates", blockedDateRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
 
