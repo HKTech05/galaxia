@@ -21,8 +21,8 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
         }).catch(() => {});
     }, []);
 
-    // Use API gallery if available, otherwise fall back to data file
-    const apiGallery = (siteImages[`dd/${screen.id}/gallery`] || []).map(i => i.url);
+    // Use per-package per-screen slideshow from API, fall back to static gallery
+    const apiGallery = (siteImages[`dd/${screen.id}/${pkg.id}/slideshow`] || []).map(i => i.url);
     const displayGallery = apiGallery.length > 0 ? apiGallery : screen.gallery.filter(Boolean);
 
     return (

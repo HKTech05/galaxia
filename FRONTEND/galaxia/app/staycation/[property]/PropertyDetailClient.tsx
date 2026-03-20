@@ -148,7 +148,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         </div>
                     </div>
                     <div className="relative h-64 sm:h-80 md:h-96 rounded-xl overflow-hidden shadow-lg">
-                        {(thumbnailImages[0] || displayImages[0]) && <Image src={thumbnailImages[0] || displayImages[0]} alt={property.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />}
+                        {thumbnailImages[0] && <Image src={thumbnailImages[0]} alt={property.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />}
                     </div>
                 </div>
             </section>

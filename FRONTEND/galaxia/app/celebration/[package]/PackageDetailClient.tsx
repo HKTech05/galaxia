@@ -32,6 +32,17 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
     const [livePricing, setLivePricing] = useState<{ hours: number; label: string; weekday: number; weekend: number }[] | null>(null);
     const [liveExtraPerson, setLiveExtraPerson] = useState<number | null>(null);
 
+    // Site images from admin panel
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        fetch("/api/site-images").then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+
+    // Package slug determines which sub-key to use (movie-time or celebration)
+    const pkgKey = pkg.id; // "movie-time" or "celebration"
+
     useEffect(() => {
         (async () => {
             try {
@@ -127,11 +138,13 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
                         <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-cel-text">Where Would You Like to Watch?</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-                        {screens.map((screen) => (
+                        {screens.map((screen) => {
+                            const screenThumb = (siteImages[`dd/${screen.id}/${pkgKey}/thumbnail`] || [])[0]?.url || screen.image;
+                            return (
                             <Link key={screen.id} href={`/celebration/${pkg.id}/${screen.id}`} className="group block">
                                 <div className="relative overflow-hidden rounded-xl border border-cel-border h-[250px] sm:h-[300px] transition-all duration-500 hover:border-rose-medium/40 hover:shadow-[0_4px_20px_rgba(159,53,58,0.12)]">
                                     <div className="absolute inset-0">
-                                        <Image src={screen.image} alt={screen.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 50vw" />
+                                        {screenThumb && <Image src={screenThumb} alt={screen.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 50vw" />}
                                     </div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                                     <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
@@ -141,7 +154,8 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
                                     </div>
                                 </div>
                             </Link>
-                        ))}
+                        );
+                        })}
                     </div>
                 </div>
             </section>

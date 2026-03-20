@@ -129,27 +129,30 @@ const staycationGroups: ImageGroup[] = [
 ];
 
 const ddGroups: ImageGroup[] = [
-    { id: "dd/movie-time", label: "Movie Time (Package)", subSections: [
-        { id: "dd/movie-time/thumbnail", label: "Package Thumbnail", maxImages: 1 },
-    ]},
-    { id: "dd/celebration", label: "Decoration + Movie Time (Package)", subSections: [
-        { id: "dd/celebration/thumbnail", label: "Package Thumbnail", maxImages: 1 },
-    ]},
+    // Per-screen sections — each screen has Movie Time and Deco+Movie Time sub-sections
     { id: "dd/sandy-screen", label: "Sandy Screen", subSections: [
-        { id: "dd/sandy-screen/gallery", label: "Gallery Images" },
-        { id: "dd/sandy-screen/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+        { id: "dd/sandy-screen/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/sandy-screen/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/sandy-screen/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/sandy-screen/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/cine-love", label: "Cine Love", subSections: [
-        { id: "dd/cine-love/gallery", label: "Gallery Images" },
-        { id: "dd/cine-love/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+        { id: "dd/cine-love/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/cine-love/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/cine-love/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/cine-love/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/park-n-watch", label: "Park N Watch", subSections: [
-        { id: "dd/park-n-watch/gallery", label: "Gallery Images" },
-        { id: "dd/park-n-watch/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+        { id: "dd/park-n-watch/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/park-n-watch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/park-n-watch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/park-n-watch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/baywatch", label: "Baywatch", subSections: [
-        { id: "dd/baywatch/gallery", label: "Gallery Images" },
-        { id: "dd/baywatch/thumbnail", label: "Screen Thumbnail", maxImages: 1 },
+        { id: "dd/baywatch/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/baywatch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/baywatch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/baywatch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
 ];
 
@@ -302,12 +305,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     };
 
     const handleImageDelete = async (id: number) => {
-        if (!confirm("Delete this image?")) return;
         try {
             await api.delete(`/site-images/${id}`);
             fetchSiteImages();
         } catch (err) {
             console.error("Delete failed:", err);
+            alert("Failed to delete image. Please try again.");
         }
     };
 
