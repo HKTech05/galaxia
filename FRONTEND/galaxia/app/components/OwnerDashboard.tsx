@@ -483,6 +483,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     // Live calendar view
     const [calendarProperty, setCalendarProperty] = useState("Heavenly Villa");
     const [calendarViewMonth, setCalendarViewMonth] = useState(new Date());
+    // Sync blackout property key with calendar property on initial load
+    useEffect(() => { if (!blackoutPropertyKey) setBlackoutPropertyKey("Heavenly Villa"); }, []);
 
 
     const timeRanges = [
@@ -1145,12 +1147,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800 tracking-tight">Live Property Calendar</h2>
-                                <p className="text-sm text-slate-500 font-medium mt-1">View booked and free dates for each property.</p>
+                                <p className="text-sm text-slate-500 font-medium mt-1">View booked, blocked, and free dates. Click dates to block them.</p>
                             </div>
                             <CustomSelect
                                 value={calendarProperty}
-                                onChange={setCalendarProperty}
-                                options={[
+                                onChange={(val: string) => { setCalendarProperty(val); setBlackoutPropertyKey(val); }}
+                                options={propertyOptions.length > 0 ? propertyOptions : [
                                     "Hill View", "Mount View", "La Paraiso", "Heavenly Villa",
                                     ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose — ${v.name}`),
                                     ...Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`)
@@ -1160,13 +1162,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
-                                <button onClick={() => setCalendarViewMonth(new Date(calendarYear, calendarMonth - 1, 1))} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                                <button onClick={() => { setCalendarViewMonth(new Date(calendarYear, calendarMonth - 1, 1)); setBlackoutViewMonth(new Date(calendarYear, calendarMonth - 1, 1)); }} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                                     <ChevronRight size={20} className="rotate-180" />
                                 </button>
                                 <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">
                                     {calendarViewMonth.toLocaleString('default', { month: 'long' })} {calendarYear}
                                 </h3>
-                                <button onClick={() => setCalendarViewMonth(new Date(calendarYear, calendarMonth + 1, 1))} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                                <button onClick={() => { setCalendarViewMonth(new Date(calendarYear, calendarMonth + 1, 1)); setBlackoutViewMonth(new Date(calendarYear, calendarMonth + 1, 1)); }} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
                                     <ChevronRight size={20} />
                                 </button>
                             </div>
@@ -1177,34 +1179,151 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </div>
                             <div className="grid grid-cols-7 gap-2">
                                 {Array.from({ length: calFirstDay }, (_, i) => <div key={`e-${i}`} className="h-16" />)}
-                                {Array.from({ length: calDaysInMonth }, (_, i) => {
-                                    const d = i + 1;
-                                    const date = new Date(calendarYear, calendarMonth, d);
-                                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                    const isBooked = bookedDaysSet.has(d);
-                                    const isToday = new Date().getDate() === d && new Date().getMonth() === calendarMonth && new Date().getFullYear() === calendarYear;
-                                    return (
-                                        <div
-                                            key={d}
-                                            className={`h-16 rounded-xl flex flex-col items-center justify-center text-sm font-semibold border transition-all
-                                                ${isToday ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' :
-                                                    isBooked ? 'bg-red-50 border-red-200 text-red-600' :
-                                                        isWeekend ? 'bg-amber-50/70 border-amber-200 text-amber-700' :
-                                                            'bg-emerald-50/50 border-emerald-200 text-emerald-700'}`}
-                                        >
-                                            <span className={`font-bold ${isToday ? 'text-purple-700' : ''}`}>{d}</span>
-                                            <span className={`text-[9px] font-medium ${isBooked ? 'text-red-500' : isWeekend ? 'text-amber-500' : 'text-emerald-500'}`}>
-                                                {isBooked ? 'Booked' : 'Free'}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
+                                {(() => {
+                                    const blockedDays = getBlockedDaysForMonth();
+                                    return Array.from({ length: calDaysInMonth }, (_, i) => {
+                                        const d = i + 1;
+                                        const date = new Date(calendarYear, calendarMonth, d);
+                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                                        const isBookedLive = bookedDaysSet.has(d);
+                                        const isBookedApi = bookedDays.includes(d);
+                                        const isBooked = isBookedLive || isBookedApi;
+                                        const isBlocked = blockedDays.includes(d);
+                                        const isSelected = blackoutDates.some(bd => bd.getDate() === d && bd.getMonth() === calendarMonth && bd.getFullYear() === calendarYear);
+                                        const isToday = new Date().getDate() === d && new Date().getMonth() === calendarMonth && new Date().getFullYear() === calendarYear;
+                                        const isClickable = !isBooked;
+                                        return (
+                                            <button
+                                                key={d}
+                                                disabled={!isClickable}
+                                                onClick={() => {
+                                                    if (!isClickable) return;
+                                                    if (isSelected) {
+                                                        setBlackoutDates(blackoutDates.filter(bd => !(bd.getDate() === d && bd.getMonth() === calendarMonth && bd.getFullYear() === calendarYear)));
+                                                    } else {
+                                                        setBlackoutDates([...blackoutDates, date]);
+                                                    }
+                                                }}
+                                                className={`h-16 rounded-xl flex flex-col items-center justify-center text-sm font-semibold border transition-all
+                                                    ${isSelected ? 'border-purple-400 bg-purple-600 text-white ring-2 ring-purple-300 shadow-md' :
+                                                        isToday && !isBlocked && !isBooked ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-200' :
+                                                            isBooked ? 'bg-teal-50 border-teal-200 text-teal-600 cursor-not-allowed opacity-70' :
+                                                                isBlocked ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 cursor-pointer' :
+                                                                    isWeekend ? 'bg-amber-50/70 border-amber-200 text-amber-700 hover:bg-amber-100 cursor-pointer' :
+                                                                        'bg-emerald-50/50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 cursor-pointer'}`}
+                                            >
+                                                <span className={`font-bold ${isToday && !isSelected ? 'text-purple-700' : ''}`}>{d}</span>
+                                                <span className={`text-[9px] font-medium ${
+                                                    isSelected ? 'text-purple-200' :
+                                                    isBooked ? 'text-teal-500' :
+                                                    isBlocked ? 'text-red-500' :
+                                                    isWeekend ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                                    {isSelected ? 'Selected' : isBooked ? 'Booked' : isBlocked ? 'Blocked' : 'Free'}
+                                                </span>
+                                            </button>
+                                        );
+                                    });
+                                })()}
                             </div>
-                            <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100">
+                            <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100 flex-wrap">
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400" /><span className="text-xs font-medium text-slate-500">Free</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-400" /><span className="text-xs font-medium text-slate-500">Booked</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-teal-400" /><span className="text-xs font-medium text-slate-500">Booked</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-400" /><span className="text-xs font-medium text-slate-500">Blocked</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400" /><span className="text-xs font-medium text-slate-500">Weekend</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-400" /><span className="text-xs font-medium text-slate-500">Today</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-400" /><span className="text-xs font-medium text-slate-500">Today / Selected</span></div>
+                            </div>
+                        </div>
+
+                        {/* Blackout Controls Panel */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                            <h3 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Block / Unblock Dates</h3>
+                            <p className="text-sm text-slate-500 font-medium mb-5">Click dates on the calendar above to select them, then choose a reason and block.</p>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Left: Reason + Selected + Button */}
+                                <div className="space-y-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700 uppercase">Reason</label>
+                                        <CustomSelect
+                                            value={blackoutReason}
+                                            onChange={setBlackoutReason}
+                                            options={["Private Event", "Maintenance", "Owner Reservation", "Seasonal Closure", "Other"]}
+                                        />
+                                    </div>
+                                    {blackoutDates.length > 0 && (
+                                        <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
+                                            <p className="text-xs text-purple-600 font-bold uppercase">Selected Dates ({blackoutDates.length})</p>
+                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                {blackoutDates.map((d, idx) => (
+                                                    <span key={idx} className="bg-white px-2 py-1 flex items-center gap-1 rounded border border-purple-200 text-[10px] font-bold text-purple-800 shadow-sm">
+                                                        {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                                        <X size={10} className="cursor-pointer hover:text-red-500" onClick={(e) => { e.stopPropagation(); setBlackoutDates(blackoutDates.filter((_, i) => i !== idx)); }} />
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={handleBlockDates}
+                                        disabled={blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey || blackoutLoading}
+                                        className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {blackoutLoading ? (
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <><Ban size={16} /> Block Property</>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Middle: Active Blocks for selected property */}
+                                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks — {calendarProperty || 'Select Property'}</h4>
+                                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                        {filteredBlocks.length === 0 ? (
+                                            <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
+                                        ) : (
+                                            filteredBlocks.map(block => (
+                                                <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5">
+                                                            {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
+                                                        </p>
+                                                    </div>
+                                                    <button onClick={() => handleUnblockDate(block.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0">
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right: All Properties Active Blocks */}
+                                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">All Active Blocks (All Properties)</h4>
+                                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                        {activeBlocks.length === 0 ? (
+                                            <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
+                                        ) : (
+                                            activeBlocks.map(block => (
+                                                <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5">
+                                                            {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
+                                                        </p>
+                                                    </div>
+                                                    <button onClick={() => handleUnblockDate(block.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0">
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
