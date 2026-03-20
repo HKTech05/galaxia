@@ -15,6 +15,16 @@ export default function HomePage() {
 	  setIsLoggedIn(!!localStorage.getItem("galaxia_token"));
   }, []);
 
+  // Load landing page card images from admin panel
+  const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+  useEffect(() => {
+    fetch("/api/site-images").then(r => r.json()).then(data => {
+      if (data && typeof data === 'object') setSiteImages(data);
+    }).catch(() => {});
+  }, []);
+  const celebrationBg = (siteImages["landing/celebration"] || [])[0]?.url || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80';
+  const staycationBg = (siteImages["landing/staycation"] || [])[0]?.url || 'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=800&q=80';
+
   return (
 	<div className="min-h-screen bg-cream-white flex flex-col">
 	  {/* Navbar */}
@@ -116,7 +126,7 @@ export default function HomePage() {
 		  {/* Celebration Card */}
 		  <Link href="/celebration" className="group relative block" onMouseEnter={() => setHoveredCard("celebration")} onMouseLeave={() => setHoveredCard(null)}>
 			<div className="relative overflow-hidden rounded-2xl border border-border-light h-[400px] sm:h-[500px] md:h-[600px] transition-all duration-700 hover:border-antique-gold/50 hover:shadow-[0_8px_40px_rgba(186,151,49,0.12)]">
-			  <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80')` }} />
+			  <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url('${celebrationBg}')` }} />
 			  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 			  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 md:p-10">
 				<p className="text-amber-300 text-xs tracking-[0.25em] uppercase mb-2 font-inter">Private Screenings</p>
@@ -137,7 +147,7 @@ export default function HomePage() {
 		  {/* Staycation Card */}
 		  <Link href="/staycation" className="group relative block" onMouseEnter={() => setHoveredCard("staycation")} onMouseLeave={() => setHoveredCard(null)}>
 			<div className="relative overflow-hidden rounded-2xl border border-border-light h-[400px] sm:h-[500px] md:h-[600px] transition-all duration-700 hover:border-antique-gold/50 hover:shadow-[0_8px_40px_rgba(186,151,49,0.12)]">
-			  <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=800&q=80')` }} />
+			  <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url('${staycationBg}')` }} />
 			  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 			  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 md:p-10">
 				<p className="text-amber-300 text-xs tracking-[0.25em] uppercase mb-2 font-inter">Luxury Villas & Resorts</p>

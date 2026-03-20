@@ -283,26 +283,40 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<typeof coupons[0] | null>(null);
 
+    // Site images from admin panel
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        fetch("/api/site-images").then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+
+    // Main thumbnail for this property (used on booking card + summary)
+    const mainThumb = (siteImages[`${property.id}/thumbnail`] || [])[0]?.url;
+
     const roomOptions = property.subProperties && property.subProperties.length > 0
-        ? property.subProperties.map((sub: any) => ({
-            id: sub.id,
-            name: sub.name,
-            theme: sub.theme,
-            image: sub.image,
-            description: sub.description,
-            price: parseInt(sub.pricing?.weekday.price.replace(/,/g, "") || "0"),
-            weekdayPrice: sub.pricing?.weekday.price || property.pricing.weekday.price,
-            weekendPrice: sub.pricing?.weekend.price || property.pricing.weekend.price,
-            primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
-            details: sub.configuration?.slice(0, 3) || [],
-            persons: sub.pricing?.weekday.persons || "2 guests",
-            maxPersons: sub.maxPersons || property.maxPersons || 4
-        }))
+        ? property.subProperties.map((sub: any) => {
+            const subThumb = (siteImages[`${property.id}/${sub.id}/thumbnail`] || [])[0]?.url;
+            return {
+                id: sub.id,
+                name: sub.name,
+                theme: sub.theme,
+                image: subThumb || sub.image || mainThumb || '',
+                description: sub.description,
+                price: parseInt(sub.pricing?.weekday.price.replace(/,/g, "") || "0"),
+                weekdayPrice: sub.pricing?.weekday.price || property.pricing.weekday.price,
+                weekendPrice: sub.pricing?.weekend.price || property.pricing.weekend.price,
+                primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
+                details: sub.configuration?.slice(0, 3) || [],
+                persons: sub.pricing?.weekday.persons || "2 guests",
+                maxPersons: sub.maxPersons || property.maxPersons || 4
+            };
+        })
         : [{
             id: property.id,
             name: property.name,
             theme: property.type === "standalone" ? "Entire Villa" : property.subtitle,
-            image: property.images[0],
+            image: mainThumb || property.images[0] || '',
             description: property.description,
             price: parseInt(property.pricing.weekday.price.replace(/,/g, "")),
             weekdayPrice: property.pricing.weekday.price,
@@ -976,7 +990,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             {selectedRoom && (
                                 <div className="flex items-start gap-4 mb-6 pb-6 border-b border-border-light">
                                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-soft-gray shrink-0 relative">
-                                        <Image src={property.images[0]} alt={selectedRoom.name} fill className="object-cover" />
+                                        {(mainThumb || property.images[0]) && <Image src={mainThumb || property.images[0]} alt={selectedRoom.name} fill className="object-cover" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="font-inter text-[9px] uppercase tracking-widest text-antique-gold mb-0.5">{selectedRoom.type}</p>

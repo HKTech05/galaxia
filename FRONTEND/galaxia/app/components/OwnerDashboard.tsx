@@ -74,6 +74,10 @@ interface ImageSubSection { id: string; label: string; maxImages?: number; }
 interface ImageGroup { id: string; label: string; subSections: ImageSubSection[]; }
 
 const staycationGroups: ImageGroup[] = [
+    { id: "landing", label: "Landing Page (galaxiaresorts.com)", subSections: [
+        { id: "landing/celebration", label: "Celebration Card Background", maxImages: 1 },
+        { id: "landing/staycation", label: "Staycation Card Background", maxImages: 1 },
+    ]},
     { id: "staycation-hero", label: "Staycation Landing Page", subSections: [
         { id: "staycation-hero/banner", label: "Hero Banner", maxImages: 1 },
     ]},
@@ -101,18 +105,26 @@ const staycationGroups: ImageGroup[] = [
         { id: "ambrose/slideshow", label: "Slideshow Images" },
         { id: "ambrose/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
         { id: "ambrose/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
-        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 Villa Thumbnail", maxImages: 1 },
-        { id: "ambrose/alta/thumbnail", label: "ALTA Villa Thumbnail", maxImages: 1 },
-        { id: "ambrose/santorini/thumbnail", label: "SANTORINI Villa Thumbnail", maxImages: 1 },
-        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA Villa Thumbnail", maxImages: 1 },
-        { id: "ambrose/cypress/thumbnail", label: "CYPRESS Villa Thumbnail", maxImages: 1 },
+        // Per-villa sections
+        { id: "ambrose/take-1/slideshow", label: "TAKE-1 — Slideshow" },
+        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/alta/slideshow", label: "ALTA — Slideshow" },
+        { id: "ambrose/alta/thumbnail", label: "ALTA — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/santorini/slideshow", label: "SANTORINI — Slideshow" },
+        { id: "ambrose/santorini/thumbnail", label: "SANTORINI — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/bamboosa/slideshow", label: "BAMBOOSA — Slideshow" },
+        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/cypress/slideshow", label: "CYPRESS — Slideshow" },
+        { id: "ambrose/cypress/thumbnail", label: "CYPRESS — Main Thumbnail", maxImages: 1 },
     ]},
     { id: "amstel-nest", label: "Amstel Nest", subSections: [
         { id: "amstel-nest/slideshow", label: "Slideshow Images" },
         { id: "amstel-nest/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
         { id: "amstel-nest/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
-        { id: "amstel-nest/standard/thumbnail", label: "Standard Cottage Thumbnail", maxImages: 1 },
-        { id: "amstel-nest/family/thumbnail", label: "Family Cottage Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/standard-cottage/slideshow", label: "Standard Cottage — Slideshow" },
+        { id: "amstel-nest/standard-cottage/thumbnail", label: "Standard Cottage — Main Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/family-cottage/slideshow", label: "Family Cottage — Slideshow" },
+        { id: "amstel-nest/family-cottage/thumbnail", label: "Family Cottage — Main Thumbnail", maxImages: 1 },
     ]},
 ];
 
