@@ -17,7 +17,13 @@ async function main() {
         { username: 'Developer', email: 'dev@galaxiaresorts.com', displayName: 'Developer', role: 'developer' },
     ];
 
-    // First reactivate all existing accounts
+    // Clean up old accounts that might conflict
+    await prisma.adminAccount.deleteMany({
+        where: { username: { in: ['dd_admin', 'reception', 'developer'] } }
+    });
+    console.log('🧹 Cleaned up old conflicting accounts');
+
+    // Reactivate all remaining accounts
     await prisma.adminAccount.updateMany({
         data: { isActive: true }
     });
