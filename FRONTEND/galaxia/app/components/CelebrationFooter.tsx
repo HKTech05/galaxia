@@ -41,6 +41,7 @@ export default function CelebrationFooter() {
                         <ul className="space-y-2.5">
                             <li><Link href="/" className="font-inter text-sm text-cel-text-secondary hover:text-rose-light transition-colors">Home</Link></li>
                             <li><Link href="/staycation" className="font-inter text-sm text-cel-text-secondary hover:text-rose-light transition-colors">Staycation</Link></li>
+                            <li><Link href="/celebration/contact" className="font-inter text-sm text-cel-text-secondary hover:text-rose-light transition-colors">Contact Us</Link></li>
                             <li><Link href="/dashboard?source=celebration" className="font-inter text-sm text-cel-text-secondary hover:text-rose-light transition-colors">My Dashboard</Link></li>
                         </ul>
                     </div>

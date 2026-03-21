@@ -69,7 +69,7 @@ const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (
 
 
 
-// Website Photo Sections â€” hierarchical: group â†’ sub-sections
+// Website Photo Sections — hierarchical: group â†’ sub-sections
 interface ImageSubSection { id: string; label: string; maxImages?: number; }
 interface ImageGroup { id: string; label: string; subSections: ImageSubSection[]; }
 
@@ -106,53 +106,53 @@ const staycationGroups: ImageGroup[] = [
         { id: "ambrose/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
         { id: "ambrose/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
         // Per-villa sections
-        { id: "ambrose/take-1/slideshow", label: "TAKE-1 â€” Slideshow" },
-        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 â€” Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/alta/slideshow", label: "ALTA â€” Slideshow" },
-        { id: "ambrose/alta/thumbnail", label: "ALTA â€” Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/santorini/slideshow", label: "SANTORINI â€” Slideshow" },
-        { id: "ambrose/santorini/thumbnail", label: "SANTORINI â€” Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/bamboosa/slideshow", label: "BAMBOOSA â€” Slideshow" },
-        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA â€” Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/cypress/slideshow", label: "CYPRESS â€” Slideshow" },
-        { id: "ambrose/cypress/thumbnail", label: "CYPRESS â€” Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/take-1/slideshow", label: "TAKE-1 — Slideshow" },
+        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/alta/slideshow", label: "ALTA — Slideshow" },
+        { id: "ambrose/alta/thumbnail", label: "ALTA — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/santorini/slideshow", label: "SANTORINI — Slideshow" },
+        { id: "ambrose/santorini/thumbnail", label: "SANTORINI — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/bamboosa/slideshow", label: "BAMBOOSA — Slideshow" },
+        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/cypress/slideshow", label: "CYPRESS — Slideshow" },
+        { id: "ambrose/cypress/thumbnail", label: "CYPRESS — Main Thumbnail", maxImages: 1 },
     ]},
     { id: "amstel-nest", label: "Amstel Nest", subSections: [
         { id: "amstel-nest/slideshow", label: "Slideshow Images" },
         { id: "amstel-nest/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
         { id: "amstel-nest/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
-        { id: "amstel-nest/standard-cottage/slideshow", label: "Standard Cottage â€” Slideshow" },
-        { id: "amstel-nest/standard-cottage/thumbnail", label: "Standard Cottage â€” Main Thumbnail", maxImages: 1 },
-        { id: "amstel-nest/family-cottage/slideshow", label: "Family Cottage â€” Slideshow" },
-        { id: "amstel-nest/family-cottage/thumbnail", label: "Family Cottage â€” Main Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/standard-cottage/slideshow", label: "Standard Cottage — Slideshow" },
+        { id: "amstel-nest/standard-cottage/thumbnail", label: "Standard Cottage — Main Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/family-cottage/slideshow", label: "Family Cottage — Slideshow" },
+        { id: "amstel-nest/family-cottage/thumbnail", label: "Family Cottage — Main Thumbnail", maxImages: 1 },
     ]},
 ];
 
 const ddGroups: ImageGroup[] = [
-    // Per-screen sections â€” each screen has Movie Time and Deco+Movie Time sub-sections
+    // Per-screen sections — each screen has Movie Time and Deco+Movie Time sub-sections
     { id: "dd/sandy-screen", label: "Sandy Screen", subSections: [
-        { id: "dd/sandy-screen/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
-        { id: "dd/sandy-screen/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
-        { id: "dd/sandy-screen/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
-        { id: "dd/sandy-screen/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/sandy-screen/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/sandy-screen/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/sandy-screen/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/sandy-screen/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/cine-love", label: "Cine Love", subSections: [
-        { id: "dd/cine-love/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
-        { id: "dd/cine-love/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
-        { id: "dd/cine-love/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
-        { id: "dd/cine-love/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/cine-love/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/cine-love/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/cine-love/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/cine-love/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/park-n-watch", label: "Park N Watch", subSections: [
-        { id: "dd/park-n-watch/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
-        { id: "dd/park-n-watch/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
-        { id: "dd/park-n-watch/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
-        { id: "dd/park-n-watch/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/park-n-watch/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/park-n-watch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/park-n-watch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/park-n-watch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/baywatch", label: "Baywatch", subSections: [
-        { id: "dd/baywatch/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
-        { id: "dd/baywatch/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
-        { id: "dd/baywatch/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
-        { id: "dd/baywatch/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/baywatch/movie-time/slideshow", label: "Movie Time — Slideshow" },
+        { id: "dd/baywatch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/baywatch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
+        { id: "dd/baywatch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
 ];
 
@@ -258,7 +258,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>([]);
     const [ddBookingsLive, setDdBookingsLive] = useState<any[]>([]);
 
-    // Website tab â€” Blackout Calendar
+    // Website tab — Blackout Calendar
     const [blackoutPropertyKey, setBlackoutPropertyKey] = useState("");
     const [blackoutDates, setBlackoutDates] = useState<Date[]>([]);
     const [blackoutReason, setBlackoutReason] = useState("");
@@ -282,7 +282,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         propertyList.forEach(p => {
             if (p.subProperties && p.subProperties.length > 0) {
                 p.subProperties.forEach((sp: any) => {
-                    const label = `${p.name} â€” ${sp.name}`;
+                    const label = `${p.name} — ${sp.name}`;
                     if (p.slug === 'ambrose') ambroseVillas.push(label);
                     else if (p.slug === 'amstel-nest') amstelNest.push(label);
                 });
@@ -302,7 +302,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         for (const p of propertyList) {
             if (p.subProperties && p.subProperties.length > 0) {
                 for (const sp of p.subProperties) {
-                    if (`${p.name} â€” ${sp.name}` === label) return { propertyId: p.id, subPropertyId: sp.id };
+                    if (`${p.name} — ${sp.name}` === label) return { propertyId: p.id, subPropertyId: sp.id };
                 }
             }
             if (p.name === label) return { propertyId: p.id, subPropertyId: null };
@@ -646,7 +646,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const bookedDaysSet = new Set<number>();
         
         if (calendarProperty.startsWith("Ambrose")) {
-            const propName = calendarProperty.split("â€”")[1]?.trim();
+            const propName = calendarProperty.split("—")[1]?.trim();
             const villa = liveAmbrose.find((v: any) => v.name === propName);
             if (villa && villa.checkedIn) {
                 // Approximate booking length or use actual checkIn/checkOut bounds
@@ -658,7 +658,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 }
             }
         } else if (calendarProperty.startsWith("Amstel Nest")) {
-            const propName = calendarProperty.split("â€”")[1]?.trim();
+            const propName = calendarProperty.split("—")[1]?.trim();
             const villa = liveAmstel.find((v: any) => v.name === propName);
             if (villa && villa.checkedIn) {
                 const inDate = new Date(villa.checkInTime);
@@ -798,13 +798,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
                         {/* STAYCATION SECTION */}
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation â€” Resort-wise Insights</h2>
+                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation — Resort-wise Insights</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Revenue and occupancy performance breakdown.</p>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Ambrose Pie Chart */}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Ambrose â€” Villa Performance</h3>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Ambrose — Villa Performance</h3>
                                     <p className="text-xs text-slate-400 font-medium mb-4">Hover to see total sales & nights booked</p>
                                     <ResponsiveContainer width="100%" height={280}>
                                         <PieChart>
@@ -822,7 +822,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 {/* Amstel Nest Bar Charts */}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest â€” Total Sales by Villa</h3>
+                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest — Total Sales by Villa</h3>
                                         <ResponsiveContainer width="100%" height={180}>
                                             <BarChart data={dashboardKPIs?.charts?.amstelSales || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -834,7 +834,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         </ResponsiveContainer>
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest â€” Total Nights by Villa</h3>
+                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest — Total Nights by Villa</h3>
                                         <ResponsiveContainer width="100%" height={180}>
                                             <BarChart data={dashboardKPIs?.charts?.amstelNights || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -851,7 +851,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                         {/* STANDALONE VILLAS INSIGHTS */}
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Standalone Villas â€” Performance</h2>
+                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Standalone Villas — Performance</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Total sales and nights booked for Hill View, Mount View, La Paraiso & Heavenly Villa.</p>
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Total Sales by Villa</h3>
@@ -928,7 +928,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                         {/* DIGITAL DIARIES SECTION */}
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries â€” Revenue Insights</h2>
+                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries — Revenue Insights</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Screen-level and package-level revenue breakdown.</p>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -967,9 +967,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                             </div>
 
-                            {/* Digital Diaries Booking Source â€” Website vs Walk-in */}
+                            {/* Digital Diaries Booking Source — Website vs Walk-in */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source â€” Website vs Walk-in</h3>
+                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source — Website vs Walk-in</h3>
                                 <ResponsiveContainer width="100%" height={260}>
                                     <PieChart>
                                         <Pie data={dashboardKPIs?.charts?.ddSource || []} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={6} dataKey="value" nameKey="name" stroke="none">
@@ -1003,7 +1003,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Additional Insights</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Occupancy trends and property revenue comparison.</p>
 
-                            {/* Occupancy Trend Area Chart â€” full width */}
+                            {/* Occupancy Trend Area Chart — full width */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Occupancy Trend (%)</h3>
                                 <ResponsiveContainer width="100%" height={300}>
@@ -1036,7 +1036,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                             {/* Property Revenue Comparison Bar Chart */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue Comparison â€” Current vs Previous Period</h3>
+                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue Comparison — Current vs Previous Period</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={dashboardKPIs?.charts?.propertyRevenue || []} barCategoryGap="15%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -1154,8 +1154,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 onChange={(val: string) => { setCalendarProperty(val); setBlackoutPropertyKey(val); }}
                                 options={propertyOptions.length > 0 ? propertyOptions : [
                                     "Hill View", "Mount View", "La Paraiso", "Heavenly Villa",
-                                    ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose â€” ${v.name}`),
-                                    ...Array.from({ length: 14 }, (_, i) => `Amstel Nest â€” Villa ${i + 1}`)
+                                    ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose — ${v.name}`),
+                                    ...Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`)
                                 ]}
                             />
                         </div>
@@ -1277,7 +1277,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                 {/* Middle: Active Blocks for selected property */}
                                 <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks â€” {calendarProperty || 'Select Property'}</h4>
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks — {calendarProperty || 'Select Property'}</h4>
                                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                                         {filteredBlocks.length === 0 ? (
                                             <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
@@ -1285,7 +1285,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             filteredBlocks.map(block => (
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} â€” ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                                                             {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
@@ -1310,7 +1310,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             activeBlocks.map(block => (
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} â€” ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                                                             {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
@@ -1394,7 +1394,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
                             <h3 className="text-lg font-bold text-slate-800">
-                                {villaModal.type === "ambrose" ? "Ambrose â€” Villa Status" : "Amstel Nest â€” Villa Status"}
+                                {villaModal.type === "ambrose" ? "Ambrose — Villa Status" : "Amstel Nest — Villa Status"}
                             </h3>
                             <button onClick={() => { setVillaModal({ ...villaModal, open: false }); setExpandedVilla(null); }} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X size={20} className="text-slate-500" />
@@ -1509,7 +1509,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // â”€â”€â”€ TAB: DD (Read-only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderDD = () => {
-        // Group bookings by screen â€” filtered by selected date
+        // Group bookings by screen — filtered by selected date
         const screenGroups: Record<string, any[]> = {};
         const selectedDateStr = `${ddViewDate.getFullYear()}-${String(ddViewDate.getMonth()+1).padStart(2,'0')}-${String(ddViewDate.getDate()).padStart(2,'0')}`;
         
@@ -1544,7 +1544,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Date View Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Digital Diaries â€” Bookings</h2>
+                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Digital Diaries — Bookings</h2>
                         <p className="text-sm text-slate-500 font-medium mt-1">Read-only view grouped by screen.</p>
                     </div>
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
@@ -1743,7 +1743,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         <div className="space-y-8">
             {/* Staycation Images */}
             <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation â€” Photo Manager</h2>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation — Photo Manager</h2>
                 <p className="text-sm text-slate-500 font-medium mb-4">Manage photos for each staycation property. All uploads auto-compress to WebP.</p>
                 <div className="space-y-3">
                     {staycationGroups.map(group => renderImageGroup(group))}
@@ -1752,7 +1752,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
             {/* Digital Diaries Images */}
             <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries â€” Photo Manager</h2>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries — Photo Manager</h2>
                 <p className="text-sm text-slate-500 font-medium mb-4">Manage photos for DD screens and packages.</p>
                 <div className="space-y-3">
                     {ddGroups.map(group => renderImageGroup(group))}

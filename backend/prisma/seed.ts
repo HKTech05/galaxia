@@ -255,7 +255,6 @@ async function main() {
             extraPersonPrice: 300, extraHourRate: 1000, minHours: 1,
             inclusions: [
                 { icon: "film", label: "Private Movie Screening" },
-                { icon: "gift", label: "Complimentary Hamper" },
                 { icon: "popcorn", label: "Popcorn & Dry Snacks" },
                 { icon: "drink", label: "Juice & Mineral Water" },
                 { icon: "chocolate", label: "Chocolates" },
@@ -268,11 +267,10 @@ async function main() {
         where: { slug: "celebration" },
         update: {},
         create: {
-            slug: "celebration", name: "Celebration", tagline: "Movie Time + Decoration",
+            slug: "celebration", name: "Decoration + Movie Time", tagline: "Decoration + Movie Time",
             extraPersonPrice: 300, extraHourRate: 1000, minHours: 2,
             inclusions: [
                 { icon: "film", label: "Private Movie Screening" },
-                { icon: "gift", label: "Complimentary Hamper" },
                 { icon: "cake", label: "Celebration Cake (250g)" },
                 { icon: "led", label: "LED Message Tag" },
                 { icon: "fog", label: "Walking on Cloud (Fog Effect)" },

@@ -24,7 +24,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     rawId: b.id,
                     customer: b.customerName || "Unknown",
                     property: b.subProperty 
-                        ? `${b.subProperty.name} (${b.property?.name || 'Unknown'})` 
+                        ? b.subProperty.name 
                         : (b.property?.name || "Unknown"),
                     parentProperty: b.property?.name || "Unknown",
                     guests: b.numGuests || 0,
@@ -382,7 +382,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-3">
                                         <span className="text-sm font-bold text-slate-800">{booking.id}</span>
-                                        <span className="inline-flex items-center px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-100 uppercase tracking-wider">
+                                        <span className="inline-flex items-center px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded border border-emerald-100 uppercase tracking-wider">
                                             {booking.property}
                                         </span>
                                     </div>
