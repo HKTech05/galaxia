@@ -91,7 +91,7 @@ router.post("/", async (req, res) => {
                 const coupon = await tx.coupon.findUnique({ where: { code: couponCode } });
                 if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
                     couponId = coupon.id;
-                    if (coupon.discountType === "percent") {
+                    if (coupon.discountType === "percentage") {
                         discountAmount = Math.round((totalAmount * Number(coupon.discountValue)) / 100);
                     } else {
                         discountAmount = Number(coupon.discountValue);

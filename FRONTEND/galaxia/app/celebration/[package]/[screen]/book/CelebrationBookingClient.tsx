@@ -39,6 +39,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
 
+    // Coupon state
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [couponError, setCouponError] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
+
     // DB IDs for screen and package (fetched by slug)
     const [dbScreenId, setDbScreenId] = useState<number | null>(null);
     const [dbPackageId, setDbPackageId] = useState<number | null>(null);
@@ -192,7 +198,17 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const addOnsTotal = balloonsCharge + ledBannerCharge + cakeCharge;
 
     const subtotal = basePrice + extraPersonCharge + addOnsTotal;
-    const total = subtotal;
+
+    // Coupon discount
+    let couponDiscount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.discountType === "percentage") {
+            couponDiscount = Math.round(subtotal * appliedCoupon.discountValue / 100);
+        } else {
+            couponDiscount = appliedCoupon.discountValue;
+        }
+    }
+    const total = subtotal - couponDiscount;
 
     // Per-slot display price: use 1hr tier if available
     const oneHrTier = pricingTiers.find((p) => p.hours === 1);
@@ -267,6 +283,23 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         return blocks.join(", ");
     }, [selectedSlots]);
 
+    // Coupon validation
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError("");
+        try {
+            const result = await api.post("/coupons/validate", { code: couponCode });
+            if (result && result.valid) {
+                setAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
+            } else {
+                setCouponError("Invalid or expired coupon code");
+            }
+        } catch (err: any) {
+            setCouponError(err?.message || "Invalid or expired coupon code");
+        } finally { setCouponLoading(false); }
+    };
+
     // Submit booking to API
     const handleBooking = useCallback(async () => {
         if (!dbScreenId || !dbPackageId) {
@@ -312,6 +345,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 paymentMethod: "online",
                 addons,
                 source: "website",
+                couponCode: appliedCoupon?.code || null,
+                discountAmount: couponDiscount,
             };
 
             const result = await api.post("/bookings/dd", payload);
@@ -347,7 +382,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         } finally {
             setIsSubmitting(false);
         }
-    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, title, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, pkg.id, router]);
+    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, title, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, pkg.id, router, appliedCoupon, couponDiscount]);
 
     return (
         <div>
@@ -670,6 +705,41 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     )}
                                     {cakeCharge > 0 && (
                                         <div className="flex justify-between"><span className="text-cel-text-secondary">🎂 Cake{cakeMessage ? ` — "${cakeMessage}"` : ''}</span><span className="text-cel-text">{formatPrice(cakeCharge)}</span></div>
+                                    )}
+
+                                    <div className="flex justify-between pt-3 border-t border-cel-border">
+                                        <span className="text-cel-text font-semibold">Subtotal</span>
+                                        <span className="text-cel-text font-cinzel font-bold">{formatPrice(subtotal)}</span>
+                                    </div>
+
+                                    {/* Coupon Input */}
+                                    <div className="pt-3 border-t border-cel-border/30">
+                                        {appliedCoupon ? (
+                                            <div className="flex items-center justify-between bg-green-900/20 border border-green-500/30 rounded-lg px-3 py-2">
+                                                <div>
+                                                    <span className="text-green-400 font-inter text-xs font-semibold">🎉 {appliedCoupon.code}</span>
+                                                    <span className="text-green-300 font-inter text-xs ml-2">
+                                                        {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`}
+                                                    </span>
+                                                </div>
+                                                <button onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} className="text-red-400 hover:text-red-300 text-xs font-inter font-semibold">Remove</button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Coupon code" className="flex-1 bg-cel-bg border border-cel-border rounded-lg px-3 py-2 text-xs font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none uppercase tracking-widest" />
+                                                <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()} className="bg-rose-dark/80 text-white px-4 py-2 rounded-lg font-inter text-xs font-semibold hover:bg-rose-dark transition-colors disabled:opacity-40">
+                                                    {couponLoading ? "..." : "Apply"}
+                                                </button>
+                                            </div>
+                                        )}
+                                        {couponError && <p className="text-red-400 text-[10px] font-inter mt-1">{couponError}</p>}
+                                    </div>
+
+                                    {couponDiscount > 0 && (
+                                        <div className="flex justify-between text-green-400 font-medium">
+                                            <span>Coupon Discount</span>
+                                            <span>-{formatPrice(couponDiscount)}</span>
+                                        </div>
                                     )}
 
                                     <div className="flex justify-between pt-3 border-t border-cel-border">

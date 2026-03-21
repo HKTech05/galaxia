@@ -12,10 +12,6 @@ interface BookingClientProps {
     property: PropertyData;
 }
 
-const coupons = [
-    { code: "WELCOME10", discount: "10% off", description: "First booking discount — valid for all properties", expires: "Mar 31, 2026", active: true },
-    { code: "SUMMER25", discount: "₹500 off", description: "Summer special — min booking ₹3,000", expires: "Jun 30, 2026", active: true },
-];
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -281,7 +277,9 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     // Coupon state
     const [couponCode, setCouponCode] = useState("");
-    const [appliedCoupon, setAppliedCoupon] = useState<typeof coupons[0] | null>(null);
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [couponError, setCouponError] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
 
     // Site images from admin panel
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
@@ -348,11 +346,10 @@ export default function BookingClient({ property }: BookingClientProps) {
     // Discount
     let discountAmount = 0;
     if (appliedCoupon) {
-        if (appliedCoupon.discount.includes("%")) {
-            const pct = parseInt(appliedCoupon.discount);
-            discountAmount = Math.round(subtotal * pct / 100);
+        if (appliedCoupon.discountType === "percentage") {
+            discountAmount = Math.round(subtotal * appliedCoupon.discountValue / 100);
         } else {
-            discountAmount = parseInt(appliedCoupon.discount.replace(/[₹,\s]/g, ""));
+            discountAmount = appliedCoupon.discountValue;
         }
     }
 
@@ -435,27 +432,24 @@ export default function BookingClient({ property }: BookingClientProps) {
     };
 
     const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError("");
         try {
             const result = await api.post("/coupons/validate", { code: couponCode });
-            if (result && result.isActive) {
+            if (result && result.valid) {
                 setAppliedCoupon({
                     code: result.code,
-                    discount: result.discountType === 'percent' ? `${result.discountValue}% off` : `₹${result.discountValue} off`,
-                    description: result.description || '',
-                    expires: '',
-                    active: true
+                    discountType: result.discountType,
+                    discountValue: result.discountValue,
                 });
             } else {
-                alert("Invalid or expired coupon code");
+                setCouponError("Invalid or expired coupon code");
             }
-        } catch {
-            // Fallback to local coupons if API fails
-            const found = coupons.find(c => c.code.toLowerCase() === couponCode.toLowerCase() && c.active);
-            if (found) {
-                setAppliedCoupon(found);
-            } else {
-                alert("Invalid or expired coupon code");
-            }
+        } catch (err: any) {
+            setCouponError(err?.message || "Invalid or expired coupon code");
+        } finally {
+            setCouponLoading(false);
         }
     };
 
