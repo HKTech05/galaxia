@@ -197,6 +197,37 @@ router.post("/", async (req, res) => {
         // Audit log (fire-and-forget, outside transaction)
         auditLog({ action: "booking_created", entityType: "dd_booking", entityId: booking.id, details: { source: source || "website" } });
 
+        // Track cash for reception walk-in bookings
+        if (source === "reception" && (amountPaid || 0) > 0) {
+            const cashMethod = (paymentMethod || "").toLowerCase();
+            if (cashMethod === "cash") {
+                try {
+                    const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
+                    if (ddProperty) {
+                        const employee = await prisma.employee.findFirst({
+                            where: { propertyId: ddProperty.id, isActive: true },
+                        });
+                        if (employee) {
+                            await prisma.employee.update({
+                                where: { id: employee.id },
+                                data: { cashCollected: { increment: amountPaid } },
+                            });
+                            await prisma.cashTransaction.create({
+                                data: {
+                                    employeeId: employee.id,
+                                    bookingRef: booking.bookingRef,
+                                    guestName: customerName,
+                                    amount: amountPaid,
+                                    transactionType: "collection",
+                                    note: `DD walk-in booking — ${booking.screen?.name || "Screen"}`,
+                                },
+                            });
+                        }
+                    }
+                } catch (e) { console.error("Cash tracking for walk-in failed:", e); }
+            }
+        }
+
         // Send confirmation email (fire-and-forget)
         sendDDBookingConfirmation({ ...booking, customerPhone, customerEmail }).catch(() => { });
 
