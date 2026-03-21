@@ -196,4 +196,89 @@ router.patch("/profile", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
+// PATCH /api/auth/change-password — Change own password
+router.patch("/change-password", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: "Current and new password required" });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+
+        const admin = await prisma.adminAccount.findUnique({ where: { id: req.admin!.id } });
+        if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+        const valid = await bcrypt.compare(currentPassword, admin.passwordHash);
+        if (!valid) {
+            return res.status(401).json({ error: "Current password is incorrect" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.adminAccount.update({
+            where: { id: admin.id },
+            data: { passwordHash: hashedPassword },
+        });
+
+        auditLog({ action: "change_own_password", entityType: "admin", entityId: admin.id });
+        return res.json({ success: true });
+    } catch (error: any) {
+        console.error("Change password error:", error?.message);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// GET /api/auth/sub-admins — List all admin accounts (owner/dev only)
+router.get("/sub-admins", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const admin = await prisma.adminAccount.findUnique({ where: { id: req.admin!.id } });
+        if (!admin || (admin.role !== "owner" && admin.role !== "developer")) {
+            return res.status(403).json({ error: "Forbidden" });
+        }
+
+        const admins = await prisma.adminAccount.findMany({
+            select: {
+                id: true, username: true, displayName: true,
+                role: true, email: true, isActive: true,
+                assignedProperties: true, lastLogin: true,
+            },
+            orderBy: { id: "asc" },
+        });
+        return res.json(admins);
+    } catch (error: any) {
+        console.error("List sub-admins error:", error?.message);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/auth/sub-admins/:id/password — Update a sub-admin's password (owner/dev only)
+router.patch("/sub-admins/:id/password", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const admin = await prisma.adminAccount.findUnique({ where: { id: req.admin!.id } });
+        if (!admin || (admin.role !== "owner" && admin.role !== "developer")) {
+            return res.status(403).json({ error: "Forbidden" });
+        }
+
+        const { newPassword } = req.body;
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+
+        const targetId = parseInt(req.params.id);
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.adminAccount.update({
+            where: { id: targetId },
+            data: { passwordHash: hashedPassword },
+        });
+
+        auditLog({ action: "update_sub_admin_password", entityType: "admin", entityId: req.admin!.id, details: { targetAdminId: targetId } });
+        return res.json({ success: true });
+    } catch (error: any) {
+        console.error("Update sub-admin password error:", error?.message);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

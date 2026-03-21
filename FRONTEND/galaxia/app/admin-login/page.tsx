@@ -22,10 +22,34 @@ export default function AdminLoginPage() {
             if (res.token) {
                 // Store token consistently
                 localStorage.setItem("galaxia_token", res.token);
+                // Store admin data for sidebar/header
+                if (res.admin) {
+                    localStorage.setItem("galaxia_admin", JSON.stringify(res.admin));
+                }
                 // Also set a secure cookie so the Next.js Middleware can read it
                 document.cookie = `admin_token=${res.token}; path=/; max-age=604800; samesite=strict`;
                 
-                router.push("/admin3");
+                // Redirect based on role: sub-admins go to their first visible page
+                const ap = res.admin?.assignedProperties;
+                const role = res.admin?.role;
+                const hasFullAccess = !ap || role === "owner" || role === "developer";
+                
+                if (hasFullAccess) {
+                    router.push("/admin3");
+                } else {
+                    // Map assigned property slugs to their first receptionist page
+                    const slugToRoute: Record<string, string> = {
+                        "dd": "/admin3/digital-diaries",
+                        "heavenly-villa": "/admin3/heavenly-villa",
+                        "hill-view": "/admin3/heavenly-villa",
+                        "mount-view": "/admin3/views-paraiso",
+                        "la-paraiso": "/admin3/views-paraiso",
+                        "ambrose": "/admin3/ambrose",
+                        "amstel-nest": "/admin3/amstel",
+                    };
+                    const firstSlug = (ap as string[])[0];
+                    router.push(slugToRoute[firstSlug] || "/admin3");
+                }
             }
         } catch (err: any) {
             setError(err.message || "Invalid credentials. Access denied.");

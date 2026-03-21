@@ -77,12 +77,14 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     // Admin profile for property-scoped access
     const [assignedProperties, setAssignedProperties] = useState<string[] | null>(null);
     const [adminRole, setAdminRole] = useState<string>("");
+    const [adminDisplayName, setAdminDisplayName] = useState<string>("");
     const [profileLoaded, setProfileLoaded] = useState(false);
 
     useEffect(() => {
         if (!isAdmin3) return;
         api.get("/auth/me").then(data => {
             setAdminRole(data?.role || "");
+            setAdminDisplayName(data?.displayName || "");
             setAssignedProperties(data?.assignedProperties || null);
             setProfileLoaded(true);
         }).catch(() => { setProfileLoaded(true); });
@@ -169,7 +171,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                         )}
                         <div>
                             <h1 className="font-bold text-xl text-slate-800 tracking-tight leading-none">Galaxia</h1>
-                            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-widest mt-1">{isAdmin3 ? "Owner Panel" : "Admin Panel"}</p>
+                            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-widest mt-1">{isAdmin3 ? (hasFullAccess ? "Owner Panel" : adminDisplayName || "Admin Panel") : "Admin Panel"}</p>
                         </div>
                     </div>
                 </div>

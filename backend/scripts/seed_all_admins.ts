@@ -11,8 +11,8 @@ async function main() {
     await prisma.adminAccount.deleteMany({
         where: {
             OR: [
-                { username: { in: ['dd_admin', 'reception', 'developer'] } },
-                { email: { in: ['dev@galaxiaresorts.com', 'developer@galaxiaresorts.com', 'dev@galaxia.in', 'dd@galaxia.in', 'reception@galaxia.in'] } },
+                { username: { in: ['dd_admin', 'reception', 'developer', 'Ambrose', 'Amstelnest'] } },
+                { email: { in: ['dev@galaxiaresorts.com', 'developer@galaxiaresorts.com', 'dev@galaxia.in', 'dd@galaxia.in', 'reception@galaxia.in', 'ambrose@galaxiaresorts.com', 'amstelnest@galaxiaresorts.com'] } },
             ]
         }
     });
@@ -30,8 +30,8 @@ async function main() {
         // Property admins = their properties only, no DD
         { username: 'H&H', email: 'hh@galaxiaresorts.com', displayName: 'H&H', role: 'staycation_admin', assignedProperties: ['hill-view', 'heavenly-villa'] },
         { username: 'M&L', email: 'ml@galaxiaresorts.com', displayName: 'M&L', role: 'staycation_admin', assignedProperties: ['mount-view', 'la-paraiso'] },
-        { username: 'Ambrose', email: 'ambrose@galaxiaresorts.com', displayName: 'Ambrose', role: 'staycation_admin', assignedProperties: ['ambrose'] },
-        { username: 'Amstelnest', email: 'amstelnest@galaxiaresorts.com', displayName: 'Amstel Nest', role: 'staycation_admin', assignedProperties: ['amstel-nest'] },
+        // Combined Ambrose + Amstel Nest (same receptionist)
+        { username: 'A&A', email: 'aa@galaxiaresorts.com', displayName: 'Ambrose & Amstel', role: 'staycation_admin', assignedProperties: ['ambrose', 'amstel-nest'] },
     ];
 
     for (const acc of accounts) {
