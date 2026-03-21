@@ -16,11 +16,11 @@ model AdminAccount {
   role                String              @db.VarChar(30)
   avatarUrl           String?             @map("avatar_url")
   isActive            Boolean             @default(true) @map("is_active")
-  assignedProperties  Json?               @map("assigned_properties")
-  plainPassword       String?             @map("plain_password") @db.VarChar(255)
   lastLogin           DateTime?           @map("last_login")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
+  assignedProperties  Json?               @map("assigned_properties")
+  plainPassword       String?             @map("plain_password") @db.VarChar(255)
   auditLogs           AuditLog[]
   blockedDates        BlockedDate[]
   paymentsCollected   BookingPayment[]
@@ -197,9 +197,9 @@ model DdPackage {
   extraHourRate    Int?               @map("extra_hour_rate")
   minHours         Int                @default(1) @map("min_hours")
   inclusions       Json
-  addonPricing     Json?              @map("addon_pricing")
   isActive         Boolean            @default(true) @map("is_active")
   createdAt        DateTime           @default(now()) @map("created_at")
+  addonPricing     Json?              @map("addon_pricing")
   bookings         DdBooking[]
   pricing          DdPackagePricing[]
 
@@ -207,16 +207,16 @@ model DdPackage {
 }
 
 model DdPackagePricing {
-  id              Int       @id @default(autoincrement())
-  packageId       Int       @map("package_id")
+  id              Int                 @id @default(autoincrement())
+  packageId       Int                 @map("package_id")
   hours           Int
-  label           String    @db.VarChar(20)
-  weekdayPrice    Int       @map("weekday_price")
-  weekendPrice    Int       @map("weekend_price")
-  weekdayDiscount Int       @default(0) @map("weekday_discount")
-  weekendDiscount Int       @default(0) @map("weekend_discount")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  package         DdPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  label           String              @db.VarChar(20)
+  weekdayPrice    Int                 @map("weekday_price")
+  weekendPrice    Int                 @map("weekend_price")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  weekdayDiscount Int                 @default(0) @map("weekday_discount")
+  weekendDiscount Int                 @default(0) @map("weekend_discount")
+  package         DdPackage           @relation(fields: [packageId], references: [id], onDelete: Cascade)
   overrides       DdPricingOverride[]
 
   @@map("dd_package_pricing")
@@ -288,9 +288,9 @@ model DdBookingAddon {
   addonType     String    @map("addon_type") @db.VarChar(50)
   addonValue    String?   @map("addon_value") @db.VarChar(200)
   price         Int       @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at")
   isPaid        Boolean   @default(false) @map("is_paid")
   paymentMethod String?   @map("payment_method") @db.VarChar(30)
-  createdAt     DateTime  @default(now()) @map("created_at")
   booking       DdBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@map("dd_booking_addons")

@@ -385,6 +385,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     <div className="space-y-3">
                                         <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Extra Adult</span><span className="text-text-primary">₹{property.pricing.extraAdult} per person</span></div>
                                         <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Kids</span><span className="text-text-primary">₹{property.pricing.kidsCharge}</span></div>
+                                        <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Pets</span><span className="text-text-primary font-medium">{property.petsAllowed ? "₹600 per pet (Allowed)" : "Not Allowed"}</span></div>
                                     </div>
                                 </div>
                                 <div className="rounded-xl border border-border-light bg-white p-5 sm:p-6 shadow-sm">

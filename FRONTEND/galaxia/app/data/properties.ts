@@ -20,6 +20,7 @@ export interface PropertyData {
     securityDeposit: string;
     securityRefund: string;
     bookingPolicy: string;
+    petsAllowed?: boolean;
     maxPersons: number;
     foodPolicy: {
         included: boolean;
@@ -82,6 +83,7 @@ export const properties: Record<string, PropertyData> = {
         securityDeposit: "3,000",
         securityRefund: "Refund within 24 hours",
         bookingPolicy: "80% payable online at booking · 20% payable at the venue",
+        petsAllowed: true,
         maxPersons: 8,
         foodPolicy: {
             included: true,
@@ -248,6 +250,7 @@ export const properties: Record<string, PropertyData> = {
         securityDeposit: "2,000",
         securityRefund: "Refund at checkout",
         bookingPolicy: "80% payable online at booking · 20% payable at the venue",
+        petsAllowed: false,
         maxPersons: 4,
         foodPolicy: {
             included: true,
@@ -369,6 +372,7 @@ export const properties: Record<string, PropertyData> = {
         securityDeposit: "3,000",
         securityRefund: "Refund at checkout",
         bookingPolicy: "80% payable online at booking · 20% payable at the venue",
+        petsAllowed: true,
         maxPersons: 8,
         foodPolicy: {
             included: false,
@@ -464,6 +468,7 @@ export const properties: Record<string, PropertyData> = {
         securityDeposit: "3,000",
         securityRefund: "Refund at checkout",
         bookingPolicy: "80% payable online at booking · 20% payable at the venue",
+        petsAllowed: false,
         maxPersons: 4,
         foodPolicy: {
             included: false,
@@ -560,6 +565,7 @@ export const properties: Record<string, PropertyData> = {
         securityDeposit: "3,000",
         securityRefund: "Refund within 24 hours",
         bookingPolicy: "80% payable online at booking · 20% payable at the venue",
+        petsAllowed: true,
         maxPersons: 6,
         foodPolicy: {
             included: false,
@@ -653,6 +659,7 @@ export const properties: Record<string, PropertyData> = {
         securityDeposit: "2,000",
         securityRefund: "Refunded at checkout",
         bookingPolicy: "80% payable online at booking · 20% payable at the venue",
+        petsAllowed: true,
         maxPersons: 6,
         foodPolicy: {
             included: false,

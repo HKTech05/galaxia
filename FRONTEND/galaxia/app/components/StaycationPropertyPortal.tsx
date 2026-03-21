@@ -72,11 +72,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
     const [extraGuestForm, setExtraGuestForm] = useState({
         guests: 1,
+        pets: 0,
         paymentMethod: "UPI",
         idFileName: ""
     });
 
-    const calculateExtraGuestPrice = () => {
+    const calculateExtraGuestPrice = (includeGuests = true, includePets = true) => {
         if (!selectedBooking) return 0;
 
         // standard parser for "DD Mmm, YYYY"
@@ -95,24 +96,40 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         else if (prop.includes("Amstel")) extraAdultPrice = 1000;
         else if (prop.includes("Ambrose")) extraAdultPrice = 2000;
 
-        const total = extraAdultPrice * extraGuestForm.guests * nights;
+        let total = 0;
+        if (includeGuests) total += extraAdultPrice * extraGuestForm.guests * nights;
+        if (includePets) total += 600 * extraGuestForm.pets * nights;
+
         return Math.round(total + (total * 0.05));
     };
 
     const handleAddExtraGuestSubmit = async () => {
         if (!selectedBooking) return;
-        const extraCharge = calculateExtraGuestPrice();
         try {
-            await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
-                guestName: "Extra Guest",
-                idProofType: "Uploaded",
-                chargeAmount: extraCharge,
-                paymentMethod: extraGuestForm.paymentMethod
-            });
+            if (extraGuestForm.guests > 0) {
+                const extraCharge = calculateExtraGuestPrice(true, false);
+                await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
+                    guestName: "Extra Guest",
+                    idProofType: "Uploaded",
+                    chargeAmount: extraCharge,
+                    paymentMethod: extraGuestForm.paymentMethod
+                });
+            }
+            if (extraGuestForm.pets > 0) {
+                const petsCharge = calculateExtraGuestPrice(false, true);
+                if (petsCharge > 0) {
+                    await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
+                        guestName: `Pet (${extraGuestForm.pets})`,
+                        idProofType: "None",
+                        chargeAmount: petsCharge,
+                        paymentMethod: extraGuestForm.paymentMethod
+                    });
+                }
+            }
             fetchBookings();
             setIsAddGuestModalOpen(false);
         } catch (err) {
-            alert("Failed to add extra guest");
+            alert("Failed to add extra guest / pet");
         }
     };
 
@@ -210,6 +227,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     };
 
     const handleManualBookingSubmit = async () => {
+        if (!manualForm.name || manualForm.name.trim() === '') {
+            alert("Please provide the guest's name before booking.");
+            return;
+        }
+        
         const calculatedTotal = calculatePrice();
         
         try {
@@ -473,9 +495,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <CheckCircle size={18} /> Confirm Check-in
                                         </button>
                                         <button
-                                            onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                            onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
                                             className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
-                                            <Users size={18} className="text-purple-600" /> Add Extra Guest
+                                            <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                         </button>
                                         <button
                                             onClick={() => setCancelModalBooking(booking)}
@@ -493,9 +515,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <RotateCcw size={18} /> Initiate Checkout
                                         </button>
                                         <button
-                                            onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                            onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
                                             className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 mt-2">
-                                            <Users size={18} className="text-purple-600" /> Add Extra Guest
+                                            <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                         </button>
                                     </>
                                 )}
@@ -739,6 +761,19 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <button
                                             type="button"
                                             onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.min(10, extraGuestForm.guests + 1) })}
+                                            className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                        >+</button>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Number of Pets (₹600/pet/night)</label>
+                                    <div className="flex items-center gap-3 mt-2 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, pets: Math.max(0, extraGuestForm.pets - 1) })}
+                                            className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                        >−</button>
+                                        <span className="text-lg font-black text-slate-800 w-6 text-center">{extraGuestForm.pets}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, pets: Math.min(10, extraGuestForm.pets + 1) })}
                                             className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
                                         >+</button>
                                     </div>

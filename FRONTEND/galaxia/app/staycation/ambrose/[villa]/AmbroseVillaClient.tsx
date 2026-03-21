@@ -104,9 +104,9 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                     <div className="inline-block px-3 py-1 mb-4 bg-antique-gold/10 border border-antique-gold/30 rounded-full">
                         <span className="text-dark-gold font-inter text-[10px] tracking-widest uppercase">{villa.theme}</span>
                     </div>
-                    <h1 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-bold text-text-primary mb-4 tracking-tight flex items-center gap-4">
+                    <h1 className="font-cinzel text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-4 tracking-tight flex items-center gap-4">
                         <img src="/logos/ambrose.png" alt="Ambrose" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
-                        {villa.name} (Ambrose)
+                        {villa.name}
                     </h1>
                     <p className="font-inter text-base sm:text-lg text-text-secondary leading-relaxed mb-6">{villa.description}</p>
                     <div className="flex items-center gap-2 text-text-muted font-inter text-sm">
@@ -116,40 +116,26 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                 </div>
             </section>
 
-            {/* Configuration */}
-            {villa.configuration && (
-                <section className="border-t border-border-light bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-10 h-[2px] bg-antique-gold" />
-                            <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-text-primary">Villa Configuration</h2>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                            {villa.configuration.map((item, i) => (
-                                <div key={i} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-soft-gray/30 hover:border-antique-gold/30 transition-all">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-antique-gold/50 shrink-0" />
-                                    <span className="text-text-primary font-inter text-xs sm:text-sm">{item}</span>
-                                </div>
-                            ))}
-                            <div className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-soft-gray/30">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                                <span className="text-text-primary font-inter text-xs sm:text-sm">Max {villa.maxPersons || 8} Guests</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {/* Amenities — shared from parent */}
-            <section className="border-t border-border-light">
+            {/* Configuration & Amenities */}
+            <section className="border-t border-border-light bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-10 h-[2px] bg-antique-gold" />
-                        <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-text-primary">Amenities</h2>
+                        <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-text-primary">Villa Configuration & Amenities</h2>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {villa.configuration && villa.configuration.map((item, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-soft-gray/30 hover:border-antique-gold/30 transition-all">
+                                <span className="w-1.5 h-1.5 rounded-full bg-antique-gold/50 shrink-0" />
+                                <span className="text-text-primary font-inter text-xs sm:text-sm">{item}</span>
+                            </div>
+                        ))}
+                        <div className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-soft-gray/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                            <span className="text-text-primary font-inter text-xs sm:text-sm">Max {villa.maxPersons || 8} Guests</span>
+                        </div>
                         {parent.amenities.map((amenity, i) => (
-                            <div key={i} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-white hover:border-antique-gold/30 hover:shadow-sm transition-all">
+                            <div key={`amenity-${i}`} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-white hover:border-antique-gold/30 hover:shadow-sm transition-all">
                                 <span className="text-antique-gold">★</span>
                                 <span className="text-text-primary font-inter text-xs sm:text-sm">{amenity.name}</span>
                             </div>
@@ -189,6 +175,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                     {villa.pricing?.saturday && (
                                         <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Saturday Rate</span><span className="text-text-primary font-medium">₹{villa.pricing.saturday.price} ({villa.pricing.saturday.persons})</span></div>
                                     )}
+                                    <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Pets</span><span className="text-text-primary font-medium">{parent.petsAllowed ? "₹600 per pet (Allowed)" : "Not Allowed"}</span></div>
                                 </div>
                             </div>
                             <div className="rounded-xl border border-border-light bg-soft-gray/30 p-5 sm:p-6 shadow-sm">

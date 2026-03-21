@@ -166,15 +166,7 @@ export default function HomePage() {
 		  </Link>
 		</div>
 
-		{/* Guest Reviews Section */}
-		<section className="w-full max-w-7xl mx-auto px-4 sm:px-6 mb-20 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
-		  <div className="text-center mb-12">
-			<p className="text-antique-gold font-inter text-xs tracking-[0.3em] uppercase mb-3">Testimonials</p>
-			<h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-semibold text-text-primary mb-4 text-center">Guest Experiences</h2>
-			<div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-antique-gold to-transparent mx-auto" />
-		  </div>
-		  <ReviewCarousel />
-		</section>
+		
 
 		<div className="text-center mb-12 animate-fade-in-up" style={{ animationDelay: "0.8s" }}>
 		  <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-antique-gold/40 to-transparent mx-auto mb-4" />

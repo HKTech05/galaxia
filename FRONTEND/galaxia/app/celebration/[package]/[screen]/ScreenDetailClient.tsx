@@ -81,7 +81,8 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 {/* Download Menu Button */}
                 <div className="flex justify-center mt-8">
                     <a
-                        href="/food-menu.pdf"
+                        href="/Satkar_Menu.pdf"
+                        download="Satkar_Menu.pdf"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex items-center gap-3 bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-500 hover:to-rose-600 shadow-md text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-full hover:shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all duration-300"

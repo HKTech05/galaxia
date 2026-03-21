@@ -174,7 +174,7 @@ const AmbroseTooltip = ({ active, payload }: any) => {
         return (
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-lg">
                 <p className="font-bold text-slate-800 text-sm">{d.name}</p>
-                <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: â‚¹{d.sales.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: ₹{d.sales.toLocaleString('en-IN')}</p>
                 <p className="text-xs text-indigo-600 font-semibold">Nights: {d.nights}</p>
             </div>
         );
@@ -560,7 +560,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
                                     Balance {item.balanceCollected ? 'âœ“ Collected' : 'â³ Pending'}
                                 </p>
-                                {item.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">â‚¹{Number(item.balanceAmount).toLocaleString('en-IN')}</p>}
+                                {item.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.balanceAmount).toLocaleString('en-IN')}</p>}
                                 {item.balanceCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
                                         via {item.balanceMode} Â· {item.balanceTime}
@@ -571,7 +571,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
                                     Security Deposit {item.depositCollected ? 'âœ“ Collected' : 'â³ Pending'}
                                 </p>
-                                {item.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">â‚¹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
+                                {item.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
                                 {item.depositCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
                                         via {item.depositMode} Â· {item.depositTime}
@@ -597,7 +597,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-xs font-bold text-emerald-600">+â‚¹{eg.chargeAmount || eg.amount || 0}</p>
+                                                <p className="text-xs font-bold text-emerald-600">+₹{eg.chargeAmount || eg.amount || 0}</p>
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMethod || eg.paymentMode}</p>
                                             </div>
                                         </div>
@@ -749,7 +749,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
-                                    <p className="text-xl font-bold text-emerald-700 mt-1">â‚¹{totalRevenue.toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-emerald-700 mt-1">₹{totalRevenue.toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-emerald-500 font-medium mt-1">â†‘ 12% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -759,7 +759,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Nightly Rate</p>
-                                    <p className="text-xl font-bold text-indigo-700 mt-1">â‚¹{avgNightlyRate.toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-indigo-700 mt-1">₹{avgNightlyRate.toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-indigo-500 font-medium mt-1">Across all properties</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -776,7 +776,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
-                                    <p className="text-xl font-bold text-violet-700 mt-1">â‚¹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-violet-500 font-medium mt-1">â†‘ 18% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -786,7 +786,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Booking Value</p>
-                                    <p className="text-xl font-bold text-teal-700 mt-1">â‚¹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
+                                    <p className="text-xl font-bold text-teal-700 mt-1">₹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
                                     <p className="text-[10px] text-teal-500 font-medium mt-1">Per reservation</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -827,8 +827,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             <BarChart data={dashboardKPIs?.charts?.amstelSales || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="villa" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
-                                                <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
-                                                <Tooltip formatter={(value: any) => [`â‚¹${Number(value).toLocaleString('en-IN')}`, "Sales"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
+                                                <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                                                <Tooltip formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Sales"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
                                                 <Bar dataKey="sales" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
@@ -860,7 +860,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <BarChart data={dashboardKPIs?.charts?.standaloneVillas || []} barCategoryGap="20%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
                                         <Tooltip
                                             content={({ active, payload }: any) => {
                                                 if (active && payload && payload.length) {
@@ -868,7 +868,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     return (
                                                         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-lg">
                                                             <p className="font-bold text-slate-800 text-sm">{d.name}</p>
-                                                            <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: â‚¹{d.sales.toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: ₹{d.sales.toLocaleString('en-IN')}</p>
                                                             <p className="text-xs text-indigo-600 font-semibold">Nights Booked: {d.nights}</p>
                                                         </div>
                                                     );
@@ -899,7 +899,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <LineChart data={timeRange === '1m' ? (dashboardKPIs?.charts?.earnings1Month || []) : (dashboardKPIs?.charts?.earningsYearly || []).slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="period" tick={{ fontSize: 11, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 100000).toFixed(1)}L`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
                                         <Tooltip
                                             content={({ active, payload, label }: any) => {
                                                 if (active && payload && payload.length) {
@@ -908,7 +908,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                             <p className="font-bold text-slate-800 text-sm mb-2">{label}</p>
                                                             {payload.map((p: any, i: number) => (
                                                                 <p key={i} className="text-xs font-semibold" style={{ color: p.stroke }}>
-                                                                    {p.name}: â‚¹{Number(p.value).toLocaleString('en-IN')}
+                                                                    {p.name}: ₹{Number(p.value).toLocaleString('en-IN')}
                                                                 </p>
                                                             ))}
                                                         </div>
@@ -938,8 +938,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <BarChart data={dashboardKPIs?.charts?.ddScreen || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis dataKey="screen" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
-                                            <Tooltip formatter={(value: any) => [`â‚¹${Number(value).toLocaleString('en-IN')}`, "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
+                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                                            <Tooltip formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
                                             <Bar dataKey="revenue" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -951,10 +951,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <BarChart data={dashboardKPIs?.charts?.ddPackage || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis dataKey="package" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748b" }} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
+                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
                                             <Tooltip
                                                 formatter={(value: any, name: any) => {
-                                                    if (name === "revenue") return [`â‚¹${Number(value).toLocaleString('en-IN')}`, "Revenue"];
+                                                    if (name === "revenue") return [`₹${Number(value).toLocaleString('en-IN')}`, "Revenue"];
                                                     return [value, "Bookings"];
                                                 }}
                                                 contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }}
@@ -1041,15 +1041,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <BarChart data={dashboardKPIs?.charts?.propertyRevenue || []} barCategoryGap="15%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="property" tick={{ fontSize: 10, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 100000).toFixed(1)}L`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
                                         <Tooltip
                                             content={({ active, payload, label }: any) => {
                                                 if (active && payload && payload.length) {
                                                     return (
                                                         <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-lg">
                                                             <p className="font-bold text-slate-800 text-sm mb-1">{label}</p>
-                                                            <p className="text-xs text-emerald-600 font-semibold">Current: â‚¹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
-                                                            <p className="text-xs text-slate-500 font-semibold">Previous: â‚¹{Number(payload[1]?.value).toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs text-emerald-600 font-semibold">Current: ₹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs text-slate-500 font-semibold">Previous: ₹{Number(payload[1]?.value).toLocaleString('en-IN')}</p>
                                                             <p className="text-xs text-indigo-600 font-bold mt-1">Growth: +{Math.round(((payload[0]?.value - payload[1]?.value) / payload[1]?.value) * 100)}%</p>
                                                         </div>
                                                     );
@@ -1481,7 +1481,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="text-xs font-bold text-emerald-600">+â‚¹{eg.chargeAmount || eg.amount || 0}</p>
+                                                                    <p className="text-xs font-bold text-emerald-600">+₹{eg.chargeAmount || eg.amount || 0}</p>
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMethod || eg.paymentMode}</p>
                                                                 </div>
                                                             </div>
@@ -1523,9 +1523,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             rawDate: b.bookingDate ? (() => { const d = new Date(b.bookingDate); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
             slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
             source: b.source === 'website' ? 'Online' : 'Walk-in',
-            upfrontAmt: `â‚¹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
+            upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
             upfrontMode: b.paymentMethod || "Online",
-            remainingAmt: `â‚¹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
+            remainingAmt: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
             remainingStatus: b.amountToCollect <= 0 ? "Paid" : "Pending",
             status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
             raw: b
