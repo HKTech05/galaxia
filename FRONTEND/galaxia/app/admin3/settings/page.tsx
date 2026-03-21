@@ -27,13 +27,6 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<{ id: number; msg: string; ok: boolean } | null>(null);
 
-    // Own password change
-    const [ownCurrentPassword, setOwnCurrentPassword] = useState("");
-    const [ownNewPassword, setOwnNewPassword] = useState("");
-    const [ownConfirmPassword, setOwnConfirmPassword] = useState("");
-    const [ownSaving, setOwnSaving] = useState(false);
-    const [ownMsg, setOwnMsg] = useState("");
-
     const [adminRole, setAdminRole] = useState("");
 
     useEffect(() => {
@@ -77,7 +70,6 @@ export default function SettingsPage() {
         setSaving(true);
         try {
             const res = await api.patch(`/auth/sub-admins/${id}`, updates);
-            // Update local state
             setSubAdmins(prev => prev.map(a => a.id === id ? {
                 ...a,
                 username: res.username || a.username,
@@ -90,31 +82,6 @@ export default function SettingsPage() {
         } finally {
             setSaving(false);
             setTimeout(() => setSaveMsg(null), 3000);
-        }
-    };
-
-    const handleOwnPasswordChange = async () => {
-        if (!ownNewPassword || ownNewPassword.length < 6) {
-            setOwnMsg("Password must be at least 6 characters");
-            return;
-        }
-        if (ownNewPassword !== ownConfirmPassword) {
-            setOwnMsg("Passwords do not match");
-            return;
-        }
-        setOwnSaving(true);
-        setOwnMsg("");
-        try {
-            await api.patch("/auth/change-password", {
-                currentPassword: ownCurrentPassword,
-                newPassword: ownNewPassword,
-            });
-            setOwnMsg("✓ Password changed successfully");
-            setOwnCurrentPassword(""); setOwnNewPassword(""); setOwnConfirmPassword("");
-        } catch (err: any) {
-            setOwnMsg(err?.message || "Failed to change password");
-        } finally {
-            setOwnSaving(false);
         }
     };
 
@@ -148,12 +115,6 @@ export default function SettingsPage() {
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "security" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
                         <Shield size={18} /> Security & Roles
                     </button>
-                    {isOwnerOrDev && (
-                        <button onClick={() => setActiveTab("sub-admins")}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "sub-admins" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
-                            <Users size={18} /> Sub-Admin Management
-                        </button>
-                    )}
                     <div className="my-4 border-t border-slate-200"></div>
                     <button onClick={() => setActiveTab("payments")}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "payments" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
@@ -163,118 +124,91 @@ export default function SettingsPage() {
 
                 {/* Content */}
                 <div className="flex-1 p-6 sm:p-8 overflow-y-auto">
-                    {/* Security & Roles */}
+                    {/* Security & Roles (with sub-admin table merged in) */}
                     {activeTab === "security" && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800">Security & Roles</h2>
-                                <p className="text-sm font-medium text-slate-500">Update your password and view your access role.</p>
                             </div>
-                            <div className="max-w-xl space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-200">
-                                <h3 className="text-md font-bold text-slate-800 mb-4 flex items-center gap-2"><Key size={18} /> Change Your Password</h3>
-                                <div className="space-y-3">
-                                    <input type="password" placeholder="Current Password" value={ownCurrentPassword} onChange={e => setOwnCurrentPassword(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-purple-600" />
-                                    <input type="password" placeholder="New Password" value={ownNewPassword} onChange={e => setOwnNewPassword(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-purple-600" />
-                                    <input type="password" placeholder="Confirm New Password" value={ownConfirmPassword} onChange={e => setOwnConfirmPassword(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-purple-600" />
-                                </div>
-                                <div className="flex items-center gap-4 mt-2">
-                                    <button onClick={handleOwnPasswordChange} disabled={ownSaving} className="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-slate-900 transition-colors disabled:opacity-50">
-                                        {ownSaving ? "Updating..." : "Update Password"}
-                                    </button>
-                                    {ownMsg && <span className={`text-sm font-medium ${ownMsg.startsWith("✓") ? "text-emerald-600" : "text-red-500"}`}>{ownMsg}</span>}
-                                </div>
-                            </div>
+
+                            {/* Sub-Admin Table (owner/dev only) */}
+                            {isOwnerOrDev && (
+                                <>
+                                    {loading ? (
+                                        <div className="text-center text-slate-400 py-12 text-sm font-medium">Loading...</div>
+                                    ) : (
+                                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                                        <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">ID</th>
+                                                        <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Location</th>
+                                                        <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Username</th>
+                                                        <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Password</th>
+                                                        <th className="text-center px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {subAdmins.map(admin => (
+                                                        <tr key={admin.id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">#{admin.id}</td>
+                                                            <td className="px-5 py-3.5">
+                                                                <span className="text-slate-800 font-medium">{propertiesLabel(admin.assignedProperties)}</span>
+                                                            </td>
+                                                            <td className="px-5 py-3.5">
+                                                                {editingId === admin.id ? (
+                                                                    <input type="text" value={editUsername} onChange={e => setEditUsername(e.target.value)}
+                                                                        className="w-full bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" autoFocus />
+                                                                ) : (
+                                                                    <code className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-mono text-[13px]">{admin.username}</code>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-5 py-3.5">
+                                                                {editingId === admin.id ? (
+                                                                    <input type="text" value={editPassword} onChange={e => setEditPassword(e.target.value)}
+                                                                        className="w-full bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                                                ) : (
+                                                                    <code className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-mono text-[13px]">{admin.plainPassword || "••••••"}</code>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-5 py-3.5 text-center">
+                                                                {editingId === admin.id ? (
+                                                                    <div className="flex items-center justify-center gap-1.5">
+                                                                        <button onClick={() => handleSave(admin.id)} disabled={saving}
+                                                                            className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50" title="Save">
+                                                                            <Check size={14} />
+                                                                        </button>
+                                                                        <button onClick={cancelEditing}
+                                                                            className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors" title="Cancel">
+                                                                            <X size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        <button onClick={() => startEditing(admin)}
+                                                                            className="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-purple-600 hover:border-purple-200 transition-colors" title="Edit">
+                                                                            <Pencil size={14} />
+                                                                        </button>
+                                                                        {saveMsg?.id === admin.id && (
+                                                                            <span className={`text-xs font-semibold ${saveMsg.ok ? "text-emerald-600" : "text-red-500"}`}>{saveMsg.msg}</span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Your Role */}
                             <div className="pt-6 border-t border-slate-100">
                                 <h3 className="text-md font-bold text-slate-800 mb-2 flex items-center gap-2"><Shield size={18} /> Your Role</h3>
                                 <p className="text-sm text-slate-500">You are currently operating as <strong className="text-slate-800">{adminRole === "owner" ? "Owner" : adminRole === "developer" ? "Developer" : adminRole}</strong>.</p>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Sub-Admin Management — Editable Table */}
-                    {activeTab === "sub-admins" && isOwnerOrDev && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-800">Sub-Admin Management</h2>
-                                <p className="text-sm font-medium text-slate-500">View and edit login credentials for all admin accounts.</p>
-                            </div>
-
-                            {loading ? (
-                                <div className="text-center text-slate-400 py-12 text-sm font-medium">Loading...</div>
-                            ) : (
-                                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="bg-slate-50 border-b border-slate-200">
-                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">ID</th>
-                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Location</th>
-                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Username</th>
-                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Password</th>
-                                                <th className="text-center px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {subAdmins.map(admin => (
-                                                <tr key={admin.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">#{admin.id}</td>
-                                                    <td className="px-5 py-3.5">
-                                                        <span className="text-slate-800 font-medium">{propertiesLabel(admin.assignedProperties)}</span>
-                                                    </td>
-                                                    <td className="px-5 py-3.5">
-                                                        {editingId === admin.id ? (
-                                                            <input
-                                                                type="text"
-                                                                value={editUsername}
-                                                                onChange={e => setEditUsername(e.target.value)}
-                                                                className="w-full bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
-                                                                autoFocus
-                                                            />
-                                                        ) : (
-                                                            <code className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-mono text-[13px]">{admin.username}</code>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3.5">
-                                                        {editingId === admin.id ? (
-                                                            <input
-                                                                type="text"
-                                                                value={editPassword}
-                                                                onChange={e => setEditPassword(e.target.value)}
-                                                                className="w-full bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
-                                                            />
-                                                        ) : (
-                                                            <code className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-mono text-[13px]">{admin.plainPassword || "••••••"}</code>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center">
-                                                        {editingId === admin.id ? (
-                                                            <div className="flex items-center justify-center gap-1.5">
-                                                                <button onClick={() => handleSave(admin.id)} disabled={saving}
-                                                                    className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50" title="Save">
-                                                                    <Check size={14} />
-                                                                </button>
-                                                                <button onClick={cancelEditing}
-                                                                    className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors" title="Cancel">
-                                                                    <X size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                <button onClick={() => startEditing(admin)}
-                                                                    className="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-purple-600 hover:border-purple-200 transition-colors" title="Edit">
-                                                                    <Pencil size={14} />
-                                                                </button>
-                                                                {saveMsg?.id === admin.id && (
-                                                                    <span className={`text-xs font-semibold ${saveMsg.ok ? "text-emerald-600" : "text-red-500"}`}>{saveMsg.msg}</span>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
                         </div>
                     )}
 
