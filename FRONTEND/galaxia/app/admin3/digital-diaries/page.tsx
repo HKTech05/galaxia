@@ -972,7 +972,14 @@ export default function Admin1Dashboard() {
             {/* Header Info */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Digital Diaries Schedule</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
+                        Digital Diaries Schedule
+                        {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-100 border border-pink-200 text-pink-700 rounded-full text-xs font-black tracking-widest uppercase shadow-sm animate-pulse">
+                                🎂 {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length} Cake{eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length > 1 ? 's' : ''} Today
+                            </span>
+                        )}
+                    </h1>
                     <p className="text-sm font-medium text-slate-500 mt-1">Review theater bookings and upcoming slots day-by-day.</p>
                 </div>
                 <div className="flex items-center gap-3">

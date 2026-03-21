@@ -81,7 +81,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 {/* Download Menu Button */}
                 <div className="flex justify-center mt-8">
                     <a
-                        href="/Satkar_Menu.pdf"
+                        href="/menus/Satkar_Menu.pdf"
                         download="Satkar_Menu.pdf"
                         target="_blank"
                         rel="noopener noreferrer"

@@ -56,6 +56,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [liveExtraHourRate, setLiveExtraHourRate] = useState<number | null>(null);
     // DD pricing overrides: key = 'pricingId-YYYY-MM-DD', value = override price
     const [ddOverrides, setDdOverrides] = useState<Record<string, number>>({});
+    
+    // Blocked/Booked slots tracking
+    const [bookedSlots, setBookedSlots] = useState<number[]>([]);
 
     // Fetch DB IDs + live pricing on mount
     useEffect(() => {
@@ -140,6 +143,59 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             return d;
         });
     }, [weekStart]);
+
+    // Fetch availability when selectedDate or dbScreenId changes
+    useEffect(() => {
+        let isMounted = true;
+        if (!dbScreenId || !selectedDate) return;
+        
+        const fetchAvailability = async () => {
+            try {
+                const dateStr = selectedDate.toISOString().split('T')[0];
+                const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+                const res = await fetch(`${baseUrl}/dd/availability/${dateStr}`);
+                if (res.ok && isMounted) {
+                    const data = await res.json();
+                    const slots: number[] = [];
+                    
+                    // Add booked hours ranges
+                    if (data.bookings && Array.isArray(data.bookings)) {
+                        data.bookings.forEach((b: any) => {
+                            if (b.screenId === dbScreenId) {
+                                for (let i = 0; i < b.durationHours; i++) {
+                                    slots.push(b.startHour + i);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Add blocked hours or full days
+                    if (data.blocked && Array.isArray(data.blocked)) {
+                        data.blocked.forEach((bk: any) => {
+                            if (bk.screenId === dbScreenId) {
+                                if (bk.isHalfDay && bk.startHour && bk.endHour) {
+                                    for (let i = bk.startHour; i < bk.endHour; i++) {
+                                        slots.push(i);
+                                    }
+                                } else if (!bk.isHalfDay) {
+                                    // Block all typical slots (e.g. 10 to 24)
+                                    for (let i = 10; i <= 24; i++) slots.push(i);
+                                }
+                            }
+                        });
+                    }
+                    
+                    setBookedSlots(slots);
+                    // Clear selected slots if they overlap
+                    setSelectedSlots(prev => prev.filter(p => !slots.includes(parseInt(p))));
+                }
+            } catch (err) {
+                console.error("Failed to fetch availability:", err);
+            }
+        };
+        fetchAvailability();
+        return () => { isMounted = false; };
+    }, [selectedDate, dbScreenId]);
 
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -493,18 +549,27 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         </div>
                                         <div className="space-y-2">
                                             {slots.map((slot) => {
+                                                const slotHour = parseInt(slot.id);
+                                                const isBooked = bookedSlots.includes(slotHour);
                                                 const isSlotSelected = selectedSlots.includes(slot.id);
+                                                
+                                                // Disable if it's booked, or if it's past
+                                                const slotDate = new Date(selectedDate);
+                                                slotDate.setHours(slotHour, 0, 0, 0);
+                                                const isSlotPast = slotDate < new Date();
+                                                const isDisabled = isMaintenance || isBooked || isSlotPast;
+
                                                 return (
                                                     <div
                                                         key={slot.id}
                                                         className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isSlotSelected
                                                             ? "border-rose-medium/50 bg-rose-dark/15"
-                                                            : isMaintenance ? "border-cel-border opacity-30 cursor-not-allowed" : "border-cel-border hover:border-cel-border-light cursor-pointer"
+                                                            : isDisabled ? "border-cel-border opacity-30 cursor-not-allowed bg-cel-card/50" : "border-cel-border hover:border-cel-border-light cursor-pointer"
                                                             }`}
-                                                        onClick={() => !isMaintenance && toggleSlot(slot.id)}
+                                                        onClick={() => !isDisabled && toggleSlot(slot.id)}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <span className="font-inter text-sm text-cel-text">{slot.label}</span>
+                                                            <span className={`font-inter text-sm ${isDisabled && isBooked ? "line-through text-cel-text-muted" : "text-cel-text"}`}>{slot.label}{isDisabled && isBooked ? ' (Booked)' : ''}</span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <span className="font-inter text-sm text-cel-text-secondary">

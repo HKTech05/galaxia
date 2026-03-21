@@ -498,11 +498,43 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
             },
         });
 
-        // Update guest count
-        await prisma.staycationBooking.update({
-            where: { id: bookingId },
-            data: { numGuests: { increment: 1 } },
-        });
+        // Update guest count (only if it's not purely pets being added)
+        const isPet = guestName.toLowerCase().includes("pet");
+        if (!isPet) {
+            await prisma.staycationBooking.update({
+                where: { id: bookingId },
+                data: { numGuests: { increment: 1 } },
+            });
+        }
+
+        // Track cash collection for employee
+        if (paymentMethod?.toLowerCase() === "cash" && chargeAmount > 0) {
+            const booking = await prisma.staycationBooking.findUnique({
+                where: { id: bookingId },
+                include: { property: true }
+            });
+            if (booking) {
+                const employee = await prisma.employee.findFirst({
+                    where: { propertyId: booking.propertyId, isActive: true },
+                });
+                if (employee) {
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: { cashCollected: { increment: chargeAmount } },
+                    });
+                    await prisma.cashTransaction.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef: booking.bookingRef,
+                            guestName: booking.customerName,
+                            amount: chargeAmount,
+                            transactionType: "collection",
+                            note: `${isPet ? 'Pet' : 'Extra guest'} charge (cash) — ${booking.property?.name || "Property"}`,
+                        },
+                    });
+                }
+            }
+        }
 
         return res.status(201).json(extraGuest);
     } catch (error) {
