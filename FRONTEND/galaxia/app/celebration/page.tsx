@@ -139,7 +139,7 @@ export default function CelebrationPage() {
                                     <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17l3 3m0 0l3-3m-3 3V10m0-4V3m-4 7h8M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                 </div>
                                 <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Nearest Station</h4>
-                                <p className="font-inter text-base font-bold text-cel-text mb-1">Wadala Station</p>
+                                <p className="font-inter text-sm text-cel-text mb-1">Wadala Station</p>
                                 <p className="font-inter text-[11px] text-cel-text-muted">5 minutes walking distance</p>
                             </div>
 

@@ -134,7 +134,13 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                             <span className="text-text-primary font-inter text-xs sm:text-sm">Max {villa.maxPersons || 8} Guests</span>
                         </div>
-                        {parent.amenities.map((amenity, i) => (
+                        {parent.amenities
+                            .filter((amenity) => {
+                                if (!villa.configuration) return true;
+                                const configLower = villa.configuration.map((c: string) => c.toLowerCase());
+                                return !configLower.some((c: string) => c.includes(amenity.name.toLowerCase()) || amenity.name.toLowerCase().includes(c));
+                            })
+                            .map((amenity, i) => (
                             <div key={`amenity-${i}`} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-white hover:border-antique-gold/30 hover:shadow-sm transition-all">
                                 <span className="text-antique-gold">★</span>
                                 <span className="text-text-primary font-inter text-xs sm:text-sm">{amenity.name}</span>

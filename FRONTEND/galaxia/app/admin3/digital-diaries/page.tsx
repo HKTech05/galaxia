@@ -86,6 +86,7 @@ export default function Admin1Dashboard() {
 
     // Fetch DD calendar events from API
     const fetchEvents = useCallback(async (date: Date) => {
+        setLoading(true);
         try {
             const dateStr = date.toISOString().split('T')[0];
             const data = await api.get(`/bookings/dd?date=${dateStr}`);
@@ -975,8 +976,25 @@ export default function Admin1Dashboard() {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
                         Digital Diaries Schedule
                         {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length > 0 && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-100 border border-pink-200 text-pink-700 rounded-full text-xs font-black tracking-widest uppercase shadow-sm animate-pulse">
+                            <span className="relative group inline-flex items-center gap-1.5 px-3 py-1 bg-pink-50 border border-pink-200 text-pink-700 rounded-full text-xs font-semibold cursor-default">
                                 🎂 {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length} Cake{eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length > 1 ? 's' : ''} Today
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cake Orders</p>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                        {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").map((ev) => (
+                                            <div key={ev.id} className="flex items-start gap-2 p-2 rounded-lg bg-pink-50/50">
+                                                <span className="text-xs">🎂</span>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-700">{ev.customerName}</p>
+                                                    {(ev.addOns?.cakeMessage || ev.cakeMessage) && (
+                                                        <p className="text-[11px] text-pink-600 italic mt-0.5">&quot;{ev.addOns?.cakeMessage || ev.cakeMessage}&quot;</p>
+                                                    )}
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">{ev.startHour > 12 ? (ev.startHour - 12) : ev.startHour}:00 {ev.startHour >= 12 ? 'PM' : 'AM'} · {ev.screen}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </span>
                         )}
                     </h1>

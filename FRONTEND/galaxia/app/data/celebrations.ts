@@ -74,8 +74,8 @@ export const packages: Record<string, CelebrationPackage> = {
     },
     celebration: {
         id: "celebration",
-        name: "DECORATION + MOVIE TIME",
-        tagline: "Decoration + Movie Time",
+        name: "Celebration",
+        tagline: "Celebration Package",
         description:
             "Transform your private screening into an unforgettable celebration. Whether it's a birthday, anniversary, proposal, or bachelorette — we set the stage with dreamy décor, fog effects, candlelight, and a personalized LED message tag.",
         image: "",

@@ -549,7 +549,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         </div>
                                         <div className="space-y-2">
                                             {slots.map((slot) => {
-                                                const slotHour = parseInt(slot.id);
+                                                const slotHour = parseInt(slot.id.replace("slot-", ""));
                                                 const isBooked = bookedSlots.includes(slotHour);
                                                 const isSlotSelected = selectedSlots.includes(slot.id);
                                                 

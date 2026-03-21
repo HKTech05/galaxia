@@ -129,7 +129,7 @@ export default function HomePage() {
 			  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 			  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 md:p-10">
 				<p className="text-amber-300 text-xs tracking-[0.25em] uppercase mb-2 font-inter">Private Screenings</p>
-				<h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">DECORATION + MOVIE TIME</h2>
+				<h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">CELEBRATION</h2>
 				<p className="text-amber-200 font-inter text-sm sm:text-base mb-1">Digital Diaries</p>
 				<p className="text-white/70 font-inter text-xs sm:text-sm leading-relaxed mb-6 max-w-sm">
 				  Premium private movie screening experience with themed rooms. Celebrate birthdays, anniversaries, or enjoy a cinematic evening in style.

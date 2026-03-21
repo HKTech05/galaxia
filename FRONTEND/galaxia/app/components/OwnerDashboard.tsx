@@ -558,23 +558,23 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                             <div className={`p-3 rounded-lg border ${item.balanceCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                    Balance {item.balanceCollected ? 'âœ“ Collected' : 'â³ Pending'}
+                                    Balance {item.balanceCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
                                 {item.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.balanceAmount).toLocaleString('en-IN')}</p>}
                                 {item.balanceCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
-                                        via {item.balanceMode} Â· {item.balanceTime}
+                                        via {item.balanceMode} · {item.balanceTime}
                                     </p>
                                 )}
                             </div>
                             <div className={`p-3 rounded-lg border ${item.depositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                    Security Deposit {item.depositCollected ? 'âœ“ Collected' : 'â³ Pending'}
+                                    Security Deposit {item.depositCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
                                 {item.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
                                 {item.depositCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
-                                        via {item.depositMode} Â· {item.depositTime}
+                                        via {item.depositMode} · {item.depositTime}
                                     </p>
                                 )}
                             </div>
@@ -750,7 +750,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
                                     <p className="text-xl font-bold text-emerald-700 mt-1">₹{totalRevenue.toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">â†‘ 12% vs last period</p>
+                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">↑ 12% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Occupancy Rate</p>
@@ -765,7 +765,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Nights Booked</p>
                                     <p className="text-xl font-bold text-amber-700 mt-1">{totalNights}</p>
-                                    <p className="text-[10px] text-amber-500 font-medium mt-1">â†‘ 8% vs last period</p>
+                                    <p className="text-[10px] text-amber-500 font-medium mt-1">↑ 8% vs last period</p>
                                 </div>
                             </div>
                         </div>
@@ -777,7 +777,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
                                     <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-violet-500 font-medium mt-1">â†‘ 18% vs last period</p>
+                                    <p className="text-[10px] text-violet-500 font-medium mt-1">↑ 18% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>
@@ -1454,15 +1454,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                                                 <div className={`p-3 rounded-lg border ${villa.balanceCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                     <p className={`text-[10px] font-bold uppercase tracking-wider ${villa.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                                        Balance {villa.balanceCollected ? 'âœ“ Collected' : 'â³ Pending'}
+                                                        Balance {villa.balanceCollected ? '✓ Collected' : '⏳ Pending'}
                                                     </p>
-                                                    {villa.balanceCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.balanceMode} Â· {villa.balanceTime}</p>}
+                                                    {villa.balanceCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.balanceMode} · {villa.balanceTime}</p>}
                                                 </div>
                                                 <div className={`p-3 rounded-lg border ${villa.depositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                     <p className={`text-[10px] font-bold uppercase tracking-wider ${villa.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                                        Security Deposit {villa.depositCollected ? 'âœ“ Collected' : 'â³ Pending'}
+                                                        Security Deposit {villa.depositCollected ? '✓ Collected' : '⏳ Pending'}
                                                     </p>
-                                                    {villa.depositCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.depositMode} Â· {villa.depositTime}</p>}
+                                                    {villa.depositCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.depositMode} · {villa.depositTime}</p>}
                                                 </div>
                                             </div>
 
