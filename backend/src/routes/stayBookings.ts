@@ -96,7 +96,7 @@ router.post("/", async (req, res) => {
             }
 
             if (isMultiUnit) {
-                // ── Multi-unit property (e.g. Amstel Nest with 14 cottages) ──
+                // ── Multi-unit property (e.g. Amstel Nest with 15 cottages) ──
                 // For each date in the requested range, count how many units are booked
                 const allSubIds = subProperties.map(sp => sp.id);
                 const bookedSubIdsForRange = new Set<number>();

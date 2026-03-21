@@ -24,8 +24,8 @@ async function syncVillas() {
     
     console.log(`Currently has ${existing.length} sub-properties.`);
 
-    // 3. Ensure 13 standard cottages
-    for (let i = 1; i <= 13; i++) {
+    // 3. Ensure 14 standard cottages
+    for (let i = 1; i <= 14; i++) {
         const slug = `cottage-${i}`;
         const name = `Cottage ${i}`;
         
@@ -48,20 +48,20 @@ async function syncVillas() {
     // 4. Ensure 1 family cottage
     await prisma.subProperty.upsert({
         where: { propertyId_slug: { propertyId: amstel.id, slug: "family-cottage" } },
-        update: { name: "Family Cottage (14)", isActive: true, displayOrder: 14 },
+        update: { name: "Family Cottage (15)", isActive: true, displayOrder: 15 },
         create: {
             propertyId: amstel.id,
             slug: "family-cottage",
-            name: "Family Cottage (14)",
+            name: "Family Cottage (15)",
             theme: "Amsterdam-Inspired (Larger)",
             description: "Spacious cottage with 2 double beds — perfect for families.",
             maxPersons: 6,
-            displayOrder: 14,
+            displayOrder: 15,
             isActive: true
         }
     });
 
-    console.log("Amstel Nest sync complete (14 villas ensured).");
+    console.log("Amstel Nest sync complete (15 villas ensured).");
     process.exit(0);
 }
 

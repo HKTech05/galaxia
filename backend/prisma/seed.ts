@@ -106,7 +106,7 @@ async function main() {
             bookingPolicy: "80% payable online at booking · 20% payable at the venue",
             foodIncluded: true, foodDetails: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.",
             foodType: "Veg Only (Jain on request)", location: "Karjat, Maharashtra, India",
-            description: "14 unique cottages with private indoor pools. Meals included.", displayOrder: 2,
+            description: "15 unique cottages with private indoor pools. Meals included.", displayOrder: 2,
         },
         {
             slug: "ambrose", name: "Ambrose", subtitle: "Themed Villa Resort",

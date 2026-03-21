@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -14,7 +14,7 @@ import {
 import CustomDatePicker from "./CustomDatePicker";
 import { api } from "../../lib/api";
 
-// ─── CUSTOM SELECT COMPONENT (Fixes Windows native font rendering bug) ───
+// â”€â”€â”€ CUSTOM SELECT COMPONENT (Fixes Windows native font rendering bug) â”€â”€â”€
 const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (v: string) => void, options: { label: string, options?: string[] }[] | string[] }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -69,7 +69,7 @@ const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (
 
 
 
-// Website Photo Sections — hierarchical: group → sub-sections
+// Website Photo Sections â€” hierarchical: group â†’ sub-sections
 interface ImageSubSection { id: string; label: string; maxImages?: number; }
 interface ImageGroup { id: string; label: string; subSections: ImageSubSection[]; }
 
@@ -106,58 +106,58 @@ const staycationGroups: ImageGroup[] = [
         { id: "ambrose/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
         { id: "ambrose/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
         // Per-villa sections
-        { id: "ambrose/take-1/slideshow", label: "TAKE-1 — Slideshow" },
-        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 — Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/alta/slideshow", label: "ALTA — Slideshow" },
-        { id: "ambrose/alta/thumbnail", label: "ALTA — Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/santorini/slideshow", label: "SANTORINI — Slideshow" },
-        { id: "ambrose/santorini/thumbnail", label: "SANTORINI — Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/bamboosa/slideshow", label: "BAMBOOSA — Slideshow" },
-        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA — Main Thumbnail", maxImages: 1 },
-        { id: "ambrose/cypress/slideshow", label: "CYPRESS — Slideshow" },
-        { id: "ambrose/cypress/thumbnail", label: "CYPRESS — Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/take-1/slideshow", label: "TAKE-1 â€” Slideshow" },
+        { id: "ambrose/take-1/thumbnail", label: "TAKE-1 â€” Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/alta/slideshow", label: "ALTA â€” Slideshow" },
+        { id: "ambrose/alta/thumbnail", label: "ALTA â€” Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/santorini/slideshow", label: "SANTORINI â€” Slideshow" },
+        { id: "ambrose/santorini/thumbnail", label: "SANTORINI â€” Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/bamboosa/slideshow", label: "BAMBOOSA â€” Slideshow" },
+        { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA â€” Main Thumbnail", maxImages: 1 },
+        { id: "ambrose/cypress/slideshow", label: "CYPRESS â€” Slideshow" },
+        { id: "ambrose/cypress/thumbnail", label: "CYPRESS â€” Main Thumbnail", maxImages: 1 },
     ]},
     { id: "amstel-nest", label: "Amstel Nest", subSections: [
         { id: "amstel-nest/slideshow", label: "Slideshow Images" },
         { id: "amstel-nest/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
         { id: "amstel-nest/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
-        { id: "amstel-nest/standard-cottage/slideshow", label: "Standard Cottage — Slideshow" },
-        { id: "amstel-nest/standard-cottage/thumbnail", label: "Standard Cottage — Main Thumbnail", maxImages: 1 },
-        { id: "amstel-nest/family-cottage/slideshow", label: "Family Cottage — Slideshow" },
-        { id: "amstel-nest/family-cottage/thumbnail", label: "Family Cottage — Main Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/standard-cottage/slideshow", label: "Standard Cottage â€” Slideshow" },
+        { id: "amstel-nest/standard-cottage/thumbnail", label: "Standard Cottage â€” Main Thumbnail", maxImages: 1 },
+        { id: "amstel-nest/family-cottage/slideshow", label: "Family Cottage â€” Slideshow" },
+        { id: "amstel-nest/family-cottage/thumbnail", label: "Family Cottage â€” Main Thumbnail", maxImages: 1 },
     ]},
 ];
 
 const ddGroups: ImageGroup[] = [
-    // Per-screen sections — each screen has Movie Time and Deco+Movie Time sub-sections
+    // Per-screen sections â€” each screen has Movie Time and Deco+Movie Time sub-sections
     { id: "dd/sandy-screen", label: "Sandy Screen", subSections: [
-        { id: "dd/sandy-screen/movie-time/slideshow", label: "Movie Time — Slideshow" },
-        { id: "dd/sandy-screen/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
-        { id: "dd/sandy-screen/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
-        { id: "dd/sandy-screen/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/sandy-screen/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
+        { id: "dd/sandy-screen/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/sandy-screen/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
+        { id: "dd/sandy-screen/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/cine-love", label: "Cine Love", subSections: [
-        { id: "dd/cine-love/movie-time/slideshow", label: "Movie Time — Slideshow" },
-        { id: "dd/cine-love/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
-        { id: "dd/cine-love/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
-        { id: "dd/cine-love/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/cine-love/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
+        { id: "dd/cine-love/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/cine-love/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
+        { id: "dd/cine-love/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/park-n-watch", label: "Park N Watch", subSections: [
-        { id: "dd/park-n-watch/movie-time/slideshow", label: "Movie Time — Slideshow" },
-        { id: "dd/park-n-watch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
-        { id: "dd/park-n-watch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
-        { id: "dd/park-n-watch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/park-n-watch/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
+        { id: "dd/park-n-watch/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/park-n-watch/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
+        { id: "dd/park-n-watch/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
     ]},
     { id: "dd/baywatch", label: "Baywatch", subSections: [
-        { id: "dd/baywatch/movie-time/slideshow", label: "Movie Time — Slideshow" },
-        { id: "dd/baywatch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
-        { id: "dd/baywatch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
-        { id: "dd/baywatch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
+        { id: "dd/baywatch/movie-time/slideshow", label: "Movie Time â€” Slideshow" },
+        { id: "dd/baywatch/movie-time/thumbnail", label: "Movie Time â€” Thumbnail", maxImages: 1 },
+        { id: "dd/baywatch/celebration/slideshow", label: "Deco + Movie Time â€” Slideshow" },
+        { id: "dd/baywatch/celebration/thumbnail", label: "Deco + Movie Time â€” Thumbnail", maxImages: 1 },
     ]},
 ];
 
 
-// ─── TABS ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ TABS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const tabs = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -166,7 +166,7 @@ const tabs = [
     { key: "website", label: "Website", icon: Globe },
 ];
 
-// ─── CUSTOM TOOLTIP ──────────────────────────────────────────────────────
+// â”€â”€â”€ CUSTOM TOOLTIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const AmbroseTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -174,7 +174,7 @@ const AmbroseTooltip = ({ active, payload }: any) => {
         return (
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-lg">
                 <p className="font-bold text-slate-800 text-sm">{d.name}</p>
-                <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: ₹{d.sales.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: â‚¹{d.sales.toLocaleString('en-IN')}</p>
                 <p className="text-xs text-indigo-600 font-semibold">Nights: {d.nights}</p>
             </div>
         );
@@ -182,7 +182,7 @@ const AmbroseTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-// ─── COMPONENT ───────────────────────────────────────────────────────────
+// â”€â”€â”€ COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTab?: string }) {
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -258,7 +258,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [propertyStatusLive, setPropertyStatusLive] = useState<any[]>([]);
     const [ddBookingsLive, setDdBookingsLive] = useState<any[]>([]);
 
-    // Website tab — Blackout Calendar
+    // Website tab â€” Blackout Calendar
     const [blackoutPropertyKey, setBlackoutPropertyKey] = useState("");
     const [blackoutDates, setBlackoutDates] = useState<Date[]>([]);
     const [blackoutReason, setBlackoutReason] = useState("");
@@ -282,7 +282,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         propertyList.forEach(p => {
             if (p.subProperties && p.subProperties.length > 0) {
                 p.subProperties.forEach((sp: any) => {
-                    const label = `${p.name} — ${sp.name}`;
+                    const label = `${p.name} â€” ${sp.name}`;
                     if (p.slug === 'ambrose') ambroseVillas.push(label);
                     else if (p.slug === 'amstel-nest') amstelNest.push(label);
                 });
@@ -302,7 +302,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         for (const p of propertyList) {
             if (p.subProperties && p.subProperties.length > 0) {
                 for (const sp of p.subProperties) {
-                    if (`${p.name} — ${sp.name}` === label) return { propertyId: p.id, subPropertyId: sp.id };
+                    if (`${p.name} â€” ${sp.name}` === label) return { propertyId: p.id, subPropertyId: sp.id };
                 }
             }
             if (p.name === label) return { propertyId: p.id, subPropertyId: null };
@@ -494,7 +494,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         { key: "1y", label: "Yearly" },
     ];
 
-    // ─── STATUS ROW COMPONENT ────────────────────────────────────────────
+    // â”€â”€â”€ STATUS ROW COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const StatusRow = ({ item }: { item: any }) => {
         const isExpanded = expandedProperty === item.name || expandedVilla === item.name;
         const toggle = () => {
@@ -558,23 +558,23 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                             <div className={`p-3 rounded-lg border ${item.balanceCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                    Balance {item.balanceCollected ? '✓ Collected' : '⏳ Pending'}
+                                    Balance {item.balanceCollected ? 'âœ“ Collected' : 'â³ Pending'}
                                 </p>
-                                {item.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.balanceAmount).toLocaleString('en-IN')}</p>}
+                                {item.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">â‚¹{Number(item.balanceAmount).toLocaleString('en-IN')}</p>}
                                 {item.balanceCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
-                                        via {item.balanceMode} · {item.balanceTime}
+                                        via {item.balanceMode} Â· {item.balanceTime}
                                     </p>
                                 )}
                             </div>
                             <div className={`p-3 rounded-lg border ${item.depositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                 <p className={`text-[10px] font-bold uppercase tracking-wider ${item.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                    Security Deposit {item.depositCollected ? '✓ Collected' : '⏳ Pending'}
+                                    Security Deposit {item.depositCollected ? 'âœ“ Collected' : 'â³ Pending'}
                                 </p>
-                                {item.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
+                                {item.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">â‚¹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
                                 {item.depositCollected && (
                                     <p className="text-xs font-medium text-slate-600 mt-1">
-                                        via {item.depositMode} · {item.depositTime}
+                                        via {item.depositMode} Â· {item.depositTime}
                                     </p>
                                 )}
                             </div>
@@ -597,7 +597,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-xs font-bold text-emerald-600">+₹{eg.chargeAmount || eg.amount || 0}</p>
+                                                <p className="text-xs font-bold text-emerald-600">+â‚¹{eg.chargeAmount || eg.amount || 0}</p>
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMethod || eg.paymentMode}</p>
                                             </div>
                                         </div>
@@ -616,7 +616,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         );
     };
 
-    // ─── TAB: DASHBOARD ──────────────────────────────────────────────────
+    // â”€â”€â”€ TAB: DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderDashboard = () => {
         const liveProperties = propertyStatusLive.length > 0 ? propertyStatusLive : [];
         const liveAmbrose = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Ambrose')?.villas || [] : [];
@@ -646,7 +646,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const bookedDaysSet = new Set<number>();
         
         if (calendarProperty.startsWith("Ambrose")) {
-            const propName = calendarProperty.split("—")[1]?.trim();
+            const propName = calendarProperty.split("â€”")[1]?.trim();
             const villa = liveAmbrose.find((v: any) => v.name === propName);
             if (villa && villa.checkedIn) {
                 // Approximate booking length or use actual checkIn/checkOut bounds
@@ -658,7 +658,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 }
             }
         } else if (calendarProperty.startsWith("Amstel Nest")) {
-            const propName = calendarProperty.split("—")[1]?.trim();
+            const propName = calendarProperty.split("â€”")[1]?.trim();
             const villa = liveAmstel.find((v: any) => v.name === propName);
             if (villa && villa.checkedIn) {
                 const inDate = new Date(villa.checkInTime);
@@ -749,8 +749,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
-                                    <p className="text-xl font-bold text-emerald-700 mt-1">₹{totalRevenue.toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">↑ 12% vs last period</p>
+                                    <p className="text-xl font-bold text-emerald-700 mt-1">â‚¹{totalRevenue.toLocaleString('en-IN')}</p>
+                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">â†‘ 12% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Occupancy Rate</p>
@@ -759,13 +759,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Nightly Rate</p>
-                                    <p className="text-xl font-bold text-indigo-700 mt-1">₹{avgNightlyRate.toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-indigo-700 mt-1">â‚¹{avgNightlyRate.toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-indigo-500 font-medium mt-1">Across all properties</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Nights Booked</p>
                                     <p className="text-xl font-bold text-amber-700 mt-1">{totalNights}</p>
-                                    <p className="text-[10px] text-amber-500 font-medium mt-1">↑ 8% vs last period</p>
+                                    <p className="text-[10px] text-amber-500 font-medium mt-1">â†‘ 8% vs last period</p>
                                 </div>
                             </div>
                         </div>
@@ -776,8 +776,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
-                                    <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-violet-500 font-medium mt-1">↑ 18% vs last period</p>
+                                    <p className="text-xl font-bold text-violet-700 mt-1">â‚¹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
+                                    <p className="text-[10px] text-violet-500 font-medium mt-1">â†‘ 18% vs last period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>
@@ -786,7 +786,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Booking Value</p>
-                                    <p className="text-xl font-bold text-teal-700 mt-1">₹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
+                                    <p className="text-xl font-bold text-teal-700 mt-1">â‚¹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
                                     <p className="text-[10px] text-teal-500 font-medium mt-1">Per reservation</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -798,13 +798,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
                         {/* STAYCATION SECTION */}
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation — Resort-wise Insights</h2>
+                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation â€” Resort-wise Insights</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Revenue and occupancy performance breakdown.</p>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Ambrose Pie Chart */}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Ambrose — Villa Performance</h3>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Ambrose â€” Villa Performance</h3>
                                     <p className="text-xs text-slate-400 font-medium mb-4">Hover to see total sales & nights booked</p>
                                     <ResponsiveContainer width="100%" height={280}>
                                         <PieChart>
@@ -822,19 +822,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 {/* Amstel Nest Bar Charts */}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest — Total Sales by Villa</h3>
+                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest â€” Total Sales by Villa</h3>
                                         <ResponsiveContainer width="100%" height={180}>
                                             <BarChart data={dashboardKPIs?.charts?.amstelSales || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="villa" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
-                                                <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-                                                <Tooltip formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Sales"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
+                                                <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
+                                                <Tooltip formatter={(value: any) => [`â‚¹${Number(value).toLocaleString('en-IN')}`, "Sales"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
                                                 <Bar dataKey="sales" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest — Total Nights by Villa</h3>
+                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Amstel Nest â€” Total Nights by Villa</h3>
                                         <ResponsiveContainer width="100%" height={180}>
                                             <BarChart data={dashboardKPIs?.charts?.amstelNights || []}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -851,7 +851,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                         {/* STANDALONE VILLAS INSIGHTS */}
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Standalone Villas — Performance</h2>
+                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Standalone Villas â€” Performance</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Total sales and nights booked for Hill View, Mount View, La Paraiso & Heavenly Villa.</p>
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Total Sales by Villa</h3>
@@ -860,7 +860,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <BarChart data={dashboardKPIs?.charts?.standaloneVillas || []} barCategoryGap="20%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
                                         <Tooltip
                                             content={({ active, payload }: any) => {
                                                 if (active && payload && payload.length) {
@@ -868,7 +868,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     return (
                                                         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-lg">
                                                             <p className="font-bold text-slate-800 text-sm">{d.name}</p>
-                                                            <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: ₹{d.sales.toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs text-emerald-600 font-semibold mt-1">Sales: â‚¹{d.sales.toLocaleString('en-IN')}</p>
                                                             <p className="text-xs text-indigo-600 font-semibold">Nights Booked: {d.nights}</p>
                                                         </div>
                                                     );
@@ -899,7 +899,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <LineChart data={timeRange === '1m' ? (dashboardKPIs?.charts?.earnings1Month || []) : (dashboardKPIs?.charts?.earningsYearly || []).slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="period" tick={{ fontSize: 11, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 100000).toFixed(1)}L`} />
                                         <Tooltip
                                             content={({ active, payload, label }: any) => {
                                                 if (active && payload && payload.length) {
@@ -908,7 +908,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                             <p className="font-bold text-slate-800 text-sm mb-2">{label}</p>
                                                             {payload.map((p: any, i: number) => (
                                                                 <p key={i} className="text-xs font-semibold" style={{ color: p.stroke }}>
-                                                                    {p.name}: ₹{Number(p.value).toLocaleString('en-IN')}
+                                                                    {p.name}: â‚¹{Number(p.value).toLocaleString('en-IN')}
                                                                 </p>
                                                             ))}
                                                         </div>
@@ -928,7 +928,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                         {/* DIGITAL DIARIES SECTION */}
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries — Revenue Insights</h2>
+                            <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries â€” Revenue Insights</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Screen-level and package-level revenue breakdown.</p>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -938,8 +938,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <BarChart data={dashboardKPIs?.charts?.ddScreen || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis dataKey="screen" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-                                            <Tooltip formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
+                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
+                                            <Tooltip formatter={(value: any) => [`â‚¹${Number(value).toLocaleString('en-IN')}`, "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
                                             <Bar dataKey="revenue" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -951,10 +951,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <BarChart data={dashboardKPIs?.charts?.ddPackage || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis dataKey="package" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748b" }} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 1000).toFixed(0)}K`} />
                                             <Tooltip
                                                 formatter={(value: any, name: any) => {
-                                                    if (name === "revenue") return [`₹${Number(value).toLocaleString('en-IN')}`, "Revenue"];
+                                                    if (name === "revenue") return [`â‚¹${Number(value).toLocaleString('en-IN')}`, "Revenue"];
                                                     return [value, "Bookings"];
                                                 }}
                                                 contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }}
@@ -967,9 +967,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                             </div>
 
-                            {/* Digital Diaries Booking Source — Website vs Walk-in */}
+                            {/* Digital Diaries Booking Source â€” Website vs Walk-in */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source — Website vs Walk-in</h3>
+                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source â€” Website vs Walk-in</h3>
                                 <ResponsiveContainer width="100%" height={260}>
                                     <PieChart>
                                         <Pie data={dashboardKPIs?.charts?.ddSource || []} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={6} dataKey="value" nameKey="name" stroke="none">
@@ -1003,7 +1003,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Additional Insights</h2>
                             <p className="text-sm text-slate-500 font-medium mb-6">Occupancy trends and property revenue comparison.</p>
 
-                            {/* Occupancy Trend Area Chart — full width */}
+                            {/* Occupancy Trend Area Chart â€” full width */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Occupancy Trend (%)</h3>
                                 <ResponsiveContainer width="100%" height={300}>
@@ -1036,20 +1036,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                             {/* Property Revenue Comparison Bar Chart */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue Comparison — Current vs Previous Period</h3>
+                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue Comparison â€” Current vs Previous Period</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={dashboardKPIs?.charts?.propertyRevenue || []} barCategoryGap="15%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="property" tick={{ fontSize: 10, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `â‚¹${(v / 100000).toFixed(1)}L`} />
                                         <Tooltip
                                             content={({ active, payload, label }: any) => {
                                                 if (active && payload && payload.length) {
                                                     return (
                                                         <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-lg">
                                                             <p className="font-bold text-slate-800 text-sm mb-1">{label}</p>
-                                                            <p className="text-xs text-emerald-600 font-semibold">Current: ₹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
-                                                            <p className="text-xs text-slate-500 font-semibold">Previous: ₹{Number(payload[1]?.value).toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs text-emerald-600 font-semibold">Current: â‚¹{Number(payload[0]?.value).toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs text-slate-500 font-semibold">Previous: â‚¹{Number(payload[1]?.value).toLocaleString('en-IN')}</p>
                                                             <p className="text-xs text-indigo-600 font-bold mt-1">Growth: +{Math.round(((payload[0]?.value - payload[1]?.value) / payload[1]?.value) * 100)}%</p>
                                                         </div>
                                                     );
@@ -1154,8 +1154,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 onChange={(val: string) => { setCalendarProperty(val); setBlackoutPropertyKey(val); }}
                                 options={propertyOptions.length > 0 ? propertyOptions : [
                                     "Hill View", "Mount View", "La Paraiso", "Heavenly Villa",
-                                    ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose — ${v.name}`),
-                                    ...Array.from({ length: 14 }, (_, i) => `Amstel Nest — Villa ${i + 1}`)
+                                    ...(dashboardKPIs?.charts?.ambrose || []).map((v: any) => `Ambrose â€” ${v.name}`),
+                                    ...Array.from({ length: 14 }, (_, i) => `Amstel Nest â€” Villa ${i + 1}`)
                                 ]}
                             />
                         </div>
@@ -1277,7 +1277,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                 {/* Middle: Active Blocks for selected property */}
                                 <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks — {calendarProperty || 'Select Property'}</h4>
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks â€” {calendarProperty || 'Select Property'}</h4>
                                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                                         {filteredBlocks.length === 0 ? (
                                             <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
@@ -1285,7 +1285,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             filteredBlocks.map(block => (
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} â€” ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                                                             {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
@@ -1310,7 +1310,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             activeBlocks.map(block => (
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
+                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} â€” ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
                                                             {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
@@ -1332,7 +1332,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         );
     };
 
-    // ─── TAB: PROPERTIES ─────────────────────────────────────────────────
+    // â”€â”€â”€ TAB: PROPERTIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderProperties = () => {
         // Group live properties by cluster
         const liveProperties = propertyStatusLive.length > 0 ? propertyStatusLive : [];
@@ -1394,7 +1394,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
                             <h3 className="text-lg font-bold text-slate-800">
-                                {villaModal.type === "ambrose" ? "Ambrose — Villa Status" : "Amstel Nest — Villa Status"}
+                                {villaModal.type === "ambrose" ? "Ambrose â€” Villa Status" : "Amstel Nest â€” Villa Status"}
                             </h3>
                             <button onClick={() => { setVillaModal({ ...villaModal, open: false }); setExpandedVilla(null); }} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                                 <X size={20} className="text-slate-500" />
@@ -1454,15 +1454,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                                                 <div className={`p-3 rounded-lg border ${villa.balanceCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                     <p className={`text-[10px] font-bold uppercase tracking-wider ${villa.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                                        Balance {villa.balanceCollected ? '✓ Collected' : '⏳ Pending'}
+                                                        Balance {villa.balanceCollected ? 'âœ“ Collected' : 'â³ Pending'}
                                                     </p>
-                                                    {villa.balanceCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.balanceMode} · {villa.balanceTime}</p>}
+                                                    {villa.balanceCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.balanceMode} Â· {villa.balanceTime}</p>}
                                                 </div>
                                                 <div className={`p-3 rounded-lg border ${villa.depositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                     <p className={`text-[10px] font-bold uppercase tracking-wider ${villa.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                                        Security Deposit {villa.depositCollected ? '✓ Collected' : '⏳ Pending'}
+                                                        Security Deposit {villa.depositCollected ? 'âœ“ Collected' : 'â³ Pending'}
                                                     </p>
-                                                    {villa.depositCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.depositMode} · {villa.depositTime}</p>}
+                                                    {villa.depositCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.depositMode} Â· {villa.depositTime}</p>}
                                                 </div>
                                             </div>
 
@@ -1481,7 +1481,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="text-xs font-bold text-emerald-600">+₹{eg.chargeAmount || eg.amount || 0}</p>
+                                                                    <p className="text-xs font-bold text-emerald-600">+â‚¹{eg.chargeAmount || eg.amount || 0}</p>
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase">{eg.paymentMethod || eg.paymentMode}</p>
                                                                 </div>
                                                             </div>
@@ -1507,9 +1507,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         );
     };
 
-    // ─── TAB: DD (Read-only) ─────────────────────────────────────────────
+    // â”€â”€â”€ TAB: DD (Read-only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderDD = () => {
-        // Group bookings by screen — filtered by selected date
+        // Group bookings by screen â€” filtered by selected date
         const screenGroups: Record<string, any[]> = {};
         const selectedDateStr = `${ddViewDate.getFullYear()}-${String(ddViewDate.getMonth()+1).padStart(2,'0')}-${String(ddViewDate.getDate()).padStart(2,'0')}`;
         
@@ -1523,9 +1523,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             rawDate: b.bookingDate ? (() => { const d = new Date(b.bookingDate); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
             slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
             source: b.source === 'website' ? 'Online' : 'Walk-in',
-            upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
+            upfrontAmt: `â‚¹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
             upfrontMode: b.paymentMethod || "Online",
-            remainingAmt: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
+            remainingAmt: `â‚¹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
             remainingStatus: b.amountToCollect <= 0 ? "Paid" : "Pending",
             status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
             raw: b
@@ -1544,7 +1544,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Date View Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Digital Diaries — Bookings</h2>
+                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Digital Diaries â€” Bookings</h2>
                         <p className="text-sm text-slate-500 font-medium mt-1">Read-only view grouped by screen.</p>
                     </div>
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
@@ -1644,7 +1644,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         );
     };
 
-    // ─── TAB: WEBSITE ────────────────────────────────────────────────────
+    // â”€â”€â”€ TAB: WEBSITE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderImageSubSection = (sub: ImageSubSection) => {
         const images = siteImages[sub.id] || [];
         const isOpen = !collapsedSections.has(sub.id);
@@ -1743,7 +1743,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         <div className="space-y-8">
             {/* Staycation Images */}
             <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation — Photo Manager</h2>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Staycation â€” Photo Manager</h2>
                 <p className="text-sm text-slate-500 font-medium mb-4">Manage photos for each staycation property. All uploads auto-compress to WebP.</p>
                 <div className="space-y-3">
                     {staycationGroups.map(group => renderImageGroup(group))}
@@ -1752,211 +1752,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
             {/* Digital Diaries Images */}
             <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries — Photo Manager</h2>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Digital Diaries â€” Photo Manager</h2>
                 <p className="text-sm text-slate-500 font-medium mb-4">Manage photos for DD screens and packages.</p>
                 <div className="space-y-3">
                     {ddGroups.map(group => renderImageGroup(group))}
                 </div>
             </div>
 
-            {/* Blackout Calendar */}
-            <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Blackout / Block Calendar</h2>
-                <p className="text-sm text-slate-500 font-medium mb-6">Block any property or villa for private events, maintenance, or blackout dates.</p>
-
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left: Property Selector + Reason */}
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700 uppercase">Select Property / Villa</label>
-                                <CustomSelect
-                                    value={blackoutPropertyKey}
-                                    onChange={setBlackoutPropertyKey}
-                                    options={propertyOptions}
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700 uppercase">Reason</label>
-                                <CustomSelect
-                                    value={blackoutReason}
-                                    onChange={setBlackoutReason}
-                                    options={[
-                                        "Private Event",
-                                        "Maintenance",
-                                        "Owner Reservation",
-                                        "Seasonal Closure",
-                                        "Other"
-                                    ]}
-                                />
-                            </div>
-                            {blackoutDates.length > 0 && (
-                                <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
-                                    <p className="text-xs text-purple-600 font-bold uppercase">Selected Dates ({blackoutDates.length})</p>
-                                    <div className="mt-1 flex flex-wrap gap-1.5">
-                                        {blackoutDates.map((d, idx) => (
-                                            <span key={idx} className="bg-white px-2 py-1 flex items-center gap-1 rounded border border-purple-200 text-[10px] font-bold text-purple-800 shadow-sm">
-                                                {d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                                                <X
-                                                    size={10}
-                                                    className="cursor-pointer hover:text-red-500"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setBlackoutDates(blackoutDates.filter((_, i) => i !== idx));
-                                                    }}
-                                                />
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            <button
-                                onClick={handleBlockDates}
-                                disabled={blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey || blackoutLoading}
-                                className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                            >
-                                {blackoutLoading ? (
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <><Ban size={16} /> Block Property</>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Center: Inline Calendar */}
-                        <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                            <div className="flex justify-between items-center mb-4">
-                                <button onClick={() => setBlackoutViewMonth(new Date(blackoutViewMonth.getFullYear(), blackoutViewMonth.getMonth() - 1, 1))} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors">
-                                    <ChevronRight size={18} className="rotate-180" />
-                                </button>
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                                    {blackoutViewMonth.toLocaleString('default', { month: 'long' })} {blackoutViewMonth.getFullYear()}
-                                </h3>
-                                <button onClick={() => setBlackoutViewMonth(new Date(blackoutViewMonth.getFullYear(), blackoutViewMonth.getMonth() + 1, 1))} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors">
-                                    <ChevronRight size={18} />
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-7 gap-1 mb-2">
-                                {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map(d => (
-                                    <div key={d} className="text-center text-[10px] font-bold text-slate-400 py-1">{d}</div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-7 gap-1">
-                                {(() => {
-                                    const year = blackoutViewMonth.getFullYear();
-                                    const month = blackoutViewMonth.getMonth();
-                                    const firstDay = new Date(year, month, 1).getDay();
-                                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                                    const cells: React.ReactNode[] = [];
-                                    for (let i = 0; i < firstDay; i++) cells.push(<div key={`e-${i}`} className="h-10" />);
-                                    const blockedDays = getBlockedDaysForMonth();
-                                    for (let d = 1; d <= daysInMonth; d++) {
-                                        const date = new Date(year, month, d);
-                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                        const isBlocked = blockedDays.includes(d);
-                                        const isBooked = bookedDays.includes(d);
-                                        const isSelected = blackoutDates.some(bd => bd.getDate() === d && bd.getMonth() === month && bd.getFullYear() === year);
-                                        const isToday = new Date().getDate() === d && new Date().getMonth() === month && new Date().getFullYear() === year;
-                                        const isDisabled = isBooked;
-                                        cells.push(
-                                            <button
-                                                key={d}
-                                                disabled={isDisabled}
-                                                onClick={() => {
-                                                    if (isDisabled) return;
-                                                    if (isSelected) {
-                                                        setBlackoutDates(blackoutDates.filter(bd => !(bd.getDate() === d && bd.getMonth() === month && bd.getFullYear() === year)));
-                                                    } else {
-                                                        setBlackoutDates([...blackoutDates, date]);
-                                                    }
-                                                }}
-                                                className={`h-10 rounded-lg text-xs font-semibold flex flex-col items-center justify-center transition-all
-                                                    ${isSelected ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-300' :
-                                                        isBooked ? 'bg-teal-50 text-teal-500 border border-teal-200 cursor-not-allowed opacity-70' :
-                                                            isBlocked ? 'bg-red-50 text-red-400 border border-red-200' :
-                                                                isToday ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                                                                    isWeekend ? 'bg-amber-50/50 text-amber-700 hover:bg-amber-100' :
-                                                                        'text-slate-700 hover:bg-slate-100'}`}
-                                            >
-                                                <span>{d}</span>
-                                                {isBooked && <span className="text-[7px] text-teal-500">Booked</span>}
-                                                {isBlocked && !isBooked && <span className="text-[8px] text-red-400">Blocked</span>}
-                                            </button>
-                                        );
-                                    }
-                                    return cells;
-                                })()}
-                            </div>
-                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-200 flex-wrap">
-                                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-slate-300" /><span className="text-[10px] font-medium text-slate-500">Weekday</span></div>
-                                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-[10px] font-medium text-slate-500">Weekend</span></div>
-                                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="text-[10px] font-medium text-slate-500">Blocked</span></div>
-                                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-teal-400" /><span className="text-[10px] font-medium text-slate-500">Booked</span></div>
-                            </div>
-                        </div>
-
-                        {/* Right: Active Blocks for selected property */}
-                        <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks {blackoutPropertyKey ? `— ${blackoutPropertyKey}` : '(All Properties)'}</h4>
-                            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                                {filteredBlocks.length === 0 ? (
-                                    <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
-                                ) : (
-                                    filteredBlocks.map(block => (
-                                        <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
-                                                <p className="text-xs text-slate-500 mt-0.5">
-                                                    {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
-                                                    {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleUnblockDate(block.id)}
-                                                className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* All Properties Active Blocks */}
-                    <div className="mt-6 bg-slate-50 rounded-xl border border-slate-100 p-4">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">All Active Blocks (All Properties)</h4>
-                        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                            {activeBlocks.length === 0 ? (
-                                <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks across any property.</p>
-                            ) : (
-                                activeBlocks.map(block => (
-                                    <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
-                                                {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleUnblockDate(block.id)}
-                                            className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 
-    // ─── MAIN RENDER ─────────────────────────────────────────────────────
+    // â”€â”€â”€ MAIN RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const pageTitles: Record<string, { title: string; subtitle: string }> = {
         dashboard: { title: "Owner Dashboard", subtitle: "Complete overview of all business operations." },
         properties: { title: "Properties", subtitle: "Live check-in status across all staycation properties." },

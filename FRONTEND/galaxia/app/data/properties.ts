@@ -232,9 +232,9 @@ export const properties: Record<string, PropertyData> = {
         name: "Amstel Nest",
         subtitle: "Mini Amsterdam — Indoor Pool Cottages",
         type: "resort",
-        description: "14 unique cottages inspired by Amsterdam, each with a private indoor pool. Meals included.",
+        description: "15 unique cottages inspired by Amsterdam, each with a private indoor pool. Meals included.",
         longDescription:
-            "Welcome to Amstel Nest — a slice of Amsterdam in the heart of Karjat. This one-of-a-kind resort features 14 charming cottages, each equipped with its own private indoor pool. But the experience goes far beyond just swimming — enjoy the gaming zone with pool tables and table tennis, go boating on the lake, and savor delicious vegetarian meals included in your stay. One special cottage offers extra space with 2 double beds for larger groups.",
+            "Welcome to Amstel Nest — a slice of Amsterdam in the heart of Karjat. This one-of-a-kind resort features 15 charming cottages, each equipped with its own private indoor pool. But the experience goes far beyond just swimming — enjoy the gaming zone with pool tables and table tennis, go boating on the lake, and savor delicious vegetarian meals included in your stay. One special cottage offers extra space with 2 double beds for larger groups.",
         images: [],
         checkIn: "1:00 PM",
         checkOut: "10:00 AM",
@@ -279,7 +279,7 @@ export const properties: Record<string, PropertyData> = {
             {
                 category: "Accommodation",
                 icon: "home",
-                items: ["14 Private Cottages", "Double Beds", "Smart TV", "AC & Washroom"],
+                items: ["15 Private Cottages", "Double Beds", "Smart TV", "AC & Washroom"],
             },
             {
                 category: "Dining",
@@ -318,8 +318,8 @@ export const properties: Record<string, PropertyData> = {
             {
                 id: "standard-cottage",
                 name: "Standard Cottage",
-                theme: "Amsterdam-Inspired · 13 Units",
-                description: "Cozy cottage with double bed and private indoor pool — the essence of Amstel Nest. Auto-assigned from 13 available units.",
+                theme: "Amsterdam-Inspired · 14 Units",
+                description: "Cozy cottage with double bed and private indoor pool — the essence of Amstel Nest. Auto-assigned from 14 available units.",
                 image: "",
                 configuration: ["Double Bed", "Smart TV", "AC", "Washroom", "Indoor Private Pool", "Garden Area"],
                 maxPersons: 4,
