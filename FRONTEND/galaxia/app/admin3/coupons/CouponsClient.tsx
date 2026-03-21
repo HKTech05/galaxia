@@ -288,11 +288,10 @@ export default function CouponsClient() {
                                 <div className="relative">
                                     <CalendarDays size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
-                                        type="text"
+                                        type="date"
                                         value={newCoupon.expiryDate}
                                         onChange={e => setNewCoupon({ ...newCoupon, expiryDate: e.target.value })}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                                        placeholder="e.g. 31 Dec 2026"
                                     />
                                 </div>
                             </div>
