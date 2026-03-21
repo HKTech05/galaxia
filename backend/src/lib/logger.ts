@@ -26,7 +26,9 @@ export type AuditAction =
     | "fetch_profile_success"
     | "fetch_profile_failure"
     | "update_profile_success"
-    | "update_profile_failure";
+    | "update_profile_failure"
+    | "change_own_password"
+    | "update_sub_admin_password";
 
 interface LogOptions {
     adminId?: number;

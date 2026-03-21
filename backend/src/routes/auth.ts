@@ -265,7 +265,7 @@ router.patch("/sub-admins/:id/password", authMiddleware, async (req: AuthRequest
             return res.status(400).json({ error: "Password must be at least 6 characters" });
         }
 
-        const targetId = parseInt(req.params.id);
+        const targetId = parseInt(req.params.id as string);
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         await prisma.adminAccount.update({
