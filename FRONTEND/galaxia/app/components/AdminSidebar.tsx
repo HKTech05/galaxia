@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     CalendarDays,
@@ -22,7 +22,8 @@ import {
     Star,
     ClipboardList
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
 
 const navigationParams = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -33,7 +34,7 @@ const navigationParams = [
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-// Admin3 top-level items (non-receptionist)
+// Admin3 top-level items (owner/dev only)
 const admin3TopItems = [
     { name: "Dashboard", href: "/admin3", icon: LayoutDashboard },
     { name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList },
@@ -46,16 +47,16 @@ const admin3DailyCheckinItems = [
     { name: "Digital Diaries", href: "/admin3/dd-view", icon: Film },
 ];
 
-// Admin3 receptionist desk items (grouped)
+// Admin3 receptionist desk items — each entry maps to property slugs for filtering
 const admin3ReceptionistItems = [
-    { name: "Digital Diaries", href: "/admin3/digital-diaries", icon: Film },
-    { name: "Heavenly Villa & Hill View", href: "/admin3/heavenly-villa", icon: Hotel },
-    { name: "Mount View & La Paraiso", href: "/admin3/views-paraiso", icon: Hotel },
-    { name: "Ambrose", href: "/admin3/ambrose", icon: Hotel },
-    { name: "Amstel Nest", href: "/admin3/amstel", icon: Hotel },
+    { name: "Digital Diaries", href: "/admin3/digital-diaries", icon: Film, slugs: [] as string[] },
+    { name: "Heavenly Villa & Hill View", href: "/admin3/heavenly-villa", icon: Hotel, slugs: ["heavenly-villa", "hill-view"] },
+    { name: "Mount View & La Paraiso", href: "/admin3/views-paraiso", icon: Hotel, slugs: ["mount-view", "la-paraiso"] },
+    { name: "Ambrose", href: "/admin3/ambrose", icon: Hotel, slugs: ["ambrose"] },
+    { name: "Amstel Nest", href: "/admin3/amstel", icon: Hotel, slugs: ["amstel-nest"] },
 ];
 
-// Admin3 bottom items
+// Admin3 bottom items (owner/dev only)
 const admin3BottomItems = [
     { name: "Employees", href: "/admin3/employees", icon: BadgeDollarSign },
     { name: "Coupons", href: "/admin3/coupons", icon: Ticket },
@@ -68,12 +69,46 @@ const admin3BottomItems = [
 
 export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean }) {
     const pathname = usePathname();
+    const router = useRouter();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [receptionistOpen, setReceptionistOpen] = useState(false);
     const [dailyCheckinsOpen, setDailyCheckinsOpen] = useState(false);
 
-    const isReceptionistActive = admin3ReceptionistItems.some(item => pathname.startsWith(item.href));
+    // Admin profile for property-scoped access
+    const [assignedProperties, setAssignedProperties] = useState<string[] | null>(null);
+    const [adminRole, setAdminRole] = useState<string>("");
+    const [profileLoaded, setProfileLoaded] = useState(false);
+
+    useEffect(() => {
+        if (!isAdmin3) return;
+        api.get("/auth/me").then(data => {
+            setAdminRole(data?.role || "");
+            setAssignedProperties(data?.assignedProperties || null);
+            setProfileLoaded(true);
+        }).catch(() => { setProfileLoaded(true); });
+    }, [isAdmin3]);
+
+    // Full access = owner, developer, or null assignedProperties
+    const hasFullAccess = !assignedProperties || adminRole === "owner" || adminRole === "developer";
+
+    // Filter receptionist items by assigned property slugs
+    const visibleReceptionistItems = hasFullAccess
+        ? admin3ReceptionistItems
+        : admin3ReceptionistItems.filter(item => {
+            // DD is visible to all admins
+            if (item.slugs.length === 0) return true;
+            // Check if any of the item's slugs match assigned properties
+            return item.slugs.some(s => assignedProperties!.includes(s));
+        });
+
+    const isReceptionistActive = visibleReceptionistItems.some(item => pathname.startsWith(item.href));
     const isDailyCheckinsActive = admin3DailyCheckinItems.some(item => pathname.startsWith(item.href));
+
+    const handleLogout = () => {
+        localStorage.removeItem("galaxia_token");
+        document.cookie = "admin_token=; path=/; max-age=0; samesite=strict";
+        router.push("/admin-login");
+    };
 
     const renderNavItem = (item: { name: string; href: string; icon: any }, nested = false) => {
         const isActive = item.href === "/admin3" ? pathname === item.href : pathname.startsWith(item.href);
@@ -146,39 +181,45 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1">
                     {isAdmin3 ? (
                         <>
-                            {/* Dashboard link */}
-                            {renderNavItem(admin3TopItems[0])}
-
-                            {/* Bookings link */}
-                            {renderNavItem(admin3TopItems[1])}
-
-                            {/* Collapsible Daily Checkins Section */}
-                            <button
-                                onClick={() => setDailyCheckinsOpen(!dailyCheckinsOpen)}
-                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isDailyCheckinsActive && !dailyCheckinsOpen
-                                    ? "bg-purple-50 text-purple-700"
-                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                                    }`}
-                            >
-                                <CalendarDays size={20} className={isDailyCheckinsActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
-                                <span className={`font-medium text-[15px] flex-1 ${isDailyCheckinsActive ? "font-semibold" : ""}`}>
-                                    Daily Checkins
-                                </span>
-                                <ChevronDown
-                                    size={16}
-                                    className={`transition-transform duration-200 ${dailyCheckinsOpen ? "rotate-180" : ""} ${isDailyCheckinsActive ? "text-purple-500" : "text-slate-400"}`}
-                                />
-                            </button>
-                            {dailyCheckinsOpen && (
-                                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {admin3DailyCheckinItems.map(item => renderNavItem(item, true))}
-                                </div>
+                            {/* Owner/Dev only: Dashboard, Bookings */}
+                            {hasFullAccess && (
+                                <>
+                                    {renderNavItem(admin3TopItems[0])}
+                                    {renderNavItem(admin3TopItems[1])}
+                                </>
                             )}
 
-                            {/* Website link */}
-                            {renderNavItem(admin3TopItems[2])}
+                            {/* Owner/Dev only: Daily Checkins */}
+                            {hasFullAccess && (
+                                <>
+                                    <button
+                                        onClick={() => setDailyCheckinsOpen(!dailyCheckinsOpen)}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isDailyCheckinsActive && !dailyCheckinsOpen
+                                            ? "bg-purple-50 text-purple-700"
+                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                            }`}
+                                    >
+                                        <CalendarDays size={20} className={isDailyCheckinsActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
+                                        <span className={`font-medium text-[15px] flex-1 ${isDailyCheckinsActive ? "font-semibold" : ""}`}>
+                                            Daily Checkins
+                                        </span>
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform duration-200 ${dailyCheckinsOpen ? "rotate-180" : ""} ${isDailyCheckinsActive ? "text-purple-500" : "text-slate-400"}`}
+                                        />
+                                    </button>
+                                    {dailyCheckinsOpen && (
+                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            {admin3DailyCheckinItems.map(item => renderNavItem(item, true))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
-                            {/* Collapsible Receptionist Section */}
+                            {/* Owner/Dev only: Website */}
+                            {hasFullAccess && renderNavItem(admin3TopItems[2])}
+
+                            {/* Receptionist Section — filtered by assigned properties */}
                             <button
                                 onClick={() => setReceptionistOpen(!receptionistOpen)}
                                 className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isReceptionistActive && !receptionistOpen
@@ -197,12 +238,12 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             </button>
                             {receptionistOpen && (
                                 <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {admin3ReceptionistItems.map(item => renderNavItem(item, true))}
+                                    {visibleReceptionistItems.map(item => renderNavItem(item, true))}
                                 </div>
                             )}
 
-                            {/* Bottom items */}
-                            {admin3BottomItems.map(item => renderNavItem(item))}
+                            {/* Owner/Dev only: Bottom items */}
+                            {hasFullAccess && admin3BottomItems.map(item => renderNavItem(item))}
                         </>
                     ) : (
                         navItems.map((item) => {
@@ -236,7 +277,10 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
 
                 {/* Bottom Area (Logout) */}
                 <div className="p-4 border-t border-slate-100 flex flex-col gap-2 mb-4">
-                    <button className="flex items-center gap-4 px-4 py-3 w-full rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors group">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-4 px-4 py-3 w-full rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors group"
+                    >
                         <LogOut size={20} className="text-slate-400 group-hover:text-red-500 transition-colors" />
                         <span className="font-medium text-[15px]">Log Out</span>
                     </button>

@@ -54,6 +54,7 @@ router.post("/login", loginLimiter, async (req, res) => {
                 displayName: admin.displayName,
                 role: admin.role,
                 avatarUrl: admin.avatarUrl,
+                assignedProperties: admin.assignedProperties,
             },
         });
     } catch (error: any) {
@@ -154,6 +155,7 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res) => {
             select: {
                 id: true, username: true, displayName: true,
                 role: true, avatarUrl: true, email: true,
+                assignedProperties: true,
             },
         });
         if (!admin) {
