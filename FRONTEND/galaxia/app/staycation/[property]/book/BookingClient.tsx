@@ -825,30 +825,21 @@ export default function BookingClient({ property }: BookingClientProps) {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-mono text-sm font-bold text-antique-gold">{appliedCoupon.code}</span>
-                                                    <span className="text-[10px] font-inter font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">{appliedCoupon.discount} applied</span>
+                                                    <span className="text-[10px] font-inter font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                                                        {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`} applied
+                                                    </span>
                                                 </div>
                                                 <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} className="text-red-400 text-xs font-inter hover:text-red-600">Remove</button>
                                             </div>
                                         ) : (
                                             <>
                                                 <div className="flex gap-2 mb-3">
-                                                    <input type="text" placeholder="Enter coupon code" className="flex-1 bg-white border border-border-light rounded-lg px-3 py-2 text-sm font-inter text-text-primary outline-none focus:border-antique-gold uppercase tracking-wider" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
-                                                    <button type="button" onClick={handleApplyCoupon} className="bg-antique-gold text-white font-inter text-xs font-medium px-4 py-2 rounded-lg hover:bg-dark-gold transition-colors whitespace-nowrap">Apply</button>
+                                                    <input type="text" placeholder="Enter coupon code" className="flex-1 bg-white border border-border-light rounded-lg px-3 py-2 text-sm font-inter text-text-primary outline-none focus:border-antique-gold uppercase tracking-wider" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
+                                                    <button type="button" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()} className="bg-antique-gold text-white font-inter text-xs font-medium px-4 py-2 rounded-lg hover:bg-dark-gold transition-colors whitespace-nowrap disabled:opacity-40">
+                                                        {couponLoading ? "..." : "Apply"}
+                                                    </button>
                                                 </div>
-                                                {coupons.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        <p className="text-[10px] font-inter text-text-muted">Available coupons:</p>
-                                                        {coupons.filter(c => c.active).map(c => (
-                                                            <div key={c.code} className="flex items-center justify-between bg-white rounded-lg border border-border-light px-3 py-2">
-                                                                <div>
-                                                                    <span className="font-mono text-xs font-bold text-antique-gold">{c.code}</span>
-                                                                    <span className="text-[10px] font-inter text-text-muted ml-2">{c.description}</span>
-                                                                </div>
-                                                                <button type="button" onClick={() => { setCouponCode(c.code); setAppliedCoupon(c); }} className="text-antique-gold text-[10px] font-inter font-medium hover:text-dark-gold">Apply</button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                {couponError && <p className="text-red-500 text-[10px] font-inter mt-1">{couponError}</p>}
                                             </>
                                         )}
                                     </div>
