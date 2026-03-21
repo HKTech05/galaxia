@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Key, CreditCard, Save, Settings, Users, Eye, EyeOff, Check, X } from "lucide-react";
+import { Shield, Key, CreditCard, Users, Pencil, Check, X } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface SubAdmin {
@@ -12,7 +12,7 @@ interface SubAdmin {
     email: string;
     isActive: boolean;
     assignedProperties: string[] | null;
-    lastLogin: string | null;
+    plainPassword: string | null;
 }
 
 export default function SettingsPage() {
@@ -20,10 +20,10 @@ export default function SettingsPage() {
     const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Password change state
+    // Inline editing state
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [newPassword, setNewPassword] = useState("");
-    const [showPassword, setShowPassword] = useState<number | null>(null);
+    const [editUsername, setEditUsername] = useState("");
+    const [editPassword, setEditPassword] = useState("");
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<{ id: number; msg: string; ok: boolean } | null>(null);
 
@@ -34,15 +34,12 @@ export default function SettingsPage() {
     const [ownSaving, setOwnSaving] = useState(false);
     const [ownMsg, setOwnMsg] = useState("");
 
-    // Admin profile
     const [adminRole, setAdminRole] = useState("");
 
     useEffect(() => {
         api.get("/auth/me").then(data => {
             setAdminRole(data?.role || "");
         }).catch(() => {});
-
-        // Fetch sub-admins
         api.get("/auth/sub-admins").then(data => {
             if (Array.isArray(data)) setSubAdmins(data);
             setLoading(false);
@@ -51,17 +48,43 @@ export default function SettingsPage() {
 
     const isOwnerOrDev = adminRole === "owner" || adminRole === "developer";
 
-    const handleUpdatePassword = async (id: number) => {
-        if (!newPassword || newPassword.length < 6) {
-            setSaveMsg({ id, msg: "Min 6 characters", ok: false });
+    const startEditing = (admin: SubAdmin) => {
+        setEditingId(admin.id);
+        setEditUsername(admin.username);
+        setEditPassword(admin.plainPassword || "");
+        setSaveMsg(null);
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditUsername("");
+        setEditPassword("");
+    };
+
+    const handleSave = async (id: number) => {
+        const original = subAdmins.find(a => a.id === id);
+        if (!original) return;
+
+        const updates: any = {};
+        if (editUsername !== original.username) updates.username = editUsername;
+        if (editPassword !== (original.plainPassword || "")) updates.password = editPassword;
+
+        if (Object.keys(updates).length === 0) {
+            cancelEditing();
             return;
         }
+
         setSaving(true);
         try {
-            await api.patch(`/auth/sub-admins/${id}/password`, { newPassword });
-            setSaveMsg({ id, msg: "Updated!", ok: true });
+            const res = await api.patch(`/auth/sub-admins/${id}`, updates);
+            // Update local state
+            setSubAdmins(prev => prev.map(a => a.id === id ? {
+                ...a,
+                username: res.username || a.username,
+                plainPassword: res.plainPassword || a.plainPassword,
+            } : a));
+            setSaveMsg({ id, msg: "Saved!", ok: true });
             setEditingId(null);
-            setNewPassword("");
         } catch (err: any) {
             setSaveMsg({ id, msg: err?.message || "Failed", ok: false });
         } finally {
@@ -87,9 +110,7 @@ export default function SettingsPage() {
                 newPassword: ownNewPassword,
             });
             setOwnMsg("✓ Password changed successfully");
-            setOwnCurrentPassword("");
-            setOwnNewPassword("");
-            setOwnConfirmPassword("");
+            setOwnCurrentPassword(""); setOwnNewPassword(""); setOwnConfirmPassword("");
         } catch (err: any) {
             setOwnMsg(err?.message || "Failed to change password");
         } finally {
@@ -97,18 +118,8 @@ export default function SettingsPage() {
         }
     };
 
-    const roleLabel = (role: string) => {
-        switch (role) {
-            case "owner": return "Owner";
-            case "developer": return "Developer";
-            case "dd_admin": return "DD Admin";
-            case "staycation_admin": return "Property Admin";
-            default: return role;
-        }
-    };
-
     const propertiesLabel = (ap: string[] | null) => {
-        if (!ap) return "All Properties";
+        if (!ap) return "All Properties (Full Access)";
         return ap.map(s => {
             switch (s) {
                 case "dd": return "Digital Diaries";
@@ -131,44 +142,34 @@ export default function SettingsPage() {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col md:flex-row overflow-hidden min-h-[600px]">
-                {/* Navigation Sidebar */}
+                {/* Sidebar */}
                 <div className="w-full md:w-64 bg-slate-50 border-r border-slate-200 p-4 space-y-1">
-                    <button
-                        onClick={() => setActiveTab("security")}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "security" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}
-                    >
+                    <button onClick={() => setActiveTab("security")}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "security" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
                         <Shield size={18} /> Security & Roles
                     </button>
-
                     {isOwnerOrDev && (
-                        <button
-                            onClick={() => setActiveTab("sub-admins")}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "sub-admins" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}
-                        >
+                        <button onClick={() => setActiveTab("sub-admins")}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "sub-admins" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
                             <Users size={18} /> Sub-Admin Management
                         </button>
                     )}
-
                     <div className="my-4 border-t border-slate-200"></div>
-
-                    <button
-                        onClick={() => setActiveTab("payments")}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "payments" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}
-                    >
+                    <button onClick={() => setActiveTab("payments")}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "payments" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
                         <CreditCard size={18} /> Payment Gateways
                     </button>
                 </div>
 
-                {/* Content Area */}
+                {/* Content */}
                 <div className="flex-1 p-6 sm:p-8 overflow-y-auto">
-                    {/* Security & Roles Tab */}
+                    {/* Security & Roles */}
                     {activeTab === "security" && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800">Security & Roles</h2>
                                 <p className="text-sm font-medium text-slate-500">Update your password and view your access role.</p>
                             </div>
-
                             <div className="max-w-xl space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-200">
                                 <h3 className="text-md font-bold text-slate-800 mb-4 flex items-center gap-2"><Key size={18} /> Change Your Password</h3>
                                 <div className="space-y-3">
@@ -183,96 +184,101 @@ export default function SettingsPage() {
                                     {ownMsg && <span className={`text-sm font-medium ${ownMsg.startsWith("✓") ? "text-emerald-600" : "text-red-500"}`}>{ownMsg}</span>}
                                 </div>
                             </div>
-
                             <div className="pt-6 border-t border-slate-100">
-                                <h3 className="text-md font-bold text-slate-800 mb-4 flex items-center gap-2"><Shield size={18} /> Your Role</h3>
-                                <p className="text-sm text-slate-500">You are currently operating as <strong className="text-slate-800">{roleLabel(adminRole)}</strong>.</p>
+                                <h3 className="text-md font-bold text-slate-800 mb-2 flex items-center gap-2"><Shield size={18} /> Your Role</h3>
+                                <p className="text-sm text-slate-500">You are currently operating as <strong className="text-slate-800">{adminRole === "owner" ? "Owner" : adminRole === "developer" ? "Developer" : adminRole}</strong>.</p>
                             </div>
                         </div>
                     )}
 
-                    {/* Sub-Admin Management Tab */}
+                    {/* Sub-Admin Management — Editable Table */}
                     {activeTab === "sub-admins" && isOwnerOrDev && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800">Sub-Admin Management</h2>
-                                <p className="text-sm font-medium text-slate-500">View and manage all admin accounts and their passwords.</p>
+                                <p className="text-sm font-medium text-slate-500">View and edit login credentials for all admin accounts.</p>
                             </div>
 
                             {loading ? (
-                                <div className="text-center text-slate-400 py-12 text-sm font-medium">Loading accounts...</div>
+                                <div className="text-center text-slate-400 py-12 text-sm font-medium">Loading...</div>
                             ) : (
-                                <div className="space-y-3">
-                                    {subAdmins.map(admin => (
-                                        <div key={admin.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                                            {/* Account Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h4 className="font-bold text-slate-800 text-sm">{admin.displayName}</h4>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                        admin.role === "owner" ? "bg-amber-100 text-amber-700" :
-                                                        admin.role === "developer" ? "bg-sky-100 text-sky-700" :
-                                                        admin.role === "dd_admin" ? "bg-violet-100 text-violet-700" :
-                                                        "bg-emerald-100 text-emerald-700"
-                                                    }`}>
-                                                        {roleLabel(admin.role)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500">
-                                                    <span>Username: <strong className="text-slate-700 font-mono">{admin.username}</strong></span>
-                                                    <span>Password: <strong className="text-slate-700 font-mono">galaxia2026</strong></span>
-                                                </div>
-                                                <p className="text-[11px] text-slate-400 mt-1">{propertiesLabel(admin.assignedProperties)}</p>
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                {editingId === admin.id ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="New password"
-                                                            value={newPassword}
-                                                            onChange={e => setNewPassword(e.target.value)}
-                                                            className="w-36 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-purple-600"
-                                                            autoFocus
-                                                        />
-                                                        <button
-                                                            onClick={() => handleUpdatePassword(admin.id)}
-                                                            disabled={saving}
-                                                            className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                                                        >
-                                                            <Check size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { setEditingId(null); setNewPassword(""); }}
-                                                            className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => setEditingId(admin.id)}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm"
-                                                    >
-                                                        <Key size={14} /> Change Password
-                                                    </button>
-                                                )}
-                                                {saveMsg?.id === admin.id && (
-                                                    <span className={`text-xs font-semibold ${saveMsg.ok ? "text-emerald-600" : "text-red-500"}`}>
-                                                        {saveMsg.msg}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-slate-50 border-b border-slate-200">
+                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">ID</th>
+                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Location</th>
+                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Username</th>
+                                                <th className="text-left px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Password</th>
+                                                <th className="text-center px-5 py-3 font-bold text-slate-600 text-xs uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {subAdmins.map(admin => (
+                                                <tr key={admin.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">#{admin.id}</td>
+                                                    <td className="px-5 py-3.5">
+                                                        <span className="text-slate-800 font-medium">{propertiesLabel(admin.assignedProperties)}</span>
+                                                    </td>
+                                                    <td className="px-5 py-3.5">
+                                                        {editingId === admin.id ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editUsername}
+                                                                onChange={e => setEditUsername(e.target.value)}
+                                                                className="w-full bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <code className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-mono text-[13px]">{admin.username}</code>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-5 py-3.5">
+                                                        {editingId === admin.id ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editPassword}
+                                                                onChange={e => setEditPassword(e.target.value)}
+                                                                className="w-full bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                                                            />
+                                                        ) : (
+                                                            <code className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-mono text-[13px]">{admin.plainPassword || "••••••"}</code>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-center">
+                                                        {editingId === admin.id ? (
+                                                            <div className="flex items-center justify-center gap-1.5">
+                                                                <button onClick={() => handleSave(admin.id)} disabled={saving}
+                                                                    className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50" title="Save">
+                                                                    <Check size={14} />
+                                                                </button>
+                                                                <button onClick={cancelEditing}
+                                                                    className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors" title="Cancel">
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button onClick={() => startEditing(admin)}
+                                                                    className="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-purple-600 hover:border-purple-200 transition-colors" title="Edit">
+                                                                    <Pencil size={14} />
+                                                                </button>
+                                                                {saveMsg?.id === admin.id && (
+                                                                    <span className={`text-xs font-semibold ${saveMsg.ok ? "text-emerald-600" : "text-red-500"}`}>{saveMsg.msg}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Payment Gateways Tab */}
+                    {/* Payment Gateways */}
                     {activeTab === "payments" && (
                         <div className="h-full flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-300">
                             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">

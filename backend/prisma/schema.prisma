@@ -17,6 +17,7 @@ model AdminAccount {
   avatarUrl           String?             @map("avatar_url")
   isActive            Boolean             @default(true) @map("is_active")
   assignedProperties  Json?               @map("assigned_properties")
+  plainPassword       String?             @map("plain_password") @db.VarChar(255)
   lastLogin           DateTime?           @map("last_login")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")

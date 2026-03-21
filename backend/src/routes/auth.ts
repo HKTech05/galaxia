@@ -241,7 +241,7 @@ router.get("/sub-admins", authMiddleware, async (req: AuthRequest, res) => {
             select: {
                 id: true, username: true, displayName: true,
                 role: true, email: true, isActive: true,
-                assignedProperties: true, lastLogin: true,
+                assignedProperties: true, plainPassword: true,
             },
             orderBy: { id: "asc" },
         });
@@ -252,31 +252,45 @@ router.get("/sub-admins", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
-// PATCH /api/auth/sub-admins/:id/password — Update a sub-admin's password (owner/dev only)
-router.patch("/sub-admins/:id/password", authMiddleware, async (req: AuthRequest, res) => {
+// PATCH /api/auth/sub-admins/:id — Update a sub-admin's username and/or password (owner/dev only)
+router.patch("/sub-admins/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
         const admin = await prisma.adminAccount.findUnique({ where: { id: req.admin!.id } });
         if (!admin || (admin.role !== "owner" && admin.role !== "developer")) {
             return res.status(403).json({ error: "Forbidden" });
         }
 
-        const { newPassword } = req.body;
-        if (!newPassword || newPassword.length < 6) {
+        const { username, password } = req.body;
+        const targetId = parseInt(req.params.id as string);
+        const updateData: any = {};
+
+        if (username && username.trim()) {
+            updateData.username = username.trim();
+        }
+        if (password && password.length >= 6) {
+            updateData.passwordHash = await bcrypt.hash(password, 10);
+            updateData.plainPassword = password;
+        } else if (password) {
             return res.status(400).json({ error: "Password must be at least 6 characters" });
         }
 
-        const targetId = parseInt(req.params.id as string);
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: "No fields to update" });
+        }
 
-        await prisma.adminAccount.update({
+        const updated = await prisma.adminAccount.update({
             where: { id: targetId },
-            data: { passwordHash: hashedPassword },
+            data: updateData,
+            select: { id: true, username: true, plainPassword: true },
         });
 
         auditLog({ action: "update_sub_admin_password", entityType: "admin", entityId: req.admin!.id, details: { targetAdminId: targetId } });
-        return res.json({ success: true });
+        return res.json(updated);
     } catch (error: any) {
-        console.error("Update sub-admin password error:", error?.message);
+        if (error?.code === "P2002") {
+            return res.status(409).json({ error: "Username already taken" });
+        }
+        console.error("Update sub-admin error:", error?.message);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
