@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -18,11 +18,13 @@ async function main() {
     });
     console.log('🧹 Cleaned up old accounts');
 
-    const accounts = [
-        // owner + developer = null (full access to everything)
-        { username: 'owner', email: 'owner@galaxiaresorts.com', displayName: 'Admin User', role: 'owner', assignedProperties: null },
-        { username: 'Developer', email: 'developer@galaxiaresorts.com', displayName: 'Developer', role: 'developer', assignedProperties: null },
-        // Property-scoped admins
+    // Define accounts with typed assignedProperties
+    const accounts: Array<{
+        username: string; email: string; displayName: string; role: string;
+        assignedProperties: Prisma.InputJsonValue | typeof Prisma.DbNull;
+    }> = [
+        { username: 'owner', email: 'owner@galaxiaresorts.com', displayName: 'Admin User', role: 'owner', assignedProperties: Prisma.DbNull },
+        { username: 'Developer', email: 'developer@galaxiaresorts.com', displayName: 'Developer', role: 'developer', assignedProperties: Prisma.DbNull },
         { username: 'asmita', email: 'asmita@galaxiaresorts.com', displayName: 'Asmita', role: 'staycation_admin', assignedProperties: ['hill-view', 'mount-view', 'heavenly-villa', 'la-paraiso', 'ambrose', 'amstel-nest'] },
         { username: 'H&H', email: 'hh@galaxiaresorts.com', displayName: 'H&H', role: 'staycation_admin', assignedProperties: ['hill-view', 'heavenly-villa'] },
         { username: 'M&L', email: 'ml@galaxiaresorts.com', displayName: 'M&L', role: 'staycation_admin', assignedProperties: ['mount-view', 'la-paraiso'] },
@@ -51,7 +53,8 @@ async function main() {
                 assignedProperties: acc.assignedProperties,
             },
         });
-        console.log(`  ✅ ${acc.username} (${acc.role}) → ${acc.assignedProperties ? acc.assignedProperties.join(', ') : 'ALL'}`);
+        const props = acc.assignedProperties === Prisma.DbNull ? 'ALL' : (acc.assignedProperties as string[]).join(', ');
+        console.log(`  ✅ ${acc.username} (${acc.role}) → ${props}`);
     }
 
     console.log('\n🎉 All 7 admin accounts ready with property assignments!');
