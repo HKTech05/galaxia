@@ -216,27 +216,35 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             {/* Owner/Dev only: Website */}
                             {hasFullAccess && renderNavItem(admin3TopItems[2])}
 
-                            {/* Receptionist Section — filtered by assigned properties */}
-                            <button
-                                onClick={() => setReceptionistOpen(!receptionistOpen)}
-                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isReceptionistActive && !receptionistOpen
-                                    ? "bg-purple-50 text-purple-700"
-                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                                    }`}
-                            >
-                                <Eye size={20} className={isReceptionistActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
-                                <span className={`font-medium text-[15px] flex-1 ${isReceptionistActive ? "font-semibold" : ""}`}>
-                                    Receptionist View
-                                </span>
-                                <ChevronDown
-                                    size={16}
-                                    className={`transition-transform duration-200 ${receptionistOpen ? "rotate-180" : ""} ${isReceptionistActive ? "text-purple-500" : "text-slate-400"}`}
-                                />
-                            </button>
-                            {receptionistOpen && (
-                                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {visibleReceptionistItems.map(item => renderNavItem(item, true))}
-                                </div>
+                            {/* Receptionist Section */}
+                            {hasFullAccess ? (
+                                <>
+                                    {/* Owner/Dev: collapsible dropdown */}
+                                    <button
+                                        onClick={() => setReceptionistOpen(!receptionistOpen)}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isReceptionistActive && !receptionistOpen
+                                            ? "bg-purple-50 text-purple-700"
+                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                            }`}
+                                    >
+                                        <Eye size={20} className={isReceptionistActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
+                                        <span className={`font-medium text-[15px] flex-1 ${isReceptionistActive ? "font-semibold" : ""}`}>
+                                            Receptionist View
+                                        </span>
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform duration-200 ${receptionistOpen ? "rotate-180" : ""} ${isReceptionistActive ? "text-purple-500" : "text-slate-400"}`}
+                                        />
+                                    </button>
+                                    {receptionistOpen && (
+                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            {visibleReceptionistItems.map(item => renderNavItem(item, true))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                /* Sub-admins: show items directly, no dropdown */
+                                visibleReceptionistItems.map(item => renderNavItem(item))
                             )}
 
                             {/* Owner/Dev only: Bottom items */}
