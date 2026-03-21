@@ -763,6 +763,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.min(10, extraGuestForm.guests + 1) })}
                                             className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
                                         >+</button>
+                                    </div>
+
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Number of Pets (₹600/pet/night)</label>
                                     <div className="flex items-center gap-3 mt-2 mb-4">
                                         <button
