@@ -25,7 +25,9 @@ async function main() {
     }> = [
         { username: 'owner', email: 'owner@galaxiaresorts.com', displayName: 'Admin User', role: 'owner', assignedProperties: Prisma.DbNull },
         { username: 'Developer', email: 'developer@galaxiaresorts.com', displayName: 'Developer', role: 'developer', assignedProperties: Prisma.DbNull },
-        { username: 'asmita', email: 'asmita@galaxiaresorts.com', displayName: 'Asmita', role: 'staycation_admin', assignedProperties: ['hill-view', 'mount-view', 'heavenly-villa', 'la-paraiso', 'ambrose', 'amstel-nest'] },
+        // asmita = DD only (no staycation properties)
+        { username: 'asmita', email: 'asmita@galaxiaresorts.com', displayName: 'Asmita', role: 'dd_admin', assignedProperties: ['dd'] },
+        // Property admins = their properties only, no DD
         { username: 'H&H', email: 'hh@galaxiaresorts.com', displayName: 'H&H', role: 'staycation_admin', assignedProperties: ['hill-view', 'heavenly-villa'] },
         { username: 'M&L', email: 'ml@galaxiaresorts.com', displayName: 'M&L', role: 'staycation_admin', assignedProperties: ['mount-view', 'la-paraiso'] },
         { username: 'Ambrose', email: 'ambrose@galaxiaresorts.com', displayName: 'Ambrose', role: 'staycation_admin', assignedProperties: ['ambrose'] },

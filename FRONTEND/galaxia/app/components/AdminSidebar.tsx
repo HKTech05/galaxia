@@ -49,7 +49,7 @@ const admin3DailyCheckinItems = [
 
 // Admin3 receptionist desk items — each entry maps to property slugs for filtering
 const admin3ReceptionistItems = [
-    { name: "Digital Diaries", href: "/admin3/digital-diaries", icon: Film, slugs: [] as string[] },
+    { name: "Digital Diaries", href: "/admin3/digital-diaries", icon: Film, slugs: ["dd"] },
     { name: "Heavenly Villa & Hill View", href: "/admin3/heavenly-villa", icon: Hotel, slugs: ["heavenly-villa", "hill-view"] },
     { name: "Mount View & La Paraiso", href: "/admin3/views-paraiso", icon: Hotel, slugs: ["mount-view", "la-paraiso"] },
     { name: "Ambrose", href: "/admin3/ambrose", icon: Hotel, slugs: ["ambrose"] },
@@ -94,12 +94,9 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     // Filter receptionist items by assigned property slugs
     const visibleReceptionistItems = hasFullAccess
         ? admin3ReceptionistItems
-        : admin3ReceptionistItems.filter(item => {
-            // DD is visible to all admins
-            if (item.slugs.length === 0) return true;
-            // Check if any of the item's slugs match assigned properties
-            return item.slugs.some(s => assignedProperties!.includes(s));
-        });
+        : admin3ReceptionistItems.filter(item =>
+            item.slugs.some(s => assignedProperties!.includes(s))
+        );
 
     const isReceptionistActive = visibleReceptionistItems.some(item => pathname.startsWith(item.href));
     const isDailyCheckinsActive = admin3DailyCheckinItems.some(item => pathname.startsWith(item.href));
