@@ -41,7 +41,7 @@ export default function EmployeesClient() {
                 role: emp.role,
                 location: emp.property?.name || "Unknown",
                 cashCollected: emp.cashCollected || 0,
-                lastCollectedAt: emp.lastCollectedAt || "",
+                lastCollectedAt: emp.lastCollectedAt ? new Date(emp.lastCollectedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Never",
             }));
             setEmployees(mapped);
         } catch (err) {

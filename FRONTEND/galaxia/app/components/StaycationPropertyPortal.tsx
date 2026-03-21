@@ -211,9 +211,6 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
     const handleManualBookingSubmit = async () => {
         const calculatedTotal = calculatePrice();
-        const property = properties.find(p => portalName.includes(p)) || manualForm.property;
-        // Find property ID (hacky for now, ideally passed in)
-        // For now, let's just assume the API can handle name or we use a map
         
         try {
             const propertyMap: Record<string, number> = {
@@ -229,24 +226,25 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
             await api.post("/bookings/staycation", {
                 customerName: manualForm.name,
-                customerPhone: manualForm.phone,
+                customerPhone: manualForm.phone || "0000000000",
                 propertyId: propId,
                 numGuests: manualForm.guests,
                 checkInDate: manualForm.checkInDate.toISOString(),
                 checkOutDate: manualForm.checkOutDate.toISOString(),
                 totalAmount: calculatedTotal,
                 advanceAmount: calculatedTotal, // Full payment for walk-in
-                basePrice: calculatedTotal / 1.05, // Approximation
-                gstAmount: calculatedTotal - (calculatedTotal / 1.05),
+                balanceAmount: 0,
+                securityDeposit: 3000,
+                basePrice: Math.round(calculatedTotal / 1.05),
+                gstAmount: Math.round(calculatedTotal - (calculatedTotal / 1.05)),
                 advancePaid: true,
                 advanceMethod: manualForm.paymentMethod,
                 source: "reception",
-                status: "checked_in"
             });
             fetchBookings();
             setIsManualBookingOpen(false);
-        } catch (err) {
-            alert("Failed to create manual booking");
+        } catch (err: any) {
+            alert(err?.message || err?.error || "Failed to create manual booking");
         }
     };
 

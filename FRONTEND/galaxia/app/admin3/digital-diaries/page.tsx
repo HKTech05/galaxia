@@ -171,6 +171,7 @@ export default function Admin1Dashboard() {
     const [addCake, setAddCake] = useState(false);
     const [addOnCakeMessage, setAddOnCakeMessage] = useState("");
     const [walkInIdFiles, setWalkInIdFiles] = useState<(File | null)[]>([null, null]);
+    const [walkInPaymentMethod, setWalkInPaymentMethod] = useState<"Cash" | "UPI">("Cash");
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
@@ -270,7 +271,7 @@ export default function Admin1Dashboard() {
                 numGuests: guestsCount,
                 totalAmount: totalPrice,
                 amountPaid: totalPrice, // Walk-in usually pays full
-                paymentMethod: (document.querySelector('select:last-of-type') as HTMLSelectElement)?.value || "Cash",
+                paymentMethod: walkInPaymentMethod,
                 paymentDetails: "Manual booking from receptionist view",
                 source: "reception",
                 addons: [
@@ -845,9 +846,9 @@ export default function Admin1Dashboard() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment (100% Amount)</label>
-                                        <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
-                                            <option>Cash</option>
-                                            <option>UPI</option>
+                                        <select value={walkInPaymentMethod} onChange={(e) => setWalkInPaymentMethod(e.target.value as "Cash" | "UPI")} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                            <option value="Cash">Cash</option>
+                                            <option value="UPI">UPI</option>
                                         </select>
                                     </div>
                                 </div>
