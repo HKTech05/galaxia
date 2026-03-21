@@ -80,15 +80,12 @@ export default function Admin1Dashboard() {
 
     // Dynamic Calendar State
     const [startDate, setStartDate] = useState(new Date());
-    const [displayDate, setDisplayDate] = useState(new Date());
     const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
-    const [isCakeOpen, setIsCakeOpen] = useState(false);
 
     const screens = ["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"] as const;
 
     // Fetch DD calendar events from API
     const fetchEvents = useCallback(async (date: Date) => {
-        setLoading(true);
         try {
             const dateStr = date.toISOString().split('T')[0];
             const data = await api.get(`/bookings/dd?date=${dateStr}`);
@@ -125,7 +122,6 @@ export default function Admin1Dashboard() {
                     }
                 }));
                 setEventsList(mapped);
-                setDisplayDate(date);
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);
@@ -976,15 +972,24 @@ export default function Admin1Dashboard() {
             {/* Header Info */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-                        Digital Diaries Schedule
-                        {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length > 0 && (
-                            <span className="relative inline-flex items-center gap-1.5 px-3 py-1 bg-pink-50 border border-pink-200 text-pink-700 rounded-full text-xs font-semibold cursor-pointer" onClick={() => setIsCakeOpen(prev => !prev)}>
-                                🎂 {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length} Cake{eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").length > 1 ? 's' : ''} Today
-                                <div className={`absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-3 transition-all duration-200 z-50 ${isCakeOpen ? 'opacity-100 visible' : 'opacity-0 invisible md:group-hover:opacity-100 md:group-hover:visible'}`}>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Digital Diaries Schedule</h1>
+                    <div className="flex items-center gap-3 mt-1">
+                        <p className="text-sm font-medium text-slate-500">Review theater bookings and upcoming slots day-by-day.</p>
+                        {eventsList.filter(e => e.addOns?.cake).length > 0 && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => {
+                                        const el = document.getElementById('cake-tooltip');
+                                        if (el) el.classList.toggle('hidden');
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-50 border border-pink-200 text-pink-700 rounded-full text-xs font-semibold cursor-pointer hover:bg-pink-100 transition-colors"
+                                >
+                                    🎂 {eventsList.filter(e => e.addOns?.cake).length} Cake{eventsList.filter(e => e.addOns?.cake).length > 1 ? 's' : ''} Today
+                                </button>
+                                <div id="cake-tooltip" className="hidden absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-3 z-50">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cake Orders</p>
                                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                                        {eventsList.filter(e => e.addOns?.cake || e.packageType === "Celebration").map((ev) => (
+                                        {eventsList.filter(e => e.addOns?.cake).map((ev) => (
                                             <div key={ev.id} className="flex items-start gap-2 p-2 rounded-lg bg-pink-50/50">
                                                 <span className="text-xs">🎂</span>
                                                 <div>
@@ -998,10 +1003,9 @@ export default function Admin1Dashboard() {
                                         ))}
                                     </div>
                                 </div>
-                            </span>
+                            </div>
                         )}
-                    </h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Review theater bookings and upcoming slots day-by-day.</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <CustomDatePicker
@@ -1028,7 +1032,7 @@ export default function Admin1Dashboard() {
                     {/* Centered Date Header */}
                     <div className="bg-indigo-50/40 py-3.5 border-b border-slate-200 flex items-center justify-center">
                         <h2 className="text-base sm:text-lg font-bold text-indigo-900 uppercase tracking-widest whitespace-nowrap">
-                            {displayDate.toLocaleString('en-US', { weekday: 'long' })}, {displayDate.getDate().toString().padStart(2, '0')} {displayDate.toLocaleString('en-US', { month: 'long' })} {displayDate.getFullYear()}
+                            {startDate.toLocaleString('en-US', { weekday: 'long' })}, {startDate.getDate().toString().padStart(2, '0')} {startDate.toLocaleString('en-US', { month: 'long' })} {startDate.getFullYear()}
                         </h2>
                     </div>
 
@@ -1072,9 +1076,9 @@ export default function Admin1Dashboard() {
                                 {eventsList.map((ev) => {
                                     // Filter by current date
                                     const evDate = new Date(ev.reservationDate);
-                                    if (evDate.getDate() !== displayDate.getDate() ||
-                                        evDate.getMonth() !== displayDate.getMonth() ||
-                                        evDate.getFullYear() !== displayDate.getFullYear()) return null;
+                                    if (evDate.getDate() !== startDate.getDate() ||
+                                        evDate.getMonth() !== startDate.getMonth() ||
+                                        evDate.getFullYear() !== startDate.getFullYear()) return null;
 
                                     // Find which dynamic column this event belongs to
                                     const colIndex = screens.indexOf(ev.screen);

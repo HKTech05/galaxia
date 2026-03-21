@@ -180,9 +180,9 @@ export default function DDContactPage() {
                                         <button
                                             type="submit"
                                             disabled={formStatus === "sending"}
-                                            className="w-full relative overflow-hidden bg-gradient-to-r from-rose-dark via-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 shadow-[0_8px_32px_rgba(159,53,58,0.35)] hover:shadow-[0_12px_40px_rgba(159,53,58,0.5)] hover:scale-[1.01]"
+                                            className="w-full relative overflow-hidden bg-gradient-to-r from-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-4 rounded-full transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 hover:shadow-lg hover:shadow-rose-dark/30"
                                         >
-                                            <span className="absolute inset-0 bg-gradient-to-t from-white/0 via-white/10 to-white/20 rounded-2xl pointer-events-none" />
+                                            <span className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/5 to-transparent rounded-full pointer-events-none" />
                                             {formStatus === "sending" ? (
                                                 <>
                                                     <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
