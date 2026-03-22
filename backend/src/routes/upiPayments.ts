@@ -110,7 +110,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer"), async (req, r
 router.get("/by-employee/:employeeId", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
     try {
         const payments = await prisma.upiPayment.findMany({
-            where: { employeeId: parseInt(req.params.employeeId) },
+            where: { employeeId: parseInt(String(req.params.employeeId)) },
             orderBy: { createdAt: "desc" },
         });
         return res.json(payments);
@@ -124,7 +124,7 @@ router.get("/by-employee/:employeeId", authMiddleware, requireRole("owner", "dev
 router.get("/image/:id", authMiddleware, async (req, res) => {
     try {
         const payment = await prisma.upiPayment.findUnique({
-            where: { id: parseInt(req.params.id) },
+            where: { id: parseInt(String(req.params.id)) },
         });
 
         if (!payment) return res.status(404).json({ error: "Payment not found" });
@@ -153,7 +153,7 @@ router.get("/image/:id", authMiddleware, async (req, res) => {
 router.get("/download/:id", authMiddleware, async (req, res) => {
     try {
         const payment = await prisma.upiPayment.findUnique({
-            where: { id: parseInt(req.params.id) },
+            where: { id: parseInt(String(req.params.id)) },
         });
 
         if (!payment) return res.status(404).json({ error: "Payment not found" });
@@ -180,7 +180,7 @@ router.get("/download/:id", authMiddleware, async (req, res) => {
 // ─── GET /api/upi-payments/download-all/:employeeId ─── Download all proofs as ZIP
 router.get("/download-all/:employeeId", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
     try {
-        const employeeId = parseInt(req.params.employeeId);
+        const employeeId = parseInt(String(req.params.employeeId));
         const employee = await prisma.employee.findUnique({
             where: { id: employeeId },
             include: { property: { select: { name: true } } },
