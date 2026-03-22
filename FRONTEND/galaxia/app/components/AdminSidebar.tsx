@@ -20,7 +20,8 @@ import {
     BadgeDollarSign,
     Ticket,
     Star,
-    ClipboardList
+    ClipboardList,
+    Smartphone
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -59,6 +60,7 @@ const admin3ReceptionistItems = [
 // Admin3 bottom items (owner/dev only)
 const admin3BottomItems = [
     { name: "Cash Management", href: "/admin3/employees", icon: BadgeDollarSign },
+    { name: "UPI Management", href: "/admin3/upi-management", icon: Smartphone },
     { name: "Coupons", href: "/admin3/coupons", icon: Ticket },
     { name: "Users", href: "/admin3/users", icon: Users },
     { name: "Properties", href: "/admin3/properties-mgmt", icon: Building },

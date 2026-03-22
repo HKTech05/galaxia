@@ -46,6 +46,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             b.status || "Pending Arrival",
                     addons: b.addons || null,
                     totalAmount: b.totalAmount || 0,
+                    propertyId: b.propertyId || null,
                 }));
                 setBookings(mapped);
             }
@@ -66,6 +67,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     // Payment collection states
     const [collected20, setCollected20] = useState<string | null>(null);
     const [collectedSec, setCollectedSec] = useState<string | null>(null);
+    // UPI proof files
+    const [upiProofBalance, setUpiProofBalance] = useState<File | null>(null);
+    const [upiProofDeposit, setUpiProofDeposit] = useState<File | null>(null);
 
     // Cancel modal state
     const [cancelModalBooking, setCancelModalBooking] = useState<any>(null);
@@ -315,16 +319,58 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             
             // Record payment if checking in
             if (newStatus === "Checked In" && selectedBooking) {
+                const balanceAmt = parseInt(selectedBooking.remainingAmt.replace('₹', '').replace(/,/g, '')) || 0;
+                const depositAmt = parseInt(selectedBooking.depositAmt.replace('₹', '').replace(/,/g, '')) || 0;
+
                 await api.post(`/bookings/staycation/${numericId}/payment`, {
                     paymentType: "balance",
-                    amount: parseInt(selectedBooking.remainingAmt.replace('₹', '').replace(/,/g, '')) || 0,
+                    amount: balanceAmt,
                     method: collected20
                 });
                 await api.post(`/bookings/staycation/${numericId}/payment`, {
                     paymentType: "deposit",
-                    amount: parseInt(selectedBooking.depositAmt.replace('₹', '').replace(/,/g, '')) || 0,
+                    amount: depositAmt,
                     method: collectedSec
                 });
+
+                // Upload UPI proof images if UPI was used
+                const token = localStorage.getItem("galaxia_token") || "";
+                const employee = await api.get(`/employees?propertyId=${selectedBooking.propertyId || ''}`);
+                const empId = Array.isArray(employee) && employee[0] ? employee[0].id : null;
+
+                if (collected20 === "UPI" && upiProofBalance && empId) {
+                    const fd = new FormData();
+                    fd.append("file", upiProofBalance);
+                    fd.append("employeeId", String(empId));
+                    fd.append("bookingRef", booking.id || '');
+                    fd.append("guestName", booking.customer || '');
+                    fd.append("amount", String(balanceAmt));
+                    fd.append("paymentType", "balance");
+                    fd.append("note", `Balance — ${selectedBooking.property}`);
+                    await fetch("/api/uploads/upi-proof", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: fd,
+                    });
+                }
+                if (collectedSec === "UPI" && upiProofDeposit && empId) {
+                    const fd = new FormData();
+                    fd.append("file", upiProofDeposit);
+                    fd.append("employeeId", String(empId));
+                    fd.append("bookingRef", booking.id || '');
+                    fd.append("guestName", booking.customer || '');
+                    fd.append("amount", String(depositAmt));
+                    fd.append("paymentType", "deposit");
+                    fd.append("note", `Security deposit — ${selectedBooking.property}`);
+                    await fetch("/api/uploads/upi-proof", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: fd,
+                    });
+                }
+                // Reset proof states
+                setUpiProofBalance(null);
+                setUpiProofDeposit(null);
             }
 
             fetchBookings();
@@ -620,6 +666,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     </button>
                                                 </div>
                                             </div>
+                                            {collected20 === "UPI" && (
+                                                <div className="mt-2">
+                                                    <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofBalance(e.target.files[0]); }} />
+                                                        <Upload size={14} className="text-indigo-600" />
+                                                        <span className="text-xs font-bold text-indigo-700 truncate max-w-[200px]">{upiProofBalance ? upiProofBalance.name : 'Upload UPI Proof'}</span>
+                                                        {upiProofBalance && <CheckCircle size={14} className="text-emerald-600 ml-auto" />}
+                                                    </label>
+                                                </div>
+                                            )}
 
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">SECURITY DEPOSIT</span>
@@ -643,6 +699,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                         {collectedSec === "UPI" ? <><CheckCircle size={12} className="inline mr-1" /> Collected UPI</> : <><span className="bg-white text-indigo-600 px-1 py-0.5 rounded-sm mr-1">UPI</span> Collect</>}
                                                     </button>
                                                 </div>
+                                            {collectedSec === "UPI" && (
+                                                <div className="mt-2">
+                                                    <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofDeposit(e.target.files[0]); }} />
+                                                        <Upload size={14} className="text-indigo-600" />
+                                                        <span className="text-xs font-bold text-indigo-700 truncate max-w-[200px]">{upiProofDeposit ? upiProofDeposit.name : 'Upload UPI Proof'}</span>
+                                                        {upiProofDeposit && <CheckCircle size={14} className="text-emerald-600 ml-auto" />}
+                                                    </label>
+                                                </div>
+                                            )}
                                             </div>
                                         </div>
                                     </div>

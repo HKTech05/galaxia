@@ -448,9 +448,26 @@ model Employee {
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
   transactions    CashTransaction[]
+  upiPayments     UpiPayment[]
   property        Property          @relation(fields: [propertyId], references: [id])
 
   @@map("employees")
+}
+
+model UpiPayment {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int      @map("employee_id")
+  bookingRef      String?  @map("booking_ref") @db.VarChar(50)
+  guestName       String?  @map("guest_name") @db.VarChar(200)
+  amount          Int
+  paymentType     String   @map("payment_type") @db.VarChar(30)
+  proofImageUrl   String   @map("proof_image_url")
+  proofImageKey   String?  @map("proof_image_key") @db.VarChar(500)
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("upi_payments")
 }
 
 model CashTransaction {
