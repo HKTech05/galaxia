@@ -90,21 +90,23 @@ export default function Admin1Dashboard() {
             const dateStr = date.toISOString().split('T')[0];
             const data = await api.get(`/bookings/dd?date=${dateStr}`);
             if (Array.isArray(data)) {
-                const mapped: Event[] = data.map((b: any) => ({
+                const mapped: Event[] = data.map((b: any) => {
+                    const cleanName = (b.screen?.name || "Sandy Screen").replace(/\s*\(.*?\)/g, "").trim();
+                    return {
                     id: b.id.toString(),
                     day: 0, // Placeholder as required by type
-                    title: `${b.screen?.name || "Sandy Screen"} - ${b.customerName}`,
+                    title: `${cleanName} - ${b.customerName}`,
                     customerName: b.customerName,
                     phone: b.customerPhone || "—",
                     email: b.customerEmail || "—",
-                    screen: (b.screen?.name || "Sandy Screen").replace(" (Digital Diaries)", "") as any,
+                    screen: cleanName as any,
                     startHour: b.startHour,
                     duration: b.durationHours,
                     reservationDate: b.bookingDate,
                     packageType: b.package?.name || "Movie Time",
-                    color: b.screen?.name === "Cine Love" ? "bg-pink-100 text-pink-700 border-pink-200" :
-                           b.screen?.name === "Sandy Screen" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
-                           b.screen?.name === "Park N Watch" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                    color: cleanName === "Cine Love" ? "bg-pink-100 text-pink-700 border-pink-200" :
+                           cleanName === "Sandy Screen" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                           cleanName === "Park N Watch" ? "bg-orange-100 text-orange-700 border-orange-200" :
                            "bg-sky-100 text-sky-700 border-sky-200",
                     amountPaid: `₹${(b.amountPaid || 0).toLocaleString()}`,
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
@@ -120,7 +122,8 @@ export default function Admin1Dashboard() {
                         cake: b.addons?.some((a: any) => a.addonType === "cake"),
                         cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || ""
                     }
-                }));
+                };
+            });
                 setEventsList(mapped);
             }
         } catch (err) {

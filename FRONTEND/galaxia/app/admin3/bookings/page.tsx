@@ -38,11 +38,12 @@ export default function Admin3BookingsPage() {
                     const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
                     return `${hr}:00 ${ampm}`;
                 };
+                const cleanName = (b.screen?.name || "Unknown").replace(/\s*\(.*?\)/g, "").trim();
                 return {
                     id: b.bookingRef || `#DD-${b.id}`,
                     customer: b.customerName || "Unknown",
                     phone: b.customerPhone || "",
-                    screen: b.screen?.name ? `${b.screen.name} (Digital Diaries)` : "Unknown",
+                    screen: cleanName !== "Unknown" ? `${cleanName} (Digital Diaries)` : "Unknown",
                     date: b.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     slot: `${fmtHour(startHr)} - ${fmtHour(endHr)}`,
                     source: b.source === "website" ? "Online" : "Walk-in",
