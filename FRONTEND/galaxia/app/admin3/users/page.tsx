@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Ban, KeyRound, Mail, Phone, CalendarDays, ChevronDown, MapPin, IndianRupee, Moon, Clock } from "lucide-react";
+import { Search, Ban, KeyRound, Mail, Phone, CalendarDays, ChevronDown, MapPin, IndianRupee, Moon, Clock, Download } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface UserItem {
@@ -90,8 +90,24 @@ export default function UsersPage() {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">User Management</h1>
                     <p className="text-sm font-medium text-slate-500 mt-1">View registered customers and manage their account access.</p>
                 </div>
-                <button className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors w-full sm:w-auto">
-                    Export CSV
+                <button
+                    onClick={() => {
+                        const headers = ["Name", "Email", "Phone", "Bookings", "Status", "Joined"];
+                        const rows = filteredUsers.map(u => [
+                            u.name, u.email, u.phone, u.totalBookings, u.status, u.joined
+                        ]);
+                        const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+                        const blob = new Blob([csv], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `galaxia_users_${new Date().toISOString().slice(0,10)}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                    className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors w-full sm:w-auto flex items-center gap-2"
+                >
+                    <Download size={15} /> Export CSV
                 </button>
             </div>
 

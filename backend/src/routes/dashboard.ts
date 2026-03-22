@@ -99,20 +99,20 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         for (let d = 0; d <= 30; d++) {
             const day = new Date(thirtyDaysAgo.getTime() + d * 86400000);
             const key = `${day.getDate()}/${day.getMonth() + 1}`;
-            dailyMap[key] = { Staycation: 0, DD: 0 };
+            dailyMap[key] = { staycation: 0, dd: 0 };
         }
         for (const b of stayDaily) {
             const d = b.bookedAt;
             const key = `${d.getDate()}/${d.getMonth() + 1}`;
-            if (dailyMap[key]) dailyMap[key].Staycation += b.totalAmount;
+            if (dailyMap[key]) dailyMap[key].staycation += b.totalAmount;
         }
         for (const b of ddDaily) {
             const d = b.bookedAt;
             const key = `${d.getDate()}/${d.getMonth() + 1}`;
-            if (dailyMap[key]) dailyMap[key].DD += b.totalAmount;
+            if (dailyMap[key]) dailyMap[key].dd += b.totalAmount;
         }
         const earnings1Month = Object.entries(dailyMap).map(([period, data]) => ({
-            period, Staycation: data.Staycation, DD: data.DD,
+            period, staycation: data.staycation, dd: data.dd, total: data.staycation + data.dd,
         }));
 
         // Monthly earnings for the last 12 months
@@ -130,20 +130,20 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         for (let m = 0; m < 12; m++) {
             const ref = new Date(now.getFullYear(), now.getMonth() - 11 + m, 1);
             const key = `${monthNames[ref.getMonth()]} ${String(ref.getFullYear()).slice(2)}`;
-            monthlyMap[key] = { Staycation: 0, DD: 0 };
+            monthlyMap[key] = { staycation: 0, dd: 0 };
         }
         for (const b of stayMonthly) {
             const d = b.bookedAt;
             const key = `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
-            if (monthlyMap[key]) monthlyMap[key].Staycation += b.totalAmount;
+            if (monthlyMap[key]) monthlyMap[key].staycation += b.totalAmount;
         }
         for (const b of ddMonthly) {
             const d = b.bookedAt;
             const key = `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
-            if (monthlyMap[key]) monthlyMap[key].DD += b.totalAmount;
+            if (monthlyMap[key]) monthlyMap[key].dd += b.totalAmount;
         }
         const earningsYearly = Object.entries(monthlyMap).map(([period, data]) => ({
-            period, Staycation: data.Staycation, DD: data.DD,
+            period, staycation: data.staycation, dd: data.dd, total: data.staycation + data.dd,
         }));
 
         // ── DD booking sources ──
@@ -153,6 +153,24 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         const ddWalkInCount = await prisma.ddBooking.count({
             where: { bookedAt: { gte: startDate }, source: "walk_in", status: { notIn: ["cancelled", "no_show"] } },
         });
+
+        // ── DD screen & package chart data ──
+        const allDdBookings = await prisma.ddBooking.findMany({
+            where: { bookingDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            include: { screen: true, package: true },
+        });
+        const ddScreenMap: Record<string, number> = {};
+        const ddPackageMap: Record<string, { revenue: number; bookings: number }> = {};
+        for (const b of allDdBookings) {
+            const screenName = b.screen?.name?.replace(/\s*\(.*\)$/, '') || "Unknown";
+            ddScreenMap[screenName] = (ddScreenMap[screenName] || 0) + b.totalAmount;
+            const pkgName = b.package?.name || "Unknown";
+            if (!ddPackageMap[pkgName]) ddPackageMap[pkgName] = { revenue: 0, bookings: 0 };
+            ddPackageMap[pkgName].revenue += b.totalAmount;
+            ddPackageMap[pkgName].bookings += 1;
+        }
+        const ddScreenChart = Object.entries(ddScreenMap).map(([screen, revenue]) => ({ screen, revenue }));
+        const ddPackageChart = Object.entries(ddPackageMap).map(([pkg, data]) => ({ package: pkg, revenue: data.revenue, bookings: data.bookings }));
 
         // ── Recent bookings (live feed) ──
         const recentStay = await prisma.staycationBooking.findMany({
@@ -179,6 +197,8 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
                 standaloneVillas: standaloneChart,
                 earnings1Month,
                 earningsYearly,
+                ddScreen: ddScreenChart,
+                ddPackage: ddPackageChart,
             },
             ddBookingSources: { website: ddWebsiteCount, walkIn: ddWalkInCount },
             recentStayBookings: recentStay.map(b => ({

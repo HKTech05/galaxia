@@ -214,7 +214,7 @@ function DashboardContent() {
                     };
                     return {
                         id: b.bookingRef || `#DD-${b.id}`,
-                        property: b.screen?.name ? `${b.screen.name} \u2014 Digital Diaries` : "Digital Diaries",
+                        property: b.screen?.name ? `${b.screen.name.replace(/\s*\(Digital Diaries\)/i, '')} \u2014 Digital Diaries` : "Digital Diaries",
                         dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),

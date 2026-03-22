@@ -689,6 +689,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             <div className="space-y-8">
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                        {([["insights", "Insights"], ["reports", "Advanced Reports"], ["calendar", "Live Calendar"]] as const).map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => setDashboardSubTab(key)}
+                                className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${dashboardSubTab === key
+                                    ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                                    }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                     {dashboardSubTab === "insights" && (
                     <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-sm">
                         {timeRanges.map(tr => (
@@ -704,19 +717,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         ))}
                     </div>
                     )}
-                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {([["insights", "Insights"], ["reports", "Advanced Reports"], ["calendar", "Live Calendar"]] as const).map(([key, label]) => (
-                            <button
-                                key={key}
-                                onClick={() => setDashboardSubTab(key)}
-                                className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${dashboardSubTab === key
-                                    ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
-                                    }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
                 </div>
 
                 {/* Sub-tab Content */}
@@ -905,7 +905,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <LineChart data={timeRange === '1m' ? (dashboardKPIs?.charts?.earnings1Month || []) : (dashboardKPIs?.charts?.earningsYearly || []).slice(timeRange === '3m' ? -3 : timeRange === '6m' ? -6 : 0)}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="period" tick={{ fontSize: 11, fontWeight: 700, fill: "#475569" }} />
-                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`} />
                                         <Tooltip
                                             content={({ active, payload, label }: any) => {
                                                 if (active && payload && payload.length) {
@@ -1594,6 +1594,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {Object.entries(screenGroups).length === 0 && (
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-12 text-center">
+                        <span className="text-3xl mb-2 block">📭</span>
+                        <p className="text-sm font-bold text-slate-600">No bookings today</p>
+                        <p className="text-xs text-slate-400 mt-1">All screens are available for this date.</p>
                     </div>
                 )}
 
