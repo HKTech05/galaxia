@@ -299,7 +299,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
         : "";
 
     const mapsButton = `<div style="text-align: center; margin-top: 24px;">
-        <a href="https://www.google.com/maps/search/?api=1&query=Digital+Diaries+Wadala+Mumbai" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${DD_ROSE}; color: ${DD_DARK}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
+        <a href="https://maps.app.goo.gl/VCu71cGbX4SbxqHLA" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${DD_ROSE}; color: ${DD_DARK}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
        </div>`;
 
     const html = `<!DOCTYPE html>
