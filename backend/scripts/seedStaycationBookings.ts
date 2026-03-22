@@ -39,18 +39,31 @@ async function main() {
     let refCounter = 1;
     const makeRef = () => `ST-${todayIST.replace(/-/g, "")}-${String(refCounter++).padStart(3, "0")}`;
 
-    // Property/sub-property IDs (from DB)
-    const HEAVENLY = 3;
-    const AMBROSE = 6;
-    const AMSTEL = 5;
-    const LA_PARAISO = 4;
-    const TAKE1 = 3;
-    const ALTA = 4;
-    const SANTORINI = 5;
-    const BAMBOOSA_SUB = 6;
-    const CYPRESS_SUB = 7;
-    const COTTAGE1 = 8;
-    const FAMILY_COTTAGE = 2;
+    // Dynamically fetch property/sub-property IDs
+    const allProperties = await prisma.property.findMany({ include: { subProperties: true } });
+    const propMap: Record<string, number> = {};
+    const subPropMap: Record<string, number> = {};
+    for (const p of allProperties) {
+        propMap[p.slug] = p.id;
+        for (const sp of p.subProperties) {
+            subPropMap[`${p.slug}/${sp.slug}`] = sp.id;
+        }
+    }
+
+    const HEAVENLY = propMap["heavenly-villa"];
+    const AMBROSE = propMap["ambrose"];
+    const AMSTEL = propMap["amstel-nest"];
+    const LA_PARAISO = propMap["la-paraiso"];
+    const TAKE1 = subPropMap["ambrose/take-1"];
+    const ALTA = subPropMap["ambrose/alta"];
+    const SANTORINI = subPropMap["ambrose/santorini"];
+    const BAMBOOSA_SUB = subPropMap["ambrose/bamboosa"];
+    const CYPRESS_SUB = subPropMap["ambrose/cypress"];
+    const COTTAGE1 = subPropMap["amstel-nest/standard-cottage"];
+    const FAMILY_COTTAGE = subPropMap["amstel-nest/family-cottage"];
+
+    console.log(`  Property IDs: HEAVENLY=${HEAVENLY}, AMBROSE=${AMBROSE}, AMSTEL=${AMSTEL}, LA_PARAISO=${LA_PARAISO}`);
+    console.log(`  Sub-property IDs: TAKE1=${TAKE1}, ALTA=${ALTA}, SANTORINI=${SANTORINI}, BAMBOOSA=${BAMBOOSA_SUB}, CYPRESS=${CYPRESS_SUB}, COTTAGE1=${COTTAGE1}, FAMILY=${FAMILY_COTTAGE}`);
 
     const bookings: any[] = [
         // 1: HEAVENLY — Checked in today
