@@ -151,15 +151,14 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         <div>
-                            <p className="text-cel-text-secondary font-inter text-sm mb-4">Karjat, Maharashtra, India</p>
-                            <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="text-rose-medium font-inter text-xs hover:text-rose-light transition-colors inline-block mb-6">OPEN GOOGLE MAPS →</a>
+                            <p className="text-cel-text-secondary font-inter text-sm mb-4">Wadala, Mumbai, Maharashtra</p>
                             <div className="space-y-3">
                                 <details className="group border border-cel-border rounded-lg">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
                                         Nearest Railway Station
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
-                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">Karjat Railway Station (approx. 45 min drive)</div>
+                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">5 minutes walking distance from Wadala Station</div>
                                 </details>
                                 <details className="group border border-cel-border rounded-lg">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
@@ -167,14 +166,23 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
                                     <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">
-                                        Local taxis and auto-rickshaws available from the station. Contact +91 123456789 for pre-booking an auto rickshaw.
+                                        Local taxis available
+                                    </div>
+                                </details>
+                                <details className="group border border-cel-border rounded-lg">
+                                    <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
+                                        Accessibility
+                                        <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </summary>
+                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">
+                                        Easy access from Western & Central lines
                                     </div>
                                 </details>
                             </div>
                         </div>
                         <div className="rounded-xl overflow-hidden border border-cel-border h-64 sm:h-80 bg-cel-card flex items-center justify-center">
                             <iframe 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4680.79406035677!2d72.85311857596447!3d19.013532253929238!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7cf29b87f566d%3A0x11e519df25f953af!2sDigital%20Diaries!5e1!3m2!1sen!2sin!4v1774188296796!5m2!1sen!2sin" 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4680.79406035677!2d72.85311857596447!3d19.013532253929238!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7cf29b87f566d%3A0x11e519df25f953af!2sDigital%20Diaries!5e0!3m2!1sen!2sin!4v1774188296796!5m2!1sen!2sin" 
                                 className="w-full h-full border-0" 
                                 allowFullScreen 
                                 loading="lazy" 

@@ -440,7 +440,16 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                         <svg className="w-4 h-4 text-antique-gold transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
                                     <div className="px-4 pb-4 text-text-secondary font-inter text-sm">
-                                        ~2 hours via Mumbai-Pune Expressway.
+                                        Approximately 2 hours via Mumbai-Pune Expressway.
+                                    </div>
+                                </details>
+                                <details className="group border border-border-light rounded-lg">
+                                    <summary className="flex items-center justify-between p-4 cursor-pointer text-text-primary font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
+                                        Local Transportation
+                                        <svg className="w-4 h-4 text-antique-gold transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </summary>
+                                    <div className="px-4 pb-4 text-text-secondary font-inter text-sm">
+                                        Local taxis and auto-rickshaws available. Contact +91 123456789 for pre-booking an auto rickshaw.
                                     </div>
                                 </details>
                             </div>
@@ -448,7 +457,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         <div className="rounded-xl overflow-hidden border border-border-light h-64 sm:h-80 bg-soft-gray flex items-center justify-center">
                             {(property as any).googleMapSrc ? (
                                 <iframe 
-                                    src={(property as any).googleMapSrc} 
+                                    src={`${(property as any).googleMapSrc.replace('!5e1', '!5e0')}`} 
                                     className="w-full h-full border-0" 
                                     allowFullScreen 
                                     loading="lazy" 
