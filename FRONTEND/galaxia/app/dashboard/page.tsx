@@ -8,6 +8,35 @@ import { api } from "../../lib/api";
 type Tab = "bookings" | "profile" | "reviews";
 type Category = "all" | "staycation" | "celebration";
 
+// Smart name parser: splits email-derived strings into readable first/last names
+function parseSmartName(raw: string): { first: string; last: string } {
+    if (!raw) return { first: "", last: "" };
+    // Remove email domain and common suffixes like .11, _99 etc.
+    let cleaned = raw.split("@")[0].replace(/[._-]\d+$/g, "");
+    // Replace separators (., _, -) with spaces
+    cleaned = cleaned.replace(/[._-]+/g, " ");
+    // Insert space before capitals in camelCase (e.g. "savagebeast" → keep, "SavageBeast" → "Savage Beast")
+    cleaned = cleaned.replace(/([a-z])([A-Z])/g, "$1 $2");
+    // Common concatenated word pairs that should be split
+    const commonPairs: [RegExp, string][] = [
+        [/savage\s*beast/gi, "Savage Beast"],
+        [/dark\s*knight/gi, "Dark Knight"],
+        [/star\s*lord/gi, "Star Lord"],
+        [/iron\s*man/gi, "Iron Man"],
+    ];
+    for (const [pattern, replacement] of commonPairs) {
+        cleaned = cleaned.replace(pattern, replacement);
+    }
+    // Try to split concatenated lowercase words by known prefixes (da, the, etc.)
+    cleaned = cleaned.replace(/^(da|the|mr|ms|dr)\s*/gi, (m) => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
+    if (cleaned.includes(" ")) cleaned = cleaned.replace(/^(da|the)\s+/i, "");
+    // Capitalize each word
+    const words = cleaned.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    if (words.length === 0) return { first: "", last: "" };
+    if (words.length === 1) return { first: words[0], last: "" };
+    return { first: words[0], last: words.slice(1).join(" ") };
+}
+
 interface Booking {
     id: string;
     propertyDbId?: number;
@@ -58,6 +87,13 @@ function DashboardContent() {
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
     const [reviewSuccess, setReviewSuccess] = useState(false);
 
+    // Profile editing state
+    const [editFirstName, setEditFirstName] = useState("");
+    const [editLastName, setEditLastName] = useState("");
+    const [editPhone, setEditPhone] = useState("");
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileSaved, setProfileSaved] = useState(false);
+
     useEffect(() => {
         if (activeTab === "reviews" && localStorage.getItem("galaxia_token")) {
             api.get("/reviews/me").then(res => setPersonalReviews(Array.isArray(res) ? res : [])).catch(console.error);
@@ -99,6 +135,12 @@ function DashboardContent() {
                 setUserEmail(user.email || "");
                 setUserPhone(user.phone || "");
                 localStorage.setItem("galaxia_user", JSON.stringify(user));
+                // Populate profile form with smart name parsing
+                const fullN = user.fullName || user.email?.split("@")[0] || "";
+                const parsed = parseSmartName(fullN);
+                setEditFirstName(parsed.first);
+                setEditLastName(parsed.last);
+                setEditPhone(user.phone || "");
             }
         }).catch(err => {
             console.error("Error fetching user profile:", err);
@@ -172,7 +214,7 @@ function DashboardContent() {
                     };
                     return {
                         id: b.bookingRef || `#DD-${b.id}`,
-                        property: "Celebration",
+                        property: b.screen?.name ? `${b.screen.name} \u2014 Digital Diaries` : "Digital Diaries",
                         dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),
@@ -470,7 +512,7 @@ function DashboardContent() {
                                                 <img src={booking.image} alt={booking.property} className="w-full h-full object-cover" />
                                                 {booking.type === 'celebration' && (
                                                     <div className="absolute top-2 left-2 bg-[#9f353a] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-sm uppercase tracking-wide">
-                                                        Celebration
+                                                        Digital Diaries
                                                     </div>
                                                 )}
                                             </div>
@@ -508,31 +550,53 @@ function DashboardContent() {
                         <div className={`${bgCard} rounded-xl border ${borderMain} p-6 sm:p-8 mb-6 transition-colors`}>
                             <h3 className={`font-cinzel text-lg font-semibold ${textPrimary} mb-6`}>Personal Information</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                                {[
-                                    { label: "First Name", value: userName.split(" ")[0] || "", type: "text" },
-                                    { label: "Last Name", value: userName.split(" ").slice(1).join(" ") || "", type: "text" },
-                                    { label: "Email", value: userEmail, type: "email" },
-                                    { label: "Phone", value: userPhone, type: "tel" },
-                                ].map((field) => (
-                                    <div key={field.label}>
-                                        <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>{field.label}</label>
-                                        <input type={field.type} defaultValue={field.value} className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-colors`} />
-                                    </div>
-                                ))}
+                                <div>
+                                    <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>First Name</label>
+                                    <input type="text" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-colors`} />
+                                </div>
+                                <div>
+                                    <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Last Name</label>
+                                    <input type="text" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-colors`} />
+                                </div>
+                                <div>
+                                    <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Email</label>
+                                    <input type="email" value={userEmail} readOnly className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none opacity-60 cursor-not-allowed transition-colors`} />
+                                </div>
+                                <div>
+                                    <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>Phone</label>
+                                    <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-colors`} />
+                                </div>
                             </div>
-                            <button className={`mt-6 ${gradientBrandText} text-white font-inter text-sm font-medium px-6 py-2.5 rounded-full hover:shadow-lg transition-all`}>Save Changes</button>
-                        </div>
-                        <div className={`${bgCard} rounded-xl border ${borderMain} p-6 sm:p-8 transition-colors`}>
-                            <h3 className={`font-cinzel text-lg font-semibold ${textPrimary} mb-6`}>Change Password</h3>
-                            <div className="space-y-4 max-w-sm">
-                                {["Current Password", "New Password", "Confirm Password"].map((label) => (
-                                    <div key={label}>
-                                        <label className={`${textMuted} text-xs font-inter uppercase tracking-wider mb-1.5 block`}>{label}</label>
-                                        <input type="password" placeholder="••••••••" className={`w-full ${bgInput} border ${borderMain} rounded-lg px-4 py-2.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-colors`} />
-                                    </div>
-                                ))}
-                            </div>
-                            <button className={`mt-6 border border-current ${accentText} font-inter text-sm font-medium px-6 py-2.5 rounded-full hover:opacity-80 transition-all`}>Update Password</button>
+                            <button
+                                onClick={async () => {
+                                    setProfileSaving(true);
+                                    setProfileSaved(false);
+                                    try {
+                                        const fullName = [editFirstName, editLastName].filter(Boolean).join(" ").trim();
+                                        await api.patch("/users/me", { fullName, phone: editPhone });
+                                        setUserName(fullName || "Guest");
+                                        setUserInitial((fullName || "G").charAt(0).toUpperCase());
+                                        setUserPhone(editPhone);
+                                        localStorage.setItem("galaxia_user", JSON.stringify({ fullName, email: userEmail, phone: editPhone }));
+                                        setProfileSaved(true);
+                                        setTimeout(() => setProfileSaved(false), 3000);
+                                    } catch (err) {
+                                        alert("Failed to save profile. Please try again.");
+                                    } finally {
+                                        setProfileSaving(false);
+                                    }
+                                }}
+                                disabled={profileSaving}
+                                className={`mt-6 ${gradientBrandText} text-white font-inter text-sm font-medium px-6 py-2.5 rounded-full hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2`}
+                            >
+                                {profileSaving ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : profileSaved ? (
+                                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg> Saved!</>
+                                ) : (
+                                    "Save Changes"
+                                )}
+                            </button>
                         </div>
 
                         {/* Logout Section */}

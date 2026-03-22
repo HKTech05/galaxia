@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -685,6 +685,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             <div className="space-y-8">
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {dashboardSubTab === "insights" && (
                     <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-sm">
                         {timeRanges.map(tr => (
                             <button
@@ -698,6 +699,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </button>
                         ))}
                     </div>
+                    )}
                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                         {([["insights", "Insights"], ["reports", "Advanced Reports"], ["calendar", "Live Calendar"]] as const).map(([key, label]) => (
                             <button
@@ -1767,7 +1769,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         dashboard: { title: "Owner Dashboard", subtitle: "Complete overview of all business operations." },
         properties: { title: "Properties", subtitle: "Live check-in status across all staycation properties." },
         dd: { title: "Digital Diaries", subtitle: "Read-only view of all Digital Diaries reservations." },
-        website: { title: "Website Management", subtitle: "Manage website photos and property blackout dates." },
+        website: { title: "Photo Manager", subtitle: "" },
     };
 
     const page = pageTitles[activeTab] || pageTitles.dashboard;

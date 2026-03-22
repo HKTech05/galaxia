@@ -18,6 +18,7 @@ export default function CelebrationNavbar() {
     const [showAuthModal, setShowAuthModal] = useState(false);
 
     return (
+        <>
         <nav className="fixed top-0 left-0 right-0 z-50 bg-cel-bg/95 backdrop-blur-xl border-b border-cel-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
                 {/* Logo */}
@@ -114,7 +115,9 @@ export default function CelebrationNavbar() {
                 </div>
             )}
 
-            {/* ChatGPT-style Dark Auth Modal */}
+        </nav>
+
+            {/* ChatGPT-style Dark Auth Modal — Outside nav for correct fixed positioning */}
             {showAuthModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
                     <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 xs:p-10 relative transform transition-all">
@@ -169,6 +172,6 @@ export default function CelebrationNavbar() {
                     </div>
                 </div>
             )}
-        </nav>
+        </>
     );
 }

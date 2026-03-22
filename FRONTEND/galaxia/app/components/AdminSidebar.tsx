@@ -38,7 +38,7 @@ const navigationParams = [
 const admin3TopItems = [
     { name: "Dashboard", href: "/admin3", icon: LayoutDashboard },
     { name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList },
-    { name: "Website", href: "/admin3/website-view", icon: Globe },
+    { name: "Photo Manager", href: "/admin3/website-view", icon: Globe },
 ];
 
 // Admin3 Daily Checkins dropdown items

@@ -78,6 +78,28 @@ router.get("/me", customerAuthMiddleware, async (req: CustomerAuthRequest, res) 
     }
 });
 
+// PATCH /api/users/me — Update own profile (name, phone)
+router.patch("/me", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const { fullName, phone } = req.body;
+        const data: any = {};
+        if (fullName !== undefined) data.fullName = fullName;
+        if (phone !== undefined) data.phone = phone;
+
+        const user = await prisma.user.update({
+            where: { id: req.user.id },
+            data,
+        });
+        return res.json(user);
+    } catch (error) {
+        console.error("Update profile error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // All routes below require owner/developer
 router.use(authMiddleware);
 router.use(requireRole("owner", "developer", "manager"));
@@ -99,13 +121,67 @@ router.get("/", async (_req, res) => {
             email: u.email || "—",
             phone: u.phone || "—",
             totalBookings: u._count.stayBookings + u._count.ddBookings,
-            status: u.isVerified ? "Active" : "Inactive",
+            status: (u.isVerified || u.email) ? "Active" : "Inactive",
             joined: u.createdAt.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
         }));
 
         return res.json(formatted);
     } catch (error: any) {
         console.error("Users list error:", error?.message);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// GET /api/users/:id/bookings — Admin: fetch a specific user's bookings
+router.get("/:id/bookings", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id as string, 10);
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                stayBookings: {
+                    include: { property: true, subProperty: true },
+                    orderBy: { checkInDate: "desc" },
+                    take: 20
+                },
+                ddBookings: {
+                    include: { screen: true, package: true },
+                    orderBy: { bookingDate: "desc" },
+                    take: 20
+                }
+            }
+        });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        const bookings = [
+            ...user.stayBookings.map(b => {
+                const ci = new Date(b.checkInDate);
+                const co = new Date(b.checkOutDate);
+                const nights = Math.max(1, Math.round((co.getTime() - ci.getTime()) / 86400000));
+                return {
+                    id: b.bookingRef || `#S-${b.id}`,
+                    type: "staycation" as const,
+                    location: b.subProperty?.name ? `${b.subProperty.name} (${b.property?.name || ""})` : (b.property?.name || "Staycation"),
+                    amount: b.totalAmount,
+                    nights,
+                    status: b.status,
+                    date: b.checkInDate,
+                };
+            }),
+            ...user.ddBookings.map(b => ({
+                id: b.bookingRef || `#DD-${b.id}`,
+                type: "celebration" as const,
+                location: b.screen?.name ? `${b.screen.name} (Digital Diaries)` : "Digital Diaries",
+                amount: b.totalAmount,
+                nights: 0,
+                status: b.status,
+                date: b.bookingDate,
+            }))
+        ];
+        return res.json(bookings);
+    } catch (error: any) {
+        console.error("User bookings error:", error?.message);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
