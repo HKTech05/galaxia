@@ -201,11 +201,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // Fetch dashboard data from API
     useEffect(() => {
-        api.get("/admin/dashboard").then(data => {
+        // Map frontend timeRange to backend period format
+        const periodMap: Record<string, string> = { '1m': '1month', '3m': '3months', '6m': '6months', '1y': 'year' };
+        const periodParam = periodMap[timeRange] || '1month';
+
+        api.get(`/admin/dashboard?period=${periodParam}`).then(data => {
             setDashboardKPIs(data);
         }).catch(err => console.error("Dashboard KPIs:", err));
 
-        api.get("/admin/dashboard/earnings").then(data => {
+        api.get(`/admin/dashboard/earnings?period=${periodParam}`).then(data => {
             if (Array.isArray(data) && data.length > 0) setEarningsData(data);
         }).catch(err => console.error("Earnings:", err));
 
@@ -250,7 +254,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         api.get("/bookings/dd").then(data => {
             if (Array.isArray(data) && data.length > 0) setDdBookingsLive(data);
         }).catch(err => console.error("DD bookings:", err));
-    }, [propertyDate, ddViewDate]);
+    }, [propertyDate, ddViewDate, timeRange]);
 
     // API-loaded dashboard data
     const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
@@ -752,7 +756,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
                                     <p className="text-xl font-bold text-emerald-700 mt-1">₹{totalRevenue.toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">↑ 12% vs last period</p>
+                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">this period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Occupancy Rate</p>
@@ -767,7 +771,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Nights Booked</p>
                                     <p className="text-xl font-bold text-amber-700 mt-1">{totalNights}</p>
-                                    <p className="text-[10px] text-amber-500 font-medium mt-1">↑ 8% vs last period</p>
+                                    <p className="text-[10px] text-amber-500 font-medium mt-1">this period</p>
                                 </div>
                             </div>
                         </div>
@@ -779,7 +783,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
                                     <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-violet-500 font-medium mt-1">↑ 18% vs last period</p>
+                                    <p className="text-[10px] text-violet-500 font-medium mt-1">this period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>

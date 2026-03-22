@@ -8,119 +8,145 @@ const router = Router();
 // GET /api/admin/dashboard — Dashboard KPIs and chart data
 router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), async (req, res) => {
     try {
-        const { period } = req.query; // 'month', '3months', '6months', 'year'
+        const { period } = req.query; // '1month', '3months', '6months', 'year'
         const now = new Date();
-        // Default to the first day of the CURRENT month for a "live" feel
-        let startDate = new Date(now.getFullYear(), now.getMonth(), 1); 
+        let startDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
         if (period === "3months") startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
         else if (period === "6months") startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
         else if (period === "year") startDate = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1);
 
-        // Revenue based on realized stay (check-in date) for Staycation
+        // ── KPI aggregations ──
         const stayRevenue = await prisma.staycationBooking.aggregate({
             _sum: { totalAmount: true },
-            where: {
-                checkInDate: { gte: startDate },
-                status: { in: ["confirmed", "checked_in", "checked_out"] },
-            },
+            where: { checkInDate: { gte: startDate }, status: { in: ["confirmed", "checked_in", "checked_out"] } },
         });
-        
-        // Revenue based on booking date for DD
         const ddRevenue = await prisma.ddBooking.aggregate({
             _sum: { totalAmount: true },
-            where: {
-                bookingDate: { gte: startDate },
-                status: { in: ["confirmed", "checked_in", "paid"] }, 
-            },
+            where: { bookingDate: { gte: startDate }, status: { in: ["confirmed", "checked_in", "paid"] } },
         });
-
-        // Booking counts for the same period
         const totalStayBookings = await prisma.staycationBooking.count({
             where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
         });
         const totalDdBookings = await prisma.ddBooking.count({
             where: { bookingDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
         });
-
-        // Total nights booked
         const stayBookingsForNights = await prisma.staycationBooking.findMany({
             where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
             select: { numNights: true },
         });
         const totalNightsBooked = stayBookingsForNights.reduce((sum: number, b) => sum + b.numNights, 0);
 
-        const totalRevenue = (stayRevenue._sum.totalAmount || 0) + (ddRevenue._sum.totalAmount || 0);
-
-        // Latest bookings with decrypted info
-        const stayBookings = await prisma.staycationBooking.findMany({
-            take: 10,
-            orderBy: { bookedAt: "desc" },
-            include: { property: true },
-        });
-        const ddBookings = await prisma.ddBooking.findMany({
-            take: 10,
-            orderBy: { bookedAt: "desc" },
-            include: { screen: true },
+        // ── Villa-wise chart data ──
+        const allStayBookings = await prisma.staycationBooking.findMany({
+            where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            include: { property: true, subProperty: true },
         });
 
-        const stayLive = stayBookings.map(b => ({
-            id: b.bookingRef,
-            guest: b.customerName,
-            property: b.property.name,
-            total: b.totalAmount,
-            status: b.status,
-            phone: b.customerPhone ? decrypt(b.customerPhone) : "—",
+        // Ambrose pie chart: { name, sales, nights, fill }
+        const ambroseColors = ["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"];
+        const ambroseVillas: Record<string, { sales: number; nights: number }> = {};
+        const amstelVillas: Record<string, { sales: number; nights: number }> = {};
+        const standaloneVillas: Record<string, { sales: number; nights: number }> = {};
+        const standaloneColors: Record<string, string> = {
+            "Hill View": "#10b981",
+            "Mount View": "#3b82f6",
+            "La Paraiso": "#f59e0b",
+            "Euphoria": "#ec4899",
+            "Heavenly Villa": "#8b5cf6",
+        };
+
+        for (const b of allStayBookings) {
+            const propName = b.property?.name || "Unknown";
+            if (propName === "Ambrose" && b.subProperty) {
+                const villa = b.subProperty.name;
+                if (!ambroseVillas[villa]) ambroseVillas[villa] = { sales: 0, nights: 0 };
+                ambroseVillas[villa].sales += b.totalAmount;
+                ambroseVillas[villa].nights += b.numNights;
+            } else if (propName === "Amstel Nest" && b.subProperty) {
+                const villa = b.subProperty.name;
+                if (!amstelVillas[villa]) amstelVillas[villa] = { sales: 0, nights: 0 };
+                amstelVillas[villa].sales += b.totalAmount;
+                amstelVillas[villa].nights += b.numNights;
+            } else if (!b.subProperty) {
+                if (!standaloneVillas[propName]) standaloneVillas[propName] = { sales: 0, nights: 0 };
+                standaloneVillas[propName].sales += b.totalAmount;
+                standaloneVillas[propName].nights += b.numNights;
+            }
+        }
+
+        const ambroseChart = Object.entries(ambroseVillas).map(([name, data], i) => ({
+            name, sales: data.sales, nights: data.nights, fill: ambroseColors[i % ambroseColors.length],
+        }));
+        const amstelSales = Object.entries(amstelVillas).map(([villa, data]) => ({ villa, sales: data.sales }));
+        const amstelNights = Object.entries(amstelVillas).map(([villa, data]) => ({ villa, nights: data.nights }));
+        const standaloneChart = Object.entries(standaloneVillas).map(([name, data]) => ({
+            name, sales: data.sales, nights: data.nights, fill: standaloneColors[name] || "#6b7280",
         }));
 
-        const ddLive = ddBookings.map(b => ({
-            id: b.bookingRef,
-            guest: b.customerName,
-            screen: b.screen.name,
-            total: b.totalAmount,
-            status: b.status,
-            phone: b.customerPhone ? decrypt(b.customerPhone) : "—",
+        // ── Earnings charts ──
+        // Daily earnings for the last 30 days (1-month view)
+        const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+        const stayDaily = await prisma.staycationBooking.findMany({
+            where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            select: { totalAmount: true, bookedAt: true },
+        });
+        const ddDaily = await prisma.ddBooking.findMany({
+            where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            select: { totalAmount: true, bookedAt: true },
+        });
+        const dailyMap: Record<string, { Staycation: number; DD: number }> = {};
+        for (let d = 0; d <= 30; d++) {
+            const day = new Date(thirtyDaysAgo.getTime() + d * 86400000);
+            const key = `${day.getDate()}/${day.getMonth() + 1}`;
+            dailyMap[key] = { Staycation: 0, DD: 0 };
+        }
+        for (const b of stayDaily) {
+            const d = b.bookedAt;
+            const key = `${d.getDate()}/${d.getMonth() + 1}`;
+            if (dailyMap[key]) dailyMap[key].Staycation += b.totalAmount;
+        }
+        for (const b of ddDaily) {
+            const d = b.bookedAt;
+            const key = `${d.getDate()}/${d.getMonth() + 1}`;
+            if (dailyMap[key]) dailyMap[key].DD += b.totalAmount;
+        }
+        const earnings1Month = Object.entries(dailyMap).map(([period, data]) => ({
+            period, Staycation: data.Staycation, DD: data.DD,
         }));
 
-        return res.json({
-            kpis: {
-                totalReservations: totalStayBookings + totalDdBookings,
-                totalRevenue,
-                staycationRevenue: stayRevenue._sum.totalAmount || 0,
-                ddRevenue: ddRevenue._sum.totalAmount || 0,
-                totalNightsBooked,
-                occupancyRate: 0, // Placeholder
-            },
-            recentStayBookings: stayLive,
-            recentDdBookings: ddLive,
+        // Monthly earnings for the last 12 months
+        const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        const stayMonthly = await prisma.staycationBooking.findMany({
+            where: { bookedAt: { gte: yearAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            select: { totalAmount: true, bookedAt: true },
         });
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(todayStart.getTime() + 86400000);
-
-        const todayCheckIns = await prisma.staycationBooking.findMany({
-            where: {
-                checkInDate: { gte: todayStart, lt: todayEnd },
-                status: { notIn: ["cancelled", "no_show"] },
-            },
-            include: {
-                property: { select: { name: true } },
-                subProperty: { select: { name: true } },
-                extraGuests: true,
-            },
+        const ddMonthly = await prisma.ddBooking.findMany({
+            where: { bookedAt: { gte: yearAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            select: { totalAmount: true, bookedAt: true },
         });
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthlyMap: Record<string, { Staycation: number; DD: number }> = {};
+        for (let m = 0; m < 12; m++) {
+            const ref = new Date(now.getFullYear(), now.getMonth() - 11 + m, 1);
+            const key = `${monthNames[ref.getMonth()]} ${String(ref.getFullYear()).slice(2)}`;
+            monthlyMap[key] = { Staycation: 0, DD: 0 };
+        }
+        for (const b of stayMonthly) {
+            const d = b.bookedAt;
+            const key = `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+            if (monthlyMap[key]) monthlyMap[key].Staycation += b.totalAmount;
+        }
+        for (const b of ddMonthly) {
+            const d = b.bookedAt;
+            const key = `${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+            if (monthlyMap[key]) monthlyMap[key].DD += b.totalAmount;
+        }
+        const earningsYearly = Object.entries(monthlyMap).map(([period, data]) => ({
+            period, Staycation: data.Staycation, DD: data.DD,
+        }));
 
-        // Property-wise revenue
-        const propertyRevenue = await prisma.staycationBooking.groupBy({
-            by: ["propertyId"],
-            _sum: { totalAmount: true },
-            _count: { id: true },
-            where: {
-                bookedAt: { gte: startDate },
-                status: { notIn: ["cancelled", "no_show"] },
-            },
-        });
-
-        // DD booking source breakdown
+        // ── DD booking sources ──
         const ddWebsiteCount = await prisma.ddBooking.count({
             where: { bookedAt: { gte: startDate }, source: "website", status: { notIn: ["cancelled", "no_show"] } },
         });
@@ -128,30 +154,43 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
             where: { bookedAt: { gte: startDate }, source: "walk_in", status: { notIn: ["cancelled", "no_show"] } },
         });
 
-        // Employee cash summary
-        const employees = await prisma.employee.findMany({
-            where: { isActive: true },
-            include: { property: { select: { name: true } } },
+        // ── Recent bookings (live feed) ──
+        const recentStay = await prisma.staycationBooking.findMany({
+            take: 10, orderBy: { bookedAt: "desc" }, include: { property: true },
         });
-        const totalPendingCash = employees.reduce((sum: number, e: { cashCollected: number }) => sum + e.cashCollected, 0);
+        const recentDd = await prisma.ddBooking.findMany({
+            take: 10, orderBy: { bookedAt: "desc" }, include: { screen: true },
+        });
 
         return res.json({
             kpis: {
                 totalRevenue: (stayRevenue._sum.totalAmount || 0) + (ddRevenue._sum.totalAmount || 0),
+                totalReservations: totalStayBookings + totalDdBookings,
                 staycationRevenue: stayRevenue._sum.totalAmount || 0,
                 ddRevenue: ddRevenue._sum.totalAmount || 0,
                 totalStayBookings,
                 totalDdBookings,
                 totalNightsBooked,
-                totalPendingCash,
             },
-            todayCheckIns,
-            propertyRevenue,
-            ddBookingSources: {
-                website: ddWebsiteCount,
-                walkIn: ddWalkInCount,
+            charts: {
+                ambrose: ambroseChart,
+                amstelSales,
+                amstelNights,
+                standaloneVillas: standaloneChart,
+                earnings1Month,
+                earningsYearly,
             },
-            employees,
+            ddBookingSources: { website: ddWebsiteCount, walkIn: ddWalkInCount },
+            recentStayBookings: recentStay.map(b => ({
+                id: b.bookingRef, guest: b.customerName, property: b.property.name,
+                total: b.totalAmount, status: b.status,
+                phone: b.customerPhone ? decrypt(b.customerPhone) : "—",
+            })),
+            recentDdBookings: recentDd.map(b => ({
+                id: b.bookingRef, guest: b.customerName, screen: b.screen.name,
+                total: b.totalAmount, status: b.status,
+                phone: b.customerPhone ? decrypt(b.customerPhone) : "—",
+            })),
         });
     } catch (error) {
         console.error("Dashboard error:", error);
