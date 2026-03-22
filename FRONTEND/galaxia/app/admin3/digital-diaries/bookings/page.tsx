@@ -172,7 +172,7 @@ export default function Admin3DDBookingsPage() {
                                             <span className="text-[11px] font-bold text-slate-400 mt-0.5">{b.customerPhone}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4"><span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">{b.screen?.name || "—"}</span></td>
+                                    <td className="px-6 py-4"><span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">{(b.screen?.name || "—").replace(/\s*\(.*?\)/g, '')}</span></td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col gap-0.5">
                                             <span className="text-sm font-bold text-slate-800">{new Date(b.bookingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>

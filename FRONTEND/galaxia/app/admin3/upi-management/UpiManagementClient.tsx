@@ -167,7 +167,7 @@ export default function UpiManagementClient() {
 
         try {
             const token = localStorage.getItem("galaxia_token") || "";
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://65.1.183.241:4000'}/api/upi-payments/download-all/${viewEmployeeId}`, {
+            const res = await fetch(`/api/upi-payments/download-all/${viewEmployeeId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error("Download failed");
@@ -418,14 +418,14 @@ export default function UpiManagementClient() {
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center justify-center gap-2">
                                                             <button
-                                                                onClick={() => setPreviewImageUrl(log.proofImageUrl)}
+                                                                onClick={() => setPreviewImageUrl(`/api/upi-payments/image/${log.id}`)}
                                                                 className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors"
                                                                 title="View proof"
                                                             >
                                                                 <Eye size={14} />
                                                             </button>
                                                             <a
-                                                                href={log.proofImageUrl}
+                                                                href={`/api/upi-payments/download/${log.id}`}
                                                                 download
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
