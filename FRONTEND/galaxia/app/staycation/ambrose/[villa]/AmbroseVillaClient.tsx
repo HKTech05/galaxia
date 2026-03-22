@@ -35,38 +35,6 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     const [liveWeekday, setLiveWeekday] = useState<string | null>(null);
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
-    const [isDownloading, setIsDownloading] = useState(false);
-
-    const handleDownload = async (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
-        e.preventDefault();
-        try {
-            setIsDownloading(true);
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Network fetch failed");
-            const blob = await response.blob();
-            
-            let ext = "pdf";
-            const contentType = response.headers.get("content-type") || blob.type;
-            if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = "jpg";
-            else if (contentType.includes("png")) ext = "png";
-            else if (url.toLowerCase().includes(".jpg") || url.toLowerCase().includes(".jpeg")) ext = "jpg";
-            else if (url.toLowerCase().includes(".png")) ext = "png";
-
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = blobUrl;
-            a.download = `${parent.name.replace(/\s+/g, "-")}-Menu.${ext}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(blobUrl);
-        } catch (err) {
-            console.error("Download failed, using fallback", err);
-            window.open(url, "_blank");
-        } finally {
-            setIsDownloading(false);
-        }
-    };
 
     // Fetch DB property IDs + live pricing
     useEffect(() => {
@@ -221,13 +189,9 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                 <span className="inline-block px-2 py-0.5 rounded text-[10px] font-inter font-medium mb-2 bg-green-50 text-green-700 border border-green-200">MEALS INCLUDED</span>
                                 <p className="text-text-secondary font-inter text-sm">{parent.foodPolicy.details}</p>
                                 {parent.foodPolicy.menuFile && (
-                                    <a href={parent.foodPolicy.menuFile} onClick={(e) => handleDownload(e, parent.foodPolicy.menuFile!)} className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-gradient-to-r from-antique-gold to-dark-gold text-white font-inter text-xs font-medium hover:shadow-md hover:shadow-antique-gold/20 transition-all duration-300">
-                                        {isDownloading ? (
-                                            <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                        ) : (
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                        )}
-                                        {isDownloading ? "Downloading..." : "Download Menu"}
+                                    <a href={`/api/download?url=${encodeURIComponent(parent.foodPolicy.menuFile!)}&name=${encodeURIComponent(parent.name + "-Menu")}`} download className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-gradient-to-r from-antique-gold to-dark-gold text-white font-inter text-xs font-medium hover:shadow-md hover:shadow-antique-gold/20 transition-all duration-300">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        Download Menu
                                     </a>
                                 )}
                             </div>
