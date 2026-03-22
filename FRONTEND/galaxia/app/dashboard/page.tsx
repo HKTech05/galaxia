@@ -202,6 +202,9 @@ function DashboardContent() {
                             }
                             const propThumb = (siteImages[`${slug}/thumbnail`] || [])[0]?.url;
                             if (propThumb) return propThumb;
+                            // Fallback: try property or subProperty imageUrl from DB
+                            if (b.subProperty?.imageUrl) return b.subProperty.imageUrl;
+                            if (b.property?.imageUrl) return b.property.imageUrl;
                             return b.property?.images?.[0] || '';
                         })(),
                         type: "staycation",
@@ -236,7 +239,7 @@ function DashboardContent() {
                     };
                     return {
                         id: b.bookingRef || `#DD-${b.id}`,
-                        property: b.screen?.name ? `${b.screen.name.replace(/\s*\(Digital Diaries\)/i, '')} \u2014 Digital Diaries` : "Digital Diaries",
+                        property: b.screen?.name ? `${b.screen.name.replace(/\s*\([^)]*\)/g, '').trim()} \u2014 Digital Diaries` : "Digital Diaries",
                         dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),
@@ -258,7 +261,7 @@ function DashboardContent() {
                         totalPaid: formatPrice(b.totalAmount),
                         payNow: formatPrice(b.amountPaid || Math.round(b.totalAmount * 0.5)),
                         payAtVenue: formatPrice(b.amountToCollect || Math.round(b.totalAmount * 0.5)),
-                        screen: b.screen?.name || "Private Screen",
+                        screen: (b.screen?.name || "Private Screen").replace(/\s*\([^)]*\)/g, '').trim(),
                         package: b.package?.name || "Private Screening",
                         duration: `${b.durationHours || 3} hours`,
                         timeSlot: b.startHour != null ? `${fmtHour(b.startHour)} - ${fmtHour(b.startHour + (b.durationHours || 3))}` : b.timeSlot

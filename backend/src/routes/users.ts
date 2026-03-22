@@ -41,7 +41,7 @@ router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthReque
         });
 
         const ddBookings = user.ddBookings.map(b => {
-            let standardizedName = b.screen?.name || "Digital Diaries";
+            let standardizedName = (b.screen?.name || "Digital Diaries").replace(/\s*\([^)]*\)/g, '').trim();
             standardizedName = `${standardizedName} (Digital Diaries)`;
             return {
                 ...b,
