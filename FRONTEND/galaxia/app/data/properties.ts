@@ -39,6 +39,7 @@ export interface PropertyData {
     googleMap?: string;
     googleMapSrc?: string;
     location: string;
+    activities?: { title: string; description: string; image: string; icon?: string }[];
     subProperties?: {
         id: string;
         entryDbId?: number;
@@ -225,6 +226,7 @@ export const properties: Record<string, PropertyData> = {
                     weekend: { price: "6,500", persons: "2 with meals" },
                 },
             },
+        ],
         instagram: "https://instagram.com/ambrose_villas",
         googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.38095862043!2d73.4718958!3d18.992673399999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd57105ba96147%3A0x164ca3cb8874bed2!2sAmbrose!5e1!3m2!1sen!2sin!4v1774188490076!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",

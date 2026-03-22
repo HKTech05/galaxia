@@ -62,7 +62,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
 
     // Use site images if available, otherwise fall back to data file
     const displayImages = slideshowImages.length > 0 ? slideshowImages : property.images.filter(Boolean);
-    const displayActivities = property.activities.map((act, i) => ({
+    const displayActivities = (property.activities || []).map((act: { title: string; description: string; image: string }, i: number) => ({
         ...act,
         image: activityImages[i] || act.image,
     }));
@@ -207,7 +207,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-text-primary">Experiences & Activities</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6">
-                        {displayActivities.map((activity, i) => (
+                        {displayActivities.map((activity: any, i: number) => (
                             <div key={i} className="group rounded-xl overflow-hidden border border-border-light bg-white hover:shadow-lg hover:border-antique-gold/30 transition-all duration-500">
                                 <div className="relative h-44 sm:h-48 overflow-hidden">
                                     {activity.image && <Image src={activity.image} alt={activity.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />}
