@@ -33,7 +33,7 @@ router.post("/", async (req, res) => {
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             advancePaid, advanceMethod,
-            source, couponCode,
+            source, couponCode, addons,
         } = req.body;
 
         if (!customerName || !customerPhone || !propertyId || !checkInDate || !checkOutDate) {
@@ -224,6 +224,7 @@ router.post("/", async (req, res) => {
                     source: source || "website",
                     couponId,
                     discountAmount,
+                    addons: addons || null,
                 },
                 include: { property: true, subProperty: true },
             });

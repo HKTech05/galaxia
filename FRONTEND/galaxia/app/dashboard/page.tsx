@@ -66,6 +66,7 @@ interface Booking {
     checkOut?: string;
     roomType?: string;
     taxes?: string;
+    addons?: any[];
 }
 
 function DashboardContent() {
@@ -156,6 +157,14 @@ function DashboardContent() {
         });
     }, [router, searchParams]);
 
+    // Site images for DD thumbnails
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        fetch("/api/site-images").then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+
     useEffect(() => {
         (async () => {
             try {
@@ -193,7 +202,8 @@ function DashboardContent() {
                         checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkInTime || "1:00 PM"),
                         checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkOutTime || "11:00 AM"),
                         roomType: b.subProperty?.name || "Entire Property",
-                        taxes: formatPrice(b.gstAmount || 0)
+                        taxes: formatPrice(b.gstAmount || 0),
+                        addons: b.addons || [],
                     };
                 });
                 
@@ -219,7 +229,18 @@ function DashboardContent() {
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),
                         guests: b.numGuests,
-                        image: b.screen?.imageUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80",
+                        image: (() => {
+                            // Try to get package-specific thumbnail from Photo Manager
+                            const screenSlug = b.screen?.slug;
+                            const pkgSlug = b.package?.slug;
+                            if (screenSlug && pkgSlug) {
+                                const thumbSection = `dd/${screenSlug}/${pkgSlug}/thumbnail`;
+                                const thumbImg = (siteImages[thumbSection] || [])[0]?.url;
+                                if (thumbImg) return thumbImg;
+                            }
+                            // Fallback to screen image
+                            return b.screen?.imageUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80";
+                        })(),
                         type: "celebration",
                         time: isUpcoming ? "upcoming" : "past",
                         totalPaid: formatPrice(b.totalAmount),
@@ -360,6 +381,15 @@ function DashboardContent() {
                                         <p className={`font-inter text-[10px] ${isDark ? "text-sky-500/70" : "text-sky-600/70"}`}>Refundable · due at check-in</p>
                                     </div>
                                     <span className={`font-cinzel font-bold text-sm ${isDark ? "text-sky-400" : "text-sky-700"}`}>{booking.securityDeposit}</span>
+                                </div>
+                            )}
+                            {booking.addons && booking.addons.length > 0 && (
+                                <div className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200"}`}>
+                                    <div>
+                                        <p className={`font-inter text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-700"}`}>🎉 {booking.addons[0].name}</p>
+                                        <p className={`font-inter text-[10px] ${isDark ? "text-amber-500/70" : "text-amber-600/70"}`}>{booking.addons[0].description}</p>
+                                    </div>
+                                    <span className={`font-cinzel font-bold text-sm ${isDark ? "text-amber-400" : "text-amber-700"}`}>₹{booking.addons[0].price?.toLocaleString('en-IN')}</span>
                                 </div>
                             )}
                         </div>

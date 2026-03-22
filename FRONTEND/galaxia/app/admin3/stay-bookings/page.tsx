@@ -36,6 +36,7 @@ interface StayBooking {
     depositMethod: string | null;
     couponCode: string | null;
     extraGuests: any[];
+    addons: any[] | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -107,6 +108,7 @@ export default function StayBookingsPage() {
                 depositMethod: b.depositMethod || null,
                 couponCode: b.coupon?.code || null,
                 extraGuests: b.extraGuests || [],
+                addons: b.addons || null,
             }));
             setBookings(mapped);
         } catch (err) {
@@ -395,6 +397,12 @@ export default function StayBookingsPage() {
                                             <span className="font-bold text-emerald-600">-{formatPrice(selectedBooking.discountAmount)}</span>
                                         </div>
                                     )}
+                                    {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.length > 0 && selectedBooking.addons.map((addon: any, i: number) => (
+                                        <div key={i} className="flex justify-between text-sm">
+                                            <span className="text-amber-700">🎉 {addon.name}</span>
+                                            <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
+                                        </div>
+                                    ))}
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">GST (5%)</span>
                                         <span className="font-bold text-slate-800">{formatPrice(selectedBooking.gstAmount)}</span>

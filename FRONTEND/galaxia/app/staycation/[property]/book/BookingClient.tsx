@@ -154,6 +154,11 @@ export default function BookingClient({ property }: BookingClientProps) {
     });
     const [idProofError, setIdProofError] = useState("");
 
+    // Celebration Add-on (Ambrose only)
+    const isAmbrose = property.id === 'ambrose' || property.id.startsWith('ambrose/');
+    const [celebrationAddon, setCelebrationAddon] = useState(false);
+    const CELEBRATION_ADDON_PRICE = 1200;
+
     // Load user data if logged in
     useEffect(() => {
         const token = localStorage.getItem("galaxia_token");
@@ -353,8 +358,9 @@ export default function BookingClient({ property }: BookingClientProps) {
         }
     }
 
+    const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
     const taxesAndFees = Math.round((subtotal - discountAmount) * property.gstPercent / 100);
-    const totalAmount = subtotal - discountAmount + taxesAndFees;
+    const totalAmount = subtotal - discountAmount + addonTotal + taxesAndFees;
 
     const totalGuests = adults + kids;
     const maxGuests = selectedRoom?.maxPersons || property.maxPersons || 4;
@@ -486,6 +492,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 advanceMethod: "online",
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
+                addons: celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance' }] : null,
             };
 
             const result = await api.post("/bookings/staycation", payload);
@@ -778,6 +785,28 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         )}
                                     </div>
 
+                                    {/* Celebration Add-on (Ambrose only) */}
+                                    {isAmbrose && (
+                                        <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
+                                            <div className="flex items-start gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    id="celebration-addon"
+                                                    checked={celebrationAddon}
+                                                    onChange={(e) => setCelebrationAddon(e.target.checked)}
+                                                    className="mt-1 w-4 h-4 accent-[#B8860B] cursor-pointer"
+                                                />
+                                                <label htmlFor="celebration-addon" className="cursor-pointer flex-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="font-inter text-sm font-semibold text-text-primary">Celebration Add-on</h4>
+                                                        <span className="font-cinzel text-sm font-semibold text-dark-gold">+ ₹{CELEBRATION_ADDON_PRICE.toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                    <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner for a warm ambiance</p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* ID Proof Upload */}
                                     <div className="mb-8">
                                         <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Valid ID Proof Upload* (Aadhaar/DL/PAN)</label>
@@ -904,6 +933,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     <div className="flex justify-between items-center"><span>Room Price</span><span>{formatPrice(roomPrice)}</span></div>
                                     {extraCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Extra Guests</span><span>{formatPrice(extraCharges)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
+                                    {celebrationAddon && <div className="flex justify-between items-center text-xs text-amber-700"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
                                     <div className="flex justify-between items-center"><span>Taxes ({property.gstPercent}% GST)</span><span>{formatPrice(taxesAndFees)}</span></div>
                                 </div>
 
@@ -1049,6 +1079,12 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     <div className="flex justify-between text-green-600 text-xs">
                                         <span>Coupon ({appliedCoupon?.code})</span>
                                         <span>-{formatPrice(discountAmount)}</span>
+                                    </div>
+                                )}
+                                {celebrationAddon && (
+                                    <div className="flex justify-between text-amber-700 text-xs">
+                                        <span>Celebration Add-on</span>
+                                        <span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-text-secondary text-xs">

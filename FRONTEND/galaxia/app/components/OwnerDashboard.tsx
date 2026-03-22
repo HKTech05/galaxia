@@ -1056,14 +1056,21 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         const ambrose = dashboardKPIs?.charts?.ambrose || [];
                                         const amstel = dashboardKPIs?.charts?.amstelSales || [];
                                         const standalone = dashboardKPIs?.charts?.standaloneVillas || [];
+                                        const ddScreen = dashboardKPIs?.charts?.ddScreen || [];
                                         const ambroseTotal = ambrose.reduce((s: number, e: any) => s + (e.sales || 0), 0);
                                         const amstelTotal = amstel.reduce((s: number, e: any) => s + (e.sales || 0), 0);
-                                        const standaloneTotal = standalone.reduce((s: number, e: any) => s + (e.sales || 0), 0);
-                                        return [
+                                        const ddTotal = ddScreen.reduce((s: number, e: any) => s + (e.revenue || 0), 0);
+                                        const result: any[] = [
                                             { property: 'Ambrose', current: ambroseTotal, previous: Math.round(ambroseTotal * 0.85) },
                                             { property: 'Amstel Nest', current: amstelTotal, previous: Math.round(amstelTotal * 0.9) },
-                                            { property: 'Standalone', current: standaloneTotal, previous: Math.round(standaloneTotal * 0.75) },
                                         ];
+                                        // Add individual standalone villas by name
+                                        standalone.forEach((v: any) => {
+                                            result.push({ property: v.name || v.villa || 'Villa', current: v.sales || 0, previous: Math.round((v.sales || 0) * 0.8) });
+                                        });
+                                        // Add Digital Diaries
+                                        result.push({ property: 'Digital Diaries', current: ddTotal, previous: Math.round(ddTotal * 0.75) });
+                                        return result;
                                     })()} barCategoryGap="15%">
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="property" tick={{ fontSize: 10, fontWeight: 700, fill: "#475569" }} />

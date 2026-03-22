@@ -338,6 +338,7 @@ model StaycationBooking {
   bookedAt           DateTime         @default(now()) @map("booked_at")
   createdBy          Int?             @map("created_by")
   updatedAt          DateTime         @updatedAt @map("updated_at")
+  addons             Json?            @map("addons")
   payments           BookingPayment[]
   extraGuests        ExtraGuest[]
   guestIds           GuestId[]
