@@ -86,13 +86,12 @@ export default function Admin3DDBookingsPage() {
         }
     };
 
-    const cleanScreenName = (name: string | undefined | null) => (name || "—").replace(/\s*\(.*?\)/g, "").trim();
-    const screens = [...new Set(bookings.map(b => cleanScreenName(b.screen?.name)).filter(name => name !== "—"))];
+    const screens = [...new Set(bookings.map(b => b.screen?.name).filter(Boolean))];
 
     const filteredBookings = bookings.filter(b => {
         const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || `#DD-${b.id}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === "All" || b.status === statusFilter.toLowerCase();
-        const matchesScreen = screenFilter === "All" || cleanScreenName(b.screen?.name) === screenFilter;
+        const matchesScreen = screenFilter === "All" || b.screen?.name === screenFilter;
         return matchesSearch && matchesStatus && matchesScreen;
     });
 
