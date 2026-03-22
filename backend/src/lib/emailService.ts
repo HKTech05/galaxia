@@ -365,7 +365,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
                 </td></tr>
                 <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
                     <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">2.</span>
-                    Complete privacy is guaranteed. There are no CCTV cameras inside the screening rooms.
+                    This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.
                 </td></tr>
                 <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
                     <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">3.</span>
