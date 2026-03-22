@@ -320,6 +320,34 @@ export default function Admin1Dashboard() {
                     amount: balanceInt,
                     method: mode
                 });
+
+                // Create UPI payment record for UPI Management tracking
+                if (mode === "UPI") {
+                    try {
+                        const employees = await api.get("/employees?propertyId=7");
+                        const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
+                        if (empId) {
+                            const token = localStorage.getItem("galaxia_token") || "";
+                            const fd = new FormData();
+                            fd.append("employeeId", String(empId));
+                            fd.append("bookingRef", `DD-${activeEvent.id}`);
+                            fd.append("guestName", activeEvent.customerName || '');
+                            fd.append("amount", String(balanceInt));
+                            fd.append("paymentType", "balance");
+                            fd.append("note", `DD Balance — ${activeEvent.screen}`);
+                            // Create a minimal placeholder file for the proof
+                            const blob = new Blob(["UPI payment collected at reception"], { type: "text/plain" });
+                            fd.append("file", blob, "upi-collected.txt");
+                            await fetch("/api/uploads/upi-proof", {
+                                method: "POST",
+                                headers: { Authorization: `Bearer ${token}` },
+                                body: fd,
+                            });
+                        }
+                    } catch (upiErr) {
+                        console.error("Failed to record UPI payment:", upiErr);
+                    }
+                }
             }
             alert(`Collected ₹${balanceInt.toLocaleString()} via ${mode}`);
             fetchEvents(startDate);
@@ -339,9 +367,39 @@ export default function Admin1Dashboard() {
         }
 
         try {
+            let totalAddonAmount = 0;
             for (const addon of unpaidAddons) {
                 await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: mode });
+                totalAddonAmount += addon.price;
             }
+
+            // Create UPI payment record for UPI Management tracking
+            if (mode === "UPI" && totalAddonAmount > 0) {
+                try {
+                    const employees = await api.get("/employees?propertyId=7");
+                    const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
+                    if (empId) {
+                        const token = localStorage.getItem("galaxia_token") || "";
+                        const fd = new FormData();
+                        fd.append("employeeId", String(empId));
+                        fd.append("bookingRef", `DD-${activeEvent.id}`);
+                        fd.append("guestName", activeEvent.customerName || '');
+                        fd.append("amount", String(totalAddonAmount));
+                        fd.append("paymentType", "balance");
+                        fd.append("note", `DD Add-ons — ${activeEvent.screen}`);
+                        const blob = new Blob(["UPI add-on payment collected at reception"], { type: "text/plain" });
+                        fd.append("file", blob, "upi-addon-collected.txt");
+                        await fetch("/api/uploads/upi-proof", {
+                            method: "POST",
+                            headers: { Authorization: `Bearer ${token}` },
+                            body: fd,
+                        });
+                    }
+                } catch (upiErr) {
+                    console.error("Failed to record UPI addon payment:", upiErr);
+                }
+            }
+
             alert(`Collected payment for ${unpaidAddons.length} add-ons via ${mode}`);
             fetchEvents(startDate);
         } catch (err: any) {
