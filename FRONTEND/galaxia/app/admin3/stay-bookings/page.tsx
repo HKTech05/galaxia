@@ -398,9 +398,13 @@ export default function StayBookingsPage() {
                                         </div>
                                     )}
                                     {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.length > 0 && selectedBooking.addons.map((addon: any, i: number) => (
-                                        <div key={i} className="flex justify-between text-sm">
-                                            <span className="text-amber-700">{addon.name}</span>
-                                            <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
+                                        <div key={i}>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-amber-700">{addon.name}</span>
+                                                <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
+                                            </div>
+                                            {addon.cakeMessage && <p className="text-xs text-slate-500 mt-0.5 ml-1">Cake: {addon.cakeMessage}</p>}
+                                            {addon.occasion && <p className="text-xs text-slate-500 ml-1">Occasion: {addon.occasion}</p>}
                                         </div>
                                     ))}
                                     <div className="flex justify-between text-sm">

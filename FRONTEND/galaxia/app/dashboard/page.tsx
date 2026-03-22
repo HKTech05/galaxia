@@ -272,7 +272,7 @@ function DashboardContent() {
                 setIsLoading(false);
             }
         })();
-    }, []);
+    }, [siteImages]);
 
     useEffect(() => {
         const source = searchParams.get("source");

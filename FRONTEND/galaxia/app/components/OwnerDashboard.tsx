@@ -234,6 +234,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             guests: v.guests || (villaBooking?.numGuests || 0),
                             balanceAmount: v.balanceAmount ?? (villaBooking?.balanceAmount || null),
                             depositAmount: v.depositAmount ?? (villaBooking?.securityDeposit || null),
+                            totalAmount: v.totalAmount ?? (villaBooking?.totalAmount || null),
+                            addons: v.addons ?? (villaBooking?.addons || null),
+                            phone: v.phone ?? (villaBooking?.customerPhone || null),
                         };
                     });
                     return {
@@ -244,6 +247,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         isCheckoutDay: p.isCheckoutDay ?? (propBooking ? propBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
                         balanceAmount: p.balanceAmount ?? (propBooking?.balanceAmount || null),
                         depositAmount: p.depositAmount ?? (propBooking?.securityDeposit || null),
+                        totalAmount: p.totalAmount ?? (propBooking?.totalAmount || null),
+                        addons: p.addons ?? (propBooking?.addons || null),
                         villas: enrichedVillas,
                     };
                 });
@@ -582,6 +587,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     </p>
                                 )}
                             </div>
+                            {item.addons && Array.isArray(item.addons) && item.addons.length > 0 && (
+                                <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
+                                    <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(item.addons[0].price || 1200).toLocaleString('en-IN')}</p>
+                                    {item.addons[0].cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {item.addons[0].cakeMessage}</p>}
+                                    {item.addons[0].occasion && <p className="text-[10px] text-slate-600">Occasion: {item.addons[0].occasion}</p>}
+                                </div>
+                            )}
                         </div>
 
                         {/* Extra Guests Display */}
@@ -1489,14 +1502,24 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     <p className={`text-[10px] font-bold uppercase tracking-wider ${villa.balanceCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
                                                         Balance {villa.balanceCollected ? '✓ Collected' : '⏳ Pending'}
                                                     </p>
+                                                    {villa.balanceAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(villa.balanceAmount).toLocaleString('en-IN')}</p>}
                                                     {villa.balanceCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.balanceMode} · {villa.balanceTime}</p>}
                                                 </div>
                                                 <div className={`p-3 rounded-lg border ${villa.depositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                     <p className={`text-[10px] font-bold uppercase tracking-wider ${villa.depositCollected ? 'text-emerald-600' : 'text-amber-600'}`}>
                                                         Security Deposit {villa.depositCollected ? '✓ Collected' : '⏳ Pending'}
                                                     </p>
+                                                    {villa.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(villa.depositAmount).toLocaleString('en-IN')}</p>}
                                                     {villa.depositCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.depositMode} · {villa.depositTime}</p>}
                                                 </div>
+                                                {villa.addons && Array.isArray(villa.addons) && villa.addons.length > 0 && (
+                                                    <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
+                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
+                                                        <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(villa.addons[0].price || 1200).toLocaleString('en-IN')}</p>
+                                                        {villa.addons[0].cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {villa.addons[0].cakeMessage}</p>}
+                                                        {villa.addons[0].occasion && <p className="text-[10px] text-slate-600">Occasion: {villa.addons[0].occasion}</p>}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Extra Guests Display */}

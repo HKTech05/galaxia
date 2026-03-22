@@ -44,6 +44,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             b.status === "confirmed" ? "Pending Arrival" : 
                             b.status === "checked_in" ? "Checked In" : 
                             b.status || "Pending Arrival",
+                    addons: b.addons || null,
+                    totalAmount: b.totalAmount || 0,
                 }));
                 setBookings(mapped);
             }
@@ -429,6 +431,19 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 {booking.extraGuestCharge.toLocaleString('en-IN')}
                                                 <span className="text-[9px] bg-purple-200 text-purple-800 px-1 py-0.5 rounded ml-1.5 uppercase">{booking.extraGuestPayment}</span>
                                             </p>
+                                        </div>
+                                    )}
+
+                                    {booking.addons && Array.isArray(booking.addons) && booking.addons.length > 0 && (
+                                        <div className="mt-2 col-span-2 sm:col-span-5 bg-amber-50 p-2.5 rounded-lg border border-amber-100 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Celebration Add-on</p>
+                                                <p className="text-sm font-bold text-amber-800 mt-0.5">₹{Number(booking.addons[0].price || 1200).toLocaleString('en-IN')}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                {booking.addons[0].cakeMessage && <p className="text-xs text-slate-700">Cake: <span className="font-bold">{booking.addons[0].cakeMessage}</span></p>}
+                                                {booking.addons[0].occasion && <p className="text-xs text-slate-700">Occasion: <span className="font-bold">{booking.addons[0].occasion}</span></p>}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
