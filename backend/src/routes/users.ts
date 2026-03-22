@@ -121,7 +121,7 @@ router.get("/", async (_req, res) => {
             email: u.email || "—",
             phone: u.phone || "—",
             totalBookings: u._count.stayBookings + u._count.ddBookings,
-            status: (u.isVerified || u.email) ? "Active" : "Inactive",
+            status: (u.email && u.phone) ? "Verified" : "Unverified",
             joined: u.createdAt.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
         }));
 

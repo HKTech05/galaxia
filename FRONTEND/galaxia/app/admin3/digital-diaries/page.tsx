@@ -1132,7 +1132,7 @@ export default function Admin1Dashboard() {
                                 }).length === 0 && (
                                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                                         <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-lg px-8 py-6">
-                                            <span className="text-3xl mb-2 block">📭</span>
+
                                             <p className="text-sm font-bold text-slate-600">No bookings today</p>
                                             <p className="text-xs text-slate-400 mt-1">All screens are available for this date.</p>
                                         </div>

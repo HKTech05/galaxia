@@ -172,17 +172,12 @@ export default function UsersPage() {
                                                 <CalendarDays size={13} className="text-slate-400" /> {user.joined}
                                             </span>
                                         </div>
-                                        <span className={`inline-flex px-2.5 py-1 rounded text-[10px] font-bold tracking-wide uppercase ${user.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-                                            user.status === 'Inactive' ? 'bg-slate-100 text-slate-600' :
-                                                'bg-red-100 text-red-700'
+                                        <span className={`inline-flex px-2.5 py-1 rounded text-[10px] font-bold tracking-wide uppercase ${user.status === 'Verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                                             }`}>
                                             {user.status}
                                         </span>
 
                                         <div className="flex items-center gap-1.5">
-                                            <button onClick={(e) => { e.stopPropagation(); handleSuspend(user); }} title={user.status === 'Active' ? 'Suspend Account' : 'Activate Account'} className="p-2 bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 rounded-lg shadow-sm transition-colors">
-                                                <Ban size={15} />
-                                            </button>
                                             <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                                         </div>
                                     </div>
