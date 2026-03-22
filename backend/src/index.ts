@@ -21,6 +21,8 @@ import blockedDateRoutes from "./routes/blockedDates";
 import userRoutes from "./routes/users";
 import reviewRoutes from "./routes/reviews";
 import { apiLimiter } from "./middleware/rateLimiter";
+import { sendTestEmail } from "./lib/emailService";
+import { authMiddleware, requireRole, AuthRequest } from "./middleware/auth";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -64,6 +66,14 @@ app.use("/api/site-images", siteImageRoutes);
 app.use("/api/blocked-dates", blockedDateRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
+
+// Test email route (owner/dev only)
+app.post("/api/test-email", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    const { to } = req.body;
+    if (!to) return res.status(400).json({ error: "Target email (to) is required" });
+    const result = await sendTestEmail(to);
+    return res.json(result);
+});
 
 // 404
 app.use((_req, res) => {

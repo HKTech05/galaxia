@@ -1,9 +1,10 @@
 import nodemailer from "nodemailer";
 
-// Create reusable transporter
-// Supports Gmail SMTP, AWS SES, or any SMTP provider
+// ───────────────────────────────────────────────────────────────
+//  Transporter — AWS SES SMTP (Mumbai)
+// ───────────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    host: process.env.SMTP_HOST || "email-smtp.ap-south-1.amazonaws.com",
     port: parseInt(process.env.SMTP_PORT || "587"),
     secure: false,
     auth: {
@@ -12,78 +13,259 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const FROM_EMAIL = process.env.SMTP_FROM || "Galaxia <bookings@galaxia.in>";
+const FROM_EMAIL = process.env.SMTP_FROM || "Galaxia Resorts <admin@galaxiaresorts.com>";
 
-/**
- * Send staycation booking confirmation email
- */
+// ───────────────────────────────────────────────────────────────
+//  Helpers
+// ───────────────────────────────────────────────────────────────
+const fmtCurrency = (v: number) => `₹${(v || 0).toLocaleString("en-IN")}`;
+
+const fmtDate = (d: string | Date) =>
+    new Date(d).toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
+
+const fmtShortDate = (d: string | Date) =>
+    new Date(d).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+
+// ───────────────────────────────────────────────────────────────
+//  Shared Styles
+// ───────────────────────────────────────────────────────────────
+const GOLD = "#C4A265";
+const NAVY = "#1a1a2e";
+const NAVY_LIGHT = "#16213e";
+const WARM_BG = "#faf9f6";
+const BORDER = "#e8e5dd";
+const TEXT_DARK = "#1a1a2e";
+const TEXT_MED = "#555";
+const TEXT_LIGHT = "#888";
+
+function row(label: string, value: string, opts?: { bold?: boolean; color?: string; borderTop?: boolean }) {
+    const tdStyle = opts?.borderTop ? `border-top: 2px solid ${GOLD}; padding: 14px 0;` : "padding: 10px 0;";
+    const valWeight = opts?.bold ? "700" : "500";
+    const valColor = opts?.color || TEXT_DARK;
+    return `<tr>
+        <td style="${tdStyle} color: ${TEXT_MED}; font-size: 13px; letter-spacing: 0.3px;">${label}</td>
+        <td style="${tdStyle} text-align: right; font-weight: ${valWeight}; color: ${valColor}; font-size: 14px;">${value}</td>
+    </tr>`;
+}
+
+function divider() {
+    return `<tr><td colspan="2" style="padding: 0;"><div style="height: 1px; background: ${BORDER}; margin: 4px 0;"></div></td></tr>`;
+}
+
+function sectionTitle(title: string) {
+    return `<tr><td colspan="2" style="padding: 18px 0 8px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">${title}</td></tr>`;
+}
+
+// ───────────────────────────────────────────────────────────────
+//  Staycation Booking Confirmation
+// ───────────────────────────────────────────────────────────────
 export async function sendBookingConfirmation(booking: any): Promise<void> {
     if (!process.env.SMTP_USER || !booking.customerEmail) return;
 
     const email = booking.customerEmail;
-    const checkIn = new Date(booking.checkInDate).toLocaleDateString("en-IN", {
-        weekday: "short", day: "2-digit", month: "short", year: "numeric",
-    });
-    const checkOut = new Date(booking.checkOutDate).toLocaleDateString("en-IN", {
-        weekday: "short", day: "2-digit", month: "short", year: "numeric",
-    });
+    const prop = booking.property || {};
+    const sub = booking.subProperty;
+    const propertyName = sub ? `${sub.name} — ${prop.name}` : (prop.name || "Galaxia Property");
+    const location = prop.location || "Karjat, Maharashtra, India";
+    const mapsLink = prop.googleMapUrl || "";
+    const checkInTime = prop.checkInTime || "1:00 PM";
+    const checkOutTime = prop.checkOutTime || "11:00 AM";
 
-    const propertyName = booking.property?.name || "Galaxia Property";
+    const checkInDate = fmtDate(booking.checkInDate);
+    const checkOutDate = fmtDate(booking.checkOutDate);
+    const bookedOn = fmtShortDate(booking.bookedAt || new Date());
 
-    const html = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #faf9f6; border-radius: 12px; overflow: hidden;">
-        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 32px; text-align: center;">
-            <h1 style="color: #C4A265; margin: 0; font-size: 28px; letter-spacing: 2px;">GALAXIA</h1>
-            <p style="color: #C4A265; margin: 4px 0 0; font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">Staycation</p>
+    const advancePaid = booking.advancePaid ? fmtCurrency(booking.advanceAmount) : "Not yet paid";
+    const balanceDue = fmtCurrency(booking.balanceAmount || 0);
+    const securityDeposit = booking.securityDeposit ? fmtCurrency(booking.securityDeposit) : null;
+    const securityRefund = prop.securityRefund || "Refundable at checkout (subject to property condition)";
+
+    const discountRow = booking.discountAmount > 0
+        ? row("Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, { color: "#16a34a" })
+        : "";
+
+    const foodSection = prop.foodIncluded
+        ? `<div style="margin-top: 20px; padding: 18px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
+            <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Meals Included</p>
+            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">${prop.foodDetails || "Complimentary meals included with your stay."}${prop.foodType ? ` (${prop.foodType})` : ""}</p>
+           </div>`
+        : "";
+
+    const mapsButton = mapsLink
+        ? `<div style="text-align: center; margin-top: 24px;">
+            <a href="${mapsLink}" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${NAVY}; color: ${GOLD}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
+           </div>`
+        : "";
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; background: #e8e5dd;">
+<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, ${NAVY}, ${NAVY_LIGHT}); padding: 40px 32px; text-align: center;">
+        <h1 style="margin: 0; color: ${GOLD}; font-size: 32px; letter-spacing: 6px; font-weight: 400;">GALAXIA</h1>
+        <div style="width: 60px; height: 1px; background: ${GOLD}; margin: 12px auto;"></div>
+        <p style="margin: 0; color: rgba(196,162,101,0.7); font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">Premium Staycation Experience</p>
+    </div>
+
+    <!-- Body -->
+    <div style="background: ${WARM_BG}; padding: 40px 32px;">
+
+        <!-- Greeting -->
+        <p style="margin: 0 0 6px; font-size: 13px; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">Booking Confirmed</p>
+        <h2 style="margin: 0 0 4px; font-size: 22px; color: ${TEXT_DARK}; font-weight: 400;">Dear ${booking.customerName},</h2>
+        <p style="margin: 0 0 28px; font-size: 14px; color: ${TEXT_MED}; line-height: 1.6;">
+            Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you. Please find your complete booking details below.
+        </p>
+
+        <!-- Booking Details Card -->
+        <div style="background: white; border-radius: 10px; padding: 28px; border: 1px solid ${BORDER}; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <table style="width: 100%; border-collapse: collapse;">
+                ${sectionTitle("Reservation Details")}
+                ${row("Booking Reference", booking.bookingRef, { bold: true })}
+                ${row("Booked On", bookedOn)}
+                ${divider()}
+                ${sectionTitle("Property")}
+                ${row("Venue", propertyName, { bold: true })}
+                ${row("Location", location)}
+                ${divider()}
+                ${sectionTitle("Stay Details")}
+                ${row("Check-in", `${checkInDate}  ·  ${checkInTime}`)}
+                ${row("Check-out", `${checkOutDate}  ·  ${checkOutTime}`)}
+                ${row("Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`)}
+                ${row("Guests", `${booking.numGuests} Guest${booking.numGuests > 1 ? "s" : ""}`)}
+                ${divider()}
+                ${sectionTitle("Payment Summary")}
+                ${row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`)}
+                ${booking.extraPersonCharge > 0 ? row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}
+                ${row("Base Amount", fmtCurrency(booking.basePrice))}
+                ${row("GST", fmtCurrency(booking.gstAmount))}
+                ${discountRow}
+                ${row("Total Amount", fmtCurrency(booking.totalAmount), { bold: true, color: GOLD, borderTop: true })}
+                ${divider()}
+                ${row("Advance Paid", advancePaid, { color: booking.advancePaid ? "#16a34a" : TEXT_MED })}
+                ${row("Balance Due at Venue", balanceDue, { bold: true })}
+                ${securityDeposit ? row("Security Deposit", securityDeposit) : ""}
+            </table>
         </div>
-        <div style="padding: 32px;">
-            <h2 style="color: #1a1a2e; margin: 0 0 8px;">Booking Confirmed ✓</h2>
-            <p style="color: #666; margin: 0 0 24px;">Hi ${booking.customerName}, your staycation is booked!</p>
-            
-            <div style="background: white; border-radius: 10px; padding: 24px; border: 1px solid #e8e5dd;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr><td style="padding: 8px 0; color: #999; font-size: 13px;">Booking Ref</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a1a2e;">${booking.bookingRef}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #999; font-size: 13px;">Property</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: #1a1a2e;">${propertyName}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #999; font-size: 13px;">Check-in</td><td style="padding: 8px 0; text-align: right; color: #1a1a2e;">${checkIn}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #999; font-size: 13px;">Check-out</td><td style="padding: 8px 0; text-align: right; color: #1a1a2e;">${checkOut}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #999; font-size: 13px;">Nights</td><td style="padding: 8px 0; text-align: right; color: #1a1a2e;">${booking.numNights}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #999; font-size: 13px;">Guests</td><td style="padding: 8px 0; text-align: right; color: #1a1a2e;">${booking.numGuests}</td></tr>
-                    <tr style="border-top: 2px solid #C4A265;"><td style="padding: 12px 0; color: #1a1a2e; font-weight: 700;">Total Amount</td><td style="padding: 12px 0; text-align: right; font-weight: 700; color: #C4A265; font-size: 18px;">₹${(booking.totalAmount || 0).toLocaleString("en-IN")}</td></tr>
-                </table>
-            </div>
-            
-            <div style="margin-top: 24px; padding: 16px; background: #f0ede5; border-radius: 8px;">
-                <p style="margin: 0; font-size: 13px; color: #666;"><strong>Important:</strong> Please carry a valid government ID at check-in. A refundable security deposit may be collected on arrival.</p>
-            </div>
+
+        ${foodSection}
+
+        <!-- Security Deposit Note -->
+        ${securityDeposit ? `
+        <div style="margin-top: 20px; padding: 18px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
+            <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Security Deposit</p>
+            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">${securityRefund}</p>
+        </div>` : ""}
+
+        ${mapsButton}
+
+        <!-- Important Information -->
+        <div style="margin-top: 28px; padding: 22px; background: white; border-radius: 10px; border: 1px solid ${BORDER};">
+            <p style="margin: 0 0 12px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Important Information</p>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
+                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">1.</span>
+                    Please carry a valid government-issued photo ID for all guests at check-in.
+                </td></tr>
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
+                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">2.</span>
+                    Early check-in and late check-out are subject to availability. Please contact us in advance.
+                </td></tr>
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
+                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">3.</span>
+                    The balance amount and security deposit must be paid at the venue during check-in.
+                </td></tr>
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
+                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">4.</span>
+                    Cancellation and refund policies as per the terms agreed at the time of booking.
+                </td></tr>
+            </table>
         </div>
-        <div style="background: #1a1a2e; padding: 20px; text-align: center;">
-            <p style="color: #888; margin: 0; font-size: 11px;">Galaxia Staycation — Karjat, Maharashtra, India</p>
+
+        <!-- Contact -->
+        <div style="margin-top: 28px; text-align: center;">
+            <p style="margin: 0 0 4px; font-size: 11px; color: ${TEXT_LIGHT}; letter-spacing: 1px; text-transform: uppercase;">Need assistance?</p>
+            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED};">
+                <a href="https://www.galaxiaresorts.com" target="_blank" style="color: ${GOLD}; text-decoration: none; font-weight: 600;">www.galaxiaresorts.com</a>
+            </p>
         </div>
-    </div>`;
+    </div>
+
+    <!-- Footer -->
+    <div style="background: ${NAVY}; padding: 28px 32px; text-align: center;">
+        <p style="margin: 0 0 4px; color: ${GOLD}; font-size: 14px; letter-spacing: 3px; font-weight: 400;">GALAXIA</p>
+        <p style="margin: 0 0 12px; color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Premium Staycation Experience</p>
+        <div style="width: 40px; height: 1px; background: rgba(196,162,101,0.3); margin: 0 auto 12px;"></div>
+        <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 11px; line-height: 1.6;">
+            ${location}<br>
+            This is an automated confirmation. Please do not reply to this email.
+        </p>
+    </div>
+
+</div>
+</body>
+</html>`;
 
     try {
         await transporter.sendMail({
             from: FROM_EMAIL,
             to: email,
-            subject: `Booking Confirmed — ${booking.bookingRef} | ${propertyName}`,
+            subject: `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`,
             html,
         });
-        console.log(`[Email] Booking confirmation sent to ${email}`);
+        console.log(`[Email] Staycation confirmation sent to ${email}`);
     } catch (error) {
-        console.error("[Email] Failed to send booking confirmation:", error);
+        console.error("[Email] Failed to send staycation confirmation:", error);
     }
 }
 
-/**
- * Send DD booking confirmation email
- */
+// ───────────────────────────────────────────────────────────────
+//  DD Booking Confirmation
+// ───────────────────────────────────────────────────────────────
+const DD_DARK = "#0d050a";
+const DD_BG = "#1a0a14";
+const DD_ROSE = "#e8a0b4";
+const DD_ROSE_DIM = "#c97a90";
+const DD_BORDER = "rgba(232,160,180,0.15)";
+
+function ddRow(label: string, value: string, opts?: { bold?: boolean; color?: string; borderTop?: boolean }) {
+    const tdStyle = opts?.borderTop ? `border-top: 2px solid ${DD_ROSE}; padding: 14px 0;` : "padding: 10px 0;";
+    const valWeight = opts?.bold ? "700" : "500";
+    const valColor = opts?.color || "white";
+    return `<tr>
+        <td style="${tdStyle} color: ${DD_ROSE_DIM}; font-size: 13px; letter-spacing: 0.3px;">${label}</td>
+        <td style="${tdStyle} text-align: right; font-weight: ${valWeight}; color: ${valColor}; font-size: 14px;">${value}</td>
+    </tr>`;
+}
+
+function ddDivider() {
+    return `<tr><td colspan="2" style="padding: 0;"><div style="height: 1px; background: ${DD_BORDER}; margin: 4px 0;"></div></td></tr>`;
+}
+
+function ddSectionTitle(title: string) {
+    return `<tr><td colspan="2" style="padding: 18px 0 8px; font-size: 11px; font-weight: 700; color: ${DD_ROSE}; letter-spacing: 2px; text-transform: uppercase;">${title}</td></tr>`;
+}
+
 export async function sendDDBookingConfirmation(booking: any): Promise<void> {
     if (!process.env.SMTP_USER || !booking.customerEmail) return;
 
     const email = booking.customerEmail;
-    const bookingDate = new Date(booking.bookingDate).toLocaleDateString("en-IN", {
-        weekday: "short", day: "2-digit", month: "short", year: "numeric",
-    });
+    const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
+    const packageName = booking.package?.name || "Experience";
+    const bookingDate = fmtDate(booking.bookingDate);
+    const bookedOn = fmtShortDate(booking.bookedAt || new Date());
 
     const formatHour = (h: number) => {
         const period = h >= 12 ? "PM" : "AM";
@@ -91,52 +273,168 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
         return `${h12}:00 ${period}`;
     };
 
-    const screenName = booking.screen?.name || "Digital Diaries Screen";
-    const packageName = booking.package?.name || "Experience";
     const startTime = formatHour(booking.startHour);
     const endTime = formatHour(booking.startHour + booking.durationHours);
+    const advancePaid = booking.amountPaid > 0 ? fmtCurrency(booking.amountPaid) : "Not yet paid";
+    const balanceDue = fmtCurrency(booking.amountToCollect || 0);
 
-    const html = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a0a14; border-radius: 12px; overflow: hidden;">
-        <div style="background: linear-gradient(135deg, #2d0a1e, #1a0a14); padding: 32px; text-align: center;">
-            <h1 style="color: #e8a0b4; margin: 0; font-size: 28px; letter-spacing: 2px;">GALAXIA</h1>
-            <p style="color: #c97a90; margin: 4px 0 0; font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">Digital Diaries</p>
+    const discountRow = booking.discountAmount > 0
+        ? ddRow("Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, { color: "#86efac" })
+        : "";
+
+    const occasionRow = booking.occasion
+        ? ddRow("Occasion", booking.occasion)
+        : "";
+
+    const cakeRow = booking.cakeMessage
+        ? ddRow("Cake Message", `"${booking.cakeMessage}"`)
+        : "";
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; background: #1a0a14;">
+<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif;">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #2d0a1e, ${DD_BG}); padding: 40px 32px; text-align: center;">
+        <h1 style="margin: 0; color: ${DD_ROSE}; font-size: 32px; letter-spacing: 6px; font-weight: 400;">GALAXIA</h1>
+        <div style="width: 60px; height: 1px; background: ${DD_ROSE}; margin: 12px auto;"></div>
+        <p style="margin: 0; color: ${DD_ROSE_DIM}; font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">Digital Diaries</p>
+    </div>
+
+    <!-- Body -->
+    <div style="background: ${DD_BG}; padding: 40px 32px;">
+
+        <p style="margin: 0 0 6px; font-size: 13px; color: ${DD_ROSE}; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">Booking Confirmed</p>
+        <h2 style="margin: 0 0 4px; font-size: 22px; color: white; font-weight: 400;">Dear ${booking.customerName},</h2>
+        <p style="margin: 0 0 28px; font-size: 14px; color: ${DD_ROSE_DIM}; line-height: 1.6;">
+            Your private screening experience has been confirmed. We look forward to hosting you. Please find your booking details below.
+        </p>
+
+        <!-- Booking Card -->
+        <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 28px; border: 1px solid ${DD_BORDER};">
+            <table style="width: 100%; border-collapse: collapse;">
+                ${ddSectionTitle("Reservation Details")}
+                ${ddRow("Booking Reference", booking.bookingRef, { bold: true, color: DD_ROSE })}
+                ${ddRow("Booked On", bookedOn)}
+                ${ddDivider()}
+                ${ddSectionTitle("Screening Details")}
+                ${ddRow("Screen", screenName, { bold: true })}
+                ${ddRow("Package", packageName, { bold: true })}
+                ${ddRow("Date", bookingDate)}
+                ${ddRow("Time Slot", `${startTime} — ${endTime}`)}
+                ${ddRow("Duration", `${booking.durationHours} Hour${booking.durationHours > 1 ? "s" : ""}`)}
+                ${ddRow("Guests", `${booking.numGuests} Guest${booking.numGuests > 1 ? "s" : ""}`)}
+                ${occasionRow}
+                ${cakeRow}
+                ${ddDivider()}
+                ${ddSectionTitle("Payment Summary")}
+                ${ddRow("Base Price", fmtCurrency(booking.basePrice))}
+                ${booking.extraPersonCharge > 0 ? ddRow("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}
+                ${booking.gstAmount > 0 ? ddRow("GST", fmtCurrency(booking.gstAmount)) : ""}
+                ${discountRow}
+                ${ddRow("Total Amount", fmtCurrency(booking.totalAmount), { bold: true, color: DD_ROSE, borderTop: true })}
+                ${ddDivider()}
+                ${ddRow("Advance Paid", advancePaid, { color: booking.amountPaid > 0 ? "#86efac" : DD_ROSE_DIM })}
+                ${ddRow("Balance Due at Venue", balanceDue, { bold: true })}
+            </table>
         </div>
-        <div style="padding: 32px;">
-            <h2 style="color: #e8a0b4; margin: 0 0 8px;">Booking Confirmed ✓</h2>
-            <p style="color: #c97a90; margin: 0 0 24px;">Hi ${booking.customerName}, your screening is booked!</p>
-            
-            <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 24px; border: 1px solid rgba(232,160,180,0.2);">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Booking Ref</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: #e8a0b4;">${booking.bookingRef}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Package</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: white;">${packageName}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Screen</td><td style="padding: 8px 0; text-align: right; color: white;">${screenName}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Date</td><td style="padding: 8px 0; text-align: right; color: white;">${bookingDate}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Time</td><td style="padding: 8px 0; text-align: right; color: white;">${startTime} – ${endTime}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Guests</td><td style="padding: 8px 0; text-align: right; color: white;">${booking.numGuests}</td></tr>
-                    ${booking.occasion ? `<tr><td style="padding: 8px 0; color: #c97a90; font-size: 13px;">Occasion</td><td style="padding: 8px 0; text-align: right; color: white;">${booking.occasion}</td></tr>` : ""}
-                    <tr style="border-top: 2px solid #e8a0b4;"><td style="padding: 12px 0; color: white; font-weight: 700;">Total Amount</td><td style="padding: 12px 0; text-align: right; font-weight: 700; color: #e8a0b4; font-size: 18px;">₹${(booking.totalAmount || 0).toLocaleString("en-IN")}</td></tr>
-                </table>
-            </div>
-            
-            <div style="margin-top: 24px; padding: 16px; background: rgba(232,160,180,0.1); border-radius: 8px;">
-                <p style="margin: 0; font-size: 13px; color: #c97a90;"><strong>Important:</strong> Valid ID proof is required. No CCTV — complete privacy guaranteed.</p>
-            </div>
+
+        <!-- Important Info -->
+        <div style="margin-top: 28px; padding: 22px; background: rgba(232,160,180,0.06); border-radius: 10px; border: 1px solid ${DD_BORDER};">
+            <p style="margin: 0 0 12px; font-size: 11px; font-weight: 700; color: ${DD_ROSE}; letter-spacing: 2px; text-transform: uppercase;">Important Information</p>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
+                    <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">1.</span>
+                    Please carry a valid government-issued photo ID for verification at the venue.
+                </td></tr>
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
+                    <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">2.</span>
+                    Complete privacy is guaranteed. There are no CCTV cameras inside the screening rooms.
+                </td></tr>
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
+                    <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">3.</span>
+                    Please arrive 10 minutes before your scheduled time slot for a smooth check-in.
+                </td></tr>
+                <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
+                    <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">4.</span>
+                    The remaining balance must be paid at the venue prior to your screening.
+                </td></tr>
+            </table>
         </div>
-        <div style="background: #0d050a; padding: 20px; text-align: center;">
-            <p style="color: #666; margin: 0; font-size: 11px;">Galaxia Digital Diaries — Wadala, Mumbai, India</p>
+
+        <!-- Contact -->
+        <div style="margin-top: 28px; text-align: center;">
+            <p style="margin: 0 0 4px; font-size: 11px; color: ${DD_ROSE_DIM}; letter-spacing: 1px; text-transform: uppercase;">Need assistance?</p>
+            <p style="margin: 0; font-size: 13px;">
+                <a href="https://www.galaxiaresorts.com" target="_blank" style="color: ${DD_ROSE}; text-decoration: none; font-weight: 600;">www.galaxiaresorts.com</a>
+            </p>
         </div>
-    </div>`;
+    </div>
+
+    <!-- Footer -->
+    <div style="background: ${DD_DARK}; padding: 28px 32px; text-align: center;">
+        <p style="margin: 0 0 4px; color: ${DD_ROSE}; font-size: 14px; letter-spacing: 3px; font-weight: 400;">GALAXIA</p>
+        <p style="margin: 0 0 12px; color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;">Digital Diaries</p>
+        <div style="width: 40px; height: 1px; background: rgba(232,160,180,0.3); margin: 0 auto 12px;"></div>
+        <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 11px; line-height: 1.6;">
+            Wadala, Mumbai, India<br>
+            This is an automated confirmation. Please do not reply to this email.
+        </p>
+    </div>
+
+</div>
+</body>
+</html>`;
 
     try {
         await transporter.sendMail({
             from: FROM_EMAIL,
             to: email,
-            subject: `Booking Confirmed — ${booking.bookingRef} | ${packageName}`,
+            subject: `Booking Confirmed | ${booking.bookingRef} — ${screenName} (${packageName})`,
             html,
         });
         console.log(`[Email] DD booking confirmation sent to ${email}`);
     } catch (error) {
-        console.error("[Email] Failed to send DD booking confirmation:", error);
+        console.error("[Email] Failed to send DD confirmation:", error);
+    }
+}
+
+// ───────────────────────────────────────────────────────────────
+//  Test Email (for verifying SMTP connection)
+// ───────────────────────────────────────────────────────────────
+export async function sendTestEmail(toEmail: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        await transporter.sendMail({
+            from: FROM_EMAIL,
+            to: toEmail,
+            subject: "Galaxia — Email Configuration Test",
+            html: `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#e8e5dd;">
+<div style="max-width:640px;margin:0 auto;font-family:Georgia,serif;">
+    <div style="background:linear-gradient(135deg,${NAVY},${NAVY_LIGHT});padding:40px 32px;text-align:center;">
+        <h1 style="margin:0;color:${GOLD};font-size:32px;letter-spacing:6px;font-weight:400;">GALAXIA</h1>
+        <div style="width:60px;height:1px;background:${GOLD};margin:12px auto;"></div>
+    </div>
+    <div style="background:${WARM_BG};padding:40px 32px;text-align:center;">
+        <h2 style="margin:0 0 12px;color:${TEXT_DARK};font-size:20px;font-weight:400;">Email Configuration Verified</h2>
+        <p style="margin:0;font-size:14px;color:${TEXT_MED};line-height:1.6;">
+            Your SMTP configuration is working correctly.<br>
+            Booking confirmation emails are ready to send.
+        </p>
+        <p style="margin:20px 0 0;font-size:12px;color:${TEXT_LIGHT};">Sent at ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
+    </div>
+    <div style="background:${NAVY};padding:20px;text-align:center;">
+        <p style="margin:0;color:rgba(255,255,255,0.4);font-size:11px;">Galaxia Resorts — SMTP Test</p>
+    </div>
+</div>
+</body></html>`,
+        });
+        console.log(`[Email] Test email sent to ${toEmail}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error("[Email] Test email failed:", error);
+        return { success: false, error: error?.message || "Unknown error" };
     }
 }
