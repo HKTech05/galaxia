@@ -103,6 +103,10 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     const mapsButton = mapsLink
         ? `<div style="text-align: center; margin-top: 24px;">
             <a href="${mapsLink}" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${NAVY}; color: ${GOLD}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
+           </div>
+           <div style="margin-top: 16px; padding: 14px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
+            <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">How to Reach</p>
+            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">Nearest Station: Karjat (30-40 mins journey from station via auto/cab).<br>From Mumbai: Approximately 2 hours via Mumbai-Pune Expressway.</p>
            </div>`
         : "";
 
@@ -166,7 +170,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         ${securityDeposit ? `
         <div style="margin-top: 20px; padding: 18px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
             <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Security Deposit</p>
-            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">${securityRefund}</p>
+            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">A security deposit of ${securityDeposit} is applicable and will be collected at the venue. ${securityRefund}</p>
         </div>` : ""}
 
         ${mapsButton}
@@ -189,8 +193,12 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 </td></tr>
                 <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
                     <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">4.</span>
-                    Cancellation and refund policies as per the terms agreed at the time of booking.
+                    This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.
                 </td></tr>
+                ${securityDeposit ? `<tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
+                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">5.</span>
+                    Security deposit of ${securityDeposit} is applicable and will be refunded per the property's refund timeline.
+                </td></tr>` : ""}
             </table>
         </div>
 
