@@ -113,8 +113,8 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin: 0; padding: 0; background: #e8e5dd;">
-<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif;">
+<body style="margin: 0; padding: 0; background: #ffffff;">
+<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif; background: #e8e5dd;">
 
     <!-- Header -->
     <div style="background: linear-gradient(135deg, ${NAVY}, ${NAVY_LIGHT}); padding: 40px 32px; text-align: center;">
@@ -299,14 +299,14 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
         : "";
 
     const mapsButton = `<div style="text-align: center; margin-top: 24px;">
-        <a href="https://www.google.com/maps/search/Digital+Diaries" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${DD_ROSE}; color: ${DD_DARK}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
+        <a href="https://www.google.com/maps/search/?api=1&query=Digital+Diaries+Wadala+Mumbai" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${DD_ROSE}; color: ${DD_DARK}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
        </div>`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin: 0; padding: 0; background: #1a0a14;">
-<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif;">
+<body style="margin: 0; padding: 0; background: #ffffff;">
+<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif; background: #1a0a14;">
 
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #2d0a1e, ${DD_BG}); padding: 40px 32px; text-align: center;">
@@ -425,8 +425,8 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
             to: toEmail,
             subject: "Galaxia — Email Configuration Test",
             html: `<!DOCTYPE html>
-<html><body style="margin:0;padding:0;background:#e8e5dd;">
-<div style="max-width:640px;margin:0 auto;font-family:Georgia,serif;">
+<html><body style="margin:0;padding:0;background:#ffffff;">
+<div style="max-width:640px;margin:0 auto;font-family:Georgia,serif;background:#e8e5dd;">
     <div style="background:linear-gradient(135deg,${NAVY},${NAVY_LIGHT});padding:40px 32px;text-align:center;">
         <h1 style="margin:0;color:${GOLD};font-size:32px;letter-spacing:6px;font-weight:400;">GALAXIA</h1>
         <div style="width:60px;height:1px;background:${GOLD};margin:12px auto;"></div>
