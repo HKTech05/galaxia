@@ -43,6 +43,38 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const [subPropertyStatus, setSubPropertyStatus] = useState<Record<number, boolean>>({});
     const [livePricing, setLivePricing] = useState<{ weekday: string; weekend: string } | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    const handleDownload = async (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+        e.preventDefault();
+        try {
+            setIsDownloading(true);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Network fetch failed");
+            const blob = await response.blob();
+            
+            let ext = "pdf";
+            const contentType = response.headers.get("content-type") || blob.type;
+            if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = "jpg";
+            else if (contentType.includes("png")) ext = "png";
+            else if (url.toLowerCase().includes(".jpg") || url.toLowerCase().includes(".jpeg")) ext = "jpg";
+            else if (url.toLowerCase().includes(".png")) ext = "png";
+
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = `${property.name.replace(/\s+/g, "-")}-Menu.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Download failed, using fallback", err);
+            window.open(url, "_blank");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     // Site images from admin panel
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
