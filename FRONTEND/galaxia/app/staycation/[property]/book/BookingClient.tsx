@@ -138,7 +138,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     }, [property.id, searchParams]);
 
     // Guest state
-    const [adults, setAdults] = useState(1);
+    const [adults, setAdults] = useState(2);
     const [kids, setKids] = useState(0);
 
     // Form state
@@ -157,6 +157,8 @@ export default function BookingClient({ property }: BookingClientProps) {
     // Celebration Add-on (Ambrose only)
     const isAmbrose = property.id === 'ambrose' || property.id.startsWith('ambrose/');
     const [celebrationAddon, setCelebrationAddon] = useState(false);
+    const [celebrationCakeMsg, setCelebrationCakeMsg] = useState('');
+    const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
     const CELEBRATION_ADDON_PRICE = 1200;
 
     // Load user data if logged in
@@ -492,7 +494,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 advanceMethod: "online",
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
-                addons: celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance' }] : null,
+                addons: celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion }] : null,
             };
 
             const result = await api.post("/bookings/staycation", payload);
@@ -771,7 +773,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                 <button type="button" onClick={() => setAdults(Math.min(maxGuests - kids, adults + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <label className="font-inter text-xs text-text-secondary w-16">Kids (5+)</label>
+                                                <label className="font-inter text-xs text-text-secondary w-16">Kids (5-12)</label>
                                                 <button type="button" onClick={() => setKids(Math.max(0, kids - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
                                                 <span className="font-inter text-sm text-text-primary w-4 text-center">{kids}</span>
                                                 <button type="button" onClick={() => setKids(Math.min(maxGuests - adults, kids + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
@@ -804,6 +806,25 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner for a warm ambiance</p>
                                                 </label>
                                             </div>
+                                            {celebrationAddon && (
+                                                <div className="mt-4 space-y-3 pl-7 animate-in fade-in slide-in-from-top-2">
+                                                    <div>
+                                                        <label className="block font-inter text-xs text-text-secondary mb-1.5">Cake Message</label>
+                                                        <input value={celebrationCakeMsg} onChange={(e) => setCelebrationCakeMsg(e.target.value)} maxLength={50} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary placeholder-text-muted focus:border-antique-gold focus:outline-none transition-colors" placeholder="e.g. Happy Birthday Neha!" />
+                                                        <p className="text-right text-[10px] text-text-muted font-inter mt-1">{celebrationCakeMsg.length}/50</p>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block font-inter text-xs text-text-secondary mb-1.5">Banner / Occasion</label>
+                                                        <select value={celebrationOccasion} onChange={(e) => setCelebrationOccasion(e.target.value)} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none transition-colors">
+                                                            <option>Birthday</option>
+                                                            <option>Anniversary</option>
+                                                            <option>Proposal</option>
+                                                            <option>Welcome Party</option>
+                                                            <option>Other</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

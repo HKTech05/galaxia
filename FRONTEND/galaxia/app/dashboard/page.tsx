@@ -191,7 +191,19 @@ function DashboardContent() {
                         status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                         amount: formatPrice(b.totalAmount),
                         guests: b.numGuests,
-                        image: b.property?.images?.[0] || "https://images.unsplash.com/photo-1615571022219-eb45cf7faa36?w=400&q=80",
+                        image: (() => {
+                            // Use Photo Manager thumbnail from SiteImage
+                            const slug = (b.property?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                            const subSlug = b.subProperty?.name ? b.subProperty.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : null;
+                            // Try sub-property thumbnail first (e.g. ambrose/bamboosa/thumbnail), then property (e.g. la-paraiso/thumbnail)
+                            if (subSlug) {
+                                const subThumb = (siteImages[`${slug}/${subSlug}/thumbnail`] || [])[0]?.url;
+                                if (subThumb) return subThumb;
+                            }
+                            const propThumb = (siteImages[`${slug}/thumbnail`] || [])[0]?.url;
+                            if (propThumb) return propThumb;
+                            return b.property?.images?.[0] || '';
+                        })(),
                         type: "staycation",
                         time: isUpcoming ? "upcoming" : "past",
                         totalPaid: formatPrice(b.totalAmount),
@@ -345,6 +357,19 @@ function DashboardContent() {
                     )}
                 </div>
 
+                {/* Celebration Add-on (above Payment Details) */}
+                {booking.addons && booking.addons.length > 0 && (
+                    <div className={`border-t ${borderMain} pt-4 mb-4`}>
+                        <div className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200"}`}>
+                            <div>
+                                <p className={`font-inter text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-700"}`}>Celebration Add-on</p>
+                                <p className={`font-inter text-[10px] ${isDark ? "text-amber-500/70" : "text-amber-600/70"}`}>{booking.addons[0].description}</p>
+                            </div>
+                            <span className={`font-cinzel font-bold text-sm ${isDark ? "text-amber-400" : "text-amber-700"}`}>₹{booking.addons[0].price?.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Section: Payment Breakdown */}
                 <div className={`border-t ${borderMain} pt-4 mb-4`}>
                     <h4 className={`font-cinzel text-xs font-semibold ${textPrimary} uppercase tracking-wider mb-3`}>Payment Details</h4>
@@ -381,15 +406,6 @@ function DashboardContent() {
                                         <p className={`font-inter text-[10px] ${isDark ? "text-sky-500/70" : "text-sky-600/70"}`}>Refundable · due at check-in</p>
                                     </div>
                                     <span className={`font-cinzel font-bold text-sm ${isDark ? "text-sky-400" : "text-sky-700"}`}>{booking.securityDeposit}</span>
-                                </div>
-                            )}
-                            {booking.addons && booking.addons.length > 0 && (
-                                <div className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200"}`}>
-                                    <div>
-                                        <p className={`font-inter text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-700"}`}>🎉 {booking.addons[0].name}</p>
-                                        <p className={`font-inter text-[10px] ${isDark ? "text-amber-500/70" : "text-amber-600/70"}`}>{booking.addons[0].description}</p>
-                                    </div>
-                                    <span className={`font-cinzel font-bold text-sm ${isDark ? "text-amber-400" : "text-amber-700"}`}>₹{booking.addons[0].price?.toLocaleString('en-IN')}</span>
                                 </div>
                             )}
                         </div>

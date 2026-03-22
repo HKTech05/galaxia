@@ -569,7 +569,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                         onClick={() => !isDisabled && toggleSlot(slot.id)}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <span className={`font-inter text-sm ${isDisabled && isBooked ? "line-through text-cel-text-muted" : "text-cel-text"}`}>{slot.label}{isDisabled && isBooked ? ' (Booked)' : ''}</span>
+                                                            <span className={`font-inter text-sm ${isDisabled ? "text-cel-text-muted" : "text-cel-text"}`}>{slot.label}{isDisabled && isBooked ? ' (Booked)' : ''}</span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <span className="font-inter text-sm text-cel-text-secondary">

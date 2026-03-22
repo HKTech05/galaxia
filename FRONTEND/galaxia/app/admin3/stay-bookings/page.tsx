@@ -399,7 +399,7 @@ export default function StayBookingsPage() {
                                     )}
                                     {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.length > 0 && selectedBooking.addons.map((addon: any, i: number) => (
                                         <div key={i} className="flex justify-between text-sm">
-                                            <span className="text-amber-700">🎉 {addon.name}</span>
+                                            <span className="text-amber-700">{addon.name}</span>
                                             <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
                                         </div>
                                     ))}
