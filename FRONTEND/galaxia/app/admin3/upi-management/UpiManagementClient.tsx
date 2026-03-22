@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, CalendarDays, IndianRupee, FileText, Download, X, Filter, Building, Loader2, Image, Eye, Archive } from "lucide-react";
+import { Users, CalendarDays, IndianRupee, FileText, Download, X, Filter, Building, Loader2, Image, Eye, Archive, Pencil, Check } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface Employee {
@@ -70,6 +70,20 @@ export default function UpiManagementClient() {
     // UI State
     const [viewEmployeeId, setViewEmployeeId] = useState<number | null>(null);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+    const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
+    const [editName, setEditName] = useState("");
+
+    const handleSaveName = async (empId: number) => {
+        if (!editName.trim()) return;
+        try {
+            await api.patch(`/employees/${empId}`, { name: editName.trim() });
+            setEmployees(prev => prev.map(e => e.id === empId ? { ...e, name: editName.trim() } : e));
+            setEditingEmpId(null);
+        } catch (err) {
+            console.error("Failed to save employee name:", err);
+            alert("Failed to save name");
+        }
+    };
 
     const handlePropertyToggle = (prop: string) => {
         if (selectedProperties.includes(prop)) {
@@ -251,8 +265,33 @@ export default function UpiManagementClient() {
                             >
                                 <div>
                                     <div className="flex items-start justify-between mb-4">
-                                        <div>
-                                            <p className="text-lg font-bold text-slate-800">{emp.location} — {emp.name}</p>
+                                        <div className="flex-1 min-w-0">
+                                            {editingEmpId === emp.id ? (
+                                                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                                    <span className="text-lg font-bold text-slate-800">{emp.location} — </span>
+                                                    <input
+                                                        type="text"
+                                                        value={editName}
+                                                        onChange={e => setEditName(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter') handleSaveName(emp.id); }}
+                                                        className="text-lg font-bold text-slate-800 bg-white border border-indigo-300 rounded-lg px-2 py-0.5 w-32 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                                                        autoFocus
+                                                    />
+                                                    <button onClick={(e) => { e.stopPropagation(); handleSaveName(emp.id); }} className="p-1 bg-emerald-100 hover:bg-emerald-200 rounded-lg text-emerald-700 transition-colors"><Check size={14} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setEditingEmpId(null); }} className="p-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"><X size={14} /></button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-lg font-bold text-slate-800 truncate">{emp.location} — {emp.name}</p>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setEditingEmpId(emp.id); setEditName(emp.name); }}
+                                                        className="p-1 opacity-0 group-hover:opacity-100 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
+                                                        title="Edit name"
+                                                    >
+                                                        <Pencil size={12} />
+                                                    </button>
+                                                </div>
+                                            )}
                                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">{emp.role}</p>
                                         </div>
                                         <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">

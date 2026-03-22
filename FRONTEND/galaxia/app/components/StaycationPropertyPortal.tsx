@@ -699,6 +699,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                         {collectedSec === "UPI" ? <><CheckCircle size={12} className="inline mr-1" /> Collected UPI</> : <><span className="bg-white text-indigo-600 px-1 py-0.5 rounded-sm mr-1">UPI</span> Collect</>}
                                                     </button>
                                                 </div>
+                                            </div>
                                             {collectedSec === "UPI" && (
                                                 <div className="mt-2">
                                                     <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
@@ -709,17 +710,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     </label>
                                                 </div>
                                             )}
-                                            </div>
                                         </div>
                                     </div>
                                     <div className="pt-2">
                                         <button
-                                            disabled={!collected20 || !collectedSec}
+                                            disabled={!collected20 || !collectedSec || (collected20 === "UPI" && !upiProofBalance) || (collectedSec === "UPI" && !upiProofDeposit)}
                                             onClick={() => {
                                                 handleAction(selectedBooking, "Checked In");
                                                 setIsActionModalOpen(false);
                                             }}
-                                            className={`w-full font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 ${(!collected20 || !collectedSec)
+                                            className={`w-full font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 ${(!collected20 || !collectedSec || (collected20 === "UPI" && !upiProofBalance) || (collectedSec === "UPI" && !upiProofDeposit))
                                                 ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                                                 : "bg-teal-600 hover:bg-teal-700 text-white border border-teal-700"
                                                 }`}
