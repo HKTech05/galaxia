@@ -192,15 +192,15 @@ function DashboardContent() {
                         amount: formatPrice(b.totalAmount),
                         guests: b.numGuests,
                         image: (() => {
-                            // Use Photo Manager thumbnail from SiteImage
-                            const slug = (b.property?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                            const subSlug = b.subProperty?.name ? b.subProperty.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : null;
-                            // Try sub-property thumbnail first (e.g. ambrose/bamboosa/thumbnail), then property (e.g. la-paraiso/thumbnail)
+                            // Use raw slugs from DB for siteImages lookup (NOT the standardized combined name)
+                            const propSlug = b.property?.slug || (b.property?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                            const subSlug = b.subProperty?.slug || (b.subProperty?.name ? b.subProperty.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : null);
+                            // Try sub-property thumbnail first (e.g. ambrose/alta/thumbnail), then property (e.g. la-paraiso/thumbnail)
                             if (subSlug) {
-                                const subThumb = (siteImages[`${slug}/${subSlug}/thumbnail`] || [])[0]?.url;
+                                const subThumb = (siteImages[`${propSlug}/${subSlug}/thumbnail`] || [])[0]?.url;
                                 if (subThumb) return subThumb;
                             }
-                            const propThumb = (siteImages[`${slug}/thumbnail`] || [])[0]?.url;
+                            const propThumb = (siteImages[`${propSlug}/thumbnail`] || [])[0]?.url;
                             if (propThumb) return propThumb;
                             // Fallback: try property or subProperty imageUrl from DB
                             if (b.subProperty?.imageUrl) return b.subProperty.imageUrl;
@@ -558,7 +558,7 @@ function DashboardContent() {
                                     <div key={booking.id}>
                                         <div className={`${bgCard} rounded-xl border ${borderMain} p-4 sm:p-5 flex flex-col sm:flex-row gap-4 hover:shadow-lg transition-all ${expandedBooking === booking.id ? (isDark ? 'ring-1 ring-[#9f353a]/30' : 'ring-1 ring-antique-gold/30') : ''}`}>
                                             <div className="relative w-full sm:w-32 h-40 sm:h-24 rounded-lg overflow-hidden shrink-0">
-                                                <img src={booking.image} alt={booking.property} className="w-full h-full object-cover" />
+                                                <img src={booking.image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80'} alt={booking.property} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80'; }} />
                                                 {booking.type === 'celebration' && (
                                                     <div className="absolute top-2 left-2 bg-[#9f353a] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-sm uppercase tracking-wide">
                                                         Digital Diaries
