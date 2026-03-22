@@ -173,11 +173,13 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                             </div>
                         </div>
                         <div className="rounded-xl overflow-hidden border border-cel-border h-64 sm:h-80 bg-cel-card flex items-center justify-center">
-                            <div className="text-center">
-                                <svg className="w-12 h-12 text-cel-border-light mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                <p className="text-cel-text-muted font-inter text-sm">Google Maps will be embedded here</p>
-                                <p className="text-cel-text-muted font-inter text-xs mt-1">Karjat, Maharashtra, India</p>
-                            </div>
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4680.79406035677!2d72.85311857596447!3d19.013532253929238!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7cf29b87f566d%3A0x11e519df25f953af!2sDigital%20Diaries!5e1!3m2!1sen!2sin!4v1774188296796!5m2!1sen!2sin" 
+                                className="w-full h-full border-0" 
+                                allowFullScreen 
+                                loading="lazy" 
+                                referrerPolicy="no-referrer-when-downgrade"
+                            />
                         </div>
                     </div>
                 </div>

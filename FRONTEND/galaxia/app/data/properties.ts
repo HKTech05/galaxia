@@ -35,9 +35,9 @@ export interface PropertyData {
         icon: string;
         items: string[];
     }[];
-    activities: { title: string; description: string; image: string }[];
     instagram?: string;
     googleMap?: string;
+    googleMapSrc?: string;
     location: string;
     subProperties?: {
         id: string;
@@ -225,8 +225,8 @@ export const properties: Record<string, PropertyData> = {
                     weekend: { price: "6,500", persons: "2 with meals" },
                 },
             },
-        ],
         instagram: "https://instagram.com/ambrose_villas",
+        googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.38095862043!2d73.4718958!3d18.992673399999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd57105ba96147%3A0x164ca3cb8874bed2!2sAmbrose!5e1!3m2!1sen!2sin!4v1774188490076!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",
     },
     "amstel-nest": {
@@ -345,6 +345,7 @@ export const properties: Record<string, PropertyData> = {
                 },
             },
         ],
+        googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.386338290377!2d73.4719264!3d18.9924821!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd57a0cdf40eb9%3A0xe1d6da31ef9a0ee6!2sAmstel%20nest!5e1!3m2!1sen!2sin!4v1774188512576!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",
     },
     "la-paraiso": {
@@ -445,6 +446,7 @@ export const properties: Record<string, PropertyData> = {
             },
         ],
         instagram: "https://instagram.com/la_paraiso001",
+        googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.48728811449!2d73.4832867!3d18.988892!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd578f4295d5f7%3A0xb9668f8ece1fd08b!2sLa%20Paraiso!5e1!3m2!1sen!2sin!4v1774188535176!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",
     },
     "heavenly-villa": {
@@ -536,6 +538,7 @@ export const properties: Record<string, PropertyData> = {
             },
         ],
         instagram: "https://www.instagram.com/heavenly_villa01",
+        googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.478223317829!2d73.4821025!3d18.9892144!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd57edcee9b063%3A0x886c42c660252443!2sHoliday%20Maiyaan!5e1!3m2!1sen!2sin!4v1774188563792!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",
     },
     "mount-view": {
@@ -635,6 +638,7 @@ export const properties: Record<string, PropertyData> = {
             },
         ],
         googleMap: "https://maps.app.goo.gl/1v6azy4nLhHe7Hzq6",
+        googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.478223317829!2d73.4821025!3d18.9892144!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd57edcee9b063%3A0x886c42c660252443!2sHoliday%20Maiyaan!5e1!3m2!1sen!2sin!4v1774188563792!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",
     },
     "hill-view": {
@@ -728,6 +732,7 @@ export const properties: Record<string, PropertyData> = {
             },
         ],
         instagram: "https://www.instagram.com/hill_view101",
+        googleMapSrc: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4681.478223317829!2d73.4821025!3d18.9892144!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bdd57edcee9b063%3A0x886c42c660252443!2sHoliday%20Maiyaan!5e1!3m2!1sen!2sin!4v1774188563792!5m2!1sen!2sin",
         location: "Karjat, Maharashtra, India",
     },
 };
