@@ -298,6 +298,10 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
         ? ddRow("Cake Message", `"${booking.cakeMessage}"`)
         : "";
 
+    const mapsButton = `<div style="text-align: center; margin-top: 24px;">
+        <a href="https://www.google.com/maps/search/Digital+Diaries" target="_blank" style="display: inline-block; padding: 12px 32px; background: ${DD_ROSE}; color: ${DD_DARK}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">View on Google Maps</a>
+       </div>`;
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -348,6 +352,8 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
                 ${ddRow("Balance Due at Venue", balanceDue, { bold: true })}
             </table>
         </div>
+
+        ${mapsButton}
 
         <!-- Important Info -->
         <div style="margin-top: 28px; padding: 22px; background: rgba(232,160,180,0.06); border-radius: 10px; border: 1px solid ${DD_BORDER};">
