@@ -73,6 +73,44 @@ export default function UpiManagementClient() {
     const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
     const [editName, setEditName] = useState("");
 
+    // Fetch image with auth and return blob URL
+    const fetchImageBlob = async (logId: number): Promise<string | null> => {
+        try {
+            const token = localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/upi-payments/image/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return URL.createObjectURL(blob);
+        } catch { return null; }
+    };
+
+    const handleViewProof = async (logId: number) => {
+        const url = await fetchImageBlob(logId);
+        if (url) setPreviewImageUrl(url);
+        else alert("Failed to load proof image");
+    };
+
+    const handleDownloadProof = async (logId: number) => {
+        try {
+            const token = localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/upi-payments/download/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error();
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `upi-proof-${logId}.jpg`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            alert("Failed to download proof");
+        }
+    };
+
     const handleSaveName = async (empId: number) => {
         if (!editName.trim()) return;
         try {
@@ -418,22 +456,19 @@ export default function UpiManagementClient() {
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center justify-center gap-2">
                                                             <button
-                                                                onClick={() => setPreviewImageUrl(`/api/upi-payments/image/${log.id}`)}
+                                                                onClick={() => handleViewProof(log.id)}
                                                                 className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors"
                                                                 title="View proof"
                                                             >
                                                                 <Eye size={14} />
                                                             </button>
-                                                            <a
-                                                                href={`/api/upi-payments/download/${log.id}`}
-                                                                download
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
+                                                            <button
+                                                                onClick={() => handleDownloadProof(log.id)}
                                                                 className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors"
                                                                 title="Download proof"
                                                             >
                                                                 <Download size={14} />
-                                                            </a>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -470,15 +505,17 @@ export default function UpiManagementClient() {
                             className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain bg-white"
                         />
                         <div className="mt-3 flex justify-center">
-                            <a
-                                href={previewImageUrl}
-                                download
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <button
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = previewImageUrl;
+                                    a.download = "upi-proof.jpg";
+                                    a.click();
+                                }}
                                 className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-colors"
                             >
                                 <Download size={16} /> Download Image
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
