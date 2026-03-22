@@ -95,7 +95,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
             where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show"] } },
             select: { totalAmount: true, bookedAt: true },
         });
-        const dailyMap: Record<string, { Staycation: number; DD: number }> = {};
+        const dailyMap: Record<string, { staycation: number; dd: number }> = {};
         for (let d = 0; d <= 30; d++) {
             const day = new Date(thirtyDaysAgo.getTime() + d * 86400000);
             const key = `${day.getDate()}/${day.getMonth() + 1}`;
@@ -126,7 +126,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
             select: { totalAmount: true, bookedAt: true },
         });
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const monthlyMap: Record<string, { Staycation: number; DD: number }> = {};
+        const monthlyMap: Record<string, { staycation: number; dd: number }> = {};
         for (let m = 0; m < 12; m++) {
             const ref = new Date(now.getFullYear(), now.getMonth() - 11 + m, 1);
             const key = `${monthNames[ref.getMonth()]} ${String(ref.getFullYear()).slice(2)}`;
