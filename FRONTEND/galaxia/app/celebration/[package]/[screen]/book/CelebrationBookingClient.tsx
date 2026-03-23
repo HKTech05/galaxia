@@ -29,7 +29,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [idVerificationMethod, setIdVerificationMethod] = useState<"online" | "venue">("venue");
     const [idProofs, setIdProofs] = useState<(File | null)[]>([null, null]);
 
-    // Add-ons (Movie Time only)
+    // Add-ons (both Movie Time and Celebration packages)
     const [addBalloons, setAddBalloons] = useState(false);
     const [addLedBanner, setAddLedBanner] = useState(false);
     const [ledBannerType, setLedBannerType] = useState("Happy Birthday");
@@ -59,6 +59,13 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     
     // Blocked/Booked slots tracking
     const [bookedSlots, setBookedSlots] = useState<number[]>([]);
+
+    // Auto-enable balloons for Celebration (Decoration + Movie Time) package
+    useEffect(() => {
+        if (pkg.id === "celebration") {
+            setAddBalloons(true);
+        }
+    }, [pkg.id]);
 
     // Fetch DB IDs + live pricing on mount
     useEffect(() => {
@@ -245,12 +252,13 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const basePrice = getHourlyRate();
     const extraPersonCharge = Math.max(0, guestCount - 2) * extraPersonPrice;
 
-    // Add-on charges (only for Movie Time) — read from DB if available
+    // Add-on charges — read from DB if available
     const isMovieTime = pkg.id === "movie-time";
+    const isCelebration = pkg.id === "celebration";
     const getAddonPrice = (key: string) => liveAddonPricing?.[key] ?? 400;
-    const balloonsCharge = isMovieTime && addBalloons ? getAddonPrice('balloons') : 0;
-    const ledBannerCharge = isMovieTime && addLedBanner ? getAddonPrice('led_banner') : 0;
-    const cakeCharge = isMovieTime && addCake ? getAddonPrice('cake') : 0;
+    const balloonsCharge = addBalloons ? getAddonPrice('balloons') : 0;
+    const ledBannerCharge = addLedBanner ? getAddonPrice('led_banner') : 0;
+    const cakeCharge = addCake ? getAddonPrice('cake') : 0;
     const addOnsTotal = balloonsCharge + ledBannerCharge + cakeCharge;
 
     const subtotal = basePrice + extraPersonCharge + addOnsTotal;
@@ -631,21 +639,21 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                             </div>
                         </div>
 
-                        {/* Add-ons (Movie Time only) */}
-                        {isMovieTime && (
+                        {/* Add-ons (Movie Time & Celebration) */}
+                        {(isMovieTime || isCelebration) && (
                             <div className="rounded-xl border border-cel-border bg-cel-card p-5 sm:p-6 mb-6">
                                 <h3 className="font-cinzel text-base font-semibold text-cel-text mb-1">Add-Ons</h3>
-                                <p className="font-inter text-[10px] text-cel-text-muted mb-4">Enhance your experience with optional extras.</p>
+                                <p className="font-inter text-[10px] text-cel-text-muted mb-4">{isCelebration ? 'These extras are included with your celebration package. You may customize further below.' : 'Enhance your experience with optional extras.'}</p>
                                 <div className="space-y-3">
                                     {/* Balloons */}
                                     <div
-                                        onClick={() => setAddBalloons(!addBalloons)}
-                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${addBalloons ? 'border-rose-medium/50 bg-rose-dark/15' : 'border-cel-border hover:border-cel-border-light'}`}
+                                        onClick={() => { if (!isCelebration) setAddBalloons(!addBalloons); }}
+                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isCelebration ? 'border-rose-medium/50 bg-rose-dark/15 cursor-default' : `cursor-pointer ${addBalloons ? 'border-rose-medium/50 bg-rose-dark/15' : 'border-cel-border hover:border-cel-border-light'}`}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">🎈</span>
                                             <div className="flex flex-col">
-                                                <span className="font-inter text-sm text-cel-text">Balloons</span>
+                                                <span className="font-inter text-sm text-cel-text">Balloons {isCelebration && <span className="text-[10px] text-rose-medium">(Included)</span>}</span>
                                                 <span className="text-[10px] text-cel-text-muted">{formatPrice(getAddonPrice('balloons'))} (Colorful balloon decoration)</span>
                                             </div>
                                         </div>
