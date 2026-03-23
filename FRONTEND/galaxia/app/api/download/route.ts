@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-    const url = req.nextUrl.searchParams.get("url");
+    let url = req.nextUrl.searchParams.get("url");
     const name = req.nextUrl.searchParams.get("name") || "Menu-Download";
     
     if (!url) {
         return new NextResponse("Missing file URL", { status: 400 });
+    }
+
+    // Resolve relative paths (e.g. /menus/file.pdf) to absolute URLs
+    if (url.startsWith("/")) {
+        const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin || "https://www.galaxiaresorts.com";
+        url = `${siteOrigin}${url}`;
     }
 
     try {

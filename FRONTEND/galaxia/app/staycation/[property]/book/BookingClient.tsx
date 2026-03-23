@@ -171,8 +171,6 @@ export default function BookingClient({ property }: BookingClientProps) {
                 const nameParts = user.fullName?.split(" ") || [""];
                 setFormData(prev => ({
                     ...prev,
-                    firstName: nameParts[0] || "",
-                    lastName: nameParts.slice(1).join(" ") || "",
                     email: user.email || "",
                     phone: user.phone || ""
                 }));
@@ -214,8 +212,6 @@ export default function BookingClient({ property }: BookingClientProps) {
                         const nameParts = user.fullName?.split(" ") || [""];
                         setFormData(prev => ({
                             ...prev,
-                            firstName: nameParts[0] || "",
-                            lastName: nameParts.slice(1).join(" ") || "",
                             email: user.email || "",
                             phone: user.phone || ""
                         }));
@@ -238,8 +234,6 @@ export default function BookingClient({ property }: BookingClientProps) {
             const nameParts = data.user.fullName?.split(" ") || [""];
             setFormData(prev => ({
                 ...prev,
-                firstName: nameParts[0] || "",
-                lastName: nameParts.slice(1).join(" ") || "",
                 email: data.user.email || "",
                 phone: data.user.phone || ""
             }));
@@ -269,8 +263,6 @@ export default function BookingClient({ property }: BookingClientProps) {
             const nameParts = authName.split(" ");
             setFormData(prev => ({
                 ...prev,
-                firstName: nameParts[0] || "",
-                lastName: nameParts.slice(1).join(" ") || "",
                 email: authEmail,
                 phone: authPhone
             }));
@@ -744,8 +736,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     {/* Email & Phone */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                         <div>
-                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Email*</label>
-                                            <input type="email" required placeholder="Email" className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold placeholder:text-text-muted" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Email (Optional)</label>
+                                            <input type="email" placeholder="Email" className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold placeholder:text-text-muted" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                                         </div>
                                         <div>
                                             <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Mobile*</label>

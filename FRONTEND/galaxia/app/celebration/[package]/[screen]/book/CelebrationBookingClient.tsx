@@ -862,7 +862,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Email*</label>
+                                        <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Email (Optional)</label>
                                         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="email@example.com" />
                                     </div>
                                     <div>
@@ -961,7 +961,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     </button>
                                     <button
                                         onClick={() => setCurrentStep(3)}
-                                        disabled={!firstName || !lastName || !email || !phone || !agreed || (idVerificationMethod === "online" && (idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)))}
+                                        disabled={!firstName || !lastName || !phone || !agreed || (idVerificationMethod === "online" && (idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)))}
                                         className="flex-1 bg-gradient-to-r from-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-3 rounded-lg hover:shadow-lg hover:shadow-rose-dark/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         Continue
