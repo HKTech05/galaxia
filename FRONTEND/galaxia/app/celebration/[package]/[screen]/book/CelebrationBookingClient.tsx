@@ -70,10 +70,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     // Blocked/Booked slots tracking
     const [bookedSlots, setBookedSlots] = useState<number[]>([]);
 
-    // Auto-enable balloons for Celebration (Decoration + Movie Time) package
+    // Auto-enable ALL add-ons for Celebration (Decoration + Movie Time) package
     useEffect(() => {
         if (pkg.id === "celebration") {
             setAddBalloons(true);
+            setAddLedBanner(true);
+            setAddCake(true);
         }
     }, [pkg.id]);
 
@@ -766,8 +768,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
                                     {/* LED Banner */}
                                     <div
-                                        onClick={() => setAddLedBanner(!addLedBanner)}
-                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${addLedBanner ? 'border-rose-medium/50 bg-rose-dark/15' : 'border-cel-border hover:border-cel-border-light'}`}
+                                        onClick={() => { if (!isCelebration) setAddLedBanner(!addLedBanner); }}
+                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isCelebration ? 'border-rose-medium/50 bg-rose-dark/15 cursor-default' : `cursor-pointer ${addLedBanner ? 'border-rose-medium/50 bg-rose-dark/15' : 'border-cel-border hover:border-cel-border-light'}`}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">💡</span>
@@ -787,7 +789,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             </div>
                                         </div>
                                     </div>
-                                    {addLedBanner && (
+                                    {(addLedBanner || isCelebration) && (
                                         <div className="pl-10 animate-in fade-in slide-in-from-top-2">
                                             <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Select Banner Message</label>
                                             <select value={ledBannerType} onChange={(e) => setLedBannerType(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text focus:border-rose-medium focus:outline-none transition-colors">
@@ -800,8 +802,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
                                     {/* Cake */}
                                     <div
-                                        onClick={() => setAddCake(!addCake)}
-                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${addCake ? 'border-rose-medium/50 bg-rose-dark/15' : 'border-cel-border hover:border-cel-border-light'}`}
+                                        onClick={() => { if (!isCelebration) setAddCake(!addCake); }}
+                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isCelebration ? 'border-rose-medium/50 bg-rose-dark/15 cursor-default' : `cursor-pointer ${addCake ? 'border-rose-medium/50 bg-rose-dark/15' : 'border-cel-border hover:border-cel-border-light'}`}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">🎂</span>
@@ -821,7 +823,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             </div>
                                         </div>
                                     </div>
-                                    {addCake && (
+                                    {(addCake || isCelebration) && (
                                         <div className="pl-10 animate-in fade-in slide-in-from-top-2">
                                             <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Cake Message</label>
                                             <input value={cakeMessage} onChange={(e) => setCakeMessage(e.target.value)} maxLength={50} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="e.g. Happy Birthday Neha!" />
