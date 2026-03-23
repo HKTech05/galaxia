@@ -87,7 +87,8 @@ export default function Admin1Dashboard() {
     // Fetch DD calendar events from API
     const fetchEvents = useCallback(async (date: Date) => {
         try {
-            const dateStr = date.toISOString().split('T')[0];
+            // Use local date parts to avoid UTC timezone offset issues
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             const data = await api.get(`/bookings/dd?date=${dateStr}`);
             if (Array.isArray(data)) {
                 const mapped: Event[] = data.map((b: any) => ({
@@ -97,15 +98,18 @@ export default function Admin1Dashboard() {
                     customerName: b.customerName,
                     phone: b.customerPhone || "—",
                     email: b.customerEmail || "—",
-                    screen: (b.screen?.name || "Sandy Screen").replace(" (Digital Diaries)", "") as any,
+                    screen: ((b.screen?.name || "Sandy Screen") as string).replace(" (Digital Diaries)", "").replace(/ \(15 x 8 sq ft\)/g, "") as any,
                     startHour: b.startHour,
                     duration: b.durationHours,
                     reservationDate: b.bookingDate,
                     packageType: b.package?.name || "Movie Time",
-                    color: b.screen?.name === "Cine Love" ? "bg-pink-100 text-pink-700 border-pink-200" :
-                           b.screen?.name === "Sandy Screen" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
-                           b.screen?.name === "Park N Watch" ? "bg-orange-100 text-orange-700 border-orange-200" :
-                           "bg-sky-100 text-sky-700 border-sky-200",
+                    color: (() => {
+                        const sName = ((b.screen?.name || "") as string).replace(" (Digital Diaries)", "").replace(/ \(15 x 8 sq ft\)/g, "");
+                        if (sName === "Cine Love") return "bg-pink-100 text-pink-700 border-pink-200";
+                        if (sName === "Sandy Screen") return "bg-yellow-100 text-yellow-700 border-yellow-200";
+                        if (sName === "Park N Watch") return "bg-orange-100 text-orange-700 border-orange-200";
+                        return "bg-sky-100 text-sky-700 border-sky-200";
+                    })(),
                     amountPaid: `₹${(b.amountPaid || 0).toLocaleString()}`,
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
                     paymentDetails: b.paymentDetails || "N/A",

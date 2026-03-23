@@ -39,6 +39,16 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
 
+    // Login prompt state
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [emailMode, setEmailMode] = useState<false | "login" | "register">(false);
+    const [authEmail, setAuthEmail] = useState("");
+    const [authPassword, setAuthPassword] = useState("");
+    const [authName, setAuthName] = useState("");
+    const [authPhone, setAuthPhone] = useState("");
+    const [authError, setAuthError] = useState("");
+    const [authLoading, setAuthLoading] = useState(false);
+
     // Coupon state
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
@@ -66,6 +76,90 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             setAddBalloons(true);
         }
     }, [pkg.id]);
+
+    // Load user data if logged in
+    useEffect(() => {
+        const token = localStorage.getItem("galaxia_token");
+        const userStr = localStorage.getItem("galaxia_user");
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                setEmail(user.email || "");
+                setPhone(user.phone || "");
+            } catch {}
+        }
+    }, []);
+
+    // Listen for Cognito popup success
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data === "COGNITO_LOGIN_SUCCESS") {
+                setShowLoginPrompt(false);
+                const userStr = localStorage.getItem("galaxia_user");
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        setEmail(user.email || "");
+                        setPhone(user.phone || "");
+                    } catch {}
+                }
+            }
+        };
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
+    }, []);
+
+    // Guest login handler
+    const handleGuestLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAuthLoading(true);
+        setAuthError("");
+        try {
+            const res = await fetch(`${typeof window !== 'undefined' ? '' : process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: authEmail, password: authPassword }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Login failed");
+            localStorage.setItem("galaxia_token", data.token);
+            localStorage.setItem("galaxia_user", JSON.stringify(data.user));
+            setEmail(data.user.email || "");
+            setPhone(data.user.phone || "");
+            setShowLoginPrompt(false);
+            setEmailMode(false);
+        } catch (err: any) {
+            setAuthError(err.message || "Login failed");
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    // Guest register handler
+    const handleGuestRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAuthLoading(true);
+        setAuthError("");
+        try {
+            const res = await fetch(`${typeof window !== 'undefined' ? '' : process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fullName: authName, email: authEmail, phone: authPhone, password: authPassword }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Registration failed");
+            localStorage.setItem("galaxia_token", data.token);
+            localStorage.setItem("galaxia_user", JSON.stringify(data.user));
+            setEmail(authEmail);
+            setPhone(authPhone);
+            setShowLoginPrompt(false);
+            setEmailMode(false);
+        } catch (err: any) {
+            setAuthError(err.message || "Registration failed");
+        } finally {
+            setAuthLoading(false);
+        }
+    };
 
     // Fetch DB IDs + live pricing on mount
     useEffect(() => {
@@ -253,12 +347,13 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const extraPersonCharge = Math.max(0, guestCount - 2) * extraPersonPrice;
 
     // Add-on charges — read from DB if available
+    // For celebration: add-ons are included FREE, so no extra charge
     const isMovieTime = pkg.id === "movie-time";
     const isCelebration = pkg.id === "celebration";
     const getAddonPrice = (key: string) => liveAddonPricing?.[key] ?? 400;
-    const balloonsCharge = addBalloons ? getAddonPrice('balloons') : 0;
-    const ledBannerCharge = addLedBanner ? getAddonPrice('led_banner') : 0;
-    const cakeCharge = addCake ? getAddonPrice('cake') : 0;
+    const balloonsCharge = isMovieTime && addBalloons ? getAddonPrice('balloons') : 0;
+    const ledBannerCharge = isMovieTime && addLedBanner ? getAddonPrice('led_banner') : 0;
+    const cakeCharge = isMovieTime && addCake ? getAddonPrice('cake') : 0;
     const addOnsTotal = balloonsCharge + ledBannerCharge + cakeCharge;
 
     const subtotal = basePrice + extraPersonCharge + addOnsTotal;
@@ -654,11 +749,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             <span className="text-lg">🎈</span>
                                             <div className="flex flex-col">
                                                 <span className="font-inter text-sm text-cel-text">Balloons {isCelebration && <span className="text-[10px] text-rose-medium">(Included)</span>}</span>
-                                                <span className="text-[10px] text-cel-text-muted">{formatPrice(getAddonPrice('balloons'))} (Colorful balloon decoration)</span>
+                                                <span className="text-[10px] text-cel-text-muted">{isCelebration ? 'Included free' : `${formatPrice(getAddonPrice('balloons'))} (Colorful balloon decoration)`}</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(getAddonPrice('balloons'))}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{isCelebration ? 'Free' : formatPrice(getAddonPrice('balloons'))}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addBalloons ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addBalloons ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -677,12 +772,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">💡</span>
                                             <div className="flex flex-col">
-                                                <span className="font-inter text-sm text-cel-text">LED Banner</span>
-                                                <span className="text-[10px] text-cel-text-muted">{formatPrice(getAddonPrice('led_banner'))} (Neon-style LED message banner)</span>
+                                                <span className="font-inter text-sm text-cel-text">LED Banner {isCelebration && <span className="text-[10px] text-rose-medium">(Included)</span>}</span>
+                                                <span className="text-[10px] text-cel-text-muted">{isCelebration ? 'Included free' : `${formatPrice(getAddonPrice('led_banner'))} (Neon-style LED message banner)`}</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(getAddonPrice('led_banner'))}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{isCelebration ? 'Free' : formatPrice(getAddonPrice('led_banner'))}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addLedBanner ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addLedBanner ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -711,12 +806,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         <div className="flex items-center gap-3">
                                             <span className="text-lg">🎂</span>
                                             <div>
-                                                <span className="font-inter text-sm text-cel-text">Cake</span>
-                                                <p className="font-inter text-[10px] text-cel-text-muted">Customizable celebration cake</p>
+                                                <span className="font-inter text-sm text-cel-text">Cake {isCelebration && <span className="text-[10px] text-rose-medium">(Included)</span>}</span>
+                                                <p className="font-inter text-[10px] text-cel-text-muted">{isCelebration ? 'Included free' : 'Customizable celebration cake'}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="font-inter text-sm text-cel-text-secondary">{formatPrice(getAddonPrice('cake'))}</span>
+                                            <span className="font-inter text-sm text-cel-text-secondary">{isCelebration ? 'Free' : formatPrice(getAddonPrice('cake'))}</span>
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${addCake ? 'bg-rose-dark text-white' : 'border border-cel-border text-cel-text-muted hover:border-rose-medium/40'}`}>
                                                 {addCake ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -829,7 +924,15 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => (totalHours >= (isMovieTime ? 1 : 2)) && setCurrentStep(2)}
+                                    onClick={() => {
+                                        if (totalHours >= (isMovieTime ? 1 : 2)) {
+                                            const token = localStorage.getItem("galaxia_token");
+                                            if (!token) {
+                                                setShowLoginPrompt(true);
+                                            }
+                                            setCurrentStep(2);
+                                        }
+                                    }}
                                     disabled={totalHours < (isMovieTime ? 1 : 2)}
                                     className={`w-full font-cinzel font-semibold text-sm py-3.5 rounded-lg transition-all duration-300 ${(totalHours >= (isMovieTime ? 1 : 2)) ? 'bg-gradient-to-r from-rose-medium to-rose-dark text-white hover:shadow-lg hover:shadow-rose-dark/30' : 'bg-cel-border text-cel-text-muted cursor-not-allowed'}`}
                                 >
@@ -841,7 +944,116 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 )}
 
                 {/* Step 2: Guest Details */}
-                {currentStep === 2 && (
+                {currentStep === 2 && showLoginPrompt && (
+                    <>
+                        {/* Faded background form */}
+                        <div className="rounded-xl border border-cel-border bg-cel-card p-5 sm:p-6 opacity-30 pointer-events-none">
+                            <h2 className="font-cinzel text-lg font-semibold text-cel-text mb-1">Primary Guest Details</h2>
+                            <p className="font-inter text-xs text-cel-text-muted mb-6">Please fill all relevant fields to proceed further.</p>
+                        </div>
+
+                        {/* Dark Auth Modal */}
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                            <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 relative">
+                                <button onClick={() => { setShowLoginPrompt(false); setEmailMode(false); setCurrentStep(1); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+
+                                {!emailMode && (
+                                    <>
+                                        <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
+                                        <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
+                                            Sign in to securely manage your booking and confirm your screening.
+                                        </p>
+                                        <div className="w-full space-y-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const redirectUri = `${window.location.origin}/auth/callback`;
+                                                    const currentUrl = window.location.pathname + window.location.search;
+                                                    const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}&identity_provider=Google`;
+                                                    window.open(cognitoUrl, "Cognito Login", "width=500,height=600");
+                                                }}
+                                                className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                                            >
+                                                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                                Continue with Google
+                                            </button>
+                                            <div className="flex items-center gap-4 py-2 opacity-60">
+                                                <div className="h-[1px] bg-white/20 flex-1"></div>
+                                                <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
+                                                <div className="h-[1px] bg-white/20 flex-1"></div>
+                                            </div>
+                                            <button
+                                                onClick={() => setEmailMode("login")}
+                                                className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                                            >
+                                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                                Continue with Email
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+
+                                {emailMode === "login" && (
+                                    <form onSubmit={handleGuestLogin} className="w-full">
+                                        <h2 className="font-inter text-2xl font-semibold text-white mb-6 text-center">Welcome Back</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div>
+                                                <label className="text-white/70 text-xs mb-1.5 block">Email address</label>
+                                                <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="user@example.com" />
+                                            </div>
+                                            <div>
+                                                <label className="text-white/70 text-xs mb-1.5 block">Password</label>
+                                                <input type="password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="••••••••" />
+                                            </div>
+                                        </div>
+                                        {authError && <p className="text-red-400 text-sm mb-4 text-center">{authError}</p>}
+                                        <button type="submit" disabled={authLoading} className="w-full bg-white text-black py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50">
+                                            {authLoading ? "Signing in..." : "Sign In"}
+                                        </button>
+                                        <div className="flex justify-between mt-4">
+                                            <button type="button" onClick={() => setEmailMode(false)} className="text-white/50 text-sm hover:text-white transition-colors">← Back</button>
+                                            <button type="button" onClick={() => { setEmailMode("register"); setAuthError(""); }} className="text-white/50 text-sm hover:text-white transition-colors">Create account →</button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {emailMode === "register" && (
+                                    <form onSubmit={handleGuestRegister} className="w-full">
+                                        <h2 className="font-inter text-2xl font-semibold text-white mb-6 text-center">Create Account</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div>
+                                                <label className="text-white/70 text-xs mb-1.5 block">Full Name</label>
+                                                <input type="text" required value={authName} onChange={e => setAuthName(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="John Doe" />
+                                            </div>
+                                            <div>
+                                                <label className="text-white/70 text-xs mb-1.5 block">Email address</label>
+                                                <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="user@example.com" />
+                                            </div>
+                                            <div>
+                                                <label className="text-white/70 text-xs mb-1.5 block">Phone</label>
+                                                <input type="tel" required value={authPhone} onChange={e => setAuthPhone(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="+91 98765 43210" />
+                                            </div>
+                                            <div>
+                                                <label className="text-white/70 text-xs mb-1.5 block">Password</label>
+                                                <input type="password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="••••••••" />
+                                            </div>
+                                        </div>
+                                        {authError && <p className="text-red-400 text-sm mb-4 text-center">{authError}</p>}
+                                        <button type="submit" disabled={authLoading} className="w-full bg-white text-black py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50">
+                                            {authLoading ? "Creating account..." : "Create Account"}
+                                        </button>
+                                        <div className="flex justify-between mt-4">
+                                            <button type="button" onClick={() => { setEmailMode("login"); setAuthError(""); }} className="text-white/50 text-sm hover:text-white transition-colors">← Back to login</button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
+                {currentStep === 2 && !showLoginPrompt && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Guest Form */}
                         <div className="lg:col-span-2 rounded-xl border border-cel-border bg-cel-card p-5 sm:p-6">
