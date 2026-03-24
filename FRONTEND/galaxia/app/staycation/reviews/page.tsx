@@ -156,7 +156,7 @@ export default function ReviewsPage() {
                                     <svg className="w-8 h-8 text-antique-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                 </div>
                                 <h3 className="font-cinzel text-xl font-bold text-text-primary mb-3">Authentication Required</h3>
-                                <p className="font-inter text-sm text-text-secondary mb-8 max-w-sm mx-auto">Please log in to your account to share your staycation experience.</p>
+                                <p className="font-inter text-sm text-text-secondary mb-8 max-w-sm mx-auto">Please log in to your account to share your experience with Galaxia.</p>
                                 <button onClick={handleLogin} className="bg-text-primary text-white px-8 py-3 rounded-xl font-inter text-sm font-bold hover:bg-black transition-colors flex items-center gap-2 mx-auto">
                                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4 bg-white rounded-full p-0.5" />
                                     Continue with Google
@@ -174,9 +174,9 @@ export default function ReviewsPage() {
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-cinzel text-xl font-bold text-text-primary">Share Your Story</h3>
+                                    <h3 className="font-cinzel text-xl font-bold text-text-primary">Share Your Experience</h3>
                                     <span className="text-[10px] font-inter font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Verified Member
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Logged In
                                     </span>
                                 </div>
 
@@ -189,21 +189,22 @@ export default function ReviewsPage() {
 
                                 <div className="grid grid-cols-1 gap-6">
                                     <div>
-                                        <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Select Property *</label>
+                                        <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Select Staycation Property</label>
                                         <select
-                                            required value={formData.propertyId}
+                                            value={formData.propertyId}
                                             onChange={e => setFormData(p => ({ ...p, propertyId: e.target.value }))}
                                             className="w-full px-4 py-3.5 bg-slate-50 border border-border-light rounded-xl font-inter text-sm focus:border-antique-gold focus:ring-4 focus:ring-antique-gold/10 outline-none transition-all appearance-none cursor-pointer"
                                         >
-                                            <option value="">Whered did you stay?</option>
+                                            <option value="">Galaxia Experience (General)</option>
                                             {dbProperties.map(p => (
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </select>
+                                        <p className="text-[10px] text-text-muted mt-1.5 px-1 italic">Optional — select a property if you stayed there, or leave as General.</p>
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">How was your stay? *</label>
+                                        <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Overall Experience *</label>
                                         <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl border border-border-light">
                                             {[1, 2, 3, 4, 5].map(s => (
                                                 <button key={s} type="button" onClick={() => setFormData(p => ({ ...p, rating: s }))}
@@ -328,10 +329,21 @@ export default function ReviewsPage() {
 
                                 <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between relative z-10">
                                     <div className="flex items-center gap-2">
-                                        <div className="p-1 bg-emerald-50 rounded-full">
-                                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                        </div>
-                                        <span className="font-inter text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Verified Stay</span>
+                                    {review.property ? (
+                                        <>
+                                            <div className="p-1 bg-emerald-50 rounded-full">
+                                                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                            </div>
+                                            <span className="font-inter text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Verified Stay</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="p-1 bg-blue-50 rounded-full">
+                                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                            </div>
+                                            <span className="font-inter text-[10px] font-bold text-blue-500 uppercase tracking-widest">Galaxia Member</span>
+                                        </>
+                                    )}
                                     </div>
                                     <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
                                         <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
