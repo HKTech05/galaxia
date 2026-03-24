@@ -85,7 +85,7 @@ export default function CelebrationPage() {
                                     <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
                                 </div>
                                 <h3 className="font-cinzel text-lg font-bold text-rose-light mb-3">Choose Your Movie</h3>
-                                <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">Pick any movie of your choice — from OTT platforms (Netflix, Video Prime, Hotstar etc.) or your own content via streaming.</p>
+                                <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">Pick any movie of your choice — from OTT platforms (Netflix, Video Prime, Hotstar etc.)</p>
                             </div>
                         </div>
 
@@ -133,47 +133,53 @@ export default function CelebrationPage() {
                     </div>
 
                     {/* Train Stations Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-6">
                         {[
-                            { name: "Wadala Station", detail: "5 mins walking distance", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17l3 3m0 0l3-3m-3 3V10m0-4V3m-4 7h8M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
-                            { name: "Dadar Station", detail: "10 mins drive", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg> },
-                            { name: "King Circle Station", detail: "10 mins drive", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+                            { name: "Wadala Station", detail: "5 mins walking distance", icon: <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17l3 3m0 0l3-3m-3 3V10m0-4V3m-4 7h8M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
+                            { name: "Dadar Station", detail: "10 mins drive", icon: <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg> },
+                            { name: "King Circle Station", detail: "10 mins drive", icon: <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
                         ].map((station, i) => (
-                            <div key={i} className="group relative bg-cel-card/60 backdrop-blur-sm rounded-xl border border-cel-border/60 p-5 sm:p-6 text-center transition-all duration-500 hover:border-rose-medium/40 hover:shadow-[0_0_30px_-6px_rgba(159,53,58,0.15)]">
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-rose-dark/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div key={i} className="group relative rounded-2xl bg-gradient-to-br from-cel-card to-rose-dark/10 border border-rose-medium/40 p-8 transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_12px_40px_rgba(159,53,58,0.25)] overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-br from-rose-dark/15 via-rose-dark/5 to-transparent" />
+                                <div className="absolute top-0 left-0 w-40 h-40 bg-rose-dark/15 rounded-full blur-[60px] -ml-20 -mt-20" />
+                                <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-medium/10 rounded-full blur-[50px] -mr-16 -mb-16" />
                                 <div className="relative z-10">
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-dark/20 to-rose-medium/10 border border-rose-medium/25 flex items-center justify-center mx-auto mb-3 text-rose-light group-hover:scale-110 transition-transform duration-300">
+                                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-dark/50 to-rose-medium/30 border border-rose-medium/40 flex items-center justify-center mb-6 shadow-lg shadow-rose-dark/20">
                                         {station.icon}
                                     </div>
-                                    <h4 className="font-cinzel text-sm font-semibold text-cel-text mb-1 tracking-wide">{station.name}</h4>
-                                    <p className="font-inter text-xs text-cel-text-secondary">{station.detail}</p>
+                                    <h3 className="font-cinzel text-lg font-bold text-rose-light mb-3">{station.name}</h3>
+                                    <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">{station.detail}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
 
                     {/* Local Transport + Location Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
-                        <div className="group relative bg-cel-card/60 backdrop-blur-sm rounded-xl border border-cel-border/60 p-5 transition-all duration-500 hover:border-rose-medium/40">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-dark/20 to-rose-medium/10 border border-rose-medium/25 flex items-center justify-center shrink-0 text-rose-light">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-6">
+                        <div className="group relative rounded-2xl bg-gradient-to-br from-cel-card to-rose-dark/10 border border-rose-medium/40 p-8 transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_12px_40px_rgba(159,53,58,0.25)] overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-rose-dark/15 via-rose-dark/5 to-transparent" />
+                            <div className="absolute top-0 left-0 w-40 h-40 bg-rose-dark/15 rounded-full blur-[60px] -ml-20 -mt-20" />
+                            <div className="relative z-10 flex items-center gap-5 h-full">
+                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-dark/50 to-rose-medium/30 border border-rose-medium/40 flex items-center justify-center shadow-lg shadow-rose-dark/20 shrink-0">
+                                    <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                                 </div>
                                 <div>
-                                    <h4 className="font-cinzel text-xs font-semibold text-cel-text uppercase tracking-widest mb-0.5">Local Transport</h4>
+                                    <h3 className="font-cinzel text-lg font-bold text-rose-light mb-1">Local Transport</h3>
                                     <p className="font-inter text-sm text-cel-text-secondary">Local taxis available</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="group relative bg-cel-card/60 backdrop-blur-sm rounded-xl border border-cel-border/60 p-5 transition-all duration-500 hover:border-rose-medium/40">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-dark/20 to-rose-medium/10 border border-rose-medium/25 flex items-center justify-center shrink-0 text-rose-light">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div className="group relative rounded-2xl bg-gradient-to-br from-cel-card to-rose-dark/10 border border-rose-medium/40 p-8 transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_12px_40px_rgba(159,53,58,0.25)] overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-rose-dark/15 via-rose-dark/5 to-transparent" />
+                            <div className="absolute top-0 left-0 w-40 h-40 bg-rose-dark/15 rounded-full blur-[60px] -ml-20 -mt-20" />
+                            <div className="relative z-10 flex items-center gap-5 h-full">
+                                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-dark/50 to-rose-medium/30 border border-rose-medium/40 flex items-center justify-center shadow-lg shadow-rose-dark/20 shrink-0">
+                                    <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h4 className="font-cinzel text-xs font-semibold text-cel-text uppercase tracking-widest mb-0.5">Location</h4>
+                                    <h3 className="font-cinzel text-lg font-bold text-rose-light mb-1">Location</h3>
                                     <p className="font-inter text-sm text-cel-text-secondary">Wadala, Mumbai</p>
-                                    <p className="font-inter text-[11px] text-cel-text-secondary/60 mt-0.5">Easy access from Western & Central lines</p>
+                                    <p className="font-inter text-xs text-cel-text-secondary/60 mt-0.5">Easy access from Western & Central lines</p>
                                 </div>
                             </div>
                         </div>
