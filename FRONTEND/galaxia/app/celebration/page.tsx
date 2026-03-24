@@ -85,7 +85,7 @@ export default function CelebrationPage() {
                                     <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
                                 </div>
                                 <h3 className="font-cinzel text-lg font-bold text-rose-light mb-3">Choose Your Movie</h3>
-                                <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">Pick any movie of your choice — Bollywood, Hollywood, or your own content via USB/streaming.</p>
+                                <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">Pick any movie of your choice — from OTT platforms (Netflix, Video Prime, Hotstar etc.) or your own content via USB/streaming.</p>
                             </div>
                         </div>
 
@@ -138,29 +138,26 @@ export default function CelebrationPage() {
                                 <div className="w-12 h-12 rounded-full bg-rose-dark/15 border border-rose-medium/30 flex items-center justify-center mx-auto mb-4">
                                     <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17l3 3m0 0l3-3m-3 3V10m0-4V3m-4 7h8M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                 </div>
-                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Nearest Station</h4>
-                                <p className="font-inter text-sm text-cel-text mb-1">Wadala Station</p>
-                                <p className="font-inter text-[11px] text-cel-text-muted">5 minutes walking distance</p>
+                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Wadala Station</h4>
+                                <p className="font-inter text-sm text-cel-text mb-1">5 Mins Walking Distance</p>
                             </div>
 
-                            {/* Local Transport */}
+                            {/* Dadar Station */}
                             <div className="text-center">
                                 <div className="w-12 h-12 rounded-full bg-rose-dark/15 border border-rose-medium/30 flex items-center justify-center mx-auto mb-4">
                                     <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
                                 </div>
-                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Local Transport</h4>
-                                <p className="font-inter text-sm text-cel-text mb-1">Local taxis available</p>
-                                <p className="font-inter text-[11px] text-cel-text-muted">No rickshaws in this area</p>
+                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Dadar Station</h4>
+                                <p className="font-inter text-sm text-cel-text mb-1">10 Mins Drive</p>
                             </div>
 
-                            {/* Complete Privacy */}
+                            {/* King Circle Station */}
                             <div className="text-center">
                                 <div className="w-12 h-12 rounded-full bg-rose-dark/15 border border-rose-medium/30 flex items-center justify-center mx-auto mb-4">
                                     <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 </div>
-                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Location</h4>
-                                <p className="font-inter text-sm text-cel-text mb-1">Wadala, Mumbai</p>
-                                <p className="font-inter text-[11px] text-cel-text-muted">Easy access from Western & Central lines</p>
+                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">King Circle Station</h4>
+                                <p className="font-inter text-sm text-cel-text mb-1">10 Mins Drive</p>
                             </div>
                         </div>
                     </div>

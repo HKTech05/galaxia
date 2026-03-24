@@ -846,7 +846,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         <div className="flex justify-between"><span className="text-cel-text-secondary">Screen Size</span><span className="text-cel-text">{screen.size}</span></div>
                                     )}
                                     
-                                    {isMovieTime && originalPrice > 0 && (
+                                    {(isMovieTime || isCelebration) && originalPrice > 0 && (
                                         <>
                                             <div className="flex justify-between font-inter text-sm pt-2 border-t border-cel-border/30">
                                                 <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{discountHourRate.toLocaleString("en-IN")})</span>
@@ -861,7 +861,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         </>
                                     )}
 
-                                    {!isMovieTime && (
+                                    {!isMovieTime && !isCelebration && (
                                         <div className="flex justify-between"><span className="text-cel-text-secondary">Base Price</span><span className="text-cel-text">{formatPrice(basePrice)}</span></div>
                                     )}
                                     {extraPersonCharge > 0 && (

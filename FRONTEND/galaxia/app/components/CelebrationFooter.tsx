@@ -59,7 +59,7 @@ export default function CelebrationFooter() {
                                 </a>
                             ))}
                         </div>
-                        <p className="font-inter text-sm text-cel-text-secondary">Karjat, Maharashtra, India</p>
+                        <p className="font-inter text-sm text-cel-text-secondary">Wadala, Maharashtra, India</p>
                     </div>
                 </div>
 

@@ -153,30 +153,26 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                         <div>
                             <p className="text-cel-text-secondary font-inter text-sm mb-4">Wadala, Mumbai, Maharashtra</p>
                             <div className="space-y-3">
-                                <details className="group border border-cel-border rounded-lg">
+                                <details className="group border border-cel-border rounded-lg" open>
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
-                                        Nearest Railway Station
+                                        Wadala Station
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
-                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">5 minutes walking distance from Wadala Station</div>
+                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">5 Mins Walking Distance</div>
                                 </details>
                                 <details className="group border border-cel-border rounded-lg">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
-                                        Local Transportation
+                                        Dadar Station
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
-                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">
-                                        Local taxis available
-                                    </div>
+                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">10 Mins Drive</div>
                                 </details>
                                 <details className="group border border-cel-border rounded-lg">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
-                                        Accessibility
+                                        King Circle Station
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
-                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">
-                                        Easy access from Western & Central lines
-                                    </div>
+                                    <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">10 Mins Drive</div>
                                 </details>
                             </div>
                         </div>

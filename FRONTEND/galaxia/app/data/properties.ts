@@ -159,6 +159,7 @@ export const properties: Record<string, PropertyData> = {
                 image: "",
                 configuration: ["1 King Bedroom", "1 Sofa Cum Bed Room", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
+                maxAdults: 6,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
@@ -175,6 +176,7 @@ export const properties: Record<string, PropertyData> = {
                 image: "",
                 configuration: ["2 King Size Beds", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
+                maxAdults: 6,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
@@ -191,6 +193,7 @@ export const properties: Record<string, PropertyData> = {
                 image: "",
                 configuration: ["1 King Size Bed", "1 Queen Size Bed", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
+                maxAdults: 6,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },

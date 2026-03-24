@@ -25,6 +25,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         price: number; 
         type: string; 
         maxPersons: number;
+        maxAdults?: number;
         weekdayPrice: string;
         weekendPrice: string;
         primeDatePrice: string;
@@ -389,6 +390,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             price: initialPrice,
             type: room.theme,
             maxPersons: room.maxPersons,
+            maxAdults: room.maxAdults,
             weekdayPrice: currentWeekdayPrice,
             weekendPrice: currentWeekendPrice,
             primeDatePrice: room.primeDatePrice
@@ -762,7 +764,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                 <label className="font-inter text-xs text-text-secondary w-12">Adults</label>
                                                 <button type="button" onClick={() => setAdults(Math.max(1, adults - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
                                                 <span className="font-inter text-sm text-text-primary w-4 text-center">{adults}</span>
-                                                <button type="button" onClick={() => setAdults(Math.min(maxGuests - kids, adults + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
+                                                <button type="button" onClick={() => setAdults(Math.min(selectedRoom?.maxAdults || maxGuests, maxGuests - kids, adults + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <label className="font-inter text-xs text-text-secondary w-16">Kids (5-12)</label>

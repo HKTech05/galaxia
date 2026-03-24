@@ -159,6 +159,25 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
                 setCheckOut(null);
                 setSelectingCheckOut(true);
             } else {
+                // Check if any dates in the range (check-in to check-out) are booked
+                const hasBookedInRange = (() => {
+                    const d = new Date(checkIn);
+                    d.setDate(d.getDate() + 1);
+                    while (d < day.date) {
+                        if (bookedDates.has(toLocalDateStr(d))) return true;
+                        d.setDate(d.getDate() + 1);
+                    }
+                    return false;
+                })();
+
+                if (hasBookedInRange) {
+                    // Can't select range over booked dates — reset to new check-in
+                    setCheckIn(day.date);
+                    setCheckOut(null);
+                    setSelectingCheckOut(true);
+                    return;
+                }
+
                 setCheckOut(day.date);
                 setSelectingCheckOut(false);
 
