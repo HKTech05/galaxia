@@ -48,6 +48,7 @@ export interface PropertyData {
         description: string;
         image: string;
         maxPersons?: number;
+        maxAdults?: number;
         configuration?: string[];
         pricing?: {
             weekday: { price: string; persons: string };
