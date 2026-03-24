@@ -189,18 +189,18 @@ export default function ReviewsPage() {
 
                                 <div className="grid grid-cols-1 gap-6">
                                     <div>
-                                        <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Select Staycation Property</label>
+                                        <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Select Staycation Property *</label>
                                         <select
+                                            required
                                             value={formData.propertyId}
                                             onChange={e => setFormData(p => ({ ...p, propertyId: e.target.value }))}
                                             className="w-full px-4 py-3.5 bg-slate-50 border border-border-light rounded-xl font-inter text-sm focus:border-antique-gold focus:ring-4 focus:ring-antique-gold/10 outline-none transition-all appearance-none cursor-pointer"
                                         >
-                                            <option value="">Galaxia Experience (General)</option>
+                                            <option value="">Which property did you visit?</option>
                                             {dbProperties.map(p => (
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </select>
-                                        <p className="text-[10px] text-text-muted mt-1.5 px-1 italic">Optional — select a property if you stayed there, or leave as General.</p>
                                     </div>
                                     
                                     <div>
@@ -338,10 +338,10 @@ export default function ReviewsPage() {
                                         </>
                                     ) : (
                                         <>
-                                            <div className="p-1 bg-blue-50 rounded-full">
-                                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                            <div className="p-1 bg-emerald-50 rounded-full">
+                                                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                                             </div>
-                                            <span className="font-inter text-[10px] font-bold text-blue-500 uppercase tracking-widest">Galaxia Member</span>
+                                            <span className="font-inter text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Verified Stay</span>
                                         </>
                                     )}
                                     </div>

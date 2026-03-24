@@ -694,19 +694,27 @@ function DashboardContent() {
                                 <form onSubmit={handleReviewSubmit} className="space-y-5">
                                     <div>
                                         <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Select Staycation Property</label>
-                                        <select 
-                                            value={reviewFormData.propertyId}
-                                            onChange={(e) => setReviewFormData({...reviewFormData, propertyId: e.target.value})}
-                                            className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
-                                        >
-                                            <option value="">Galaxia Experience (General)</option>
-                                            {/* All staycation properties with villa/room names */}
-                                            {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.propertyDbId, b])).values()].map(b => (
-                                                <option key={b.propertyDbId} value={b.propertyDbId?.toString()}>
-                                                    {b.roomType && b.roomType !== 'Entire Property' ? `${b.roomType} - ${b.property}` : b.property}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        {bookings.filter(b => b.type === 'staycation').length === 0 ? (
+                                            <div className={`p-5 rounded-xl border ${borderMain} ${bgInput} text-center`}>
+                                                <svg className={`w-8 h-8 mx-auto mb-3 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                                <p className={`${textPrimary} font-cinzel text-sm font-semibold mb-1`}>Complete a Stay First</p>
+                                                <p className={`${textMuted} font-inter text-xs`}>You need to complete a staycation booking before you can post a review.</p>
+                                            </div>
+                                        ) : (
+                                            <select 
+                                                required
+                                                value={reviewFormData.propertyId}
+                                                onChange={(e) => setReviewFormData({...reviewFormData, propertyId: e.target.value})}
+                                                className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
+                                            >
+                                                <option value="">Which property did you visit?</option>
+                                                {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.propertyDbId, b])).values()].map(b => (
+                                                    <option key={b.propertyDbId} value={b.propertyDbId?.toString()}>
+                                                        {b.roomType && b.roomType !== 'Entire Property' ? `${b.roomType} - ${b.property}` : b.property}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                     <div>
                                         <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Overall Experience</label>

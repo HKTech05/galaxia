@@ -85,7 +85,7 @@ export default function CelebrationPage() {
                                     <svg className="w-6 h-6 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
                                 </div>
                                 <h3 className="font-cinzel text-lg font-bold text-rose-light mb-3">Choose Your Movie</h3>
-                                <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">Pick any movie of your choice — from OTT platforms (Netflix, Video Prime, Hotstar etc.) or your own content via USB/streaming.</p>
+                                <p className="font-inter text-sm text-cel-text-secondary leading-relaxed">Pick any movie of your choice — from OTT platforms (Netflix, Video Prime, Hotstar etc.) or your own content via streaming.</p>
                             </div>
                         </div>
 
@@ -125,55 +125,62 @@ export default function CelebrationPage() {
             {/* How to Reach */}
             <section className="bg-cel-bg relative overflow-hidden pb-16">
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cel-border to-transparent" />
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16">
-                    <div className="text-center mb-8 sm:mb-10">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16">
+                    <div className="text-center mb-10 sm:mb-14">
                         <p className="font-inter text-rose-medium text-xs tracking-[0.3em] uppercase mb-3">How to Reach</p>
                         <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-cel-text">Getting Here</h2>
+                        <div className="w-20 h-[1px] bg-gradient-to-r from-transparent via-rose-medium to-transparent mx-auto mt-4" />
                     </div>
 
-                    <div className="bg-cel-card rounded-2xl border border-cel-border p-6 sm:p-8">
-                        {/* Train Stations */}
-                        <h4 className="font-cinzel text-xs font-semibold text-rose-light uppercase tracking-widest mb-5">🚂 Train Stations</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-                            <div className="text-center">
-                                <div className="w-12 h-12 rounded-full bg-rose-dark/15 border border-rose-medium/30 flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17l3 3m0 0l3-3m-3 3V10m0-4V3m-4 7h8M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    {/* Train Stations Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-5">
+                        {[
+                            { name: "Wadala Station", detail: "5 mins walking distance", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17l3 3m0 0l3-3m-3 3V10m0-4V3m-4 7h8M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
+                            { name: "Dadar Station", detail: "10 mins drive", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg> },
+                            { name: "King Circle Station", detail: "10 mins drive", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+                        ].map((station, i) => (
+                            <div key={i} className="group relative bg-cel-card/60 backdrop-blur-sm rounded-xl border border-cel-border/60 p-5 sm:p-6 text-center transition-all duration-500 hover:border-rose-medium/40 hover:shadow-[0_0_30px_-6px_rgba(159,53,58,0.15)]">
+                                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-rose-dark/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="relative z-10">
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-dark/20 to-rose-medium/10 border border-rose-medium/25 flex items-center justify-center mx-auto mb-3 text-rose-light group-hover:scale-110 transition-transform duration-300">
+                                        {station.icon}
+                                    </div>
+                                    <h4 className="font-cinzel text-sm font-semibold text-cel-text mb-1 tracking-wide">{station.name}</h4>
+                                    <p className="font-inter text-xs text-cel-text-secondary">{station.detail}</p>
                                 </div>
-                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Wadala Station</h4>
-                                <p className="font-inter text-sm text-cel-text">5 Mins Walking Distance</p>
                             </div>
-                            <div className="text-center">
-                                <div className="w-12 h-12 rounded-full bg-rose-dark/15 border border-rose-medium/30 flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
+                        ))}
+                    </div>
+
+                    {/* Local Transport + Location Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-6">
+                        <div className="group relative bg-cel-card/60 backdrop-blur-sm rounded-xl border border-cel-border/60 p-5 transition-all duration-500 hover:border-rose-medium/40">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-dark/20 to-rose-medium/10 border border-rose-medium/25 flex items-center justify-center shrink-0 text-rose-light">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                                 </div>
-                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">Dadar Station</h4>
-                                <p className="font-inter text-sm text-cel-text">10 Mins Drive</p>
-                            </div>
-                            <div className="text-center">
-                                <div className="w-12 h-12 rounded-full bg-rose-dark/15 border border-rose-medium/30 flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-5 h-5 text-rose-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                <div>
+                                    <h4 className="font-cinzel text-xs font-semibold text-cel-text uppercase tracking-widest mb-0.5">Local Transport</h4>
+                                    <p className="font-inter text-sm text-cel-text-secondary">Local taxis available</p>
                                 </div>
-                                <h4 className="font-cinzel text-sm font-semibold text-rose-light mb-1">King Circle Station</h4>
-                                <p className="font-inter text-sm text-cel-text">10 Mins Drive</p>
                             </div>
                         </div>
-                        
-                        {/* Local Transport + Location */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-cel-border">
-                            <div className="text-center sm:text-left">
-                                <h4 className="font-cinzel text-xs font-semibold text-rose-light uppercase tracking-widest mb-2">🚕 Local Transport</h4>
-                                <p className="font-inter text-sm text-cel-text">Local taxis available</p>
-                            </div>
-                            <div className="text-center sm:text-left">
-                                <h4 className="font-cinzel text-xs font-semibold text-rose-light uppercase tracking-widest mb-2">📍 Location</h4>
-                                <p className="font-inter text-sm text-cel-text">Wadala, Mumbai</p>
-                                <p className="font-inter text-xs text-cel-text-secondary mt-1">Easy access from Western & Central lines</p>
+                        <div className="group relative bg-cel-card/60 backdrop-blur-sm rounded-xl border border-cel-border/60 p-5 transition-all duration-500 hover:border-rose-medium/40">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-dark/20 to-rose-medium/10 border border-rose-medium/25 flex items-center justify-center shrink-0 text-rose-light">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-cinzel text-xs font-semibold text-cel-text uppercase tracking-widest mb-0.5">Location</h4>
+                                    <p className="font-inter text-sm text-cel-text-secondary">Wadala, Mumbai</p>
+                                    <p className="font-inter text-[11px] text-cel-text-secondary/60 mt-0.5">Easy access from Western & Central lines</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Embedded Map */}
-                    <div className="rounded-2xl overflow-hidden border border-cel-border h-64 sm:h-80 mt-6">
+                    <div className="rounded-xl overflow-hidden border border-cel-border/60 h-64 sm:h-80">
                         <iframe 
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4680.79406035677!2d72.85311857596447!3d19.013532253929238!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7cf29b87f566d%3A0x11e519df25f953af!2sDigital%20Diaries!5e0!3m2!1sen!2sin!4v1774188296796!5m2!1sen!2sin" 
                             className="w-full h-full border-0" 

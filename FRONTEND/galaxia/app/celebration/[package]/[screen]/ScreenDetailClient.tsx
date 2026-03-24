@@ -176,14 +176,14 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                                 </details>
                                 <details className="group border border-cel-border rounded-lg">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
-                                        🚕 Local Transport
+                                        Local Transport
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
                                     <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">Local taxis available</div>
                                 </details>
                                 <details className="group border border-cel-border rounded-lg">
                                     <summary className="flex items-center justify-between p-4 cursor-pointer text-cel-text font-cinzel text-xs sm:text-sm font-semibold uppercase tracking-wider">
-                                        📍 Location
+                                        Location
                                         <svg className="w-4 h-4 text-rose-medium transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
                                     <div className="px-4 pb-4 text-cel-text-secondary font-inter text-sm">Wadala, Mumbai — Easy access from Western & Central lines</div>

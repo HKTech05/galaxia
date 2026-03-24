@@ -306,7 +306,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const isToday = (d: Date) => d.toDateString() === today.toDateString();
     const isSelected = (d: Date) => d.toDateString() === selectedDate.toDateString();
     const isPast = (d: Date) => d < today && !isToday(d);
-    const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6 || d.getDay() === 5;
+    const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
 
     // Slot selection
     const toggleSlot = (slotId: string) => {
@@ -851,19 +851,24 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         <div className="flex justify-between"><span className="text-cel-text-secondary">Screen Size</span><span className="text-cel-text">{screen.size}</span></div>
                                     )}
                                     
-                                    {(isMovieTime || isCelebration) && originalPrice > 0 && (
+                                    {(isMovieTime || isCelebration) && discount > 0 && (
                                         <>
                                             <div className="flex justify-between font-inter text-sm pt-2 border-t border-cel-border/30">
-                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''} × ₹{discountHourRate.toLocaleString("en-IN")})</span>
+                                                <span className="text-cel-text-secondary">Original Price ({totalHours} hr{totalHours > 1 ? 's' : ''})</span>
                                                 <span className="text-cel-text line-through opacity-70">{formatPrice(originalPrice)}</span>
                                             </div>
-                                            {discount > 0 && (
-                                                <div className="flex justify-between text-green-500 font-medium">
-                                                    <span>Discount ({totalHours} hour{totalHours > 1 ? 's' : ''} booking)</span>
-                                                    <span>-{formatPrice(discount)}</span>
-                                                </div>
-                                            )}
+                                            <div className="flex justify-between text-green-500 font-medium">
+                                                <span>Discount</span>
+                                                <span>-{formatPrice(discount)}</span>
+                                            </div>
                                         </>
+                                    )}
+
+                                    {(isMovieTime || isCelebration) && discount === 0 && (
+                                        <div className="flex justify-between pt-2 border-t border-cel-border/30">
+                                            <span className="text-cel-text-secondary">Base Price ({totalHours} hr{totalHours > 1 ? 's' : ''})</span>
+                                            <span className="text-cel-text">{formatPrice(basePrice)}</span>
+                                        </div>
                                     )}
 
                                     {!isMovieTime && !isCelebration && (
