@@ -695,14 +695,16 @@ function DashboardContent() {
                                     <div>
                                         <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Select Staycation Property</label>
                                         <select 
-                                            required
                                             value={reviewFormData.propertyId}
                                             onChange={(e) => setReviewFormData({...reviewFormData, propertyId: e.target.value})}
                                             className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
                                         >
-                                            <option value="">Which property did you visit?</option>
+                                            <option value="">Galaxia Experience (General)</option>
+                                            {/* All staycation properties with villa/room names */}
                                             {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.propertyDbId, b])).values()].map(b => (
-                                                <option key={b.propertyDbId} value={b.propertyDbId?.toString()}>{b.property}</option>
+                                                <option key={b.propertyDbId} value={b.propertyDbId?.toString()}>
+                                                    {b.roomType && b.roomType !== 'Entire Property' ? `${b.roomType} - ${b.property}` : b.property}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>

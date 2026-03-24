@@ -375,10 +375,15 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const oneHrTier = pricingTiers.find((p) => p.hours === 1);
     const perSlotPrice = oneHrTier ? (weekend ? oneHrTier.weekend : oneHrTier.weekday) : Math.round((weekend ? pricingTiers[0].weekend : pricingTiers[0].weekday) / pricingTiers[0].hours);
 
-    // Discount: use per-tier discount from DB if available
+    // Discount: celebration gets ₹500 off for 3hr weekday ONLY. Movie-time uses DB pricing.
     const matchedTier = pricingTiers.find((p) => p.hours === totalHours);
     const matchedLive = livePricing?.find((p) => p.hours === totalHours);
-    const discount = totalHours > 1 && matchedLive ? (weekend ? (matchedLive as any).weekendDiscount || 0 : (matchedLive as any).weekdayDiscount || 0) : 0;
+    let discount = 0;
+    if (isCelebration && totalHours === 3 && !weekend) {
+        discount = 500;
+    } else if (isMovieTime && totalHours > 1 && matchedLive) {
+        discount = weekend ? ((matchedLive as any).weekendDiscount || 0) : ((matchedLive as any).weekdayDiscount || 0);
+    }
     const discountHourRate = liveExtraHourRate ?? pkg.extraHourRate ?? 1000;
     const originalPrice = discount > 0 ? basePrice + discount : totalHours * discountHourRate;
 

@@ -307,7 +307,7 @@ export default function ContactPage() {
                     <div className="space-y-3">
                         {[
                             { q: "How do I book a villa?", a: "Browse our properties, select your dates, choose your villa, and complete the booking online. You can also call us directly for assistance." },
-                            { q: "What is the cancellation policy?", a: "Please refer to our booking terms during checkout. Generally, we offer flexible cancellation up to 48 hours before check-in for a full refund." },
+                            { q: "What is the cancellation policy?", a: "All bookings are non-refundable — no cancellations, amendments, or date changes are permitted once confirmed. Please ensure your dates are final before booking." },
                             { q: "Are pets allowed?", a: "Pet policies vary by property. Please contact us directly to confirm pet-friendly options before booking." },
                             { q: "Do you offer group bookings or events?", a: "Yes! We can accommodate larger groups and special events. Send us a message with your requirements and we'll create a custom package." },
                             { q: "What meals are included?", a: "Most of our properties include meals (breakfast, lunch & dinner) as part of the stay. Specific inclusions vary by villa and plan selected." },

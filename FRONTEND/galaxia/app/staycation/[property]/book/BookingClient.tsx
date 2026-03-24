@@ -307,7 +307,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                 primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
                 details: sub.configuration?.slice(0, 3) || [],
                 persons: sub.pricing?.weekday.persons || "2 guests",
-                maxPersons: sub.maxPersons || property.maxPersons || 4
+                maxPersons: sub.maxPersons || property.maxPersons || 4,
+                maxAdults: sub.maxAdults || undefined
             };
         })
         : [{
@@ -572,7 +573,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     <p className="font-inter text-sm text-text-secondary mb-3 pr-2 leading-relaxed">{room.description}</p>
                                                     <ul className="space-y-1.5 mb-4">
                                                         <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" />Inclusive of standard Wi-Fi</li>
-                                                        <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" /><span className="text-blue-600">Max {room.maxPersons} guests</span></li>
+                                                        <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" /><span className="text-blue-600">Max {room.maxAdults ? `${room.maxAdults} adults` : `${room.maxPersons} guests`}</span></li>
                                                     </ul>
                                                 </div>
                                                 <div className="mt-6 flex flex-col items-end border-t border-border-light pt-4 border-dashed">
@@ -758,7 +759,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     {/* Total Number of Guests */}
                                     <div className="mb-6 p-4 border border-border-light rounded-lg bg-soft-gray/30">
                                         <h4 className="font-inter text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">Total Number of Guests</h4>
-                                        <p className="font-inter text-[10px] text-text-muted mb-4">Base price includes up to {baseIncludedPersons} persons. Max {maxGuests} guests.</p>
+                                        <p className="font-inter text-[10px] text-text-muted mb-4">Base price includes up to {baseIncludedPersons} persons. {selectedRoom?.maxAdults ? `Max ${selectedRoom.maxAdults} adults.` : `Max ${maxGuests} guests.`}</p>
                                         <div className="flex flex-wrap gap-6">
                                             <div className="flex items-center gap-3">
                                                 <label className="font-inter text-xs text-text-secondary w-12">Adults</label>
