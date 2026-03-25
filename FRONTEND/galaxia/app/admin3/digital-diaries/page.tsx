@@ -117,12 +117,14 @@ export default function Admin1Dashboard() {
                     dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
                     rawAddons: b.addons || [],
                     guestIds: b.guestIds || [],
+                    occasion: b.occasion || '',
+                    cakeMessage: b.cakeMessage || '',
                     addOns: {
                         balloons: b.addons?.some((a: any) => a.addonType === "balloons"),
-                        ledBanner: b.addons?.some((a: any) => a.addonType === "led_banner"),
-                        ledBannerType: b.addons?.find((a: any) => a.addonType === "led_banner")?.addonValue || "Happy Birthday",
+                        ledBanner: b.addons?.some((a: any) => a.addonType === "ledBanner" || a.addonType === "led_banner"),
+                        ledBannerType: b.addons?.find((a: any) => a.addonType === "ledBanner" || a.addonType === "led_banner")?.addonValue || b.occasion || "Happy Birthday",
                         cake: b.addons?.some((a: any) => a.addonType === "cake"),
-                        cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || ""
+                        cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || b.cakeMessage || ""
                     }
                 }));
                 setEventsList(mapped);
@@ -523,7 +525,7 @@ export default function Admin1Dashboard() {
                                                 const paidTotal = paidAddons.reduce((sum, a) => sum + a.price, 0);
                                                 const hasAnyAddon = activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake);
 
-                                                const isCelebration = activeEvent.packageType === 'Celebration';
+                                                const isCelebration = activeEvent.packageType !== 'Movie Time' && activeEvent.packageType !== 'Maintenance';
 
                                                 const addonLabel = (type: string) => {
                                                     if (type === 'balloons') return '🎈 Balloons';
@@ -548,27 +550,52 @@ export default function Admin1Dashboard() {
                                                             )}
                                                         </div>
 
-                                                        {/* Currently active addons */}
-                                                        {hasAnyAddon && (
-                                                            <div className="space-y-2 mb-3">
-                                                                {rawAddons.map(addon => (
-                                                                    <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${isCelebration ? 'bg-slate-50 border-slate-200' : addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
-                                                                            {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
+                                                        {/* Currently active addons — or default set for Celebration */}
+                                                        {(() => {
+                                                            if (isCelebration) {
+                                                                // Celebration: always show all 3 addons as included
+                                                                return (
+                                                                    <div className="space-y-2 mb-3">
+                                                                        <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
+                                                                            <span className="text-sm font-medium">🎈 Balloons</span>
                                                                         </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            {!isCelebration && <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>}
-                                                                            {!isCelebration && (addon.isPaid ? (
-                                                                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">PAID{addon.paymentMethod ? ` · ${addon.paymentMethod}` : ''}</span>
-                                                                            ) : (
-                                                                                <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">UNPAID</span>
-                                                                            ))}
+                                                                        <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-sm font-medium">💡 LED Banner</span>
+                                                                                <span className="text-[10px] text-slate-500">— {activeEvent.occasion || activeEvent.addOns?.ledBannerType || 'Happy Birthday'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-sm font-medium">🎂 Cake</span>
+                                                                                {(activeEvent.cakeMessage || activeEvent.addOns?.cakeMessage) && <span className="text-[10px] text-slate-500 italic">— "{activeEvent.cakeMessage || activeEvent.addOns?.cakeMessage}"</span>}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                                );
+                                                            }
+                                                            if (!hasAnyAddon) return null;
+                                                            return (
+                                                                <div className="space-y-2 mb-3">
+                                                                    {rawAddons.map(addon => (
+                                                                        <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
+                                                                                {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>
+                                                                                {addon.isPaid ? (
+                                                                                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">PAID{addon.paymentMethod ? ` · ${addon.paymentMethod}` : ''}</span>
+                                                                                ) : (
+                                                                                    <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">UNPAID</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            );
+                                                        })()}
 
                                                         {/* Tally — only for Movie Time */}
                                                         {hasAnyAddon && !isCelebration && (
@@ -626,61 +653,83 @@ export default function Admin1Dashboard() {
                                                         {/* Edit Add-Ons Panel — only for Movie Time */}
                                                         {editingAddOns && !isCelebration && (
                                                             <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                                                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span>🎈</span>
-                                                                        <span className="text-sm font-medium text-slate-700">Balloons (₹400)</span>
-                                                                    </div>
-                                                                    <input type="checkbox" defaultChecked={activeEvent.addOns?.balloons} className="accent-indigo-600 w-4 h-4"
-                                                                        onChange={(e) => {
-                                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, balloons: e.target.checked } } : ev));
+                                                                {/* Only show addons that don't already exist as unpaid */}
+                                                                {!rawAddons.some(a => a.addonType === 'balloons' && !a.isPaid) && (
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
+                                                                                    addons: [{ type: 'balloons', price: 400 }]
+                                                                                });
+                                                                                fetchEvents(startDate);
+                                                                            } catch (e) { alert('Failed to add addon'); }
                                                                         }}
-                                                                    />
-                                                                </label>
-                                                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span>💡</span>
-                                                                        <span className="text-sm font-medium text-slate-700">LED Banner (₹400)</span>
+                                                                        className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-purple-50 hover:border-purple-200 transition-colors"
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span>🎈</span>
+                                                                            <span className="text-sm font-medium text-slate-700">Add Balloons (₹400)</span>
+                                                                        </div>
+                                                                        <Plus size={16} className="text-indigo-600" />
+                                                                    </button>
+                                                                )}
+                                                                {!rawAddons.some(a => (a.addonType === 'ledBanner' || a.addonType === 'led_banner') && !a.isPaid) && (
+                                                                    <div>
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                const bannerType = (document.getElementById('new-banner-type') as HTMLSelectElement)?.value || 'Happy Birthday';
+                                                                                try {
+                                                                                    await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
+                                                                                        addons: [{ type: 'ledBanner', value: bannerType, price: 400 }]
+                                                                                    });
+                                                                                    fetchEvents(startDate);
+                                                                                } catch (e) { alert('Failed to add addon'); }
+                                                                            }}
+                                                                            className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-amber-50 hover:border-amber-200 transition-colors"
+                                                                        >
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span>💡</span>
+                                                                                <span className="text-sm font-medium text-slate-700">Add LED Banner (₹400)</span>
+                                                                            </div>
+                                                                            <Plus size={16} className="text-indigo-600" />
+                                                                        </button>
+                                                                        <select id="new-banner-type" className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                                                            <option>Happy Birthday</option>
+                                                                            <option>Better Together</option>
+                                                                            <option>Happy Anniversary</option>
+                                                                        </select>
                                                                     </div>
-                                                                    <input type="checkbox" defaultChecked={activeEvent.addOns?.ledBanner} className="accent-indigo-600 w-4 h-4"
-                                                                        onChange={(e) => {
-                                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, ledBanner: e.target.checked } } : ev));
-                                                                        }}
-                                                                    />
-                                                                </label>
-                                                                <select
-                                                                    defaultValue={activeEvent.addOns?.ledBannerType || "Happy Birthday"}
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
-                                                                    onChange={(e) => {
-                                                                        setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, ledBannerType: e.target.value } } : ev));
-                                                                    }}
-                                                                >
-                                                                    <option>Happy Birthday</option>
-                                                                    <option>Better Together</option>
-                                                                    <option>Happy Anniversary</option>
-                                                                </select>
-                                                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span>🎂</span>
-                                                                        <span className="text-sm font-medium text-slate-700">Cake (₹400)</span>
+                                                                )}
+                                                                {!rawAddons.some(a => a.addonType === 'cake' && !a.isPaid) && (
+                                                                    <div>
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                const cakeMsg = (document.getElementById('new-cake-msg') as HTMLInputElement)?.value || '';
+                                                                                try {
+                                                                                    await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
+                                                                                        addons: [{ type: 'cake', value: cakeMsg, price: 400 }]
+                                                                                    });
+                                                                                    fetchEvents(startDate);
+                                                                                } catch (e) { alert('Failed to add addon'); }
+                                                                            }}
+                                                                            className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-pink-50 hover:border-pink-200 transition-colors"
+                                                                        >
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span>🎂</span>
+                                                                                <span className="text-sm font-medium text-slate-700">Add Cake (₹400)</span>
+                                                                            </div>
+                                                                            <Plus size={16} className="text-indigo-600" />
+                                                                        </button>
+                                                                        <input
+                                                                            id="new-cake-msg"
+                                                                            type="text"
+                                                                            placeholder="Cake message (optional)"
+                                                                            maxLength={50}
+                                                                            className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
+                                                                        />
                                                                     </div>
-                                                                    <input type="checkbox" defaultChecked={activeEvent.addOns?.cake} className="accent-indigo-600 w-4 h-4"
-                                                                        onChange={(e) => {
-                                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, cake: e.target.checked } } : ev));
-                                                                        }}
-                                                                    />
-                                                                </label>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Cake message (optional)"
-                                                                    defaultValue={activeEvent.addOns?.cakeMessage || ""}
-                                                                    maxLength={50}
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
-                                                                    onChange={(e) => {
-                                                                        setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, cakeMessage: e.target.value } } : ev));
-                                                                    }}
-                                                                />
-                                                                <p className="text-[10px] text-slate-400 font-medium">Changes are saved automatically. Collect add-on payment separately.</p>
+                                                                )}
+                                                                <p className="text-[10px] text-slate-400 font-medium">Click an add-on to add it. Collect payment separately below.</p>
                                                             </div>
                                                         )}
                                                     </>

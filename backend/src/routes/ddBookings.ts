@@ -417,14 +417,9 @@ router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest
             }
         });
 
-        // Update booking's total amount paid and remaining
-        await prisma.ddBooking.update({
-            where: { id: addon.bookingId },
-            data: {
-                amountPaid: { increment: addon.price },
-                amountToCollect: { decrement: addon.price }
-            }
-        });
+        // NOTE: Do NOT modify booking amountPaid/amountToCollect here.
+        // Financials section reflects booking-only amounts from the website.
+        // Addon payments are tracked separately via the addon's isPaid/paymentMethod fields.
 
         // Track cash collection for employee
         if (effectiveMethod.toLowerCase() === "cash" && addon.price > 0) {
@@ -455,6 +450,45 @@ router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest
         return res.json(addon);
     } catch (error) {
         console.error("Addon payment collection error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// POST /api/bookings/dd/:id/addons — Add new addons to an existing booking
+router.post("/:id/addons", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        const { addons } = req.body; // Array of { type, value, price }
+
+        if (!addons || !Array.isArray(addons) || addons.length === 0) {
+            return res.status(400).json({ error: "No addons provided" });
+        }
+
+        const booking = await prisma.ddBooking.findUnique({ where: { id: bookingId } });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+        const created = [];
+        for (const addon of addons) {
+            // Check if addon of this type already exists (unpaid)
+            const existing = await prisma.ddBookingAddon.findFirst({
+                where: { bookingId, addonType: addon.type, isPaid: false }
+            });
+            if (!existing) {
+                const record = await prisma.ddBookingAddon.create({
+                    data: {
+                        bookingId,
+                        addonType: addon.type,
+                        addonValue: addon.value || null,
+                        price: addon.price || 400,
+                    },
+                });
+                created.push(record);
+            }
+        }
+
+        return res.json({ created, count: created.length });
+    } catch (error) {
+        console.error("Add addon error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
