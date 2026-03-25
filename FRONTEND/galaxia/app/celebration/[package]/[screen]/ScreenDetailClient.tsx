@@ -12,6 +12,7 @@ interface ScreenDetailClientProps {
 
 export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientProps) {
     const [currentImage, setCurrentImage] = useState(0);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
 
     // Fetch site images from admin panel
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
@@ -55,8 +56,9 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                         src={displayGallery[currentImage]}
                         alt={`${screen.name} - Image ${currentImage + 1}`}
                         fill
-                        className="object-cover transition-all duration-500"
+                        className="object-cover transition-all duration-500 cursor-pointer"
                         sizes="(max-width: 1024px) 100vw, 80vw"
+                        onClick={() => setLightboxOpen(true)}
                     />
                     {/* Navigation arrows */}
                     <button onClick={() => setCurrentImage(prev => prev === 0 ? displayGallery.length - 1 : prev - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-rose-dark/60 transition-colors">
@@ -202,6 +204,31 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                     </div>
                 </div>
             </section>
+        </div>
+
+            {/* Lightbox Modal */}
+            {lightboxOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
+                    <button className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-all" onClick={() => setLightboxOpen(false)}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/70 text-sm font-inter">{currentImage + 1} / {displayGallery.length}</div>
+                    <div className="relative w-[90vw] h-[85vh]" onClick={e => e.stopPropagation()}>
+                        <Image src={displayGallery[currentImage]} alt={`${screen.name} - Full ${currentImage + 1}`} fill className="object-contain" sizes="90vw" />
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); setCurrentImage(prev => prev === 0 ? displayGallery.length - 1 : prev - 1); }} className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-all">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); setCurrentImage(prev => prev === displayGallery.length - 1 ? 0 : prev + 1); }} className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-all">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                        {displayGallery.map((_, i) => (
+                            <button key={i} onClick={e => { e.stopPropagation(); setCurrentImage(i); }} className={`transition-all duration-300 rounded-full ${i === currentImage ? "w-8 h-2 bg-white" : "w-2 h-2 bg-white/40 hover:bg-white/60"}`} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
