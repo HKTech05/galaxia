@@ -27,6 +27,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
     const displayGallery = apiGallery.length > 0 ? apiGallery : screen.gallery.filter(Boolean);
 
     return (
+        <>
         <div>
             {/* Breadcrumb */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 border-b border-cel-border">
@@ -229,6 +230,6 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
