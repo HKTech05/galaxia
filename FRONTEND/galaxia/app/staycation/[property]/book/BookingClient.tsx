@@ -469,7 +469,10 @@ export default function BookingClient({ property }: BookingClientProps) {
         setBookingError("");
 
         try {
-            const subPropertyId = selectedRoom ? dbSubPropertyMap[selectedRoom.id] : undefined;
+            const roomId = selectedRoom?.id || '';
+            const subPropertyId = selectedRoom
+                ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
+                : undefined;
 
             const payload = {
                 customerName: `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
