@@ -248,6 +248,7 @@ model DdBooking {
   customerEmail     String?          @map("customer_email") @db.VarChar(255)
   occasion          String?          @db.VarChar(100)
   cakeMessage       String?          @map("cake_message") @db.VarChar(200)
+  specialRequests   String?          @map("special_requests") @db.VarChar(500)
   numGuests         Int              @default(2) @map("num_guests")
   basePrice         Int              @map("base_price")
   extraPersonCharge Int              @default(0) @map("extra_person_charge")

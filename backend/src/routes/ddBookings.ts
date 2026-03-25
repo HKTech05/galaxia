@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
         const {
             screenId, packageId, bookingDate, startHour, durationHours,
             customerName, customerPhone, customerEmail,
-            occasion, cakeMessage, numGuests,
+            occasion, cakeMessage, specialRequests, numGuests,
             basePrice, extraPersonCharge, gstAmount, totalAmount,
             amountPaid, paymentMethod, paymentDetails,
             addons, source, couponCode,
@@ -149,6 +149,7 @@ router.post("/", async (req, res) => {
                     customerEmail: encryptedEmail,
                     occasion,
                     cakeMessage,
+                    specialRequests: specialRequests || null,
                     numGuests: numGuests || 2,
                     basePrice: basePrice || 0,
                     extraPersonCharge: extraPersonCharge || 0,

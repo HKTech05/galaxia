@@ -38,6 +38,7 @@ type Event = {
     packageType: "Movie Time" | "Celebration" | "Maintenance";
     occasion?: string;
     cakeMessage?: string;
+    specialRequests?: string;
     amountPaid: string;
     amountToCollect: string;
     paymentDetails: string;
@@ -119,6 +120,7 @@ export default function Admin1Dashboard() {
                     guestIds: b.guestIds || [],
                     occasion: b.occasion || '',
                     cakeMessage: b.cakeMessage || '',
+                    specialRequests: b.specialRequests || '',
                     addOns: {
                         balloons: b.addons?.some((a: any) => a.addonType === "balloons"),
                         ledBanner: b.addons?.some((a: any) => a.addonType === "ledBanner" || a.addonType === "led_banner"),
@@ -512,6 +514,12 @@ export default function Admin1Dashboard() {
                                                 <span className="text-sm font-bold text-slate-800 italic">"{activeEvent.cakeMessage}"</span>
                                             </div>
                                         </>
+                                    )}
+                                    {activeEvent.specialRequests && (
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-slate-500 font-medium">Special Requests</span>
+                                            <span className="text-sm font-bold text-amber-700 italic max-w-[60%] text-right">"{activeEvent.specialRequests}"</span>
+                                        </div>
                                     )}
 
                                     {/* Add-Ons Section — Separate from Financials */}

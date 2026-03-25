@@ -500,7 +500,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 customerName: `${title} ${firstName} ${lastName}`.trim(),
                 customerPhone: phone,
                 customerEmail: email || null,
-                occasion: pkg.id === "celebration" ? "Celebration" : "Movie Time",
+                occasion: pkg.id === "celebration" ? ledBannerType : (addLedBanner ? ledBannerType : null),
                 cakeMessage: addCake ? cakeMessage : null,
                 numGuests: guestCount,
                 basePrice,
@@ -513,6 +513,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
                 discountAmount: couponDiscount,
+                specialRequests: specialRequests || null,
             };
 
             const result = await api.post("/bookings/dd", payload);
@@ -548,7 +549,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         } finally {
             setIsSubmitting(false);
         }
-    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, title, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, pkg.id, router, appliedCoupon, couponDiscount]);
+    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, title, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, specialRequests, pkg.id, router, appliedCoupon, couponDiscount]);
 
     return (
         <div>
