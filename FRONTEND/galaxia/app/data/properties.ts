@@ -223,7 +223,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Machan Theme",
                 description: "Elevated treehouse-style villa with a glass-bottom pool view and mountain deck.",
                 image: "",
-                configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Kids Sleeping Area", "Mountain Deck"],
+                configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Mountain Deck"],
                 maxPersons: 4,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
