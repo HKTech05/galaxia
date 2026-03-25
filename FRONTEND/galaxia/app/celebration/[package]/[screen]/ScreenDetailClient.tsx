@@ -85,7 +85,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                         download="Satkar_Menu.pdf"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group flex items-center gap-3 bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-500 hover:to-rose-600 shadow-md text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-full hover:shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all duration-300"
+                        className="group flex items-center gap-3 bg-gradient-to-r from-rose-medium to-rose-dark hover:shadow-lg hover:shadow-rose-dark/30 text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-full transition-all duration-300"
                     >
                         <svg className="w-5 h-5 text-white/90 group-hover:-translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         Download Food Menu

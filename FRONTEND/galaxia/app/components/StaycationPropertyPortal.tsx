@@ -835,7 +835,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <div className="flex items-center gap-3 mt-2">
                                         <button
                                             type="button"
-                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.max(1, extraGuestForm.guests - 1) })}
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.max(0, extraGuestForm.guests - 1) })}
                                             className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
                                         >−</button>
                                         <span className="text-lg font-black text-slate-800 w-6 text-center">{extraGuestForm.guests}</span>
@@ -871,6 +871,29 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <h2 className="text-3xl font-black text-purple-900 flex items-center">
                                             <IndianRupee size={24} className="mr-1" /> {calculateExtraGuestPrice().toLocaleString('en-IN')}
                                         </h2>
+                                        {(() => {
+                                            if (!selectedBooking) return null;
+                                            const startStr = selectedBooking.checkInDate.replace(',', '');
+                                            const endStr = selectedBooking.checkOutDate.replace(',', '');
+                                            const start = new Date(startStr);
+                                            const end = new Date(endStr);
+                                            const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
+                                            const prop = selectedBooking.property;
+                                            let extraAdultPrice = 0;
+                                            if (prop.includes('Hill View')) extraAdultPrice = 600;
+                                            else if (prop.includes('Mount View')) extraAdultPrice = 800;
+                                            else if (prop.includes('Heavenly Villa')) extraAdultPrice = 800;
+                                            else if (prop.includes('La Paraiso')) extraAdultPrice = 1200;
+                                            else if (prop.includes('Amstel')) extraAdultPrice = 1000;
+                                            else if (prop.includes('Ambrose')) extraAdultPrice = 2000;
+                                            return (
+                                                <div className="mt-2 space-y-0.5 text-[11px] font-medium text-purple-700">
+                                                    {extraGuestForm.guests > 0 && <p>Extra guests: {extraGuestForm.guests} × ₹{extraAdultPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.guests * extraAdultPrice * nights).toLocaleString('en-IN')}</p>}
+                                                    {extraGuestForm.pets > 0 && <p>Pets: {extraGuestForm.pets} × ₹600/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.pets * 600 * nights).toLocaleString('en-IN')}</p>}
+                                                    <p className="text-purple-500">+ 5% GST</p>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
 
                                     <div className="bg-white p-1 rounded-lg border border-purple-200 flex">

@@ -42,6 +42,7 @@ export default function Admin3DDBookingsPage() {
     const [selectedBooking, setSelectedBooking] = useState<DDBooking | null>(null);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+    const [detailBooking, setDetailBooking] = useState<DDBooking | null>(null);
 
     useEffect(() => { fetchBookings(); }, []);
 
@@ -161,7 +162,7 @@ export default function Admin3DDBookingsPage() {
                             ) : filteredBookings.length === 0 ? (
                                 <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
                             ) : filteredBookings.map((b) => (
-                                <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                                <tr key={b.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer" onClick={() => setDetailBooking(b)}>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
                                             <div className="flex items-center gap-2 mb-1">
@@ -199,7 +200,7 @@ export default function Admin3DDBookingsPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button onClick={() => { setSelectedBooking(b); setIsActionModalOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                        <button onClick={(e) => { e.stopPropagation(); setSelectedBooking(b); setIsActionModalOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                                             <MoreVertical size={18} />
                                         </button>
                                     </td>
@@ -258,6 +259,69 @@ export default function Admin3DDBookingsPage() {
                                     <p className="text-sm text-slate-500 font-medium mt-1">No actions required.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Booking Detail Modal (click-to-view) */}
+            {detailBooking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                            <h3 className="font-bold text-slate-800 text-lg">Booking Details</h3>
+                            <button onClick={() => setDetailBooking(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"><X size={20} /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Booking ID</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">DD-{String(detailBooking.id).padStart(4, '0')}-{String(detailBooking.id).padStart(3, '0')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{detailBooking.customerName}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Screen</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{detailBooking.screen?.name || '—'} (Digital Diaries)</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{new Date(detailBooking.bookingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Slot</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{formatSlot(detailBooking.startHour, detailBooking.durationHours)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Source</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5 capitalize">{detailBooking.source || 'Online'}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 mt-2">
+                                <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Upfront (50%)</p>
+                                    <p className="text-lg font-black text-emerald-800 mt-0.5">₹{(detailBooking.amountPaid || 0).toLocaleString('en-IN')}</p>
+                                    <p className="text-[10px] font-medium text-emerald-600 mt-0.5">via {detailBooking.paymentMethod || '—'}</p>
+                                </div>
+                                <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Remaining (50%)</p>
+                                    <p className="text-lg font-black text-amber-800 mt-0.5">₹{(detailBooking.amountToCollect || 0).toLocaleString('en-IN')}</p>
+                                    <p className={`text-[10px] font-bold mt-0.5 ${detailBooking.amountToCollect <= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>{detailBooking.amountToCollect <= 0 ? 'Paid' : 'Pending'}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${detailBooking.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                                    {detailBooking.status === 'confirmed' && <CheckCircle size={14} />}
+                                    {detailBooking.status === 'cancelled' && <XCircle size={14} />}
+                                    {detailBooking.status.charAt(0).toUpperCase() + detailBooking.status.slice(1)}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
