@@ -371,7 +371,6 @@ export default function Admin1Dashboard() {
             setUpiProofFile(null);
             setShowUpiProofPicker(null);
             fetchEvents(startDate);
-            setSelectedEventId(null);
         } catch (err: any) {
             console.error("Failed to collect payment:", err);
             alert(err.response?.data?.error || "Failed to collect payment");
@@ -524,9 +523,11 @@ export default function Admin1Dashboard() {
                                                 const paidTotal = paidAddons.reduce((sum, a) => sum + a.price, 0);
                                                 const hasAnyAddon = activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake);
 
+                                                const isCelebration = activeEvent.packageType === 'Celebration';
+
                                                 const addonLabel = (type: string) => {
                                                     if (type === 'balloons') return '🎈 Balloons';
-                                                    if (type === 'led_banner') return '💡 LED Banner';
+                                                    if (type === 'ledBanner' || type === 'led_banner') return '💡 LED Banner';
                                                     if (type === 'cake') return '🎂 Cake';
                                                     return type;
                                                 };
@@ -535,40 +536,42 @@ export default function Admin1Dashboard() {
                                                     <>
                                                         <div className="flex items-center justify-between mb-3">
                                                             <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                                                                <Ticket size={14} /> Add-Ons
+                                                                <Ticket size={14} /> Add-Ons {isCelebration && <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 normal-case tracking-normal">Included in package</span>}
                                                             </p>
-                                                            <button
-                                                                onClick={() => setEditingAddOns(!editingAddOns)}
-                                                                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wider"
-                                                            >
-                                                                {editingAddOns ? '✕ Close' : '+ Add / Edit'}
-                                                            </button>
+                                                            {!isCelebration && (
+                                                                <button
+                                                                    onClick={() => setEditingAddOns(!editingAddOns)}
+                                                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wider"
+                                                                >
+                                                                    {editingAddOns ? '✕ Close' : '+ Add / Edit'}
+                                                                </button>
+                                                            )}
                                                         </div>
 
                                                         {/* Currently active addons */}
                                                         {hasAnyAddon && (
                                                             <div className="space-y-2 mb-3">
                                                                 {rawAddons.map(addon => (
-                                                                    <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                                                                    <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${isCelebration ? 'bg-slate-50 border-slate-200' : addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
                                                                             {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
-                                                                            <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>
-                                                                            {addon.isPaid ? (
+                                                                            {!isCelebration && <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>}
+                                                                            {!isCelebration && (addon.isPaid ? (
                                                                                 <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">PAID{addon.paymentMethod ? ` · ${addon.paymentMethod}` : ''}</span>
                                                                             ) : (
                                                                                 <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">UNPAID</span>
-                                                                            )}
+                                                                            ))}
                                                                         </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         )}
 
-                                                        {/* Tally */}
-                                                        {hasAnyAddon && (
+                                                        {/* Tally — only for Movie Time */}
+                                                        {hasAnyAddon && !isCelebration && (
                                                             <div className="grid grid-cols-2 gap-2 mb-3">
                                                                 <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 text-center">
                                                                     <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Paid</p>
@@ -581,8 +584,8 @@ export default function Admin1Dashboard() {
                                                             </div>
                                                         )}
 
-                                                        {/* Collect buttons for unpaid addons */}
-                                                        {unpaidTotal > 0 && (
+                                                        {/* Collect buttons for unpaid addons — only for Movie Time */}
+                                                        {unpaidTotal > 0 && !isCelebration && (
                                                             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 mb-3">
                                                                 {showUpiProofPicker === 'addons' && (
                                                                     <div className="mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
@@ -620,8 +623,8 @@ export default function Admin1Dashboard() {
                                                             </div>
                                                         )}
 
-                                                        {/* Edit Add-Ons Panel */}
-                                                        {editingAddOns && (
+                                                        {/* Edit Add-Ons Panel — only for Movie Time */}
+                                                        {editingAddOns && !isCelebration && (
                                                             <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
                                                                 <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
                                                                     <div className="flex items-center gap-2">
