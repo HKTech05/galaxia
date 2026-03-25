@@ -360,9 +360,8 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     const totalGuests = adults + kids;
     const maxGuests = selectedRoom?.maxPersons || property.maxPersons || 4;
-    // Hard cap: Ambrose villas (take-1, alta, santorini) max 6 adults. Bamboosa excluded.
-    const isCapAt6 = (property.id === 'ambrose' || (property.id.startsWith('ambrose/') && !property.id.endsWith('/bamboosa')));
-    const maxAdultsCap = isCapAt6 ? 6 : maxGuests;
+    // Hard cap: max 6 total guests (adults + kids) across all properties.
+    const maxAdultsCap = 6;
 
     // 80-20 Payment Split
     const payNow = Math.round(totalAmount * 0.8);

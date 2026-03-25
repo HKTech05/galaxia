@@ -640,9 +640,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const liveAmstel = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Amstel Nest')?.villas || [] : [];
         const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest'].includes(p.name));
 
-        const occupiedAmbroseCount = liveAmbrose.filter((v: any) => v.checkedIn).length;
-        const occupiedAmstelCount = liveAmstel.filter((v: any) => v.checkedIn).length;
-        const occupiedStandaloneCount = liveStandalone.filter((p: any) => p.checkedIn).length;
+        const occupiedAmbroseCount = liveAmbrose.filter((v: any) => v.booked).length;
+        const occupiedAmstelCount = liveAmstel.filter((v: any) => v.booked).length;
+        const occupiedStandaloneCount = liveStandalone.filter((p: any) => p.booked).length;
 
         const totalOccupied = occupiedAmbroseCount + occupiedAmstelCount + occupiedStandaloneCount;
         const totalUnits = liveAmbrose.length + liveAmstel.length + liveStandalone.length;
@@ -1600,7 +1600,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Date View Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Digital Diaries — Bookings</h2>
+                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Bookings</h2>
                         <p className="text-sm text-slate-500 font-medium mt-1">Read-only view grouped by screen.</p>
                     </div>
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
