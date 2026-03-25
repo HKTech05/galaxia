@@ -186,6 +186,8 @@ export default function Admin1Dashboard() {
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
+    const [upiProofFile, setUpiProofFile] = useState<File | null>(null);
+    const [showUpiProofPicker, setShowUpiProofPicker] = useState<'balance' | 'addons' | null>(null);
 
     // Calculate pricing based on selection
     let basePrice = 0;
@@ -321,8 +323,12 @@ export default function Admin1Dashboard() {
         }
     };
 
-    const handleCollectPayment = async (mode: "Cash" | "UPI") => {
+    const handleCollectPayment = async (mode: "Cash" | "UPI", proofFile?: File) => {
         if (!activeEvent) return;
+        if (mode === "UPI" && !proofFile) {
+            setShowUpiProofPicker('balance');
+            return;
+        }
         try {
             const balanceStr = activeEvent.amountToCollect.replace(/[₹,]/g, '');
             const balanceInt = parseInt(balanceStr);
@@ -332,35 +338,38 @@ export default function Admin1Dashboard() {
                     method: mode
                 });
 
-                // Create UPI payment record for UPI Management tracking
-                if (mode === "UPI") {
-                    try {
-                        const employees = await api.get("/employees?propertyId=7");
-                        const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
-                        if (empId) {
-                            const token = localStorage.getItem("galaxia_token") || "";
-                            const fd = new FormData();
-                            fd.append("employeeId", String(empId));
-                            fd.append("bookingRef", `DD-${activeEvent.id}`);
-                            fd.append("guestName", activeEvent.customerName || '');
-                            fd.append("amount", String(balanceInt));
-                            fd.append("paymentType", "balance");
-                            fd.append("note", `DD Balance — ${activeEvent.screen}`);
-                            // Create a minimal placeholder file for the proof
-                            const blob = new Blob(["UPI payment collected at reception"], { type: "text/plain" });
-                            fd.append("file", blob, "upi-collected.txt");
-                            await fetch("/api/uploads/upi-proof", {
-                                method: "POST",
-                                headers: { Authorization: `Bearer ${token}` },
-                                body: fd,
-                            });
+                // Create payment record for tracking
+                try {
+                    const employees = await api.get("/employees?propertyId=7");
+                    const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
+                    if (empId) {
+                        const token = localStorage.getItem("galaxia_token") || "";
+                        const fd = new FormData();
+                        fd.append("employeeId", String(empId));
+                        fd.append("bookingRef", `DD-${activeEvent.id}`);
+                        fd.append("guestName", activeEvent.customerName || '');
+                        fd.append("amount", String(balanceInt));
+                        fd.append("paymentType", "balance");
+                        fd.append("note", `DD Balance — ${activeEvent.screen} via ${mode}`);
+                        if (mode === "UPI" && proofFile) {
+                            fd.append("file", proofFile, proofFile.name);
+                        } else {
+                            const blob = new Blob([`${mode} payment collected at reception`], { type: "text/plain" });
+                            fd.append("file", blob, `${mode.toLowerCase()}-collected.txt`);
                         }
-                    } catch (upiErr) {
-                        console.error("Failed to record UPI payment:", upiErr);
+                        await fetch("/api/uploads/upi-proof", {
+                            method: "POST",
+                            headers: { Authorization: `Bearer ${token}` },
+                            body: fd,
+                        });
                     }
+                } catch (trackErr) {
+                    console.error("Failed to record payment:", trackErr);
                 }
             }
             alert(`Collected ₹${balanceInt.toLocaleString()} via ${mode}`);
+            setUpiProofFile(null);
+            setShowUpiProofPicker(null);
             fetchEvents(startDate);
             setSelectedEventId(null);
         } catch (err: any) {
@@ -369,11 +378,15 @@ export default function Admin1Dashboard() {
         }
     };
 
-    const handleCollectAddonsPayment = async (mode: "Cash" | "UPI") => {
+    const handleCollectAddonsPayment = async (mode: "Cash" | "UPI", proofFile?: File) => {
         if (!activeEvent || !activeEvent.rawAddons) return;
         const unpaidAddons = activeEvent.rawAddons.filter(a => !a.isPaid);
         if (unpaidAddons.length === 0) {
             alert("All add-ons are already marked as paid.");
+            return;
+        }
+        if (mode === "UPI" && !proofFile) {
+            setShowUpiProofPicker('addons');
             return;
         }
 
@@ -384,8 +397,8 @@ export default function Admin1Dashboard() {
                 totalAddonAmount += addon.price;
             }
 
-            // Create UPI payment record for UPI Management tracking
-            if (mode === "UPI" && totalAddonAmount > 0) {
+            // Create payment record for tracking
+            if (totalAddonAmount > 0) {
                 try {
                     const employees = await api.get("/employees?propertyId=7");
                     const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
@@ -397,21 +410,27 @@ export default function Admin1Dashboard() {
                         fd.append("guestName", activeEvent.customerName || '');
                         fd.append("amount", String(totalAddonAmount));
                         fd.append("paymentType", "balance");
-                        fd.append("note", `DD Add-ons — ${activeEvent.screen}`);
-                        const blob = new Blob(["UPI add-on payment collected at reception"], { type: "text/plain" });
-                        fd.append("file", blob, "upi-addon-collected.txt");
+                        fd.append("note", `DD Add-ons — ${activeEvent.screen} via ${mode}`);
+                        if (mode === "UPI" && proofFile) {
+                            fd.append("file", proofFile, proofFile.name);
+                        } else {
+                            const blob = new Blob([`${mode} add-on payment collected at reception`], { type: "text/plain" });
+                            fd.append("file", blob, `${mode.toLowerCase()}-addon-collected.txt`);
+                        }
                         await fetch("/api/uploads/upi-proof", {
                             method: "POST",
                             headers: { Authorization: `Bearer ${token}` },
                             body: fd,
                         });
                     }
-                } catch (upiErr) {
-                    console.error("Failed to record UPI addon payment:", upiErr);
+                } catch (trackErr) {
+                    console.error("Failed to record addon payment:", trackErr);
                 }
             }
 
-            alert(`Collected payment for ${unpaidAddons.length} add-ons via ${mode}`);
+            alert(`Collected ₹${totalAddonAmount.toLocaleString()} for ${unpaidAddons.length} add-on(s) via ${mode}`);
+            setUpiProofFile(null);
+            setShowUpiProofPicker(null);
             fetchEvents(startDate);
         } catch (err: any) {
             console.error("Failed to collect addon payment:", err);
@@ -494,129 +513,176 @@ export default function Admin1Dashboard() {
                                         </>
                                     )}
 
-                                    {/* Add-Ons Section */}
-                                    {activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake) && (
-                                        <div className="pt-3 border-t border-slate-200">
-                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Add-Ons</p>
-                                            <div className="space-y-2">
-                                                {activeEvent.addOns.balloons && (
-                                                    <div className="flex justify-between items-center bg-purple-50 p-2.5 rounded-lg border border-purple-100">
-                                                        <span className="text-sm font-medium text-purple-800">🎈 Balloons</span>
-                                                        <span className="text-sm font-bold text-purple-700">₹400</span>
-                                                    </div>
-                                                )}
-                                                {activeEvent.addOns.ledBanner && (
-                                                    <div className="flex justify-between items-center bg-amber-50 p-2.5 rounded-lg border border-amber-100">
-                                                        <span className="text-sm font-medium text-amber-800">💡 LED Banner — {activeEvent.addOns.ledBannerType}</span>
-                                                        <span className="text-sm font-bold text-amber-700">₹400</span>
-                                                    </div>
-                                                )}
-                                                {activeEvent.addOns.cake && (
-                                                    <div className="flex justify-between items-center bg-pink-50 p-2.5 rounded-lg border border-pink-100">
-                                                        <div>
-                                                            <span className="text-sm font-medium text-pink-800">🎂 Cake</span>
-                                                            {activeEvent.addOns.cakeMessage && <p className="text-[10px] text-pink-600 font-medium italic mt-0.5">"{activeEvent.addOns.cakeMessage}"</p>}
-                                                        </div>
-                                                        <span className="text-sm font-bold text-pink-700">₹400</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Receptionist: Add/Edit Add-Ons for existing booking */}
+                                    {/* Add-Ons Section — Separate from Financials */}
                                     {!activeEvent.isMaintenance && (
-                                        <div className="pt-3 border-t border-slate-200">
-                                            <button
-                                                onClick={() => setEditingAddOns(!editingAddOns)}
-                                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wider"
-                                            >
-                                                {editingAddOns ? '✕ Close' : '+ Add / Edit Add-Ons'}
-                                            </button>
-                                            
-                                            {/* Add-on Collection Buttons */}
-                                            {activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake) && (
-                                                <div className="mt-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
-                                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">Add-on Payment Status</p>
-                                                    <div className="flex gap-2">
-                                                        <button 
-                                                            onClick={() => handleCollectAddonsPayment('Cash')}
-                                                            className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
-                                                        >
-                                                            Collect Cash
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleCollectAddonsPayment('UPI')}
-                                                            className="flex-1 bg-white border border-indigo-600 text-indigo-600 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
-                                                        >
-                                                            Collect UPI
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
+                                        <div className="pt-4 border-t-2 border-indigo-100">
+                                            {(() => {
+                                                const rawAddons = activeEvent.rawAddons || [];
+                                                const paidAddons = rawAddons.filter(a => a.isPaid);
+                                                const unpaidAddons = rawAddons.filter(a => !a.isPaid);
+                                                const unpaidTotal = unpaidAddons.reduce((sum, a) => sum + a.price, 0);
+                                                const paidTotal = paidAddons.reduce((sum, a) => sum + a.price, 0);
+                                                const hasAnyAddon = activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake);
 
-                                            {editingAddOns && (
-                                                <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-2">
-                                                    {/* Balloons toggle */}
-                                                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                                                        <div className="flex items-center gap-2">
-                                                            <span>🎈</span>
-                                                            <span className="text-sm font-medium text-slate-700">Balloons (₹400)</span>
+                                                const addonLabel = (type: string) => {
+                                                    if (type === 'balloons') return '🎈 Balloons';
+                                                    if (type === 'led_banner') return '💡 LED Banner';
+                                                    if (type === 'cake') return '🎂 Cake';
+                                                    return type;
+                                                };
+
+                                                return (
+                                                    <>
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                                                <Ticket size={14} /> Add-Ons
+                                                            </p>
+                                                            <button
+                                                                onClick={() => setEditingAddOns(!editingAddOns)}
+                                                                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wider"
+                                                            >
+                                                                {editingAddOns ? '✕ Close' : '+ Add / Edit'}
+                                                            </button>
                                                         </div>
-                                                        <input type="checkbox" defaultChecked={activeEvent.addOns?.balloons} className="accent-indigo-600 w-4 h-4"
-                                                            onChange={(e) => {
-                                                                setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, balloons: e.target.checked } } : ev));
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    {/* LED Banner toggle */}
-                                                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                                                        <div className="flex items-center gap-2">
-                                                            <span>💡</span>
-                                                            <span className="text-sm font-medium text-slate-700">LED Banner (₹400)</span>
-                                                        </div>
-                                                        <input type="checkbox" defaultChecked={activeEvent.addOns?.ledBanner} className="accent-indigo-600 w-4 h-4"
-                                                            onChange={(e) => {
-                                                                setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, ledBanner: e.target.checked } } : ev));
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    <select
-                                                        defaultValue={activeEvent.addOns?.ledBannerType || "Happy Birthday"}
-                                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
-                                                        onChange={(e) => {
-                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, ledBannerType: e.target.value } } : ev));
-                                                        }}
-                                                    >
-                                                        <option>Happy Birthday</option>
-                                                        <option>Better Together</option>
-                                                        <option>Happy Anniversary</option>
-                                                    </select>
-                                                    {/* Cake toggle */}
-                                                    <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                                                        <div className="flex items-center gap-2">
-                                                            <span>🎂</span>
-                                                            <span className="text-sm font-medium text-slate-700">Cake (₹400)</span>
-                                                        </div>
-                                                        <input type="checkbox" defaultChecked={activeEvent.addOns?.cake} className="accent-indigo-600 w-4 h-4"
-                                                            onChange={(e) => {
-                                                                setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, cake: e.target.checked } } : ev));
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Cake message (optional)"
-                                                        defaultValue={activeEvent.addOns?.cakeMessage || ""}
-                                                        maxLength={50}
-                                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
-                                                        onChange={(e) => {
-                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, cakeMessage: e.target.value } } : ev));
-                                                        }}
-                                                    />
-                                                    <p className="text-[10px] text-slate-400 font-medium">Changes are saved automatically. Collect add-on payment separately.</p>
-                                                </div>
-                                            )}
+
+                                                        {/* Currently active addons */}
+                                                        {hasAnyAddon && (
+                                                            <div className="space-y-2 mb-3">
+                                                                {rawAddons.map(addon => (
+                                                                    <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
+                                                                            {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>
+                                                                            {addon.isPaid ? (
+                                                                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">PAID{addon.paymentMethod ? ` · ${addon.paymentMethod}` : ''}</span>
+                                                                            ) : (
+                                                                                <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">UNPAID</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Tally */}
+                                                        {hasAnyAddon && (
+                                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                                <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 text-center">
+                                                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Paid</p>
+                                                                    <p className="text-sm font-black text-emerald-700">₹{paidTotal.toLocaleString()}</p>
+                                                                </div>
+                                                                <div className={`p-2.5 rounded-lg border text-center ${unpaidTotal > 0 ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${unpaidTotal > 0 ? 'text-amber-600' : 'text-slate-400'}`}>To Collect</p>
+                                                                    <p className={`text-sm font-black ${unpaidTotal > 0 ? 'text-amber-700' : 'text-slate-400'}`}>₹{unpaidTotal.toLocaleString()}</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Collect buttons for unpaid addons */}
+                                                        {unpaidTotal > 0 && (
+                                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 mb-3">
+                                                                {showUpiProofPicker === 'addons' && (
+                                                                    <div className="mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
+                                                                        <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
+                                                                        <input
+                                                                            type="file"
+                                                                            accept="image/*"
+                                                                            className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
+                                                                            onChange={(e) => {
+                                                                                const file = e.target.files?.[0];
+                                                                                if (file) {
+                                                                                    handleCollectAddonsPayment('UPI', file);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
+                                                                    </div>
+                                                                )}
+                                                                {showUpiProofPicker !== 'addons' && (
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleCollectAddonsPayment('Cash')}
+                                                                            className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+                                                                        >
+                                                                            Collect Cash
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleCollectAddonsPayment('UPI')}
+                                                                            className="flex-1 bg-white border border-indigo-600 text-indigo-600 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
+                                                                        >
+                                                                            Collect UPI
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Edit Add-Ons Panel */}
+                                                        {editingAddOns && (
+                                                            <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span>🎈</span>
+                                                                        <span className="text-sm font-medium text-slate-700">Balloons (₹400)</span>
+                                                                    </div>
+                                                                    <input type="checkbox" defaultChecked={activeEvent.addOns?.balloons} className="accent-indigo-600 w-4 h-4"
+                                                                        onChange={(e) => {
+                                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, balloons: e.target.checked } } : ev));
+                                                                        }}
+                                                                    />
+                                                                </label>
+                                                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span>💡</span>
+                                                                        <span className="text-sm font-medium text-slate-700">LED Banner (₹400)</span>
+                                                                    </div>
+                                                                    <input type="checkbox" defaultChecked={activeEvent.addOns?.ledBanner} className="accent-indigo-600 w-4 h-4"
+                                                                        onChange={(e) => {
+                                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, ledBanner: e.target.checked } } : ev));
+                                                                        }}
+                                                                    />
+                                                                </label>
+                                                                <select
+                                                                    defaultValue={activeEvent.addOns?.ledBannerType || "Happy Birthday"}
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
+                                                                    onChange={(e) => {
+                                                                        setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, ledBannerType: e.target.value } } : ev));
+                                                                    }}
+                                                                >
+                                                                    <option>Happy Birthday</option>
+                                                                    <option>Better Together</option>
+                                                                    <option>Happy Anniversary</option>
+                                                                </select>
+                                                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span>🎂</span>
+                                                                        <span className="text-sm font-medium text-slate-700">Cake (₹400)</span>
+                                                                    </div>
+                                                                    <input type="checkbox" defaultChecked={activeEvent.addOns?.cake} className="accent-indigo-600 w-4 h-4"
+                                                                        onChange={(e) => {
+                                                                            setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, cake: e.target.checked } } : ev));
+                                                                        }}
+                                                                    />
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Cake message (optional)"
+                                                                    defaultValue={activeEvent.addOns?.cakeMessage || ""}
+                                                                    maxLength={50}
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
+                                                                    onChange={(e) => {
+                                                                        setEventsList(prev => prev.map(ev => ev.id === activeEvent.id ? { ...ev, addOns: { ...ev.addOns, cakeMessage: e.target.value } } : ev));
+                                                                    }}
+                                                                />
+                                                                <p className="text-[10px] text-slate-400 font-medium">Changes are saved automatically. Collect add-on payment separately.</p>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     )}
                                 </div>
@@ -642,20 +708,41 @@ export default function Admin1Dashboard() {
                                     </div>
 
                                     {activeEvent.amountToCollect !== '₹0' && (
-                                        <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
-                                            <button
-                                                onClick={() => handleCollectPayment('Cash')}
-                                                className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
-                                            >
-                                                Collect Cash
-                                            </button>
-                                            <button
-                                                onClick={() => handleCollectPayment('UPI')}
-                                                className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
-                                            >
-                                                Collect UPI
-                                            </button>
-                                        </div>
+                                        <>
+                                            {showUpiProofPicker === 'balance' && (
+                                                <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
+                                                    <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                handleCollectPayment('UPI', file);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
+                                                </div>
+                                            )}
+                                            {showUpiProofPicker !== 'balance' && (
+                                                <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
+                                                    <button
+                                                        onClick={() => handleCollectPayment('Cash')}
+                                                        className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
+                                                    >
+                                                        Collect Cash
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCollectPayment('UPI')}
+                                                        className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
+                                                    >
+                                                        Collect UPI
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
