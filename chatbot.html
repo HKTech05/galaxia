@@ -1,0 +1,242 @@
+Chatbot section what to do:
+I want to build a PROFESSIONAL WhatsApp-like chat dashboard UI and system that integrates into my current project.
+This is NOT a basic UI — it must feel like WhatsApp Web / Intercom level.
+
+---
+
+CORE REQUIREMENTS:
+
+1. MULTI-NUMBER SUPPORT (VERY IMPORTANT)
+
+* I have 3 WhatsApp numbers:
+
+  1. Staycation 1
+  2. Staycation 2
+  3. Digital Diaries
+
+* Each number must have:
+
+  * Separate login (email + password)
+  * Access ONLY to their chats
+  * Separate chat list + analytics
+
+* Super Admin (optional):
+
+  * Can view all numbers
+
+---
+
+2. AUTHENTICATION SYSTEM
+
+Create secure login system:
+
+Roles:
+
+* admin_staycation_1
+* admin_staycation_2
+* admin_digital
+* super_admin
+
+Features:
+
+* Login (JWT based)
+* Password hashing (bcrypt)
+* Session management
+* Role-based access control
+
+---
+
+3. UI DESIGN (WHATSAPP-LIKE)
+
+Build a modern UI using:
+
+* React.js (or Next.js)
+* Tailwind CSS
+* Clean, minimal, premium design
+
+Layout:
+
+LEFT PANEL:
+
+* List of chats
+* Show:
+
+  * User phone number
+  * Last message
+  * Timestamp
+  * Unread badge
+* Search bar
+* Filter (Staycation / Digital)
+
+RIGHT PANEL:
+
+* Chat window
+* Messages styled like WhatsApp:
+
+  * Left = user
+  * Right = bot/admin
+* Time stamps
+* Scrollable chat
+* Auto scroll to latest
+
+BOTTOM:
+
+* Input box
+* Send button
+* Emoji support (optional)
+
+---
+
+4. REAL-TIME SYSTEM
+
+Use:
+
+* Socket.IO
+
+Behavior:
+
+* New message arrives → instantly updates UI
+* No refresh required
+* Real-time typing feel
+
+---
+
+5. CHAT FEATURES
+
+* View full conversation history
+* Send manual reply from dashboard
+* Messages go via WhatsApp API
+* Show message status:
+
+  * sent
+  * delivered (optional)
+  * read (optional)
+
+---
+
+6. BOT / HUMAN TOGGLE (CRITICAL)
+
+Each chat must support:
+
+Modes:
+
+* 🤖 Bot Active
+* 👤 Human Mode
+
+Behavior:
+
+* If human mode ON → bot stops replying
+* Admin replies manually
+* Toggle per user
+
+---
+
+7. DATABASE INTEGRATION
+
+Use existing table:
+
+chat_memory:
+
+* id
+* session_id (user phone)
+* role (user / assistant)
+* message
+* created_at
+
+Extend with:
+
+* phone_number_id
+* platform (whatsapp / website)
+* is_human (boolean)
+
+---
+
+8. API INTEGRATION
+
+Connect to existing backend APIs:
+
+GET /chats
+GET /chat/:userId
+POST /send-message
+
+Webhook already exists for incoming messages.
+
+---
+
+9. MULTI-NUMBER ROUTING
+
+Use:
+phone_number_id
+
+Ensure:
+
+* Dashboard only shows chats for that number
+* Replies go from same number
+
+---
+
+10. OWNER DASHBOARD INTEGRATION
+
+IMPORTANT:
+
+* This chat dashboard must be integrated inside my existing admin panel
+* Not a separate app
+* Should be modular (component-based)
+
+---
+
+11. ADDITIONAL FEATURES (IMPORTANT)
+
+* Unread message count
+* Chat search
+* Tag users (hot lead / follow-up)
+* Quick reply buttons (optional)
+* “Talk to human” indicator
+
+---
+
+12. PERFORMANCE & UX
+
+* Fast loading
+* Pagination for chats
+* Clean animations
+* Mobile responsive
+
+---
+
+13. SECURITY
+
+* JWT auth
+* Protected routes
+* API validation
+* Prevent unauthorized access between numbers
+
+---
+
+14. DELIVERABLES
+
+* Full frontend code
+* Backend auth APIs (if needed)
+* Socket integration
+* Clean folder structure
+* Ready-to-run setup
+
+---
+
+GOAL:
+
+Build a professional WhatsApp-style dashboard that replaces WhatsApp Business App completely and allows my team to:
+
+* View chats
+* Reply manually
+* Manage bot vs human conversations
+* Handle multiple business numbers separately
+
+This should feel like a SaaS product, not a basic UI.
+
+---
+
+IMPORTANT:
+Do NOT build dummy UI.
+Connect everything to real backend APIs and database.
+Focus on real production use.
