@@ -576,7 +576,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     <p className="font-inter text-sm text-text-secondary mb-3 pr-2 leading-relaxed">{room.description}</p>
                                                     <ul className="space-y-1.5 mb-4">
                                                         <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" />Inclusive of standard Wi-Fi</li>
-                                                        <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" /><span className="text-blue-600">Max {room.maxPersons} guests</span></li>
+                                                        <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" /><span className="text-blue-600">Max {isCapAt6 ? 6 : room.maxPersons} guests</span></li>
                                                     </ul>
                                                 </div>
                                                 <div className="mt-6 flex flex-col items-end border-t border-border-light pt-4 border-dashed">
