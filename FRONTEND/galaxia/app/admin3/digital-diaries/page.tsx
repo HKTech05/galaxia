@@ -136,6 +136,13 @@ export default function Admin1Dashboard() {
 
     useEffect(() => { fetchEvents(startDate); }, [startDate, fetchEvents]);
 
+    // Ensure events are fetched on initial mount even if first call races with hydration
+    useEffect(() => {
+        const timer = setTimeout(() => fetchEvents(new Date()), 300);
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const shiftDates = (daysToShift: number) => {
         setStartDate(prev => {
             const next = new Date(prev);
@@ -621,41 +628,57 @@ export default function Admin1Dashboard() {
                             <div>
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><CreditCard size={16} /> Financials</h3>
                                 <div className="space-y-3">
-                                    <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                                        <div>
-                                            <span className="text-xs text-emerald-600 font-bold block">Amount Paid (Deposit)</span>
-                                            <span className="text-[10px] text-emerald-500 font-medium line-clamp-2">{activeEvent.paymentDetails}</span>
-                                        </div>
-                                        <span className="text-base font-bold text-emerald-700 whitespace-nowrap ml-4">{activeEvent.amountPaid}</span>
-                                    </div>
+                                    {(() => {
+                                        // Parse base amounts from API
+                                        const basePaidMatch = activeEvent.amountPaid.match(/₹([\d,]+)/);
+                                        const basePaid = basePaidMatch ? parseInt(basePaidMatch[1].replace(/,/g, '')) : 0;
+                                        const baseCollectMatch = activeEvent.amountToCollect.match(/₹([\d,]+)/);
+                                        const baseCollect = baseCollectMatch ? parseInt(baseCollectMatch[1].replace(/,/g, '')) : 0;
 
-                                    <div className="flex justify-between items-center bg-rose-50 p-3 rounded-lg border border-rose-100 mt-2">
-                                        <span className="text-xs text-rose-600 font-bold">Amount to Collect (Cash/UPI)</span>
-                                        {(() => {
-                                            const addOnTotal = (activeEvent.addOns?.balloons ? 400 : 0) + (activeEvent.addOns?.ledBanner ? 400 : 0) + (activeEvent.addOns?.cake ? 400 : 0);
-                                            const baseCollect = activeEvent.amountToCollect.match(/₹([\d,]+)/);
-                                            const baseAmount = baseCollect ? parseInt(baseCollect[1].replace(/,/g, '')) : 0;
-                                            const totalCollect = baseAmount + addOnTotal;
-                                            return <span className={`text-base font-bold ${totalCollect === 0 ? 'text-slate-400' : 'text-rose-700'}`}>₹{totalCollect.toLocaleString()}</span>;
-                                        })()}
-                                    </div>
+                                        // Calculate paid & unpaid addon totals from rawAddons
+                                        const paidAddonTotal = (activeEvent.rawAddons || []).filter(a => a.isPaid).reduce((sum, a) => sum + a.price, 0);
+                                        const unpaidAddonTotal = (activeEvent.rawAddons || []).filter(a => !a.isPaid).reduce((sum, a) => sum + a.price, 0);
 
-                                    {activeEvent.amountToCollect !== '₹0' && (
-                                        <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
-                                            <button
-                                                onClick={() => handleCollectPayment('Cash')}
-                                                className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
-                                            >
-                                                Collect Cash
-                                            </button>
-                                            <button
-                                                onClick={() => handleCollectPayment('UPI')}
-                                                className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
-                                            >
-                                                Collect UPI
-                                            </button>
-                                        </div>
-                                    )}
+                                        const totalPaid = basePaid + paidAddonTotal;
+                                        const totalToCollect = baseCollect + unpaidAddonTotal;
+
+                                        return (
+                                            <>
+                                                {/* Amount Paid */}
+                                                <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                                    <div>
+                                                        <span className="text-xs text-emerald-600 font-bold block">Amount Paid</span>
+                                                        <span className="text-[10px] text-emerald-500 font-medium line-clamp-2">{activeEvent.paymentDetails}</span>
+                                                    </div>
+                                                    <span className="text-base font-bold text-emerald-700 whitespace-nowrap ml-4">₹{totalPaid.toLocaleString()}</span>
+                                                </div>
+
+                                                {/* Amount to Collect */}
+                                                <div className="flex justify-between items-center bg-rose-50 p-3 rounded-lg border border-rose-100">
+                                                    <span className="text-xs text-rose-600 font-bold">Amount to Collect</span>
+                                                    <span className={`text-base font-bold ${totalToCollect === 0 ? 'text-slate-400' : 'text-rose-700'}`}>₹{totalToCollect.toLocaleString()}</span>
+                                                </div>
+
+                                                {/* Collect buttons — only when there's balance to collect */}
+                                                {totalToCollect > 0 && (
+                                                    <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
+                                                        <button
+                                                            onClick={() => handleCollectPayment('Cash')}
+                                                            className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
+                                                        >
+                                                            Collect Cash
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleCollectPayment('UPI')}
+                                                            className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
+                                                        >
+                                                            Collect UPI
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
