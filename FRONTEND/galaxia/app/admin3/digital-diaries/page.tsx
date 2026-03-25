@@ -562,7 +562,7 @@ export default function Admin1Dashboard() {
                                                                         <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
                                                                             <div className="flex items-center gap-2">
                                                                                 <span className="text-sm font-medium">💡 LED Banner</span>
-                                                                                <span className="text-[10px] text-slate-500">— {activeEvent.occasion || activeEvent.addOns?.ledBannerType || 'Happy Birthday'}</span>
+                                                                                <span className="text-[10px] text-slate-500">— {activeEvent.addOns?.ledBannerType || activeEvent.occasion || 'Happy Birthday'}</span>
                                                                             </div>
                                                                         </div>
                                                                         <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
