@@ -205,7 +205,7 @@ export default function ReviewsPage() {
                                     
                                     <div>
                                         <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Overall Experience *</label>
-                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl border border-border-light">
+                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl border border-border-light gap-0.5">
                                             {[1, 2, 3, 4, 5].map(s => (
                                                 <button key={s} type="button" onClick={() => setFormData(p => ({ ...p, rating: s }))}
                                                     className={`group relative flex-1 py-3 rounded-xl transition-all duration-300 ${s <= formData.rating
