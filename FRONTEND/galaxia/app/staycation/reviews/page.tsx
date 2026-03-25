@@ -173,11 +173,9 @@ export default function ReviewsPage() {
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="mb-2">
                                     <h3 className="font-cinzel text-xl font-bold text-text-primary">Share Your Experience</h3>
-                                    <span className="text-[10px] font-inter font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Logged In
-                                    </span>
+                                    <p className="font-inter text-xs text-text-muted mt-1">Help others discover the Galaxia magic</p>
                                 </div>
 
                                 {error && (
@@ -205,19 +203,11 @@ export default function ReviewsPage() {
                                     
                                     <div>
                                         <label className="block text-xs font-inter font-bold text-text-secondary uppercase tracking-wider mb-2">Overall Experience *</label>
-                                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl border border-border-light gap-0.5">
+                                        <div className="flex justify-between p-2 rounded-xl bg-slate-50 border border-border-light gap-0.5">
                                             {[1, 2, 3, 4, 5].map(s => (
                                                 <button key={s} type="button" onClick={() => setFormData(p => ({ ...p, rating: s }))}
-                                                    className={`group relative flex-1 py-3 rounded-xl transition-all duration-300 ${s <= formData.rating
-                                                        ? "text-antique-gold scale-100"
-                                                        : "text-text-muted opacity-40 hover:opacity-80 scale-90 hover:scale-100"
-                                                        }`}>
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <svg className={`w-8 h-8 ${s <= formData.rating ? "fill-antique-gold" : "fill-transparent stroke-current"}`} strokeWidth={1} viewBox="0 0 24 24">
-                                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                                        </svg>
-                                                        <span className="text-[10px] font-bold">{s}★</span>
-                                                    </div>
+                                                    className={`flex-1 py-1.5 rounded-lg transition-all ${s <= formData.rating ? 'bg-antique-gold text-white shadow-sm' : 'text-text-muted hover:bg-black/5'}`}>
+                                                    <span className="text-xs font-bold">{s}★</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -327,26 +317,12 @@ export default function ReviewsPage() {
                                     </div>
                                 )}
 
-                                <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between relative z-10">
+                                <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-center relative z-10">
                                     <div className="flex items-center gap-2">
-                                    {review.property ? (
-                                        <>
-                                            <div className="p-1 bg-emerald-50 rounded-full">
-                                                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                            </div>
-                                            <span className="font-inter text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Verified Stay</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="p-1 bg-emerald-50 rounded-full">
-                                                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                            </div>
-                                            <span className="font-inter text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Verified Stay</span>
-                                        </>
-                                    )}
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                        <div className="p-1 bg-emerald-50 rounded-full">
+                                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                        </div>
+                                        <span className="font-inter text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Verified Stay</span>
                                     </div>
                                 </div>
                             </div>

@@ -495,13 +495,13 @@ export default function Admin1Dashboard() {
                                                 {activeEvent.addOns.balloons && (
                                                     <div className="flex justify-between items-center bg-purple-50 p-2.5 rounded-lg border border-purple-100">
                                                         <span className="text-sm font-medium text-purple-800">🎈 Balloons</span>
-                                                        <span className="text-sm font-bold text-purple-700">₹200</span>
+                                                        <span className="text-sm font-bold text-purple-700">₹400</span>
                                                     </div>
                                                 )}
                                                 {activeEvent.addOns.ledBanner && (
                                                     <div className="flex justify-between items-center bg-amber-50 p-2.5 rounded-lg border border-amber-100">
                                                         <span className="text-sm font-medium text-amber-800">💡 LED Banner — {activeEvent.addOns.ledBannerType}</span>
-                                                        <span className="text-sm font-bold text-amber-700">₹200</span>
+                                                        <span className="text-sm font-bold text-amber-700">₹400</span>
                                                     </div>
                                                 )}
                                                 {activeEvent.addOns.cake && (
@@ -536,13 +536,13 @@ export default function Admin1Dashboard() {
                                                             onClick={() => handleCollectAddonsPayment('Cash')}
                                                             className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
                                                         >
-                                                            Add-ons: Cash
+                                                            Collect Cash
                                                         </button>
                                                         <button 
                                                             onClick={() => handleCollectAddonsPayment('UPI')}
                                                             className="flex-1 bg-white border border-indigo-600 text-indigo-600 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
                                                         >
-                                                            Add-ons: UPI
+                                                            Collect UPI
                                                         </button>
                                                     </div>
                                                 </div>
@@ -566,7 +566,7 @@ export default function Admin1Dashboard() {
                                                     <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
                                                         <div className="flex items-center gap-2">
                                                             <span>💡</span>
-                                                            <span className="text-sm font-medium text-slate-700">LED Banner (₹200)</span>
+                                                            <span className="text-sm font-medium text-slate-700">LED Banner (₹400)</span>
                                                         </div>
                                                         <input type="checkbox" defaultChecked={activeEvent.addOns?.ledBanner} className="accent-indigo-600 w-4 h-4"
                                                             onChange={(e) => {
@@ -1136,11 +1136,14 @@ export default function Admin1Dashboard() {
 
                                 {/* Event overlays */}
                                 {eventsList.map((ev) => {
-                                    // Filter by current date
-                                    const evDate = new Date(ev.reservationDate);
-                                    if (evDate.getDate() !== startDate.getDate() ||
-                                        evDate.getMonth() !== startDate.getMonth() ||
-                                        evDate.getFullYear() !== startDate.getFullYear()) return null;
+                                    // Filter by current date — parse as local to avoid UTC timezone shift
+                                    const dateParts = ev.reservationDate.toString().split('T')[0].split('-');
+                                    const evYear = parseInt(dateParts[0]);
+                                    const evMonth = parseInt(dateParts[1]) - 1;
+                                    const evDay = parseInt(dateParts[2]);
+                                    if (evDay !== startDate.getDate() ||
+                                        evMonth !== startDate.getMonth() ||
+                                        evYear !== startDate.getFullYear()) return null;
 
                                     // Find which dynamic column this event belongs to
                                     const colIndex = screens.indexOf(ev.screen);
