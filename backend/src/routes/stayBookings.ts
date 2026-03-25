@@ -73,9 +73,12 @@ router.post("/", async (req, res) => {
             // 1. Get all sub-properties for this property (determines capacity)
             const subProperties = await tx.subProperty.findMany({
                 where: { propertyId: parsedPropertyId, isActive: true },
-                select: { id: true },
+                select: { id: true, unitCount: true },
             });
-            const totalCapacity = subProperties.length > 0 ? subProperties.length : 1;
+            // Total capacity = sum of unitCount across all sub-properties (e.g. 14 standard + 1 family = 15)
+            const totalCapacity = subProperties.length > 0
+                ? subProperties.reduce((sum, sp) => sum + (sp.unitCount || 1), 0)
+                : 1;
             const isMultiUnit = totalCapacity > 1;
 
             // 2. Find ALL overlapping active bookings for this property
@@ -89,6 +92,15 @@ router.post("/", async (req, res) => {
                 select: { id: true, subPropertyId: true, checkInDate: true, checkOutDate: true },
             });
 
+            // 2b. Get blocked dates in the range for this property
+            const blockedInRange = await tx.blockedDate.findMany({
+                where: {
+                    propertyId: parsedPropertyId,
+                    blockedDate: { gte: checkIn, lt: checkOut },
+                },
+                select: { blockedDate: true, subPropertyId: true },
+            });
+
             let assignedSubPropertyId: number | null = null;
             if (subPropertyId) {
                 const parsed = parseInt(subPropertyId);
@@ -96,49 +108,79 @@ router.post("/", async (req, res) => {
             }
 
             if (isMultiUnit) {
-                // ── Multi-unit property (e.g. Amstel Nest with 15 cottages) ──
-                // For each date in the requested range, count how many units are booked
-                const allSubIds = subProperties.map(sp => sp.id);
-                const bookedSubIdsForRange = new Set<number>();
-
-                // Check each day in the range to find consistently-free sub-properties
-                for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
-                    const dayStart = new Date(d);
-                    const dayEnd = new Date(d);
-                    dayEnd.setDate(dayEnd.getDate() + 1);
-
-                    // Find bookings that overlap this specific day
-                    const dayBookings = overlappingBookings.filter(b => {
-                        const bIn = new Date(b.checkInDate);
-                        const bOut = new Date(b.checkOutDate);
-                        return bIn < dayEnd && bOut > dayStart;
-                    });
-
-                    // Check if all sub-properties are booked on this day
-                    const bookedSubIdsOnDay = new Set(dayBookings.map(b => b.subPropertyId).filter((id): id is number => id !== null));
-                    if (bookedSubIdsOnDay.size >= totalCapacity) {
-                        throw new Error("DATE_CONFLICT");
-                    }
-
-                    // Track which sub-properties are booked on ANY day in the range
-                    bookedSubIdsOnDay.forEach(id => bookedSubIdsForRange.add(id));
-                }
-
+                // ── Multi-unit property (e.g. Amstel Nest: 14 standard + 1 family = 15) ──
                 if (assignedSubPropertyId) {
-                    // Specific sub-property requested — check if it's free for ALL days
-                    const isSubBooked = overlappingBookings.some(
-                        b => b.subPropertyId === assignedSubPropertyId
-                    );
-                    if (isSubBooked) {
-                        throw new Error("DATE_CONFLICT");
+                    // Specific sub-property type requested (e.g. standard-cottage)
+                    const targetSp = subProperties.find(sp => sp.id === assignedSubPropertyId);
+                    const targetCapacity = targetSp?.unitCount || 1;
+
+                    // Check each day: count bookings + blocks for THIS sub-property type
+                    for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                        const dayStart = new Date(d);
+                        const dayEnd = new Date(d);
+                        dayEnd.setDate(dayEnd.getDate() + 1);
+                        const dateStr = d.toISOString().split('T')[0];
+
+                        // Count bookings for this sub-property on this day
+                        const dayBookingsForSub = overlappingBookings.filter(b => {
+                            if (b.subPropertyId !== assignedSubPropertyId) return false;
+                            const bIn = new Date(b.checkInDate);
+                            const bOut = new Date(b.checkOutDate);
+                            return bIn < dayEnd && bOut > dayStart;
+                        }).length;
+
+                        // Count blocks for this sub-property on this day
+                        const dayBlocksForSub = blockedInRange.filter(bl => {
+                            const blDate = bl.blockedDate.toISOString().split('T')[0];
+                            return blDate === dateStr && (bl.subPropertyId === assignedSubPropertyId || bl.subPropertyId === null);
+                        }).length;
+
+                        if (dayBookingsForSub + dayBlocksForSub >= targetCapacity) {
+                            throw new Error("DATE_CONFLICT");
+                        }
                     }
                 } else {
-                    // No specific sub-property requested — auto-assign a free one
-                    const freeSubIds = allSubIds.filter(id => !bookedSubIdsForRange.has(id));
-                    if (freeSubIds.length === 0) {
+                    // No specific sub-property — find which type still has capacity
+                    // Try each sub-property type, pick the first with remaining capacity for ALL days
+                    let foundFree = false;
+                    for (const sp of subProperties) {
+                        const spCapacity = sp.unitCount || 1;
+                        let spFreeAllDays = true;
+
+                        for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                            const dayStart = new Date(d);
+                            const dayEnd = new Date(d);
+                            dayEnd.setDate(dayEnd.getDate() + 1);
+                            const dateStr = d.toISOString().split('T')[0];
+
+                            const dayBookings = overlappingBookings.filter(b => {
+                                if (b.subPropertyId !== sp.id) return false;
+                                const bIn = new Date(b.checkInDate);
+                                const bOut = new Date(b.checkOutDate);
+                                return bIn < dayEnd && bOut > dayStart;
+                            }).length;
+
+                            const dayBlocks = blockedInRange.filter(bl => {
+                                const blDate = bl.blockedDate.toISOString().split('T')[0];
+                                return blDate === dateStr && (bl.subPropertyId === sp.id || bl.subPropertyId === null);
+                            }).length;
+
+                            if (dayBookings + dayBlocks >= spCapacity) {
+                                spFreeAllDays = false;
+                                break;
+                            }
+                        }
+
+                        if (spFreeAllDays) {
+                            assignedSubPropertyId = sp.id;
+                            foundFree = true;
+                            break;
+                        }
+                    }
+
+                    if (!foundFree) {
                         throw new Error("DATE_CONFLICT");
                     }
-                    assignedSubPropertyId = freeSubIds[0]; // Assign first available
                 }
             } else {
                 // ── Single-unit property — only 1 booking allowed per date ──
@@ -557,14 +599,21 @@ router.get("/booked-dates", async (req, res) => {
         const start = new Date(startDate as string || "2000-01-01");
         const end = new Date(endDate as string || "2099-12-31");
 
-        // Determine property capacity from sub-properties
+        // Determine property capacity from sub-properties (using unitCount)
         const subProperties = await prisma.subProperty.findMany({
             where: { propertyId: parsedPropertyId, isActive: true },
-            select: { id: true },
+            select: { id: true, unitCount: true },
         });
-        const totalCapacity = subProperties.length > 0 ? subProperties.length : 1;
+        const totalCapacity = subProperties.length > 0
+            ? subProperties.reduce((sum, sp) => sum + (sp.unitCount || 1), 0)
+            : 1;
 
-        // 1. Get bookings
+        // If a specific sub-property is requested, use its unitCount as capacity
+        const targetCapacity = parsedSubPropertyId
+            ? (subProperties.find(sp => sp.id === parsedSubPropertyId)?.unitCount || 1)
+            : totalCapacity;
+
+        // 1. Get bookings (filtered by subPropertyId if provided)
         const bookings = await prisma.staycationBooking.findMany({
             where: {
                 propertyId: parsedPropertyId,
@@ -580,52 +629,49 @@ router.get("/booked-dates", async (req, res) => {
         const blockedEntries = await prisma.blockedDate.findMany({
             where: {
                 propertyId: parsedPropertyId,
-                ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
                 blockedDate: { gte: start, lte: end },
+                // If subPropertyId specified, get blocks for that sub OR global blocks (null)
+                ...(parsedSubPropertyId
+                    ? { OR: [{ subPropertyId: parsedSubPropertyId }, { subPropertyId: null }] }
+                    : {}),
             },
             select: { blockedDate: true, subPropertyId: true },
         });
 
-        // Count bookings/blocks per date
-        const dateOccurrences: Record<string, Set<number | null>> = {};
-        
+        // Count bookings + blocks per date
+        const dateCounts: Record<string, number> = {};
+
         // Add bookings
         for (const b of bookings) {
             const bStart = new Date(b.checkInDate);
             const bEnd = new Date(b.checkOutDate);
             for (let d = new Date(bStart); d < bEnd; d.setDate(d.getDate() + 1)) {
                 const dateStr = d.toISOString().split("T")[0];
-                if (!dateOccurrences[dateStr]) dateOccurrences[dateStr] = new Set();
-                dateOccurrences[dateStr].add(b.subPropertyId);
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
             }
         }
 
         // Add blocks
         for (const bl of blockedEntries) {
             const dateStr = bl.blockedDate.toISOString().split("T")[0];
-            if (!dateOccurrences[dateStr]) dateOccurrences[dateStr] = new Set();
-            // If subPropertyId is null, it blocks ALL units (effectively)
-            if (bl.subPropertyId === null) {
-                // Mark as fully blocked by adding "fake" entries up to capacity
-                for (let i = 0; i < totalCapacity; i++) {
-                    dateOccurrences[dateStr].add(-100 - i); // Unique IDs to fill capacity
-                }
+            if (bl.subPropertyId === null && !parsedSubPropertyId) {
+                // Global block: counts against total capacity
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + totalCapacity;
             } else {
-                dateOccurrences[dateStr].add(bl.subPropertyId);
+                // Specific sub-property block or global block when viewing a specific sub
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
             }
         }
 
         // A date is fully booked when capacity is reached
         const fullyBookedDates: string[] = [];
-        const capacityToTarget = parsedSubPropertyId ? 1 : totalCapacity;
-
-        for (const [dateStr, units] of Object.entries(dateOccurrences)) {
-            if (units.size >= capacityToTarget) {
+        for (const [dateStr, count] of Object.entries(dateCounts)) {
+            if (count >= targetCapacity) {
                 fullyBookedDates.push(dateStr);
             }
         }
 
-        return res.json({ dates: fullyBookedDates, capacity: totalCapacity });
+        return res.json({ dates: fullyBookedDates, capacity: targetCapacity });
     } catch (error) {
         console.error("Booked dates error:", error);
         return res.status(500).json({ error: "Internal server error" });
