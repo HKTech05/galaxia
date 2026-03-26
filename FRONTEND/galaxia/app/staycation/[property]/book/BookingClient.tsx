@@ -555,7 +555,7 @@ export default function BookingClient({ property }: BookingClientProps) {
 
                 <div className={`flex flex-col lg:flex-row gap-8 lg:gap-12 items-start relative ${currentStep === 3 ? 'hidden' : ''}`}>
                     {/* Left Column */}
-                    <div className="flex-1 w-full max-w-[700px]">
+                    <div className="flex-1 w-full lg:max-w-[700px]">
 
                         {/* STEP 1: SELECT ROOM */}
                         {currentStep === 1 && (
@@ -915,7 +915,7 @@ export default function BookingClient({ property }: BookingClientProps) {
 
                     {/* Right Sidebar — shown on steps 1 & 2 only */}
                     {currentStep <= 2 && (
-                        <div className="flex-1 w-full max-w-[360px] sticky top-24 space-y-4 lg:ml-auto">
+                        <div className="flex-1 w-full lg:max-w-[360px] sticky top-24 space-y-4 lg:ml-auto">
                             {/* Calendar in sidebar */}
                             {selectedRoom && (
                                 <AvailabilityCalendar

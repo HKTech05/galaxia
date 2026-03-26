@@ -173,14 +173,27 @@ export default function StayBookingsPage() {
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                        <span className="text-slate-400 text-xs">to</span>
-                        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                    </div>
+                    {/* Status — dropdown on mobile, pills on desktop */}
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="lg:hidden py-2 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    >
+                        {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
+                            <option key={status} value={status}>{status}</option>
+                        ))}
+                    </select>
                 </div>
 
-                <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-1 gap-1">
+                {/* Date pickers — full-width row on mobile */}
+                <div className="flex items-center gap-2 w-full">
+                    <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none min-w-0" />
+                    <span className="text-slate-400 text-xs flex-shrink-0">to</span>
+                    <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none min-w-0" />
+                </div>
+
+                {/* Status pills — desktop only */}
+                <div className="hidden lg:flex flex-wrap items-center bg-slate-100 rounded-lg p-1 gap-1">
                     {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
                         <button
                             key={status}

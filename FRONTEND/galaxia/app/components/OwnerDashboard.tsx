@@ -1435,7 +1435,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="flex items-center gap-3">
                             <span className="font-bold text-slate-800 text-sm">Amstel Nest</span>
                             <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase">
-                                {liveAmstel.filter((v: any) => v.booked).length}/{liveAmstel.length} Occupied
+                                {(() => {
+                                    const stdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
+                                    const stdBooked = stdCottage?._allBookings?.length || (stdCottage?.booked ? 1 : 0);
+                                    const othersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
+                                    const othersTotal = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
+                                    return `${stdBooked + othersBooked}/${14 + othersTotal} Occupied`;
+                                })()}
                             </span>
                         </div>
                         <ChevronRight size={16} className="text-slate-400" />
