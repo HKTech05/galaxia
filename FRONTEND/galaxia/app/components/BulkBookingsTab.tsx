@@ -1,8 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, CalendarDays, IndianRupee, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Users, CalendarDays, IndianRupee, CheckCircle, AlertTriangle, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "../../lib/api";
+
+interface SubProperty {
+    id: number;
+    name: string;
+    slug: string;
+}
 
 export default function BulkBookingsTab() {
     const [bulkForm, setBulkForm] = useState({
@@ -21,11 +27,39 @@ export default function BulkBookingsTab() {
     const [bulkSuccess, setBulkSuccess] = useState("");
     const [bulkError, setBulkError] = useState("");
 
+    // Sub-property data for cottage type filtering
+    const [subProperties, setSubProperties] = useState<SubProperty[]>([]);
+    const [amstelPropertyId, setAmstelPropertyId] = useState<number | null>(null);
+    const [allBookings, setAllBookings] = useState<any[]>([]);
+
+    // Calendar state
+    const [calendarMonth, setCalendarMonth] = useState(() => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+    });
+
+    // Fetch sub-properties and bookings
+    useEffect(() => {
+        (async () => {
+            try {
+                const props = await api.get("/properties");
+                const amstel = props.find((p: any) => p.slug === "amstel-nest" || p.name?.includes("Amstel"));
+                if (amstel) {
+                    setAmstelPropertyId(amstel.id);
+                    setSubProperties(amstel.subProperties || []);
+                }
+            } catch {}
+        })();
+    }, []);
+
+    // Fetch bookings data
     useEffect(() => {
         (async () => {
             try {
                 const data = await api.get("/bookings/staycation");
                 if (Array.isArray(data)) {
+                    setAllBookings(data);
+                    // Build history
                     const groups: Record<string, any[]> = {};
                     for (const b of data) {
                         if (b.property?.name?.includes("Amstel") && (b.source === "bulk" || b.source === "admin-bulk")) {
@@ -52,6 +86,49 @@ export default function BulkBookingsTab() {
             } catch {}
         })();
     }, [bulkSuccess]);
+
+    // Filter sub-properties by cottage type
+    const getSubPropertyIds = (type: string): number[] => {
+        if (type === "standard") {
+            return subProperties.filter(sp => sp.name.toLowerCase().includes("standard")).map(sp => sp.id);
+        }
+        if (type === "family") {
+            return subProperties.filter(sp => sp.name.toLowerCase().includes("family")).map(sp => sp.id);
+        }
+        // mix: return all
+        return subProperties.map(sp => sp.id);
+    };
+
+    // Calendar occupancy data
+    const calendarData = useMemo(() => {
+        if (!amstelPropertyId) return {};
+        const year = calendarMonth.getFullYear();
+        const month = calendarMonth.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const occupancy: Record<string, number> = {};
+
+        // Filter Amstel Nest bookings that are active
+        const amstelBookings = allBookings.filter(b =>
+            b.propertyId === amstelPropertyId &&
+            b.status !== "cancelled" && b.status !== "no_show"
+        );
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            let count = 0;
+            for (const b of amstelBookings) {
+                const checkIn = new Date(b.checkInDate);
+                const checkOut = new Date(b.checkOutDate);
+                // Booking covers this day if checkIn <= date < checkOut
+                if (checkIn <= date && date < checkOut) {
+                    count++;
+                }
+            }
+            occupancy[dateStr] = count;
+        }
+        return occupancy;
+    }, [allBookings, calendarMonth, amstelPropertyId]);
 
     const calculateBulkPrice = () => {
         if (!bulkForm.checkIn || !bulkForm.checkOut) return { perNight: 0, nights: 0, subtotal: 0, gst: 0, total: 0 };
@@ -87,6 +164,13 @@ export default function BulkBookingsTab() {
             const amstelProp = props.find((p: any) => p.slug === "amstel-nest" || p.name?.includes("Amstel"));
             if (!amstelProp) throw new Error("Amstel Nest property not found");
 
+            // Get eligible sub-property IDs based on cottage type
+            const eligibleIds = getSubPropertyIds(bulkForm.cottageType);
+            if (eligibleIds.length === 0) throw new Error("No cottages available for selected type");
+            if (bulkForm.numCottages > eligibleIds.length) {
+                throw new Error(`Only ${eligibleIds.length} ${bulkForm.cottageType} cottage(s) available, but ${bulkForm.numCottages} requested.`);
+            }
+
             const perCottageSubtotal = Math.round(pricing.subtotal / bulkForm.numCottages);
             const perCottageGst = Math.round(pricing.gst / bulkForm.numCottages);
             const perCottageTotal = perCottageSubtotal + perCottageGst;
@@ -97,6 +181,7 @@ export default function BulkBookingsTab() {
                     customerPhone: bulkForm.phone,
                     customerEmail: bulkForm.email || undefined,
                     propertyId: amstelProp.id,
+                    subPropertyId: eligibleIds[i], // Assign specific sub-property
                     numGuests: bulkForm.guestsPerCottage,
                     checkInDate: bulkForm.checkIn,
                     checkOutDate: bulkForm.checkOut,
@@ -112,13 +197,134 @@ export default function BulkBookingsTab() {
                     notes: `Admin Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}.`.trim(),
                 });
             }
-            setBulkSuccess(`Created ${bulkForm.numCottages} cottage booking(s) for ${bulkForm.customerName}!`);
+            setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}!`);
             setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: 1, cottageType: "standard", guestsPerCottage: 2, paymentMethod: "UPI" });
         } catch (err: any) {
             setBulkError(err?.message || "Failed to create bulk booking.");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Calendar rendering
+    const renderCalendar = () => {
+        const year = calendarMonth.getFullYear();
+        const month = calendarMonth.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sun
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const totalCapacity = 15;
+
+        const weeks: (number | null)[][] = [];
+        let week: (number | null)[] = new Array(firstDayOfWeek).fill(null);
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            week.push(day);
+            if (week.length === 7) {
+                weeks.push(week);
+                week = [];
+            }
+        }
+        if (week.length > 0) {
+            while (week.length < 7) week.push(null);
+            weeks.push(week);
+        }
+
+        return (
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                {/* Calendar Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+                    <button
+                        onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                        {calendarMonth.toLocaleString("en-US", { month: "long", year: "numeric" })}
+                    </h3>
+                    <button
+                        onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
+                </div>
+
+                {/* Day Headers */}
+                <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/30">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                        <div key={d} className="py-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">{d}</div>
+                    ))}
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="p-1.5">
+                    {weeks.map((week, wi) => (
+                        <div key={wi} className="grid grid-cols-7 gap-1">
+                            {week.map((day, di) => {
+                                if (!day) return <div key={di} className="aspect-square" />;
+                                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                const booked = calendarData[dateStr] || 0;
+                                const vacant = totalCapacity - booked;
+                                const isToday = new Date(year, month, day).getTime() === today.getTime();
+                                const isPast = new Date(year, month, day) < today;
+
+                                // Color coding
+                                let bgColor = "bg-emerald-50 border-emerald-100"; // all vacant
+                                let textColor = "text-emerald-700";
+                                let badgeColor = "text-emerald-600";
+                                if (booked > 0 && booked < totalCapacity) {
+                                    if (booked >= 10) {
+                                        bgColor = "bg-amber-50 border-amber-100";
+                                        textColor = "text-amber-800";
+                                        badgeColor = "text-amber-600";
+                                    } else {
+                                        bgColor = "bg-sky-50 border-sky-100";
+                                        textColor = "text-sky-800";
+                                        badgeColor = "text-sky-600";
+                                    }
+                                }
+                                if (booked >= totalCapacity) {
+                                    bgColor = "bg-red-50 border-red-100";
+                                    textColor = "text-red-700";
+                                    badgeColor = "text-red-500";
+                                }
+                                if (isPast) {
+                                    bgColor = "bg-slate-50 border-slate-100";
+                                    textColor = "text-slate-400";
+                                    badgeColor = "text-slate-400";
+                                }
+
+                                return (
+                                    <div
+                                        key={di}
+                                        className={`aspect-square rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all ${bgColor} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}
+                                    >
+                                        <span className={`text-xs font-bold ${textColor}`}>{day}</span>
+                                        {!isPast && (
+                                            <span className={`text-[9px] font-bold ${badgeColor} leading-none`}>
+                                                {booked}/{totalCapacity}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Legend */}
+                <div className="px-4 py-3 border-t border-slate-100 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-100 border border-emerald-200" /> All Vacant</div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-sky-100 border border-sky-200" /> Partially</div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-100 border border-amber-200" /> Mostly Full</div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-100 border border-red-200" /> Full</div>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -142,6 +348,9 @@ export default function BulkBookingsTab() {
                     <button onClick={() => setBulkError("")} className="ml-auto text-red-400 hover:text-red-600"><X size={16} /></button>
                 </div>
             )}
+
+            {/* Occupancy Calendar */}
+            {renderCalendar()}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left: Form */}
@@ -176,14 +385,21 @@ export default function BulkBookingsTab() {
                                 <input type="date" value={bulkForm.checkOut} onChange={e => setBulkForm({ ...bulkForm, checkOut: e.target.value })} min={bulkForm.checkIn} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Number of Cottages (1–15)</label>
-                                <input type="number" min={1} max={15} value={bulkForm.numCottages} onChange={e => setBulkForm({ ...bulkForm, numCottages: Math.min(15, Math.max(1, parseInt(e.target.value) || 1)) })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Number of Cottages (1–{bulkForm.cottageType === "family" ? "1" : bulkForm.cottageType === "standard" ? "14" : "15"})</label>
+                                <input type="number" min={1} max={bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15} value={bulkForm.numCottages} onChange={e => {
+                                    const max = bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15;
+                                    setBulkForm({ ...bulkForm, numCottages: Math.min(max, Math.max(1, parseInt(e.target.value) || 1)) });
+                                }} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Cottage Type</label>
-                                <select value={bulkForm.cottageType} onChange={e => setBulkForm({ ...bulkForm, cottageType: e.target.value as any })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                    <option value="standard">Standard Cottage</option>
-                                    <option value="family">Family Cottage</option>
+                                <select value={bulkForm.cottageType} onChange={e => {
+                                    const type = e.target.value as any;
+                                    const maxCottages = type === "family" ? 1 : type === "standard" ? 14 : 15;
+                                    setBulkForm({ ...bulkForm, cottageType: type, numCottages: Math.min(bulkForm.numCottages, maxCottages) });
+                                }} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="standard">Standard Cottage (14 units)</option>
+                                    <option value="family">Family Cottage (1 unit)</option>
                                     <option value="mix">Mix (Standard + Family)</option>
                                 </select>
                             </div>
