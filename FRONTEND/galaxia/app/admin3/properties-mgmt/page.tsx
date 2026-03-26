@@ -231,7 +231,7 @@ export default function PropertiesMgmtPage() {
     const AmstelNest = () => {
         const a = filtered[0]; if (!a) return <Empty />;
         const subs = a.subProperties || [];
-        const std = subs.filter((s: any) => !s.name.toLowerCase().includes("family") && s.name.toLowerCase() !== "standard cottage");
+        const std = subs.filter((s: any) => !s.name.toLowerCase().includes("family"));
         const fam = subs.find((s: any) => s.name.toLowerCase().includes("family"));
         return (<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Standard Cottages card */}

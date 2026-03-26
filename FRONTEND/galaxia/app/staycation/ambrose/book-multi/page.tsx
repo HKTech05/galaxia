@@ -37,7 +37,6 @@ export default function BookMultiPage() {
 
     // Form state
     const [formData, setFormData] = useState({
-        title: "Mr",
         firstName: "",
         lastName: "",
         email: "",
@@ -180,7 +179,7 @@ export default function BookMultiPage() {
                 const subPropertyId = dbSubPropertyMap[item.villaId] || null;
 
                 await api.post("/bookings/staycation", {
-                    customerName: `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
+                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
                     customerPhone: formData.phone,
                     customerEmail: formData.email,
                     propertyId: dbPropertyId,
@@ -355,18 +354,12 @@ export default function BookMultiPage() {
                         <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
                         <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">These details apply to all {cart.length} villa bookings.</p>
                         <form onSubmit={handleFormSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
-                                <div className="md:col-span-2">
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Title*</label>
-                                    <select value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold">
-                                        <option>Mr</option><option>Mrs</option><option>Ms</option><option>Dr</option>
-                                    </select>
-                                </div>
-                                <div className="md:col-span-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
                                     <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">First Name*</label>
                                     <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
                                 </div>
-                                <div className="md:col-span-5">
+                                <div>
                                     <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Last Name</label>
                                     <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
                                 </div>
@@ -399,7 +392,7 @@ export default function BookMultiPage() {
                         <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
                             <h2 className="font-cinzel text-xl font-semibold text-text-primary mb-6">Booking Confirmation</h2>
                             <div className="space-y-2 mb-6 font-inter text-sm">
-                                <p className="text-text-secondary">Guest: <span className="text-text-primary font-medium">{formData.title} {formData.firstName} {formData.lastName}</span></p>
+                                <p className="text-text-secondary">Guest: <span className="text-text-primary font-medium">{formData.firstName} {formData.lastName}</span></p>
                                 <p className="text-text-secondary">Phone: <span className="text-text-primary font-medium">{formData.phone}</span></p>
                                 <p className="text-text-secondary">Dates: <span className="text-text-primary font-medium">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)} ({nights} night{nights > 1 ? "s" : ""})</span></p>
                             </div>

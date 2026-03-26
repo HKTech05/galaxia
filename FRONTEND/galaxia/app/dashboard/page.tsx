@@ -670,30 +670,33 @@ function DashboardContent() {
                        {/* Reviews Tab */}
                 {activeTab === "reviews" && (
                     <div className="max-w-2xl animate-fade-in">
-                        <div className={`${bgCard} rounded-xl border ${borderMain} p-6 sm:p-8 mb-8 shadow-sm transition-all`}>
+                        <div className={`${bgCard} rounded-2xl border ${borderMain} mb-8 shadow-sm transition-all overflow-hidden`}>
+                            {/* Gradient accent bar */}
+                            <div className={`h-1 ${gradientBrandText}`} />
+                            <div className="p-6 sm:p-8">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h3 className={`font-cinzel text-lg font-bold ${textPrimary}`}>Share Your Experience</h3>
-                                    <p className={`${textMuted} font-inter text-xs`}>Help others discover the Galaxia magic</p>
+                                    <p className={`${textMuted} font-inter text-xs mt-1`}>Help others discover the Galaxia magic</p>
                                 </div>
-                                <div className={`w-10 h-10 rounded-full ${accentBg}/10 flex items-center justify-center`}>
+                                <div className={`w-10 h-10 rounded-full ${isDark ? "bg-[#9f353a]/15" : "bg-antique-gold/10"} flex items-center justify-center`}>
                                     <svg className={`w-5 h-5 ${accentText}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 </div>
                             </div>
                             
                             {reviewSuccess ? (
-                                <div className="text-center py-6 bg-green-50/50 rounded-2xl border border-green-100 animate-in zoom-in-95 duration-300">
-                                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                <div className={`text-center py-6 ${isDark ? "bg-green-900/10 border border-green-900/30" : "bg-green-50/50 border border-green-100"} rounded-2xl animate-in zoom-in-95 duration-300`}>
+                                    <div className={`w-12 h-12 ${isDark ? "bg-green-900/20" : "bg-green-100"} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                                        <svg className={`w-6 h-6 ${isDark ? "text-green-400" : "text-green-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                                     </div>
-                                    <p className="font-cinzel text-sm font-bold text-green-800">Review Submitted!</p>
-                                    <p className="text-green-700/70 font-inter text-[11px] mt-1">Thank you for your valuable feedback.</p>
-                                    <button onClick={() => setReviewSuccess(false)} className="mt-4 text-green-700 text-xs font-bold hover:underline">Write another</button>
+                                    <p className={`font-cinzel text-sm font-bold ${isDark ? "text-green-400" : "text-green-800"}`}>Review Submitted!</p>
+                                    <p className={`${isDark ? "text-green-500/70" : "text-green-700/70"} font-inter text-[11px] mt-1`}>Thank you for your valuable feedback.</p>
+                                    <button onClick={() => setReviewSuccess(false)} className={`mt-4 ${isDark ? "text-green-400" : "text-green-700"} text-xs font-bold hover:underline`}>Write another</button>
                                 </div>
                             ) : (
                                 <form onSubmit={handleReviewSubmit} className="space-y-5">
                                     <div>
-                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Select Staycation Property</label>
+                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Select Staycation Property *</label>
                                         {bookings.filter(b => b.type === 'staycation').length === 0 ? (
                                             <div className={`p-5 rounded-xl border ${borderMain} ${bgInput} text-center`}>
                                                 <svg className={`w-8 h-8 mx-auto mb-3 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
@@ -705,7 +708,7 @@ function DashboardContent() {
                                                 required
                                                 value={reviewFormData.propertyId}
                                                 onChange={(e) => setReviewFormData({...reviewFormData, propertyId: e.target.value})}
-                                                className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
+                                                className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3.5 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} transition-all appearance-none cursor-pointer`}
                                             >
                                                 <option value="">Which property did you visit?</option>
                                                 {[...new Map(bookings.filter(b => b.type === 'staycation').map(b => [b.propertyDbId, b])).values()].map(b => (
@@ -717,16 +720,24 @@ function DashboardContent() {
                                         )}
                                     </div>
                                     <div>
-                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Overall Experience</label>
-                                        <div className={`flex justify-between p-2 rounded-xl ${bgInput} border ${borderMain}`}>
+                                        <label className={`${textMuted} text-[10px] font-inter uppercase tracking-widest font-bold mb-2 block`}>Overall Experience *</label>
+                                        <div className={`flex justify-between items-center ${bgInput} p-3 rounded-2xl border ${borderMain} gap-1`}>
                                             {[1, 2, 3, 4, 5].map(s => (
                                                 <button 
                                                     key={s} 
                                                     type="button" 
                                                     onClick={() => setReviewFormData({...reviewFormData, rating: s})}
-                                                    className={`flex-1 py-1.5 rounded-lg transition-all ${s <= reviewFormData.rating ? `${accentBg} text-white shadow-sm` : `${textMuted} hover:bg-black/5`}`}
+                                                    className={`group relative flex-1 py-3 rounded-xl transition-all duration-300 ${s <= reviewFormData.rating
+                                                        ? `${accentText} scale-100`
+                                                        : `${textMuted} opacity-40 hover:opacity-80 scale-90 hover:scale-100`
+                                                    }`}
                                                 >
-                                                    <span className="text-xs font-bold">{s}★</span>
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <svg className={`w-8 h-8 ${s <= reviewFormData.rating ? (isDark ? "fill-[#d87f82]" : "fill-antique-gold") : "fill-transparent stroke-current"}`} strokeWidth={1} viewBox="0 0 24 24">
+                                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                                        </svg>
+                                                        <span className="text-[10px] font-bold">{s}★</span>
+                                                    </div>
                                                 </button>
                                             ))}
                                         </div>
@@ -739,18 +750,25 @@ function DashboardContent() {
                                             onChange={(e) => setReviewFormData({...reviewFormData, reviewText: e.target.value})}
                                             rows={4} 
                                             placeholder="What did you love about your stay?" 
-                                            className={`w-full ${bgInput} border ${borderMain} rounded-xl px-4 py-3 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} resize-none transition-all placeholder:opacity-50`} 
+                                            className={`w-full ${bgInput} border ${borderMain} rounded-2xl px-5 py-4 text-sm font-inter ${textPrimary} outline-none focus:${borderActive} resize-none transition-all placeholder:opacity-50`} 
                                         />
+                                        <p className={`text-[10px] ${textMuted} mt-2 px-1 italic`}>Note: Reviews with 3 stars or less are stored privately for our team to improve.</p>
                                     </div>
                                     <button 
                                         type="submit" 
                                         disabled={reviewSubmitting}
-                                        className={`w-full ${accentBg} text-white font-inter text-sm font-bold py-3.5 rounded-xl hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2`}
+                                        className={`w-full ${accentBg} text-white font-inter text-sm font-bold py-4 rounded-2xl hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group`}
                                     >
-                                        {reviewSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Post My Review"}
+                                        {reviewSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (
+                                            <>
+                                                Post Review
+                                                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                            </>
+                                        )}
                                     </button>
                                 </form>
                             )}
+                            </div>
                         </div>
 
                         <h3 className={`font-cinzel text-base font-bold ${textPrimary} mb-5 flex items-center gap-2`}>

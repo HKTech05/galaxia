@@ -26,6 +26,7 @@ export default function BulkBookingsTab() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bulkSuccess, setBulkSuccess] = useState("");
     const [bulkError, setBulkError] = useState("");
+    const [discountAmount, setDiscountAmount] = useState(0);
 
     // Sub-property data for cottage type filtering
     const [subProperties, setSubProperties] = useState<SubProperty[]>([]);
@@ -171,9 +172,11 @@ export default function BulkBookingsTab() {
                 throw new Error(`Only ${eligibleIds.length} ${bulkForm.cottageType} cottage(s) available, but ${bulkForm.numCottages} requested.`);
             }
 
-            const perCottageSubtotal = Math.round(pricing.subtotal / bulkForm.numCottages);
+            const discountedTotal = pricing.total - discountAmount;
+            const finalTotal = Math.max(0, discountedTotal);
+            const perCottageTotal = Math.round(finalTotal / bulkForm.numCottages);
             const perCottageGst = Math.round(pricing.gst / bulkForm.numCottages);
-            const perCottageTotal = perCottageSubtotal + perCottageGst;
+            const perCottageBase = perCottageTotal - perCottageGst;
 
             for (let i = 0; i < bulkForm.numCottages; i++) {
                 await api.post("/bookings/staycation", {
@@ -189,7 +192,7 @@ export default function BulkBookingsTab() {
                     advanceAmount: perCottageTotal,
                     balanceAmount: 0,
                     securityDeposit: 3000,
-                    basePrice: perCottageSubtotal,
+                    basePrice: perCottageBase,
                     gstAmount: perCottageGst,
                     advancePaid: true,
                     advanceMethod: bulkForm.paymentMethod,
@@ -197,8 +200,9 @@ export default function BulkBookingsTab() {
                     notes: `Admin Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}.`.trim(),
                 });
             }
-            setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}!`);
+            setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}! ${discountAmount > 0 ? `(₹${discountAmount.toLocaleString('en-IN')} discount applied)` : ""}`);
             setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: 1, cottageType: "standard", guestsPerCottage: 2, paymentMethod: "UPI" });
+            setDiscountAmount(0);
         } catch (err: any) {
             setBulkError(err?.message || "Failed to create bulk booking.");
         } finally {
@@ -436,8 +440,43 @@ export default function BulkBookingsTab() {
                                 <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="text-slate-800">₹{pricing.subtotal.toLocaleString("en-IN")}</span></div>
                                 <div className="flex justify-between"><span className="text-slate-500">GST (5%)</span><span className="text-slate-800">₹{pricing.gst.toLocaleString("en-IN")}</span></div>
                                 <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-black"><span className="text-slate-800">Grand Total</span><span className="text-emerald-600">₹{pricing.total.toLocaleString("en-IN")}</span></div>
+
+                                {/* Discount Option */}
+                                <div className="border border-dashed border-purple-200 rounded-xl p-3 bg-purple-50/50 mt-3">
+                                    <label className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-1.5 block">Admin Discount (₹)</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={discountAmount || ""}
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                                                    setDiscountAmount(Math.min(val, pricing.total));
+                                                }}
+                                                placeholder="0"
+                                                className="w-full pl-8 pr-3 py-2 border border-purple-200 rounded-lg text-sm font-bold text-purple-800 focus:ring-2 focus:ring-purple-500/20 outline-none bg-white"
+                                            />
+                                        </div>
+                                        {discountAmount > 0 && (
+                                            <button onClick={() => setDiscountAmount(0)} className="p-2 text-purple-400 hover:text-purple-600 hover:bg-purple-100 rounded-lg transition-colors">
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Discounted Total */}
+                                {discountAmount > 0 && (
+                                    <div className="flex justify-between text-base font-black pt-1">
+                                        <span className="text-purple-700">After Discount</span>
+                                        <span className="text-purple-600">₹{Math.max(0, pricing.total - discountAmount).toLocaleString("en-IN")}</span>
+                                    </div>
+                                )}
+
                                 <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mt-2">
-                                    <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(pricing.total / bulkForm.numCottages).toLocaleString("en-IN")}</p>
+                                    <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(Math.max(0, pricing.total - discountAmount) / bulkForm.numCottages).toLocaleString("en-IN")}</p>
                                     <p className="text-[10px] text-amber-600 mt-0.5">Security deposit: ₹3,000 per cottage (separate)</p>
                                 </div>
                             </div>

@@ -19,7 +19,6 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [guestCount, setGuestCount] = useState(2);
 
     // Guest details
-    const [title, setTitle] = useState("Mr.");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
@@ -497,7 +496,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 bookingDate: selectedDate.toISOString().split("T")[0],
                 startHour,
                 durationHours,
-                customerName: `${title} ${firstName} ${lastName}`.trim(),
+                customerName: `${firstName} ${lastName}`.trim(),
                 customerPhone: phone,
                 customerEmail: email || null,
                 occasion: pkg.id === "celebration" ? ledBannerType : (addLedBanner ? ledBannerType : null),
@@ -549,7 +548,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         } finally {
             setIsSubmitting(false);
         }
-    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, title, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, specialRequests, pkg.id, router, appliedCoupon, couponDiscount]);
+    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, specialRequests, pkg.id, router, appliedCoupon, couponDiscount]);
 
     return (
         <div>
@@ -1075,22 +1074,14 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                             <p className="font-inter text-xs text-cel-text-muted mb-6">Please fill all relevant fields to proceed further.</p>
 
                             <div className="space-y-4">
-                                <div className="grid grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Title*</label>
-                                        <select value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text focus:border-rose-medium focus:outline-none transition-colors">
-                                            <option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Dr.</option>
-                                        </select>
+                                        <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">First Name*</label>
+                                        <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="First Name" />
                                     </div>
-                                    <div className="col-span-3 grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">First Name*</label>
-                                            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="First Name" />
-                                        </div>
-                                        <div>
-                                            <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Last Name*</label>
-                                            <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="Last Name" />
-                                        </div>
+                                    <div>
+                                        <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Last Name*</label>
+                                        <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="Last Name" />
                                     </div>
                                 </div>
 
@@ -1245,7 +1236,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
                             <div className="rounded-lg border border-cel-border bg-cel-bg p-5 text-left mb-6">
                                 <div className="space-y-3 text-sm font-inter">
-                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Guest</span><span className="text-cel-text">{title} {firstName} {lastName}</span></div>
+                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Guest</span><span className="text-cel-text">{firstName} {lastName}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Email</span><span className="text-cel-text">{email}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Phone</span><span className="text-cel-text">+91 {phone}</span></div>
                                     <div className="pt-3 border-t border-cel-border" />

@@ -144,7 +144,6 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     // Form state
     const [formData, setFormData] = useState({
-        title: "Mr",
         firstName: "",
         lastName: "",
         email: "",
@@ -476,7 +475,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 : undefined;
 
             const payload = {
-                customerName: `${formData.title} ${formData.firstName} ${formData.lastName}`.trim(),
+                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
                 customerPhone: formData.phone,
                 customerEmail: formData.email,
                 propertyId: dbPropertyId,
@@ -726,18 +725,12 @@ export default function BookingClient({ property }: BookingClientProps) {
 
                                 <form onSubmit={handleFormSubmit}>
                                     {/* Name */}
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
-                                        <div className="md:col-span-2 relative">
-                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Title*</label>
-                                            <select value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold appearance-none">
-                                                <option value="Mr">Mr.</option><option value="Mrs">Mrs.</option><option value="Ms">Ms.</option>
-                                            </select>
-                                        </div>
-                                        <div className="md:col-span-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                        <div>
                                             <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">First Name*</label>
                                             <input type="text" required placeholder="First Name" className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold placeholder:text-text-muted" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
                                         </div>
-                                        <div className="md:col-span-5">
+                                        <div>
                                             <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Last Name*</label>
                                             <input type="text" required placeholder="Last Name" className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold placeholder:text-text-muted" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
                                         </div>
@@ -1048,7 +1041,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <div>
                                 <h3 className="font-inter text-xs uppercase tracking-widest text-text-muted mb-3">Guest Details</h3>
                                 <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                                    <div><p className="font-inter text-[10px] text-text-muted">Name</p><p className="font-inter text-sm text-text-primary">{formData.title} {formData.firstName} {formData.lastName}</p></div>
+                                    <div><p className="font-inter text-[10px] text-text-muted">Name</p><p className="font-inter text-sm text-text-primary">{formData.firstName} {formData.lastName}</p></div>
                                     <div><p className="font-inter text-[10px] text-text-muted">Contact</p><p className="font-inter text-sm text-text-primary">+91 {formData.phone}</p></div>
                                     <div><p className="font-inter text-[10px] text-text-muted">Email</p><p className="font-inter text-sm text-text-primary">{formData.email}</p></div>
                                     {formData.gst && <div><p className="font-inter text-[10px] text-text-muted">GST No.</p><p className="font-inter text-sm text-text-primary">{formData.gst}</p></div>}
