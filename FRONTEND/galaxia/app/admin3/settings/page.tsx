@@ -137,6 +137,7 @@ export default function SettingsPage() {
                                     {loading ? (
                                         <div className="text-center text-slate-400 py-12 text-sm font-medium">Loading...</div>
                                     ) : (
+                                        <>
                                         {/* Desktop table */}
                                         <div className="border border-slate-200 rounded-xl overflow-hidden hidden md:block">
                                             <table className="w-full text-sm">
@@ -257,6 +258,7 @@ export default function SettingsPage() {
                                                 </div>
                                             ))}
                                         </div>
+                                        </>
                                     )}
                                 </>
                             )}
