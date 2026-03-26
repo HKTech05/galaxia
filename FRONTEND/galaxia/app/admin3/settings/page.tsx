@@ -137,7 +137,8 @@ export default function SettingsPage() {
                                     {loading ? (
                                         <div className="text-center text-slate-400 py-12 text-sm font-medium">Loading...</div>
                                     ) : (
-                                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                        {/* Desktop table */}
+                                        <div className="border border-slate-200 rounded-xl overflow-hidden hidden md:block">
                                             <table className="w-full text-sm">
                                                 <thead>
                                                     <tr className="bg-slate-50 border-b border-slate-200">
@@ -199,6 +200,62 @@ export default function SettingsPage() {
                                                     ))}
                                                 </tbody>
                                             </table>
+                                        </div>
+
+                                        {/* Mobile card layout */}
+                                        <div className="md:hidden space-y-3">
+                                            {subAdmins.map(admin => (
+                                                <div key={admin.id} className="border border-slate-200 rounded-xl p-4 bg-white">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div>
+                                                            <p className="text-xs text-slate-400 font-mono mb-1">#{admin.id}</p>
+                                                            <p className="text-sm font-semibold text-slate-800">{propertiesLabel(admin.assignedProperties)}</p>
+                                                        </div>
+                                                        {editingId === admin.id ? (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <button onClick={() => handleSave(admin.id)} disabled={saving}
+                                                                    className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50" title="Save">
+                                                                    <Check size={14} />
+                                                                </button>
+                                                                <button onClick={cancelEditing}
+                                                                    className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors" title="Cancel">
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => startEditing(admin)}
+                                                                    className="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-purple-600 hover:border-purple-200 transition-colors" title="Edit">
+                                                                    <Pencil size={14} />
+                                                                </button>
+                                                                {saveMsg?.id === admin.id && (
+                                                                    <span className={`text-xs font-semibold ${saveMsg.ok ? "text-emerald-600" : "text-red-500"}`}>{saveMsg.msg}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Username</span>
+                                                            {editingId === admin.id ? (
+                                                                <input type="text" value={editUsername} onChange={e => setEditUsername(e.target.value)}
+                                                                    className="bg-white border border-purple-300 rounded-lg px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 w-28 text-right" autoFocus />
+                                                            ) : (
+                                                                <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-mono text-xs">{admin.username}</code>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Password</span>
+                                                            {editingId === admin.id ? (
+                                                                <input type="text" value={editPassword} onChange={e => setEditPassword(e.target.value)}
+                                                                    className="bg-white border border-purple-300 rounded-lg px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 w-28 text-right" />
+                                                            ) : (
+                                                                <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-mono text-xs">{admin.plainPassword || "••••••"}</code>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </>

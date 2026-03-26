@@ -372,36 +372,38 @@ export default function UpiManagementClient() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-start justify-between">
-                            <div>
-                                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                                    {activeEmployee.location} — {activeEmployee.name}
-                                </h2>
-                                <p className="text-sm text-slate-500 font-medium mt-1">UPI payment history & proof images</p>
+                        <div className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <h2 className="text-lg sm:text-2xl font-black text-slate-800 leading-tight">
+                                        {activeEmployee.location} — {activeEmployee.name}
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">UPI payment history & proof images</p>
+                                </div>
+                                <button
+                                    onClick={() => setViewEmployeeId(null)}
+                                    className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors flex-shrink-0"
+                                >
+                                    <X size={20} />
+                                </button>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap mt-3">
                                 <button
                                     onClick={downloadPDF}
-                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
+                                    className="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
                                 >
                                     <Download size={16} /> Export Logs
                                 </button>
                                 <button
                                     onClick={downloadAllProofs}
                                     disabled={activeEmployeeLogs.length === 0}
-                                    className={`px-4 py-2 text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors ${
+                                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors ${
                                         activeEmployeeLogs.length > 0
                                             ? 'bg-violet-600 hover:bg-violet-700 text-white'
                                             : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                     }`}
                                 >
                                     <Archive size={16} /> All Proofs (ZIP)
-                                </button>
-                                <button
-                                    onClick={() => setViewEmployeeId(null)}
-                                    className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors"
-                                >
-                                    <X size={20} />
                                 </button>
                             </div>
                         </div>
@@ -420,7 +422,7 @@ export default function UpiManagementClient() {
                             </div>
 
                             <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><FileText size={18} className="text-indigo-500" /> UPI Transactions</h3>
-                            <div className="border border-slate-200 rounded-xl overflow-hidden">
+                            <div className="border border-slate-200 rounded-xl overflow-hidden hidden sm:block">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-slate-100 text-xs uppercase text-slate-600 font-bold border-b border-slate-200">
                                         <tr>
@@ -480,6 +482,41 @@ export default function UpiManagementClient() {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* Mobile card layout */}
+                            <div className="sm:hidden space-y-3">
+                                {activeEmployeeLogs.length > 0 ? (
+                                    activeEmployeeLogs.map(log => (
+                                        <div key={log.id} className="p-4 rounded-xl border bg-white border-slate-200">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-xs font-medium text-slate-500">
+                                                    {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                                <p className="text-sm font-black text-indigo-700">₹{log.amount.toLocaleString('en-IN')}</p>
+                                            </div>
+                                            <p className="text-sm font-bold text-slate-800">{log.guestName || '—'}</p>
+                                            {log.bookingRef && <p className="text-[10px] text-slate-400 font-medium mt-0.5">{log.bookingRef}</p>}
+                                            <div className="flex items-center justify-between mt-3">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                                    log.paymentType === 'deposit'
+                                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                }`}>
+                                                    {log.paymentType === 'deposit' ? 'Deposit' : 'Balance'}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleViewProof(log.id)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors text-xs font-bold"
+                                                >
+                                                    <Eye size={12} /> View Proof
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="py-8 text-center text-slate-400 font-medium">No UPI transactions recorded.</div>
+                                )}
                             </div>
                         </div>
                     </div>

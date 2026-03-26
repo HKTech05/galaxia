@@ -147,23 +147,23 @@ export default function Admin3DDBookingsPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Booking Info</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Screen</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Slot</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Upfront</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Remaining</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Screen</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Slot</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Upfront</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Remaining</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Status</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right hidden md:table-cell">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan={7} className="px-6 py-12 text-center"><Loader2 className="animate-spin mx-auto text-indigo-500" size={28} /><p className="text-sm text-slate-500 mt-2">Loading…</p></td></tr>
+                                <tr><td colSpan={7} className="px-3 md:px-6 py-12 text-center"><Loader2 className="animate-spin mx-auto text-indigo-500" size={28} /><p className="text-sm text-slate-500 mt-2">Loading…</p></td></tr>
                             ) : filteredBookings.length === 0 ? (
-                                <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
+                                <tr><td colSpan={7} className="px-3 md:px-6 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
                             ) : filteredBookings.map((b) => (
                                 <tr key={b.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer" onClick={() => setDetailBooking(b)}>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4">
                                         <div className="flex flex-col">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-sm font-bold text-slate-800">#DD-{b.id}</span>
@@ -173,33 +173,33 @@ export default function Admin3DDBookingsPage() {
                                             <span className="text-[11px] font-bold text-slate-400 mt-0.5">{b.customerPhone}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4"><span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">{(b.screen?.name || "—").replace(/\s*\(.*?\)/g, '')}</span></td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4 hidden md:table-cell"><span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">{(b.screen?.name || "—").replace(/\s*\(.*?\)/g, '')}</span></td>
+                                    <td className="px-3 md:px-6 py-4">
                                         <div className="flex flex-col gap-0.5">
                                             <span className="text-sm font-bold text-slate-800">{new Date(b.bookingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
                                             <span className="text-xs font-medium text-slate-500">{formatSlot(b.startHour, b.durationHours)}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4">
                                         <div className="flex flex-col gap-1">
                                             <span className="text-sm font-bold text-slate-800">₹{(b.amountPaid || 0).toLocaleString("en-IN")}</span>
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{b.paymentMethod || "—"}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4">
                                         <div className="flex flex-col gap-1">
                                             <span className="text-sm font-bold text-slate-800">₹{(b.amountToCollect || 0).toLocaleString("en-IN")}</span>
                                             {b.amountToCollect <= 0 ? <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Paid</span> : <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Pending</span>}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-4 hidden md:table-cell">
                                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${b.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
                                             {b.status === 'confirmed' && <CheckCircle size={14} />}
                                             {b.status === 'cancelled' && <XCircle size={14} />}
                                             {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td className="px-3 md:px-6 py-4 text-right hidden md:table-cell">
                                         <button onClick={(e) => { e.stopPropagation(); setSelectedBooking(b); setIsActionModalOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                                             <MoreVertical size={18} />
                                         </button>

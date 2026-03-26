@@ -1246,16 +1246,16 @@ export default function Admin1Dashboard() {
                         </h2>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto max-h-[75vh]">
                         <div className="min-w-[900px]">
                             {/* Calendar Header */}
-                            <div className="grid grid-cols-5 border-b border-slate-200 bg-slate-50">
-                                <div className="p-4 border-r border-slate-200 flex items-end justify-center">
+                            <div className="grid grid-cols-5 border-b border-slate-200 bg-slate-50 sticky top-0 z-30">
+                                <div className="p-4 border-r border-slate-200 flex items-end justify-center sticky left-0 bg-slate-50 z-40">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</span>
                                 </div>
                                 {screens.map((screen, i) => (
-                                    <div key={i} className={`p-4 border-r border-slate-200 text-center last:border-r-0`}>
-                                        <div className="text-sm font-bold uppercase text-slate-800">{screen}</div>
+                                    <div key={i} className={`p-4 border-r border-slate-200 text-center last:border-r-0 bg-slate-50`}>
+                                        <div className="text-xs md:text-sm font-bold uppercase text-slate-800 whitespace-nowrap">{screen}</div>
                                     </div>
                                 ))}
                             </div>
@@ -1264,8 +1264,8 @@ export default function Admin1Dashboard() {
                             <div className="relative">
                                 {hours.map((hour, hourIndex) => (
                                     <div key={hourIndex} className="grid grid-cols-5 border-b border-slate-100 min-h-[70px]">
-                                        <div className="p-2 border-r border-slate-200 text-center relative bg-white z-20">
-                                            <span className="text-xs font-bold text-slate-500 left-1/2 -translate-x-1/2 absolute -top-2.5 bg-white px-2 tracking-tight">{hour}</span>
+                                        <div className="p-2 border-r border-slate-200 text-center relative bg-white z-20 sticky left-0 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">
+                                            <span className="text-xs font-bold text-slate-500 left-1/2 -translate-x-1/2 absolute -top-2.5 bg-white px-2 tracking-tight whitespace-nowrap">{hour}</span>
                                         </div>
                                         {screens.map((_, screenIndex) => (
                                             <div
