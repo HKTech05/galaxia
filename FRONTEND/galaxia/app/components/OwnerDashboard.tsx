@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import CustomDatePicker from "./CustomDatePicker";
 import { api } from "../../lib/api";
+import BulkBookingsTab from "./BulkBookingsTab";
 
 // â”€â”€â”€ CUSTOM SELECT COMPONENT (Fixes Windows native font rendering bug) â”€â”€â”€
 const CustomSelect = ({ value, onChange, options }: { value: string, onChange: (v: string) => void, options: { label: string, options?: string[] }[] | string[] }) => {
@@ -187,7 +188,7 @@ const AmbroseTooltip = ({ active, payload }: any) => {
 export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTab?: string }) {
     const [activeTab, setActiveTab] = useState(initialTab);
     const [timeRange, setTimeRange] = useState("1m");
-    const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar">("insights");
+    const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar" | "bulk">("insights");
 
     // Properties tab
     const [propertyDate, setPropertyDate] = useState(new Date());
@@ -517,19 +518,18 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 return <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>;
             }
             const badges = [];
-            // Booking status badge
+            // Booking status badge — always pair with secondary status
             if (item.bookingStatus === 'confirmed' && !item.checkedIn) {
                 badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
-                if (item.isCheckinDay) {
-                    badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
-                }
+                badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
             } else if (item.checkedIn) {
                 badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                 badges.push(<span key="checked-in" className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200 uppercase">Checked In</span>);
                 if (item.isCheckoutDay) {
-                    badges.push(<span key="co-pending" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+                    badges.push(<span key="co-pending" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Pending</span>);
                 }
             } else if (item.bookingStatus === 'checked_out') {
+                badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                 badges.push(<span key="co" className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Checked Out</span>);
             }
             return <div className="flex items-center gap-1.5 flex-wrap">{badges}</div>;
@@ -703,7 +703,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {([["insights", "Insights"], ["reports", "Advanced Reports"], ["calendar", "Live Calendar"]] as const).map(([key, label]) => (
+                        {([["insights", "Insights"], ["reports", "Advanced Reports"], ["calendar", "Live Calendar"], ["bulk", "Bulk Bookings"]] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setDashboardSubTab(key)}
@@ -1374,6 +1374,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
                     </div>
                 )}
+
+                {/* BULK BOOKINGS TAB */}
+                {dashboardSubTab === "bulk" && (
+                    <BulkBookingsTab />
+                )}
             </div>
         );
     };
@@ -1455,12 +1460,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     const b = [];
                                     if (villa.bookingStatus === 'confirmed' && !villa.checkedIn) {
                                         b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
-                                        if (villa.isCheckinDay) b.push(<span key="ci" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                                        b.push(<span key="ci" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
                                     } else if (villa.checkedIn) {
                                         b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                                         b.push(<span key="ci" className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200 uppercase">Checked In</span>);
-                                        if (villa.isCheckoutDay) b.push(<span key="co" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+                                        if (villa.isCheckoutDay) b.push(<span key="co" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Pending</span>);
                                     } else if (villa.bookingStatus === 'checked_out') {
+                                        b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                                         b.push(<span key="co" className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Checked Out</span>);
                                     }
                                     return <div className="flex items-center gap-1.5 flex-wrap">{b}</div>;
@@ -1669,7 +1675,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Slot</th>
                                         <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Upfront</th>
                                         <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Remaining</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -1691,7 +1697,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 <p className={`text-sm font-bold ${b.remainingStatus === "Paid" ? 'text-emerald-700' : 'text-amber-700'}`}>{b.remainingAmt}</p>
                                                 <p className={`text-[10px] ${b.remainingStatus === "Paid" ? 'text-emerald-500' : 'text-amber-500'}`}>{b.remainingStatus}</p>
                                             </td>
-                                            <td className="px-6 py-3">
+                                            <td className="px-6 py-3 hidden sm:table-cell">
                                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${b.status === "Confirmed" ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                                                     {b.status}
                                                 </span>
