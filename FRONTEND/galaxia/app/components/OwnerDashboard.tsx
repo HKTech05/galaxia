@@ -1669,11 +1669,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         return (
             <div className="space-y-6">
                 {/* Date View Selector */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Day-wise & Screen-wise Bookings</h2>
-                        <p className="text-sm text-slate-500 font-medium mt-1">Day-wise and Screen-wise display of all digital diaries bookings.</p>
-                    </div>
+                <div className="flex items-center justify-end">
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
                 </div>
 

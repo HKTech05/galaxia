@@ -1252,10 +1252,10 @@ export default function Admin1Dashboard() {
                         </h2>
                     </div>
 
-                    <div className="overflow-auto max-h-[75vh] pt-3">
+                    <div className="overflow-auto max-h-[75vh]">
                         <div className="min-w-[900px]">
                             {/* Calendar Header */}
-                            <div className="grid grid-cols-5 border-b border-slate-200 bg-slate-50 sticky top-0 z-30">
+                            <div className="grid grid-cols-[50px_1fr_1fr_1fr_1fr] md:grid-cols-5 border-b border-slate-200 bg-slate-50 sticky top-0 z-30">
                                 <div className="p-4 border-r border-slate-200 flex items-end justify-center sticky left-0 bg-slate-50 z-40">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</span>
                                 </div>
@@ -1269,7 +1269,7 @@ export default function Admin1Dashboard() {
                             {/* Calendar Grid */}
                             <div className="relative">
                                 {hours.map((hour, hourIndex) => (
-                                    <div key={hourIndex} className="grid grid-cols-5 border-b border-slate-100 min-h-[70px]">
+                                    <div key={hourIndex} className={`grid grid-cols-[50px_1fr_1fr_1fr_1fr] md:grid-cols-5 border-b border-slate-100 min-h-[70px] ${hourIndex === 0 ? 'mt-3' : ''}`}>
                                         <div className="p-1 md:p-2 border-r border-slate-200 text-center relative bg-white z-[35] sticky left-0 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">
                                             <span className="text-[10px] md:text-xs font-bold text-slate-500 left-1/2 -translate-x-1/2 absolute -top-2.5 bg-white px-1 md:px-2 tracking-tight whitespace-nowrap">
                                                 <span className="md:hidden">{mobileHours[hourIndex]}</span>
