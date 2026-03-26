@@ -21,7 +21,8 @@ import {
     Ticket,
     Star,
     ClipboardList,
-    Smartphone
+    Smartphone,
+    FileText
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -65,6 +66,7 @@ const admin3BottomItems = [
     { name: "Users", href: "/admin3/users", icon: Users },
     { name: "Properties", href: "/admin3/properties-mgmt", icon: Building },
     { name: "Reviews", href: "/admin3/reviews", icon: Star },
+    { name: "Reports", href: "/admin3/reports", icon: FileText },
     { name: "Chatbot", href: "/admin3/chatbot", icon: MessageSquare },
     { name: "Settings", href: "/admin3/settings", icon: Settings },
 ];

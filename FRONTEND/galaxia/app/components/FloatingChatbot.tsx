@@ -10,12 +10,11 @@ export default function FloatingChatbot() {
     const [messages, setMessages] = useState<{ role: "bot" | "user", text: string }[]>([
         { role: "bot", text: "Hello! Assuming you are looking to book a beautiful stay for an upcoming celebration? 🥂" }
     ]);
-
-    // Do not show chatbot on admin pages
-    if (pathname && pathname.startsWith("/admin")) return null;
-    // Wait for client mount to avoid hydration mismatch
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
+
+    // Do not show chatbot on admin or chatbot dashboard pages
+    if (pathname && (pathname.startsWith("/admin") || pathname.startsWith("/chatbot"))) return null;
 
     const isCelebration = pathname.startsWith("/celebration");
     // The original messages state was here, but the new code above already defines `messages`.
@@ -47,7 +46,7 @@ export default function FloatingChatbot() {
         <>
             {/* Chat window */}
             {isOpen && (
-                <div className={`fixed bottom-24 right-4 sm:right-6 z-[70] w-[340px] sm:w-[380px] max-h-[500px] ${isCelebration ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-border-light"} rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-fade-in-up`}>
+                <div className={`fixed bottom-24 right-4 sm:right-6 z-[70] w-[min(340px,calc(100vw-2rem))] sm:w-[380px] max-h-[70dvh] ${isCelebration ? "bg-[#1A1A1A] border-[#2A2A2A]" : "bg-white border-border-light"} rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-fade-in-up`}>
                     {/* Header */}
                     <div className={`${isCelebration ? "bg-gradient-to-r from-[#d87f82] to-[#9f353a]" : "bg-gradient-to-r from-antique-gold to-dark-gold"} px-5 py-4 flex items-center justify-between`}>
                         <div className="flex items-center gap-3">
@@ -69,7 +68,7 @@ export default function FloatingChatbot() {
                     </div>
 
                     {/* Messages */}
-                    <div className={`flex-1 overflow-y-auto p-4 space-y-3 max-h-[320px] ${isCelebration ? "bg-[#0D0D0D]" : "bg-soft-gray/30"}`}>
+                    <div className={`flex-1 overflow-y-auto p-4 space-y-3 ${isCelebration ? "bg-[#0D0D0D]" : "bg-soft-gray/30"}`}>
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                                 <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm font-inter leading-relaxed ${msg.role === "user"
@@ -94,7 +93,7 @@ export default function FloatingChatbot() {
                                 className={`flex-1 rounded-full px-4 py-2.5 text-sm font-inter outline-none transition-colors 
                                     ${isCelebration
                                         ? "bg-[#0D0D0D] border border-[#333333] text-[#F2F2F2] placeholder-[#777777] focus:border-[#d87f82]"
-                                        : "bg-soft-gray border border-border-light text-text-primary placeholder-text-muted focus:border-antique-gold"}`}
+                                        : "bg-soft-gray border border-border-light text-text-primary placeholder-text-muted focus:border-antique-gold"} text-base`}
                             />
                             <button onClick={handleSend} className={`w-10 h-10 rounded-full text-white flex items-center justify-center transition-colors shrink-0 
                                 ${isCelebration ? "bg-[#9f353a] hover:bg-[#d87f82]" : "bg-antique-gold hover:bg-dark-gold"}`}>
