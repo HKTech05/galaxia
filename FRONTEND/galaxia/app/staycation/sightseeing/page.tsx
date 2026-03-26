@@ -91,35 +91,30 @@ export default function SightseeingPage() {
 
             {/* Vertical Cards — Reference Style */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-                <div className="flex flex-col lg:flex-row gap-4 lg:h-[550px]">
+                <div className="flex flex-col lg:flex-row gap-4 lg:h-[550px] overflow-hidden">
                     {attractions.map((spot, i) => (
                         <div
                             key={spot.name}
-                            className="group relative flex-none h-[300px] lg:flex-1 lg:h-auto rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 lg:hover:flex-[3] border border-border-light"
+                            className="group relative flex-none h-[250px] lg:flex-1 lg:h-auto rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 lg:hover:flex-[3] border border-border-light"
                         >
                             {/* Background Image */}
-                            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url('${spot.image}')` }} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 group-hover:from-black/70" />
+                            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 lg:group-hover:scale-110" style={{ backgroundImage: `url('${spot.image}')` }} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 lg:group-hover:from-black/70" />
 
-                            {/* Vertical Name Label — visible when collapsed */}
+                            {/* Vertical Name Label — visible when collapsed (desktop only) */}
                             <div className="hidden lg:flex absolute inset-0 items-center justify-center group-hover:opacity-0 transition-opacity duration-500">
                                 <div className="writing-mode-vertical transform -rotate-180 font-cinzel text-white text-xl font-bold tracking-widest whitespace-nowrap" style={{ writingMode: "vertical-rl" }}>
                                     {spot.name.toUpperCase()}
                                 </div>
                             </div>
 
-                            {/* Content — slides up on hover */}
-                            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 transform lg:translate-y-4 lg:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                                {/* Category Badge */}
+                            {/* Desktop Content — slides up on hover (hidden on mobile) */}
+                            <div className="hidden lg:block absolute bottom-0 left-0 right-0 p-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="text-lg">{spot.icon}</span>
                                     <span className="text-[10px] font-inter font-medium text-antique-gold uppercase tracking-widest">{spot.category}</span>
                                 </div>
-
-                                {/* Name */}
-                                <h3 className="font-cinzel text-lg sm:text-xl font-bold text-white mb-2">{spot.name}</h3>
-
-                                {/* Distance & Drive Time */}
+                                <h3 className="font-cinzel text-xl font-bold text-white mb-2">{spot.name}</h3>
                                 <div className="flex items-center gap-4 mb-3">
                                     <div className="flex items-center gap-1.5">
                                         <svg className="w-3.5 h-3.5 text-antique-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -130,19 +125,17 @@ export default function SightseeingPage() {
                                         <span className="font-inter text-xs text-white/80 font-medium">{spot.driveTime}</span>
                                     </div>
                                 </div>
-
-                                {/* Description */}
                                 <p className="font-inter text-xs text-white/70 leading-relaxed line-clamp-3">{spot.description}</p>
                             </div>
 
-                            {/* Mobile — always show basic info */}
-                            <div className="lg:hidden absolute bottom-0 left-0 right-0 p-5">
+                            {/* Mobile — always show basic info (no hover, no overlap) */}
+                            <div className="lg:hidden absolute bottom-0 left-0 right-0 p-4">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <span className="text-lg">{spot.icon}</span>
+                                    <span className="text-base">{spot.icon}</span>
                                     <span className="text-[10px] font-inter font-medium text-antique-gold uppercase tracking-widest">{spot.category}</span>
                                 </div>
                                 <h3 className="font-cinzel text-base font-bold text-white mb-1">{spot.name}</h3>
-                                <div className="flex items-center gap-3 mb-2">
+                                <div className="flex items-center gap-3 mb-1.5">
                                     <span className="font-inter text-[11px] text-white/70">{spot.distance}</span>
                                     <span className="w-1 h-1 rounded-full bg-white/40" />
                                     <span className="font-inter text-[11px] text-white/70">{spot.driveTime}</span>

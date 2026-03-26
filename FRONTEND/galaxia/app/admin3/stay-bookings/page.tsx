@@ -159,7 +159,7 @@ export default function StayBookingsPage() {
                     />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
                     <div className="relative">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <select
@@ -173,7 +173,7 @@ export default function StayBookingsPage() {
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
 
-                    <div className="flex items-center bg-slate-100 rounded-lg p-1">
+                    <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0 overflow-x-auto max-w-full">
                         {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
                             <button
                                 key={status}
@@ -224,7 +224,7 @@ export default function StayBookingsPage() {
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Guests</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Payment</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -279,7 +279,7 @@ export default function StayBookingsPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4">
+                                            <td className="px-5 py-4 hidden sm:table-cell">
                                                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${statusColors[b.status] || "bg-slate-100 border-slate-300 text-slate-600"}`}>
                                                     <StatusIcon size={14} />
                                                     {statusLabel(b.status)}
@@ -327,11 +327,11 @@ export default function StayBookingsPage() {
                                         </div>
                                     </div>
                                     {selectedBooking.customerEmail && (
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center"><Mail size={14} className="text-sky-600" /></div>
-                                            <div>
+                                        <div className="flex items-center gap-3 min-w-0 col-span-2 sm:col-span-1">
+                                            <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center shrink-0"><Mail size={14} className="text-sky-600" /></div>
+                                            <div className="min-w-0 flex-1">
                                                 <p className="text-xs text-slate-400 font-medium">Email</p>
-                                                <p className="text-sm font-bold text-slate-800">{selectedBooking.customerEmail}</p>
+                                                <p className="text-sm font-bold text-slate-800 truncate sm:break-all sm:whitespace-normal">{selectedBooking.customerEmail}</p>
                                             </div>
                                         </div>
                                     )}

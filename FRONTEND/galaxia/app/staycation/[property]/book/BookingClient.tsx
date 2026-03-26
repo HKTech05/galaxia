@@ -410,6 +410,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             setShowLoginPrompt(false);
         }
         setCurrentStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDatesChange = (checkIn: Date | null, checkOut: Date | null, rate: number, n: number) => {
@@ -434,6 +435,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             return;
         }
         setCurrentStep(3);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleApplyCoupon = async () => {
@@ -718,7 +720,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                         )}
 
                         {currentStep === 2 && !showLoginPrompt && (
-                            <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm">
+                            <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm max-w-lg mx-auto lg:max-w-none">
                                 <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
                                 <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">Please fill all relevant fields to proceed further.</p>
 
@@ -902,7 +904,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         </label>
                                     </div>
 
-                                    <div className="flex justify-between items-center border-t border-border-light pt-6 mt-6">
+                                    <div className="hidden sm:flex justify-between items-center border-t border-border-light pt-6 mt-6">
                                         <button type="button" onClick={() => setCurrentStep(1)} className="font-inter text-xs tracking-wider uppercase text-text-secondary hover:text-text-primary px-4 py-2">Back</button>
                                         <button type="submit" className="bg-[#2A2A2A] text-white px-8 py-3 text-xs font-inter uppercase tracking-widest hover:bg-black transition-colors">Proceed to Payment</button>
                                     </div>
@@ -963,6 +965,13 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         <span className="text-sm font-semibold text-text-primary">Total Amount</span>
                                         <span className="text-xl font-medium text-text-primary">{formatPrice(totalAmount)}</span>
                                     </div>
+                                    {/* Mobile-only: Back & Payment buttons under Total */}
+                                    {currentStep === 2 && !showLoginPrompt && (
+                                        <div className="flex justify-between items-center border-t border-border-light pt-4 mt-4 sm:hidden">
+                                            <button type="button" onClick={() => setCurrentStep(1)} className="font-inter text-xs tracking-wider uppercase text-text-secondary hover:text-text-primary px-4 py-2">Back</button>
+                                            <button type="button" onClick={(e) => { const form = document.querySelector('form'); if (form) form.requestSubmit(); }} className="bg-[#2A2A2A] text-white px-8 py-3 text-xs font-inter uppercase tracking-widest hover:bg-black transition-colors">Proceed to Payment</button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -988,7 +997,7 @@ export default function BookingClient({ property }: BookingClientProps) {
 
                 {/* STEP 3: CONFIRM & PAY — 3 equal columns, full width */}
                 {currentStep === 3 && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start max-w-lg mx-auto lg:max-w-none">
                         {/* CARD 1: Booking Summary + Guest Details */}
                         <div className="bg-white border border-border-light p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-6">

@@ -1453,7 +1453,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
                         <div className="p-6 space-y-3 overflow-y-auto max-h-[70vh]">
                             {(villaModal.type === "ambrose" ? liveAmbrose : liveAmstel)
-                                .filter((villa: any) => villa.name !== "Standard Cottage")
                                 .map((villa: any) => {
                                 const villaBadges = () => {
                                     if (!villa.booked) return <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>;
