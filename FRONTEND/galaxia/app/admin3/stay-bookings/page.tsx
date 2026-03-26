@@ -147,7 +147,7 @@ export default function StayBookingsPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div className="relative w-full lg:w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
@@ -159,7 +159,7 @@ export default function StayBookingsPage() {
                     />
                 </div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                <div className="flex flex-wrap gap-3 items-center">
                     <div className="relative">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <select
@@ -173,26 +173,26 @@ export default function StayBookingsPage() {
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
 
-                    <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0 overflow-x-auto max-w-full">
-                        {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
-                            <button
-                                key={status}
-                                onClick={() => setStatusFilter(status)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${statusFilter === status
-                                    ? "bg-white text-indigo-700 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                            >
-                                {status}
-                            </button>
-                        ))}
-                    </div>
-
                     <div className="flex items-center gap-2">
                         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" />
                         <span className="text-slate-400 text-xs">to</span>
                         <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none" />
                     </div>
+                </div>
+
+                <div className="flex flex-wrap items-center bg-slate-100 rounded-lg p-1 gap-1">
+                    {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${statusFilter === status
+                                ? "bg-white text-indigo-700 shadow-sm"
+                                : "text-slate-500 hover:text-slate-700"
+                                }`}
+                        >
+                            {status}
+                        </button>
+                    ))}
                 </div>
             </div>
 

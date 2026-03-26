@@ -223,8 +223,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 const enriched = data.properties.map((p: any) => {
                     // Find bookings for this property (no sub-property)
                     const propBooking = bookings.find((b: any) => b.propertyId === p.id && !b.subPropertyId);
+                    // Collect ALL bookings for this property's sub-properties
+                    const propSubBookings = bookings.filter((b: any) => b.propertyId === p.id && b.subPropertyId);
                     const enrichedVillas = (p.villas || []).map((v: any) => {
-                        const villaBooking = bookings.find((b: any) => b.subPropertyId === v.id);
+                        const villaBookings = bookings.filter((b: any) => b.subPropertyId === v.id);
+                        const villaBooking = villaBookings[0];
                         return {
                             ...v,
                             booked: v.booked ?? (villaBooking ? true : false),
@@ -238,6 +241,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             totalAmount: v.totalAmount ?? (villaBooking?.totalAmount || null),
                             addons: v.addons ?? (villaBooking?.addons || null),
                             phone: v.phone ?? (villaBooking?.customerPhone || null),
+                            _allBookings: villaBookings, // Store all bookings for this sub-property
                         };
                     });
                     return {
@@ -1452,7 +1456,63 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </button>
                         </div>
                         <div className="p-6 space-y-3 overflow-y-auto max-h-[70vh]">
-                            {(villaModal.type === "ambrose" ? liveAmbrose : liveAmstel)
+                            {(() => {
+                                const rawVillas = villaModal.type === "ambrose" ? liveAmbrose : liveAmstel;
+                                // For Amstel Nest: expand Standard Cottage into 14 individual units
+                                let displayVillas = rawVillas;
+                                if (villaModal.type === "amstel") {
+                                    const expanded: any[] = [];
+                                    // Get the Standard Cottage sub-property (has _allBookings from enrichment)
+                                    const stdCottage = rawVillas.find((v: any) => v.name === 'Standard Cottage');
+                                    const STANDARD_UNITS = 14;
+                                    if (stdCottage) {
+                                        // _allBookings has all bookings for this sub-property ID
+                                        const stdBookings = stdCottage._allBookings || [];
+                                        for (let i = 1; i <= STANDARD_UNITS; i++) {
+                                            const booking = stdBookings[i - 1]; // Assign bookings sequentially to units
+                                            if (booking) {
+                                                expanded.push({
+                                                    ...stdCottage,
+                                                    name: `Standard Cottage ${i}`,
+                                                    booked: true,
+                                                    bookingStatus: booking.status,
+                                                    checkedIn: booking.status === 'checked_in',
+                                                    guest: booking.customerName || stdCottage.guest,
+                                                    guests: booking.numGuests || stdCottage.guests,
+                                                    phone: stdCottage.phone,
+                                                    checkInDate: booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : null,
+                                                    checkOutDate: booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString('en-IN') : null,
+                                                    balanceAmount: booking.balanceAmount ?? stdCottage.balanceAmount,
+                                                    depositAmount: booking.securityDeposit ?? stdCottage.depositAmount,
+                                                    totalAmount: booking.totalAmount ?? stdCottage.totalAmount,
+                                                });
+                                            } else {
+                                                expanded.push({
+                                                    ...stdCottage,
+                                                    name: `Standard Cottage ${i}`,
+                                                    booked: false,
+                                                    bookingStatus: null,
+                                                    guest: null,
+                                                    guests: 0,
+                                                    phone: null,
+                                                    checkedIn: false,
+                                                    isCheckinDay: false,
+                                                    isCheckoutDay: false,
+                                                    balanceAmount: null,
+                                                    depositAmount: null,
+                                                    totalAmount: null,
+                                                });
+                                            }
+                                        }
+                                    }
+                                    // Add remaining non-standard cottages (e.g., Family Cottage)
+                                    for (const v of rawVillas) {
+                                        if (v.name !== 'Standard Cottage') expanded.push(v);
+                                    }
+                                    displayVillas = expanded;
+                                }
+                                return displayVillas;
+                            })()
                                 .map((villa: any) => {
                                 const villaBadges = () => {
                                     if (!villa.booked) return <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>;

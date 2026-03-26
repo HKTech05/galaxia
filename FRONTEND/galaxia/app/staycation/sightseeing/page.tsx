@@ -95,7 +95,7 @@ export default function SightseeingPage() {
                     {attractions.map((spot, i) => (
                         <div
                             key={spot.name}
-                            className="group relative flex-none h-[250px] lg:flex-1 lg:h-auto rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 lg:hover:flex-[3] border border-border-light"
+                            className="group relative flex-none h-[280px] lg:flex-1 lg:h-auto rounded-2xl overflow-hidden cursor-pointer transition-all duration-700 lg:hover:flex-[3] border border-border-light"
                         >
                             {/* Background Image */}
                             <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 lg:group-hover:scale-110" style={{ backgroundImage: `url('${spot.image}')` }} />
@@ -140,7 +140,7 @@ export default function SightseeingPage() {
                                     <span className="w-1 h-1 rounded-full bg-white/40" />
                                     <span className="font-inter text-[11px] text-white/70">{spot.driveTime}</span>
                                 </div>
-                                <p className="font-inter text-[11px] text-white/60 leading-relaxed line-clamp-2">{spot.description}</p>
+                                <p className="font-inter text-[11px] text-white/60 leading-relaxed line-clamp-4">{spot.description}</p>
                             </div>
                         </div>
                     ))}

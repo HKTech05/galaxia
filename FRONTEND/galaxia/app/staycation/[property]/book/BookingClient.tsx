@@ -720,7 +720,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                         )}
 
                         {currentStep === 2 && !showLoginPrompt && (
-                            <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm max-w-lg mx-auto lg:max-w-none">
+                            <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm">
                                 <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
                                 <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">Please fill all relevant fields to proceed further.</p>
 
