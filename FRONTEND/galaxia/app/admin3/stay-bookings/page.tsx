@@ -253,12 +253,12 @@ export default function StayBookingsPage() {
                                             <td className="px-5 py-4">
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2 mb-0.5">
-                                                        <span className="text-sm font-bold text-slate-800">{b.bookingRef}</span>
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${b.source === "website" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
-                                                            {b.source === "website" ? "Online" : "Walk-in"}
+                                                        <span className="text-sm font-bold text-slate-800">{b.customerName}</span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${b.source === "website" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : b.source === "admin-bulk" || b.source === "bulk" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
+                                                            {b.source === "website" ? "Online" : b.source === "admin-bulk" || b.source === "bulk" ? "Admin Bulk" : "Walk-in"}
                                                         </span>
                                                     </div>
-                                                    <span className="text-sm font-medium text-slate-600">{b.customerName}</span>
+                                                    <span className="text-[11px] font-bold text-slate-400">{b.bookingRef}</span>
                                                     <span className="text-[11px] font-bold text-slate-400 mt-0.5">{b.customerPhone}</span>
                                                 </div>
                                             </td>

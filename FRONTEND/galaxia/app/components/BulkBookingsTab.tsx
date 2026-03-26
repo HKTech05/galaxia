@@ -14,9 +14,7 @@ export default function BulkBookingsTab() {
         numCottages: 1,
         cottageType: "standard" as "standard" | "family" | "mix",
         guestsPerCottage: 2,
-        specialRequests: "",
         paymentMethod: "UPI" as "Cash" | "UPI" | "Online",
-        adminNotes: "",
     });
     const [bulkHistory, setBulkHistory] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +28,7 @@ export default function BulkBookingsTab() {
                 if (Array.isArray(data)) {
                     const groups: Record<string, any[]> = {};
                     for (const b of data) {
-                        if (b.property?.name?.includes("Amstel") && b.source === "bulk") {
+                        if (b.property?.name?.includes("Amstel") && (b.source === "bulk" || b.source === "admin-bulk")) {
                             const key = `${b.customerName}-${b.checkInDate}`;
                             if (!groups[key]) groups[key] = [];
                             groups[key].push(b);
@@ -110,12 +108,12 @@ export default function BulkBookingsTab() {
                     gstAmount: perCottageGst,
                     advancePaid: true,
                     advanceMethod: bulkForm.paymentMethod,
-                    source: "bulk",
-                    notes: `Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}. ${bulkForm.specialRequests || ""} ${bulkForm.adminNotes || ""}`.trim(),
+                    source: "admin-bulk",
+                    notes: `Admin Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}.`.trim(),
                 });
             }
             setBulkSuccess(`Created ${bulkForm.numCottages} cottage booking(s) for ${bulkForm.customerName}!`);
-            setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: 1, cottageType: "standard", guestsPerCottage: 2, specialRequests: "", paymentMethod: "UPI", adminNotes: "" });
+            setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: 1, cottageType: "standard", guestsPerCottage: 2, paymentMethod: "UPI" });
         } catch (err: any) {
             setBulkError(err?.message || "Failed to create bulk booking.");
         } finally {
@@ -201,14 +199,6 @@ export default function BulkBookingsTab() {
                                     <option value="Online">Online Transfer</option>
                                 </select>
                             </div>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Special Requests</label>
-                            <textarea value={bulkForm.specialRequests} onChange={e => setBulkForm({ ...bulkForm, specialRequests: e.target.value })} rows={2} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none" placeholder="Adjacent cottages, dietary needs, event setup..." />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Admin Notes (Internal)</label>
-                            <textarea value={bulkForm.adminNotes} onChange={e => setBulkForm({ ...bulkForm, adminNotes: e.target.value })} rows={2} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none" placeholder="Internal notes for staff..." />
                         </div>
                     </div>
                 </div>

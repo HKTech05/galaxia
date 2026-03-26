@@ -89,6 +89,15 @@ export default function Admin1Dashboard() {
     const [startDate, setStartDate] = useState(new Date());
     const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
 
+    // Mobile detection for event positioning
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
     const screens = ["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"] as const;
 
     // Fetch DD calendar events from API
@@ -1309,8 +1318,13 @@ export default function Admin1Dashboard() {
                                     // Calculate positioning based on index
                                     const top = (ev.startHour - 10) * 70; // 70px per hour row
                                     const height = ev.duration * 70;
-                                    const left = `calc(${(colIndex + 1) * 20}% + 4px)`; // 1/5th width per col + padding
-                                    const width = `calc(20% - 8px)`;
+                                    // Mobile: 50px time col + equal remaining. Desktop: equal 20% cols
+                                    const left = isMobile
+                                        ? `calc(50px + ${colIndex} * ((100% - 50px) / 4) + 4px)`
+                                        : `calc(${(colIndex + 1) * 20}% + 4px)`;
+                                    const width = isMobile
+                                        ? `calc((100% - 50px) / 4 - 8px)`
+                                        : `calc(20% - 8px)`;
 
                                     return (
                                         <div
