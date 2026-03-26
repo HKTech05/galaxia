@@ -16,6 +16,12 @@ const hours = [
     "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM"
 ];
 
+const mobileHours = [
+    "10 AM", "11 AM", "12 PM", "1 PM",
+    "2 PM", "3 PM", "4 PM", "5 PM",
+    "6 PM", "7 PM", "8 PM", "9 PM", "10 PM"
+];
+
 // Screen Color Mappings:
 // Sandy Screen = yellow
 // Cine Love = pink
@@ -1246,7 +1252,7 @@ export default function Admin1Dashboard() {
                         </h2>
                     </div>
 
-                    <div className="overflow-auto max-h-[75vh]">
+                    <div className="overflow-auto max-h-[75vh] pt-3">
                         <div className="min-w-[900px]">
                             {/* Calendar Header */}
                             <div className="grid grid-cols-5 border-b border-slate-200 bg-slate-50 sticky top-0 z-30">
@@ -1264,8 +1270,11 @@ export default function Admin1Dashboard() {
                             <div className="relative">
                                 {hours.map((hour, hourIndex) => (
                                     <div key={hourIndex} className="grid grid-cols-5 border-b border-slate-100 min-h-[70px]">
-                                        <div className="p-2 border-r border-slate-200 text-center relative bg-white z-20 sticky left-0 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">
-                                            <span className="text-xs font-bold text-slate-500 left-1/2 -translate-x-1/2 absolute -top-2.5 bg-white px-2 tracking-tight whitespace-nowrap">{hour}</span>
+                                        <div className="p-1 md:p-2 border-r border-slate-200 text-center relative bg-white z-[35] sticky left-0 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">
+                                            <span className="text-[10px] md:text-xs font-bold text-slate-500 left-1/2 -translate-x-1/2 absolute -top-2.5 bg-white px-1 md:px-2 tracking-tight whitespace-nowrap">
+                                                <span className="md:hidden">{mobileHours[hourIndex]}</span>
+                                                <span className="hidden md:inline">{hour}</span>
+                                            </span>
                                         </div>
                                         {screens.map((_, screenIndex) => (
                                             <div

@@ -1671,8 +1671,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Date View Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Bookings</h2>
-                        <p className="text-sm text-slate-500 font-medium mt-1">Read-only view grouped by screen.</p>
+                        <h2 className="text-lg font-bold text-slate-800 tracking-tight">Day-wise & Screen-wise Bookings</h2>
+                        <p className="text-sm text-slate-500 font-medium mt-1">Day-wise and Screen-wise display of all digital diaries bookings.</p>
                     </div>
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
                 </div>
@@ -1900,7 +1900,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const pageTitles: Record<string, { title: string; subtitle: string }> = {
         dashboard: { title: "Owner Dashboard", subtitle: "Complete overview of all business operations." },
         properties: { title: "Properties", subtitle: "Live check-in status across all staycation properties." },
-        dd: { title: "Digital Diaries", subtitle: "Read-only view of all Digital Diaries reservations." },
+        dd: { title: "Digital Diaries", subtitle: "Day-wise and Screen-wise display of all digital diaries bookings." },
         website: { title: "Photo Manager", subtitle: "" },
     };
 
