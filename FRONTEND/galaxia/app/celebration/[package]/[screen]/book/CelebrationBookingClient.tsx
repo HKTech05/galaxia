@@ -944,6 +944,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                 setShowLoginPrompt(true);
                                             }
                                             setCurrentStep(2);
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
                                         }
                                     }}
                                     disabled={totalHours < (isMovieTime ? 1 : 2)}
@@ -1193,7 +1194,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         Back
                                     </button>
                                     <button
-                                        onClick={() => setCurrentStep(3)}
+                                        onClick={() => { setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                         disabled={!firstName || !lastName || !phone || !agreed || (idVerificationMethod === "online" && (idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)))}
                                         className="flex-1 bg-gradient-to-r from-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-3 rounded-lg hover:shadow-lg hover:shadow-rose-dark/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
