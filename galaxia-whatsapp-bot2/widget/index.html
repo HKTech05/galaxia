@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galaxia Resorts — Chatbot Demo</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+    }
+    .header {
+      background: #111;
+      padding: 30px 20px;
+      color: white;
+      text-align: center;
+    }
+    .content {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h1 { margin-top: 0; color: #d4af37; }
+    p { line-height: 1.6; color: #555; }
+    ul { color: #555; }
+    code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Galaxia Resorts Website Demo</h1>
+    <p>Premium Experiences — Curated for You</p>
+  </div>
+
+  <div class="content">
+    <h2>Embed Instruction</h2>
+    <p>To add this chatbot to the real <code>galaxiaresorts.com</code>, simply paste the following script tag just before the closing <code>&lt;/body&gt;</code> tag on every page:</p>
+    
+    <pre><code>
+&lt;!-- Galaxia Chat Widget --&gt;
+&lt;script 
+  src="https://your-chatbot-server.com/widget/galaxia-chat.js" 
+  data-backend-url="https://your-chatbot-server.com"&gt;
+&lt;/script&gt;
+    </code></pre>
+
+    <p>Look at the bottom right corner of this screen to test the actual widget!</p>
+    
+    <h3>Features of this Widget</h3>
+    <ul>
+      <li><strong>Fully Standalone:</strong> Injects its own scoped CSS to prevent layout breaks</li>
+      <li><strong>Mobile Friendly:</strong> Expands to full screen on devices under 480px</li>
+      <li><strong>No Typing Needed:</strong> 100% button-driven menu navigation to avoid AI hallucinations</li>
+      <li><strong>Persistent Backend:</strong> Uses your Node.js backend to fetch pricing, details, and images</li>
+    </ul>
+
+  </div>
+
+  <!-- Galaxia Chat Widget -->
+  <script src="/widget/galaxia-chat.js" data-backend-url="http://localhost:3000"></script>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Login | Galaxia</title>
+    <meta name="description" content="Login to the Galaxia Chatbot Dashboard to manage WhatsApp and Instagram conversations.">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-logo">
+                <h1>Galaxia</h1>
+                <p>CHATBOT DASHBOARD</p>
+            </div>
+            
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+                </div>
+                
+                <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+                
+                <button type="submit" class="btn-primary" id="loginBtn">Sign In</button>
+            </form>
+            
+            <div class="login-footer">
+                <p>Galaxia Resorts — Internal Use Only</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /* ═══════════════════════════════════════════════════════
+       CHATBOT LOGIN — Mock Auth
+       
+       In production, this connects to your existing
+       POST /api/auth/login endpoint. For now, we use
+       mock credentials that map to roles.
+       ═══════════════════════════════════════════════════════ */
+
+    // Mock users — replace with real API call later
+    const MOCK_USERS = {
+        // Owner sees ALL numbers
+        'owner': {
+            password: 'owner123',
+            role: 'owner',
+            displayName: 'Owner',
+            assignedNumbers: ['staycation_1', 'staycation_2', 'digital_diaries']
+        },
+        // Staycation 1 admin
+        'staycation1': {
+            password: 'stay1pass',
+            role: 'chatbot_admin',
+            displayName: 'Staycation 1 Admin',
+            assignedNumbers: ['staycation_1']
+        },
+        // Staycation 2 admin
+        'staycation2': {
+            password: 'stay2pass',
+            role: 'chatbot_admin',
+            displayName: 'Staycation 2 Admin',
+            assignedNumbers: ['staycation_2']
+        },
+        // Digital Diaries admin
+        'ddadmin': {
+            password: 'ddpass',
+            role: 'chatbot_admin',
+            displayName: 'Digital Diaries Admin',
+            assignedNumbers: ['digital_diaries']
+        }
+    };
+
+    const form = document.getElementById('loginForm');
+    const errorEl = document.getElementById('loginError');
+    const loginBtn = document.getElementById('loginBtn');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.style.display = 'none';
+        loginBtn.textContent = 'Signing in...';
+        loginBtn.disabled = true;
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        // Simulate network delay
+        await new Promise(r => setTimeout(r, 600));
+
+        const user = MOCK_USERS[username];
+        if (user && user.password === password) {
+            // Store session in localStorage
+            const session = {
+                username,
+                role: user.role,
+                displayName: user.displayName,
+                assignedNumbers: user.assignedNumbers,
+                loginTime: new Date().toISOString()
+            };
+            localStorage.setItem('chatbot_session', JSON.stringify(session));
+            
+            // Redirect to dashboard
+            window.location.href = 'dashboard.html';
+        } else {
+            errorEl.textContent = 'Invalid credentials. Please try again.';
+            errorEl.style.display = 'block';
+            loginBtn.textContent = 'Sign In';
+            loginBtn.disabled = false;
+        }
+    });
+
+    // If already logged in, redirect
+    const existingSession = localStorage.getItem('chatbot_session');
+    if (existingSession) {
+        window.location.href = 'dashboard.html';
+    }
+    </script>
+</body>
+</html>

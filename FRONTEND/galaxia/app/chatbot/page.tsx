@@ -11,9 +11,9 @@ import "./chatbot.css";
 
 const MOCK_USERS: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {
     owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries"] },
-    staycation1: { password: "stay1pass", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: ["staycation_1"] },
-    staycation2: { password: "stay2pass", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2"] },
-    ddadmin: { password: "ddpass", role: "chatbot_admin", displayName: "Digital Diaries Admin", assignedNumbers: ["digital_diaries"] },
+    staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: ["staycation_1"] },
+    staycation2: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2"] },
+    ddadmin: { password: "dd123", role: "chatbot_admin", displayName: "Digital Diaries Admin", assignedNumbers: ["digital_diaries"] },
 };
 
 export default function ChatbotLoginPage() {

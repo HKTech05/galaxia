@@ -65,6 +65,7 @@ const admin3BottomItems = [
     { name: "Coupons", href: "/admin3/coupons", icon: Ticket },
     { name: "Users", href: "/admin3/users", icon: Users },
     { name: "Properties", href: "/admin3/properties-mgmt", icon: Building },
+    { name: "Reports", href: "/admin3/reports", icon: FileText },
     { name: "Reviews", href: "/admin3/reviews", icon: Star },
     { name: "Chatbot", href: "/admin3/chatbot", icon: MessageSquare },
     { name: "Settings", href: "/admin3/settings", icon: Settings },

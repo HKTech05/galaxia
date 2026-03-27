@@ -98,6 +98,7 @@ export default function ChatbotDashboard() {
     const [activeChat, setActiveChat] = useState<string | null>(null);
     const [msgInput, setMsgInput] = useState("");
     const [mobileShowChat, setMobileShowChat] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const msgEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -176,7 +177,9 @@ export default function ChatbotDashboard() {
                     <span className="cb-role-badge">{session.role === "owner" ? "Owner" : session.displayName}</span>
                 </div>
                 <div className="cb-topbar-right">
-                    <div className="cb-conn-status"><div className="cb-conn-dot" /><span>Template Mode</span></div>
+                    <button className="cb-btn-settings" onClick={() => setShowSettings(true)} title="Settings">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" /><circle cx="12" cy="12" r="3" /></svg>
+                    </button>
                     <button className="cb-btn-logout" onClick={handleLogout}>Log Out</button>
                 </div>
             </header>
@@ -330,6 +333,29 @@ export default function ChatbotDashboard() {
                     )}
                 </div>
             </div>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="cb-settings-overlay" onClick={() => setShowSettings(false)}>
+                    <div className="cb-settings-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cb-settings-header">
+                            <h3>⚙️ Settings</h3>
+                            <button className="cb-settings-close" onClick={() => setShowSettings(false)}>✕</button>
+                        </div>
+                        <div className="cb-settings-body">
+                            <table className="cb-settings-table">
+                                <thead><tr><th>Username</th><th>Password</th><th>Access</th></tr></thead>
+                                <tbody>
+                                    <tr><td>owner</td><td>owner123</td><td>All Numbers</td></tr>
+                                    <tr><td>staycation1</td><td>stay123</td><td>Staycation 1</td></tr>
+                                    <tr><td>staycation2</td><td>stay123</td><td>Staycation 2</td></tr>
+                                    <tr><td>ddadmin</td><td>dd123</td><td>Digital Diaries</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

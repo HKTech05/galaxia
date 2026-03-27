@@ -955,16 +955,41 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <p className="text-sm text-slate-500 font-medium mb-6">Screen-level and package-level revenue breakdown.</p>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* DD Booking Source — now in left column */}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue by Screen</h3>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source — Website vs Walk-in</h3>
                                     <ResponsiveContainer width="100%" height={250}>
-                                        <BarChart data={dashboardKPIs?.charts?.ddScreen || []}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                                            <XAxis dataKey="screen" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
-                                            <Tooltip formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
-                                            <Bar dataKey="revenue" fill="#7c3aed" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
+                                        <PieChart>
+                                            <Pie data={(() => {
+                                                const src = dashboardKPIs?.ddBookingSources;
+                                                if (!src) return [];
+                                                return [
+                                                    { name: 'Website', value: src.website || 0, fill: '#7c3aed' },
+                                                    { name: 'Walk-in', value: src.walkIn || 0, fill: '#c4b5fd' },
+                                                ].filter((d: any) => d.value > 0);
+                                            })()} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={6} dataKey="value" nameKey="name" stroke="none">
+                                                {[{ fill: '#7c3aed' }, { fill: '#c4b5fd' }].map((entry, index) => (
+                                                    <Cell key={`ddsrc-${index}`} fill={entry.fill} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                content={({ active, payload }: any) => {
+                                                    if (active && payload && payload.length) {
+                                                        const d = payload[0].payload;
+                                                        const src = dashboardKPIs?.ddBookingSources;
+                                                        const total = (src?.website || 0) + (src?.walkIn || 0);
+                                                        return (
+                                                            <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-lg">
+                                                                <p className="font-bold text-slate-800 text-sm">{d.name}</p>
+                                                                <p className="text-xs text-indigo-600 font-semibold mt-1">{d.value} bookings ({Math.round((d.value / total) * 100)}%)</p>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                            <Legend verticalAlign="bottom" formatter={(value: string) => <span className="text-xs font-semibold text-slate-600">{value}</span>} />
+                                        </PieChart>
                                     </ResponsiveContainer>
                                 </div>
 
@@ -990,41 +1015,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                             </div>
 
-                            {/* Digital Diaries Booking Source — Website vs Walk-in */}
+                            {/* Revenue by Screen — now full width below */}
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mt-6">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Digital Diaries Booking Source — Website vs Walk-in</h3>
+                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">Revenue by Screen</h3>
                                 <ResponsiveContainer width="100%" height={260}>
-                                    <PieChart>
-                                        <Pie data={(() => {
-                                            const src = dashboardKPIs?.ddBookingSources;
-                                            if (!src) return [];
-                                            return [
-                                                { name: 'Website', value: src.website || 0, fill: '#7c3aed' },
-                                                { name: 'Walk-in', value: src.walkIn || 0, fill: '#c4b5fd' },
-                                            ].filter((d: any) => d.value > 0);
-                                        })()} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={6} dataKey="value" nameKey="name" stroke="none">
-                                            {[{ fill: '#7c3aed' }, { fill: '#c4b5fd' }].map((entry, index) => (
-                                                <Cell key={`ddsrc-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip
-                                            content={({ active, payload }: any) => {
-                                                if (active && payload && payload.length) {
-                                                    const d = payload[0].payload;
-                                                    const src = dashboardKPIs?.ddBookingSources;
-                                                    const total = (src?.website || 0) + (src?.walkIn || 0);
-                                                    return (
-                                                        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-lg">
-                                                            <p className="font-bold text-slate-800 text-sm">{d.name}</p>
-                                                            <p className="text-xs text-indigo-600 font-semibold mt-1">{d.value} bookings ({Math.round((d.value / total) * 100)}%)</p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Legend verticalAlign="bottom" formatter={(value: string) => <span className="text-xs font-semibold text-slate-600">{value}</span>} />
-                                    </PieChart>
+                                    <BarChart data={dashboardKPIs?.charts?.ddScreen || []}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                        <XAxis dataKey="screen" tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} />
+                                        <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: "#94a3b8" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`} />
+                                        <Tooltip formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600 }} />
+                                        <Bar dataKey="revenue" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>

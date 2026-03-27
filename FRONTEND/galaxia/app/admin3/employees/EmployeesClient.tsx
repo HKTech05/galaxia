@@ -309,9 +309,9 @@ export default function EmployeesClient() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-start justify-between">
+                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                             <div>
-                                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
                                     {activeEmployee.location} — {activeEmployee.name}
                                 </h2>
                                 <p className="text-sm text-slate-500 font-medium mt-1">Cash collection history & transaction logs</p>
@@ -346,7 +346,7 @@ export default function EmployeesClient() {
                             </div>
 
                             <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><FileText size={18} className="text-indigo-500" /> Lifetime Transactions</h3>
-                            <div className="border border-slate-200 rounded-xl overflow-hidden">
+                            <div className="border border-slate-200 rounded-xl overflow-hidden hidden sm:block">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-slate-100 text-xs uppercase text-slate-600 font-bold border-b border-slate-200">
                                         <tr>
@@ -393,6 +393,44 @@ export default function EmployeesClient() {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* Mobile card layout */}
+                            <div className="sm:hidden space-y-3">
+                                {activeEmployeeLogs.length > 0 ? (
+                                    activeEmployeeLogs.map(log => {
+                                        const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
+                                        const isRefund = log.transactionType === 'refund' || log.amount < 0;
+                                        return (
+                                            <div key={log.id} className={`p-4 rounded-xl border ${
+                                                isOwnerPickup ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-500' :
+                                                isRefund ? 'bg-red-50 border-red-200 border-l-4 border-l-red-400' :
+                                                'bg-white border-slate-200'
+                                            }`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <p className="text-xs font-medium text-slate-500">
+                                                        {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                    <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                                                        {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
+                                                    </p>
+                                                </div>
+                                                <p className="text-sm font-bold text-slate-800">{log.guestName || '—'}</p>
+                                                <div className="mt-2">
+                                                    {isOwnerPickup ? (
+                                                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-300">{log.note}</span>
+                                                    ) : isRefund ? (
+                                                        <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">↩ {log.note}</span>
+                                                    ) : (
+                                                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="py-8 text-center text-slate-400 font-medium">No transactions recorded.</div>
+                                )}
                             </div>
                         </div>
                     </div>

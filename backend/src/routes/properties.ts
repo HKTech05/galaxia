@@ -114,6 +114,23 @@ router.patch("/sub/:id/toggle", authMiddleware, requireRole("owner", "developer"
     }
 });
 
+// PATCH /api/properties/sub/:id/unit-count — Update sub-property unitCount
+router.patch("/sub/:id/unit-count", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const { unitCount } = req.body;
+        if (unitCount === undefined || unitCount < 0) return res.status(400).json({ error: "Valid unitCount required" });
+        const updated = await prisma.subProperty.update({
+            where: { id },
+            data: { unitCount: parseInt(unitCount) },
+        });
+        return res.json(updated);
+    } catch (error) {
+        console.error("Update unit count error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // PATCH /api/properties/sub/:id/pricing — Update/create sub-property pricing
 router.patch("/sub/:id/pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {

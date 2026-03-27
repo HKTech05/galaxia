@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Overview | Galaxia Owner</title>
+    <meta name="description" content="Galaxia Owner Chatbot Overview — monitor all WhatsApp and Instagram bot activity.">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Override body for owner page which needs scrolling */
+        body { overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="owner-wrapper">
+        <!-- Header -->
+        <div class="owner-header">
+            <div>
+                <h1>Chatbot Management</h1>
+                <p>Monitor WhatsApp & Instagram conversations, analytics, and bot responses.</p>
+            </div>
+            <a href="dashboard.html" class="btn-open-dashboard" target="_blank">
+                💬 Open Chat Dashboard
+            </a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon purple">💬</div>
+                    <span class="stat-trend up">↑ 12%</span>
+                </div>
+                <div class="stat-value" id="statTotalConversations">156</div>
+                <div class="stat-label">Total Conversations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon green">✅</div>
+                    <span class="stat-trend up">↑ 8%</span>
+                </div>
+                <div class="stat-value" id="statActiveToday">23</div>
+                <div class="stat-label">Active Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon amber">🔔</div>
+                </div>
+                <div class="stat-value" id="statUnread">11</div>
+                <div class="stat-label">Unread Messages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon blue">🤖</div>
+                </div>
+                <div class="stat-value" id="statBotHandled">89%</div>
+                <div class="stat-label">Bot Handled</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-icon red">🔥</div>
+                </div>
+                <div class="stat-value" id="statHotLeads">7</div>
+                <div class="stat-label">Hot Leads</div>
+            </div>
+        </div>
+
+        <!-- Number Cards -->
+        <div class="numbers-grid" id="numbersGrid">
+            <!-- Staycation 1 -->
+            <div class="number-card">
+                <div class="number-card-header">
+                    <div class="number-card-title">
+                        <span style="font-size:24px">🏡</span>
+                        <h3>Staycation 1</h3>
+                    </div>
+                    <div class="number-status connected">
+                        <div class="connection-dot"></div>
+                        Placeholder
+                    </div>
+                </div>
+                <div class="number-stats">
+                    <div class="number-stat">
+                        <div class="number-stat-value">64</div>
+                        <div class="number-stat-label">Chats</div>
+                    </div>
+                    <div class="number-stat">
+                        <div class="number-stat-value">5</div>
+                        <div class="number-stat-label">Unread</div>
+                    </div>
+                    <div class="number-stat">
+                        <div class="number-stat-value">3</div>
+                        <div class="number-stat-label">Human</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staycation 2 -->
+            <div class="number-card">
+                <div class="number-card-header">
+                    <div class="number-card-title">
+                        <span style="font-size:24px">🏘️</span>
+                        <h3>Staycation 2</h3>
+                    </div>
+                    <div class="number-status connected">
+                        <div class="connection-dot"></div>
+                        Placeholder
+                    </div>
+                </div>
+                <div class="number-stats">
+                    <div class="number-stat">
+                        <div class="number-stat-value">48</div>
+                        <div class="number-stat-label">Chats</div>
+                    </div>
+                    <div class="number-stat">
+                        <div class="number-stat-value">2</div>
+                        <div class="number-stat-label">Unread</div>
+                    </div>
+                    <div class="number-stat">
+                        <div class="number-stat-value">1</div>
+                        <div class="number-stat-label">Human</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Diaries -->
+            <div class="number-card">
+                <div class="number-card-header">
+                    <div class="number-card-title">
+                        <span style="font-size:24px">🎬</span>
+                        <h3>Digital Diaries</h3>
+                    </div>
+                    <div class="number-status connected">
+                        <div class="connection-dot"></div>
+                        Placeholder
+                    </div>
+                </div>
+                <div class="number-stats">
+                    <div class="number-stat">
+                        <div class="number-stat-value">44</div>
+                        <div class="number-stat-label">Chats</div>
+                    </div>
+                    <div class="number-stat">
+                        <div class="number-stat-value">4</div>
+                        <div class="number-stat-label">Unread</div>
+                    </div>
+                    <div class="number-stat">
+                        <div class="number-stat-value">2</div>
+                        <div class="number-stat-label">Human</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Conversations -->
+        <div class="recent-section">
+            <div class="recent-header">
+                <h2>Recent Conversations</h2>
+                <a href="dashboard.html" style="font-size:12px; font-weight:700; color:var(--accent);">View All →</a>
+            </div>
+            <ul class="recent-list" id="recentList">
+                <li class="recent-item">
+                    <div class="recent-avatar">S</div>
+                    <div class="recent-info">
+                        <h4>Sneha Kulkarni · +91 65432 10987</h4>
+                        <p>🎬 Digital Diaries — Hi! I want to book Sandy Screen for Saturday</p>
+                    </div>
+                    <div class="recent-meta">
+                        <div class="time">5m ago</div>
+                        <div class="mode-badge bot-mode">🤖 Bot</div>
+                    </div>
+                </li>
+                <li class="recent-item">
+                    <div class="recent-avatar">A</div>
+                    <div class="recent-info">
+                        <h4>Arjun Mehta · +91 98765 43210</h4>
+                        <p>🏡 Staycation 1 — What is the check-in time for La Paraiso?</p>
+                    </div>
+                    <div class="recent-meta">
+                        <div class="time">2m ago</div>
+                        <div class="mode-badge bot-mode">🤖 Bot</div>
+                    </div>
+                </li>
+                <li class="recent-item">
+                    <div class="recent-avatar">P</div>
+                    <div class="recent-info">
+                        <h4>Priya Sharma · +91 87654 32109</h4>
+                        <p>🏡 Staycation 1 — Thank you! We will arrive by 3 PM.</p>
+                    </div>
+                    <div class="recent-meta">
+                        <div class="time">15m ago</div>
+                        <div class="mode-badge human-mode">👤 Human</div>
+                    </div>
+                </li>
+                <li class="recent-item">
+                    <div class="recent-avatar">N</div>
+                    <div class="recent-info">
+                        <h4>Nikhil Rao · +91 32109 87654</h4>
+                        <p>🎬 Digital Diaries — Is Park N Watch available for a birthday party?</p>
+                    </div>
+                    <div class="recent-meta">
+                        <div class="time">30m ago</div>
+                        <div class="mode-badge human-mode">👤 Human</div>
+                    </div>
+                </li>
+                <li class="recent-item">
+                    <div class="recent-avatar">R</div>
+                    <div class="recent-info">
+                        <h4>Rohan Patel · +91 76543 21098</h4>
+                        <p>🏘️ Staycation 2 — Is Amstel Nest pet friendly?</p>
+                    </div>
+                    <div class="recent-meta">
+                        <div class="time">45m ago</div>
+                        <div class="mode-badge bot-mode">🤖 Bot</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

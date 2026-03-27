@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Dashboard | Galaxia</title>
+    <meta name="description" content="Galaxia WhatsApp-style Chat Dashboard — manage conversations across all business numbers.">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-wrapper" id="app">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="top-header-left">
+                <h1>Galaxia</h1>
+                <span class="badge-role" id="roleBadge">Owner</span>
+            </div>
+            <div class="top-header-right">
+                <div class="connection-status">
+                    <div class="connection-dot" id="connDot"></div>
+                    <span id="connText">Template Mode</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn" onclick="handleLogout()">Log Out</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- LEFT PANEL -->
+            <div class="left-panel" id="leftPanel">
+                <!-- Number Tabs -->
+                <div class="number-tabs" id="numberTabs"></div>
+
+                <!-- Search -->
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search conversations...">
+                </div>
+
+                <!-- Chat List -->
+                <div class="chat-list" id="chatList"></div>
+            </div>
+
+            <!-- RIGHT PANEL -->
+            <div class="right-panel" id="rightPanel">
+                <!-- Empty State (default) -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">💬</div>
+                    <h2>Galaxia Chat Dashboard</h2>
+                    <p>Select a conversation from the left to view messages. Toggle between bot and human mode for each chat.</p>
+                </div>
+
+                <!-- Chat View (hidden by default) -->
+                <div id="chatView" style="display:none; flex:1; flex-direction:column;">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <div class="chat-header-left">
+                            <button class="btn-back-mobile" id="btnBackMobile" style="display:none; background:none; border:none; color:var(--text-secondary); font-size:20px; cursor:pointer; margin-right:4px;" onclick="goBackToList()">←</button>
+                            <div class="chat-header-avatar" id="chatHeaderAvatar">?</div>
+                            <div class="chat-header-info">
+                                <h3 id="chatHeaderName">+91 98765 43210</h3>
+                                <p id="chatHeaderSub">Staycation 1 · Last seen 2m ago</p>
+                            </div>
+                        </div>
+                        <div class="chat-header-right">
+                            <div class="tag-buttons">
+                                <button class="tag-btn" data-tag="hot" onclick="toggleTag('hot')">🔥 Hot</button>
+                                <button class="tag-btn" data-tag="followup" onclick="toggleTag('followup')">📌 Follow-up</button>
+                                <button class="tag-btn" data-tag="resolved" onclick="toggleTag('resolved')">✅ Resolved</button>
+                            </div>
+                            <div class="mode-toggle" onclick="toggleMode()">
+                                <span class="mode-label bot" id="modeLabelBot">🤖</span>
+                                <div class="toggle-switch" id="modeSwitch"></div>
+                                <span class="mode-label human" id="modeLabelHuman">👤</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages Area -->
+                    <div class="messages-area" id="messagesArea"></div>
+
+                    <!-- Message Input (visible when human mode) -->
+                    <div class="message-input-area" id="messageInputArea" style="display:none;">
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
+                        <button class="btn-send" onclick="sendMessage()">➤</button>
+                    </div>
+
+                    <!-- Bot Active Banner (visible when bot mode) -->
+                    <div class="bot-active-banner" id="botBanner">
+                        <p>🤖 Bot is handling this conversation · <a href="#" onclick="toggleMode(); return false;" style="color:var(--green); font-weight:700;">Switch to Human</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /* ═══════════════════════════════════════════════════════
+       GALAXIA CHAT DASHBOARD
+       Full template with mock data. Replace API calls with
+       real endpoints when integrating.
+       ═══════════════════════════════════════════════════════ */
+
+    // ─── CONFIG: Phone Number Mapping ────────────────────
+    // UPDATE THESE with real phone_number_ids when ready
+    const PHONE_NUMBERS = {
+        staycation_1: {
+            id: 'PLACEHOLDER_STAYCATION_1_PHONE_ID',
+            label: 'Staycation 1',
+            icon: '🏡',
+            color: '#7c3aed'
+        },
+        staycation_2: {
+            id: 'PLACEHOLDER_STAYCATION_2_PHONE_ID',
+            label: 'Staycation 2',
+            icon: '🏘️',
+            color: '#3b82f6'
+        },
+        digital_diaries: {
+            id: 'PLACEHOLDER_DIGITAL_DIARIES_PHONE_ID',
+            label: 'Digital Diaries',
+            icon: '🎬',
+            color: '#f59e0b'
+        }
+    };
+
+    // ─── SESSION ─────────────────────────────────────────
+    let session = null;
+    try {
+        session = JSON.parse(localStorage.getItem('chatbot_session'));
+    } catch(e) {}
+
+    if (!session) {
+        window.location.href = 'login.html';
+    }
+
+    // ─── STATE ───────────────────────────────────────────
+    let currentTab = 'all';
+    let currentChatId = null;
+    let searchQuery = '';
+
+    // ─── MOCK DATA ───────────────────────────────────────
+    const MOCK_SESSIONS = [
+        {
+            id: 'sess_1',
+            sessionId: '+91 98765 43210',
+            displayName: 'Arjun Mehta',
+            phoneNumberKey: 'staycation_1',
+            mode: 'bot',
+            tags: ['hot'],
+            unread: 3,
+            lastMessage: 'What is the check-in time for La Paraiso?',
+            lastMessageTime: new Date(Date.now() - 2 * 60 * 1000),
+            platform: 'whatsapp'
+        },
+        {
+            id: 'sess_2',
+            sessionId: '+91 87654 32109',
+            displayName: 'Priya Sharma',
+            phoneNumberKey: 'staycation_1',
+            mode: 'human',
+            tags: ['followup'],
+            unread: 0,
+            lastMessage: 'Thank you! We will arrive by 3 PM.',
+            lastMessageTime: new Date(Date.now() - 15 * 60 * 1000),
+            platform: 'whatsapp'
+        },
+        {
+            id: 'sess_3',
+            sessionId: '+91 76543 21098',
+            displayName: 'Rohan Patel',
+            phoneNumberKey: 'staycation_2',
+            mode: 'bot',
+            tags: [],
+            unread: 1,
+            lastMessage: 'Is Amstel Nest pet friendly?',
+            lastMessageTime: new Date(Date.now() - 45 * 60 * 1000),
+            platform: 'whatsapp'
+        },
+        {
+            id: 'sess_4',
+            sessionId: '+91 65432 10987',
+            displayName: 'Sneha Kulkarni',
+            phoneNumberKey: 'digital_diaries',
+            mode: 'bot',
+            tags: ['new'],
+            unread: 5,
+            lastMessage: 'Hi! I want to book Sandy Screen for Saturday',
+            lastMessageTime: new Date(Date.now() - 5 * 60 * 1000),
+            platform: 'whatsapp'
+        },
+        {
+            id: 'sess_5',
+            sessionId: '+91 54321 09876',
+            displayName: 'Amit Desai',
+            phoneNumberKey: 'staycation_1',
+            mode: 'human',
+            tags: ['resolved'],
+            unread: 0,
+            lastMessage: 'Booking confirmed. Ref: STY-2024-0341',
+            lastMessageTime: new Date(Date.now() - 3 * 3600 * 1000),
+            platform: 'whatsapp'
+        },
+        {
+            id: 'sess_6',
+            sessionId: '+91 43210 98765',
+            displayName: 'Kavita Joshi',
+            phoneNumberKey: 'staycation_2',
+            mode: 'bot',
+            tags: [],
+            unread: 0,
+            lastMessage: 'Can we bring our pet dog?',
+            lastMessageTime: new Date(Date.now() - 5 * 3600 * 1000),
+            platform: 'instagram'
+        },
+        {
+            id: 'sess_7',
+            sessionId: '+91 32109 87654',
+            displayName: 'Nikhil Rao',
+            phoneNumberKey: 'digital_diaries',
+            mode: 'human',
+            tags: ['hot'],
+            unread: 2,
+            lastMessage: 'Is Park N Watch available for a birthday party?',
+            lastMessageTime: new Date(Date.now() - 30 * 60 * 1000),
+            platform: 'whatsapp'
+        },
+        {
+            id: 'sess_8',
+            sessionId: '+91 21098 76543',
+            displayName: 'Meera Iyer',
+            phoneNumberKey: 'staycation_1',
+            mode: 'bot',
+            tags: [],
+            unread: 0,
+            lastMessage: 'What are the weekend prices for Santorini?',
+            lastMessageTime: new Date(Date.now() - 8 * 3600 * 1000),
+            platform: 'whatsapp'
+        }
+    ];
+
+    const MOCK_MESSAGES = {
+        'sess_1': [
+            { role: 'user', message: 'Hi', time: new Date(Date.now() - 10 * 60 * 1000), isHuman: false },
+            { role: 'assistant', message: '👋 *Welcome to Galaxia Staycations!*\n\nExplore our luxury villas in Karjat. Choose a category below:', time: new Date(Date.now() - 10 * 60 * 1000 + 2000), isHuman: false },
+            { role: 'user', message: 'I want to see La Paraiso', time: new Date(Date.now() - 8 * 60 * 1000), isHuman: false },
+            { role: 'assistant', message: '🏡 *La Paraiso*\nPremium Private Pool Villa\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Weekday: ₹4,950 + 5% GST\n  • Weekend: ₹7,500 + 5% GST\n  • Extra Adult: ₹1,200 + 5% GST\n  • Kids (5-10 yrs): ₹800 + 5% GST\n\n🕒 Check-in: 2:00 PM | Check-out: 10:00 AM\n🍽️ Food: Restaurant 10 steps away.\n🐾 Pets: Allowed ✅ (₹600 extra)\n💵 Security Deposit: ₹3,000\n✨ Amenities: Private Pool, Private Garden, Gazebo, Smart TV', time: new Date(Date.now() - 8 * 60 * 1000 + 3000), isHuman: false },
+            { role: 'user', message: 'What is the check-in time for La Paraiso?', time: new Date(Date.now() - 2 * 60 * 1000), isHuman: false },
+        ],
+        'sess_2': [
+            { role: 'user', message: 'Hello, we want to book Heavenly Villas for this weekend', time: new Date(Date.now() - 2 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: '👋 Welcome! Let me check availability for Heavenly Villas this weekend.', time: new Date(Date.now() - 2 * 3600 * 1000 + 2000), isHuman: false },
+            { role: 'assistant', message: 'Great news! Heavenly Villas is available for Saturday-Sunday. The rate is ₹4,950 + GST per night. Shall I proceed with the booking?', time: new Date(Date.now() - 1.5 * 3600 * 1000), isHuman: true },
+            { role: 'user', message: 'Yes please! 2 adults, checking in Saturday 2 PM', time: new Date(Date.now() - 1 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: 'Perfect! I\'ve reserved Heavenly Villas for you:\n📅 Sat → Sun\n👥 2 Adults\n💰 ₹4,950 + 5% GST = ₹5,198\n\nPlease complete payment on galaxiaresorts.com to confirm. I\'ll send you the link!', time: new Date(Date.now() - 50 * 60 * 1000), isHuman: true },
+            { role: 'user', message: 'Thank you! We will arrive by 3 PM.', time: new Date(Date.now() - 15 * 60 * 1000), isHuman: false },
+        ],
+        'sess_3': [
+            { role: 'user', message: 'Hi is Amstel Nest pet friendly?', time: new Date(Date.now() - 50 * 60 * 1000), isHuman: false },
+            { role: 'assistant', message: '🐾 *Pets Policy*\n\n✅ Pets Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose villas.\n💰 Cost: ₹600 extra per pet.\n❌ Not Allowed: Amstel Nest.', time: new Date(Date.now() - 50 * 60 * 1000 + 2000), isHuman: false },
+            { role: 'user', message: 'Is Amstel Nest pet friendly?', time: new Date(Date.now() - 45 * 60 * 1000), isHuman: false },
+        ],
+        'sess_4': [
+            { role: 'user', message: 'Hi! I want to book Sandy Screen for Saturday', time: new Date(Date.now() - 5 * 60 * 1000), isHuman: false },
+            { role: 'assistant', message: '🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala. Let me help you with Sandy Screen booking!', time: new Date(Date.now() - 5 * 60 * 1000 + 2000), isHuman: false },
+        ],
+        'sess_5': [
+            { role: 'user', message: 'Hi, we need to cancel our booking STY-2024-0341', time: new Date(Date.now() - 6 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: '❌ *Cancellation & Refund*\n\nAll bookings are *Non-Refundable* and *Non-Transferable*.', time: new Date(Date.now() - 6 * 3600 * 1000 + 2000), isHuman: false },
+            { role: 'user', message: 'Can I speak to someone?', time: new Date(Date.now() - 5 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: 'I understand your concern. Let me connect you with our team.', time: new Date(Date.now() - 4 * 3600 * 1000), isHuman: true },
+            { role: 'assistant', message: 'Hi! I checked with the team. Since your check-in is more than 7 days away, we can offer you a one-time date change instead of cancellation. Would that work?', time: new Date(Date.now() - 3.5 * 3600 * 1000), isHuman: true },
+            { role: 'user', message: 'Yes! That would be great. Can we move to next weekend?', time: new Date(Date.now() - 3.2 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: 'Done! Your booking STY-2024-0341 has been moved to next Saturday-Sunday. Same property, same rate. Enjoy your stay! 🎉', time: new Date(Date.now() - 3 * 3600 * 1000), isHuman: true },
+            { role: 'user', message: 'Booking confirmed. Ref: STY-2024-0341', time: new Date(Date.now() - 3 * 3600 * 1000), isHuman: false },
+        ],
+        'sess_6': [
+            { role: 'user', message: 'Can we bring our pet dog?', time: new Date(Date.now() - 5 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: '🐾 *Pets Policy*\n\n✅ Pets Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose villas.\n💰 Cost: ₹600 extra per pet.\n❌ Not Allowed: Amstel Nest.', time: new Date(Date.now() - 5 * 3600 * 1000 + 2000), isHuman: false },
+        ],
+        'sess_7': [
+            { role: 'user', message: 'Hey, is Park N Watch available for a birthday party on 30th?', time: new Date(Date.now() - 60 * 60 * 1000), isHuman: false },
+            { role: 'assistant', message: '🎬 *Welcome to Digital Diaries!*\n\nLet me check Park N Watch availability for the 30th!', time: new Date(Date.now() - 60 * 60 * 1000 + 2000), isHuman: false },
+            { role: 'user', message: 'Also, can we get decoration?', time: new Date(Date.now() - 55 * 60 * 1000), isHuman: false },
+            { role: 'assistant', message: 'Yes! We have celebration packs with decorations. Let me get our team to help you with the details.', time: new Date(Date.now() - 50 * 60 * 1000), isHuman: false },
+            { role: 'user', message: 'Is Park N Watch available for a birthday party?', time: new Date(Date.now() - 30 * 60 * 1000), isHuman: false },
+        ],
+        'sess_8': [
+            { role: 'user', message: 'What are the weekend prices for Santorini?', time: new Date(Date.now() - 8 * 3600 * 1000), isHuman: false },
+            { role: 'assistant', message: '🏡 *Santorini*\nMediterranean-Style Themed Villa\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Weekday: ₹5,500 + 5% GST\n  • Weekend: ₹6,500 + 5% GST\n\n🕒 Check-in: 2:00 PM | Check-out: 10:00 AM\n🍽️ Food: Meals Included — Lunch, Dinner & Breakfast. Only Veg.\n✨ Amenities: Private Pool, White & Blue Interiors, Smart TV, AC', time: new Date(Date.now() - 8 * 3600 * 1000 + 2000), isHuman: false },
+        ],
+    };
+
+    // ─── INIT ────────────────────────────────────────────
+    function init() {
+        // Set role badge
+        document.getElementById('roleBadge').textContent = session.role === 'owner' ? 'Owner' : session.displayName;
+        
+        // Set connection status to template mode
+        document.getElementById('connDot').classList.add('offline');
+        document.getElementById('connText').textContent = 'Template Mode';
+
+        // Build number tabs based on access
+        buildNumberTabs();
+        
+        // Render chat list
+        renderChatList();
+        
+        // Search handler
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderChatList();
+        });
+
+        // Mobile responsiveness
+        handleResize();
+        window.addEventListener('resize', handleResize);
+    }
+
+    // ─── NUMBER TABS ─────────────────────────────────────
+    function buildNumberTabs() {
+        const container = document.getElementById('numberTabs');
+        const allowedNumbers = session.assignedNumbers || Object.keys(PHONE_NUMBERS);
+
+        let html = `<button class="number-tab ${currentTab === 'all' ? 'active' : ''}" onclick="switchTab('all')">All`;
+        
+        // Calculate total unread for "All"
+        const totalUnread = getFilteredSessions('all').reduce((sum, s) => sum + s.unread, 0);
+        if (totalUnread > 0) html += `<span class="tab-count">${totalUnread}</span>`;
+        html += `</button>`;
+
+        for (const key of allowedNumbers) {
+            const num = PHONE_NUMBERS[key];
+            if (!num) continue;
+            const unread = getFilteredSessions(key).reduce((sum, s) => sum + s.unread, 0);
+            html += `<button class="number-tab ${currentTab === key ? 'active' : ''}" onclick="switchTab('${key}')">${num.icon} ${num.label}`;
+            if (unread > 0) html += `<span class="tab-count">${unread}</span>`;
+            html += `</button>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        buildNumberTabs();
+        renderChatList();
+    }
+
+    // ─── FILTER SESSIONS ─────────────────────────────────
+    function getFilteredSessions(tab) {
+        const allowedNumbers = session.assignedNumbers || Object.keys(PHONE_NUMBERS);
+        
+        return MOCK_SESSIONS.filter(s => {
+            // Filter by access
+            if (!allowedNumbers.includes(s.phoneNumberKey)) return false;
+            // Filter by tab
+            if (tab !== 'all' && s.phoneNumberKey !== tab) return false;
+            return true;
+        });
+    }
+
+    // ─── RENDER CHAT LIST ────────────────────────────────
+    function renderChatList() {
+        const container = document.getElementById('chatList');
+        let sessions = getFilteredSessions(currentTab);
+
+        // Apply search filter
+        if (searchQuery) {
+            sessions = sessions.filter(s =>
+                s.displayName.toLowerCase().includes(searchQuery) ||
+                s.sessionId.includes(searchQuery) ||
+                s.lastMessage.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        // Sort by last message time (newest first)
+        sessions.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+        if (sessions.length === 0) {
+            container.innerHTML = `
+                <div style="padding:40px 20px; text-align:center; color:var(--text-dim);">
+                    <p style="font-size:32px; margin-bottom:12px;">📭</p>
+                    <p style="font-size:13px; font-weight:600;">No conversations found</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = sessions.map(s => {
+            const num = PHONE_NUMBERS[s.phoneNumberKey];
+            const initial = s.displayName.charAt(0).toUpperCase();
+            const modeClass = s.mode === 'bot' ? 'bot-active' : 'human-active';
+            const modeIcon = s.mode === 'bot' ? '🤖' : '👤';
+            const timeStr = formatTime(s.lastMessageTime);
+            const platformIcon = s.platform === 'instagram' ? '📷' : '';
+
+            return `
+            <div class="chat-item ${currentChatId === s.id ? 'active' : ''}" onclick="openChat('${s.id}')">
+                <div class="chat-avatar ${modeClass}">${initial}</div>
+                <div class="chat-info">
+                    <div class="chat-info-top">
+                        <span class="chat-name">${platformIcon} ${s.displayName}</span>
+                        <span class="chat-time ${s.unread > 0 ? 'has-unread' : ''}">${timeStr}</span>
+                    </div>
+                    <div class="chat-info-bottom">
+                        <span class="chat-preview">${escapeHtml(s.lastMessage)}</span>
+                        ${s.unread > 0 ? `<span class="unread-badge">${s.unread}</span>` : ''}
+                        <span class="chat-mode-indicator">${modeIcon}</span>
+                    </div>
+                    ${s.tags.length > 0 ? `
+                    <div class="chat-tags">
+                        ${s.tags.map(t => `<span class="tag tag-${t}">${t === 'hot' ? '🔥 Hot Lead' : t === 'followup' ? '📌 Follow-up' : t === 'resolved' ? '✅ Resolved' : '🆕 New'}</span>`).join('')}
+                    </div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ─── OPEN CHAT ───────────────────────────────────────
+    function openChat(chatId) {
+        currentChatId = chatId;
+        const chat = MOCK_SESSIONS.find(s => s.id === chatId);
+        if (!chat) return;
+
+        // Mark as read
+        chat.unread = 0;
+
+        // Update UI
+        document.getElementById('emptyState').style.display = 'none';
+        const chatView = document.getElementById('chatView');
+        chatView.style.display = 'flex';
+
+        // Header
+        const num = PHONE_NUMBERS[chat.phoneNumberKey];
+        document.getElementById('chatHeaderAvatar').textContent = chat.displayName.charAt(0);
+        document.getElementById('chatHeaderName').textContent = `${chat.displayName} · ${chat.sessionId}`;
+        document.getElementById('chatHeaderSub').textContent = `${num.icon} ${num.label} · ${chat.platform} · Last seen ${formatTime(chat.lastMessageTime)}`;
+
+        // Mode toggle
+        updateModeUI(chat.mode);
+
+        // Tags
+        updateTagButtons(chat.tags);
+
+        // Messages
+        renderMessages(chatId);
+
+        // Re-render chat list to update active state + unread
+        renderChatList();
+        buildNumberTabs();
+
+        // Mobile: hide left, show right
+        if (window.innerWidth <= 768) {
+            document.getElementById('leftPanel').classList.add('hidden');
+            document.getElementById('rightPanel').classList.remove('hidden');
+            document.getElementById('btnBackMobile').style.display = 'block';
+        }
+    }
+
+    // ─── RENDER MESSAGES ─────────────────────────────────
+    function renderMessages(chatId) {
+        const container = document.getElementById('messagesArea');
+        const messages = MOCK_MESSAGES[chatId] || [];
+
+        if (messages.length === 0) {
+            container.innerHTML = `<div style="text-align:center; color:var(--text-dim); padding:40px;"><p>No messages yet</p></div>`;
+            return;
+        }
+
+        let html = '';
+        let lastDate = '';
+
+        for (const msg of messages) {
+            const dateStr = msg.time.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+            if (dateStr !== lastDate) {
+                html += `<div class="date-divider"><span>${dateStr}</span></div>`;
+                lastDate = dateStr;
+            }
+
+            const isUser = msg.role === 'user';
+            const rowClass = isUser ? 'user' : (msg.isHuman ? 'admin' : 'bot');
+            const senderLabel = isUser ? 'Customer' : (msg.isHuman ? 'Admin' : 'Bot');
+            const senderClass = isUser ? 'user-label' : (msg.isHuman ? 'human-label' : 'bot-label');
+            const timeStr = msg.time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            // Convert markdown-like bold (*text*) to <strong>
+            const formatted = escapeHtml(msg.message)
+                .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            html += `
+            <div class="message-row ${rowClass}">
+                <div class="message-bubble">
+                    <div>${formatted}</div>
+                    <div class="message-meta">
+                        <span class="message-sender ${senderClass}">${senderLabel}</span>
+                        <span class="message-time">${timeStr}</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // ─── SEND MESSAGE ────────────────────────────────────
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text || !currentChatId) return;
+
+        const chat = MOCK_SESSIONS.find(s => s.id === currentChatId);
+        if (!chat) return;
+
+        // Add to messages
+        if (!MOCK_MESSAGES[currentChatId]) MOCK_MESSAGES[currentChatId] = [];
+        MOCK_MESSAGES[currentChatId].push({
+            role: 'assistant',
+            message: text,
+            time: new Date(),
+            isHuman: true
+        });
+
+        // Update last message
+        chat.lastMessage = text;
+        chat.lastMessageTime = new Date();
+
+        // Clear input and re-render
+        input.value = '';
+        renderMessages(currentChatId);
+        renderChatList();
+    }
+
+    // ─── MODE TOGGLE ─────────────────────────────────────
+    function toggleMode() {
+        if (!currentChatId) return;
+        const chat = MOCK_SESSIONS.find(s => s.id === currentChatId);
+        if (!chat) return;
+
+        chat.mode = chat.mode === 'bot' ? 'human' : 'bot';
+        updateModeUI(chat.mode);
+        renderChatList();
+    }
+
+    function updateModeUI(mode) {
+        const switchEl = document.getElementById('modeSwitch');
+        const inputArea = document.getElementById('messageInputArea');
+        const botBanner = document.getElementById('botBanner');
+
+        if (mode === 'human') {
+            switchEl.classList.add('human-mode');
+            inputArea.style.display = 'flex';
+            botBanner.style.display = 'none';
+        } else {
+            switchEl.classList.remove('human-mode');
+            inputArea.style.display = 'none';
+            botBanner.style.display = 'block';
+        }
+    }
+
+    // ─── TAGS ────────────────────────────────────────────
+    function toggleTag(tag) {
+        if (!currentChatId) return;
+        const chat = MOCK_SESSIONS.find(s => s.id === currentChatId);
+        if (!chat) return;
+
+        const idx = chat.tags.indexOf(tag);
+        if (idx >= 0) {
+            chat.tags.splice(idx, 1);
+        } else {
+            chat.tags.push(tag);
+        }
+        updateTagButtons(chat.tags);
+        renderChatList();
+    }
+
+    function updateTagButtons(tags) {
+        document.querySelectorAll('.tag-btn').forEach(btn => {
+            const t = btn.dataset.tag;
+            btn.className = 'tag-btn';
+            if (tags.includes(t)) {
+                btn.classList.add(`active-${t}`);
+            }
+        });
+    }
+
+    // ─── HELPERS ─────────────────────────────────────────
+    function formatTime(date) {
+        const now = new Date();
+        const diff = now - date;
+
+        if (diff < 60 * 1000) return 'now';
+        if (diff < 3600 * 1000) return `${Math.floor(diff / 60000)}m`;
+        if (diff < 24 * 3600 * 1000) return `${Math.floor(diff / 3600000)}h`;
+        return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('chatbot_session');
+        window.location.href = 'login.html';
+    }
+
+    function goBackToList() {
+        document.getElementById('leftPanel').classList.remove('hidden');
+        document.getElementById('rightPanel').classList.add('hidden');
+    }
+
+    function handleResize() {
+        const mobile = window.innerWidth <= 768;
+        const backBtn = document.getElementById('btnBackMobile');
+        
+        if (!mobile) {
+            document.getElementById('leftPanel').classList.remove('hidden');
+            document.getElementById('rightPanel').classList.remove('hidden');
+            backBtn.style.display = 'none';
+        } else {
+            if (currentChatId) {
+                backBtn.style.display = 'block';
+            }
+        }
+    }
+
+    // ─── BOOT ────────────────────────────────────────────
+    init();
+    </script>
+</body>
+</html>

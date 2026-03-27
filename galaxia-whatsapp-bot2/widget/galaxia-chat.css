@@ -1,0 +1,393 @@
+/* 
+ * Galaxia Resorts Chat Widget UI
+ * Vanilla CSS - completely scoped under .galaxia-chat-widget to avoid site conflicts
+ */
+
+.galaxia-chat-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999999;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Floating Toggle Button */
+.galaxia-chat-widget .toggle-btn {
+  background: linear-gradient(135deg, #1A1A1A 0%, #333 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.galaxia-chat-widget .toggle-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.galaxia-chat-widget .toggle-btn svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+
+/* Chat Window Container */
+.galaxia-chat-widget .chat-window {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: 380px;
+  max-width: 90vw;
+  height: 600px;
+  max-height: 80vh;
+  background-color: #f5f7f9;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.galaxia-chat-widget .chat-window.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+/* Header */
+.galaxia-chat-widget .chat-header {
+  background: #1A1A1A;
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.galaxia-chat-widget .chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.galaxia-chat-widget .chat-header-logo {
+  width: 32px;
+  height: 32px;
+  background-color: #d4af37; /* Gold accent */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  color: #1A1A1A;
+}
+
+.galaxia-chat-widget .chat-header-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.galaxia-chat-widget .chat-header-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.galaxia-chat-widget .close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.galaxia-chat-widget .close-btn:hover {
+  opacity: 1;
+}
+
+.galaxia-chat-widget .close-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* Messages Area */
+.galaxia-chat-widget .chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #E5DDD5; /* WhatsApp-like background */
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2v2H20v-1.5zM0 20h2v20H0V20zm4 0h2v20H4V20zm4 0h2v20H8V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2z' fill='%23d8cfc4' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+/* Message Bubbles */
+.galaxia-chat-widget .message {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  animation: fadeIn 0.3s ease;
+}
+
+.galaxia-chat-widget .message a {
+  color: #d4af37;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.galaxia-chat-widget .message a:hover {
+  text-decoration: underline;
+}
+
+.galaxia-chat-widget .message.bot {
+  background-color: #fff;
+  color: #222;
+  align-self: flex-start;
+  border-top-left-radius: 4px;
+}
+
+.galaxia-chat-widget .message.user {
+  background-color: #defcc2;
+  color: #222;
+  align-self: flex-end;
+  border-top-right-radius: 4px;
+}
+
+/* Images in Bubbles */
+.galaxia-chat-widget .message-img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Horizontal Swipeable Carousel */
+.galaxia-chat-widget .chat-carousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 4px 0 12px 0;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for carousel but allow swipe */
+.galaxia-chat-widget .chat-carousel::-webkit-scrollbar {
+  display: none;
+}
+.galaxia-chat-widget .chat-carousel {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Individual Card (MakeMyTrip Style) */
+.galaxia-chat-widget .carousel-card {
+  flex: 0 0 240px; /* fixed width card */
+  scroll-snap-align: start;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.galaxia-chat-widget .carousel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+
+.galaxia-chat-widget .carousel-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background-color: #eee;
+}
+
+.galaxia-chat-widget .carousel-content {
+  padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.galaxia-chat-widget .carousel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.galaxia-chat-widget .carousel-rating {
+  font-size: 12px;
+  color: #fff;
+  background-color: #1A7971; /* Trusted green color */
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  width: fit-content;
+}
+
+.galaxia-chat-widget .carousel-location {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.galaxia-chat-widget .carousel-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #b12704;
+  margin-top: auto;
+  margin-bottom: 12px;
+}
+
+.galaxia-chat-widget .carousel-action {
+  background: #d4af37;
+  color: #1a1a1a;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 0;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.galaxia-chat-widget .carousel-action:hover {
+  background: #c29f30;
+}
+
+/* Options / Buttons Area */
+.galaxia-chat-widget .chat-options {
+  background-color: #fff;
+  padding: 16px;
+  border-top: 1px solid #eaeaea;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40%;
+  overflow-y: auto;
+}
+
+.galaxia-chat-widget .option-btn {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  color: #222;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: block;
+  width: 100%;
+}
+
+.galaxia-chat-widget .option-btn:hover {
+  background: #f0f0f0;
+  border-color: #d4af37;
+  transform: translateY(-1px);
+}
+
+.galaxia-chat-widget .option-btn:active {
+  transform: translateY(1px);
+}
+
+/* Loading Indicator */
+.galaxia-chat-widget .typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 16px;
+  background: #fff;
+  align-self: flex-start;
+  border-radius: 12px;
+  border-top-left-radius: 4px;
+  margin-bottom: 8px;
+  display: none;
+}
+
+.galaxia-chat-widget .typing-indicator.active {
+  display: flex;
+}
+
+.galaxia-chat-widget .typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #aaa;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.galaxia-chat-widget .typing-dot:nth-child(1) { animation-delay: 0s; }
+.galaxia-chat-widget .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.galaxia-chat-widget .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Scrollbar */
+.galaxia-chat-widget .chat-messages::-webkit-scrollbar,
+.galaxia-chat-widget .chat-options::-webkit-scrollbar {
+  width: 6px;
+}
+.galaxia-chat-widget .chat-messages::-webkit-scrollbar-thumb,
+.galaxia-chat-widget .chat-options::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typing {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 480px) {
+  .galaxia-chat-widget .chat-window {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    max-width: 100vw;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+  }
+  
+  .galaxia-chat-widget .toggle-btn {
+    display: none; /* Hide toggle button when open on mobile */
+  }
+}
