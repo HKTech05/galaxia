@@ -166,6 +166,8 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [unitCount, setUnitCount] = useState(1);
     const [unitAvailability, setUnitAvailability] = useState<Record<string, number>>({});
     const [availabilityWarning, setAvailabilityWarning] = useState('');
+    const [availabilityDetails, setAvailabilityDetails] = useState<{date: string; available: number}[]>([]);
+    const [userAcceptedWarning, setUserAcceptedWarning] = useState(false);
 
     // Load user data if logged in
     useEffect(() => {
@@ -436,6 +438,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     // Check if selected unit count is available for all dates
     const checkUnitAvailability = useCallback(async (ci: Date, co: Date, units: number) => {
         if (!dbPropertyId) return;
+        setUserAcceptedWarning(false);
         try {
             const startStr = `${ci.getFullYear()}-${String(ci.getMonth()+1).padStart(2,'0')}-${String(ci.getDate()).padStart(2,'0')}`;
             const endStr = `${co.getFullYear()}-${String(co.getMonth()+1).padStart(2,'0')}-${String(co.getDate()).padStart(2,'0')}`;
@@ -447,19 +450,22 @@ export default function BookingClient({ property }: BookingClientProps) {
                 const data = await res.json();
                 if (data.dateCounts) {
                     setUnitAvailability(data.dateCounts);
-                    const totalUnits = 15;
-                    let warning = '';
+                    const totalUnits = data.capacity || 15;
+                    const details: {date: string; available: number}[] = [];
                     for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
                         const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                         const booked = data.dateCounts[ds] || 0;
                         const avail = totalUnits - booked;
                         if (avail < units) {
-                            const dateLabel = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-                            warning = `Only ${avail} unit${avail !== 1 ? 's' : ''} available on ${dateLabel}. ${units - avail} less than selected.`;
-                            break;
+                            details.push({ date: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), available: avail });
                         }
                     }
-                    setAvailabilityWarning(warning);
+                    setAvailabilityDetails(details);
+                    if (details.length > 0) {
+                        setAvailabilityWarning(`${details.length} date${details.length > 1 ? 's have' : ' has'} fewer units than selected (${units}).`);
+                    } else {
+                        setAvailabilityWarning('');
+                    }
                 }
             }
         } catch {}
@@ -665,11 +671,36 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                 </div>
                                             </div>
                                         </div>
-                                        {/* Availability Warning */}
+                                        {/* Availability Warning with confirmation */}
                                         {availabilityWarning && (
-                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-                                                <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-                                                <p className="font-inter text-xs text-amber-800">{availabilityWarning}</p>
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                <div className="flex items-start gap-2 mb-2">
+                                                    <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                                                    <div>
+                                                        <p className="font-inter text-xs text-amber-800 font-semibold mb-1">{availabilityWarning}</p>
+                                                        {availabilityDetails.length > 0 && (
+                                                            <ul className="font-inter text-[11px] text-amber-700 space-y-0.5 mb-2">
+                                                                {availabilityDetails.map((d, i) => (
+                                                                    <li key={i}>• {d.date}: only <strong>{d.available}</strong> unit{d.available !== 1 ? 's' : ''} available ({unitCount - d.available} less)</li>
+                                                                ))}
+                                                            </ul>
+                                                        )}
+                                                        {!userAcceptedWarning ? (
+                                                            <div className="flex gap-2 mt-2">
+                                                                <button
+                                                                    onClick={() => setUserAcceptedWarning(true)}
+                                                                    className="px-3 py-1.5 bg-amber-600 text-white text-[11px] font-semibold rounded-md hover:bg-amber-700 transition-colors"
+                                                                >Continue Anyway</button>
+                                                                <button
+                                                                    onClick={() => { setCheckInDate(null); setCheckOutDate(null); setNights(0); setAvailabilityWarning(''); setAvailabilityDetails([]); }}
+                                                                    className="px-3 py-1.5 bg-white border border-amber-300 text-amber-800 text-[11px] font-semibold rounded-md hover:bg-amber-50 transition-colors"
+                                                                >Change Dates</button>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="font-inter text-[11px] text-emerald-700 font-medium mt-1">✓ Proceeding with available units</p>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                         {unitCount > 1 && nightlyRate > 0 && nights > 0 && (

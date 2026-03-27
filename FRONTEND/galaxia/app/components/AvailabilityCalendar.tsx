@@ -3,10 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 
 interface CalendarProps {
-    propertyId: number | null;
+    propertyId?: number | null;
+    propertySlug?: string; // Alternative to propertyId — slug is resolved to numeric ID automatically
     subPropertyId?: number | null;
-    weekdayPrice: string;
-    weekendPrice: string;
+    weekdayPrice?: string;
+    weekendPrice?: string;
     primeDatePrice?: string;
     dateOverrides?: Record<string, number>;
     onDatesChange?: (checkIn: Date | null, checkOut: Date | null, nightlyRate: number, nights: number) => void;
@@ -66,7 +67,25 @@ const getMaintenancePrice = (date: Date) => {
     return { price: "Maintenance", numPrice: 0, type: "booked" as const };
 };
 
-export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits }: CalendarProps) {
+    // Resolve slug to numeric ID if propertySlug is provided
+    const [resolvedId, setResolvedId] = useState<number | null>(null);
+    useEffect(() => {
+        if (propId) { setResolvedId(propId); return; }
+        if (!propertySlug) return;
+        (async () => {
+            try {
+                const baseUrl = typeof window !== "undefined" ? "/api" : "http://localhost:4000/api";
+                const res = await fetch(`${baseUrl}/properties`);
+                if (res.ok) {
+                    const props = await res.json();
+                    const found = props.find((p: any) => p.slug === propertySlug);
+                    if (found) setResolvedId(found.id);
+                }
+            } catch {}
+        })();
+    }, [propId, propertySlug]);
+    const propertyId = resolvedId;
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(initialCheckIn ? initialCheckIn.getMonth() : today.getMonth());
     const [currentYear, setCurrentYear] = useState(initialCheckIn ? initialCheckIn.getFullYear() : today.getFullYear());
@@ -79,7 +98,7 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
     // Also stores booking counts per date when totalUnits is provided
     const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
     useEffect(() => {
-        if (!propertyId || propertyId <= 0) return; // Skip fetch if no valid DB ID
+        if (!propertyId || propertyId <= 0) return;
         (async () => {
             try {
                 const startDate = toLocalDateStr(new Date(currentYear, currentMonth, 1));

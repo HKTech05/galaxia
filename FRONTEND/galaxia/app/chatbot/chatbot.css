@@ -205,7 +205,7 @@
 /* Right Panel — WhatsApp wallpaper */
 .cb-right {
   flex: 1; display: flex; flex-direction: column; min-width: 0;
-  background: #efeae2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cg fill='%23d3cdc4' fill-opacity='0.4'%3E%3Ccircle cx='50' cy='50' r='2'/%3E%3Ccircle cx='150' cy='80' r='1.5'/%3E%3Ccircle cx='250' cy='30' r='2'/%3E%3Ccircle cx='350' cy='70' r='1'/%3E%3Ccircle cx='100' cy='160' r='1.5'/%3E%3Ccircle cx='200' cy='140' r='2'/%3E%3Ccircle cx='300' cy='180' r='1'/%3E%3Ccircle cx='50' cy='250' r='1'/%3E%3Ccircle cx='150' cy='220' r='2'/%3E%3Ccircle cx='250' cy='260' r='1.5'/%3E%3Ccircle cx='350' cy='240' r='2'/%3E%3Ccircle cx='100' cy='330' r='2'/%3E%3Ccircle cx='200' cy='350' r='1'/%3E%3Ccircle cx='300' cy='310' r='1.5'/%3E%3C/g%3E%3C/svg%3E");
+  background: #efeae2 url("/chatbot-wallpaper.png") center/cover;
 }
 .cb-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--cb-text-dim); }
 .cb-empty-icon { width: 80px; height: 80px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 36px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }

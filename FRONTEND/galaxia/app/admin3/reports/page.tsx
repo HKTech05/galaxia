@@ -5,19 +5,43 @@ import { FileText, Download, Calendar, IndianRupee, Users, TrendingUp, Filter, C
 import { api } from "../../../lib/api";
 
 type ReportType = "revenue" | "occupancy" | "bookings";
+type BusinessCategory = "all" | "staycation" | "digital-diaries";
 
 export default function ReportsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
+    const [ddBookings, setDdBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [reportType, setReportType] = useState<ReportType>("revenue");
+    const [businessCategory, setBusinessCategory] = useState<BusinessCategory>("all");
     const [dateRange, setDateRange] = useState({ from: "", to: "" });
     const [propertyFilter, setPropertyFilter] = useState("all");
 
     useEffect(() => {
         (async () => {
             try {
-                const data = await api.get("/bookings/staycation");
-                if (Array.isArray(data)) setBookings(data);
+                const [stayData, ddData] = await Promise.all([
+                    api.get("/bookings/staycation").catch(() => []),
+                    api.get("/bookings/dd").catch(() => []),
+                ]);
+                if (Array.isArray(stayData)) setBookings(stayData);
+                if (Array.isArray(ddData)) {
+                    // Normalize DD bookings to match staycation shape
+                    const normalized = ddData.map((d: any) => ({
+                        id: `dd-${d.id}`,
+                        customerName: d.customerName,
+                        checkInDate: d.bookingDate,
+                        checkOutDate: d.bookingDate,
+                        totalAmount: d.totalAmount || 0,
+                        advanceAmount: d.amountPaid || 0,
+                        balanceAmount: d.amountToCollect || 0,
+                        gstAmount: d.gstAmount || 0,
+                        status: d.status || "confirmed",
+                        source: d.source || "website",
+                        property: { name: d.screen?.name || "Digital Diaries" },
+                        _business: "digital-diaries",
+                    }));
+                    setDdBookings(normalized);
+                }
             } catch {} finally { setLoading(false); }
         })();
         // Default: current month
@@ -28,21 +52,29 @@ export default function ReportsPage() {
         setDateRange({ from, to });
     }, []);
 
+    // Combine bookings based on category
+    const combinedBookings = useMemo(() => {
+        const stayWithBiz = bookings.map(b => ({ ...b, _business: "staycation" }));
+        if (businessCategory === "staycation") return stayWithBiz;
+        if (businessCategory === "digital-diaries") return ddBookings;
+        return [...stayWithBiz, ...ddBookings];
+    }, [bookings, ddBookings, businessCategory]);
+
     const filteredBookings = useMemo(() => {
-        return bookings.filter(b => {
+        return combinedBookings.filter(b => {
             if (b.status === "cancelled") return false;
             if (dateRange.from && new Date(b.checkInDate) < new Date(dateRange.from)) return false;
             if (dateRange.to && new Date(b.checkInDate) > new Date(dateRange.to)) return false;
             if (propertyFilter !== "all" && b.property?.name !== propertyFilter) return false;
             return true;
         });
-    }, [bookings, dateRange, propertyFilter]);
+    }, [combinedBookings, dateRange, propertyFilter]);
 
     const properties = useMemo(() => {
         const names = new Set<string>();
-        bookings.forEach(b => { if (b.property?.name) names.add(b.property.name); });
+        combinedBookings.forEach(b => { if (b.property?.name) names.add(b.property.name); });
         return Array.from(names).sort();
-    }, [bookings]);
+    }, [combinedBookings]);
 
     // Revenue stats
     const stats = useMemo(() => {
@@ -119,7 +151,15 @@ export default function ReportsPage() {
             {/* Filters */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-sm font-bold text-slate-600 uppercase tracking-wider"><Filter size={14} className="text-indigo-600" /> Filters</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Business</label>
+                        <select value={businessCategory} onChange={e => setBusinessCategory(e.target.value as BusinessCategory)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none">
+                            <option value="all">All</option>
+                            <option value="staycation">Staycation</option>
+                            <option value="digital-diaries">Digital Diaries</option>
+                        </select>
+                    </div>
                     <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Report Type</label>
                         <select value={reportType} onChange={e => setReportType(e.target.value as ReportType)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none">
@@ -137,9 +177,9 @@ export default function ReportsPage() {
                         <input type="date" value={dateRange.to} onChange={e => setDateRange(p => ({ ...p, to: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none" />
                     </div>
                     <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Property</label>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Property / Screen</label>
                         <select value={propertyFilter} onChange={e => setPropertyFilter(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none">
-                            <option value="all">All Properties</option>
+                            <option value="all">All</option>
                             {properties.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                     </div>

@@ -87,6 +87,74 @@ function getOffsetMs(id: string): number {
     return offsets[id] || 0;
 }
 
+const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123" };
+const ACCOUNTS = [
+    { key: "owner", label: "Owner", access: "All Numbers" },
+    { key: "staycation1", label: "Staycation 1", access: "Staycation 1" },
+    { key: "staycation2", label: "Staycation 2", access: "Staycation 2" },
+    { key: "ddadmin", label: "DD Admin", access: "Digital Diaries" },
+];
+
+function SettingsModal({ onClose }: { onClose: () => void }) {
+    const [passwords, setPasswords] = useState<Record<string, string>>({});
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        try {
+            const custom = JSON.parse(localStorage.getItem("chatbot_passwords") || "{}");
+            const merged: Record<string, string> = {};
+            for (const a of ACCOUNTS) merged[a.key] = custom[a.key] || DEFAULT_PASSWORDS[a.key] || "";
+            setPasswords(merged);
+        } catch {
+            setPasswords({ ...DEFAULT_PASSWORDS });
+        }
+    }, []);
+
+    const handleSave = () => {
+        localStorage.setItem("chatbot_passwords", JSON.stringify(passwords));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    return (
+        <div className="cb-settings-overlay" onClick={onClose}>
+            <div className="cb-settings-modal" onClick={e => e.stopPropagation()}>
+                <div className="cb-settings-header">
+                    <h3>⚙️ Settings</h3>
+                    <button className="cb-settings-close" onClick={onClose}>✕</button>
+                </div>
+                <div className="cb-settings-body">
+                    <table className="cb-settings-table">
+                        <thead><tr><th>Username</th><th>Password</th><th>Access</th></tr></thead>
+                        <tbody>
+                            {ACCOUNTS.map(a => (
+                                <tr key={a.key}>
+                                    <td style={{ fontWeight: 600 }}>{a.key}</td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            value={passwords[a.key] || ""}
+                                            onChange={e => setPasswords(p => ({ ...p, [a.key]: e.target.value }))}
+                                            style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                                        />
+                                    </td>
+                                    <td>{a.access}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
+                        {saved && <span style={{ color: "#00a884", fontSize: 13, fontWeight: 600 }}>✓ Saved</span>}
+                        <button onClick={handleSave} style={{ background: "#075e54", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ChatbotDashboard() {
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
@@ -336,25 +404,7 @@ export default function ChatbotDashboard() {
 
             {/* Settings Modal */}
             {showSettings && (
-                <div className="cb-settings-overlay" onClick={() => setShowSettings(false)}>
-                    <div className="cb-settings-modal" onClick={e => e.stopPropagation()}>
-                        <div className="cb-settings-header">
-                            <h3>⚙️ Settings</h3>
-                            <button className="cb-settings-close" onClick={() => setShowSettings(false)}>✕</button>
-                        </div>
-                        <div className="cb-settings-body">
-                            <table className="cb-settings-table">
-                                <thead><tr><th>Username</th><th>Password</th><th>Access</th></tr></thead>
-                                <tbody>
-                                    <tr><td>owner</td><td>owner123</td><td>All Numbers</td></tr>
-                                    <tr><td>staycation1</td><td>stay123</td><td>Staycation 1</td></tr>
-                                    <tr><td>staycation2</td><td>stay123</td><td>Staycation 2</td></tr>
-                                    <tr><td>ddadmin</td><td>dd123</td><td>Digital Diaries</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                <SettingsModal onClose={() => setShowSettings(false)} />
             )}
         </div>
     );

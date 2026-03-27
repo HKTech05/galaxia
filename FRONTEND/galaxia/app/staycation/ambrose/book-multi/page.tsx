@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { properties } from "../../../data/properties";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
 import { api } from "../../../../lib/api";
@@ -55,6 +55,10 @@ export default function BookMultiPage() {
     // Auth
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
+    // Per-villa booked dates for conflict detection
+    const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
+    const [villaConflicts, setVillaConflicts] = useState<Record<string, string[]>>({});
+
     useEffect(() => {
         setMounted(true);
         try {
@@ -64,6 +68,20 @@ export default function BookMultiPage() {
             stored.forEach((item: CartItem) => { guests[item.villaId] = { adults: 2, kids: 0 }; });
             setGuestsPerVilla(guests);
         } catch { setCart([]); }
+
+        // Read dates from URL params (from /cart redirect)
+        const params = new URLSearchParams(window.location.search);
+        const ciStr = params.get("checkIn");
+        const coStr = params.get("checkOut");
+        if (ciStr && coStr) {
+            const ci = new Date(ciStr + "T00:00:00");
+            const co = new Date(coStr + "T00:00:00");
+            if (!isNaN(ci.getTime()) && !isNaN(co.getTime()) && co > ci) {
+                setCheckInDate(ci);
+                setCheckOutDate(co);
+                setNights(Math.ceil((co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24)));
+            }
+        }
     }, []);
 
     // Fetch DB IDs
@@ -85,6 +103,53 @@ export default function BookMultiPage() {
             } catch {}
         })();
     }, []);
+
+    // Fetch per-villa booked dates for conflict detection
+    useEffect(() => {
+        if (!dbPropertyId || cart.length === 0) return;
+        (async () => {
+            try {
+                const subProps = await api.get(`/properties/ambrose/availability`);
+                const subs = subProps.subProperties || [];
+                const allConflicts: Record<string, string[]> = {};
+                for (const item of cart) {
+                    const sub = subs.find((s: any) => s.slug === item.villaId || s.id?.toString() === item.villaId);
+                    if (sub) {
+                        const startDate = new Date();
+                        const endDate = new Date();
+                        endDate.setMonth(endDate.getMonth() + 3);
+                        const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${dbPropertyId}&subPropertyId=${sub.id}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            allConflicts[item.villaId] = data.dates || [];
+                        }
+                    }
+                }
+                setVillaBookedDates(allConflicts);
+            } catch {}
+        })();
+    }, [dbPropertyId, cart]);
+
+    // Check conflicts when dates change
+    useEffect(() => {
+        if (!checkInDate || !checkOutDate) { setVillaConflicts({}); return; }
+        const conflicts: Record<string, string[]> = {};
+        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        for (const item of cart) {
+            const booked = villaBookedDates[item.villaId] || [];
+            const conflictDates: string[] = [];
+            for (let i = 0; i < nights; i++) {
+                const d = new Date(checkInDate);
+                d.setDate(d.getDate() + i);
+                const ds = d.toISOString().split("T")[0];
+                if (booked.includes(ds)) conflictDates.push(ds);
+            }
+            if (conflictDates.length > 0) conflicts[item.villaId] = conflictDates;
+        }
+        setVillaConflicts(conflicts);
+    }, [checkInDate, checkOutDate, cart, villaBookedDates]);
+
+    const hasAnyConflicts = Object.keys(villaConflicts).length > 0;
 
     // Load user data if logged in
     useEffect(() => {
@@ -273,9 +338,10 @@ export default function BookMultiPage() {
                             const villaPrice = getVillaPrice(item);
                             const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
                             const extraCharges = getExtraCharges(item);
+                            const conflict = villaConflicts[item.villaId];
 
                             return (
-                                <div key={item.villaId} className="bg-white border border-border-light rounded-xl overflow-hidden shadow-sm">
+                                <div key={item.villaId} className={`bg-white border ${conflict ? 'border-red-300' : 'border-border-light'} rounded-xl overflow-hidden shadow-sm`}>
                                     <div className="p-5 sm:p-6">
                                         <div className="flex items-center justify-between mb-4">
                                             <div>
@@ -286,6 +352,14 @@ export default function BookMultiPage() {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                             </button>
                                         </div>
+
+                                        {/* Conflict Warning */}
+                                        {conflict && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 font-inter text-xs text-red-800">
+                                                ⚠️ <strong>{item.villaName}</strong> is already booked on: {conflict.map(d => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })).join(", ")}.
+                                                <span className="block mt-1 text-red-600">Please remove this villa or choose different dates.</span>
+                                            </div>
+                                        )}
 
                                         {/* Guest selectors */}
                                         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -334,14 +408,14 @@ export default function BookMultiPage() {
                                 </div>
                                 <button
                                     onClick={handleProceed}
-                                    disabled={!checkInDate || !checkOutDate}
+                                    disabled={!checkInDate || !checkOutDate || hasAnyConflicts}
                                     className={`mt-6 w-full py-3 rounded-lg font-cinzel font-semibold text-sm uppercase tracking-wider transition-all duration-300 ${
-                                        checkInDate && checkOutDate
+                                        checkInDate && checkOutDate && !hasAnyConflicts
                                             ? "bg-gradient-to-r from-antique-gold to-dark-gold text-white hover:shadow-lg hover:shadow-antique-gold/20"
                                             : "bg-slate-100 text-slate-400 cursor-not-allowed"
                                     }`}
                                 >
-                                    Proceed to Details
+                                    {hasAnyConflicts ? "Resolve Conflicts to Continue" : "Proceed to Details"}
                                 </button>
                             </div>
                         )}
