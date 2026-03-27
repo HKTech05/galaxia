@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { properties } from "../../../data/properties";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
 import { api } from "../../../../lib/api";
@@ -14,6 +14,8 @@ interface CartItem {
     weekdayPrice: string;
     weekendPrice: string;
     maxPersons: number;
+    property?: string; // "amstel-nest" | undefined (Ambrose default)
+    unitCount?: number; // Amstel Nest: how many cottages
 }
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -24,7 +26,7 @@ export default function BookMultiPage() {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [mounted, setMounted] = useState(false);
 
-    // Date state — shared across all villas
+    // Date state — shared across all items
     const [checkInDate, setCheckInDate] = useState<Date | null>(null);
     const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
     const [nights, setNights] = useState(0);
@@ -44,8 +46,13 @@ export default function BookMultiPage() {
         agreedToTerms: false,
     });
 
-    // DB IDs
-    const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+    // ID upload
+    const [idFile, setIdFile] = useState<File | null>(null);
+    const [idPreview, setIdPreview] = useState<string>("");
+    const [idError, setIdError] = useState("");
+
+    // DB IDs — for both Ambrose and Amstel Nest
+    const [dbPropertyMap, setDbPropertyMap] = useState<Record<string, number>>({});
     const [dbSubPropertyMap, setDbSubPropertyMap] = useState<Record<string, number>>({});
 
     // Submission
@@ -58,6 +65,21 @@ export default function BookMultiPage() {
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
     const [villaConflicts, setVillaConflicts] = useState<Record<string, string[]>>({});
+    const [expandedConflict, setExpandedConflict] = useState<string | null>(null);
+
+    // Derived: separate by property
+    const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
+    const amstelItems = cart.filter(c => c.property === "amstel-nest");
+
+    // Should we hide prices? Only for multi Ambrose villas, OR mix of standard + family cottage
+    const hasMixedPrices = (() => {
+        if (ambroseItems.length > 1) return true;
+        if (amstelItems.length > 1) {
+            const prices = new Set(amstelItems.map(i => i.weekdayPrice));
+            if (prices.size > 1) return true;
+        }
+        return false;
+    })();
 
     useEffect(() => {
         setMounted(true);
@@ -69,7 +91,7 @@ export default function BookMultiPage() {
             setGuestsPerVilla(guests);
         } catch { setCart([]); }
 
-        // Read dates from URL params (from /cart redirect)
+        // Read dates from URL params
         const params = new URLSearchParams(window.location.search);
         const ciStr = params.get("checkIn");
         const coStr = params.get("checkOut");
@@ -84,41 +106,44 @@ export default function BookMultiPage() {
         }
     }, []);
 
-    // Fetch DB IDs
+    // Fetch DB IDs for all properties in cart
     useEffect(() => {
         (async () => {
             try {
                 const props = await api.get("/properties");
-                const dbProp = props.find((p: any) => p.slug === "ambrose");
-                if (dbProp) {
-                    setDbPropertyId(dbProp.id);
-                    if (dbProp.subProperties) {
-                        const map: Record<string, number> = {};
-                        for (const sp of dbProp.subProperties) {
-                            map[sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-")] = sp.id;
+                const propMap: Record<string, number> = {};
+                const subMap: Record<string, number> = {};
+                for (const p of props) {
+                    if (p.slug === "ambrose" || p.slug === "amstel-nest") {
+                        propMap[p.slug] = p.id;
+                        if (p.subProperties) {
+                            for (const sp of p.subProperties) {
+                                const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
+                                subMap[key] = sp.id;
+                            }
                         }
-                        setDbSubPropertyMap(map);
                     }
                 }
+                setDbPropertyMap(propMap);
+                setDbSubPropertyMap(subMap);
             } catch {}
         })();
     }, []);
 
-    // Fetch per-villa booked dates for conflict detection
+    // Fetch per-villa booked dates for conflict detection (Ambrose villas only)
     useEffect(() => {
-        if (!dbPropertyId || cart.length === 0) return;
+        const ambId = dbPropertyMap["ambrose"];
+        if (!ambId || ambroseItems.length === 0) return;
         (async () => {
             try {
-                const subProps = await api.get(`/properties/ambrose/availability`);
-                const subs = subProps.subProperties || [];
+                const startDate = new Date();
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + 3);
                 const allConflicts: Record<string, string[]> = {};
-                for (const item of cart) {
-                    const sub = subs.find((s: any) => s.slug === item.villaId || s.id?.toString() === item.villaId);
-                    if (sub) {
-                        const startDate = new Date();
-                        const endDate = new Date();
-                        endDate.setMonth(endDate.getMonth() + 3);
-                        const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${dbPropertyId}&subPropertyId=${sub.id}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+                for (const item of ambroseItems) {
+                    const subId = dbSubPropertyMap[item.villaId];
+                    if (subId) {
+                        const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${ambId}&subPropertyId=${subId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
                         if (res.ok) {
                             const data = await res.json();
                             allConflicts[item.villaId] = data.dates || [];
@@ -128,17 +153,17 @@ export default function BookMultiPage() {
                 setVillaBookedDates(allConflicts);
             } catch {}
         })();
-    }, [dbPropertyId, cart]);
+    }, [dbPropertyMap, dbSubPropertyMap, ambroseItems.length]);
 
     // Check conflicts when dates change
     useEffect(() => {
         if (!checkInDate || !checkOutDate) { setVillaConflicts({}); return; }
         const conflicts: Record<string, string[]> = {};
-        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-        for (const item of cart) {
+        const n = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        for (const item of ambroseItems) {
             const booked = villaBookedDates[item.villaId] || [];
             const conflictDates: string[] = [];
-            for (let i = 0; i < nights; i++) {
+            for (let i = 0; i < n; i++) {
                 const d = new Date(checkInDate);
                 d.setDate(d.getDate() + i);
                 const ds = d.toISOString().split("T")[0];
@@ -147,7 +172,7 @@ export default function BookMultiPage() {
             if (conflictDates.length > 0) conflicts[item.villaId] = conflictDates;
         }
         setVillaConflicts(conflicts);
-    }, [checkInDate, checkOutDate, cart, villaBookedDates]);
+    }, [checkInDate, checkOutDate, ambroseItems.length, villaBookedDates]);
 
     const hasAnyConflicts = Object.keys(villaConflicts).length > 0;
 
@@ -166,7 +191,14 @@ export default function BookMultiPage() {
         const newCart = cart.filter(c => c.villaId !== villaId);
         localStorage.setItem("ambrose_cart", JSON.stringify(newCart));
         setCart(newCart);
-        if (newCart.length === 0) router.push("/staycation/ambrose");
+        window.dispatchEvent(new Event("cart-update"));
+        if (newCart.length === 0) router.push("/staycation");
+    };
+
+    const updateUnitCount = (villaId: string, count: number) => {
+        const newCart = cart.map(c => c.villaId === villaId ? { ...c, unitCount: Math.max(1, count) } : c);
+        localStorage.setItem("ambrose_cart", JSON.stringify(newCart));
+        setCart(newCart);
     };
 
     const handleDatesChange = (ci: Date | null, co: Date | null) => {
@@ -180,10 +212,11 @@ export default function BookMultiPage() {
     const formatPrice = (n: number) => `₹${n.toLocaleString("en-IN")}`;
     const formatDateShort = (d: Date) => `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 
-    // Calculate pricing per villa
-    const getVillaPrice = (item: CartItem) => {
+    // Calculate pricing per item
+    const getItemPrice = (item: CartItem) => {
         if (!checkInDate || nights <= 0) return 0;
         let total = 0;
+        const units = item.unitCount || 1;
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
@@ -192,18 +225,20 @@ export default function BookMultiPage() {
             const price = parseInt((isWeekend ? item.weekendPrice : item.weekdayPrice).replace(/,/g, ""));
             total += price;
         }
-        return total;
+        return total * units;
     };
 
     const getExtraCharges = (item: CartItem) => {
         const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
         const extraAdults = Math.max(0, guests.adults - 2);
-        const extraAdultCharge = 2000; // Ambrose extra adult
-        const kidsCharge = 1000; // Ambrose kids charge
-        return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1);
+        const isAmstel = item.property === "amstel-nest";
+        const extraAdultCharge = isAmstel ? 1500 : 2000;
+        const kidsCharge = isAmstel ? 500 : 1000;
+        const units = item.unitCount || 1;
+        return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1) * units;
     };
 
-    const grandSubtotal = cart.reduce((sum, item) => sum + getVillaPrice(item) + getExtraCharges(item), 0);
+    const grandSubtotal = cart.reduce((sum, item) => sum + getItemPrice(item) + getExtraCharges(item), 0);
     const gst = Math.round(grandSubtotal * 0.05);
     const grandTotal = grandSubtotal + gst;
     const payNow = Math.round(grandTotal * 0.8);
@@ -212,12 +247,19 @@ export default function BookMultiPage() {
     const handleProceed = () => {
         if (!checkInDate || !checkOutDate || nights <= 0) return;
         const token = localStorage.getItem("galaxia_token");
-        if (!token) {
-            setShowLoginPrompt(true);
-            return;
-        }
+        if (!token) { setShowLoginPrompt(true); return; }
         setCurrentStep(2);
         window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setIdError("");
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) { setIdError("Please upload an image file"); return; }
+        if (file.size > 2 * 1024 * 1024) { setIdError("File must be under 2MB"); return; }
+        setIdFile(file);
+        setIdPreview(URL.createObjectURL(file));
     };
 
     const handleFormSubmit = (e: React.FormEvent) => {
@@ -228,46 +270,73 @@ export default function BookMultiPage() {
     };
 
     const handlePayment = async () => {
-        if (!dbPropertyId) { setBookingError("System loading, please wait..."); return; }
         setIsSubmitting(true);
         setBookingError("");
 
         try {
-            for (const item of cart) {
-                const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
-                const villaSubtotal = getVillaPrice(item) + getExtraCharges(item);
-                const villaGst = Math.round(villaSubtotal * 0.05);
-                const villaTotal = villaSubtotal + villaGst;
-                const villaPayNow = Math.round(villaTotal * 0.8);
-                const villaPayAtVenue = villaTotal - villaPayNow;
-
-                const subPropertyId = dbSubPropertyMap[item.villaId] || null;
-
-                await api.post("/bookings/staycation", {
-                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                    customerPhone: formData.phone,
-                    customerEmail: formData.email,
-                    propertyId: dbPropertyId,
-                    subPropertyId,
-                    numGuests: guests.adults + guests.kids,
-                    checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
-                    checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
-                    nightlyRate: getVillaPrice(item) / Math.max(nights, 1),
-                    basePrice: getVillaPrice(item),
-                    extraPersonCharge: getExtraCharges(item),
-                    gstAmount: villaGst,
-                    totalAmount: villaTotal,
-                    advanceAmount: villaPayNow,
-                    balanceAmount: villaPayAtVenue,
-                    securityDeposit: 3000,
-                    advancePaid: true,
-                    advanceMethod: "online",
-                    source: "website",
-                });
+            // Upload ID first if provided
+            let guestIdUrl = "";
+            if (idFile) {
+                const fd = new FormData();
+                fd.append("file", idFile);
+                const uploadRes = await fetch("/api/uploads/guest-id-public", { method: "POST", body: fd });
+                if (uploadRes.ok) {
+                    const data = await uploadRes.json();
+                    guestIdUrl = data.url || data.path || "";
+                }
             }
 
-            // Clear cart
+            for (const item of cart) {
+                const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
+                const itemSubtotal = getItemPrice(item) + getExtraCharges(item);
+                const itemGst = Math.round(itemSubtotal * 0.05);
+                const itemTotal = itemSubtotal + itemGst;
+                const itemPayNow = Math.round(itemTotal * 0.8);
+                const itemPayAtVenue = itemTotal - itemPayNow;
+
+                const isAmstel = item.property === "amstel-nest";
+                const propertyId = isAmstel ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"];
+                const subPropertyId = dbSubPropertyMap[item.villaId] || null;
+
+                if (!propertyId) { setBookingError("Property not found. Please try again."); return; }
+
+                const units = item.unitCount || 1;
+                for (let u = 0; u < units; u++) {
+                    const perUnitPrice = getItemPrice({ ...item, unitCount: 1 });
+                    const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
+                    const perUnitSubtotal = perUnitPrice + perUnitExtra;
+                    const perUnitGst = Math.round(perUnitSubtotal * 0.05);
+                    const perUnitTotal = perUnitSubtotal + perUnitGst;
+                    const perUnitPayNow = Math.round(perUnitTotal * 0.8);
+                    const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
+
+                    await api.post("/bookings/staycation", {
+                        customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                        customerPhone: formData.phone,
+                        customerEmail: formData.email,
+                        propertyId,
+                        subPropertyId,
+                        numGuests: guests.adults + guests.kids,
+                        checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
+                        checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
+                        nightlyRate: perUnitPrice / Math.max(nights, 1),
+                        basePrice: perUnitPrice,
+                        extraPersonCharge: perUnitExtra,
+                        gstAmount: perUnitGst,
+                        totalAmount: perUnitTotal,
+                        advanceAmount: perUnitPayNow,
+                        balanceAmount: perUnitPayAtVenue,
+                        securityDeposit: isAmstel ? 2000 : 3000,
+                        advancePaid: true,
+                        advanceMethod: "online",
+                        source: "website",
+                        ...(guestIdUrl ? { guestIdUrl } : {}),
+                    });
+                }
+            }
+
             localStorage.removeItem("ambrose_cart");
+            window.dispatchEvent(new Event("cart-update"));
             router.push("/dashboard?source=staycation&status=success");
         } catch (err: any) {
             setBookingError(err?.message || "Booking failed. Please try again.");
@@ -283,11 +352,19 @@ export default function BookMultiPage() {
             <div className="min-h-screen bg-[#FDFCF9] flex flex-col items-center justify-center p-4">
                 <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
                 <h2 className="font-cinzel text-xl text-slate-800 mb-2">Your Cart is Empty</h2>
-                <p className="font-inter text-sm text-slate-500 mb-6">Add Ambrose villas to your cart to book them together.</p>
-                <Link href="/staycation/ambrose" className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-full">Browse Villas</Link>
+                <p className="font-inter text-sm text-slate-500 mb-6">Add villas or cottages to your cart to book them together.</p>
+                <div className="flex gap-3">
+                    <Link href="/staycation/ambrose" className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-full">Ambrose Villas</Link>
+                    <Link href="/staycation/amstel-nest" className="border border-antique-gold text-antique-gold font-cinzel font-semibold text-sm px-6 py-3 rounded-full hover:bg-antique-gold/5 transition-colors">Amstel Nest</Link>
+                </div>
             </div>
         );
     }
+
+    // Which property's calendar to show for date picker
+    const calendarPropertyId = dbPropertyMap["ambrose"] || dbPropertyMap["amstel-nest"] || null;
+    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
+    const showAmstelCalendar = hasAmstelOnly || amstelItems.length > 0;
 
     return (
         <div className="min-h-screen bg-[#FDFCF9] pb-24">
@@ -296,7 +373,7 @@ export default function BookMultiPage() {
                 <div className="text-center mb-10">
                     <div className="flex items-center justify-center gap-4 mb-8">
                         <div className="w-12 h-[1px] bg-border-medium" />
-                        <h1 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-medium tracking-wide text-text-primary uppercase">Book Multiple Villas</h1>
+                        <h1 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-medium tracking-wide text-text-primary uppercase">Your Booking Cart</h1>
                         <div className="w-12 h-[1px] bg-border-medium" />
                     </div>
                     <div className="flex items-center justify-center gap-1.5 sm:gap-6 font-inter text-[10px] sm:text-sm max-w-2xl mx-auto bg-white py-3 sm:py-4 px-4 sm:px-6 rounded-full shadow-sm border border-border-light">
@@ -315,91 +392,198 @@ export default function BookMultiPage() {
                 {/* STEP 1: Cart Review */}
                 {currentStep === 1 && (
                     <div className="space-y-6">
+                        {/* Info banner */}
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-5 flex items-center gap-3">
                             <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <p className="font-inter text-sm text-amber-800">You're booking <strong>{cart.length} Ambrose villa{cart.length > 1 ? "s" : ""}</strong> together. All villas share the same dates.</p>
+                            <p className="font-inter text-sm text-amber-800">
+                                You're booking <strong>{cart.length} item{cart.length > 1 ? "s" : ""}</strong>
+                                {ambroseItems.length > 0 && <> ({ambroseItems.length} Ambrose)</>}
+                                {amstelItems.length > 0 && <> ({amstelItems.length} Amstel Nest)</>}
+                                . All items share the same dates.
+                            </p>
                         </div>
 
                         {/* Date Picker */}
                         <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
                             <h3 className="font-cinzel text-lg font-semibold text-text-primary mb-4">Select Dates</h3>
                             <AvailabilityCalendar
-                                propertyId={dbPropertyId}
-                                weekdayPrice={ambrose.pricing.weekday.price}
-                                weekendPrice={ambrose.pricing.weekend.price}
+                                propertyId={hasAmstelOnly ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"]}
+                                weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : ambrose.pricing.weekday.price}
+                                weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "6,950") : ambrose.pricing.weekend.price}
                                 dateOverrides={{}}
                                 onDatesChange={handleDatesChange}
+                                hidePrice={hasMixedPrices}
+                                totalUnits={hasAmstelOnly ? 15 : undefined}
+                                initialCheckIn={checkInDate}
+                                initialCheckOut={checkOutDate}
                             />
                         </div>
 
-                        {/* Villa Cards */}
-                        {cart.map((item) => {
-                            const villa = ambrose.subProperties?.find(v => v.id === item.villaId);
-                            const villaPrice = getVillaPrice(item);
-                            const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
-                            const extraCharges = getExtraCharges(item);
-                            const conflict = villaConflicts[item.villaId];
+                        {/* ═══ AMBROSE ITEMS ═══ */}
+                        {ambroseItems.length > 0 && (
+                            <div>
+                                <h3 className="font-cinzel text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-antique-gold" />Ambrose Villas ({ambroseItems.length})
+                                </h3>
+                                <div className="space-y-4">
+                                    {ambroseItems.map((item) => {
+                                        const villaPrice = getItemPrice(item);
+                                        const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
+                                        const extraCharges = getExtraCharges(item);
+                                        const conflict = villaConflicts[item.villaId];
+                                        const isExpanded = expandedConflict === item.villaId;
 
-                            return (
-                                <div key={item.villaId} className={`bg-white border ${conflict ? 'border-red-300' : 'border-border-light'} rounded-xl overflow-hidden shadow-sm`}>
-                                    <div className="p-5 sm:p-6">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div>
-                                                <span className="inline-block px-3 py-1 mb-2 bg-antique-gold/10 border border-antique-gold/30 rounded-full text-[10px] font-inter uppercase tracking-widest text-dark-gold">{item.theme}</span>
-                                                <h3 className="font-cinzel text-lg font-semibold text-text-primary">{item.villaName}</h3>
-                                            </div>
-                                            <button onClick={() => removeFromCart(item.villaId)} className="text-red-400 hover:text-red-600 transition-colors p-2" title="Remove">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </div>
+                                        return (
+                                            <div key={item.villaId} className={`bg-white border ${conflict ? 'border-red-300' : 'border-border-light'} rounded-xl overflow-hidden shadow-sm`}>
+                                                <div className="p-5 sm:p-6">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div>
+                                                            <span className="inline-block px-3 py-1 mb-2 bg-antique-gold/10 border border-antique-gold/30 rounded-full text-[10px] font-inter uppercase tracking-widest text-dark-gold">{item.theme}</span>
+                                                            <h3 className="font-cinzel text-lg font-semibold text-text-primary">{item.villaName}</h3>
+                                                        </div>
+                                                        <button onClick={() => removeFromCart(item.villaId)} className="text-red-400 hover:text-red-600 transition-colors p-2" title="Remove">
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                        </button>
+                                                    </div>
 
-                                        {/* Conflict Warning */}
-                                        {conflict && (
-                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 font-inter text-xs text-red-800">
-                                                ⚠️ <strong>{item.villaName}</strong> is already booked on: {conflict.map(d => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })).join(", ")}.
-                                                <span className="block mt-1 text-red-600">Please remove this villa or choose different dates.</span>
-                                            </div>
-                                        )}
+                                                    {/* Conflict Warning + collapsible calendar */}
+                                                    {conflict && (
+                                                        <div className="mb-4">
+                                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 font-inter text-xs text-red-800">
+                                                                ⚠️ <strong>{item.villaName}</strong> is booked on: {conflict.map(d => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })).join(", ")}.
+                                                                <span className="block mt-1 text-red-600">Remove this villa or choose different dates.</span>
+                                                                <button onClick={() => setExpandedConflict(isExpanded ? null : item.villaId)} className="mt-2 text-red-700 underline text-[11px] font-medium">
+                                                                    {isExpanded ? "Hide" : "View"} availability calendar
+                                                                </button>
+                                                            </div>
+                                                            {isExpanded && (
+                                                                <div className="mt-3 border border-red-100 rounded-lg p-3">
+                                                                    <AvailabilityCalendar
+                                                                        propertyId={dbPropertyMap["ambrose"]}
+                                                                        subPropertyId={dbSubPropertyMap[item.villaId]}
+                                                                        weekdayPrice={item.weekdayPrice}
+                                                                        weekendPrice={item.weekendPrice}
+                                                                        compact
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
 
-                                        {/* Guest selectors */}
-                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                            <div>
-                                                <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Adults</label>
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                    <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
-                                                    <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(6, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                    {/* Guest selectors */}
+                                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                                        <div>
+                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Adults</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(6, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Kids (5-12 yrs)</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(4, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {villaPrice > 0 && (
+                                                        <div className="border-t border-border-light pt-4 space-y-1.5 font-inter text-sm">
+                                                            <div className="flex justify-between"><span className="text-text-secondary">Room ({nights} night{nights > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(villaPrice)}</span></div>
+                                                            {extraCharges > 0 && <div className="flex justify-between"><span className="text-text-secondary">Extra guests</span><span className="text-text-primary">{formatPrice(extraCharges)}</span></div>}
+                                                            <div className="flex justify-between font-semibold text-text-primary pt-1"><span>Villa Subtotal</span><span>{formatPrice(villaPrice + extraCharges)}</span></div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Kids (5-12 yrs)</label>
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                    <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
-                                                    <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(4, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {villaPrice > 0 && (
-                                            <div className="border-t border-border-light pt-4 space-y-1.5 font-inter text-sm">
-                                                <div className="flex justify-between"><span className="text-text-secondary">Room ({nights} night{nights > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(villaPrice)}</span></div>
-                                                {extraCharges > 0 && <div className="flex justify-between"><span className="text-text-secondary">Extra guests</span><span className="text-text-primary">{formatPrice(extraCharges)}</span></div>}
-                                                <div className="flex justify-between font-semibold text-text-primary pt-1"><span>Villa Subtotal</span><span>{formatPrice(villaPrice + extraCharges)}</span></div>
-                                            </div>
-                                        )}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })}
+                            </div>
+                        )}
 
-                        {/* Grand Total */}
+                        {/* ═══ AMSTEL NEST ITEMS ═══ */}
+                        {amstelItems.length > 0 && (
+                            <div>
+                                <h3 className="font-cinzel text-base font-semibold text-text-primary mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-600" />Amstel Nest ({amstelItems.length})
+                                </h3>
+                                <div className="space-y-4">
+                                    {amstelItems.map((item) => {
+                                        const itemPrice = getItemPrice(item);
+                                        const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
+                                        const extraCharges = getExtraCharges(item);
+                                        const units = item.unitCount || 1;
+
+                                        return (
+                                            <div key={item.villaId} className="bg-white border border-border-light rounded-xl overflow-hidden shadow-sm">
+                                                <div className="p-5 sm:p-6">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div>
+                                                            <span className="inline-block px-3 py-1 mb-2 bg-emerald-50 border border-emerald-200 rounded-full text-[10px] font-inter uppercase tracking-widest text-emerald-700">{item.theme}</span>
+                                                            <h3 className="font-cinzel text-lg font-semibold text-text-primary">{item.villaName}</h3>
+                                                        </div>
+                                                        <button onClick={() => removeFromCart(item.villaId)} className="text-red-400 hover:text-red-600 transition-colors p-2" title="Remove">
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Unit count selector */}
+                                                    <div className="mb-4">
+                                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Number of Cottages</label>
+                                                        <div className="flex items-center gap-3">
+                                                            <button onClick={() => updateUnitCount(item.villaId, units - 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                            <span className="font-inter text-xl font-bold text-text-primary w-8 text-center">{units}</span>
+                                                            <button onClick={() => updateUnitCount(item.villaId, units + 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                            <span className="font-inter text-xs text-text-muted">× {item.villaName}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Guest selectors (per unit) */}
+                                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                                        <div>
+                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Adults per cottage</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(6, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Kids per cottage</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(4, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {itemPrice > 0 && (
+                                                        <div className="border-t border-border-light pt-4 space-y-1.5 font-inter text-sm">
+                                                            <div className="flex justify-between"><span className="text-text-secondary">{units} cottage{units > 1 ? "s" : ""} × {nights} night{nights > 1 ? "s" : ""}</span><span className="text-text-primary">{formatPrice(itemPrice)}</span></div>
+                                                            {extraCharges > 0 && <div className="flex justify-between"><span className="text-text-secondary">Extra guests</span><span className="text-text-primary">{formatPrice(extraCharges)}</span></div>}
+                                                            <div className="flex justify-between font-semibold text-text-primary pt-1"><span>Subtotal</span><span>{formatPrice(itemPrice + extraCharges)}</span></div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Grand Total + Proceed */}
                         {nights > 0 && (
                             <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
                                 <h3 className="font-cinzel text-lg font-semibold text-text-primary mb-4">Booking Summary</h3>
                                 <div className="space-y-2 font-inter text-sm">
                                     <div className="flex justify-between"><span className="text-text-secondary">Dates</span><span className="text-text-primary">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)}</span></div>
-                                    <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} villa{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
+                                    <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} item{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
                                     <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
                                     <div className="border-t border-border-light my-2" />
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
@@ -424,39 +608,71 @@ export default function BookMultiPage() {
 
                 {/* STEP 2: Personal Details */}
                 {currentStep === 2 && (
-                    <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm rounded-xl">
-                        <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
-                        <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">These details apply to all {cart.length} villa bookings.</p>
-                        <form onSubmit={handleFormSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div>
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">First Name*</label>
-                                    <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                    <div className="space-y-6">
+                        <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm rounded-xl">
+                            <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
+                            <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">These details apply to all {cart.length} bookings.</p>
+                            <form onSubmit={handleFormSubmit}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">First Name*</label>
+                                        <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                                    </div>
+                                    <div>
+                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Last Name</label>
+                                        <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                                    </div>
                                 </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Phone*</label>
+                                        <input required type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                                    </div>
+                                    <div>
+                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label>
+                                        <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                                    </div>
+                                </div>
+
+                                {/* ID Upload */}
+                                <div className="mb-6">
+                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Government ID (Image, max 2MB)</label>
+                                    <div className="flex items-center gap-4">
+                                        <label className="cursor-pointer flex items-center gap-2 px-4 py-2.5 border border-dashed border-border-medium rounded-lg hover:border-antique-gold transition-colors">
+                                            <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                            <span className="font-inter text-xs text-text-secondary">{idFile ? idFile.name : "Upload ID"}</span>
+                                            <input type="file" accept="image/*" onChange={handleIdUpload} className="hidden" />
+                                        </label>
+                                        {idPreview && <img src={idPreview} alt="ID Preview" className="w-16 h-16 object-cover rounded-lg border border-border-light" />}
+                                    </div>
+                                    {idError && <p className="font-inter text-xs text-red-500 mt-1">{idError}</p>}
+                                </div>
+
+                                <label className="flex items-start gap-3 mt-6 cursor-pointer">
+                                    <input type="checkbox" required checked={formData.agreedToTerms} onChange={(e) => setFormData({ ...formData, agreedToTerms: e.target.checked })} className="mt-1 accent-[#C4A265] w-4 h-4" />
+                                    <span className="text-text-secondary font-inter text-xs leading-relaxed">I agree to the booking terms, cancellation policy, and property rules for all selected villas.</span>
+                                </label>
+                                <div className="flex gap-3 mt-8">
+                                    <button type="button" onClick={() => { setCurrentStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-6 py-3 border border-border-medium text-text-primary font-inter text-sm rounded-lg hover:bg-soft-gray transition-colors">Back</button>
+                                    <button type="submit" className="flex-1 bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm py-3 rounded-lg hover:shadow-lg hover:shadow-antique-gold/20 transition-all">Continue to Payment</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Terms & Conditions Card */}
+                        <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
+                            <h3 className="font-cinzel text-sm font-semibold text-text-primary mb-3 uppercase tracking-wider">Terms & Conditions</h3>
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Last Name</label>
-                                    <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                                    <h4 className="font-inter text-xs font-semibold text-red-700 mb-1">No Cancellation</h4>
+                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.</p>
+                                </div>
+                                <div className="border-t border-border-light pt-3">
+                                    <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Payment Policy</h4>
+                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">80% payable online at booking · 20% payable at the venue</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div>
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Phone*</label>
-                                    <input required type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
-                                </div>
-                                <div>
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label>
-                                    <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
-                                </div>
-                            </div>
-                            <label className="flex items-start gap-3 mt-6 cursor-pointer">
-                                <input type="checkbox" required checked={formData.agreedToTerms} onChange={(e) => setFormData({ ...formData, agreedToTerms: e.target.checked })} className="mt-1 accent-[#C4A265] w-4 h-4" />
-                                <span className="text-text-secondary font-inter text-xs leading-relaxed">I agree to the booking terms, cancellation policy, and property rules for all selected villas.</span>
-                            </label>
-                            <div className="flex gap-3 mt-8">
-                                <button type="button" onClick={() => { setCurrentStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-6 py-3 border border-border-medium text-text-primary font-inter text-sm rounded-lg hover:bg-soft-gray transition-colors">Back</button>
-                                <button type="submit" className="flex-1 bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm py-3 rounded-lg hover:shadow-lg hover:shadow-antique-gold/20 transition-all">Continue to Payment</button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 )}
 
@@ -472,17 +688,18 @@ export default function BookMultiPage() {
                             </div>
 
                             {cart.map((item) => {
-                                const villaTotal = getVillaPrice(item) + getExtraCharges(item);
+                                const itemTotal = getItemPrice(item) + getExtraCharges(item);
                                 const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
+                                const units = item.unitCount || 1;
                                 return (
                                     <div key={item.villaId} className="border border-border-light rounded-lg p-4 mb-3">
                                         <div className="flex justify-between items-center">
                                             <div>
-                                                <span className="text-[10px] text-dark-gold font-inter uppercase tracking-wider">{item.theme}</span>
-                                                <h4 className="font-cinzel font-semibold text-text-primary">{item.villaName}</h4>
-                                                <p className="text-xs text-text-muted font-inter">{guests.adults} adults{guests.kids > 0 ? `, ${guests.kids} kids` : ""}</p>
+                                                <span className="text-[10px] text-dark-gold font-inter uppercase tracking-wider">{item.property === "amstel-nest" ? "Amstel Nest" : "Ambrose"} · {item.theme}</span>
+                                                <h4 className="font-cinzel font-semibold text-text-primary">{item.villaName}{units > 1 ? ` × ${units}` : ""}</h4>
+                                                <p className="text-xs text-text-muted font-inter">{guests.adults} adults{guests.kids > 0 ? `, ${guests.kids} kids` : ""}{units > 1 ? " per cottage" : ""}</p>
                                             </div>
-                                            <span className="font-inter font-semibold text-text-primary">{formatPrice(villaTotal)}</span>
+                                            <span className="font-inter font-semibold text-text-primary">{formatPrice(itemTotal)}</span>
                                         </div>
                                     </div>
                                 );

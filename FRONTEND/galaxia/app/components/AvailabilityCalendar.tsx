@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 
 interface CalendarProps {
     propertyId?: number | null;
-    propertySlug?: string; // Alternative to propertyId — slug is resolved to numeric ID automatically
+    propertySlug?: string;
     subPropertyId?: number | null;
     weekdayPrice?: string;
     weekendPrice?: string;
@@ -15,7 +15,8 @@ interface CalendarProps {
     initialCheckIn?: Date | null;
     initialCheckOut?: Date | null;
     isDisabled?: boolean;
-    totalUnits?: number; // When set (e.g. 15 for Amstel Nest), shows "X avail" or "Booked" under each date
+    totalUnits?: number;
+    hidePrice?: boolean; // Hide prices (for multi-villa bookings with different prices)
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -67,7 +68,7 @@ const getMaintenancePrice = (date: Date) => {
     return { price: "Maintenance", numPrice: 0, type: "booked" as const };
 };
 
-export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits, hidePrice }: CalendarProps) {
     // Resolve slug to numeric ID if propertySlug is provided
     const [resolvedId, setResolvedId] = useState<number | null>(null);
     useEffect(() => {
@@ -291,19 +292,33 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                                         </span>
                                     ) : (
                                         <>
-                                            <span className={`font-inter ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"} ${day.type === "prime" ? "text-warning" :
-                                                day.type === "weekend" ? "text-antique-gold" :
-                                                    "text-text-muted"
-                                                }`}>
-                                                {formatPrice(day.price)}
-                                            </span>
-                                            {totalUnits && (() => {
+                                            {totalUnits ? (() => {
                                                 const dateStr = toLocalDateStr(day.date);
                                                 const count = bookingCounts[dateStr] || 0;
                                                 const avail = totalUnits - count;
-                                                if (avail <= 0) return <span className="font-inter text-[7px] sm:text-[8px] text-red-500 font-bold">Booked</span>;
-                                                return <span className={`font-inter text-[7px] sm:text-[8px] ${avail <= 3 ? 'text-amber-600' : 'text-emerald-600'} font-medium`}>{avail} avail</span>;
-                                            })()}
+                                                if (avail <= 0) return <span className="font-inter text-[7px] sm:text-[8px] text-red-500 font-bold block">Booked</span>;
+                                                return (
+                                                    <>
+                                                        <span className={`font-inter text-[7px] sm:text-[8px] ${count > 0 ? 'text-amber-600' : 'text-emerald-600'} font-medium block`}>
+                                                            {count > 0 ? `${count} booked` : ''} / {totalUnits}
+                                                        </span>
+                                                        {!hidePrice && (
+                                                            <span className={`font-inter ${compact ? "text-[7px]" : "text-[7px] sm:text-[8px]"} ${day.type === "prime" ? "text-warning" : day.type === "weekend" ? "text-antique-gold" : "text-text-muted"}`}>
+                                                                {formatPrice(day.price)}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                );
+                                            })() : (
+                                                !hidePrice && (
+                                                    <span className={`font-inter ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"} ${day.type === "prime" ? "text-warning" :
+                                                        day.type === "weekend" ? "text-antique-gold" :
+                                                            "text-text-muted"
+                                                        }`}>
+                                                        {formatPrice(day.price)}
+                                                    </span>
+                                                )
+                                            )}
                                         </>
                                     )}
                                 </div>

@@ -43,9 +43,10 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
 
     const refreshCart = useCallback(() => {
         try {
-            const cart = JSON.parse(localStorage.getItem("amstel_cart") || "[]");
+            const cart = JSON.parse(localStorage.getItem("ambrose_cart") || "[]");
+            const myItems = cart.filter((item: any) => item.property === "amstel-nest");
             setCartCount(cart.length);
-            setIsInCart(cart.some((item: any) => item.cottageId === cottage.id));
+            setIsInCart(myItems.some((item: any) => item.villaId === cottage.id));
         } catch { setCartCount(0); setIsInCart(false); }
     }, [cottage.id]);
 
@@ -53,30 +54,33 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
 
     const addToCart = () => {
         try {
-            const cart = JSON.parse(localStorage.getItem("amstel_cart") || "[]");
-            if (cart.some((item: any) => item.cottageId === cottage.id)) {
+            const cart = JSON.parse(localStorage.getItem("ambrose_cart") || "[]");
+            if (cart.some((item: any) => item.villaId === cottage.id && item.property === "amstel-nest")) {
                 setCartMessage("Already in cart!"); setTimeout(() => setCartMessage(""), 2000); return;
             }
             cart.push({
-                cottageId: cottage.id,
-                cottageName: cottage.name,
+                villaId: cottage.id,
+                villaName: cottage.name,
                 theme: cottage.theme,
                 weekdayPrice: liveWeekday || cottage.pricing?.weekday.price || "4,950",
                 weekendPrice: liveWeekend || cottage.pricing?.weekend.price || "6,950",
                 maxPersons: cottage.maxPersons || 4,
-                property: "Amstel Nest",
+                property: "amstel-nest",
+                unitCount: 1,
             });
-            localStorage.setItem("amstel_cart", JSON.stringify(cart));
+            localStorage.setItem("ambrose_cart", JSON.stringify(cart));
             refreshCart();
+            window.dispatchEvent(new Event("cart-update"));
             setCartMessage("Added to cart!"); setTimeout(() => setCartMessage(""), 2000);
         } catch {}
     };
 
     const removeFromCart = () => {
         try {
-            const cart = JSON.parse(localStorage.getItem("amstel_cart") || "[]").filter((item: any) => item.cottageId !== cottage.id);
-            localStorage.setItem("amstel_cart", JSON.stringify(cart));
+            const cart = JSON.parse(localStorage.getItem("ambrose_cart") || "[]").filter((item: any) => !(item.villaId === cottage.id && item.property === "amstel-nest"));
+            localStorage.setItem("ambrose_cart", JSON.stringify(cart));
             refreshCart();
+            window.dispatchEvent(new Event("cart-update"));
         } catch {}
     };
 

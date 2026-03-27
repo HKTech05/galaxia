@@ -11,9 +11,8 @@ export default function FloatingCart() {
 
     const refresh = useCallback(() => {
         try {
-            const amstel = JSON.parse(localStorage.getItem("amstel_cart") || "[]");
-            const ambrose = JSON.parse(localStorage.getItem("ambrose_cart") || "[]");
-            setTotalCount(amstel.length + ambrose.length);
+            const cart = JSON.parse(localStorage.getItem("ambrose_cart") || "[]");
+            setTotalCount(cart.length);
         } catch { setTotalCount(0); }
     }, []);
 
@@ -31,7 +30,7 @@ export default function FloatingCart() {
     if (!mounted || totalCount === 0) return null;
 
     const handleClick = () => {
-        router.push("/cart");
+        router.push("/staycation/ambrose/book-multi");
     };
 
     return (

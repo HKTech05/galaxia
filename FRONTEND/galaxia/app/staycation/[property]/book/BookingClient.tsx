@@ -590,8 +590,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                 }
             }
 
-            // Clear Amstel Nest cart after booking
-            if (isAmstelNest) localStorage.removeItem('amstel_cart');
+            // Clear unified cart after booking
+            if (isAmstelNest) localStorage.removeItem('ambrose_cart');
 
             router.push("/dashboard?source=staycation&status=success");
         } catch (err: any) {
