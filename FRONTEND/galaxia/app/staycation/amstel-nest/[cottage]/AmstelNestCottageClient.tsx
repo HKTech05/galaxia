@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PropertyData } from "../../../data/properties";
@@ -36,6 +36,50 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [liveWeekday, setLiveWeekday] = useState<string | null>(null);
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
+
+    // Cart state
+    const [cartCount, setCartCount] = useState(0);
+    const [isInCart, setIsInCart] = useState(false);
+    const [cartMessage, setCartMessage] = useState("");
+
+    const refreshCart = useCallback(() => {
+        try {
+            const cart = JSON.parse(localStorage.getItem("amstel_cart") || "[]");
+            setCartCount(cart.length);
+            setIsInCart(cart.some((item: any) => item.cottageId === cottage.id));
+        } catch { setCartCount(0); setIsInCart(false); }
+    }, [cottage.id]);
+
+    useEffect(() => { refreshCart(); }, [refreshCart]);
+
+    const addToCart = () => {
+        try {
+            const cart = JSON.parse(localStorage.getItem("amstel_cart") || "[]");
+            if (cart.some((item: any) => item.cottageId === cottage.id)) {
+                setCartMessage("Already in cart!"); setTimeout(() => setCartMessage(""), 2000); return;
+            }
+            cart.push({
+                cottageId: cottage.id,
+                cottageName: cottage.name,
+                theme: cottage.theme,
+                weekdayPrice: liveWeekday || cottage.pricing?.weekday.price || "4,950",
+                weekendPrice: liveWeekend || cottage.pricing?.weekend.price || "6,950",
+                maxPersons: cottage.maxPersons || 4,
+                property: "Amstel Nest",
+            });
+            localStorage.setItem("amstel_cart", JSON.stringify(cart));
+            refreshCart();
+            setCartMessage("Added to cart!"); setTimeout(() => setCartMessage(""), 2000);
+        } catch {}
+    };
+
+    const removeFromCart = () => {
+        try {
+            const cart = JSON.parse(localStorage.getItem("amstel_cart") || "[]").filter((item: any) => item.cottageId !== cottage.id);
+            localStorage.setItem("amstel_cart", JSON.stringify(cart));
+            refreshCart();
+        } catch {}
+    };
 
     // Fetch DB property ID + live pricing for parent property (Amstel Nest)
     useEffect(() => {
@@ -269,9 +313,25 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                 isDisabled={isCottageDisabled}
                             />
-                            <Link href={bookNowUrl} className="mt-5 block w-full sm:w-auto sm:inline-block bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
-                                BOOK NOW
-                            </Link>
+                            <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                                <Link href={bookNowUrl} className="block w-full sm:w-auto bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
+                                    BOOK NOW
+                                </Link>
+                                {isInCart ? (
+                                    <button onClick={removeFromCart} className="block w-full sm:w-auto border-2 border-red-400 text-red-600 font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-red-50 transition-all duration-300 flex items-center justify-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        Remove from Cart
+                                    </button>
+                                ) : (
+                                    <button onClick={addToCart} className="block w-full sm:w-auto border-2 border-antique-gold/50 text-antique-gold font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-antique-gold/5 transition-all duration-300 flex items-center justify-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                                        Add to Cart
+                                    </button>
+                                )}
+                            </div>
+                            {cartMessage && (
+                                <div className="mt-2 text-sm font-inter font-medium text-antique-gold animate-fade-in">{cartMessage}</div>
+                            )}
                         </div>
                         <div className="space-y-5">
                             <div className="rounded-xl border border-border-light bg-soft-gray/30 p-5 sm:p-6 shadow-sm">
@@ -374,6 +434,17 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     </div>
                 </div>
             </section>
+
+            {/* Floating Cart Badge */}
+            {cartCount > 0 && (
+                <Link href={bookNowUrl} className="fixed bottom-24 right-4 sm:right-6 z-50 bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 flex items-center gap-3 px-5 py-3 group">
+                    <div className="relative">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                        <span className="absolute -top-2 -right-2 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>
+                    </div>
+                    <span className="font-inter font-semibold text-sm group-hover:tracking-wide transition-all">{cartCount} in Cart</span>
+                </Link>
+            )}
         </div>
     );
 }
