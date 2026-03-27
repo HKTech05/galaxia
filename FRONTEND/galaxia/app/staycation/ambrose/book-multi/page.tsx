@@ -67,14 +67,13 @@ export default function BookMultiPage() {
     const [authPhone, setAuthPhone] = useState("");
     const [authError, setAuthError] = useState("");
     const [isAuthenticating, setIsAuthenticating] = useState(false);
-    const [emailMode, setEmailMode] = useState(false);
-    const [isRegistering, setIsRegistering] = useState(false);
+    const [emailMode, setEmailMode] = useState<false | "login" | "register">(false);
 
-    // Coupon
+    // Coupon (API-based — same as BookingClient)
     const [couponCode, setCouponCode] = useState("");
-    const [couponDiscount, setCouponDiscount] = useState(0);
-    const [couponMsg, setCouponMsg] = useState("");
-    const [couponApplied, setCouponApplied] = useState(false);
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [couponError, setCouponError] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
 
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
@@ -302,7 +301,14 @@ export default function BookMultiPage() {
     };
 
     const grandSubtotal = cart.reduce((sum, item) => sum + getItemPrice(item) + getExtraCharges(item), 0);
-    const discountAmount = couponApplied ? Math.round(grandSubtotal * couponDiscount / 100) : 0;
+    let discountAmount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.discountType === "percentage") {
+            discountAmount = Math.round(grandSubtotal * appliedCoupon.discountValue / 100);
+        } else {
+            discountAmount = appliedCoupon.discountValue;
+        }
+    }
     const afterDiscount = grandSubtotal - discountAmount;
     const gst = Math.round(afterDiscount * 0.05);
     const grandTotal = afterDiscount + gst;
@@ -355,33 +361,26 @@ export default function BookMultiPage() {
         }
     };
 
-    const applyCoupon = () => {
-        setCouponMsg("");
-        const code = couponCode.trim().toUpperCase();
-        if (!code) return;
-        // Predefined coupons
-        const COUPONS: Record<string, { percent: number; label: string }> = {
-            "WELCOME10": { percent: 10, label: "10% off" },
-            "GALAXIA15": { percent: 15, label: "15% off" },
-            "STAYCATION20": { percent: 20, label: "20% off" },
-        };
-        const coupon = COUPONS[code];
-        if (coupon) {
-            setCouponDiscount(coupon.percent);
-            setCouponMsg(`✓ Coupon applied: ${coupon.label}`);
-            setCouponApplied(true);
-        } else {
-            setCouponDiscount(0);
-            setCouponMsg("Invalid coupon code");
-            setCouponApplied(false);
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError("");
+        try {
+            const result = await api.post("/coupons/validate", { code: couponCode });
+            if (result && result.valid) {
+                setAppliedCoupon({
+                    code: result.code,
+                    discountType: result.discountType,
+                    discountValue: result.discountValue,
+                });
+            } else {
+                setCouponError("Invalid or expired coupon code");
+            }
+        } catch (err: any) {
+            setCouponError(err?.message || "Invalid or expired coupon code");
+        } finally {
+            setCouponLoading(false);
         }
-    };
-
-    const removeCoupon = () => {
-        setCouponCode("");
-        setCouponDiscount(0);
-        setCouponMsg("");
-        setCouponApplied(false);
     };
 
     const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -499,7 +498,7 @@ export default function BookMultiPage() {
     const showAmstelCalendar = hasAmstelOnly || amstelItems.length > 0;
 
     return (
-        <div className="min-h-screen bg-[#FDFCF9] pb-24">
+        <div className="min-h-screen bg-[#FDFCF9] pb-24 relative z-0">
             <main className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14">
                 {/* Steps */}
                 <div className="text-center mb-10">
@@ -524,6 +523,9 @@ export default function BookMultiPage() {
                 {/* STEP 1: Cart Review */}
                 {currentStep === 1 && (
                     <div className="space-y-6">
+                        <Link href="/staycation" className="inline-flex items-center gap-2 font-inter text-sm text-text-muted hover:text-antique-gold transition-colors">
+                            Back to Staycation
+                        </Link>
                         {/* Info banner */}
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-5 flex items-center gap-3">
                             <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -745,7 +747,7 @@ export default function BookMultiPage() {
                                 <div className="space-y-2 font-inter text-sm">
                                     <div className="flex justify-between"><span className="text-text-secondary">Dates</span><span className="text-text-primary">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)}</span></div>
                                     <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} item{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
-                                    {couponApplied && <div className="flex justify-between text-emerald-600"><span>Discount ({couponDiscount}%)</span><span>-{formatPrice(discountAmount)}</span></div>}
+                                    {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
                                     <div className="border-t border-border-light my-2" />
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
@@ -755,30 +757,28 @@ export default function BookMultiPage() {
 
                                 {/* Coupon */}
                                 <div className="mt-4 pt-4 border-t border-border-light">
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Have a coupon?</label>
-                                    {couponApplied ? (
+                                    <h4 className="font-inter text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">Have a Coupon?</h4>
+                                    {appliedCoupon ? (
                                         <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                                             <div>
-                                                <span className="font-inter text-sm font-semibold text-emerald-700">{couponCode}</span>
-                                                <span className="font-inter text-xs text-emerald-600 ml-2">{couponMsg}</span>
+                                                <span className="font-mono text-sm font-bold text-antique-gold">{appliedCoupon.code}</span>
+                                                <p className="text-[10px] text-green-600 font-inter mt-0.5">
+                                                    {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`} applied
+                                                </p>
                                             </div>
-                                            <button onClick={removeCoupon} className="text-red-500 hover:text-red-700 text-xs font-inter font-medium">Remove</button>
+                                            <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} className="text-red-400 text-xs font-inter hover:text-red-600">Remove</button>
                                         </div>
                                     ) : (
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={couponCode}
-                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                                placeholder="Enter coupon code"
-                                                className="flex-1 border border-border-medium rounded-lg px-3 py-2.5 font-inter text-sm text-text-primary focus:ring-1 focus:ring-antique-gold focus:border-antique-gold outline-none"
-                                            />
-                                            <button onClick={applyCoupon} className="px-4 py-2.5 bg-antique-gold/10 border border-antique-gold/30 text-antique-gold font-inter font-semibold text-sm rounded-lg hover:bg-antique-gold hover:text-white transition-all">
-                                                Apply
-                                            </button>
+                                        <div>
+                                            <div className="flex gap-2">
+                                                <input type="text" placeholder="Enter coupon code" className="flex-1 bg-white border border-border-light rounded-lg px-3 py-2 text-sm font-inter text-text-primary outline-none focus:border-antique-gold uppercase tracking-wider" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
+                                                <button type="button" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()} className="bg-antique-gold text-white font-inter text-xs font-medium px-4 py-2 rounded-lg hover:bg-dark-gold transition-colors whitespace-nowrap disabled:opacity-40">
+                                                    {couponLoading ? "..." : "Apply"}
+                                                </button>
+                                            </div>
+                                            {couponError && <p className="text-red-500 text-[10px] font-inter mt-1">{couponError}</p>}
                                         </div>
                                     )}
-                                    {couponMsg && !couponApplied && <p className="font-inter text-xs text-red-500 mt-1">{couponMsg}</p>}
                                 </div>
 
                                 <button
@@ -792,9 +792,6 @@ export default function BookMultiPage() {
                                 >
                                     {hasAnyConflicts ? "Resolve Conflicts to Continue" : "Proceed to Details"}
                                 </button>
-                                <Link href="/staycation" className="block text-center mt-3 font-inter text-xs text-text-muted hover:text-antique-gold transition-colors">
-                                    ← Back to Staycation
-                                </Link>
                             </div>
                         )}
                     </div>
@@ -924,7 +921,7 @@ export default function BookMultiPage() {
 
                             <div className="border-t border-border-light mt-4 pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(grandSubtotal)}</span></div>
-                                {couponApplied && <div className="flex justify-between text-emerald-600"><span>Discount ({couponDiscount}%)</span><span>-{formatPrice(discountAmount)}</span></div>}
+                                {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span>{formatPrice(gst)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
@@ -950,45 +947,102 @@ export default function BookMultiPage() {
                 )}
             </main>
 
-            {/* Login Modal */}
+            {/* Login Modal — matching BookingClient style */}
             {showLoginPrompt && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-[#202123] rounded-2xl shadow-xl w-full max-w-[420px] p-8 relative">
-                        <button onClick={() => { setShowLoginPrompt(false); setAuthError(""); setEmailMode(false); setIsRegistering(false); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-[#202123] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[400px] overflow-hidden flex flex-col items-center p-8 xs:p-10 relative transform transition-all">
+                        <button onClick={() => { setShowLoginPrompt(false); setAuthError(""); setEmailMode(false); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
-                        <h2 className="font-inter text-2xl font-semibold text-white text-center mb-2">Log In to Continue</h2>
-                        <p className="text-[#C5C5D2] text-sm text-center mb-6">Sign in to your account to complete your booking</p>
+                        
+                        {!emailMode && (
+                            <>
+                                <h2 className="font-inter text-[28px] font-semibold text-white mb-2 text-center tracking-tight">Log in or sign up</h2>
+                                <p className="font-inter text-[15px] text-[#C5C5D2] text-center mb-8 px-2 font-normal">
+                                    Sign in to your account or create a new one to access your premium reservations.
+                                </p>
+                                
+                                <div className="w-full space-y-3">
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            const redirectUri = `${window.location.origin}/auth/callback`;
+                                            const currentUrl = window.location.pathname + window.location.search;
+                                            const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}&identity_provider=Google`;
+                                            window.open(cognitoUrl, "Cognito Login", "width=500,height=600");
+                                        }}
+                                        className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
+                                    >
+                                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                        Continue with Google
+                                    </button>
+                                    
+                                    <div className="flex items-center gap-4 py-2 opacity-60">
+                                        <div className="h-[1px] bg-white/20 flex-1"></div>
+                                        <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
+                                        <div className="h-[1px] bg-white/20 flex-1"></div>
+                                    </div>
 
-                        {!emailMode ? (
-                            <div className="space-y-3">
-                                <button onClick={() => { setEmailMode(true); setIsRegistering(false); }} className="w-full flex items-center justify-center gap-3 bg-white text-[#202123] py-3 rounded-xl font-inter text-sm font-semibold hover:bg-gray-100 transition-colors">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                    Continue with Email
+                                    <button 
+                                        onClick={() => setEmailMode("login")}
+                                        className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
+                                    >
+                                        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                        Continue with Email
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
+                        {emailMode === "login" && (
+                            <form onSubmit={handleGuestLogin} className="w-full animate-fade-in">
+                                <h2 className="font-inter text-2xl font-semibold text-white mb-6 text-center">Welcome Back</h2>
+                                <div className="space-y-4 mb-6">
+                                    <div>
+                                        <label className="text-white/70 text-xs mb-1.5 block">Email address</label>
+                                        <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="user@example.com" />
+                                    </div>
+                                    <div>
+                                        <label className="text-white/70 text-xs mb-1.5 block">Password</label>
+                                        <input type="password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-3 text-white focus:border-white focus:outline-none transition-colors" placeholder="••••••••" />
+                                    </div>
+                                </div>
+                                {authError && <p className="text-red-400 text-xs mb-4 text-center">{authError}</p>}
+                                <button disabled={isAuthenticating} type="submit" className="w-full bg-white text-black hover:bg-gray-100 py-[12px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors mb-4 disabled:opacity-50">
+                                    {isAuthenticating ? "Logging in..." : "Continue"}
                                 </button>
-                                <button onClick={() => { setEmailMode(true); setIsRegistering(true); }} className="w-full flex items-center justify-center gap-3 bg-[#343541] text-white py-3 rounded-xl font-inter text-sm font-semibold hover:bg-[#40414F] transition-colors">
-                                    Create New Account
-                                </button>
-                                <button onClick={() => setShowLoginPrompt(false)} className="w-full text-[#C5C5D2] py-2 font-inter text-sm hover:text-white transition-colors">Cancel</button>
-                            </div>
-                        ) : isRegistering ? (
-                            <form onSubmit={handleGuestRegister} className="space-y-4">
-                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Full Name</label><input required type="text" value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="Full name" /></div>
-                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label><input required type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="you@example.com" /></div>
-                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Phone</label><input required type="tel" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="+91 XXXXX XXXXX" /></div>
-                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Password</label><input required type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="Create a password" /></div>
-                                {authError && <p className="text-red-400 text-xs font-inter">{authError}</p>}
-                                <button type="submit" disabled={isAuthenticating} className="w-full bg-gradient-to-r from-[#C4A265] to-[#B8956A] text-white py-3 rounded-xl font-inter text-sm font-semibold mt-2 disabled:opacity-50">{isAuthenticating ? "Creating Account..." : "Create Account & Continue"}</button>
-                                <button type="button" onClick={() => { setIsRegistering(false); setAuthError(""); }} className="w-full text-[#C5C5D2] py-2 font-inter text-xs hover:text-white transition-colors">Already have an account? Log in</button>
+                                <p className="text-[#C5C5D2] text-sm text-center">Don&apos;t have an account? <button type="button" onClick={() => setEmailMode("register")} className="text-white hover:underline">Sign up</button></p>
+                                <button type="button" onClick={() => setEmailMode(false)} className="mx-auto block mt-4 text-white/50 text-xs hover:text-white transition-colors">Back to options</button>
                             </form>
-                        ) : (
-                            <form onSubmit={handleGuestLogin} className="space-y-4">
-                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label><input required type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="you@example.com" /></div>
-                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Password</label><input required type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="Password" /></div>
-                                {authError && <p className="text-red-400 text-xs font-inter">{authError}</p>}
-                                <button type="submit" disabled={isAuthenticating} className="w-full bg-gradient-to-r from-[#C4A265] to-[#B8956A] text-white py-3 rounded-xl font-inter text-sm font-semibold mt-2 disabled:opacity-50">{isAuthenticating ? "Signing In..." : "Sign In & Continue"}</button>
-                                <button type="button" onClick={() => { setIsRegistering(true); setAuthError(""); }} className="w-full text-[#C5C5D2] py-2 font-inter text-xs hover:text-white transition-colors">Don&apos;t have an account? Register</button>
-                                <button type="button" onClick={() => { setEmailMode(false); setAuthError(""); }} className="w-full text-[#C5C5D2] py-1 font-inter text-xs hover:text-white transition-colors">← Back</button>
+                        )}
+
+                        {emailMode === "register" && (
+                            <form onSubmit={handleGuestRegister} className="w-full animate-fade-in">
+                                <h2 className="font-inter text-2xl font-semibold text-white mb-6 text-center">Create Account</h2>
+                                <div className="space-y-3 mb-6">
+                                    <div>
+                                        <label className="text-white/70 text-xs mb-1 block">Full Name</label>
+                                        <input type="text" required value={authName} onChange={e => setAuthName(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="John Doe" />
+                                    </div>
+                                    <div>
+                                        <label className="text-white/70 text-xs mb-1 block">Email address</label>
+                                        <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="user@example.com" />
+                                    </div>
+                                    <div>
+                                        <label className="text-white/70 text-xs mb-1 block">Phone Number</label>
+                                        <input type="tel" required value={authPhone} onChange={e => setAuthPhone(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="9876543210" />
+                                    </div>
+                                    <div>
+                                        <label className="text-white/70 text-xs mb-1 block">Password</label>
+                                        <input type="password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#565869] rounded-md px-3 py-2.5 text-white focus:border-white focus:outline-none" placeholder="••••••••" />
+                                    </div>
+                                </div>
+                                {authError && <p className="text-red-400 text-xs mb-4 text-center">{authError}</p>}
+                                <button disabled={isAuthenticating} type="submit" className="w-full bg-[#10A37F] text-white hover:bg-[#0E906F] py-[12px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors mb-4 disabled:opacity-50">
+                                    {isAuthenticating ? "Creating..." : "Sign Up"}
+                                </button>
+                                <p className="text-[#C5C5D2] text-sm text-center">Already have an account? <button type="button" onClick={() => setEmailMode("login")} className="text-white hover:underline">Log in</button></p>
+                                <button type="button" onClick={() => setEmailMode(false)} className="mx-auto block mt-4 text-white/50 text-xs hover:text-white transition-colors">Back to options</button>
                             </form>
                         )}
                     </div>

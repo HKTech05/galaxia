@@ -66,11 +66,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
             if (idx >= 0) {
                 cart.splice(idx, 1);
             } else {
-                if (cart.length >= 2) {
-                    setCartMsg("Max 2 villas in cart");
-                    setTimeout(() => setCartMsg(""), 2000);
-                    return;
-                }
+
                 cart.push({
                     villaId: sub.id,
                     villaName: sub.name,
