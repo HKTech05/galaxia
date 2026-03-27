@@ -1067,163 +1067,123 @@ export default function BookingClient({ property }: BookingClientProps) {
                     )}
                 </div>
 
-                {/* STEP 3: CONFIRM & PAY — 3 equal columns, full width */}
+                {/* STEP 3: CONFIRM & PAY — Multi-booking style */}
                 {currentStep === 3 && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start max-w-lg mx-auto lg:max-w-none">
-                        {/* CARD 1: Booking Summary + Guest Details */}
-                        <div className="bg-white border border-border-light p-6 shadow-sm">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0">
-                                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                </div>
-                                <div>
-                                    <h2 className="font-cinzel text-lg text-text-primary uppercase">Booking Summary</h2>
-                                    <p className="font-inter text-xs text-text-muted">Please review your reservation details</p>
-                                </div>
+                    <div className="space-y-6 max-w-2xl mx-auto">
+                        {/* Icon Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Check-in</span>
+                                <span className="font-cinzel text-base font-semibold text-text-primary block">{checkInDate ? formatDateShort(checkInDate) : "—"}</span>
+                                <span className="font-inter text-xs text-text-muted">{property.checkIn}</span>
+                            </div>
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Check-out</span>
+                                <span className="font-cinzel text-base font-semibold text-text-primary block">{checkOutDate ? formatDateShort(checkOutDate) : "—"}</span>
+                                <span className="font-inter text-xs text-text-muted">{property.checkOut}</span>
+                            </div>
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Duration</span>
+                                <span className="font-cinzel text-2xl font-bold text-text-primary block">{nights}</span>
+                                <span className="font-inter text-xs text-text-muted">Night{nights > 1 ? "s" : ""}</span>
+                            </div>
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Total Guests</span>
+                                <span className="font-cinzel text-2xl font-bold text-text-primary block">{totalGuests}</span>
+                                <span className="font-inter text-xs text-text-muted">{adults} Adult{adults > 1 ? "s" : ""}{kids > 0 ? ` · ${kids} Kid${kids > 1 ? "s" : ""}` : ""}</span>
+                            </div>
+                        </div>
+
+                        {/* Booking Confirmation Card */}
+                        <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
+                            <h2 className="font-cinzel text-xl font-semibold text-text-primary mb-6">Booking Confirmation</h2>
+                            <div className="space-y-2 mb-6 font-inter text-sm">
+                                <p className="text-text-secondary">Guest: <span className="text-text-primary font-medium">{formData.firstName} {formData.lastName}</span></p>
+                                <p className="text-text-secondary">Phone: <span className="text-text-primary font-medium">+91 {formData.phone}</span></p>
+                                {formData.email && <p className="text-text-secondary">Email: <span className="text-text-primary font-medium">{formData.email}</span></p>}
+                                {formData.gst && <p className="text-text-secondary">GST: <span className="text-text-primary font-medium">{formData.gst}</span></p>}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mb-6 pb-6 border-b border-border-light">
-                                <div className="bg-soft-gray/50 rounded-lg p-3 text-center border border-border-light">
-                                    <p className="font-inter text-[9px] text-text-muted uppercase tracking-wider mb-1">Check-in</p>
-                                    <p className="font-inter text-sm text-text-primary font-medium">{checkInDate ? formatDateShort(checkInDate) : "—"}</p>
-                                    <p className="font-inter text-[10px] text-text-muted mt-0.5">{property.checkIn}</p>
-                                </div>
-                                <div className="bg-soft-gray/50 rounded-lg p-3 text-center border border-border-light">
-                                    <p className="font-inter text-[9px] text-text-muted uppercase tracking-wider mb-1">Check-out</p>
-                                    <p className="font-inter text-sm text-text-primary font-medium">{checkOutDate ? formatDateShort(checkOutDate) : "—"}</p>
-                                    <p className="font-inter text-[10px] text-text-muted mt-0.5">{property.checkOut}</p>
-                                </div>
-                                <div className="bg-soft-gray/50 rounded-lg p-3 text-center border border-border-light">
-                                    <p className="font-inter text-[9px] text-text-muted uppercase tracking-wider mb-1">Duration</p>
-                                    <p className="font-inter text-sm text-text-primary font-medium">{nights} Night{nights !== 1 ? "s" : ""}</p>
-                                </div>
-                                <div className="bg-soft-gray/50 rounded-lg p-3 text-center border border-border-light">
-                                    <p className="font-inter text-[9px] text-text-muted uppercase tracking-wider mb-1">Total Guests</p>
-                                    <p className="font-inter text-sm text-text-primary font-medium">{totalGuests}</p>
-                                    <p className="font-inter text-[10px] text-text-muted mt-0.5">{adults} Adult{adults > 1 ? "s" : ""}{kids > 0 ? ` · ${kids} Kid${kids > 1 ? "s" : ""}` : ""}</p>
-                                </div>
-                            </div>
-
+                            {/* Villa Card with Thumbnail */}
                             {selectedRoom && (
-                                <div className="flex items-start gap-4 mb-6 pb-6 border-b border-border-light">
-                                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-soft-gray shrink-0 relative">
-                                        {(mainThumb || property.images[0]) && <Image src={mainThumb || property.images[0]} alt={selectedRoom.name} fill className="object-cover" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-inter text-[9px] uppercase tracking-widest text-antique-gold mb-0.5">{selectedRoom.type}</p>
-                                        <h3 className="font-cinzel text-sm font-semibold text-text-primary mb-1">{selectedRoom.name}</h3>
-                                        <p className="font-inter text-xs text-text-muted">{formatPrice(nightlyRate)} × {nights} night{nights !== 1 ? "s" : ""}</p>
+                                <div className="border border-border-light rounded-lg p-4 mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-soft-gray shrink-0 relative">
+                                            {(mainThumb || property.images[0]) && <Image src={mainThumb || property.images[0]} alt={selectedRoom.name} fill className="object-cover" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-[10px] text-dark-gold font-inter uppercase tracking-wider">{selectedRoom.type}</span>
+                                            <h4 className="font-cinzel font-semibold text-text-primary">{selectedRoom.name}{unitCount > 1 ? ` × ${unitCount}` : ""}</h4>
+                                            <p className="text-xs text-text-muted font-inter">{adults} adult{adults > 1 ? "s" : ""}{kids > 0 ? `, ${kids} kid${kids > 1 ? "s" : ""}` : ""}{unitCount > 1 ? " per unit" : ""}</p>
+                                        </div>
+                                        <span className="font-inter font-semibold text-text-primary">{formatPrice(roomPrice + extraCharges)}</span>
                                     </div>
                                 </div>
                             )}
 
-                            <div>
-                                <h3 className="font-inter text-xs uppercase tracking-widest text-text-muted mb-3">Guest Details</h3>
-                                <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                                    <div><p className="font-inter text-[10px] text-text-muted">Name</p><p className="font-inter text-sm text-text-primary">{formData.firstName} {formData.lastName}</p></div>
-                                    <div><p className="font-inter text-[10px] text-text-muted">Contact</p><p className="font-inter text-sm text-text-primary">+91 {formData.phone}</p></div>
-                                    <div><p className="font-inter text-[10px] text-text-muted">Email</p><p className="font-inter text-sm text-text-primary">{formData.email}</p></div>
-                                    {formData.gst && <div><p className="font-inter text-[10px] text-text-muted">GST No.</p><p className="font-inter text-sm text-text-primary">{formData.gst}</p></div>}
+                            {/* Pricing Breakdown */}
+                            <div className="border-t border-border-light pt-4 space-y-2 font-inter text-sm">
+                                <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(roomPrice + extraCharges)}</span></div>
+                                {celebrationAddon && <div className="flex justify-between text-amber-700 text-xs"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
+                                {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
+                                <div className="flex justify-between"><span className="text-text-secondary">GST ({property.gstPercent}%)</span><span>{formatPrice(taxesAndFees)}</span></div>
+                                <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
+                                <div className="flex justify-between text-xs text-sky-600 mt-1">
+                                    <span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span>
+                                    <span>{"\u20B9"}{parseInt((property.securityDeposit || '3000').replace(/,/g, '')).toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
+                                    <div className="flex justify-between text-sm"><span className="text-amber-800 font-medium">Pay Now (80%)</span><span className="font-bold text-amber-900">{formatPrice(payNow)}</span></div>
+                                    <div className="flex justify-between text-xs text-amber-600 mt-1"><span>Balance at venue (20%)</span><span>{formatPrice(payAtVenue)}</span></div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* CARD 2: Cancellation & Booking Policy */}
-                        <div className="bg-white border border-border-light p-6 shadow-sm">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                                    <svg className="w-5 h-5 text-antique-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                                </div>
+                        {/* Terms & Conditions Card */}
+                        <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
+                            <h3 className="font-cinzel text-sm font-semibold text-text-primary mb-3 uppercase tracking-wider">Terms & Conditions</h3>
+                            <div className="space-y-4">
                                 <div>
-                                    <h2 className="font-cinzel text-lg text-text-primary uppercase">Booking Policy</h2>
-                                    <p className="font-inter text-xs text-text-muted">Cancellation & refund terms</p>
+                                    <h4 className="font-inter text-xs font-semibold text-red-700 mb-1">No Cancellation</h4>
+                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.</p>
+                                </div>
+                                <div className="border-t border-border-light pt-3">
+                                    <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Payment Policy</h4>
+                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">80% payable online at booking · 20% payable at the venue</p>
+                                </div>
+                                <div className="border-t border-border-light pt-3">
+                                    <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Security Deposit</h4>
+                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">Security deposit of {"\u20B9"}{property.securityDeposit} is applicable and will be refunded per the property&apos;s refund timeline.</p>
                                 </div>
                             </div>
-                            <ul className="space-y-2.5 text-xs font-inter text-text-secondary leading-relaxed mb-5">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-antique-gold mt-0.5 shrink-0">•</span>
-                                    <span>This booking is <strong className="text-text-primary">non-refundable</strong> — no cancellations, amendments, or date changes are permitted once confirmed.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-antique-gold mt-0.5 shrink-0">•</span>
-                                    <span>By proceeding with payment, you acknowledge and accept these terms in full.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-antique-gold mt-0.5 shrink-0">•</span>
-                                    <span>Security deposit of ₹{property.securityDeposit} is applicable and will be refunded per the property&apos;s refund timeline.</span>
-                                </li>
-                            </ul>
                         </div>
 
-                        {/* CARD 3: Pricing + Pay Button */}
-                        <div className="bg-white border border-border-light p-6 shadow-sm">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                                </div>
-                                <div>
-                                    <h2 className="font-cinzel text-lg text-text-primary uppercase">Payment Details</h2>
-                                    <p className="font-inter text-xs text-text-muted">Pricing breakdown & final amount</p>
-                                </div>
+                        {bookingError && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm font-inter">
+                                <p className="font-medium">{bookingError}</p>
+                                {bookingError.toLowerCase().includes("booked") && (
+                                    <button onClick={() => { setCurrentStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mt-2 text-red-800 underline text-xs font-semibold">
+                                        Go back to Step 1 and select different dates
+                                    </button>
+                                )}
                             </div>
-                            <div className="space-y-2.5 font-inter text-sm mb-5">
-                                <div className="flex justify-between text-text-secondary">
-                                    <span>Room ({nights} night{nights !== 1 ? "s" : ""})</span>
-                                    <span className="text-text-primary font-medium">{formatPrice(roomPrice)}</span>
-                                </div>
-                                {extraCharges > 0 && (
-                                    <div className="flex justify-between text-text-secondary text-xs">
-                                        <span>Extra Guests Charges</span>
-                                        <span className="text-text-primary">{formatPrice(extraCharges)}</span>
-                                    </div>
-                                )}
-                                {discountAmount > 0 && (
-                                    <div className="flex justify-between text-green-600 text-xs">
-                                        <span>Coupon ({appliedCoupon?.code})</span>
-                                        <span>-{formatPrice(discountAmount)}</span>
-                                    </div>
-                                )}
-                                {celebrationAddon && (
-                                    <div className="flex justify-between text-amber-700 text-xs">
-                                        <span>Celebration Add-on</span>
-                                        <span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-text-secondary text-xs">
-                                    <span>Taxes ({property.gstPercent}% GST)</span>
-                                    <span className="text-text-primary">{formatPrice(taxesAndFees)}</span>
-                                </div>
-                                <div className="flex justify-between text-text-secondary text-xs">
-                                    <span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(due at check-in)</span></span>
-                                    <span className="text-text-primary">₹{parseInt((property.securityDeposit || '3000').replace(/,/g, '')).toLocaleString('en-IN')}</span>
-                                </div>
-                            </div>
+                        )}
 
-                            <div className="flex justify-between items-center py-4 border-t border-dashed border-border-medium mb-2">
-                                <span className="font-inter text-xs text-text-muted uppercase tracking-wider">Pay Now (80%)</span>
-                                <span className="font-cinzel text-xl font-semibold text-text-primary">{formatPrice(payNow)}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-5">
-                                <span className="font-inter text-xs text-text-muted uppercase tracking-wider">Due at Venue (20%)</span>
-                                <span className="font-cinzel text-xl font-semibold text-text-secondary">{formatPrice(payAtVenue)}</span>
-                            </div>
-
-                            <button onClick={handlePayment} disabled={isSubmitting || !dbPropertyId} className="w-full bg-gradient-to-r from-antique-gold to-dark-gold text-white py-3.5 text-xs font-inter uppercase tracking-widest hover:shadow-lg hover:shadow-antique-gold/20 transition-all rounded-lg disabled:opacity-60">
-                                {isSubmitting ? "Processing..." : (!dbPropertyId ? "Loading System..." : "Make Payment")}
+                        <div className="flex gap-3">
+                            <button onClick={() => { setCurrentStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-6 py-3 border border-border-medium text-text-primary font-inter text-sm rounded-lg hover:bg-soft-gray transition-colors">Back</button>
+                            <button
+                                onClick={handlePayment}
+                                disabled={isSubmitting || !dbPropertyId}
+                                className="flex-1 bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm py-3.5 rounded-lg hover:shadow-lg hover:shadow-antique-gold/20 transition-all disabled:opacity-50"
+                            >
+                                {isSubmitting ? "Processing..." : `Pay ${formatPrice(payNow)} Now`}
                             </button>
-                            {bookingError && (
-                                <p className="text-red-500 text-xs font-inter mt-2 text-center">{bookingError}</p>
-                            )}
-                            <button type="button" onClick={() => setCurrentStep(2)} className="w-full mt-3 font-inter text-xs tracking-wider uppercase text-text-secondary hover:text-text-primary py-2 text-center">
-                                ← Edit Details
-                            </button>
-                            <div className="pt-4 mt-4 border-t border-border-light">
-                                <p className="font-inter text-[11px] text-text-muted flex items-center gap-2">
-                                    <svg className="w-3.5 h-3.5 text-antique-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                    A copy of the invoice will be sent to your registered email &amp; phone number upon confirmation.
-                                </p>
-                            </div>
                         </div>
+
+                        <p className="font-inter text-[11px] text-text-muted flex items-center gap-2 justify-center">
+                            <svg className="w-3.5 h-3.5 text-antique-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            A copy of the invoice will be sent to your registered email &amp; phone number upon confirmation.
+                        </p>
                     </div>
                 )}
             </main>
