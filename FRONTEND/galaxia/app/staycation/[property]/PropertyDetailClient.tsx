@@ -250,14 +250,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                             ))}
                         </div>
                         {cartMsg && <p className="text-center text-sm font-inter font-medium text-red-500 mt-3 animate-pulse">{cartMsg}</p>}
-                        {cartVillas.length > 0 && (
-                            <div className="mt-8 text-center">
-                                <Link href="/staycation/ambrose/book-multi" className="inline-flex items-center gap-3 bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                                    Book {cartVillas.length} Villa{cartVillas.length > 1 ? "s" : ""} Together
-                                </Link>
-                            </div>
-                        )}
+
+
                     </div>
                 </section>
             )}

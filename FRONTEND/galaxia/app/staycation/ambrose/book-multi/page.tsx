@@ -61,6 +61,20 @@ export default function BookMultiPage() {
 
     // Auth
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [authEmail, setAuthEmail] = useState("");
+    const [authPassword, setAuthPassword] = useState("");
+    const [authName, setAuthName] = useState("");
+    const [authPhone, setAuthPhone] = useState("");
+    const [authError, setAuthError] = useState("");
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const [emailMode, setEmailMode] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+
+    // Coupon
+    const [couponCode, setCouponCode] = useState("");
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponMsg, setCouponMsg] = useState("");
+    const [couponApplied, setCouponApplied] = useState(false);
 
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
@@ -288,8 +302,10 @@ export default function BookMultiPage() {
     };
 
     const grandSubtotal = cart.reduce((sum, item) => sum + getItemPrice(item) + getExtraCharges(item), 0);
-    const gst = Math.round(grandSubtotal * 0.05);
-    const grandTotal = grandSubtotal + gst;
+    const discountAmount = couponApplied ? Math.round(grandSubtotal * couponDiscount / 100) : 0;
+    const afterDiscount = grandSubtotal - discountAmount;
+    const gst = Math.round(afterDiscount * 0.05);
+    const grandTotal = afterDiscount + gst;
     const payNow = Math.round(grandTotal * 0.8);
     const payAtVenue = grandTotal - payNow;
 
@@ -299,6 +315,73 @@ export default function BookMultiPage() {
         if (!token) { setShowLoginPrompt(true); return; }
         setCurrentStep(2);
         window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleGuestLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsAuthenticating(true);
+        setAuthError("");
+        try {
+            const data = await api.post("/auth/login-guest", { email: authEmail, password: authPassword });
+            localStorage.setItem("galaxia_token", data.token);
+            localStorage.setItem("galaxia_user", JSON.stringify(data.user));
+            setFormData(prev => ({ ...prev, email: data.user.email || "", phone: data.user.phone || "" }));
+            setShowLoginPrompt(false);
+            setCurrentStep(2);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err: any) {
+            setAuthError(err.message || "Invalid email or password");
+        } finally {
+            setIsAuthenticating(false);
+        }
+    };
+
+    const handleGuestRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsAuthenticating(true);
+        setAuthError("");
+        try {
+            const data = await api.post("/auth/register-guest", { fullName: authName, email: authEmail, phone: authPhone, password: authPassword });
+            localStorage.setItem("galaxia_token", data.token);
+            localStorage.setItem("galaxia_user", JSON.stringify(data.user));
+            setFormData(prev => ({ ...prev, email: data.user.email || "", phone: data.user.phone || "", firstName: authName.split(" ")[0] || "", lastName: authName.split(" ").slice(1).join(" ") || "" }));
+            setShowLoginPrompt(false);
+            setCurrentStep(2);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err: any) {
+            setAuthError(err.message || "Registration failed");
+        } finally {
+            setIsAuthenticating(false);
+        }
+    };
+
+    const applyCoupon = () => {
+        setCouponMsg("");
+        const code = couponCode.trim().toUpperCase();
+        if (!code) return;
+        // Predefined coupons
+        const COUPONS: Record<string, { percent: number; label: string }> = {
+            "WELCOME10": { percent: 10, label: "10% off" },
+            "GALAXIA15": { percent: 15, label: "15% off" },
+            "STAYCATION20": { percent: 20, label: "20% off" },
+        };
+        const coupon = COUPONS[code];
+        if (coupon) {
+            setCouponDiscount(coupon.percent);
+            setCouponMsg(`✓ Coupon applied: ${coupon.label}`);
+            setCouponApplied(true);
+        } else {
+            setCouponDiscount(0);
+            setCouponMsg("Invalid coupon code");
+            setCouponApplied(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setCouponCode("");
+        setCouponDiscount(0);
+        setCouponMsg("");
+        setCouponApplied(false);
     };
 
     const handleIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,7 +469,7 @@ export default function BookMultiPage() {
 
             localStorage.removeItem("ambrose_cart");
             window.dispatchEvent(new Event("cart-update"));
-            router.push("/dashboard?source=staycation&status=success");
+            window.location.href = "/dashboard?source=staycation&status=success";
         } catch (err: any) {
             setBookingError(err?.message || "Booking failed. Please try again.");
         } finally {
@@ -662,12 +745,42 @@ export default function BookMultiPage() {
                                 <div className="space-y-2 font-inter text-sm">
                                     <div className="flex justify-between"><span className="text-text-secondary">Dates</span><span className="text-text-primary">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)}</span></div>
                                     <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} item{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
+                                    {couponApplied && <div className="flex justify-between text-emerald-600"><span>Discount ({couponDiscount}%)</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
                                     <div className="border-t border-border-light my-2" />
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                     <div className="flex justify-between text-xs text-text-muted"><span>Pay Now (80%)</span><span>{formatPrice(payNow)}</span></div>
                                     <div className="flex justify-between text-xs text-text-muted"><span>Pay at Venue (20%)</span><span>{formatPrice(payAtVenue)}</span></div>
                                 </div>
+
+                                {/* Coupon */}
+                                <div className="mt-4 pt-4 border-t border-border-light">
+                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Have a coupon?</label>
+                                    {couponApplied ? (
+                                        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                            <div>
+                                                <span className="font-inter text-sm font-semibold text-emerald-700">{couponCode}</span>
+                                                <span className="font-inter text-xs text-emerald-600 ml-2">{couponMsg}</span>
+                                            </div>
+                                            <button onClick={removeCoupon} className="text-red-500 hover:text-red-700 text-xs font-inter font-medium">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                placeholder="Enter coupon code"
+                                                className="flex-1 border border-border-medium rounded-lg px-3 py-2.5 font-inter text-sm text-text-primary focus:ring-1 focus:ring-antique-gold focus:border-antique-gold outline-none"
+                                            />
+                                            <button onClick={applyCoupon} className="px-4 py-2.5 bg-antique-gold/10 border border-antique-gold/30 text-antique-gold font-inter font-semibold text-sm rounded-lg hover:bg-antique-gold hover:text-white transition-all">
+                                                Apply
+                                            </button>
+                                        </div>
+                                    )}
+                                    {couponMsg && !couponApplied && <p className="font-inter text-xs text-red-500 mt-1">{couponMsg}</p>}
+                                </div>
+
                                 <button
                                     onClick={handleProceed}
                                     disabled={!checkInDate || !checkOutDate || hasAnyConflicts}
@@ -679,6 +792,9 @@ export default function BookMultiPage() {
                                 >
                                     {hasAnyConflicts ? "Resolve Conflicts to Continue" : "Proceed to Details"}
                                 </button>
+                                <Link href="/staycation" className="block text-center mt-3 font-inter text-xs text-text-muted hover:text-antique-gold transition-colors">
+                                    ← Back to Staycation
+                                </Link>
                             </div>
                         )}
                     </div>
@@ -756,13 +872,36 @@ export default function BookMultiPage() {
 
                 {/* STEP 3: Confirm & Pay */}
                 {currentStep === 3 && (
-                    <div className="max-w-3xl mx-auto space-y-6">
+                    <div className="space-y-6">
+                        {/* Icon Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Check-in</span>
+                                <span className="font-cinzel text-base font-semibold text-text-primary block">{checkInDate && `${checkInDate.getDate()} ${MONTH_SHORT[checkInDate.getMonth()]} ${checkInDate.getFullYear()}`}</span>
+                                <span className="font-inter text-xs text-text-muted">1:00 PM</span>
+                            </div>
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Check-out</span>
+                                <span className="font-cinzel text-base font-semibold text-text-primary block">{checkOutDate && `${checkOutDate.getDate()} ${MONTH_SHORT[checkOutDate.getMonth()]} ${checkOutDate.getFullYear()}`}</span>
+                                <span className="font-inter text-xs text-text-muted">10:00 AM</span>
+                            </div>
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Duration</span>
+                                <span className="font-cinzel text-2xl font-bold text-text-primary block">{nights}</span>
+                                <span className="font-inter text-xs text-text-muted">Night{nights > 1 ? "s" : ""}</span>
+                            </div>
+                            <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Total Guests</span>
+                                <span className="font-cinzel text-2xl font-bold text-text-primary block">{cart.reduce((s, item) => { const g = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 }; return s + (g.adults + g.kids) * (item.unitCount || 1); }, 0)}</span>
+                                <span className="font-inter text-xs text-text-muted">{cart.reduce((s, item) => s + (guestsPerVilla[item.villaId]?.adults || 2) * (item.unitCount || 1), 0)} Adults</span>
+                            </div>
+                        </div>
+
                         <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
                             <h2 className="font-cinzel text-xl font-semibold text-text-primary mb-6">Booking Confirmation</h2>
                             <div className="space-y-2 mb-6 font-inter text-sm">
                                 <p className="text-text-secondary">Guest: <span className="text-text-primary font-medium">{formData.firstName} {formData.lastName}</span></p>
                                 <p className="text-text-secondary">Phone: <span className="text-text-primary font-medium">{formData.phone}</span></p>
-                                <p className="text-text-secondary">Dates: <span className="text-text-primary font-medium">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)} ({nights} night{nights > 1 ? "s" : ""})</span></p>
                             </div>
 
                             {cart.map((item) => {
@@ -785,6 +924,7 @@ export default function BookMultiPage() {
 
                             <div className="border-t border-border-light mt-4 pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(grandSubtotal)}</span></div>
+                                {couponApplied && <div className="flex justify-between text-emerald-600"><span>Discount ({couponDiscount}%)</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span>{formatPrice(gst)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
@@ -810,19 +950,53 @@ export default function BookMultiPage() {
                 )}
             </main>
 
-            {/* Login Prompt */}
+            {/* Login Modal */}
             {showLoginPrompt && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-[#202123] rounded-2xl shadow-xl w-full max-w-[400px] p-8 text-center">
-                        <h2 className="font-inter text-2xl font-semibold text-white mb-4">Please Log In</h2>
-                        <p className="text-[#C5C5D2] text-sm mb-6">You need to be logged in to book. Please log in from any single villa booking page first.</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowLoginPrompt(false)} className="flex-1 bg-[#343541] text-white py-3 rounded-lg font-inter text-sm">Cancel</button>
-                            <Link href={`/staycation/ambrose/${cart[0]?.villaId}/book`} className="flex-1 bg-white text-black py-3 rounded-lg font-inter text-sm font-semibold text-center">Go to Login</Link>
-                        </div>
+                    <div className="bg-[#202123] rounded-2xl shadow-xl w-full max-w-[420px] p-8 relative">
+                        <button onClick={() => { setShowLoginPrompt(false); setAuthError(""); setEmailMode(false); setIsRegistering(false); }} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        <h2 className="font-inter text-2xl font-semibold text-white text-center mb-2">Log In to Continue</h2>
+                        <p className="text-[#C5C5D2] text-sm text-center mb-6">Sign in to your account to complete your booking</p>
+
+                        {!emailMode ? (
+                            <div className="space-y-3">
+                                <button onClick={() => { setEmailMode(true); setIsRegistering(false); }} className="w-full flex items-center justify-center gap-3 bg-white text-[#202123] py-3 rounded-xl font-inter text-sm font-semibold hover:bg-gray-100 transition-colors">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    Continue with Email
+                                </button>
+                                <button onClick={() => { setEmailMode(true); setIsRegistering(true); }} className="w-full flex items-center justify-center gap-3 bg-[#343541] text-white py-3 rounded-xl font-inter text-sm font-semibold hover:bg-[#40414F] transition-colors">
+                                    Create New Account
+                                </button>
+                                <button onClick={() => setShowLoginPrompt(false)} className="w-full text-[#C5C5D2] py-2 font-inter text-sm hover:text-white transition-colors">Cancel</button>
+                            </div>
+                        ) : isRegistering ? (
+                            <form onSubmit={handleGuestRegister} className="space-y-4">
+                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Full Name</label><input required type="text" value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="Full name" /></div>
+                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label><input required type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="you@example.com" /></div>
+                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Phone</label><input required type="tel" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="+91 XXXXX XXXXX" /></div>
+                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Password</label><input required type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="Create a password" /></div>
+                                {authError && <p className="text-red-400 text-xs font-inter">{authError}</p>}
+                                <button type="submit" disabled={isAuthenticating} className="w-full bg-gradient-to-r from-[#C4A265] to-[#B8956A] text-white py-3 rounded-xl font-inter text-sm font-semibold mt-2 disabled:opacity-50">{isAuthenticating ? "Creating Account..." : "Create Account & Continue"}</button>
+                                <button type="button" onClick={() => { setIsRegistering(false); setAuthError(""); }} className="w-full text-[#C5C5D2] py-2 font-inter text-xs hover:text-white transition-colors">Already have an account? Log in</button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleGuestLogin} className="space-y-4">
+                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label><input required type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="you@example.com" /></div>
+                                <div><label className="text-[#A0A0B0] text-[10px] font-inter uppercase tracking-wider mb-1 block">Password</label><input required type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full bg-[#343541] border border-[#444654] rounded-xl px-4 py-3 text-white font-inter text-sm focus:ring-1 focus:ring-[#C4A265] focus:border-[#C4A265] outline-none" placeholder="Password" /></div>
+                                {authError && <p className="text-red-400 text-xs font-inter">{authError}</p>}
+                                <button type="submit" disabled={isAuthenticating} className="w-full bg-gradient-to-r from-[#C4A265] to-[#B8956A] text-white py-3 rounded-xl font-inter text-sm font-semibold mt-2 disabled:opacity-50">{isAuthenticating ? "Signing In..." : "Sign In & Continue"}</button>
+                                <button type="button" onClick={() => { setIsRegistering(true); setAuthError(""); }} className="w-full text-[#C5C5D2] py-2 font-inter text-xs hover:text-white transition-colors">Don&apos;t have an account? Register</button>
+                                <button type="button" onClick={() => { setEmailMode(false); setAuthError(""); }} className="w-full text-[#C5C5D2] py-1 font-inter text-xs hover:text-white transition-colors">← Back</button>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}
         </div>
     );
 }
+
+
+
