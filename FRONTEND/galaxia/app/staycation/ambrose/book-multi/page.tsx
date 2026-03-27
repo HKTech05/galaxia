@@ -14,6 +14,8 @@ interface CartItem {
     weekdayPrice: string;
     weekendPrice: string;
     maxPersons: number;
+    maxAdults?: number;
+    maxKids?: number;
     property?: string; // "amstel-nest" | undefined (Ambrose default)
     unitCount?: number; // Amstel Nest: how many cottages
 }
@@ -635,7 +637,7 @@ export default function BookMultiPage() {
                                                             <div className="flex items-center gap-2">
                                                                 <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                 <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(6, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(item.maxAdults || 6, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
                                                             </div>
                                                         </div>
                                                         <div>
@@ -643,7 +645,7 @@ export default function BookMultiPage() {
                                                             <div className="flex items-center gap-2">
                                                                 <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                 <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(4, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(item.maxKids ?? 2, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -736,7 +738,7 @@ export default function BookMultiPage() {
                                                             <div className="flex items-center gap-2">
                                                                 <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                 <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(6, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(item.maxAdults || 3, guests.adults + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
                                                             </div>
                                                         </div>
                                                         <div>
@@ -744,7 +746,7 @@ export default function BookMultiPage() {
                                                             <div className="flex items-center gap-2">
                                                                 <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                 <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(4, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.min(item.maxKids ?? 1, guests.kids + 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
                                                             </div>
                                                         </div>
                                                     </div>

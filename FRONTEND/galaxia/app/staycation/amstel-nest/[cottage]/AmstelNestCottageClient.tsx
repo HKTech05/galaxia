@@ -65,6 +65,8 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                 weekdayPrice: liveWeekday || cottage.pricing?.weekday.price || "4,950",
                 weekendPrice: liveWeekend || cottage.pricing?.weekend.price || "6,950",
                 maxPersons: cottage.maxPersons || 4,
+                maxAdults: (cottage as any).maxAdults || parent.maxAdults || 3,
+                maxKids: (cottage as any).maxKids ?? parent.maxKids ?? 1,
                 property: "amstel-nest",
                 unitCount: 1,
             });

@@ -71,6 +71,8 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                 weekdayPrice: liveWeekday || villa.pricing?.weekday.price || "5,500",
                 weekendPrice: liveWeekend || villa.pricing?.weekend.price || "6,500",
                 maxPersons: villa.maxPersons || 8,
+                maxAdults: (villa as any).maxAdults || parent.maxAdults || 6,
+                maxKids: (villa as any).maxKids ?? parent.maxKids ?? 2,
             });
             localStorage.setItem("ambrose_cart", JSON.stringify(cart));
             refreshCart();

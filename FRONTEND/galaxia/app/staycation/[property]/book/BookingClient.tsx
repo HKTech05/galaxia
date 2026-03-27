@@ -26,6 +26,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         type: string; 
         maxPersons: number;
         maxAdults?: number;
+        maxKids?: number;
         weekdayPrice: string;
         weekendPrice: string;
         primeDatePrice: string;
@@ -315,7 +316,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                 details: sub.configuration?.slice(0, 3) || [],
                 persons: sub.pricing?.weekday.persons || "2 guests",
                 maxPersons: sub.maxPersons || property.maxPersons || 4,
-                maxAdults: sub.maxAdults || undefined
+                maxAdults: sub.maxAdults || property.maxAdults || undefined,
+                maxKids: sub.maxKids ?? property.maxKids ?? undefined
             };
         })
         : [{
@@ -330,7 +332,9 @@ export default function BookingClient({ property }: BookingClientProps) {
             primeDatePrice: property.pricing.primeDates || "",
             details: property.configuration.slice(0, 3),
             persons: property.pricing.weekday.persons,
-            maxPersons: property.maxPersons || 4
+            maxPersons: property.maxPersons || 4,
+            maxAdults: property.maxAdults || undefined,
+            maxKids: property.maxKids ?? undefined
         }];
 
     const formatPrice = (price: number) => `₹ ${price.toLocaleString('en-IN')}`;
@@ -368,8 +372,9 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     const totalGuests = adults + kids;
     const maxGuests = selectedRoom?.maxPersons || property.maxPersons || 4;
-    // Hard cap: max 6 total guests (adults + kids) across all properties.
-    const maxAdultsCap = 6;
+    // Per-property max adults & kids caps
+    const maxAdultsCap = selectedRoom?.maxAdults || property.maxAdults || 6;
+    const maxKidsCap = selectedRoom?.maxKids ?? property.maxKids ?? 2;
 
     // 80-20 Payment Split
     const payNow = Math.round(totalAmount * 0.8);
@@ -402,6 +407,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             type: room.theme,
             maxPersons: room.maxPersons,
             maxAdults: room.maxAdults,
+            maxKids: room.maxKids,
             weekdayPrice: currentWeekdayPrice,
             weekendPrice: currentWeekendPrice,
             primeDatePrice: room.primeDatePrice
@@ -838,19 +844,19 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     {/* Total Number of Guests */}
                                     <div className="mb-6 p-4 border border-border-light rounded-lg bg-soft-gray/30">
                                         <h4 className="font-inter text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">Total Number of Guests</h4>
-                                        <p className="font-inter text-[10px] text-text-muted mb-4">Base price includes up to {baseIncludedPersons} persons. Max {maxAdultsCap} guests.</p>
+                                        <p className="font-inter text-[10px] text-text-muted mb-4">Base price includes up to {baseIncludedPersons} persons. Max {maxAdultsCap} adults, {maxKidsCap} kids.</p>
                                         <div className="flex flex-wrap gap-6">
                                             <div className="flex items-center gap-3">
                                                 <label className="font-inter text-xs text-text-secondary w-12">Adults</label>
                                                 <button type="button" onClick={() => setAdults(Math.max(1, adults - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
                                                 <span className="font-inter text-sm text-text-primary w-4 text-center">{adults}</span>
-                                                <button type="button" onClick={() => setAdults(Math.min(maxAdultsCap, maxAdultsCap - kids, adults + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
+                                                <button type="button" onClick={() => setAdults(Math.min(maxAdultsCap, adults + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <label className="font-inter text-xs text-text-secondary w-16">Kids (5-12)</label>
                                                 <button type="button" onClick={() => setKids(Math.max(0, kids - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
                                                 <span className="font-inter text-sm text-text-primary w-4 text-center">{kids}</span>
-                                                <button type="button" onClick={() => setKids(Math.min(maxAdultsCap - adults, kids + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
+                                                <button type="button" onClick={() => setKids(Math.min(maxKidsCap, kids + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
                                             </div>
                                         </div>
                                         {(extraAdults > 0 || kids > 0) && (
