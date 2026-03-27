@@ -24,6 +24,8 @@ export default async function AmstelNestCottageBookingPage(props: { params: Prom
         description: data.cottage.description,
         images: [data.cottage.image, ...data.parent.images.slice(1, 4)],
         maxPersons: data.cottage.maxPersons || data.parent.maxPersons,
+        maxAdults: data.cottage.maxAdults ?? data.parent.maxAdults,
+        maxKids: data.cottage.maxKids ?? data.parent.maxKids,
         pricing: {
             ...data.parent.pricing,
             weekday: data.cottage.pricing?.weekday || data.parent.pricing.weekday,

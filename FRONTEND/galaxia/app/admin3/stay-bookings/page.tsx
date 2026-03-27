@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail } from "lucide-react";
 import { api } from "../../../lib/api";
+import CustomDatePicker from "../../components/CustomDatePicker";
 
 interface StayBooking {
     id: number;
@@ -200,10 +201,34 @@ export default function StayBookingsPage() {
                 </div>
 
                 {/* Date pickers — full-width row on mobile */}
-                <div className="flex items-center gap-2 w-full">
-                    <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none min-w-0" />
+                <div className="flex items-center gap-2 w-full flex-wrap">
+                    <CustomDatePicker
+                        date={dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date()}
+                        onDateChange={(d) => {
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            setDateFrom(`${y}-${m}-${day}`);
+                        }}
+                    />
                     <span className="text-slate-400 text-xs flex-shrink-0">to</span>
-                    <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none min-w-0" />
+                    <CustomDatePicker
+                        date={dateTo ? new Date(dateTo + 'T00:00:00') : new Date()}
+                        onDateChange={(d) => {
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            setDateTo(`${y}-${m}-${day}`);
+                        }}
+                    />
+                    {(dateFrom || dateTo) && (
+                        <button
+                            onClick={() => { setDateFrom(''); setDateTo(''); }}
+                            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                        >
+                            Clear
+                        </button>
+                    )}
                 </div>
 
                 {/* Status pills — desktop only */}

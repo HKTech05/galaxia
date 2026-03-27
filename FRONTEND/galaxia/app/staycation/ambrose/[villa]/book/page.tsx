@@ -24,6 +24,8 @@ export default async function AmbroseVillaBookingPage(props: { params: Promise<{
         description: data.villa.description,
         images: [data.villa.image, ...data.parent.images.slice(1, 4)],
         maxPersons: data.villa.maxPersons || data.parent.maxPersons,
+        maxAdults: data.villa.maxAdults ?? data.parent.maxAdults,
+        maxKids: data.villa.maxKids ?? data.parent.maxKids,
         pricing: {
             ...data.parent.pricing,
             weekday: data.villa.pricing?.weekday || data.parent.pricing.weekday,

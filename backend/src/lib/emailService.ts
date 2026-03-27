@@ -452,3 +452,78 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
         return { success: false, error: error?.message || "Unknown error" };
     }
 }
+
+// ───────────────────────────────────────────────────────────────
+//  Contact Form Notification (to admin)
+// ───────────────────────────────────────────────────────────────
+export async function sendContactFormEmail(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    message: string;
+    source?: string; // "staycation" or "digital-diaries"
+}): Promise<void> {
+    if (!process.env.SMTP_USER) return;
+
+    const sourceLabel = data.source === "digital-diaries" ? "Digital Diaries" : "Staycation";
+    const sourceBadge = data.source === "digital-diaries"
+        ? `<span style="display:inline-block;padding:4px 12px;background:#2d0a1e;color:#e8a0b4;font-size:11px;font-weight:700;border-radius:4px;letter-spacing:1px;">${sourceLabel}</span>`
+        : `<span style="display:inline-block;padding:4px 12px;background:${NAVY};color:${GOLD};font-size:11px;font-weight:700;border-radius:4px;letter-spacing:1px;">${sourceLabel}</span>`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; background: #ffffff;">
+<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif; background: #e8e5dd;">
+
+    <div style="background: linear-gradient(135deg, ${NAVY}, ${NAVY_LIGHT}); padding: 36px 32px; text-align: center;">
+        <h1 style="margin: 0; color: ${GOLD}; font-size: 28px; letter-spacing: 6px; font-weight: 400;">GALAXIA</h1>
+        <div style="width: 60px; height: 1px; background: ${GOLD}; margin: 12px auto;"></div>
+        <p style="margin: 0; color: rgba(196,162,101,0.7); font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">Contact Form Submission</p>
+    </div>
+
+    <div style="background: ${WARM_BG}; padding: 36px 32px;">
+
+        <div style="margin-bottom: 24px;">
+            ${sourceBadge}
+            <span style="margin-left: 8px; font-size: 12px; color: ${TEXT_LIGHT};">${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</span>
+        </div>
+
+        <div style="background: white; border-radius: 10px; padding: 24px; border: 1px solid ${BORDER}; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <table style="width: 100%; border-collapse: collapse;">
+                ${sectionTitle("Contact Details")}
+                ${row("Name", data.name, { bold: true })}
+                ${row("Email", data.email)}
+                ${data.phone ? row("Phone", data.phone) : ""}
+                ${divider()}
+                ${sectionTitle("Message")}
+            </table>
+            <div style="padding: 12px 0; font-size: 14px; color: ${TEXT_DARK}; line-height: 1.7; white-space: pre-wrap;">${data.message}</div>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="mailto:${data.email}" style="display: inline-block; padding: 12px 32px; background: ${NAVY}; color: ${GOLD}; text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; border-radius: 6px; text-transform: uppercase;">Reply to ${data.name}</a>
+        </div>
+    </div>
+
+    <div style="background: ${NAVY}; padding: 20px 32px; text-align: center;">
+        <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 11px;">This is an automated notification from the Galaxia website contact form.</p>
+    </div>
+
+</div>
+</body>
+</html>`;
+
+    try {
+        await transporter.sendMail({
+            from: FROM_EMAIL,
+            to: "admin@galaxiaresorts.com",
+            replyTo: data.email,
+            subject: `New Contact Form — ${data.name} (${sourceLabel})`,
+            html,
+        });
+        console.log(`[Email] Contact form notification sent for ${data.name}`);
+    } catch (error) {
+        console.error("[Email] Failed to send contact form email:", error);
+    }
+}

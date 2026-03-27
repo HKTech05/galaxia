@@ -34,15 +34,29 @@ export default function FloatingCart() {
     };
 
     return (
-        <button
-            onClick={handleClick}
-            className="fixed bottom-6 left-4 sm:left-6 z-[65] bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 flex items-center gap-2 pl-4 pr-5 py-3 group"
-        >
-            <div className="relative">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                <span className="absolute -top-2 -right-2 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">{totalCount}</span>
-            </div>
-            <span className="font-inter font-semibold text-sm">View Cart</span>
-        </button>
+        <>
+            {/* Desktop: pill button on left with text */}
+            <button
+                onClick={handleClick}
+                className="hidden sm:flex fixed bottom-6 left-6 z-[65] bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 items-center gap-2 pl-4 pr-5 py-3 group"
+            >
+                <div className="relative">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                    <span className="absolute -top-2 -right-2 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">{totalCount}</span>
+                </div>
+                <span className="font-inter font-semibold text-sm">View Cart</span>
+            </button>
+
+            {/* Mobile: circle icon-only button on RIGHT, above WhatsApp icon */}
+            <button
+                onClick={handleClick}
+                className="flex sm:hidden fixed bottom-[88px] right-4 z-[65] bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 items-center justify-center w-12 h-12"
+            >
+                <div className="relative">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                    <span className="absolute -top-2.5 -right-2.5 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">{totalCount}</span>
+                </div>
+            </button>
+        </>
     );
 }

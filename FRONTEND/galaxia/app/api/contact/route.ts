@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
     try {
-        const { name, email, phone, message } = await request.json();
+        const { name, email, phone, message, source } = await request.json();
 
         if (!name || !email || !message) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         const res = await fetch(`${backendUrl}/contact`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, phone, message }),
+            body: JSON.stringify({ name, email, phone, message, source }),
         });
 
         if (res.ok) {

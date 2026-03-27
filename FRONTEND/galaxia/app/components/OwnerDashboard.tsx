@@ -497,8 +497,40 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     // Live calendar view
     const [calendarProperty, setCalendarProperty] = useState("Heavenly Villa");
     const [calendarViewMonth, setCalendarViewMonth] = useState(new Date());
+    const [calendarBookedDays, setCalendarBookedDays] = useState<number[]>([]);
     // Sync blackout property key with calendar property on initial load
     useEffect(() => { if (!blackoutPropertyKey) setBlackoutPropertyKey("Heavenly Villa"); }, []);
+
+    // Fetch booked days for the live calendar (separate from blackout calendar)
+    useEffect(() => {
+        const fetchCalendarBookings = async () => {
+            if (!calendarProperty || propertyList.length === 0) { setCalendarBookedDays([]); return; }
+            const { propertyId, subPropertyId } = resolvePropertyIds(calendarProperty);
+            if (!propertyId) { setCalendarBookedDays([]); return; }
+            const year = calendarViewMonth.getFullYear();
+            const month = String(calendarViewMonth.getMonth() + 1).padStart(2, '0');
+            try {
+                const bookings = await api.get(`/blocked-dates/bookings?propertyId=${propertyId}${subPropertyId ? `&subPropertyId=${subPropertyId}` : ''}&month=${year}-${month}`);
+                if (!Array.isArray(bookings)) { setCalendarBookedDays([]); return; }
+                const days = new Set<number>();
+                const monthStart = new Date(year, calendarViewMonth.getMonth(), 1);
+                const monthEnd = new Date(year, calendarViewMonth.getMonth() + 1, 0);
+                for (const b of bookings) {
+                    const ciParts = b.checkInDate.split('T')[0].split('-');
+                    const coParts = b.checkOutDate.split('T')[0].split('-');
+                    const checkIn = new Date(parseInt(ciParts[0]), parseInt(ciParts[1]) - 1, parseInt(ciParts[2]));
+                    const checkOut = new Date(parseInt(coParts[0]), parseInt(coParts[1]) - 1, parseInt(coParts[2]));
+                    const start = checkIn < monthStart ? monthStart : checkIn;
+                    const end = checkOut > monthEnd ? monthEnd : checkOut;
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        days.add(d.getDate());
+                    }
+                }
+                setCalendarBookedDays(Array.from(days));
+            } catch { setCalendarBookedDays([]); }
+        };
+        fetchCalendarBookings();
+    }, [calendarProperty, calendarViewMonth, propertyList]);
 
 
     const timeRanges = [
@@ -663,44 +695,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const calFirstDay = new Date(calendarYear, calendarMonth, 1).getDay();
         const calDaysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
         
-        // Calculate dynamic booked dates for the selected property
-        const bookedDaysSet = new Set<number>();
-        
-        if (calendarProperty.startsWith("Ambrose")) {
-            const propName = calendarProperty.split("—")[1]?.trim();
-            const villa = liveAmbrose.find((v: any) => v.name === propName);
-            if (villa && villa.checkedIn) {
-                // Approximate booking length or use actual checkIn/checkOut bounds
-                const inDate = new Date(villa.checkInTime);
-                const outDate = new Date(villa.checkOutDate);
-                for (let d = 1; d <= calDaysInMonth; d++) {
-                    const current = new Date(calendarYear, calendarMonth, d);
-                    if (current >= inDate && current <= outDate) bookedDaysSet.add(d);
-                }
-            }
-        } else if (calendarProperty.startsWith("Amstel Nest")) {
-            const propName = calendarProperty.split("—")[1]?.trim();
-            const villa = liveAmstel.find((v: any) => v.name === propName);
-            if (villa && villa.checkedIn) {
-                const inDate = new Date(villa.checkInTime);
-                const outDate = new Date(villa.checkOutDate);
-                for (let d = 1; d <= calDaysInMonth; d++) {
-                    const current = new Date(calendarYear, calendarMonth, d);
-                    if (current >= inDate && current <= outDate) bookedDaysSet.add(d);
-                }
-            }
-        } else {
-            // Standalone
-            const prop = liveStandalone.find((p: any) => p.name === calendarProperty);
-            if (prop && prop.checkedIn) {
-                const inDate = new Date(prop.checkInTime);
-                const outDate = new Date(prop.checkOutDate);
-                for (let d = 1; d <= calDaysInMonth; d++) {
-                    const current = new Date(calendarYear, calendarMonth, d);
-                    if (current >= inDate && current <= outDate) bookedDaysSet.add(d);
-                }
-            }
-        }
+        // Calculate dynamic booked dates for the selected property (from API)
+        const bookedDaysSet = new Set<number>(calendarBookedDays);
 
         return (
             <div className="space-y-8">
