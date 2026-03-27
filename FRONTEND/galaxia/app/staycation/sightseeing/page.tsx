@@ -77,7 +77,7 @@ export default function SightseeingPage() {
         <div className="bg-cream-white min-h-screen">
             {/* Hero */}
             <section className="relative h-[45vh] sm:h-[55vh] flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('/images/sightseeing/hero.jpg')` }} />
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('/images/sightseeing/hero.webp')` }} />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-cream-white" />
                 <div className="relative z-10 text-center px-4">
                     <p className="text-antique-gold font-inter text-xs tracking-[0.4em] uppercase mb-4">Explore Karjat</p>
