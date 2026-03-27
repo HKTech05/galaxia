@@ -396,6 +396,7 @@ export default function BookMultiPage() {
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.firstName || !formData.phone || !formData.agreedToTerms) return;
+        if (!idFile) { setIdError("Government ID is required"); return; }
         setCurrentStep(3);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -523,9 +524,6 @@ export default function BookMultiPage() {
                 {/* STEP 1: Cart Review */}
                 {currentStep === 1 && (
                     <div className="space-y-6">
-                        <Link href="/staycation" className="inline-flex items-center gap-2 font-inter text-sm text-text-muted hover:text-antique-gold transition-colors">
-                            Back to Staycation
-                        </Link>
                         {/* Info banner */}
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 sm:p-5 flex items-center gap-3">
                             <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -740,6 +738,11 @@ export default function BookMultiPage() {
                             </div>
                         )}
 
+                        {/* Back to Staycation button */}
+                        <Link href="/staycation" className="inline-flex items-center justify-center w-full px-5 py-3 bg-[#1A1A1A] text-white font-inter text-sm font-medium rounded-lg hover:bg-[#333] transition-colors">
+                            Back to Staycation
+                        </Link>
+
                         {/* Grand Total + Proceed */}
                         {nights > 0 && (
                             <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
@@ -827,15 +830,13 @@ export default function BookMultiPage() {
 
                                 {/* ID Upload */}
                                 <div className="mb-6">
-                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Government ID (Image, max 2MB)</label>
-                                    <div className="flex items-center gap-4">
-                                        <label className="cursor-pointer flex items-center gap-2 px-4 py-2.5 border border-dashed border-border-medium rounded-lg hover:border-antique-gold transition-colors">
-                                            <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                            <span className="font-inter text-xs text-text-secondary">{idFile ? idFile.name : "Upload ID"}</span>
-                                            <input type="file" accept="image/*" onChange={handleIdUpload} className="hidden" />
-                                        </label>
-                                        {idPreview && <img src={idPreview} alt="ID Preview" className="w-16 h-16 object-cover rounded-lg border border-border-light" />}
-                                    </div>
+                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Government ID (Image, max 2MB) *</label>
+                                    <label className="cursor-pointer flex items-center gap-3 w-full px-4 py-3 border border-dashed border-border-medium rounded-lg hover:border-antique-gold transition-colors">
+                                        <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <span className="font-inter text-sm text-text-secondary flex-1">{idFile ? idFile.name : "Upload ID"}</span>
+                                        {idPreview && <img src={idPreview} alt="ID Preview" className="w-12 h-12 object-cover rounded-lg border border-border-light" />}
+                                        <input type="file" accept="image/*" onChange={handleIdUpload} className="hidden" />
+                                    </label>
                                     {idError && <p className="font-inter text-xs text-red-500 mt-1">{idError}</p>}
                                 </div>
 
@@ -931,7 +932,16 @@ export default function BookMultiPage() {
                             </div>
                         </div>
 
-                        {bookingError && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm font-inter">{bookingError}</div>}
+                        {bookingError && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm font-inter">
+                                <p className="font-medium">{bookingError}</p>
+                                {bookingError.toLowerCase().includes("booked") && (
+                                    <button onClick={() => { setCurrentStep(1); setBookingError(""); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="mt-2 text-red-800 underline text-xs font-semibold">
+                                        Go back to Step 1 and select different dates
+                                    </button>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex gap-3">
                             <button onClick={() => { setCurrentStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-6 py-3 border border-border-medium text-text-primary font-inter text-sm rounded-lg hover:bg-soft-gray transition-colors">Back</button>

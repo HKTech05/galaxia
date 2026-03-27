@@ -30,7 +30,7 @@ export default function StaycationNavbar() {
 
     return (
         <>
-            <nav className="fixed top-0 left-0 right-0 z-50 glass-light">
+            <nav className="fixed top-0 left-0 right-0 z-50 glass-light" style={{ pointerEvents: 'auto' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
                     {/* Left: Home icon + Logo */}
                     <div className="flex items-center gap-2 shrink-0">
