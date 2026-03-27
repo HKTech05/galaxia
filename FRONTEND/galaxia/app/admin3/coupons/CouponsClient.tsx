@@ -232,7 +232,7 @@ export default function CouponsClient() {
             {/* Create Coupon Modal */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-visible animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
                             <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
                                 <Plus className="text-purple-600" size={20} /> Create New Coupon

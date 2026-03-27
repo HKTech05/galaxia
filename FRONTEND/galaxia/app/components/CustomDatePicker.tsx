@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 
-export default function CustomDatePicker({ date, onDateChange }: { date: Date, onDateChange: (d: Date) => void }) {
+export default function CustomDatePicker({ date, onDateChange, className }: { date: Date, onDateChange: (d: Date) => void, className?: string }) {
     const [isOpen, setIsOpen] = useState(false);
 
     const [viewDate, setViewDate] = useState(new Date(date));
@@ -73,7 +73,7 @@ export default function CustomDatePicker({ date, onDateChange }: { date: Date, o
         <div className="relative group" ref={menuRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                className={`flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 bg-white shadow-sm cursor-pointer hover:bg-slate-50 transition-colors ${className || ''}`}
                 title="Select a specific date to jump to"
             >
                 <CalendarIcon size={16} className="text-indigo-600 group-hover:scale-110 transition-transform" />

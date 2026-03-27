@@ -226,7 +226,7 @@ export default function PropertiesMgmtPage() {
     /* ========= STANDALONE VILLAS ========= */
     const VillaCard = ({ p }: { p: any }) => {
         const k = `prop-${p.id}`;
-        return (<div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        return (<div className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm hover:shadow-md transition-shadow">
             <div className="p-5 border-b border-slate-100 flex justify-between items-start">
                 <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">{p.name}</h3><p className="text-xs text-slate-500">{p.type}</p></div></div>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{p.isActive ? "Active" : "Disabled"}</span>
@@ -246,7 +246,7 @@ export default function PropertiesMgmtPage() {
         const stdActive = std.filter((s: any) => s.isActive).reduce((sum: number, s: any) => sum + (s.unitCount || 1), 0);
         return (<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Standard Cottages card */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm">
                 <div className="p-5 border-b border-slate-100 flex justify-between items-start">
                     <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Standard Cottages</h3><p className="text-xs text-slate-500">{stdCount} cottages</p></div></div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{a.isActive ? "Active" : "Disabled"}</span>
@@ -272,7 +272,7 @@ export default function PropertiesMgmtPage() {
                 <OverrideUI oKey={`prop-${a.id}`} />
             </div>
             {/* Family Cottage card */}
-            {fam && (<div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            {fam && (<div className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm">
                 <div className="p-5 border-b border-slate-100 flex justify-between items-start">
                     <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 text-amber-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Family Cottage</h3><p className="text-xs text-slate-500">Premium Family Unit</p></div></div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${fam.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{fam.isActive ? "Active" : "Disabled"}</span>
@@ -292,7 +292,7 @@ export default function PropertiesMgmtPage() {
         return (<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {villas.map((v: any) => {
                 const k = `sub-${v.id}`;
-                return (<div key={v.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                return (<div key={v.id} className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm hover:shadow-md transition-shadow">
                     <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                         <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600"><Home size={18} /></div><h3 className="font-bold text-slate-800">{v.name}</h3></div>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${v.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{v.isActive ? "Active" : "Disabled"}</span>
@@ -353,7 +353,7 @@ export default function PropertiesMgmtPage() {
             {/* 4 Screen Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {screens.map((scr: any) => (
-                    <div key={scr.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div key={scr.id} className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm">
                         <div className="p-5 border-b border-slate-100 flex justify-between items-start">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600"><Building size={20} /></div>

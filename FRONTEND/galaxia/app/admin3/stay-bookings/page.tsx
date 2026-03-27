@@ -186,6 +186,7 @@ export default function StayBookingsPage() {
                                 const day = String(d.getDate()).padStart(2, '0');
                                 setDateFrom(`${y}-${m}-${day}`);
                             }}
+                            className="w-full"
                         />
                     </div>
                     <span className="text-slate-400 text-xs flex-shrink-0">to</span>
@@ -198,6 +199,7 @@ export default function StayBookingsPage() {
                                 const day = String(d.getDate()).padStart(2, '0');
                                 setDateTo(`${y}-${m}-${day}`);
                             }}
+                            className="w-full"
                         />
                     </div>
                     {(dateFrom || dateTo) && (

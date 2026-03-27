@@ -179,6 +179,7 @@ export default function ReportsPage() {
                                 const day = String(d.getDate()).padStart(2, '0');
                                 setDateRange(p => ({ ...p, from: `${y}-${m}-${day}` }));
                             }}
+                            className="w-full"
                         />
                     </div>
                     <div>
@@ -191,6 +192,7 @@ export default function ReportsPage() {
                                 const day = String(d.getDate()).padStart(2, '0');
                                 setDateRange(p => ({ ...p, to: `${y}-${m}-${day}` }));
                             }}
+                            className="w-full"
                         />
                     </div>
                     <div>
