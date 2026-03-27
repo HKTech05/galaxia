@@ -408,18 +408,6 @@ export default function BookMultiPage() {
         setBookingError("");
 
         try {
-            // Upload ID first if provided
-            let guestIdUrl = "";
-            if (idFile) {
-                const fd = new FormData();
-                fd.append("file", idFile);
-                const uploadRes = await fetch("/api/uploads/guest-id-public", { method: "POST", body: fd });
-                if (uploadRes.ok) {
-                    const data = await uploadRes.json();
-                    guestIdUrl = data.url || data.path || "";
-                }
-            }
-
             for (const item of cart) {
                 const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
                 const itemSubtotal = getItemPrice(item) + getExtraCharges(item);
@@ -444,7 +432,7 @@ export default function BookMultiPage() {
                     const perUnitPayNow = Math.round(perUnitTotal * 0.8);
                     const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
 
-                    await api.post("/bookings/staycation", {
+                    const booking = await api.post("/bookings/staycation", {
                         customerName: `${formData.firstName} ${formData.lastName}`.trim(),
                         customerPhone: formData.phone,
                         customerEmail: formData.email,
@@ -464,8 +452,19 @@ export default function BookMultiPage() {
                         advancePaid: true,
                         advanceMethod: "online",
                         source: "website",
-                        ...(guestIdUrl ? { guestIdUrl } : {}),
                     });
+
+                    // Upload guest ID proof for this booking
+                    if (idFile && booking?.id) {
+                        try {
+                            const fd = new FormData();
+                            fd.append("file", idFile);
+                            fd.append("bookingId", String(booking.id));
+                            await fetch("/api/uploads/guest-id-public", { method: "POST", body: fd });
+                        } catch (uploadErr) {
+                            console.error("ID upload failed for booking", booking.id, uploadErr);
+                        }
+                    }
                 }
             }
 
