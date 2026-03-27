@@ -707,7 +707,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {([["insights", "Insights"], ["reports", "Advanced Reports"], ["calendar", "Live Calendar"], ["bulk", "Bulk Bookings"]] as const).map(([key, label]) => (
+                        {([["insights", "Insights"], ["calendar", "Live Calendar"], ["bulk", "Bulk Bookings"]] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setDashboardSubTab(key)}

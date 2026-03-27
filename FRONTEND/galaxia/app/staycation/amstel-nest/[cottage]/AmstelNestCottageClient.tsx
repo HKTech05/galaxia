@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PropertyData } from "../../../data/properties";
 import ImageSlideshow from "../../../components/ImageSlideshow";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
-import { api } from "../../../../lib/api";
 
 interface AmstelNestCottageClientProps {
     parent: PropertyData;
@@ -128,27 +127,6 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
         })();
     }, [cottage.id]);
 
-    // ── Occupancy X/15 calendar ──
-    const [allBookings, setAllBookings] = useState<any[]>([]);
-    const [occMonth, setOccMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
-    useEffect(() => {
-        (async () => { try { const d = await api.get("/bookings/staycation"); if (Array.isArray(d)) setAllBookings(d); } catch {} })();
-    }, []);
-    const occData = useMemo(() => {
-        if (!dbPropertyId) return {} as Record<string, number>;
-        const y = occMonth.getFullYear(), m = occMonth.getMonth();
-        const days = new Date(y, m + 1, 0).getDate();
-        const occ: Record<string, number> = {};
-        const ab = allBookings.filter(b => b.propertyId === dbPropertyId && b.status !== "cancelled" && b.status !== "no_show");
-        for (let d = 1; d <= days; d++) {
-            const dt = new Date(y, m, d);
-            const ds = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-            let c = 0;
-            for (const b of ab) { const ci = new Date(b.checkInDate), co = new Date(b.checkOutDate); if (ci <= dt && dt < co) c++; }
-            occ[ds] = c;
-        }
-        return occ;
-    }, [allBookings, occMonth, dbPropertyId]);
 
     const images = [cottage.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = liveWeekday || cottage.pricing?.weekday.price || parent.pricing.weekday.price;
@@ -241,69 +219,6 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         <div>
-                            {/* Occupancy Mini Calendar */}
-                            {dbPropertyId && (() => {
-                                const y = occMonth.getFullYear(), m = occMonth.getMonth();
-                                const daysInMonth = new Date(y, m + 1, 0).getDate();
-                                const firstDay = new Date(y, m, 1).getDay();
-                                const today = new Date(); today.setHours(0,0,0,0);
-                                const weeks: (number | null)[][] = [];
-                                let week: (number | null)[] = Array(firstDay).fill(null);
-                                for (let d = 1; d <= daysInMonth; d++) { week.push(d); if (week.length === 7) { weeks.push(week); week = []; } }
-                                if (week.length) { while (week.length < 7) week.push(null); weeks.push(week); }
-                                return (
-                                    <div className="mb-6 rounded-xl border border-border-light bg-white shadow-sm overflow-hidden">
-                                        <div className="flex items-center justify-between px-4 py-3 border-b border-border-light bg-soft-gray/40">
-                                            <button onClick={() => setOccMonth(new Date(y, m - 1, 1))} className="p-1.5 text-text-muted hover:text-antique-gold rounded-lg transition-colors">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                            </button>
-                                            <div className="text-center">
-                                                <p className="text-xs font-cinzel font-bold text-text-primary uppercase tracking-wider">{occMonth.toLocaleString("en-US", { month: "long", year: "numeric" })}</p>
-                                                <p className="text-[10px] text-text-muted font-inter mt-0.5">Amstel Nest Availability (15 cottages)</p>
-                                            </div>
-                                            <button onClick={() => setOccMonth(new Date(y, m + 1, 1))} className="p-1.5 text-text-muted hover:text-antique-gold rounded-lg transition-colors">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                            </button>
-                                        </div>
-                                        <div className="grid grid-cols-7 border-b border-border-light">
-                                            {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} className="py-1.5 text-center text-[10px] font-bold text-text-muted uppercase">{d}</div>)}
-                                        </div>
-                                        <div className="p-1.5">
-                                            {weeks.map((wk, wi) => (
-                                                <div key={wi} className="grid grid-cols-7 gap-0.5">
-                                                    {wk.map((day, di) => {
-                                                        if (!day) return <div key={di} className="aspect-square" />;
-                                                        const ds = `${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                                                        const booked = occData[ds] || 0;
-                                                        const vacant = 15 - booked;
-                                                        const isPast = new Date(y, m, day) < today;
-                                                        const isToday = new Date(y, m, day).getTime() === today.getTime();
-                                                        let bg = "bg-emerald-50 border-emerald-100", txt = "text-emerald-700", badge = "text-emerald-600";
-                                                        if (booked > 0 && booked < 15) {
-                                                            if (booked >= 10) { bg = "bg-amber-50 border-amber-100"; txt = "text-amber-800"; badge = "text-amber-600"; }
-                                                            else { bg = "bg-sky-50 border-sky-100"; txt = "text-sky-800"; badge = "text-sky-600"; }
-                                                        }
-                                                        if (booked >= 15) { bg = "bg-red-50 border-red-100"; txt = "text-red-700"; badge = "text-red-500"; }
-                                                        if (isPast) { bg = "bg-slate-50/50 border-transparent"; txt = "text-text-muted/40"; badge = "text-text-muted/40"; }
-                                                        return (
-                                                            <div key={di} className={`aspect-square rounded-md border flex flex-col items-center justify-center transition-all ${bg} ${isToday ? "ring-1 ring-antique-gold ring-offset-1" : ""}`}>
-                                                                <span className={`text-[11px] font-bold ${txt}`}>{day}</span>
-                                                                {!isPast && <span className={`text-[8px] font-bold ${badge} leading-none`}>{booked}/15</span>}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="px-3 py-2 border-t border-border-light flex flex-wrap gap-2 text-[9px] font-bold text-text-muted uppercase tracking-wider">
-                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-200" />All Free</div>
-                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-sky-100 border border-sky-200" />Some Booked</div>
-                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-200" />Mostly Full</div>
-                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-red-100 border border-red-200" />Full</div>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
                             <AvailabilityCalendar
                                 propertyId={dbPropertyId}
                                 subPropertyId={dbSubPropertyId}
@@ -312,6 +227,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 dateOverrides={dateOverrides}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                 isDisabled={isCottageDisabled}
+                                totalUnits={15}
                             />
                             <div className="mt-5 flex flex-col sm:flex-row gap-3">
                                 <Link href={bookNowUrl} className="block w-full sm:w-auto bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">

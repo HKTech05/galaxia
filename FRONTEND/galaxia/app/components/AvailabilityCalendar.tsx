@@ -14,6 +14,7 @@ interface CalendarProps {
     initialCheckIn?: Date | null;
     initialCheckOut?: Date | null;
     isDisabled?: boolean;
+    totalUnits?: number; // When set (e.g. 15 for Amstel Nest), shows "X avail" or "Booked" under each date
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -65,7 +66,7 @@ const getMaintenancePrice = (date: Date) => {
     return { price: "Maintenance", numPrice: 0, type: "booked" as const };
 };
 
-export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId, subPropertyId, weekdayPrice, weekendPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits }: CalendarProps) {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(initialCheckIn ? initialCheckIn.getMonth() : today.getMonth());
     const [currentYear, setCurrentYear] = useState(initialCheckIn ? initialCheckIn.getFullYear() : today.getFullYear());
@@ -75,6 +76,8 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
     const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
 
     // Fetch booked dates from API (only when we have a valid numeric property ID)
+    // Also stores booking counts per date when totalUnits is provided
+    const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
     useEffect(() => {
         if (!propertyId || propertyId <= 0) return; // Skip fetch if no valid DB ID
         (async () => {
@@ -90,12 +93,16 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
                 if (res.ok) {
                     const data = await res.json();
                     setBookedDates(new Set(data.dates || []));
+                    // If we have totalUnits, also get booking counts per date
+                    if (totalUnits && data.dateCounts) {
+                        setBookingCounts(data.dateCounts);
+                    }
                 }
             } catch {
                 // Silently fail — calendar will show all dates as available
             }
         })();
-    }, [propertyId, subPropertyId, currentMonth, currentYear]);
+    }, [propertyId, subPropertyId, currentMonth, currentYear, totalUnits]);
 
     const prevMonth = () => {
         if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
@@ -264,12 +271,21 @@ export default function AvailabilityCalendar({ propertyId, subPropertyId, weekda
                                             {day.price}
                                         </span>
                                     ) : (
-                                        <span className={`font-inter ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"} ${day.type === "prime" ? "text-warning" :
-                                            day.type === "weekend" ? "text-antique-gold" :
-                                                "text-text-muted"
-                                            }`}>
-                                            {formatPrice(day.price)}
-                                        </span>
+                                        <>
+                                            <span className={`font-inter ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"} ${day.type === "prime" ? "text-warning" :
+                                                day.type === "weekend" ? "text-antique-gold" :
+                                                    "text-text-muted"
+                                                }`}>
+                                                {formatPrice(day.price)}
+                                            </span>
+                                            {totalUnits && (() => {
+                                                const dateStr = toLocalDateStr(day.date);
+                                                const count = bookingCounts[dateStr] || 0;
+                                                const avail = totalUnits - count;
+                                                if (avail <= 0) return <span className="font-inter text-[7px] sm:text-[8px] text-red-500 font-bold">Booked</span>;
+                                                return <span className={`font-inter text-[7px] sm:text-[8px] ${avail <= 3 ? 'text-amber-600' : 'text-emerald-600'} font-medium`}>{avail} avail</span>;
+                                            })()}
+                                        </>
                                     )}
                                 </div>
                             )}

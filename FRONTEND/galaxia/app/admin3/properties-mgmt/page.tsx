@@ -233,17 +233,19 @@ export default function PropertiesMgmtPage() {
         const subs = a.subProperties || [];
         const std = subs.filter((s: any) => !s.name.toLowerCase().includes("family"));
         const fam = subs.find((s: any) => s.name.toLowerCase().includes("family"));
+        const stdCount = std.reduce((sum: number, s: any) => sum + (s.unitCount || 1), 0);
+        const stdActive = std.filter((s: any) => s.isActive).reduce((sum: number, s: any) => sum + (s.unitCount || 1), 0);
         return (<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Standard Cottages card */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-slate-100 flex justify-between items-start">
-                    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Standard Cottages</h3><p className="text-xs text-slate-500">{std.length} cottages</p></div></div>
+                    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Standard Cottages</h3><p className="text-xs text-slate-500">{stdCount} cottages</p></div></div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{a.isActive ? "Active" : "Disabled"}</span>
                 </div>
                 <div className="p-5"><PrShow prop={a} /></div>
                 <div className="px-5 pb-4 border-t border-slate-100 pt-4">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-3">Cottages ({std.filter((s: any) => s.isActive).length}/{std.length} active)</p>
-                    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">{std.map((s: any) => <button key={s.id} onClick={() => toggleSub(s.id)} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold border ${s.isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'}`}><span className="truncate">{s.name}</span>{s.isActive ? <Check size={12} /> : <Ban size={12} />}</button>)}</div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-3">Cottages ({stdActive}/{stdCount} active)</p>
+                    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">{std.map((s: any) => <button key={s.id} onClick={() => toggleSub(s.id)} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold border ${s.isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'}`}><span className="truncate">{s.name}{(s.unitCount || 1) > 1 ? ` (${s.unitCount} units)` : ''}</span>{s.isActive ? <Check size={12} /> : <Ban size={12} />}</button>)}</div>
                 </div>
                 <EditForm editKey={`prop-${a.id}`} />
                 <CardBtns editKey={`prop-${a.id}`} onToggle={() => toggleProp(a)} />

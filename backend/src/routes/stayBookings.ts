@@ -671,7 +671,7 @@ router.get("/booked-dates", async (req, res) => {
             }
         }
 
-        return res.json({ dates: fullyBookedDates, capacity: targetCapacity });
+        return res.json({ dates: fullyBookedDates, capacity: targetCapacity, dateCounts });
     } catch (error) {
         console.error("Booked dates error:", error);
         return res.status(500).json({ error: "Internal server error" });

@@ -327,23 +327,6 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                 </section>
             )}
 
-            {/* Amstel Nest Bulk Booking Banner */}
-            {property.id === "amstel-nest" && (
-                <section className="border-t border-border-light bg-gradient-to-r from-indigo-50 via-blue-50 to-indigo-50">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-12 text-center">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 border border-indigo-200 rounded-full mb-4">
-                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                            <span className="text-indigo-700 font-inter text-[10px] font-bold tracking-widest uppercase">Group & Corporate</span>
-                        </div>
-                        <h2 className="font-cinzel text-xl sm:text-2xl font-bold text-slate-800 mb-3">Planning a Bulk Booking?</h2>
-                        <p className="font-inter text-sm text-slate-600 max-w-lg mx-auto mb-6">For corporate retreats, large family gatherings, or group bookings of multiple cottages — contact us directly for special rates and custom arrangements.</p>
-                        <a href="tel:+919876543210" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-inter font-semibold text-sm px-8 py-3.5 rounded-full shadow-md hover:shadow-lg transition-all duration-300">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                            Call for Bulk Bookings
-                        </a>
-                    </div>
-                </section>
-            )}
 
             {/* Property Info Grid */}
             <section className="border-t border-border-light bg-white">
