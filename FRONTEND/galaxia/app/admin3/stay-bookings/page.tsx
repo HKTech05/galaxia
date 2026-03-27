@@ -163,7 +163,8 @@ export default function StayBookingsPage() {
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="relative w-full lg:w-80">
+                {/* Row 1: Search bar — full width on desktop */}
+                <div className="relative w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                         type="text"
@@ -174,7 +175,43 @@ export default function StayBookingsPage() {
                     />
                 </div>
 
-                <div className="flex flex-wrap gap-3 items-center">
+                {/* Row 2: Date pickers — full width on desktop */}
+                <div className="flex items-center gap-2 w-full">
+                    <div className="flex-1">
+                        <CustomDatePicker
+                            date={dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date()}
+                            onDateChange={(d) => {
+                                const y = d.getFullYear();
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                setDateFrom(`${y}-${m}-${day}`);
+                            }}
+                        />
+                    </div>
+                    <span className="text-slate-400 text-xs flex-shrink-0">to</span>
+                    <div className="flex-1">
+                        <CustomDatePicker
+                            date={dateTo ? new Date(dateTo + 'T00:00:00') : new Date()}
+                            onDateChange={(d) => {
+                                const y = d.getFullYear();
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                setDateTo(`${y}-${m}-${day}`);
+                            }}
+                        />
+                    </div>
+                    {(dateFrom || dateTo) && (
+                        <button
+                            onClick={() => { setDateFrom(''); setDateTo(''); }}
+                            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+
+                {/* Row 3: Property filter + Status pills — evenly spaced on desktop */}
+                <div className="flex flex-wrap gap-3 items-center lg:justify-between">
                     <div className="relative">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <select
@@ -198,55 +235,25 @@ export default function StayBookingsPage() {
                             <option key={status} value={status}>{status}</option>
                         ))}
                     </select>
-                </div>
 
-                {/* Date pickers — full-width row on mobile */}
-                <div className="flex items-center gap-2 w-full flex-wrap">
-                    <CustomDatePicker
-                        date={dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date()}
-                        onDateChange={(d) => {
-                            const y = d.getFullYear();
-                            const m = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            setDateFrom(`${y}-${m}-${day}`);
-                        }}
-                    />
-                    <span className="text-slate-400 text-xs flex-shrink-0">to</span>
-                    <CustomDatePicker
-                        date={dateTo ? new Date(dateTo + 'T00:00:00') : new Date()}
-                        onDateChange={(d) => {
-                            const y = d.getFullYear();
-                            const m = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            setDateTo(`${y}-${m}-${day}`);
-                        }}
-                    />
-                    {(dateFrom || dateTo) && (
-                        <button
-                            onClick={() => { setDateFrom(''); setDateTo(''); }}
-                            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
-                        >
-                            Clear
-                        </button>
-                    )}
-                </div>
-
-                {/* Status pills — desktop only */}
-                <div className="hidden lg:flex flex-wrap items-center bg-slate-100 rounded-lg p-1 gap-1">
-                    {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
-                        <button
-                            key={status}
-                            onClick={() => setStatusFilter(status)}
-                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${statusFilter === status
-                                ? "bg-white text-indigo-700 shadow-sm"
-                                : "text-slate-500 hover:text-slate-700"
-                                }`}
-                        >
-                            {status}
-                        </button>
-                    ))}
+                    {/* Status pills — desktop only */}
+                    <div className="hidden lg:flex flex-1 items-center bg-slate-100 rounded-lg p-1 gap-1 ml-3">
+                        {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap text-center ${statusFilter === status
+                                    ? "bg-white text-indigo-700 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
+
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

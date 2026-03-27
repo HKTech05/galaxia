@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { FileText, Download, Calendar, IndianRupee, Users, TrendingUp, Filter, ChevronDown } from "lucide-react";
 import { api } from "../../../lib/api";
+import CustomDatePicker from "../../components/CustomDatePicker";
 
 type ReportType = "revenue" | "occupancy" | "bookings";
 type BusinessCategory = "all" | "staycation" | "digital-diaries";
@@ -170,11 +171,27 @@ export default function ReportsPage() {
                     </div>
                     <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">From</label>
-                        <input type="date" value={dateRange.from} onChange={e => setDateRange(p => ({ ...p, from: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none" />
+                        <CustomDatePicker
+                            date={dateRange.from ? new Date(dateRange.from + 'T00:00:00') : new Date()}
+                            onDateChange={(d) => {
+                                const y = d.getFullYear();
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                setDateRange(p => ({ ...p, from: `${y}-${m}-${day}` }));
+                            }}
+                        />
                     </div>
                     <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">To</label>
-                        <input type="date" value={dateRange.to} onChange={e => setDateRange(p => ({ ...p, to: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none" />
+                        <CustomDatePicker
+                            date={dateRange.to ? new Date(dateRange.to + 'T00:00:00') : new Date()}
+                            onDateChange={(d) => {
+                                const y = d.getFullYear();
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                setDateRange(p => ({ ...p, to: `${y}-${m}-${day}` }));
+                            }}
+                        />
                     </div>
                     <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Property / Screen</label>

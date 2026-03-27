@@ -156,7 +156,7 @@ export default function ContactPage() {
                                             <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                                         </div>
                                         <h3 className="font-cinzel text-2xl font-bold text-text-primary mb-3">Message Sent!</h3>
-                                        <p className="font-inter text-sm text-text-secondary mb-8 max-w-md mx-auto">Thank you for reaching out. Our team will get back to you within 2 hours during business hours.</p>
+                                        <p className="font-inter text-sm text-text-secondary mb-8 max-w-md mx-auto">Thank you for reaching out. Our team will get back to you within 24 hours during business hours.</p>
                                         <button onClick={() => setSent(false)} className="text-antique-gold font-inter text-sm font-semibold hover:underline underline-offset-4">
                                             Send another message →
                                         </button>

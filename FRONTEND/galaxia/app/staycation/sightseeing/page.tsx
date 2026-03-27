@@ -147,6 +147,26 @@ export default function SightseeingPage() {
                 </div>
             </section>
 
+            {/* Interactive Map */}
+            <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 sm:pb-16">
+                <div className="text-center mb-8">
+                    <p className="text-antique-gold font-inter text-xs tracking-[0.4em] uppercase mb-3">Our Map</p>
+                    <h2 className="font-cinzel text-2xl sm:text-3xl font-semibold text-text-primary mb-2">Nearby Attractions</h2>
+                    <div className="w-16 h-[1px] bg-antique-gold mx-auto" />
+                </div>
+                <div className="rounded-2xl overflow-hidden border border-border-light shadow-md">
+                    <iframe
+                        src="https://www.google.com/maps/d/embed?mid=1CY2y-qqAH_vx9FXfTwjmd9fYDLOUOaM&ehbc=2E312F&noprof=1"
+                        width="100%"
+                        height="480"
+                        style={{ border: 0 }}
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                    />
+                </div>
+            </section>
+
             {/* Explore More CTA */}
             <section className="max-w-4xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 text-center">
                 <div className="bg-[#faf8f4] rounded-2xl border border-border-light p-8 sm:p-12">
@@ -154,12 +174,12 @@ export default function SightseeingPage() {
                     <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-text-primary mb-3">Explore More Around Karjat</h2>
                     <p className="font-inter text-sm text-text-secondary max-w-md mx-auto mb-6">Whether you&apos;re seeking adventure, spirituality, nature, or cinematic experiences — Karjat offers a diverse range of attractions just a short drive away.</p>
                     <a
-                        href="https://maps.app.goo.gl/1v6azy4nLhHe7Hzq6"
+                        href="https://www.google.com/maps/d/edit?mid=1CY2y-qqAH_vx9FXfTwjmd9fYDLOUOaM&usp=sharing"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-antique-gold to-dark-gold text-white font-inter text-sm font-medium hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300"
                     >
-                        View on Google Maps
+                        View in Maps
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                     </a>
                 </div>

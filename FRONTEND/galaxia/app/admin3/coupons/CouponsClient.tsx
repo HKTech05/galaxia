@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Ticket, Plus, Trash2, Eye, X, CalendarDays, Hash, Percent, Users, CheckCircle, Search } from "lucide-react";
 import { api } from "../../../lib/api";
+import CustomDatePicker from "../../components/CustomDatePicker";
 
 interface Coupon {
     id: string;
@@ -285,15 +286,15 @@ export default function CouponsClient() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Expiry Date</label>
-                                <div className="relative">
-                                    <CalendarDays size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="date"
-                                        value={newCoupon.expiryDate}
-                                        onChange={e => setNewCoupon({ ...newCoupon, expiryDate: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                                    />
-                                </div>
+                                <CustomDatePicker
+                                    date={newCoupon.expiryDate ? new Date(newCoupon.expiryDate + 'T00:00:00') : new Date()}
+                                    onDateChange={(d) => {
+                                        const y = d.getFullYear();
+                                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                                        const day = String(d.getDate()).padStart(2, '0');
+                                        setNewCoupon({ ...newCoupon, expiryDate: `${y}-${m}-${day}` });
+                                    }}
+                                />
                             </div>
                             <button
                                 onClick={handleCreateCoupon}

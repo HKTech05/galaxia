@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus } from "lucide-react";
 import { api } from "../../../lib/api";
+import CustomDatePicker from "../../components/CustomDatePicker";
 type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
 
 // Standalone override form — manages its own state, fully isolated from parent re-renders
@@ -30,7 +31,15 @@ function DdOverrideForm({ rows, onClose, onSaved }: { rows: any[]; onClose: () =
     return (
         <div className="px-5 py-4 bg-indigo-50 border-t border-indigo-200">
             <p className="text-xs font-bold text-indigo-700 mb-3">Override Prices for Specific Date</p>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm mb-3" />
+            <CustomDatePicker
+                date={date ? new Date(date + 'T00:00:00') : new Date()}
+                onDateChange={(d) => {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    setDate(`${y}-${m}-${day}`);
+                }}
+            />
             {rows.map((pr: any) => (
                 <div key={pr.id} className="flex items-center gap-2 mb-2">
                     <span className="text-xs text-slate-600 w-12">{pr.hours}hr{pr.hours > 1 ? "s" : ""}:</span>
@@ -196,7 +205,7 @@ export default function PropertiesMgmtPage() {
         return (<div className="px-5 py-4 bg-indigo-50/50 border-t border-indigo-100 space-y-3">
             {ovMsg ? <p className="text-sm text-emerald-700 font-bold text-center py-2">✓ {ovMsg}</p> : (<>
                 <p className="text-[10px] font-bold text-indigo-600 uppercase">Set Price for Specific Date</p>
-                <div className="flex gap-2"><input type="date" value={ovDate} onChange={e => setOvDate(e.target.value)} className="flex-1 px-3 py-2 border border-indigo-200 rounded-lg text-sm bg-white outline-none" /><NI value={ovPrice} onChange={setOvPrice} placeholder="Price" className="flex-1" /></div>
+                <div className="flex gap-2 items-center"><CustomDatePicker date={ovDate ? new Date(ovDate + 'T00:00:00') : new Date()} onDateChange={(d) => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); setOvDate(`${y}-${m}-${day}`); }} /><NI value={ovPrice} onChange={setOvPrice} placeholder="Price" className="flex-1" /></div>
                 <button onClick={saveOverride} className="w-full py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700"><Plus size={14} className="inline mr-1" />Set Override</button>
             </>)}
         </div>);
