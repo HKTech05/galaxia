@@ -30,7 +30,7 @@ export default function StaycationNavbar() {
 
     return (
         <>
-            <nav className="fixed top-0 left-0 right-0 z-50 glass-light" style={{ pointerEvents: 'auto' }}>
+            <nav className="fixed top-0 left-0 right-0 z-[9999] glass-light" style={{ pointerEvents: 'auto', isolation: 'isolate' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
                     {/* Left: Home icon + Logo */}
                     <div className="flex items-center gap-2 shrink-0">
@@ -163,13 +163,13 @@ export default function StaycationNavbar() {
 
             {/* Overlay — always rendered, visibility toggled via opacity + pointer-events */}
             <div
-                className={`fixed inset-0 z-[55] bg-black/20 transition-opacity duration-300 ${menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+                className={`fixed inset-0 z-[9998] bg-black/20 transition-opacity duration-300 ${menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
                 onClick={() => setMenuOpen(false)}
             />
 
             {/* Side menu drawer */}
             <div
-                className={`fixed top-0 right-0 h-full w-80 z-[60] bg-white shadow-2xl border-l border-border-light transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
+                className={`fixed top-0 right-0 h-full w-80 z-[9999] bg-white shadow-2xl border-l border-border-light transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${menuOpen ? "translate-x-0" : "translate-x-full"}`}
             >
                 <div className="p-6 pt-16 h-full overflow-y-auto">
                     <button

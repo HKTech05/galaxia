@@ -114,6 +114,8 @@ export const api = {
 export async function login(username: string, password: string) {
     const data = await api.post<{ token: string; admin: any }>("/auth/login", { username, password });
     setToken(data.token);
+    // Always store dedicated admin token — prevents guest login from overwriting it
+    localStorage.setItem("galaxia_admin_token", data.token);
     setAdmin(data.admin);
     return data;
 }

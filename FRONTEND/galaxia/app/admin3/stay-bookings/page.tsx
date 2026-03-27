@@ -66,6 +66,8 @@ export default function StayBookingsPage() {
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
     const [selectedBooking, setSelectedBooking] = useState<StayBooking | null>(null);
+    const [sortField, setSortField] = useState<"bookedAt" | "checkIn">("bookedAt");
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -128,6 +130,18 @@ export default function StayBookingsPage() {
             || b.customerPhone.includes(searchTerm);
         const matchesProperty = propertyFilter === "All" || b.propertyName === propertyFilter;
         return matchesSearch && matchesProperty;
+    });
+
+    const sortedBookings = [...filteredBookings].sort((a, b) => {
+        let valA: number, valB: number;
+        if (sortField === "bookedAt") {
+            valA = new Date(a.bookedAt).getTime();
+            valB = new Date(b.bookedAt).getTime();
+        } else {
+            valA = new Date(a.checkIn).getTime();
+            valB = new Date(b.checkIn).getTime();
+        }
+        return sortDir === "asc" ? valA - valB : valB - valA;
     });
 
     const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
@@ -232,8 +246,18 @@ export default function StayBookingsPage() {
                             <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Property</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Booked On</th>
-                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Dates</th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <button onClick={() => { if (sortField === "bookedAt") { setSortDir(d => d === "asc" ? "desc" : "asc"); } else { setSortField("bookedAt"); setSortDir("desc"); } }} className="inline-flex items-center gap-1 hover:text-indigo-600 transition-colors">
+                                        Booked On
+                                        <span className={`text-[10px] ${sortField === "bookedAt" ? "text-indigo-600" : "text-slate-300"}`}>{sortField === "bookedAt" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                                    </button>
+                                </th>
+                                <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <button onClick={() => { if (sortField === "checkIn") { setSortDir(d => d === "asc" ? "desc" : "asc"); } else { setSortField("checkIn"); setSortDir("desc"); } }} className="inline-flex items-center gap-1 hover:text-indigo-600 transition-colors">
+                                        Dates
+                                        <span className={`text-[10px] ${sortField === "checkIn" ? "text-indigo-600" : "text-slate-300"}`}>{sortField === "checkIn" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                                    </button>
+                                </th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Guests</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
                                 <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Payment</th>
@@ -246,7 +270,7 @@ export default function StayBookingsPage() {
                             ) : filteredBookings.length === 0 ? (
                                 <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-500 font-medium">No bookings found.</td></tr>
                             ) : (
-                                filteredBookings.map((b) => {
+                                sortedBookings.map((b) => {
                                     const StatusIcon = statusIcons[b.status] || CheckCircle;
                                     return (
                                         <tr key={b.id} onClick={() => setSelectedBooking(b)} className="hover:bg-slate-50/80 transition-colors cursor-pointer">

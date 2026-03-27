@@ -161,10 +161,11 @@ export default function BookMultiPage() {
                 for (const item of ambroseItems) {
                     const subId = dbSubPropertyMap[item.villaId];
                     if (subId) {
-                        const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${ambId}&subPropertyId=${subId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
-                        if (res.ok) {
-                            const data = await res.json();
+                        try {
+                            const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${ambId}&subPropertyId=${subId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
                             allConflicts[item.villaId] = data.dates || [];
+                        } catch (err) {
+                            console.error(`Failed to fetch booked dates for ${item.villaId}:`, err);
                         }
                     }
                 }
@@ -738,11 +739,6 @@ export default function BookMultiPage() {
                             </div>
                         )}
 
-                        {/* Back to Staycation button */}
-                        <Link href="/staycation" className="inline-flex items-center justify-center w-full px-5 py-3 bg-[#1A1A1A] text-white font-inter text-sm font-medium rounded-lg hover:bg-[#333] transition-colors">
-                            Back to Staycation
-                        </Link>
-
                         {/* Grand Total + Proceed */}
                         {nights > 0 && (
                             <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
@@ -797,6 +793,11 @@ export default function BookMultiPage() {
                                 </button>
                             </div>
                         )}
+
+                        {/* Back to Staycation button */}
+                        <Link href="/staycation" className="inline-flex items-center justify-center w-full px-5 py-3 bg-[#1A1A1A] text-white font-inter text-sm font-medium rounded-lg hover:bg-[#333] transition-colors">
+                            Back to Staycation
+                        </Link>
                     </div>
                 )}
 
