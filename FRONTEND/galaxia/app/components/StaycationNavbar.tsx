@@ -35,7 +35,7 @@ export default function StaycationNavbar() {
                     {/* Left: Home icon + Logo */}
                     <div className="flex items-center gap-2 shrink-0">
                         {/* Removed Home Icon from here */}
-                        <Link href="/staycation" className="flex items-center gap-2">
+                        <a href="/staycation" className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-antique-gold to-dark-gold flex items-center justify-center">
                                 <span className="text-white font-cinzel font-bold text-xs">G</span>
                             </div>
@@ -43,14 +43,14 @@ export default function StaycationNavbar() {
                                 <span className="font-cinzel text-base sm:text-lg font-semibold text-gold-gradient">GALAXIA</span>
                                 <span className="text-[8px] font-inter text-text-muted tracking-[0.2em] uppercase">Staycation</span>
                             </div>
-                        </Link>
+                        </a>
                     </div>
 
                     {/* Center: Property links (desktop only) */}
                     <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
                         {propertyLinks.map((link, i) => (
                             <span key={link.href} className="flex items-center">
-                                <Link
+                                <a
                                     href={link.href}
                                     className={`text-[11px] tracking-wide uppercase px-2.5 xl:px-3 py-1.5 rounded transition-all duration-300 font-inter whitespace-nowrap ${pathname === link.href || pathname?.startsWith(link.href + "/")
                                         ? "text-antique-gold bg-antique-gold/8 font-medium"
@@ -58,7 +58,7 @@ export default function StaycationNavbar() {
                                         }`}
                                 >
                                     {link.name}
-                                </Link>
+                                </a>
                                 {i < propertyLinks.length - 1 && (
                                     <span className="text-border-medium text-[10px] mx-0.5">|</span>
                                 )}
@@ -68,11 +68,11 @@ export default function StaycationNavbar() {
 
                     {/* Right: User + Hamburger */}
                     <div className="flex items-center gap-2 shrink-0">
-                        <Link href="/" className="w-8 h-8 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group" title="Back to Galaxia Home">
+                        <a href="/" className="w-8 h-8 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:bg-antique-gold/5 transition-all duration-300 group" title="Back to Galaxia Home">
                             <svg className="w-4 h-4 text-text-muted group-hover:text-antique-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
-                        </Link>
+                        </a>
                         <button
                             onClick={(e) => {
                                 e.preventDefault();

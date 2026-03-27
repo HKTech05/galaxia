@@ -162,7 +162,8 @@ export default function BookMultiPage() {
                     const subId = dbSubPropertyMap[item.villaId];
                     if (subId) {
                         try {
-                            const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${ambId}&subPropertyId=${subId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+                            const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+                            const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${ambId}&subPropertyId=${subId}&startDate=${fmt(startDate)}&endDate=${fmt(endDate)}`);
                             allConflicts[item.villaId] = data.dates || [];
                         } catch (err) {
                             console.error(`Failed to fetch booked dates for ${item.villaId}:`, err);
@@ -185,7 +186,7 @@ export default function BookMultiPage() {
             for (let i = 0; i < n; i++) {
                 const d = new Date(checkInDate);
                 d.setDate(d.getDate() + i);
-                const ds = d.toISOString().split("T")[0];
+                const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                 if (booked.includes(ds)) conflictDates.push(ds);
             }
             if (conflictDates.length > 0) conflicts[item.villaId] = conflictDates;
