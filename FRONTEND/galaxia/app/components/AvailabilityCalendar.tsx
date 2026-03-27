@@ -300,7 +300,7 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                                                 return (
                                                     <>
                                                         <span className={`font-inter text-[7px] sm:text-[8px] ${count > 0 ? 'text-amber-600' : 'text-emerald-600'} font-medium block`}>
-                                                            {count > 0 ? `${count} booked` : ''} / {totalUnits}
+                                                            {count > 0 ? `${count} booked` : '0'} / {totalUnits}
                                                         </span>
                                                         {!hidePrice && (
                                                             <span className={`font-inter ${compact ? "text-[7px]" : "text-[7px] sm:text-[8px]"} ${day.type === "prime" ? "text-warning" : day.type === "weekend" ? "text-antique-gold" : "text-text-muted"}`}>

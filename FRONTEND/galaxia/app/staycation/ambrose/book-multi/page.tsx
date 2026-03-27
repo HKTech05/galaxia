@@ -67,13 +67,18 @@ export default function BookMultiPage() {
     const [villaConflicts, setVillaConflicts] = useState<Record<string, string[]>>({});
     const [expandedConflict, setExpandedConflict] = useState<string | null>(null);
 
+    // Amstel Nest availability: per-date bookingCounts from API
+    const [amstelBookingCounts, setAmstelBookingCounts] = useState<Record<string, number>>({});
+    const [amstelConflicts, setAmstelConflicts] = useState<Record<string, { date: string; available: number }[]>>({});
+
     // Derived: separate by property
     const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
     const amstelItems = cart.filter(c => c.property === "amstel-nest");
 
-    // Should we hide prices? Only for multi Ambrose villas, OR mix of standard + family cottage
+    // Should we hide prices? Multi Ambrose, or mix of standard + family
     const hasMixedPrices = (() => {
         if (ambroseItems.length > 1) return true;
+        if (ambroseItems.length > 0 && amstelItems.length > 0) return true;
         if (amstelItems.length > 1) {
             const prices = new Set(amstelItems.map(i => i.weekdayPrice));
             if (prices.size > 1) return true;
@@ -174,7 +179,47 @@ export default function BookMultiPage() {
         setVillaConflicts(conflicts);
     }, [checkInDate, checkOutDate, ambroseItems.length, villaBookedDates]);
 
-    const hasAnyConflicts = Object.keys(villaConflicts).length > 0;
+    // Fetch Amstel Nest booked dates
+    useEffect(() => {
+        const anId = dbPropertyMap["amstel-nest"];
+        if (!anId || amstelItems.length === 0) return;
+        (async () => {
+            try {
+                const startDate = new Date();
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + 3);
+                const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${anId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setAmstelBookingCounts(data.bookingCounts || {});
+                }
+            } catch {}
+        })();
+    }, [dbPropertyMap, amstelItems.length]);
+
+    // Check Amstel Nest conflicts: unitCount vs available
+    useEffect(() => {
+        if (!checkInDate || !checkOutDate || amstelItems.length === 0) { setAmstelConflicts({}); return; }
+        const n = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        const conflicts: Record<string, { date: string; available: number }[]> = {};
+        for (const item of amstelItems) {
+            const maxUnits = item.villaId === 'standard-cottage' ? 14 : 1;
+            const units = item.unitCount || 1;
+            const itemConflicts: { date: string; available: number }[] = [];
+            for (let i = 0; i < n; i++) {
+                const d = new Date(checkInDate);
+                d.setDate(d.getDate() + i);
+                const ds = d.toISOString().split("T")[0];
+                const booked = amstelBookingCounts[ds] || 0;
+                const available = maxUnits - booked;
+                if (units > available) itemConflicts.push({ date: ds, available: Math.max(0, available) });
+            }
+            if (itemConflicts.length > 0) conflicts[item.villaId] = itemConflicts;
+        }
+        setAmstelConflicts(conflicts);
+    }, [checkInDate, checkOutDate, amstelItems, amstelBookingCounts]);
+
+    const hasAnyConflicts = Object.keys(villaConflicts).length > 0 || Object.keys(amstelConflicts).length > 0;
 
     // Load user data if logged in
     useEffect(() => {
@@ -196,7 +241,11 @@ export default function BookMultiPage() {
     };
 
     const updateUnitCount = (villaId: string, count: number) => {
-        const newCart = cart.map(c => c.villaId === villaId ? { ...c, unitCount: Math.max(1, count) } : c);
+        // Standard cottage max 14, family cottage max 1
+        const item = cart.find(c => c.villaId === villaId);
+        const maxUnits = villaId === 'standard-cottage' ? 14 : (villaId === 'family-cottage' ? 1 : 99);
+        const clamped = Math.max(1, Math.min(maxUnits, count));
+        const newCart = cart.map(c => c.villaId === villaId ? { ...c, unitCount: clamped } : c);
         localStorage.setItem("ambrose_cart", JSON.stringify(newCart));
         setCart(newCart);
     };
@@ -533,7 +582,7 @@ export default function BookMultiPage() {
 
                                                     {/* Unit count selector */}
                                                     <div className="mb-4">
-                                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Number of Cottages</label>
+                                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Number of Cottages {item.villaId === 'standard-cottage' ? '(max 14)' : ''}</label>
                                                         <div className="flex items-center gap-3">
                                                             <button onClick={() => updateUnitCount(item.villaId, units - 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                             <span className="font-inter text-xl font-bold text-text-primary w-8 text-center">{units}</span>
@@ -541,6 +590,35 @@ export default function BookMultiPage() {
                                                             <span className="font-inter text-xs text-text-muted">× {item.villaName}</span>
                                                         </div>
                                                     </div>
+
+                                                    {/* Amstel Nest Conflict Warning */}
+                                                    {amstelConflicts[item.villaId] && (
+                                                        <div className="mb-4">
+                                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 font-inter text-xs text-red-800">
+                                                                ⚠️ <strong>{item.villaName}</strong> has insufficient availability on some dates:
+                                                                <ul className="mt-1 space-y-0.5">
+                                                                    {amstelConflicts[item.villaId].map((c, i) => (
+                                                                        <li key={i}>• {new Date(c.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}: only <strong>{c.available}</strong> available (need {units})</li>
+                                                                    ))}
+                                                                </ul>
+                                                                <span className="block mt-1 text-red-600">Reduce unit count or choose different dates.</span>
+                                                                <button onClick={() => setExpandedConflict(expandedConflict === item.villaId ? null : item.villaId)} className="mt-2 text-red-700 underline text-[11px] font-medium">
+                                                                    {expandedConflict === item.villaId ? "Hide" : "View"} availability calendar
+                                                                </button>
+                                                            </div>
+                                                            {expandedConflict === item.villaId && (
+                                                                <div className="mt-3 border border-red-100 rounded-lg p-3">
+                                                                    <AvailabilityCalendar
+                                                                        propertyId={dbPropertyMap["amstel-nest"]}
+                                                                        weekdayPrice={item.weekdayPrice}
+                                                                        weekendPrice={item.weekendPrice}
+                                                                        totalUnits={item.villaId === 'standard-cottage' ? 14 : undefined}
+                                                                        compact
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
 
                                                     {/* Guest selectors (per unit) */}
                                                     <div className="grid grid-cols-2 gap-4 mb-4">

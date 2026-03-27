@@ -19,9 +19,12 @@ const DEFAULT_USERS: Record<string, { password: string; role: string; displayNam
 function getMockUsers() {
     try {
         const custom = JSON.parse(localStorage.getItem("chatbot_passwords") || "{}");
-        const users = { ...DEFAULT_USERS };
-        for (const key of Object.keys(users)) {
-            if (custom[key]) users[key] = { ...users[key], password: custom[key] };
+        const users: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {};
+        const keys = Object.keys(DEFAULT_USERS) as Array<keyof typeof DEFAULT_USERS>;
+        for (const key of keys) {
+            const customUsername = custom[`${key}_username`] || key;
+            const customPassword = custom[key] || DEFAULT_USERS[key].password;
+            users[customUsername] = { ...DEFAULT_USERS[key], password: customPassword };
         }
         return users;
     } catch { return DEFAULT_USERS; }

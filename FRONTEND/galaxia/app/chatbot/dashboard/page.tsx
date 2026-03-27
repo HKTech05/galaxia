@@ -96,22 +96,29 @@ const ACCOUNTS = [
 ];
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
-    const [passwords, setPasswords] = useState<Record<string, string>>({});
+    const [credentials, setCredentials] = useState<{ username: string; password: string }[]>([]);
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
         try {
             const custom = JSON.parse(localStorage.getItem("chatbot_passwords") || "{}");
-            const merged: Record<string, string> = {};
-            for (const a of ACCOUNTS) merged[a.key] = custom[a.key] || DEFAULT_PASSWORDS[a.key] || "";
-            setPasswords(merged);
+            const creds = ACCOUNTS.map(a => ({
+                username: custom[`${a.key}_username`] || a.key,
+                password: custom[a.key] || DEFAULT_PASSWORDS[a.key] || "",
+            }));
+            setCredentials(creds);
         } catch {
-            setPasswords({ ...DEFAULT_PASSWORDS });
+            setCredentials(ACCOUNTS.map(a => ({ username: a.key, password: DEFAULT_PASSWORDS[a.key] || "" })));
         }
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem("chatbot_passwords", JSON.stringify(passwords));
+        const toSave: Record<string, string> = {};
+        ACCOUNTS.forEach((a, i) => {
+            toSave[a.key] = credentials[i]?.password || DEFAULT_PASSWORDS[a.key] || "";
+            toSave[`${a.key}_username`] = credentials[i]?.username || a.key;
+        });
+        localStorage.setItem("chatbot_passwords", JSON.stringify(toSave));
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -127,14 +134,21 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
                     <table className="cb-settings-table">
                         <thead><tr><th>Username</th><th>Password</th><th>Access</th></tr></thead>
                         <tbody>
-                            {ACCOUNTS.map(a => (
+                            {ACCOUNTS.map((a, i) => (
                                 <tr key={a.key}>
-                                    <td style={{ fontWeight: 600 }}>{a.key}</td>
                                     <td>
                                         <input
                                             type="text"
-                                            value={passwords[a.key] || ""}
-                                            onChange={e => setPasswords(p => ({ ...p, [a.key]: e.target.value }))}
+                                            value={credentials[i]?.username || ""}
+                                            onChange={e => { const c = [...credentials]; c[i] = { ...c[i], username: e.target.value }; setCredentials(c); }}
+                                            style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none", fontWeight: 600 }}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            value={credentials[i]?.password || ""}
+                                            onChange={e => { const c = [...credentials]; c[i] = { ...c[i], password: e.target.value }; setCredentials(c); }}
                                             style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none" }}
                                         />
                                     </td>

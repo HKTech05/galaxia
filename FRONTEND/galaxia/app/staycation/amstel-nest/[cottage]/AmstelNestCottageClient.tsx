@@ -231,19 +231,16 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 dateOverrides={dateOverrides}
                                 onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
                                 isDisabled={isCottageDisabled}
-                                totalUnits={15}
+                                totalUnits={cottage.id === 'standard-cottage' ? 14 : undefined}
                             />
                             <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                                <Link href={bookNowUrl} className="block w-full sm:w-auto bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
-                                    BOOK NOW
-                                </Link>
                                 {isInCart ? (
                                     <button onClick={removeFromCart} className="block w-full sm:w-auto border-2 border-red-400 text-red-600 font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-red-50 transition-all duration-300 flex items-center justify-center gap-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         Remove from Cart
                                     </button>
                                 ) : (
-                                    <button onClick={addToCart} className="block w-full sm:w-auto border-2 border-antique-gold/50 text-antique-gold font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-antique-gold/5 transition-all duration-300 flex items-center justify-center gap-2">
+                                    <button onClick={addToCart} className="block w-full sm:w-auto bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300 flex items-center justify-center gap-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
                                         Add to Cart
                                     </button>
@@ -338,16 +335,24 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                 </div>
             </section>
 
-            {/* Book Now CTA */}
+            {/* Add to Cart CTA */}
             <section className="border-t border-border-light bg-gradient-to-r from-soft-gray via-cream-white to-soft-gray">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 text-center">
                     <p className="text-antique-gold font-inter text-xs tracking-[0.3em] uppercase mb-3">Ready to Experience</p>
                     <h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-text-primary mb-4">{cottage.name}</h2>
                     <p className="text-text-secondary font-inter text-sm max-w-lg mx-auto mb-8">{cottage.description}</p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link href={bookNowUrl} className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
-                            Book Now — Starting ₹{weekdayPrice}
-                        </Link>
+                        {isInCart ? (
+                            <button onClick={removeFromCart} className="border-2 border-red-400 text-red-600 font-inter font-semibold text-sm px-8 py-3.5 rounded-full hover:bg-red-50 transition-all duration-300 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                Remove from Cart
+                            </button>
+                        ) : (
+                            <button onClick={addToCart} className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                                Add to Cart — Starting ₹{weekdayPrice}
+                            </button>
+                        )}
                         <Link href="/staycation/amstel-nest" className="border border-antique-gold/30 text-antique-gold font-inter text-sm px-8 py-3.5 rounded-full hover:bg-antique-gold/5 transition-all duration-300">
                             Back to All Cottages
                         </Link>
@@ -357,7 +362,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
 
             {/* Floating Cart Badge */}
             {cartCount > 0 && (
-                <Link href={bookNowUrl} className="fixed bottom-24 right-4 sm:right-6 z-50 bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 flex items-center gap-3 px-5 py-3 group">
+                <Link href="/staycation/ambrose/book-multi" className="fixed bottom-24 right-4 sm:right-6 z-50 bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 flex items-center gap-3 px-5 py-3 group">
                     <div className="relative">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
                         <span className="absolute -top-2 -right-2 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>
