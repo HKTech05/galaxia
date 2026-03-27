@@ -85,7 +85,7 @@ export default function CustomDatePicker({ date, onDateChange, className }: { da
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-[100] w-[280px] animate-in fade-in zoom-in duration-200">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-[100] w-[280px] animate-in fade-in zoom-in duration-200">
                     <div className="flex justify-between items-center mb-4">
                         <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"><ChevronLeft size={18} /></button>
                         <h3 className="text-sm font-bold text-slate-800">

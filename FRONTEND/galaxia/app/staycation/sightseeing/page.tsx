@@ -19,7 +19,7 @@ const attractions: Attraction[] = [
         distance: "28.4 km",
         driveTime: "58 mins",
         description: "A historic Buddhist cave complex believed to date back to the 1st century BC. The caves feature intricate carvings, stupas, and ancient architecture. Especially beautiful during the monsoon season when waterfalls flow around the caves.",
-        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+        image: "/images/sightseeing/kcaves.jpg",
         category: "History",
         icon: "🏛️",
     },
@@ -28,7 +28,7 @@ const attractions: Attraction[] = [
         distance: "11.4 km",
         driveTime: "25 mins",
         description: "Nestled in the Bhivpuri region, this fort is well-known for its cave temple and scenic views from the top. A short trek leads to breathtaking panoramic views at approximately 3,100 ft altitude.",
-        image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
+        image: "/images/sightseeing/kpethfort.jpg",
         category: "Adventure",
         icon: "⛰️",
     },
@@ -37,7 +37,7 @@ const attractions: Attraction[] = [
         distance: "12.4 km",
         driveTime: "26 mins",
         description: "A hidden gem offering lush greenery and peaceful surroundings. Popular during the monsoon season, this waterfall provides a refreshing natural retreat and is perfect for nature lovers.",
-        image: "https://images.unsplash.com/photo-1432405972618-c6b0cfba5849?w=800&q=80",
+        image: "/images/sightseeing/solanpada.jpg",
         category: "Nature",
         icon: "🌊",
     },
@@ -46,7 +46,7 @@ const attractions: Attraction[] = [
         distance: "25 km",
         driveTime: "40 mins to Neral",
         description: "One of the very few vehicle-free hill stations in India. Famous for scenic viewpoints, toy train rides, red soil paths, and serene surroundings — a peaceful mountain escape near Karjat.",
-        image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80",
+        image: "/images/sightseeing/matheran.jpg",
         category: "Hill Station",
         icon: "🚂",
     },
@@ -55,7 +55,7 @@ const attractions: Attraction[] = [
         distance: "29.2 km",
         driveTime: "58 mins",
         description: "A renowned film studio known for Bollywood movie sets. Visitors can explore grand shooting locations and experience behind-the-scenes glimpses of Indian cinema.",
-        image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&q=80",
+        image: "/images/sightseeing/ndstudio.jpg",
         category: "Entertainment",
         icon: "🎬",
     },
@@ -64,7 +64,7 @@ const attractions: Attraction[] = [
         distance: "9 km",
         driveTime: "15 mins",
         description: "A divine idol of Lord Ganesha, believed to be 8–9 feet tall, carved from a single marble stone. A spiritually significant temple attracting devotees, especially during Ganesh festivals.",
-        image: "https://images.unsplash.com/photo-1609619385002-f40f1df9b5a4?w=800&q=80",
+        image: "/images/sightseeing/ganesh-mandir.jpg",
         category: "Spiritual",
         icon: "🛕",
     },
@@ -77,7 +77,7 @@ export default function SightseeingPage() {
         <div className="bg-cream-white min-h-screen">
             {/* Hero */}
             <section className="relative h-[45vh] sm:h-[55vh] flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=80')` }} />
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('/images/sightseeing/hero.jpg')` }} />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-cream-white" />
                 <div className="relative z-10 text-center px-4">
                     <p className="text-antique-gold font-inter text-xs tracking-[0.4em] uppercase mb-4">Explore Karjat</p>

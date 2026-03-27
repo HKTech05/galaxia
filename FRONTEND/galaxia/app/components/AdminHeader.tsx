@@ -53,10 +53,8 @@ export default function AdminHeader() {
 
     return (
         <header className="h-20 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 ml-0 lg:ml-72" style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-            {/* Left side: Branding */}
-            <div className="flex-1 ml-12 lg:ml-0">
-                <h2 className="font-bold text-lg text-slate-800 tracking-tight">Galaxia</h2>
-            </div>
+            {/* Left spacer */}
+            <div className="flex-1 ml-12 lg:ml-0" />
 
 
             {/* Right side: Actions & Profile */}
