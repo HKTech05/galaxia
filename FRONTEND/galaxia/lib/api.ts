@@ -4,16 +4,28 @@ const BASE_URL = typeof window !== "undefined" ? "/api" : "http://65.1.183.241:4
 
 export function getToken(): string | null {
     if (typeof window === "undefined") return null;
+    // On admin pages, prefer the dedicated admin token
+    if (window.location.pathname.startsWith("/admin")) {
+        return localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token");
+    }
     return localStorage.getItem("galaxia_token");
 }
 
 export function setToken(token: string) {
     localStorage.setItem("galaxia_token", token);
+    // Also store as admin token when on admin pages
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+        localStorage.setItem("galaxia_admin_token", token);
+    }
 }
 
 export function clearToken() {
     localStorage.removeItem("galaxia_token");
     localStorage.removeItem("galaxia_admin");
+    // Clear admin token only when on admin pages
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+        localStorage.removeItem("galaxia_admin_token");
+    }
 }
 
 export function getAdmin(): { id: number; username: string; displayName: string; role: string } | null {
