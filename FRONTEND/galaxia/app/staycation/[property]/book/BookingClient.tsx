@@ -156,10 +156,16 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     // Celebration Add-on (Ambrose only)
     const isAmbrose = property.id === 'ambrose' || property.id.startsWith('ambrose/');
+    const isAmstelNest = property.id.startsWith('amstel-nest/');
     const [celebrationAddon, setCelebrationAddon] = useState(false);
     const [celebrationCakeMsg, setCelebrationCakeMsg] = useState('');
     const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
     const CELEBRATION_ADDON_PRICE = 1200;
+
+    // Amstel Nest multi-unit cart state
+    const [unitCount, setUnitCount] = useState(1);
+    const [unitAvailability, setUnitAvailability] = useState<Record<string, number>>({});
+    const [availabilityWarning, setAvailabilityWarning] = useState('');
 
     // Load user data if logged in
     useEffect(() => {
@@ -341,7 +347,8 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     const roomPrice = nightlyRate * nights;
     const extraCharges = (extraAdultTotal + kidsTotal) * nights;
-    const subtotal = roomPrice + extraCharges;
+    const perUnitSubtotal = roomPrice + extraCharges;
+    const subtotal = perUnitSubtotal * (isAmstelNest ? unitCount : 1);
 
     // Discount
     let discountAmount = 0;
@@ -417,7 +424,46 @@ export default function BookingClient({ property }: BookingClientProps) {
         setCheckOutDate(checkOut);
         setNightlyRate(rate);
         setNights(n);
+
+        // Check unit availability warnings for Amstel Nest
+        if (isAmstelNest && checkIn && checkOut && unitCount > 1) {
+            checkUnitAvailability(checkIn, checkOut, unitCount);
+        } else {
+            setAvailabilityWarning('');
+        }
     };
+
+    // Check if selected unit count is available for all dates
+    const checkUnitAvailability = useCallback(async (ci: Date, co: Date, units: number) => {
+        if (!dbPropertyId) return;
+        try {
+            const startStr = `${ci.getFullYear()}-${String(ci.getMonth()+1).padStart(2,'0')}-${String(ci.getDate()).padStart(2,'0')}`;
+            const endStr = `${co.getFullYear()}-${String(co.getMonth()+1).padStart(2,'0')}-${String(co.getDate()).padStart(2,'0')}`;
+            const subId = selectedRoom ? (dbSubPropertyMap[selectedRoom.id] || dbSubPropertyMap[selectedRoom.id.split('/').pop() || '']) : null;
+            let url = `/api/bookings/staycation/booked-dates?propertyId=${dbPropertyId}&startDate=${startStr}&endDate=${endStr}`;
+            if (subId) url += `&subPropertyId=${subId}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.dateCounts) {
+                    setUnitAvailability(data.dateCounts);
+                    const totalUnits = 15;
+                    let warning = '';
+                    for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                        const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                        const booked = data.dateCounts[ds] || 0;
+                        const avail = totalUnits - booked;
+                        if (avail < units) {
+                            const dateLabel = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                            warning = `Only ${avail} unit${avail !== 1 ? 's' : ''} available on ${dateLabel}. ${units - avail} less than selected.`;
+                            break;
+                        }
+                    }
+                    setAvailabilityWarning(warning);
+                }
+            }
+        } catch {}
+    }, [dbPropertyId, dbSubPropertyMap, selectedRoom]);
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -474,38 +520,61 @@ export default function BookingClient({ property }: BookingClientProps) {
                 ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
                 : undefined;
 
-            const payload = {
-                customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                customerPhone: formData.phone,
-                customerEmail: formData.email,
-                propertyId: dbPropertyId,
-                subPropertyId: subPropertyId || null,
-                numGuests: adults + kids,
-                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
-                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
-                nightlyRate,
-                basePrice: roomPrice,
-                extraPersonCharge: extraCharges,
-                gstAmount: taxesAndFees,
-                totalAmount,
-                advanceAmount: payNow,
-                balanceAmount: payAtVenue,
-                securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
-                advancePaid: true,
-                advanceMethod: "online",
-                source: "website",
-                couponCode: appliedCoupon?.code || null,
-                addons: celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion }] : null,
-            };
+            const bookingCount = isAmstelNest ? unitCount : 1;
+            let firstResult: any = null;
 
-            const result = await api.post("/bookings/staycation", payload);
+            for (let i = 0; i < bookingCount; i++) {
+                const unitRoomPrice = roomPrice;
+                const unitExtraCharges = extraCharges;
+                const unitSubtotal = unitRoomPrice + unitExtraCharges;
+                let unitDiscount = 0;
+                if (appliedCoupon) {
+                    if (appliedCoupon.discountType === 'percentage') {
+                        unitDiscount = Math.round(unitSubtotal * appliedCoupon.discountValue / 100);
+                    } else {
+                        unitDiscount = Math.round(appliedCoupon.discountValue / bookingCount);
+                    }
+                }
+                const unitAddon = i === 0 && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                const unitTaxes = Math.round((unitSubtotal - unitDiscount) * property.gstPercent / 100);
+                const unitTotal = unitSubtotal - unitDiscount + unitAddon + unitTaxes;
+                const unitPayNow = Math.round(unitTotal * 0.8);
+                const unitPayAtVenue = unitTotal - unitPayNow;
+
+                const payload = {
+                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                    customerPhone: formData.phone,
+                    customerEmail: formData.email,
+                    propertyId: dbPropertyId,
+                    subPropertyId: subPropertyId || null,
+                    numGuests: adults + kids,
+                    checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
+                    checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
+                    nightlyRate,
+                    basePrice: unitRoomPrice,
+                    extraPersonCharge: unitExtraCharges,
+                    gstAmount: unitTaxes,
+                    totalAmount: unitTotal,
+                    advanceAmount: unitPayNow,
+                    balanceAmount: unitPayAtVenue,
+                    securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
+                    advancePaid: true,
+                    advanceMethod: "online",
+                    source: "website",
+                    couponCode: i === 0 ? (appliedCoupon?.code || null) : null,
+                    addons: i === 0 && celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion }] : null,
+                };
+
+                const result = await api.post("/bookings/staycation", payload);
+                if (i === 0) firstResult = result;
+            }
 
             // Upload ID proof to S3 (fire-and-forget — booking succeeds even if upload fails)
-            if (formData.aadhaarFile && result?.id) {
+            if (formData.aadhaarFile && firstResult?.id) {
                 try {
                     const uploadForm = new FormData();
                     uploadForm.append("file", formData.aadhaarFile);
-                    uploadForm.append("bookingId", String(result.id));
+                    uploadForm.append("bookingId", String(firstResult.id));
                     await fetch("/api/uploads/guest-id-public", {
                         method: "POST",
                         body: uploadForm,
@@ -514,6 +583,9 @@ export default function BookingClient({ property }: BookingClientProps) {
                     console.error("ID upload failed (booking succeeded):", uploadErr);
                 }
             }
+
+            // Clear Amstel Nest cart after booking
+            if (isAmstelNest) localStorage.removeItem('amstel_cart');
 
             router.push("/dashboard?source=staycation&status=success");
         } catch (err: any) {
@@ -559,7 +631,54 @@ export default function BookingClient({ property }: BookingClientProps) {
                         {/* STEP 1: SELECT ROOM */}
                         {currentStep === 1 && (
                             <div className="space-y-6">
-                                <h2 className="font-inter text-sm font-semibold text-text-primary mb-4">Rooms for your search</h2>
+                                {/* Amstel Nest Cart Panel */}
+                                {isAmstelNest && (
+                                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-5 sm:p-6">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                                            <h3 className="font-cinzel text-base font-semibold text-slate-800">Your Booking</h3>
+                                        </div>
+                                        <div className="bg-white rounded-lg border border-emerald-100 p-4 mb-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div>
+                                                    <p className="font-inter text-sm font-bold text-slate-800">Amstel Nest</p>
+                                                    <p className="font-inter text-xs text-slate-500">{property.name} · {property.subtitle}</p>
+                                                </div>
+                                                <img src="/logos/amstel-nest.jpeg" alt="Amstel Nest" className="w-10 h-10 rounded-lg object-contain" />
+                                            </div>
+                                            {/* Unit Count Selector */}
+                                            <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+                                                <div>
+                                                    <p className="font-inter text-xs text-slate-600 font-medium">Number of Cottages</p>
+                                                    <p className="font-inter text-[10px] text-slate-400">Max 15 units available</p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => { const v = Math.max(1, unitCount - 1); setUnitCount(v); if (checkInDate && checkOutDate) checkUnitAvailability(checkInDate, checkOutDate, v); }}
+                                                        className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-700 hover:border-emerald-500 hover:text-emerald-600 transition-colors font-bold text-lg"
+                                                    >−</button>
+                                                    <span className="font-inter text-xl font-bold text-slate-800 w-8 text-center">{unitCount}</span>
+                                                    <button
+                                                        onClick={() => { const v = Math.min(15, unitCount + 1); setUnitCount(v); if (checkInDate && checkOutDate) checkUnitAvailability(checkInDate, checkOutDate, v); }}
+                                                        className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-700 hover:border-emerald-500 hover:text-emerald-600 transition-colors font-bold text-lg"
+                                                    >+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* Availability Warning */}
+                                        {availabilityWarning && (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                                                <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                                                <p className="font-inter text-xs text-amber-800">{availabilityWarning}</p>
+                                            </div>
+                                        )}
+                                        {unitCount > 1 && nightlyRate > 0 && nights > 0 && (
+                                            <p className="font-inter text-xs text-emerald-700 mt-3 font-medium">Booking {unitCount} × {property.name} = {formatPrice(roomPrice * unitCount)} for {nights} night{nights > 1 ? 's' : ''}</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                <h2 className="font-inter text-sm font-semibold text-text-primary mb-4">{isAmstelNest ? 'Select your cottage type' : 'Rooms for your search'}</h2>
                                 {roomOptions.map((room: any) => (
                                     <div key={room.id} className="mb-6">
                                         <div className="inline-block px-4 py-1.5 mb-3 border border-antique-gold/30 rounded-full bg-antique-gold/5 text-[10px] font-inter uppercase tracking-widest text-dark-gold">
@@ -586,7 +705,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     <p className="text-[10px] font-inter text-text-muted uppercase tracking-wider mb-1">Exclusive Rate</p>
                                                     <div className="flex items-end gap-1 mb-3">
                                                         <span className="font-cinzel text-lg font-semibold text-text-primary">{formatPrice(room.price)}</span>
-                                                        <span className="text-[10px] font-inter text-text-muted mb-1">/ Night</span>
+                                                        <span className="text-[10px] font-inter text-text-muted mb-1">/ Night{isAmstelNest && unitCount > 1 ? ` × ${unitCount}` : ''}</span>
                                                     </div>
                                                     <button onClick={() => handleRoomSelect(room)} className="px-8 py-2 border border-antique-gold text-antique-gold font-inter text-xs tracking-wider uppercase hover:bg-antique-gold hover:text-white transition-all w-32">
                                                         SELECT
