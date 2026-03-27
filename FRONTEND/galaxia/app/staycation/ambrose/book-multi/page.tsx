@@ -317,6 +317,15 @@ export default function BookMultiPage() {
     const payNow = Math.round(grandTotal * 0.8);
     const payAtVenue = grandTotal - payNow;
 
+    // Calculate total security deposit for display
+    const totalAmstelVillaCount = amstelItems.reduce((sum, item) => sum + (item.unitCount || 1), 0);
+    const amstelDeposit = totalAmstelVillaCount === 0 ? 0
+        : totalAmstelVillaCount <= 5 ? 2000
+        : totalAmstelVillaCount <= 10 ? 5000
+        : 10000;
+    const ambroseDeposit = ambroseItems.reduce((sum, item) => sum + 3000 * (item.unitCount || 1), 0);
+    const totalSecurityDeposit = amstelDeposit + ambroseDeposit;
+
     const handleProceed = () => {
         if (!checkInDate || !checkOutDate || nights <= 0) return;
         const token = localStorage.getItem("galaxia_token");
@@ -408,6 +417,14 @@ export default function BookMultiPage() {
         setBookingError("");
 
         try {
+            // Calculate tiered Amstel Nest security deposit
+            const totalAmstelVillas = amstelItems.reduce((sum, item) => sum + (item.unitCount || 1), 0);
+            const amstelTotalDeposit = totalAmstelVillas === 0 ? 0
+                : totalAmstelVillas <= 5 ? 2000
+                : totalAmstelVillas <= 10 ? 5000
+                : 10000;
+            let amstelDepositAssigned = false;
+
             for (const item of cart) {
                 const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
                 const itemSubtotal = getItemPrice(item) + getExtraCharges(item);
@@ -432,6 +449,14 @@ export default function BookMultiPage() {
                     const perUnitPayNow = Math.round(perUnitTotal * 0.8);
                     const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
 
+                    // Amstel Nest: put total tiered deposit on first booking, 0 on rest
+                    // Ambrose: ₹3,000 per villa
+                    let deposit = 3000; // Ambrose default
+                    if (isAmstel) {
+                        deposit = !amstelDepositAssigned ? amstelTotalDeposit : 0;
+                        amstelDepositAssigned = true;
+                    }
+
                     const booking = await api.post("/bookings/staycation", {
                         customerName: `${formData.firstName} ${formData.lastName}`.trim(),
                         customerPhone: formData.phone,
@@ -448,7 +473,7 @@ export default function BookMultiPage() {
                         totalAmount: perUnitTotal,
                         advanceAmount: perUnitPayNow,
                         balanceAmount: perUnitPayAtVenue,
-                        securityDeposit: isAmstel ? 2000 : 3000,
+                        securityDeposit: deposit,
                         advancePaid: true,
                         advanceMethod: "online",
                         source: "website",
@@ -752,6 +777,7 @@ export default function BookMultiPage() {
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                     <div className="flex justify-between text-xs text-text-muted"><span>Pay Now (80%)</span><span>{formatPrice(payNow)}</span></div>
                                     <div className="flex justify-between text-xs text-text-muted"><span>Pay at Venue (20%)</span><span>{formatPrice(payAtVenue)}</span></div>
+                                    {totalSecurityDeposit > 0 && <div className="flex justify-between text-xs text-sky-600 mt-1"><span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span><span>{formatPrice(totalSecurityDeposit)}</span></div>}
                                 </div>
 
                                 {/* Coupon */}
@@ -926,6 +952,7 @@ export default function BookMultiPage() {
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span>{formatPrice(gst)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
+                                {totalSecurityDeposit > 0 && <div className="flex justify-between text-xs text-sky-600 mt-1"><span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span><span>{formatPrice(totalSecurityDeposit)}</span></div>}
                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
                                     <div className="flex justify-between text-sm"><span className="text-amber-800 font-medium">Pay Now (80%)</span><span className="font-bold text-amber-900">{formatPrice(payNow)}</span></div>
                                     <div className="flex justify-between text-xs text-amber-600 mt-1"><span>Balance at venue (20%)</span><span>{formatPrice(payAtVenue)}</span></div>
