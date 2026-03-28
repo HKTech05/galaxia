@@ -1,14 +1,12 @@
 import { Resend } from "resend";
 
 // ───────────────────────────────────────────────────────────────
-//  Resend Client
-//  Currently using onboarding@resend.dev (Resend's test sender).
-//  After domain verification, switch FROM_EMAIL to:
-//    "Galaxia Resorts <admin@galaxiaresorts.com>"
+//  Resend Client — Domain verified: galaxiaresorts.com
 // ───────────────────────────────────────────────────────────────
 const resend = new Resend(process.env.RESEND_API_KEY || "");
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "Galaxia Resorts <onboarding@resend.dev>";
+const FROM_EMAIL = "Galaxia <admin@galaxiaresorts.com>";
+const REPLY_TO = "admin@galaxiaresorts.com";
 
 // ───────────────────────────────────────────────────────────────
 //  Helpers
@@ -225,6 +223,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: email,
+            replyTo: REPLY_TO,
             subject: `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`,
             html,
         });
@@ -401,6 +400,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: email,
+            replyTo: REPLY_TO,
             subject: `Booking Confirmed | ${booking.bookingRef} — ${screenName} (${packageName})`,
             html,
         });
@@ -418,6 +418,7 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
         await resend.emails.send({
             from: FROM_EMAIL,
             to: toEmail,
+            replyTo: REPLY_TO,
             subject: "Galaxia — Email Configuration Test",
             html: `<!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#ffffff;">
