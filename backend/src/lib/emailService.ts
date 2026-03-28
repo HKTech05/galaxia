@@ -1,19 +1,14 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 // ───────────────────────────────────────────────────────────────
-//  Transporter — AWS SES SMTP (Mumbai)
+//  Resend Client
+//  Currently using onboarding@resend.dev (Resend's test sender).
+//  After domain verification, switch FROM_EMAIL to:
+//    "Galaxia Resorts <admin@galaxiaresorts.com>"
 // ───────────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "email-smtp.ap-south-1.amazonaws.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER || "",
-        pass: process.env.SMTP_PASS || "",
-    },
-});
+const resend = new Resend(process.env.RESEND_API_KEY || "");
 
-const FROM_EMAIL = process.env.SMTP_FROM || "Galaxia Resorts <admin@galaxiaresorts.com>";
+const FROM_EMAIL = process.env.EMAIL_FROM || "Galaxia Resorts <onboarding@resend.dev>";
 
 // ───────────────────────────────────────────────────────────────
 //  Helpers
@@ -69,7 +64,7 @@ function sectionTitle(title: string) {
 //  Staycation Booking Confirmation
 // ───────────────────────────────────────────────────────────────
 export async function sendBookingConfirmation(booking: any): Promise<void> {
-    if (!process.env.SMTP_USER || !booking.customerEmail) return;
+    if (!process.env.RESEND_API_KEY || !booking.customerEmail) return;
 
     const email = booking.customerEmail;
     const prop = booking.property || {};
@@ -227,7 +222,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
 </html>`;
 
     try {
-        await transporter.sendMail({
+        await resend.emails.send({
             from: FROM_EMAIL,
             to: email,
             subject: `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`,
@@ -267,7 +262,7 @@ function ddSectionTitle(title: string) {
 }
 
 export async function sendDDBookingConfirmation(booking: any): Promise<void> {
-    if (!process.env.SMTP_USER || !booking.customerEmail) return;
+    if (!process.env.RESEND_API_KEY || !booking.customerEmail) return;
 
     const email = booking.customerEmail;
     const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
@@ -403,7 +398,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
 </html>`;
 
     try {
-        await transporter.sendMail({
+        await resend.emails.send({
             from: FROM_EMAIL,
             to: email,
             subject: `Booking Confirmed | ${booking.bookingRef} — ${screenName} (${packageName})`,
@@ -420,7 +415,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
 // ───────────────────────────────────────────────────────────────
 export async function sendTestEmail(toEmail: string): Promise<{ success: boolean; error?: string }> {
     try {
-        await transporter.sendMail({
+        await resend.emails.send({
             from: FROM_EMAIL,
             to: toEmail,
             subject: "Galaxia — Email Configuration Test",
@@ -434,13 +429,13 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
     <div style="background:${WARM_BG};padding:40px 32px;text-align:center;">
         <h2 style="margin:0 0 12px;color:${TEXT_DARK};font-size:20px;font-weight:400;">Email Configuration Verified</h2>
         <p style="margin:0;font-size:14px;color:${TEXT_MED};line-height:1.6;">
-            Your SMTP configuration is working correctly.<br>
+            Your email configuration is working correctly.<br>
             Booking confirmation emails are ready to send.
         </p>
         <p style="margin:20px 0 0;font-size:12px;color:${TEXT_LIGHT};">Sent at ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
     </div>
     <div style="background:${NAVY};padding:20px;text-align:center;">
-        <p style="margin:0;color:rgba(255,255,255,0.4);font-size:11px;">Galaxia Resorts — SMTP Test</p>
+        <p style="margin:0;color:rgba(255,255,255,0.4);font-size:11px;">Galaxia Resorts — Email Test</p>
     </div>
 </div>
 </body></html>`,
@@ -463,7 +458,7 @@ export async function sendContactFormEmail(data: {
     message: string;
     source?: string; // "staycation" or "digital-diaries"
 }): Promise<void> {
-    if (!process.env.SMTP_USER) return;
+    if (!process.env.RESEND_API_KEY) return;
 
     const sourceLabel = data.source === "digital-diaries" ? "Digital Diaries" : "Staycation";
     const sourceBadge = data.source === "digital-diaries"
@@ -515,7 +510,7 @@ export async function sendContactFormEmail(data: {
 </html>`;
 
     try {
-        await transporter.sendMail({
+        await resend.emails.send({
             from: FROM_EMAIL,
             to: "admin@galaxiaresorts.com",
             replyTo: data.email,

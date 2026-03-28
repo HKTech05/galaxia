@@ -101,6 +101,18 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 app.listen(PORT, () => {
     console.log(`🚀 Galaxia API running on http://localhost:${PORT}`);
+
+    // Periodic cleanup of expired booking holds (every 2 minutes)
+    setInterval(async () => {
+        try {
+            const { count } = await (await import("./lib/prisma")).default.bookingHold.deleteMany({
+                where: { expiresAt: { lt: new Date() } },
+            });
+            if (count > 0) console.log(`[Hold Cleanup] Removed ${count} expired holds`);
+        } catch (err) {
+            console.error("[Hold Cleanup] Error:", err);
+        }
+    }, 2 * 60 * 1000);
 });
 
 export default app;

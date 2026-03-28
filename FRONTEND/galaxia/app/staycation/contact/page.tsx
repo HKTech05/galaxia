@@ -195,9 +195,10 @@ export default function ContactPage() {
                                                 <label className="block font-inter text-[10px] font-bold text-text-secondary uppercase tracking-[0.15em] mb-2">Phone Number</label>
                                                 <input
                                                     type="tel" value={formData.phone}
-                                                    onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                                                    onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                                                    maxLength={10}
                                                     className="w-full px-4 py-3.5 bg-slate-50/80 border border-border-light rounded-xl font-inter text-sm text-text-primary focus:border-antique-gold focus:ring-4 focus:ring-antique-gold/10 focus:bg-white outline-none transition-all"
-                                                    placeholder="+91 XXXXX XXXXX"
+                                                    placeholder="10-digit mobile number"
                                                 />
                                             </div>
                                             <div>

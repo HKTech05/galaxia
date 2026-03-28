@@ -70,6 +70,7 @@ export default function BookMultiPage() {
     // Submission
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
+    const [holdSessionIds, setHoldSessionIds] = useState<string[]>([]);
 
     // Auth
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -259,6 +260,20 @@ export default function BookMultiPage() {
         }
     }, []);
 
+    // Release holds on page leave / component unmount
+    useEffect(() => {
+        const releaseHolds = () => {
+            for (const sid of holdSessionIds) {
+                fetch(`/api/bookings/staycation/hold/${sid}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+            }
+        };
+        window.addEventListener('beforeunload', releaseHolds);
+        return () => {
+            window.removeEventListener('beforeunload', releaseHolds);
+            releaseHolds();
+        };
+    }, [holdSessionIds]);
+
     const removeFromCart = (villaId: string) => {
         const newCart = cart.filter(c => c.villaId !== villaId);
         localStorage.setItem("ambrose_cart", JSON.stringify(newCart));
@@ -344,6 +359,30 @@ export default function BookMultiPage() {
         if (!token) { setShowLoginPrompt(true); return; }
         setCurrentStep(2);
         window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Acquire holds for all cart items (fire-and-forget)
+        if (checkInDate && checkOutDate && Object.keys(dbPropertyMap).length > 0) {
+            for (const item of cart) {
+                const propSlug = item.property || 'ambrose';
+                const propId = dbPropertyMap[propSlug];
+                const subPropId = dbSubPropertyMap[item.villaId] || null;
+                if (propId) {
+                    fetch('/api/bookings/staycation/hold', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            propertyId: propId,
+                            subPropertyId: subPropId,
+                            checkInDate: checkInDate.toISOString().split('T')[0],
+                            checkOutDate: checkOutDate.toISOString().split('T')[0],
+                        }),
+                    })
+                        .then(r => r.json())
+                        .then(data => { if (data.sessionId) setHoldSessionIds(prev => [...prev, data.sessionId]); })
+                        .catch(() => {});
+                }
+            }
+        }
     };
 
     const handleGuestLogin = async (e: React.FormEvent) => {
@@ -425,6 +464,11 @@ export default function BookMultiPage() {
     };
 
     const handlePayment = async () => {
+        const cleanPhone = formData.phone.replace(/\D/g, '');
+        if (cleanPhone.length !== 10) {
+            setBookingError("Please enter a valid 10-digit mobile number.");
+            return;
+        }
         setIsSubmitting(true);
         setBookingError("");
 
@@ -507,6 +551,13 @@ export default function BookMultiPage() {
 
             localStorage.removeItem("ambrose_cart");
             window.dispatchEvent(new Event("cart-update"));
+
+            // Release all holds
+            for (const sid of holdSessionIds) {
+                fetch(`/api/bookings/staycation/hold/${sid}`, { method: 'DELETE' }).catch(() => {});
+            }
+            setHoldSessionIds([]);
+
             window.location.href = "/dashboard?source=staycation&status=success";
         } catch (err: any) {
             setBookingError(err?.message || "Booking failed. Please try again.");
@@ -859,7 +910,7 @@ export default function BookMultiPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div>
                                         <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Phone*</label>
-                                        <input required type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
+                                        <input required type="tel" maxLength={10} placeholder="10-digit mobile number" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2 font-inter text-sm text-text-primary focus:ring-0 focus:border-antique-gold" />
                                     </div>
                                     <div>
                                         <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Email</label>

@@ -149,9 +149,10 @@ export default function DDContactPage() {
                                                 <input
                                                     type="tel"
                                                     value={form.phone}
-                                                    onChange={e => setForm({ ...form, phone: e.target.value })}
+                                                    onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    maxLength={10}
                                                     className="w-full bg-cel-bg/50 border border-cel-border rounded-xl px-4 py-3 font-inter text-sm text-cel-text placeholder-cel-text-muted focus:outline-none focus:border-rose-medium/50 focus:ring-1 focus:ring-rose-medium/30 transition-all"
-                                                    placeholder="+91 98765 43210"
+                                                    placeholder="10-digit mobile number"
                                                 />
                                             </div>
                                         </div>

@@ -559,3 +559,26 @@ model SiteImage {
   @@index([section])
   @@map("site_images")
 }
+
+model BookingHold {
+  id            Int      @id @default(autoincrement())
+  holdType      String   @map("hold_type") @db.VarChar(20) // "staycation" or "dd"
+  sessionId     String   @unique @map("session_id") @db.VarChar(100)
+  // Staycation fields
+  propertyId    Int?     @map("property_id")
+  subPropertyId Int?     @map("sub_property_id")
+  checkIn       DateTime? @map("check_in") @db.Date
+  checkOut      DateTime? @map("check_out") @db.Date
+  // DD fields
+  screenId      Int?     @map("screen_id")
+  holdDate      DateTime? @map("hold_date") @db.Date
+  holdHours     Json?    @map("hold_hours") // Array of hours, e.g. [10,11,12]
+  // Common
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([holdType, expiresAt])
+  @@index([propertyId, checkIn, checkOut])
+  @@index([screenId, holdDate])
+  @@map("booking_holds")
+}

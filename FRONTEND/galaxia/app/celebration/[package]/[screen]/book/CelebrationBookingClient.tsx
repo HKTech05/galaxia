@@ -37,6 +37,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [idProofErrors, setIdProofErrors] = useState<string[]>(["", ""]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
+    const [holdSessionId, setHoldSessionId] = useState<string | null>(null);
 
     // Login prompt state
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -109,6 +110,20 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         window.addEventListener("message", handleMessage);
         return () => window.removeEventListener("message", handleMessage);
     }, []);
+
+    // Release DD hold on page leave / component unmount
+    useEffect(() => {
+        const releaseHold = () => {
+            if (holdSessionId) {
+                fetch(`/api/bookings/dd/hold/${holdSessionId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+            }
+        };
+        window.addEventListener('beforeunload', releaseHold);
+        return () => {
+            window.removeEventListener('beforeunload', releaseHold);
+            releaseHold();
+        };
+    }, [holdSessionId]);
 
     // Guest login handler
     const handleGuestLogin = async (e: React.FormEvent) => {
@@ -471,6 +486,11 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             setBookingError("Booking system loading, please wait...");
             return;
         }
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length !== 10) {
+            setBookingError("Please enter a valid 10-digit mobile number.");
+            return;
+        }
 
         setIsSubmitting(true);
         setBookingError("");
@@ -534,6 +554,12 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                         }
                     }
                 }
+            }
+
+            // Release the hold after successful booking
+            if (holdSessionId) {
+                fetch(`/api/bookings/dd/hold/${holdSessionId}`, { method: 'DELETE' }).catch(() => {});
+                setHoldSessionId(null);
             }
 
             // Success — redirect to dashboard with success indicator
@@ -944,6 +970,23 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             }
                                             setCurrentStep(2);
                                             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                                            // Acquire DD hold (fire-and-forget)
+                                            if (dbScreenId && selectedSlots.length > 0) {
+                                                const hours = selectedSlots.map(s => parseInt(s.replace('slot-', '')));
+                                                fetch('/api/bookings/dd/hold', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        screenId: dbScreenId,
+                                                        bookingDate: selectedDate.toISOString().split('T')[0],
+                                                        hours,
+                                                    }),
+                                                })
+                                                    .then(r => r.json())
+                                                    .then(data => { if (data.sessionId) setHoldSessionId(data.sessionId); })
+                                                    .catch(() => {});
+                                            }
                                         }
                                     }}
                                     disabled={totalHours < (isMovieTime ? 1 : 2)}
@@ -1094,7 +1137,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Mobile Number*</label>
                                         <div className="flex">
                                             <span className="bg-cel-bg border border-r-0 border-cel-border rounded-l-lg px-3 py-2.5 text-sm font-inter text-cel-text-secondary">+91</span>
-                                            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-cel-bg border border-cel-border rounded-r-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="Phone Number" />
+                                            <input type="tel" maxLength={10} value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className="w-full bg-cel-bg border border-cel-border rounded-r-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="10-digit number" />
                                         </div>
                                     </div>
                                 </div>

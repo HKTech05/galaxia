@@ -494,4 +494,103 @@ router.post("/:id/addons", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
+// ────────────────────────────────────────────────────────────────
+//  BOOKING HOLD — Temporary 7-minute slot lock (DD)
+// ────────────────────────────────────────────────────────────────
+
+// POST /api/bookings/dd/hold — Create a temporary DD hold
+router.post("/hold", async (req, res) => {
+    try {
+        const { screenId, bookingDate, hours } = req.body; // hours = [10,11,12]
+        if (!screenId || !bookingDate || !hours || !Array.isArray(hours) || hours.length === 0) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const parsedScreenId = parseInt(screenId);
+        const date = new Date(bookingDate);
+        const sessionId = `dh-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        const expiresAt = new Date(Date.now() + 7 * 60 * 1000); // 7 minutes
+
+        // Clean up expired holds
+        await prisma.bookingHold.deleteMany({
+            where: { expiresAt: { lt: new Date() } },
+        });
+
+        // Check for conflicts with existing bookings
+        const existingBookings = await prisma.ddBooking.findMany({
+            where: {
+                screenId: parsedScreenId,
+                bookingDate: date,
+                status: { notIn: ["cancelled", "no_show"] },
+            },
+            select: { startHour: true, durationHours: true },
+        });
+
+        const bookedHours = new Set<number>();
+        for (const b of existingBookings) {
+            for (let i = 0; i < b.durationHours; i++) {
+                bookedHours.add(b.startHour + i);
+            }
+        }
+
+        // Check for conflicts with active holds
+        const activeHolds = await prisma.bookingHold.findMany({
+            where: {
+                holdType: "dd",
+                screenId: parsedScreenId,
+                holdDate: date,
+                expiresAt: { gt: new Date() },
+            },
+            select: { holdHours: true },
+        });
+
+        for (const h of activeHolds) {
+            if (h.holdHours && Array.isArray(h.holdHours)) {
+                for (const hr of h.holdHours as number[]) {
+                    bookedHours.add(hr);
+                }
+            }
+        }
+
+        // Check if any requested hour conflicts
+        for (const hr of hours) {
+            if (bookedHours.has(hr)) {
+                return res.status(409).json({
+                    error: "These time slots are currently held by another guest. Please try different slots.",
+                });
+            }
+        }
+
+        // Create the hold
+        const hold = await prisma.bookingHold.create({
+            data: {
+                holdType: "dd",
+                sessionId,
+                screenId: parsedScreenId,
+                holdDate: date,
+                holdHours: hours,
+                expiresAt,
+            },
+        });
+
+        return res.status(201).json({ sessionId: hold.sessionId, expiresAt: hold.expiresAt });
+    } catch (error) {
+        console.error("Create DD hold error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// DELETE /api/bookings/dd/hold/:sessionId — Release a DD hold
+router.delete("/hold/:sessionId", async (req, res) => {
+    try {
+        await prisma.bookingHold.deleteMany({
+            where: { sessionId: req.params.sessionId },
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Release DD hold error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

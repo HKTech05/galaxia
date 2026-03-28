@@ -677,5 +677,109 @@ router.get("/booked-dates", async (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 });
+// ────────────────────────────────────────────────────────────────
+//  BOOKING HOLD — Temporary 7-minute reservation lock
+// ────────────────────────────────────────────────────────────────
+
+// POST /api/bookings/staycation/hold — Create a temporary hold
+router.post("/hold", async (req, res) => {
+    try {
+        const { propertyId, subPropertyId, checkInDate, checkOutDate } = req.body;
+        if (!propertyId || !checkInDate || !checkOutDate) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const parsedPropertyId = parseInt(propertyId);
+        const parsedSubPropertyId = subPropertyId ? parseInt(subPropertyId) : null;
+        const checkIn = new Date(checkInDate);
+        const checkOut = new Date(checkOutDate);
+        const sessionId = `sh-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        const expiresAt = new Date(Date.now() + 7 * 60 * 1000); // 7 minutes
+
+        // Clean up expired holds first
+        await prisma.bookingHold.deleteMany({
+            where: { expiresAt: { lt: new Date() } },
+        });
+
+        // Check capacity including existing bookings + active holds
+        const subProperties = await prisma.subProperty.findMany({
+            where: { propertyId: parsedPropertyId, isActive: true },
+            select: { id: true, unitCount: true },
+        });
+        const totalCapacity = subProperties.length > 0
+            ? subProperties.reduce((sum, sp) => sum + (sp.unitCount || 1), 0)
+            : 1;
+        const targetCapacity = parsedSubPropertyId
+            ? (subProperties.find(sp => sp.id === parsedSubPropertyId)?.unitCount || 1)
+            : totalCapacity;
+
+        // Check each day in the range
+        for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+            const dayStart = new Date(d);
+            const dayEnd = new Date(d);
+            dayEnd.setDate(dayEnd.getDate() + 1);
+
+            // Count existing bookings
+            const bookingCount = await prisma.staycationBooking.count({
+                where: {
+                    propertyId: parsedPropertyId,
+                    ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
+                    status: { notIn: ["cancelled", "no_show"] },
+                    checkInDate: { lt: dayEnd },
+                    checkOutDate: { gt: dayStart },
+                },
+            });
+
+            // Count active holds (excluding expired)
+            const holdCount = await prisma.bookingHold.count({
+                where: {
+                    holdType: "staycation",
+                    propertyId: parsedPropertyId,
+                    ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
+                    checkIn: { lt: dayEnd },
+                    checkOut: { gt: dayStart },
+                    expiresAt: { gt: new Date() },
+                },
+            });
+
+            if (bookingCount + holdCount >= targetCapacity) {
+                return res.status(409).json({
+                    error: "These dates are currently held by another guest. Please try different dates.",
+                });
+            }
+        }
+
+        // Create the hold
+        const hold = await prisma.bookingHold.create({
+            data: {
+                holdType: "staycation",
+                sessionId,
+                propertyId: parsedPropertyId,
+                subPropertyId: parsedSubPropertyId,
+                checkIn,
+                checkOut,
+                expiresAt,
+            },
+        });
+
+        return res.status(201).json({ sessionId: hold.sessionId, expiresAt: hold.expiresAt });
+    } catch (error) {
+        console.error("Create booking hold error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// DELETE /api/bookings/staycation/hold/:sessionId — Release a hold
+router.delete("/hold/:sessionId", async (req, res) => {
+    try {
+        await prisma.bookingHold.deleteMany({
+            where: { sessionId: req.params.sessionId },
+        });
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Release booking hold error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 export default router;

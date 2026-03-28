@@ -34,6 +34,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+    const [holdSessionId, setHoldSessionId] = useState<string | null>(null);
     
     // Auth Modes
     const [emailMode, setEmailMode] = useState<"login" | "register" | false>(false);
@@ -207,6 +208,20 @@ export default function BookingClient({ property }: BookingClientProps) {
             } catch (e) {}
         }
     }, []);
+
+    // Release booking hold on page leave / component unmount
+    useEffect(() => {
+        const releaseHold = () => {
+            if (holdSessionId) {
+                fetch(`/api/bookings/staycation/hold/${holdSessionId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+            }
+        };
+        window.addEventListener('beforeunload', releaseHold);
+        return () => {
+            window.removeEventListener('beforeunload', releaseHold);
+            releaseHold();
+        };
+    }, [holdSessionId]);
 
     // Listen for Cognito popup success
     useEffect(() => {
@@ -425,6 +440,27 @@ export default function BookingClient({ property }: BookingClientProps) {
         }
         setCurrentStep(2);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Acquire booking hold (fire-and-forget, non-blocking)
+        if (checkInDate && checkOutDate && dbPropertyId) {
+            const roomId = selectedRoom?.id || '';
+            const subPropertyId = selectedRoom
+                ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
+                : undefined;
+            fetch('/api/bookings/staycation/hold', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    propertyId: dbPropertyId,
+                    subPropertyId: subPropertyId || null,
+                    checkInDate: checkInDate.toISOString().split('T')[0],
+                    checkOutDate: checkOutDate.toISOString().split('T')[0],
+                }),
+            })
+                .then(r => r.json())
+                .then(data => { if (data.sessionId) setHoldSessionId(data.sessionId); })
+                .catch(() => { /* hold is best-effort */ });
+        }
     };
 
     const handleDatesChange = (checkIn: Date | null, checkOut: Date | null, rate: number, n: number) => {
@@ -522,6 +558,11 @@ export default function BookingClient({ property }: BookingClientProps) {
             setBookingError("Booking system loading, please wait...");
             return;
         }
+        const cleanPhone = formData.phone.replace(/\D/g, '');
+        if (cleanPhone.length !== 10) {
+            setBookingError("Please enter a valid 10-digit mobile number.");
+            return;
+        }
 
         setIsSubmitting(true);
         setBookingError("");
@@ -598,6 +639,12 @@ export default function BookingClient({ property }: BookingClientProps) {
 
             // Clear unified cart after booking
             if (isAmstelNest) localStorage.removeItem('ambrose_cart');
+
+            // Release the hold after successful booking
+            if (holdSessionId) {
+                fetch(`/api/bookings/staycation/hold/${holdSessionId}`, { method: 'DELETE' }).catch(() => {});
+                setHoldSessionId(null);
+            }
 
             router.push("/dashboard?source=staycation&status=success");
         } catch (err: any) {
@@ -831,7 +878,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                             <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Mobile*</label>
                                             <div className="flex items-center border-b border-border-medium focus-within:border-antique-gold transition-colors">
                                                 <span className="text-sm text-text-primary font-inter px-1 shrink-0">+91</span>
-                                                <input type="tel" required placeholder="Mobile Number" className="w-full bg-transparent border-0 rounded-none px-2 py-2 font-inter text-sm text-text-primary focus:ring-0 placeholder:text-text-muted" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                                                <input type="tel" required placeholder="Mobile Number" maxLength={10} className="w-full bg-transparent border-0 rounded-none px-2 py-2 font-inter text-sm text-text-primary focus:ring-0 placeholder:text-text-muted" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
                                             </div>
                                         </div>
                                     </div>
