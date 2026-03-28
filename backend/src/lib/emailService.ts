@@ -2,8 +2,14 @@ import { Resend } from "resend";
 
 // ───────────────────────────────────────────────────────────────
 //  Resend Client — Domain verified: galaxiaresorts.com
+//  Lazy-initialized to prevent crash if RESEND_API_KEY is missing
 // ───────────────────────────────────────────────────────────────
-const resend = new Resend(process.env.RESEND_API_KEY || "");
+let _resend: Resend | null = null;
+function getResend(): Resend | null {
+    if (!process.env.RESEND_API_KEY) return null;
+    if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+    return _resend;
+}
 
 const FROM_EMAIL = "Galaxia <admin@galaxiaresorts.com>";
 const REPLY_TO = "admin@galaxiaresorts.com";
@@ -220,7 +226,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
 </html>`;
 
     try {
-        await resend.emails.send({
+        await getResend()?.emails.send({
             from: FROM_EMAIL,
             to: email,
             replyTo: REPLY_TO,
@@ -397,7 +403,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
 </html>`;
 
     try {
-        await resend.emails.send({
+        await getResend()?.emails.send({
             from: FROM_EMAIL,
             to: email,
             replyTo: REPLY_TO,
@@ -415,7 +421,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
 // ───────────────────────────────────────────────────────────────
 export async function sendTestEmail(toEmail: string): Promise<{ success: boolean; error?: string }> {
     try {
-        await resend.emails.send({
+        await getResend()?.emails.send({
             from: FROM_EMAIL,
             to: toEmail,
             replyTo: REPLY_TO,
@@ -511,7 +517,7 @@ export async function sendContactFormEmail(data: {
 </html>`;
 
     try {
-        await resend.emails.send({
+        await getResend()?.emails.send({
             from: FROM_EMAIL,
             to: "admin@galaxiaresorts.com",
             replyTo: data.email,
