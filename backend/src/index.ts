@@ -78,9 +78,9 @@ app.post("/api/test-email", authMiddleware, requireRole("owner", "developer"), a
 // Contact form (public — no auth)
 app.post("/api/contact", async (req, res) => {
     try {
-        const { name, email, phone, message, source } = req.body;
+        const { name, email, phone, message, source, subject } = req.body;
         if (!name || !email || !message) return res.status(400).json({ error: "Missing required fields" });
-        await sendContactFormEmail({ name, email, phone, message, source });
+        await sendContactFormEmail({ name, email, phone, message, source, subject });
         return res.json({ success: true });
     } catch (err: any) {
         console.error("Contact form error:", err);

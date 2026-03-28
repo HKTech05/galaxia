@@ -464,6 +464,7 @@ export async function sendContactFormEmail(data: {
     phone?: string;
     message: string;
     source?: string; // "staycation" or "digital-diaries"
+    subject?: string; // "General Inquiry", "Booking Assistance", etc.
 }): Promise<void> {
     if (!process.env.RESEND_API_KEY) return;
 
@@ -521,7 +522,7 @@ export async function sendContactFormEmail(data: {
             from: FROM_EMAIL,
             to: "admin@galaxiaresorts.com",
             replyTo: data.email,
-            subject: `New Contact Form — ${data.name} (${sourceLabel})`,
+            subject: `New Contact Form — ${data.name} (${sourceLabel})${data.subject ? ` — ${data.subject}` : ''}`,
             html,
         });
         console.log(`[Email] Contact form notification sent for ${data.name}`);
