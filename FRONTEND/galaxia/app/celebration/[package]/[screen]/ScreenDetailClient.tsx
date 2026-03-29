@@ -191,18 +191,25 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                                 rel="noopener noreferrer"
                                 className="group block rounded-2xl overflow-hidden border border-white/[0.06] hover:border-rose-medium/40 bg-[#111111] transition-all duration-300 hover:shadow-xl hover:shadow-rose-dark/15 hover:-translate-y-1"
                             >
-                                {/* Reel embed — blank by default, shows on hover */}
+                                {/* Reel embed — visible by default, overlays hide play btn + text */}
                                 <div className="reel-clip-wrapper">
                                     <iframe
-                                        src={`https://www.instagram.com/reel/${reel.id}/embed/?cr=1`}
+                                        src={`https://www.instagram.com/reel/${reel.id}/embed/?cr=1&hidecaption=1`}
                                         scrolling="no"
                                         allowFullScreen
                                         loading="lazy"
                                         title={`Instagram Reel ${reel.id}`}
                                         allow="encrypted-media"
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                                         style={{ pointerEvents: "none" }}
                                     />
+                                    {/* Cover play triangle in center */}
+                                    <div className="absolute inset-0 z-[3] flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity duration-500">
+                                        <div className="w-24 h-24 rounded-full bg-black/70 backdrop-blur-md" />
+                                    </div>
+                                    {/* Cover "Watch on Instagram" at bottom */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-14 z-[3] bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none group-hover:opacity-0 transition-opacity duration-500" />
+                                    {/* Cover "Reel thumbnail" alt text at top */}
+                                    <div className="absolute top-0 left-0 right-0 h-8 z-[3] bg-gradient-to-b from-black to-transparent pointer-events-none group-hover:opacity-0 transition-opacity duration-500" />
                                 </div>
 
                                 {/* Dark Stats Bar */}
