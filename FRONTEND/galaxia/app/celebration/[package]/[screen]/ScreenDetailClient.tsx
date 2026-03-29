@@ -191,15 +191,8 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                                 rel="noopener noreferrer"
                                 className="group block rounded-2xl overflow-hidden border border-white/[0.06] hover:border-rose-medium/40 bg-[#111111] transition-all duration-300 hover:shadow-xl hover:shadow-rose-dark/15 hover:-translate-y-1"
                             >
-                                {/* Cropped Reel Video */}
+                                {/* Reel embed — blank by default, shows on hover */}
                                 <div className="reel-clip-wrapper">
-                                    {/* Static thumbnail - visible by default, fades on hover */}
-                                    <img
-                                        src={`https://www.instagram.com/p/${reel.id}/media/?size=l`}
-                                        alt="Reel thumbnail"
-                                        className="absolute inset-0 w-full h-full object-cover z-[2] transition-opacity duration-500 group-hover:opacity-0"
-                                    />
-                                    {/* Instagram embed - visible on hover when thumbnail fades */}
                                     <iframe
                                         src={`https://www.instagram.com/reel/${reel.id}/embed/?cr=1`}
                                         scrolling="no"
@@ -207,6 +200,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                                         loading="lazy"
                                         title={`Instagram Reel ${reel.id}`}
                                         allow="encrypted-media"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                                         style={{ pointerEvents: "none" }}
                                     />
                                 </div>
