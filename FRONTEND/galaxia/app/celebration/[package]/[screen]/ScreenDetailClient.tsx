@@ -128,19 +128,119 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 </div>
             </section>
 
-            {/* Instagram Section */}
-            <section className="border-t border-cel-border">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-                    <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-cel-text mb-6">Follow us on Instagram!</h2>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-                        {displayGallery.concat(displayGallery).slice(0, 6).map((img, i) => (
-                            <a key={i} href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-lg overflow-hidden border border-cel-border hover:border-rose-medium/40 transition-all">
-                                <Image src={img} alt={`Instagram ${i + 1}`} fill className="object-cover transition-transform duration-500 group-hover:scale-110" sizes="(max-width: 768px) 33vw, 16vw" />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+            <style jsx>{`
+                .reel-clip-wrapper {
+                    position: relative;
+                    overflow: hidden;
+                    height: 300px;
+                    border-radius: 14px 14px 0 0;
+                    background: #111;
+                }
+                @media (min-width: 640px) {
+                    .reel-clip-wrapper { height: 340px; }
+                }
+                @media (min-width: 1024px) {
+                    .reel-clip-wrapper { height: 320px; }
+                }
+                .reel-clip-wrapper iframe {
+                    position: absolute;
+                    top: -56px;
+                    left: -1px;
+                    width: calc(100% + 2px);
+                    height: 900px;
+                    border: 0;
+                    overflow: hidden;
+                }
+            `}</style>
+            <section className="border-t border-cel-border bg-gradient-to-b from-cel-bg via-cel-card/30 to-cel-bg">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+                    {/* Header */}
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center gap-3 mb-4">
+                            <div className="w-10 h-[1.5px] bg-gradient-to-r from-transparent to-rose-medium" />
+                            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                                <defs>
+                                    <linearGradient id="ig-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#feda75" />
+                                        <stop offset="25%" stopColor="#fa7e1e" />
+                                        <stop offset="50%" stopColor="#d62976" />
+                                        <stop offset="75%" stopColor="#962fbf" />
+                                        <stop offset="100%" stopColor="#4f5bd5" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" fill="url(#ig-gradient)" />
+                            </svg>
+                            <div className="w-10 h-[1.5px] bg-gradient-to-l from-transparent to-rose-medium" />
+                        </div>
+                        <h2 className="font-cinzel text-2xl sm:text-3xl font-bold text-cel-text mb-2">Catch Our Reels</h2>
+                        <p className="font-inter text-cel-text-muted text-sm">See what celebrations look like at Digital Diaries</p>
+                    </div>
+
+                    {/* Reels Grid */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                        {[
+                            { id: "DRsy5-MgT1x", likes: "104K", comments: "1.2K" },
+                            { id: "DWEA3TckyWb", likes: "196K", comments: "2.8K" },
+                            { id: "DTY8-pADi7l", likes: "320K", comments: "4.1K" },
+                            { id: "DT3CLqVjFF7", likes: "2.7M", comments: "18K" },
+                        ].map((reel) => (
+                            <a
+                                key={reel.id}
+                                href={`https://www.instagram.com/reel/${reel.id}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group block rounded-2xl overflow-hidden border border-white/[0.06] hover:border-rose-medium/40 bg-[#111111] transition-all duration-300 hover:shadow-xl hover:shadow-rose-dark/15 hover:-translate-y-1"
+                            >
+                                {/* Cropped Reel Video */}
+                                <div className="reel-clip-wrapper">
+                                    {/* Static thumbnail - visible by default, fades on hover */}
+                                    <img
+                                        src={`https://www.instagram.com/p/${reel.id}/media/?size=l`}
+                                        alt="Reel thumbnail"
+                                        className="absolute inset-0 w-full h-full object-cover z-[2] transition-opacity duration-500 group-hover:opacity-0"
+                                    />
+                                    {/* Instagram embed - visible on hover when thumbnail fades */}
+                                    <iframe
+                                        src={`https://www.instagram.com/reel/${reel.id}/embed/?cr=1`}
+                                        scrolling="no"
+                                        allowFullScreen
+                                        loading="lazy"
+                                        title={`Instagram Reel ${reel.id}`}
+                                        allow="encrypted-media"
+                                        style={{ pointerEvents: "none" }}
+                                    />
+                                </div>
+
+                                {/* Dark Stats Bar */}
+                                <div className="flex items-center gap-4 px-3 sm:px-4 py-2.5 sm:py-3 bg-[#111111]">
+                                    <div className="flex items-center gap-1.5">
+                                        <svg className="w-4 h-4 text-rose-medium" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+                                        <span className="text-white/80 font-inter text-xs sm:text-sm font-medium">{reel.likes}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                                        <span className="text-white/50 font-inter text-xs sm:text-sm">{reel.comments}</span>
+                                    </div>
+                                    <div className="ml-auto">
+                                        <svg className="w-4 h-4 text-white/30 group-hover:text-rose-medium transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                                    </div>
                                 </div>
                             </a>
                         ))}
+                    </div>
+
+                    {/* Follow CTA */}
+                    <div className="flex justify-center mt-10">
+                        <a
+                            href="https://www.instagram.com/digitaldiaries_wadala?igsh=cHZic3RmcDB4b28z"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-center gap-3 bg-gradient-to-r from-[#833AB4] via-[#C13584] to-[#E1306C] hover:shadow-lg hover:shadow-[#C13584]/30 text-white font-inter font-semibold text-sm px-7 py-3.5 rounded-full transition-all duration-300 hover:-translate-y-0.5"
+                        >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                            Follow @digitaldiaries_wadala
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                        </a>
                     </div>
                 </div>
             </section>
