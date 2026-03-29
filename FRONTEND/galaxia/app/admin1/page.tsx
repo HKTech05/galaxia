@@ -80,7 +80,8 @@ export default function Admin1Dashboard() {
             const data = await api.get(`/bookings/dd?date=${dateStr}`);
             if (Array.isArray(data)) {
                 const mapped: Event[] = data.map((b: any) => {
-                    const screenName = b.screen?.name || "Unknown";
+                    const rawScreenName = b.screen?.name || "Unknown";
+                    const screenName = rawScreenName.replace(/ \(Digital Diaries\)/, '');
                     const color = screenColorMap[screenName] || "bg-slate-100 text-slate-700 border-slate-200";
                     const bDate = new Date(b.bookingDate);
                     const bookedDate = new Date(b.bookedAt || b.createdAt || b.bookingDate);
@@ -112,9 +113,10 @@ export default function Admin1Dashboard() {
                             cakeMessage: b.addons.find((a: any) => a.addonType === 'cake')?.addonValue,
                         } : undefined,
                         guestIds: b.guestIds || [],
+                        status: b.status || 'confirmed',
                     };
                 });
-                setEventsList(mapped);
+                setEventsList(mapped.filter(ev => ev.screen !== 'Unknown' && (ev as any).status !== 'cancelled'));
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);
@@ -268,6 +270,7 @@ export default function Admin1Dashboard() {
             timeStr: hours[hourIndex]
         });
         setSelectedScreen(screens[screenIndex]);
+        setMaintScreen(screens[screenIndex]);
         setShowOverlapWarning(false);
         setDuration(packageType === "Celebration" ? "3" : "3");
     };

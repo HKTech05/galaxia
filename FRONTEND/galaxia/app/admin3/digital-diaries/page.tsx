@@ -142,9 +142,10 @@ export default function Admin1Dashboard() {
                         ledBannerType: b.addons?.find((a: any) => a.addonType === "ledBanner" || a.addonType === "led_banner")?.addonValue || b.occasion || "Happy Birthday",
                         cake: b.addons?.some((a: any) => a.addonType === "cake"),
                         cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || b.cakeMessage || ""
-                    }
+                    },
+                    status: b.status || 'confirmed',
                 }));
-                setEventsList(mapped);
+                setEventsList(mapped.filter(ev => (ev as any).status !== 'cancelled'));
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);
@@ -285,6 +286,7 @@ export default function Admin1Dashboard() {
             timeStr: hours[hourIndex]
         });
         setSelectedScreen(screens[screenIndex]);
+        setMaintScreen(screens[screenIndex]);
         setShowOverlapWarning(false);
         setDuration(packageType === "Celebration" ? "3" : "3");
     };
