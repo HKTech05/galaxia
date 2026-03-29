@@ -194,7 +194,7 @@ export default function Admin1Dashboard() {
         if (!draftSlot) return;
         setMaintSubmitting(true);
         try {
-            const screenMap: Record<string, number> = { "Cine Love": 1, "Sandy Screen": 2, "Park N Watch": 3, "Baywatch": 4 };
+            const screenMap: Record<string, number> = { "Sandy Screen": 1, "Cine Love": 2, "Park N Watch": 3, "Baywatch": 4 };
             const screenId = screenMap[maintScreen] || 1;
 
             await api.post("/bookings/dd", {
@@ -219,6 +219,18 @@ export default function Admin1Dashboard() {
             alert(err.message || "Failed to create maintenance block");
         } finally {
             setMaintSubmitting(false);
+        }
+    };
+
+    const handleUnblock = async (bookingId: string) => {
+        if (!confirm("Are you sure you want to unblock this slot?")) return;
+        try {
+            await api.patch(`/bookings/dd/${bookingId}/status`, { status: "cancelled" });
+            setSelectedEventId(null);
+            fetchEvents(startDate);
+        } catch (err: any) {
+            console.error("Unblock error:", err);
+            alert(err.message || "Failed to unblock");
         }
     };
 
@@ -526,6 +538,18 @@ export default function Admin1Dashboard() {
                             <p className="text-xl font-bold flex items-center gap-1.5"><Clock size={18} /> {hours[activeEvent.startHour - 10]} ({activeEvent.duration} hrs)</p>
                         </div>
                     </div>
+
+                    {/* Unblock Button for Maintenance */}
+                    {activeEvent.isMaintenance && (
+                        <div className="px-8 py-4 bg-red-50 border-b border-red-100">
+                            <button
+                                onClick={() => handleUnblock(activeEvent.id)}
+                                className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Ban size={18} /> Unblock This Screen Slot
+                            </button>
+                        </div>
+                    )}
 
                     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50">
                         {/* Customer Details */}

@@ -132,19 +132,19 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 .reel-clip-wrapper {
                     position: relative;
                     overflow: hidden;
-                    height: 240px;
+                    height: 200px;
                     border-radius: 14px 14px 0 0;
                     background: #111;
                 }
                 @media (min-width: 640px) {
-                    .reel-clip-wrapper { height: 340px; }
+                    .reel-clip-wrapper { height: 320px; }
                 }
                 @media (min-width: 1024px) {
-                    .reel-clip-wrapper { height: 320px; }
+                    .reel-clip-wrapper { height: 300px; }
                 }
                 .reel-clip-wrapper iframe {
                     position: absolute;
-                    top: -56px;
+                    top: -70px;
                     left: -1px;
                     width: calc(100% + 2px);
                     height: 900px;
