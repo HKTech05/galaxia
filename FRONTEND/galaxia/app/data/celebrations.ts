@@ -67,7 +67,7 @@ export const packages: Record<string, CelebrationPackage> = {
         pricing: [
             { hours: 1, label: "1 Hour", weekday: 999, weekend: 999 },
             { hours: 2, label: "2 Hours", weekday: 1500, weekend: 1500 },
-            { hours: 3, label: "3 Hours", weekday: 1950, weekend: 1950 },
+            { hours: 3, label: "3 Hours", weekday: 2500, weekend: 2500 },
         ],
         extraPerson: 300,
         extraHourRate: 1000,

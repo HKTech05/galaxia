@@ -182,7 +182,7 @@ async function main() {
                 const bookingDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, 15 + i * 3);
                 const hours = (i + round) % 2 === 0 ? 2 : 3;
                 const basePrices: Record<string, Record<number, number>> = {
-                    "movie-time": { 2: 1500, 3: 1950 },
+                    "movie-time": { 2: 1500, 3: 2500 },
                     "celebration": { 2: 2950, 3: 3450 },
                 };
                 const basePrice = basePrices[pkg.slug]?.[hours] || 1500;

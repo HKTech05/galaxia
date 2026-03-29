@@ -23,6 +23,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+    const [age, setAge] = useState("");
     const [specialRequests, setSpecialRequests] = useState("");
     const [agreed, setAgreed] = useState(false);
     const [idVerificationMethod, setIdVerificationMethod] = useState<"online" | "venue">("venue");
@@ -395,7 +396,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     let discount = 0;
     if (isCelebration && totalHours === 3 && !weekend) {
         discount = 500;
-    } else if (isMovieTime && totalHours > 1) {
+    } else if (isMovieTime && totalHours === 2) {
         const fullPrice = totalHours * discountHourRate;
         discount = Math.max(0, fullPrice - basePrice);
     }
@@ -1128,6 +1129,14 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     </div>
                                 </div>
 
+                                <div>
+                                    <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Age*</label>
+                                    <input type="number" min="1" max="120" value={age} onChange={(e) => setAge(e.target.value.replace(/\D/g, '').slice(0, 3))} className="w-full sm:w-48 bg-cel-bg border border-cel-border rounded-lg px-3 py-2.5 text-sm font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none transition-colors" placeholder="Enter your age" />
+                                    {age !== "" && parseInt(age) < 18 && (
+                                        <p className="text-red-500 text-xs font-inter mt-1.5">You must be 18 or older to make a booking.</p>
+                                    )}
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-inter text-xs text-cel-text-secondary mb-1.5">Email (Optional)</label>
@@ -1229,7 +1238,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     </button>
                                     <button
                                         onClick={() => { setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        disabled={!firstName || !lastName || !phone || !agreed || (idVerificationMethod === "online" && (idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)))}
+                                        disabled={!firstName || !lastName || !phone || !age || parseInt(age) < 18 || !agreed || (idVerificationMethod === "online" && (idProofs.slice(0, guestCount).some(p => !p) || idProofErrors.slice(0, guestCount).some(e => !!e)))}
                                         className="flex-1 bg-gradient-to-r from-rose-medium to-rose-dark text-white font-cinzel font-semibold text-sm py-3 rounded-lg hover:shadow-lg hover:shadow-rose-dark/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         Continue

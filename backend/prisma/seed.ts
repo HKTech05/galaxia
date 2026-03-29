@@ -285,7 +285,7 @@ async function main() {
     const ddPricing = [
         { packageId: movieTime.id, hours: 1, label: "1 Hour", weekdayPrice: 999, weekendPrice: 999 },
         { packageId: movieTime.id, hours: 2, label: "2 Hours", weekdayPrice: 1500, weekendPrice: 1500 },
-        { packageId: movieTime.id, hours: 3, label: "3 Hours", weekdayPrice: 1950, weekendPrice: 1950 },
+        { packageId: movieTime.id, hours: 3, label: "3 Hours", weekdayPrice: 2500, weekendPrice: 2500 },
         { packageId: celebration.id, hours: 2, label: "2 Hours", weekdayPrice: 2950, weekendPrice: 2950 },
         { packageId: celebration.id, hours: 3, label: "3 Hours", weekdayPrice: 3450, weekendPrice: 3950 },
     ];

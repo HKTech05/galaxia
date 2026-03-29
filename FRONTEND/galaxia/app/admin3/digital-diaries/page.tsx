@@ -215,8 +215,8 @@ export default function Admin1Dashboard() {
     if (packageType === "Movie Time") {
         if (durNum === 1) basePrice = 999;
         else if (durNum === 2) basePrice = 1500;
-        else if (durNum === 3) basePrice = 1950;
-        else basePrice = 1950 + ((durNum - 3) * 1000);
+        else if (durNum === 3) basePrice = 2500;
+        else basePrice = 2500 + ((durNum - 3) * 1000);
     } else {
         const isWeekend = startDate.getDay() === 0 || startDate.getDay() === 6;
         if (durNum === 2) basePrice = 2950;

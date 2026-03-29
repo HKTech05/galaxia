@@ -91,7 +91,7 @@ export const properties: Record<string, PropertyData> = {
         petsAllowed: true,
         maxPersons: 8,
         maxAdults: 6,
-        maxKids: 2,
+        maxKids: 4,
         foodPolicy: {
             included: true,
             details: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.",
@@ -166,7 +166,7 @@ export const properties: Record<string, PropertyData> = {
                 configuration: ["1 King Bedroom", "1 Sofa Cum Bed Room", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
                 maxAdults: 6,
-                maxKids: 2,
+                maxKids: 4,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
@@ -184,7 +184,7 @@ export const properties: Record<string, PropertyData> = {
                 configuration: ["2 King Size Beds", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
                 maxAdults: 6,
-                maxKids: 2,
+                maxKids: 4,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
@@ -202,7 +202,7 @@ export const properties: Record<string, PropertyData> = {
                 configuration: ["1 King Size Bed", "1 Queen Size Bed", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
                 maxPersons: 8,
                 maxAdults: 6,
-                maxKids: 2,
+                maxKids: 4,
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
@@ -220,7 +220,7 @@ export const properties: Record<string, PropertyData> = {
                 configuration: ["2 King Bedrooms", "Spacious Living Room", "4 Bathrooms", "4 AC", "Private Pool", "Garden Seating"],
                 maxPersons: 12,
                 maxAdults: 10,
-                maxKids: 2,
+                maxKids: 5,
                 pricing: {
                     weekday: { price: "10,500", persons: "4 with meals" },
                     weekend: { price: "11,500", persons: "4 with meals" },
@@ -362,7 +362,7 @@ export const properties: Record<string, PropertyData> = {
                 configuration: ["2 Double Beds", "Smart TV", "AC", "Washroom", "Indoor Private Pool", "Garden Area"],
                 maxPersons: 8,
                 maxAdults: 6,
-                maxKids: 2,
+                maxKids: 4,
                 pricing: {
                     weekday: { price: "4,950", persons: "2 persons with meals" },
                     weekend: { price: "6,950", persons: "2 persons with meals" },
@@ -400,7 +400,7 @@ export const properties: Record<string, PropertyData> = {
         petsAllowed: true,
         maxPersons: 8,
         maxAdults: 6,
-        maxKids: 2,
+        maxKids: 4,
         foodPolicy: {
             included: false,
             details: "Restaurant 10 steps away. Veg allowed inside villa. Non-Veg must be consumed in restaurant.",
@@ -499,7 +499,7 @@ export const properties: Record<string, PropertyData> = {
         petsAllowed: false,
         maxPersons: 4,
         maxAdults: 3,
-        maxKids: 1,
+        maxKids: 4,
         foodPolicy: {
             included: false,
             details: "Restaurant available nearby",
@@ -599,7 +599,7 @@ export const properties: Record<string, PropertyData> = {
         petsAllowed: true,
         maxPersons: 8,
         maxAdults: 6,
-        maxKids: 2,
+        maxKids: 4,
         foodPolicy: {
             included: false,
             details: "Veg & Non-Veg restaurant available nearby",
@@ -696,7 +696,7 @@ export const properties: Record<string, PropertyData> = {
         petsAllowed: true,
         maxPersons: 8,
         maxAdults: 6,
-        maxKids: 2,
+        maxKids: 4,
         foodPolicy: {
             included: false,
             details: "Society restaurant available (Veg & Non-Veg)",

@@ -390,6 +390,9 @@ export default function BookingClient({ property }: BookingClientProps) {
     // Per-property max adults & kids caps
     const maxAdultsCap = selectedRoom?.maxAdults || property.maxAdults || 6;
     const maxKidsCap = selectedRoom?.maxKids ?? property.maxKids ?? 2;
+    // Dynamic combo caps: total guests cannot exceed maxGuests
+    const effectiveMaxAdults = Math.min(maxAdultsCap, maxGuests - kids);
+    const effectiveMaxKids = Math.min(maxKidsCap, maxGuests - 1); // at least 1 adult required
 
     // 80-20 Payment Split
     const payNow = Math.round(totalAmount * 0.8);
@@ -891,21 +894,24 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     {/* Total Number of Guests */}
                                     <div className="mb-6 p-4 border border-border-light rounded-lg bg-soft-gray/30">
                                         <h4 className="font-inter text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">Total Number of Guests</h4>
-                                        <p className="font-inter text-[10px] text-text-muted mb-4">Base price includes up to {baseIncludedPersons} persons. Max {maxAdultsCap} adults, {maxKidsCap} kids.</p>
+                                        <p className="font-inter text-[10px] text-text-muted mb-4">Base price includes up to {baseIncludedPersons} persons. Max {maxGuests} guests total (up to {maxAdultsCap} adults, {maxKidsCap} kids).</p>
                                         <div className="flex flex-wrap gap-6">
                                             <div className="flex items-center gap-3">
                                                 <label className="font-inter text-xs text-text-secondary w-12">Adults</label>
                                                 <button type="button" onClick={() => setAdults(Math.max(1, adults - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
                                                 <span className="font-inter text-sm text-text-primary w-4 text-center">{adults}</span>
-                                                <button type="button" onClick={() => setAdults(Math.min(maxAdultsCap, adults + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
+                                                <button type="button" onClick={() => setAdults(Math.min(effectiveMaxAdults, adults + 1))} disabled={adults >= effectiveMaxAdults} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <label className="font-inter text-xs text-text-secondary w-16">Kids (5-12)</label>
                                                 <button type="button" onClick={() => setKids(Math.max(0, kids - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
                                                 <span className="font-inter text-sm text-text-primary w-4 text-center">{kids}</span>
-                                                <button type="button" onClick={() => setKids(Math.min(maxKidsCap, kids + 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">+</button>
+                                                <button type="button" onClick={() => { const newKids = Math.min(effectiveMaxKids, kids + 1); setKids(newKids); if (adults + newKids > maxGuests) setAdults(Math.max(1, maxGuests - newKids)); }} disabled={kids >= effectiveMaxKids || totalGuests >= maxGuests} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                                             </div>
                                         </div>
+                                        {totalGuests >= maxGuests && (
+                                            <p className="mt-2 text-[10px] font-inter text-amber-600 font-medium">Maximum {maxGuests} guests reached.</p>
+                                        )}
                                         {(extraAdults > 0 || kids > 0) && (
                                             <div className="mt-3 pt-3 border-t border-border-light text-[10px] font-inter text-text-muted space-y-1">
                                                 {extraAdults > 0 && <p>Extra adults: {extraAdults} × ₹{property.pricing.extraAdult}/night = ₹{(extraAdultTotal).toLocaleString("en-IN")}/night</p>}

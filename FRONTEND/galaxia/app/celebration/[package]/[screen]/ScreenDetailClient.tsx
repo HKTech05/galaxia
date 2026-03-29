@@ -177,13 +177,37 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                     </div>
 
                     {/* Reels Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-                        {[
-                            { id: "DRsy5-MgT1x", likes: "104K", comments: "1.2K" },
-                            { id: "DWEA3TckyWb", likes: "196K", comments: "2.8K" },
-                            { id: "DTY8-pADi7l", likes: "320K", comments: "4.1K" },
-                            { id: "DT3CLqVjFF7", likes: "2.7M", comments: "18K" },
-                        ].map((reel) => (
+                    {(() => {
+                        const SCREEN_REELS: Record<string, { id: string; likes: string; comments: string }[]> = {
+                            "baywatch": [
+                                { id: "DUVFK0xDXvV", likes: "11K", comments: "68" },
+                                { id: "DOnrAeojTZS", likes: "81", comments: "2" },
+                                { id: "DNdOOKvop1K", likes: "844", comments: "56" },
+                                { id: "DKonIXFIL0W", likes: "150", comments: "12" },
+                            ],
+                            "park-n-watch": [
+                                { id: "DEE1sJUsNSr", likes: "42", comments: "0" },
+                                { id: "DD4CAZfsbK9", likes: "29", comments: "0" },
+                                { id: "DA2ONRZIIFS", likes: "67", comments: "0" },
+                            ],
+                            "cine-love": [
+                                { id: "DTzIyWGDCMm", likes: "27", comments: "1" },
+                                { id: "DO-o0bqjBWm", likes: "36", comments: "1" },
+                                { id: "DMZaGeyoomm", likes: "271", comments: "0" },
+                                { id: "DHU-jxHisDV", likes: "46", comments: "2" },
+                            ],
+                            "sandy-screen": [
+                                { id: "DQqwtioAndH", likes: "211", comments: "35" },
+                                { id: "DO6NDLTDOCH", likes: "27", comments: "2" },
+                                { id: "DObFhO9jCln", likes: "22", comments: "0" },
+                                { id: "C5THBU1vLqY", likes: "3.4K", comments: "132" },
+                            ],
+                        };
+                        const reels = SCREEN_REELS[screen.id] || SCREEN_REELS["baywatch"]!;
+                        const gridCols = reels.length === 3 ? "grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-4";
+                        return (
+                    <div className={`grid ${gridCols} gap-3 sm:gap-5`}>
+                        {reels.map((reel) => (
                             <a
                                 key={reel.id}
                                 href={`https://www.instagram.com/reel/${reel.id}/`}
@@ -221,6 +245,8 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                             </a>
                         ))}
                     </div>
+                        );
+                    })()}
 
                     {/* Follow CTA */}
                     <div className="flex justify-center mt-10">

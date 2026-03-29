@@ -35,7 +35,17 @@ function getAmenityIcon(iconName: string) {
     return amenityIcons[iconName] || amenityIcons.star;
 }
 
+const PROPERTY_PHONE: Record<string, string> = {
+    "amstel-nest": "9987734458",
+    "ambrose": "8169519564",
+    "la-paraiso": "8169519564",
+    "heavenly-villa": "8169519564",
+    "mount-view": "8169519564",
+    "hill-view": "8169519564",
+};
+
 export default function PropertyDetailClient({ property }: { property: PropertyData }) {
+    const contactPhone = PROPERTY_PHONE[property.id] || "8169519564";
     const [calCheckIn, setCalCheckIn] = useState<Date | null>(null);
     const [calCheckOut, setCalCheckOut] = useState<Date | null>(null);
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
@@ -354,6 +364,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                             </div>
                             <div className="space-y-3 text-sm font-inter">
                                 <p className="flex items-center gap-2 text-text-primary"><svg className="w-4 h-4 text-antique-gold/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>{property.location}</p>
+                                <a href={`tel:+91${contactPhone}`} className="flex items-center gap-2 text-text-primary hover:text-antique-gold transition-colors"><svg className="w-4 h-4 text-antique-gold/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>+91 {contactPhone.replace(/(\d{5})(\d{5})/, '$1 $2')}</a>
                                 {property.googleMap && <a href={property.googleMap} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-antique-gold hover:text-dark-gold transition-colors"><svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>View on Google Maps</a>}
                             </div>
                         </div>
@@ -503,7 +514,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                         <svg className="w-4 h-4 text-antique-gold transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
                                     <div className="px-4 pb-4 text-text-secondary font-inter text-sm">
-                                        Local taxis and auto-rickshaws available. Contact +91 123456789 for pre-booking an auto rickshaw.
+                                        Local taxis and auto-rickshaws available. Contact Ashok at <a href="tel:+918983736999" className="text-antique-gold hover:text-dark-gold transition-colors font-medium">+91 8983736999</a> for pre-booking an auto rickshaw.
                                     </div>
                                 </details>
                             </div>
@@ -542,7 +553,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                             ) : (
                                 <Link href={`/staycation/${property.id}/book`} className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3.5 rounded-full hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">Book Now — Starting ₹{property.pricing.weekday.price}</Link>
                             )}
-                            <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="border border-antique-gold/30 text-antique-gold font-inter text-sm px-8 py-3.5 rounded-full hover:bg-antique-gold/5 transition-all duration-300">Contact via WhatsApp</a>
+                            <a href={`https://wa.me/91${contactPhone}`} target="_blank" rel="noopener noreferrer" className="border border-antique-gold/30 text-antique-gold font-inter text-sm px-8 py-3.5 rounded-full hover:bg-antique-gold/5 transition-all duration-300">Contact via WhatsApp</a>
                         </div>
                     </div>
                 </section>
