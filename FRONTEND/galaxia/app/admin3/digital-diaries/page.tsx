@@ -185,6 +185,43 @@ export default function Admin1Dashboard() {
     const [draftSlot, setDraftSlot] = useState<{ screenIndex: number, hour: number, dateStr: string, timeStr: string } | null>(null);
     const [draftMode, setDraftMode] = useState<"booking" | "maintenance">("booking");
 
+    // Maintenance form states
+    const [maintScreen, setMaintScreen] = useState<"Cine Love" | "Sandy Screen" | "Park N Watch" | "Baywatch">("Cine Love");
+    const [maintDuration, setMaintDuration] = useState("1");
+    const [maintSubmitting, setMaintSubmitting] = useState(false);
+
+    const handleSubmitMaintenance = async () => {
+        if (!draftSlot) return;
+        setMaintSubmitting(true);
+        try {
+            const screenMap: Record<string, number> = { "Cine Love": 1, "Sandy Screen": 2, "Park N Watch": 3, "Baywatch": 4 };
+            const screenId = screenMap[maintScreen] || 1;
+
+            await api.post("/bookings/dd", {
+                screenId,
+                packageId: 1,
+                bookingDate: startDate.toISOString().split('T')[0],
+                startHour: draftSlot.hour,
+                durationHours: parseInt(maintDuration),
+                customerName: "Maintenance Block",
+                customerPhone: "0000000000",
+                basePrice: 0,
+                totalAmount: 0,
+                amountPaid: 0,
+                source: "admin",
+                isMaintenance: true,
+            });
+
+            setDraftSlot(null);
+            fetchEvents(startDate);
+        } catch (err: any) {
+            console.error("Maintenance block error:", err);
+            alert(err.message || "Failed to create maintenance block");
+        } finally {
+            setMaintSubmitting(false);
+        }
+    };
+
     // Walk-in form states
     const [guestsCount, setGuestsCount] = useState(2);
     const [packageType, setPackageType] = useState<"Movie Time" | "Celebration">("Movie Time");
@@ -943,26 +980,35 @@ export default function Admin1Dashboard() {
                                 <div className="text-left space-y-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 uppercase">Select Screen</label>
-                                        <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-red-600/20 focus:border-red-600 outline-none">
-                                            <option>Cine Love (Pink)</option>
-                                            <option>Sandy Screen (Yellow)</option>
-                                            <option>Park N Watch (Orange)</option>
-                                            <option>Baywatch (Light Blue)</option>
+                                        <select
+                                            value={maintScreen}
+                                            onChange={(e) => setMaintScreen(e.target.value as any)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-red-600/20 focus:border-red-600 outline-none"
+                                        >
+                                            <option value="Cine Love">Cine Love (Pink)</option>
+                                            <option value="Sandy Screen">Sandy Screen (Yellow)</option>
+                                            <option value="Park N Watch">Park N Watch (Orange)</option>
+                                            <option value="Baywatch">Baywatch (Light Blue)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 uppercase">Duration (Hours)</label>
-                                        <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-red-600/20 focus:border-red-600 outline-none">
-                                            <option>1 Hour</option>
-                                            <option>2 Hours</option>
-                                            <option>3 Hours</option>
+                                        <select
+                                            value={maintDuration}
+                                            onChange={(e) => setMaintDuration(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-red-600/20 focus:border-red-600 outline-none"
+                                        >
+                                            <option value="1">1 Hour</option>
+                                            <option value="2">2 Hours</option>
+                                            <option value="3">3 Hours</option>
                                         </select>
                                     </div>
                                     <button
-                                        onClick={() => setDraftSlot(null)}
-                                        className="w-full py-3.5 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-colors mt-4"
+                                        onClick={handleSubmitMaintenance}
+                                        disabled={maintSubmitting}
+                                        className="w-full py-3.5 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-colors mt-4 disabled:opacity-60"
                                     >
-                                        Confirm Maintenance Block
+                                        {maintSubmitting ? "Blocking..." : "Confirm Maintenance Block"}
                                     </button>
                                 </div>
                             </div>

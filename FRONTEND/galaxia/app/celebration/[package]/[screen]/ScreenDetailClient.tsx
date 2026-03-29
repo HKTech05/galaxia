@@ -132,7 +132,7 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
                 .reel-clip-wrapper {
                     position: relative;
                     overflow: hidden;
-                    height: 300px;
+                    height: 240px;
                     border-radius: 14px 14px 0 0;
                     background: #111;
                 }

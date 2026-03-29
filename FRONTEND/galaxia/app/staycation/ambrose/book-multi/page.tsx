@@ -575,8 +575,8 @@ export default function BookMultiPage() {
                 <h2 className="font-cinzel text-xl text-slate-800 mb-2">Your Cart is Empty</h2>
                 <p className="font-inter text-sm text-slate-500 mb-6">Add villas or cottages to your cart to book them together.</p>
                 <div className="flex gap-3">
-                    <Link href="/staycation/ambrose" className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-full">Ambrose Villas</Link>
-                    <Link href="/staycation/amstel-nest" className="border border-antique-gold text-antique-gold font-cinzel font-semibold text-sm px-6 py-3 rounded-full hover:bg-antique-gold/5 transition-colors">Amstel Nest</Link>
+                    <a href="/staycation/ambrose" className="bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-full">Ambrose Villas</a>
+                    <a href="/staycation/amstel-nest" className="border border-antique-gold text-antique-gold font-cinzel font-semibold text-sm px-6 py-3 rounded-full hover:bg-antique-gold/5 transition-colors">Amstel Nest</a>
                 </div>
             </div>
         );

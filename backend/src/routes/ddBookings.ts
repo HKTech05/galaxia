@@ -31,10 +31,15 @@ router.post("/", async (req, res) => {
             occasion, cakeMessage, specialRequests, numGuests,
             basePrice, extraPersonCharge, gstAmount, totalAmount,
             amountPaid, paymentMethod, paymentDetails,
-            addons, source, couponCode,
+            addons, source, couponCode, isMaintenance,
         } = req.body;
 
-        if (!screenId || !packageId || !bookingDate || startHour === undefined || !customerName || !customerPhone) {
+        // Maintenance bookings have relaxed validation
+        if (isMaintenance) {
+            if (!screenId || !bookingDate || startHour === undefined) {
+                return res.status(400).json({ error: "Missing required fields for maintenance block" });
+            }
+        } else if (!screenId || !packageId || !bookingDate || startHour === undefined || !customerName || !customerPhone) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
@@ -103,50 +108,59 @@ router.post("/", async (req, res) => {
                 }
             }
 
-            // Find or create user
-            let user = null;
-            if (loggedInUserId) {
-                user = await tx.user.findUnique({ where: { id: loggedInUserId } });
-            }
-            if (!user && customerEmail) {
-                user = await tx.user.findUnique({ where: { email: customerEmail } });
-            }
-            if (!user && customerPhone) {
-                user = await tx.user.findFirst({ where: { phone: customerPhone } });
-            }
+            // For maintenance blocks, skip user association
+            let user: any = null;
+            let encryptedPhone = "";
+            let encryptedEmail: string | null = null;
 
-            if (!user) {
-                user = await tx.user.create({
-                    data: { fullName: customerName, phone: customerPhone, email: customerEmail || null },
-                });
+            if (isMaintenance) {
+                encryptedPhone = encrypt("0000000000");
             } else {
-                // If user exists but is missing phone (e.g. from Cognito login), update it
-                if (!user.phone || user.phone === "") {
-                    user = await tx.user.update({
-                        where: { id: user.id },
-                        data: { phone: customerPhone, fullName: user.fullName === "Guest" ? customerName : user.fullName },
-                    });
+                // Find or create user
+                if (loggedInUserId) {
+                    user = await tx.user.findUnique({ where: { id: loggedInUserId } });
                 }
+                if (!user && customerEmail) {
+                    user = await tx.user.findUnique({ where: { email: customerEmail } });
+                }
+                if (!user && customerPhone) {
+                    user = await tx.user.findFirst({ where: { phone: customerPhone } });
+                }
+
+                if (!user) {
+                    user = await tx.user.create({
+                        data: { fullName: customerName, phone: customerPhone, email: customerEmail || null },
+                    });
+                } else {
+                    // If user exists but is missing phone (e.g. from Cognito login), update it
+                    if (!user.phone || user.phone === "") {
+                        user = await tx.user.update({
+                            where: { id: user.id },
+                            data: { phone: customerPhone, fullName: user.fullName === "Guest" ? customerName : user.fullName },
+                        });
+                    }
+                }
+
+                // Encrypt sensitive data before storing
+                encryptedPhone = encrypt(customerPhone);
+                encryptedEmail = customerEmail ? encrypt(customerEmail) : null;
             }
 
             const bookingRef = await generateDdRef();
 
-            // Encrypt sensitive data before storing
-            const encryptedPhone = encrypt(customerPhone);
-            const encryptedEmail = customerEmail ? encrypt(customerEmail) : null;
-
             const created = await tx.ddBooking.create({
                 data: {
                     bookingRef,
-                    userId: user.id,
+                    userId: user?.id || null,
                     screenId: parseInt(screenId),
-                    packageId: parseInt(packageId),
+                    packageId: parseInt(packageId || "1"),
                     bookingDate: new Date(bookingDate),
                     startHour: newStart,
                     durationHours: parseInt(durationHours || "1"),
-                    customerName,
+                    customerName: customerName || (isMaintenance ? "Maintenance Block" : "Guest"),
                     customerPhone: encryptedPhone,
                     customerEmail: encryptedEmail,
+                    isMaintenance: isMaintenance || false,
                     occasion,
                     cakeMessage,
                     specialRequests: specialRequests || null,
@@ -229,8 +243,10 @@ router.post("/", async (req, res) => {
             }
         }
 
-        // Send confirmation email (fire-and-forget)
-        sendDDBookingConfirmation({ ...booking, customerPhone, customerEmail }).catch(() => { });
+        // Send confirmation email (fire-and-forget) — skip for maintenance blocks
+        if (!isMaintenance) {
+            sendDDBookingConfirmation({ ...booking, customerPhone, customerEmail }).catch(() => { });
+        }
 
         return res.status(201).json(booking);
     } catch (error: any) {
