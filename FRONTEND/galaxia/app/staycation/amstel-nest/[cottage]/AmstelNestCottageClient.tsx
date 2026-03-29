@@ -351,26 +351,6 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                 </div>
             </section>
 
-            {/* Floating Cart Badge */}
-            {cartCount > 0 && (
-                <>
-                    {/* Desktop */}
-                    <Link href="/staycation/ambrose/book-multi" className="hidden sm:flex fixed bottom-24 right-6 z-50 bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 items-center gap-3 px-5 py-3 group">
-                        <div className="relative">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                            <span className="absolute -top-2 -right-2 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>
-                        </div>
-                        <span className="font-inter font-semibold text-sm group-hover:tracking-wide transition-all">{cartCount} in Cart</span>
-                    </Link>
-                    {/* Mobile: icon-only circle, right side above WhatsApp */}
-                    <Link href="/staycation/ambrose/book-multi" className="flex sm:hidden fixed bottom-[88px] right-4 z-50 bg-gradient-to-r from-antique-gold to-dark-gold text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300 items-center justify-center w-12 h-12">
-                        <div className="relative">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                            <span className="absolute -top-2.5 -right-2.5 bg-white text-antique-gold text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">{cartCount}</span>
-                        </div>
-                    </Link>
-                </>
-            )}
         </div>
     );
 }

@@ -116,7 +116,7 @@ export default function Admin1Dashboard() {
                         status: b.status || 'confirmed',
                     };
                 });
-                setEventsList(mapped.filter(ev => ev.screen !== 'Unknown' && (ev as any).status !== 'cancelled'));
+                setEventsList(mapped.filter(ev => (ev.screen as string) !== 'Unknown' && (ev as any).status !== 'cancelled'));
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);
