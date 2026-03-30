@@ -20,6 +20,7 @@ import siteImageRoutes from "./routes/siteImages";
 import blockedDateRoutes from "./routes/blockedDates";
 import userRoutes from "./routes/users";
 import reviewRoutes from "./routes/reviews";
+import paymentRoutes from "./routes/payments";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { sendTestEmail, sendContactFormEmail } from "./lib/emailService";
 import { authMiddleware, requireRole, AuthRequest } from "./middleware/auth";
@@ -66,6 +67,7 @@ app.use("/api/site-images", siteImageRoutes);
 app.use("/api/blocked-dates", blockedDateRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Test email route (owner/dev only)
 app.post("/api/test-email", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {

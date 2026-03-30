@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CelebrationPackage, ScreenData, timeSlots, formatPrice } from "../../../../data/celebrations";
 import { api } from "../../../../../lib/api";
+import { initiateRazorpayPayment } from "../../../../../lib/razorpay";
 
 interface CelebrationBookingClientProps {
     pkg: CelebrationPackage;
@@ -511,13 +512,39 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             if (addLedBanner) addons.push({ type: "ledBanner", price: getAddonPrice('led_banner'), message: ledBannerType });
             if (addCake) addons.push({ type: "cake", value: cakeMessage, price: getAddonPrice('cake') });
 
+            // Initiate Razorpay payment
+            const customerName = `${firstName} ${lastName}`.trim();
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: email || undefined,
+                    customerPhone: phone,
+                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
+                    notes: {
+                        bookingType: "dd",
+                        screen: screen.name,
+                        package: pkg.name,
+                        date: selectedDate.toISOString().split("T")[0],
+                    },
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
             const payload = {
                 screenId: dbScreenId,
                 packageId: dbPackageId,
                 bookingDate: selectedDate.toISOString().split("T")[0],
                 startHour,
                 durationHours,
-                customerName: `${firstName} ${lastName}`.trim(),
+                customerName,
                 customerPhone: phone,
                 customerEmail: email || null,
                 occasion: pkg.id === "celebration" ? ledBannerType : (addLedBanner ? ledBannerType : null),
@@ -529,6 +556,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 totalAmount: total,
                 amountPaid: payNow,
                 paymentMethod: "online",
+                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 addons,
                 source: "website",
                 couponCode: appliedCoupon?.code || null,

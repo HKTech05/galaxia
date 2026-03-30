@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { PropertyData } from "../../../data/properties";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
 import { api } from "../../../../lib/api";
+import { initiateRazorpayPayment } from "../../../../lib/razorpay";
 
 interface BookingClientProps {
     property: PropertyData;
@@ -571,6 +572,33 @@ export default function BookingClient({ property }: BookingClientProps) {
         setBookingError("");
 
         try {
+            const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+
+            // Initiate Razorpay payment for the advance amount
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: formData.email || undefined,
+                    customerPhone: formData.phone,
+                    description: `Staycation - ${property.name}${selectedRoom ? ` (${selectedRoom.name})` : ''}`,
+                    notes: {
+                        bookingType: "staycation",
+                        property: property.name,
+                        checkIn: checkInDate ? checkInDate.toISOString().split('T')[0] : '',
+                        checkOut: checkOutDate ? checkOutDate.toISOString().split('T')[0] : '',
+                    },
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
             const roomId = selectedRoom?.id || '';
             const subPropertyId = selectedRoom
                 ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
@@ -598,7 +626,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 const unitPayAtVenue = unitTotal - unitPayNow;
 
                 const payload = {
-                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                    customerName,
                     customerPhone: formData.phone,
                     customerEmail: formData.email,
                     propertyId: dbPropertyId,
@@ -615,7 +643,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     balanceAmount: unitPayAtVenue,
                     securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
                     advancePaid: true,
-                    advanceMethod: "online",
+                    advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                     source: "website",
                     couponCode: i === 0 ? (appliedCoupon?.code || null) : null,
                     addons: i === 0 && celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion }] : null,

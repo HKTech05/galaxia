@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { properties } from "../../../data/properties";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
 import { api } from "../../../../lib/api";
+import { initiateRazorpayPayment } from "../../../../lib/razorpay";
 
 interface CartItem {
     villaId: string;
@@ -473,6 +474,33 @@ export default function BookMultiPage() {
         setBookingError("");
 
         try {
+            const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+
+            // Initiate single Razorpay payment for total advance
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: formData.email || undefined,
+                    customerPhone: formData.phone,
+                    description: `Staycation - ${cart.length} villa${cart.length > 1 ? 's' : ''}`,
+                    notes: {
+                        bookingType: "staycation-multi",
+                        villaCount: String(cart.length),
+                        checkIn: checkInDate ? checkInDate.toISOString().split('T')[0] : '',
+                        checkOut: checkOutDate ? checkOutDate.toISOString().split('T')[0] : '',
+                    },
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
             // Calculate tiered Amstel Nest security deposit
             const totalAmstelVillas = amstelItems.reduce((sum, item) => sum + (item.unitCount || 1), 0);
             const amstelTotalDeposit = totalAmstelVillas === 0 ? 0
@@ -514,7 +542,7 @@ export default function BookMultiPage() {
                     }
 
                     const booking = await api.post("/bookings/staycation", {
-                        customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                        customerName,
                         customerPhone: formData.phone,
                         customerEmail: formData.email,
                         propertyId,
@@ -531,7 +559,7 @@ export default function BookMultiPage() {
                         balanceAmount: perUnitPayAtVenue,
                         securityDeposit: deposit,
                         advancePaid: true,
-                        advanceMethod: "online",
+                        advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                         source: "website",
                     });
 
