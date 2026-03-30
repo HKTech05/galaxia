@@ -294,6 +294,7 @@ export default function CouponsClient() {
                                         const day = String(d.getDate()).padStart(2, '0');
                                         setNewCoupon({ ...newCoupon, expiryDate: `${y}-${m}-${day}` });
                                     }}
+                                    openAbove
                                 />
                             </div>
                             <button
