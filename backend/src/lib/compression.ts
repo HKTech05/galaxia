@@ -12,6 +12,7 @@ export async function compressImage(
     _mimetype: string
 ): Promise<{ buffer: Buffer; mimetype: string; extension: string }> {
     const compressed = await sharp(buffer)
+        .rotate()  // Auto-rotate based on EXIF orientation before stripping metadata
         .resize(1920, 1920, {
             fit: "inside",       // Never upscale, maintain aspect ratio
             withoutEnlargement: true,
@@ -38,6 +39,7 @@ export async function compressGuestId(
     _mimetype: string
 ): Promise<{ buffer: Buffer; mimetype: string; extension: string }> {
     const compressed = await sharp(buffer)
+        .rotate()  // Auto-rotate based on EXIF orientation
         .resize(1200, 1200, {
             fit: "inside",
             withoutEnlargement: true,

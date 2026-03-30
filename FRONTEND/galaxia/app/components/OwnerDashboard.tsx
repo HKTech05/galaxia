@@ -1800,7 +1800,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                                     <button
                                         onClick={() => handleImageDelete(img.id)}
-                                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow"
+                                        className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-md opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow"
                                     >
                                         <Trash2 size={10} />
                                     </button>
