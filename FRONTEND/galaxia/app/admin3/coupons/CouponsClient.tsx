@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Ticket, Plus, Trash2, Eye, X, CalendarDays, Hash, Percent, Users, CheckCircle, Search } from "lucide-react";
+import { Ticket, Plus, Trash2, Eye, X, CalendarDays, Hash, Percent, Users, CheckCircle, Search, Mail, Phone } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -15,10 +15,12 @@ interface Coupon {
 }
 
 interface UsageLog {
-    bookingId: string;
-    customer: string;
-    date: string;
-    saved: string;
+    bookingRef: string;
+    customerName: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    usedAt: string;
+    discountSaved: number;
 }
 
 export default function CouponsClient() {
@@ -109,7 +111,7 @@ export default function CouponsClient() {
         setViewUsage(couponId);
         try {
             const logs = await api.get(`/coupons/${couponId}/usage`);
-            setUsageLogs(logs);
+            setUsageLogs(Array.isArray(logs) ? logs : []);
         } catch (err) {
             console.error("Failed to fetch usage logs:", err);
             setUsageLogs([]);
@@ -327,20 +329,34 @@ export default function CouponsClient() {
                         </div>
                         <div className="p-6 overflow-y-auto">
                             <div className="space-y-3">
-                                {usageLogs.map((log, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors">
-                                        <div>
-                                            <p className="font-bold text-slate-800">{log.customer}</p>
-                                            <p className="text-xs font-medium text-slate-500 mt-0.5">{log.bookingId} • {log.date}</p>
+                                {usageLogs.length > 0 ? usageLogs.map((log, idx) => (
+                                    <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-200 transition-colors">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="font-bold text-slate-800">{log.customerName}</p>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Saved</p>
+                                                <p className="font-bold text-emerald-600">₹{log.discountSaved?.toLocaleString('en-IN')}</p>
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Discount Applied</p>
-                                            <p className="font-bold text-emerald-600">{log.saved}</p>
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                                            {log.customerEmail && (
+                                                <span className="flex items-center gap-1">
+                                                    <Mail size={12} className="text-slate-400" />
+                                                    {log.customerEmail}
+                                                </span>
+                                            )}
+                                            {log.customerPhone && (
+                                                <span className="flex items-center gap-1">
+                                                    <Phone size={12} className="text-slate-400" />
+                                                    {log.customerPhone}
+                                                </span>
+                                            )}
                                         </div>
+                                        <p className="text-[11px] font-medium text-slate-400 mt-2">{log.bookingRef} • {new Date(log.usedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                                     </div>
-                                )) || (
-                                        <div className="text-center py-8 text-slate-500 font-medium">No usage records found.</div>
-                                    )}
+                                )) : (
+                                    <div className="text-center py-8 text-slate-500 font-medium">No usage records found.</div>
+                                )}
                             </div>
                         </div>
                     </div>

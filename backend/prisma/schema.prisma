@@ -409,7 +409,7 @@ model BookingPayment {
 
 model Coupon {
   id            Int                 @id @default(autoincrement())
-  code          String              @unique @db.VarChar(50)
+  code          String              @db.VarChar(50)
   discountType  String              @map("discount_type") @db.VarChar(10)
   discountValue Decimal             @map("discount_value") @db.Decimal(10, 2)
   maxUses       Int                 @map("max_uses")

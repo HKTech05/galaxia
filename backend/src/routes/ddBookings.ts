@@ -93,7 +93,7 @@ router.post("/", async (req, res) => {
             let couponId = null;
             let discountAmount = 0;
             if (couponCode) {
-                const coupon = await tx.coupon.findUnique({ where: { code: couponCode } });
+                const coupon = await tx.coupon.findFirst({ where: { code: couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
                 if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
                     couponId = coupon.id;
                     if (coupon.discountType === "percentage") {
