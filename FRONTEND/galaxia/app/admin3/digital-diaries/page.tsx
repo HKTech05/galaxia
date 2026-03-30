@@ -252,6 +252,9 @@ export default function Admin1Dashboard() {
     const [addOnCakeMessage, setAddOnCakeMessage] = useState("");
     const [walkInIdFiles, setWalkInIdFiles] = useState<(File | null)[]>([null, null]);
     const [walkInPaymentMethod, setWalkInPaymentMethod] = useState<"Cash" | "UPI">("Cash");
+    const [customPaymentMode, setCustomPaymentMode] = useState(false);
+    const [customPrepaid, setCustomPrepaid] = useState("");
+    const [customOnArrival, setCustomOnArrival] = useState("");
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
@@ -353,9 +356,12 @@ export default function Admin1Dashboard() {
                 customerEmail: (document.querySelector('input[placeholder="john@example.com"]') as HTMLInputElement)?.value || "",
                 numGuests: guestsCount,
                 totalAmount: totalPrice,
-                amountPaid: totalPrice, // Walk-in usually pays full
+                amountPaid: customPaymentMode ? parseInt(customPrepaid || '0') : totalPrice,
+                amountToCollect: customPaymentMode ? parseInt(customOnArrival || '0') : 0,
                 paymentMethod: walkInPaymentMethod,
-                paymentDetails: "Manual booking from receptionist view",
+                paymentDetails: customPaymentMode
+                    ? `Custom split — Prepaid ₹${customPrepaid || '0'} via ${walkInPaymentMethod}, ₹${customOnArrival || '0'} on arrival`
+                    : `Walk-in, full payment via ${walkInPaymentMethod}`,
                 source: "reception",
                 addons: [
                     ...(addBalloons ? [{ type: "balloons", value: "yes", price: 400 }] : []),
@@ -1142,13 +1148,50 @@ export default function Admin1Dashboard() {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment (100% Amount)</label>
+                                        <label className="text-xs font-bold text-slate-700 uppercase">Payment Type</label>
+                                        <div className="flex rounded-xl overflow-hidden border border-slate-200">
+                                            <button type="button" onClick={() => { setCustomPaymentMode(false); }} className={`flex-1 py-3 text-sm font-bold transition-colors ${!customPaymentMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>Full (100%)</button>
+                                            <button type="button" onClick={() => { setCustomPaymentMode(true); setCustomPrepaid(String(totalPrice)); setCustomOnArrival('0'); }} className={`flex-1 py-3 text-sm font-bold transition-colors ${customPaymentMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>Custom Split</button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment</label>
                                         <select value={walkInPaymentMethod} onChange={(e) => setWalkInPaymentMethod(e.target.value as "Cash" | "UPI")} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
                                             <option value="Cash">Cash</option>
                                             <option value="UPI">UPI</option>
                                         </select>
                                     </div>
                                 </div>
+
+                                {customPaymentMode && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-amber-800 uppercase">Amount Prepaid (₹)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={customPrepaid}
+                                                onChange={(e) => setCustomPrepaid(e.target.value)}
+                                                placeholder="0"
+                                                className="w-full bg-white border border-amber-300 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-amber-800 uppercase">Amount on Arrival (₹)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={customOnArrival}
+                                                onChange={(e) => setCustomOnArrival(e.target.value)}
+                                                placeholder="0"
+                                                className="w-full bg-white border border-amber-300 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 outline-none"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 text-xs font-medium text-amber-700">
+                                            Total: ₹{(parseInt(customPrepaid || '0') + parseInt(customOnArrival || '0')).toLocaleString('en-IN')} &nbsp;|&nbsp; System price: ₹{totalPrice.toLocaleString('en-IN')}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Add-Ons Section in Walk-in Form */}
                                 {packageType === "Movie Time" && (

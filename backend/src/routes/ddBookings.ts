@@ -170,7 +170,9 @@ router.post("/", async (req, res) => {
                     gstAmount: gstAmount || 0,
                     totalAmount: (totalAmount || 0) - discountAmount,
                     amountPaid: amountPaid || 0,
-                    amountToCollect: Math.max(0, ((totalAmount || 0) - discountAmount) - (amountPaid || 0)),
+                    amountToCollect: req.body.amountToCollect !== undefined
+                        ? req.body.amountToCollect
+                        : Math.max(0, ((totalAmount || 0) - discountAmount) - (amountPaid || 0)),
                     paymentMethod,
                     paymentDetails,
                     source: source || "website",
