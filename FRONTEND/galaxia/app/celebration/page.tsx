@@ -8,10 +8,15 @@ import { packages as staticPackages } from "../data/celebrations";
 
 export default function CelebrationPage() {
     const [pkgList, setPkgList] = useState<any[]>(Object.values(staticPackages));
-    const [loading, setLoading] = useState(false); // Set to false if not fetching yet
+    const [loading, setLoading] = useState(false);
 
-    // Future-proofing: If celebration packages are added to DB, fetch here.
-    // For now, ensuring static prices are easily updatable or fetched if possible.
+    // Fetch package card images from admin photo manager
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        fetch("/api/site-images").then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
 
     return (
         <div>
@@ -43,7 +48,7 @@ export default function CelebrationPage() {
                         <Link key={pkg.id} href={`/celebration/${pkg.id}`} className="group block">
                             <div className="relative overflow-hidden rounded-2xl border border-cel-border h-[350px] sm:h-[450px] md:h-[500px] transition-all duration-700 hover:border-rose-medium/40 hover:shadow-[0_8px_40px_rgba(159,53,58,0.15)]">
                                 <div className="absolute inset-0">
-                                    <Image src={pkg.image} alt={pkg.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(max-width: 768px) 100vw, 50vw" />
+                                        {(siteImages[`dd/landing/${pkg.id}`]?.[0]?.url || pkg.image) && <Image src={siteImages[`dd/landing/${pkg.id}`]?.[0]?.url || pkg.image} alt={pkg.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" sizes="(max-width: 768px) 100vw, 50vw" />}
                                 </div>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">

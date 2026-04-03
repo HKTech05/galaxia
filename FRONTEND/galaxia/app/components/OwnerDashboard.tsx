@@ -130,6 +130,10 @@ const staycationGroups: ImageGroup[] = [
 ];
 
 const ddGroups: ImageGroup[] = [
+    { id: "dd/landing", label: "Digital Diaries Landing Page", subSections: [
+        { id: "dd/landing/movie-time", label: "Movie Time — Card Image", maxImages: 1 },
+        { id: "dd/landing/celebration", label: "Decoration + Movie Time — Card Image", maxImages: 1 },
+    ]},
     // Per-screen sections — each screen has Movie Time and Deco+Movie Time sub-sections
     { id: "dd/sandy-screen", label: "Sandy Screen", subSections: [
         { id: "dd/sandy-screen/movie-time/slideshow", label: "Movie Time — Slideshow" },
