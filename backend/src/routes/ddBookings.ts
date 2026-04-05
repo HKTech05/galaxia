@@ -353,11 +353,17 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
         });
         if (!booking) return res.status(404).json({ error: "Booking not found" });
 
+        // Guard: prevent over-collection
+        if (booking.amountToCollect <= 0) {
+            return res.status(400).json({ error: "No balance remaining to collect" });
+        }
+        const collectAmount = Math.min(amount, booking.amountToCollect);
+
         const payment = await prisma.bookingPayment.create({
             data: {
                 ddBookingId: bookingId,
                 paymentType: "balance",
-                amount,
+                amount: collectAmount,
                 method,
                 collectedBy: req.admin!.id,
             },
@@ -366,16 +372,15 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
         await prisma.ddBooking.update({
             where: { id: bookingId },
             data: {
-                amountPaid: { increment: amount },
-                amountToCollect: { decrement: amount },
+                amountPaid: { increment: collectAmount },
+                amountToCollect: { decrement: collectAmount },
                 paymentStatus: "paid",
                 paymentMethod: method,
             },
         });
 
         // Track cash collection for employee
-        if (method?.toLowerCase() === "cash" && amount > 0) {
-            // Find the DD property and its employee
+        if (method?.toLowerCase() === "cash" && collectAmount > 0) {
             const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
             if (ddProperty) {
                 const employee = await prisma.employee.findFirst({
@@ -384,14 +389,14 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
                 if (employee) {
                     await prisma.employee.update({
                         where: { id: employee.id },
-                        data: { cashCollected: { increment: amount } },
+                        data: { cashCollected: { increment: collectAmount } },
                     });
                     await prisma.cashTransaction.create({
                         data: {
                             employeeId: employee.id,
                             bookingRef: booking.bookingRef,
                             guestName: booking.customerName,
-                            amount,
+                            amount: collectAmount,
                             transactionType: "collection",
                             note: `DD balance payment — ${booking.screen?.name || "Screen"}`,
                         },
@@ -607,6 +612,74 @@ router.delete("/hold/:sessionId", async (req, res) => {
         return res.json({ success: true });
     } catch (error) {
         console.error("Release DD hold error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ────────────────────────────────────────────────────────────────
+//  DELETE BOOKING — Permanently remove a DD booking + rollback financials
+// ────────────────────────────────────────────────────────────────
+router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        const booking = await prisma.ddBooking.findUnique({
+            where: { id: bookingId },
+            include: { screen: true },
+        });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+        const bookingRef = booking.bookingRef;
+
+        // 1. Reverse cash tracking: find all cash transactions for this booking
+        const cashTxns = await prisma.cashTransaction.findMany({
+            where: { bookingRef },
+        });
+        for (const tx of cashTxns) {
+            if (tx.transactionType === "collection") {
+                await prisma.employee.update({
+                    where: { id: tx.employeeId },
+                    data: { cashCollected: { decrement: tx.amount } },
+                });
+            }
+        }
+        await prisma.cashTransaction.deleteMany({ where: { bookingRef } });
+
+        // 2. Delete UPI payment logs for this booking
+        await prisma.upiPayment.deleteMany({ where: { bookingRef } });
+        // Also check DD-prefixed bookingRef used by frontend
+        await prisma.upiPayment.deleteMany({ where: { bookingRef: `DD-${bookingId}` } });
+        await prisma.cashTransaction.deleteMany({ where: { bookingRef: `DD-${bookingId}` } });
+
+        // 3. Delete booking payments
+        await prisma.bookingPayment.deleteMany({ where: { ddBookingId: bookingId } });
+
+        // 4. Delete addons
+        await prisma.ddBookingAddon.deleteMany({ where: { bookingId } });
+
+        // 5. Delete guest IDs
+        await prisma.guestId.deleteMany({ where: { ddBookingId: bookingId } });
+
+        // 6. Delete coupon usage
+        await prisma.couponUsage.deleteMany({ where: { bookingRef } });
+
+        // 7. Delete the booking itself
+        await prisma.ddBooking.delete({ where: { id: bookingId } });
+
+        // Audit log
+        await prisma.auditLog.create({
+            data: {
+                adminId: req.admin!.id,
+                action: "booking_deleted",
+                entityType: "dd_booking",
+                entityId: bookingId,
+                details: { bookingRef, customerName: booking.customerName },
+                isDeveloper: req.admin!.role === "developer",
+            },
+        });
+
+        return res.json({ success: true, message: `Booking ${bookingRef} deleted` });
+    } catch (error) {
+        console.error("Delete DD booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

@@ -227,4 +227,19 @@ router.get("/download-all/:employeeId", authMiddleware, requireRole("owner", "de
     }
 });
 
+// ─── DELETE /api/upi-payments/:id ─── Delete a single UPI payment log
+router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+    try {
+        const id = parseInt(String(req.params.id));
+        const payment = await prisma.upiPayment.findUnique({ where: { id } });
+        if (!payment) return res.status(404).json({ error: "UPI payment not found" });
+
+        await prisma.upiPayment.delete({ where: { id } });
+        return res.json({ success: true, message: `UPI payment ${id} deleted` });
+    } catch (error) {
+        console.error("Delete UPI payment error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

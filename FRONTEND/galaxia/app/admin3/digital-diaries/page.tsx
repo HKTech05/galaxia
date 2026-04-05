@@ -852,7 +852,7 @@ export default function Admin1Dashboard() {
                                         <span className={`text-base font-bold ${activeEvent.amountToCollect === '₹0' ? 'text-slate-400' : 'text-rose-700'}`}>{activeEvent.amountToCollect}</span>
                                     </div>
 
-                                    {activeEvent.amountToCollect !== '₹0' && (
+                                    {parseInt(activeEvent.amountToCollect.replace(/[₹,]/g, '')) > 0 && (
                                         <>
                                             {showUpiProofPicker === 'balance' && (
                                                 <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
@@ -950,6 +950,29 @@ export default function Admin1Dashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Delete Booking — at the bottom */}
+                {!activeEvent.isMaintenance && (
+                    <div className="px-8 py-5 bg-slate-50 border-t border-slate-200">
+                        <button
+                            onClick={async () => {
+                                if (!confirm(`Are you sure you want to PERMANENTLY DELETE this booking for ${activeEvent.customerName}? This will also reverse any collected cash/UPI and cannot be undone.`)) return;
+                                try {
+                                    await api.delete(`/bookings/dd/${activeEvent.id}`);
+                                    alert('Booking deleted successfully.');
+                                    setSelectedEventId(null);
+                                    fetchEvents(startDate);
+                                } catch (err: any) {
+                                    console.error('Delete booking error:', err);
+                                    alert(err.message || 'Failed to delete booking');
+                                }
+                            }}
+                            className="w-full py-3 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center gap-2"
+                        >
+                            <X size={16} /> Delete Booking Permanently
+                        </button>
+                    </div>
+                )}
             </div>
             {previewGuestId && (
                 <IdProofModal

@@ -84,4 +84,36 @@ router.get("/:id/transactions", authMiddleware, requireRole("owner", "developer"
     }
 });
 
+// DELETE /api/employees/:empId/transactions/:txId — Delete a single cash transaction log
+router.delete("/:empId/transactions/:txId", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const empId = parseInt(req.params.empId as string);
+        const txId = parseInt(req.params.txId as string);
+
+        const tx = await prisma.cashTransaction.findFirst({
+            where: { id: txId, employeeId: empId },
+        });
+        if (!tx) return res.status(404).json({ error: "Transaction not found" });
+
+        // Reverse the cash impact
+        if (tx.transactionType === "collection") {
+            await prisma.employee.update({
+                where: { id: empId },
+                data: { cashCollected: { decrement: tx.amount } },
+            });
+        } else if (tx.transactionType === "owner_pickup") {
+            await prisma.employee.update({
+                where: { id: empId },
+                data: { cashCollected: { increment: tx.amount } },
+            });
+        }
+
+        await prisma.cashTransaction.delete({ where: { id: txId } });
+        return res.json({ success: true, message: `Transaction ${txId} deleted` });
+    } catch (error) {
+        console.error("Delete cash transaction error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;
