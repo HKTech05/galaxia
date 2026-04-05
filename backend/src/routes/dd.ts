@@ -37,7 +37,7 @@ router.get("/packages", async (_req, res) => {
 // GET /api/dd/availability/:date — Slots for a specific date across all screens
 router.get("/availability/:date", async (req, res) => {
     try {
-        const date = new Date(req.params.date);
+        const date = new Date(req.params.date + 'T12:00:00');
 
         // Get all bookings for this date
         const bookings = await prisma.ddBooking.findMany({

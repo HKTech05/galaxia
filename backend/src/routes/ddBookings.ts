@@ -73,7 +73,7 @@ router.post("/", async (req, res) => {
             const existingBookings = await tx.ddBooking.findMany({
                 where: {
                     screenId: parseInt(screenId),
-                    bookingDate: new Date(bookingDate),
+                    bookingDate: new Date(bookingDate + 'T12:00:00'),
                     status: { notIn: ["cancelled", "no_show"] },
                 },
             });
@@ -154,7 +154,7 @@ router.post("/", async (req, res) => {
                     userId: user?.id || null,
                     screenId: parseInt(screenId),
                     packageId: parseInt(packageId || "1"),
-                    bookingDate: new Date(bookingDate),
+                    bookingDate: new Date(bookingDate + 'T12:00:00'),
                     startHour: newStart,
                     durationHours: parseInt(durationHours || "1"),
                     customerName: customerName || (isMaintenance ? "Maintenance Block" : "Guest"),
@@ -269,11 +269,11 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
         if (status) where.status = status;
         if (screenId) where.screenId = parseInt(screenId as string);
         if (date) {
-            where.bookingDate = new Date(date as string);
+            where.bookingDate = new Date((date as string) + 'T12:00:00');
         } else if (startDate || endDate) {
             where.bookingDate = {};
-            if (startDate) where.bookingDate.gte = new Date(startDate as string);
-            if (endDate) where.bookingDate.lte = new Date(endDate as string);
+            if (startDate) where.bookingDate.gte = new Date((startDate as string) + 'T12:00:00');
+            if (endDate) where.bookingDate.lte = new Date((endDate as string) + 'T12:00:00');
         }
 
         // Role-based filtering
@@ -525,7 +525,7 @@ router.post("/hold", async (req, res) => {
         }
 
         const parsedScreenId = parseInt(screenId);
-        const date = new Date(bookingDate);
+        const date = new Date(bookingDate + 'T12:00:00');
         const sessionId = `dh-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
         const expiresAt = new Date(Date.now() + 7 * 60 * 1000); // 7 minutes
 
