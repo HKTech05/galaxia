@@ -173,7 +173,8 @@ export default function Admin1Dashboard() {
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.value) {
-            setStartDate(new Date(e.target.value));
+            const [y, m, d] = e.target.value.split('-').map(Number);
+            setStartDate(new Date(y, m - 1, d));
         }
     };
 
@@ -201,7 +202,7 @@ export default function Admin1Dashboard() {
             await api.post("/bookings/dd", {
                 screenId,
                 packageId: 1,
-                bookingDate: startDate.toISOString().split('T')[0],
+                bookingDate: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
                 startHour: draftSlot.hour,
                 durationHours: parseInt(maintDuration),
                 customerName: "Maintenance Block",
@@ -348,7 +349,7 @@ export default function Admin1Dashboard() {
             const result = await api.post("/bookings/dd", {
                 screenId,
                 packageId,
-                bookingDate: startDate.toISOString().split('T')[0],
+                bookingDate: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
                 startHour: draftSlot.hour,
                 durationHours: durNum,
                 customerName: (document.querySelector('input[placeholder="John Doe"]') as HTMLInputElement)?.value || "Walk-in Guest",
