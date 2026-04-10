@@ -28,7 +28,11 @@ export type AuditAction =
     | "update_profile_success"
     | "update_profile_failure"
     | "change_own_password"
-    | "update_sub_admin_password";
+    | "update_sub_admin_password"
+    | "phone_otp_sent"
+    | "phone_register"
+    | "phone_login"
+    | "phone_user_name_update";
 
 interface LogOptions {
     adminId?: number;

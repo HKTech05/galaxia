@@ -6,6 +6,7 @@ dotenv.config();
 
 import authRoutes from "./routes/auth";
 import cognitoAuthRoutes from "./routes/cognitoAuth";
+import phoneAuthRoutes from "./routes/phoneAuth";
 import propertyRoutes from "./routes/properties";
 import ddRoutes from "./routes/dd";
 import stayBookingRoutes from "./routes/stayBookings";
@@ -53,6 +54,7 @@ app.get("/api/health", (_req, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auth/cognito", cognitoAuthRoutes);
+app.use("/api/auth/phone", phoneAuthRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/dd", ddRoutes);
 app.use("/api/bookings/staycation", stayBookingRoutes);
