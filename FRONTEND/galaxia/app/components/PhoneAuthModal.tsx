@@ -79,9 +79,10 @@ export default function PhoneAuthModal({ onClose, onSuccess }: PhoneAuthModalPro
     }
 
     /* ─── Verify OTP ───────────────────────────────────────── */
-    async function handleVerifyOtp() {
+    async function handleVerifyOtp(otpOverride?: string[]) {
         setError("");
-        const otpString = otp.join("");
+        const digits = otpOverride || otp;
+        const otpString = digits.join("");
         if (otpString.length !== 4) {
             setError("Please enter the 4-digit OTP");
             return;
@@ -186,7 +187,7 @@ export default function PhoneAuthModal({ onClose, onSuccess }: PhoneAuthModalPro
 
         // Auto-submit when all 4 digits entered
         if (value && index === 3 && newOtp.every((d) => d !== "")) {
-            setTimeout(() => handleVerifyOtp(), 100);
+            setTimeout(() => handleVerifyOtp(newOtp), 100);
         }
     }
 
@@ -206,7 +207,7 @@ export default function PhoneAuthModal({ onClose, onSuccess }: PhoneAuthModalPro
             const newOtp = pasted.split("");
             setOtp(newOtp);
             otpRefs[3].current?.focus();
-            setTimeout(() => handleVerifyOtp(), 100);
+            setTimeout(() => handleVerifyOtp(newOtp), 100);
         }
     }
 
