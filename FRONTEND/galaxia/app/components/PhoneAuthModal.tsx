@@ -323,7 +323,7 @@ export default function PhoneAuthModal({ onClose, onSuccess }: PhoneAuthModalPro
                             )}
 
                             <button
-                                onClick={handleVerifyOtp}
+                                onClick={() => handleVerifyOtp()}
                                 disabled={loading || otp.some((d) => !d)}
                                 className="w-full bg-[#25D366] hover:bg-[#20BD5A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-inter text-[15px] font-medium py-3.5 rounded-lg transition-all duration-200 flex items-center justify-center"
                             >
