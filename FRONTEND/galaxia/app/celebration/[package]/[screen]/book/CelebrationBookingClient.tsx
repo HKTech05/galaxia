@@ -1072,13 +1072,6 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                 <span className="text-white/80 font-inter text-xs uppercase tracking-wider">or</span>
                                                 <div className="h-[1px] bg-white/20 flex-1"></div>
                                             </div>
-                                            <button
-                                                onClick={() => setEmailMode("login")}
-                                                className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
-                                            >
-                                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                                Continue with Email
-                                            </button>
 
                                             <button
                                                 onClick={() => { setShowLoginPrompt(false); setShowPhoneAuth(true); }}

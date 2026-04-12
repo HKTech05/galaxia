@@ -143,21 +143,6 @@ export default function StaycationNavbar() {
                                 <div className="h-[1px] bg-white/20 flex-1"></div>
                             </div>
 
-                            <button 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    if (typeof window !== "undefined") {
-                                        const redirectUri = `${window.location.origin}/auth/callback`;
-                                        const currentUrl = window.location.pathname + window.location.search;
-                                        const cognitoUrl = `https://ap-south-1diugx2q6b.auth.ap-south-1.amazoncognito.com/login?client_id=2elbrrrn0rcabd58aapdet82ht&response_type=code&scope=email+openid&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(currentUrl)}`;
-                                        window.location.href = cognitoUrl;
-                                    }
-                                }}
-                                className="w-full bg-[#343541] outline outline-1 outline-[#565869] text-white hover:bg-[#40414F] flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors"
-                            >
-                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                Continue with Email
-                            </button>
 
                             <button 
                                 onClick={() => { setShowAuthModal(false); setShowPhoneAuth(true); }}
