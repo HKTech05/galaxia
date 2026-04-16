@@ -1,190 +1,125 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-
-    const [isLogin, setIsLogin] = useState(true);
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const [formData, setFormData] = useState({
-        email: "",
-        password: "",
-        fullName: "",
-        phone: "",
-    });
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
         try {
-            if (isLogin) {
-                const res = await api.post("/auth/login-guest", {
-                    email: formData.email,
-                    password: formData.password,
-                });
-                
-                if (res.token) {
-                    localStorage.setItem("galaxia_token", res.token);
-                    localStorage.setItem("galaxia_user", JSON.stringify(res.user));
-                    window.location.href = callbackUrl;
+            const res = await api.post("/auth/login", { username, password });
+            if (res.token) {
+                // Store token consistently
+                localStorage.setItem("galaxia_token", res.token);
+                // Store admin data for sidebar/header
+                if (res.admin) {
+                    localStorage.setItem("galaxia_admin", JSON.stringify(res.admin));
                 }
-            } else {
-                const res = await api.post("/auth/register-guest", {
-                    email: formData.email,
-                    password: formData.password,
-                    fullName: formData.fullName,
-                    phone: formData.phone,
-                });
+                // Also set a secure cookie so the Next.js Middleware can read it
+                document.cookie = `admin_token=${res.token}; path=/; max-age=604800; samesite=strict`;
                 
-                if (res.id) {
-                    // Auto-login after registration
-                    const loginRes = await api.post("/auth/login-guest", {
-                        email: formData.email,
-                        password: formData.password,
-                    });
-                    
-                    if (loginRes.token) {
-                        localStorage.setItem("galaxia_token", loginRes.token);
-                        localStorage.setItem("galaxia_user", JSON.stringify(loginRes.user));
-                        window.location.href = callbackUrl;
-                    }
+                // Redirect based on role: sub-admins go to their first visible page
+                const ap = res.admin?.assignedProperties;
+                const role = res.admin?.role;
+                const hasFullAccess = !ap || role === "owner" || role === "developer";
+                
+                if (hasFullAccess) {
+                    router.push("/admin3");
+                } else {
+                    // Map assigned property slugs to their first receptionist page
+                    const slugToRoute: Record<string, string> = {
+                        "dd": "/admin3/digital-diaries",
+                        "heavenly-villa": "/admin3/heavenly-villa",
+                        "hill-view": "/admin3/heavenly-villa",
+                        "mount-view": "/admin3/views-paraiso",
+                        "la-paraiso": "/admin3/views-paraiso",
+                        "ambrose": "/admin3/ambrose",
+                        "amstel-nest": "/admin3/amstel",
+                    };
+                    const firstSlug = (ap as string[])[0];
+                    router.push(slugToRoute[firstSlug] || "/admin3");
                 }
             }
         } catch (err: any) {
-            setError(err.message || "Authentication failed. Please check your credentials.");
+            setError(err.message || "Invalid credentials. Access denied.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-cream-white flex">
-            {/* Left Side — Image */}
-            <div className="hidden lg:block lg:w-1/2 relative bg-soft-gray">
-                <Image
-                    src="https://images.unsplash.com/photo-1542314831-c6a4d14d8376?q=80&w=2070&auto=format&fit=crop"
-                    alt="Galaxia Luxury Resort"
-                    fill
-                    className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-16 left-16 text-white max-w-md">
-                    <h2 className="font-cinzel text-4xl mb-4 font-bold tracking-wide">Enter the extraordinary.</h2>
-                    <p className="font-inter text-sm text-white/80 leading-relaxed">
-                        Access your bookings, manage your stays, and unlock exclusive experiences reserved for our members.
-                    </p>
-                </div>
+        <div className="min-h-screen bg-[#111] flex items-center justify-center relative overflow-hidden">
+            {/* Background elements */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <div className="absolute w-[500px] h-[500px] bg-antique-gold/10 rounded-full blur-[100px] -top-48 -left-48" />
+                <div className="absolute w-[600px] h-[600px] bg-dark-gold/10 rounded-full blur-[120px] -bottom-64 -right-32" />
             </div>
 
-            {/* Right Side — Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-16">
-                <div className="w-full max-w-md">
-                    <div className="text-center mb-10">
-                        <Link href="/" className="inline-block mb-8">
-                            <span className="font-cinzel font-semibold text-gold-gradient text-3xl">GALAXIA</span>
-                        </Link>
-                        <h1 className="font-cinzel text-3xl text-text-primary mb-2">
-                            {isLogin ? "Welcome Back" : "Create an Account"}
-                        </h1>
-                        <p className="font-inter text-sm text-text-secondary">
-                            {isLogin
-                                ? "Sign in to manage your luxury stay"
-                                : "Join Galaxia to unlock premium experiences"}
-                        </p>
+            <div className="w-full max-w-md p-8 relative z-10">
+                <div className="text-center mb-10">
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-br from-antique-gold to-dark-gold rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(196,163,103,0.3)]">
+                        <svg className="w-8 h-8 text-[#111]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                     </div>
+                    <h1 className="font-cinzel text-3xl text-white tracking-widest mb-2">GALAXIA<span className="text-antique-gold ml-2">ADMIN</span></h1>
+                    <p className="font-inter text-xs text-white/50 tracking-[0.2em] uppercase">Authorized Personnel Only</p>
+                </div>
 
+                <div className="bg-[#1A1A1A] border border-[#333] rounded-xl p-8 shadow-2xl backdrop-blur-sm">
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-lg text-red-600 font-inter text-sm text-center">
+                        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded text-red-400 font-inter text-xs text-center">
                             {error}
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {!isLogin && (
-                            <>
-                                <div>
-                                    <label className="text-text-muted text-xs font-inter uppercase tracking-wider mb-1 block">Full Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2.5 font-inter text-base text-text-primary focus:ring-0 focus:border-antique-gold transition-colors"
-                                        placeholder="John Doe"
-                                        value={formData.fullName}
-                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-text-muted text-xs font-inter uppercase tracking-wider mb-1 block">Mobile Number</label>
-                                    <input
-                                        type="tel"
-                                        required
-                                        className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2.5 font-inter text-base text-text-primary focus:ring-0 focus:border-antique-gold transition-colors"
-                                        placeholder="+91 9876543210"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    />
-                                </div>
-                            </>
-                        )}
-
+                    <form onSubmit={handleLogin} className="space-y-6">
                         <div>
-                            <label className="text-text-muted text-xs font-inter uppercase tracking-wider mb-1 block">Email Address</label>
+                            <label className="text-white/60 text-[10px] font-inter uppercase tracking-[0.1em] mb-2 block">Username</label>
                             <input
-                                type="email"
+                                type="text"
                                 required
-                                className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2.5 font-inter text-base text-text-primary focus:ring-0 focus:border-antique-gold transition-colors"
-                                placeholder="you@example.com"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full bg-[#222] border border-[#333] rounded-lg px-4 py-3 font-inter text-sm text-white focus:outline-none focus:border-antique-gold/50 transition-colors placeholder:text-white/20"
+                                placeholder="Admin ID"
                             />
                         </div>
 
                         <div>
-                            <label className="text-text-muted text-xs font-inter uppercase tracking-wider mb-1 block">Password</label>
+                            <label className="text-white/60 text-[10px] font-inter uppercase tracking-[0.1em] mb-2 block">Secure Password</label>
                             <input
                                 type="password"
                                 required
-                                minLength={6}
-                                className="w-full bg-transparent border-0 border-b border-border-medium rounded-none px-0 py-2.5 font-inter text-base text-text-primary focus:ring-0 focus:border-antique-gold transition-colors"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-[#222] border border-[#333] rounded-lg px-4 py-3 font-inter text-sm text-white focus:outline-none focus:border-antique-gold/50 transition-colors placeholder:text-white/20"
                                 placeholder="••••••••"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full mt-8 bg-gradient-to-r from-antique-gold to-dark-gold text-white py-4 rounded-md font-inter tracking-widest uppercase text-xs hover:shadow-lg hover:shadow-antique-gold/20 transition-all disabled:opacity-70 disabled:pointer-events-none"
+                            className="w-full bg-gradient-to-r from-antique-gold to-dark-gold text-[#111] py-3.5 rounded-lg font-cinzel font-bold tracking-widest text-sm hover:shadow-[0_0_20px_rgba(196,163,103,0.4)] transition-all disabled:opacity-50 mt-4"
                         >
-                            {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
+                            {loading ? "Authenticating..." : "Establish Connection"}
                         </button>
                     </form>
-
-                    <div className="mt-8 text-center border-t border-border-light pt-6">
-                        <button
-                            onClick={() => {
-                                setIsLogin(!isLogin);
-                                setError("");
-                                setFormData({ email: "", password: "", fullName: "", phone: "" });
-                            }}
-                            className="font-inter text-xs text-text-secondary hover:text-antique-gold transition-colors block w-full"
-                        >
-                            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                        </button>
-                    </div>
                 </div>
+                
+                <p className="text-center mt-8 text-[10px] font-inter text-white/30 uppercase tracking-widest">
+                    Galaxia Management Protocol v2.5
+                </p>
             </div>
         </div>
     );
