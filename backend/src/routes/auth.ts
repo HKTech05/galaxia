@@ -267,11 +267,11 @@ router.patch("/sub-admins/:id", authMiddleware, async (req: AuthRequest, res) =>
         if (username && username.trim()) {
             updateData.username = username.trim();
         }
-        if (password && password.length >= 6) {
+        if (password && password.length >= 3) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
             updateData.plainPassword = password;
         } else if (password) {
-            return res.status(400).json({ error: "Password must be at least 6 characters" });
+            return res.status(400).json({ error: "Password must be at least 3 characters" });
         }
 
         if (Object.keys(updateData).length === 0) {

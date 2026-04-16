@@ -110,7 +110,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     const handleLogout = () => {
         localStorage.removeItem("galaxia_token");
         document.cookie = "admin_token=; path=/; max-age=0; samesite=strict";
-        router.push("/admin-login");
+        router.push("/login");
     };
 
     const renderNavItem = (item: { name: string; href: string; icon: any }, nested = false) => {

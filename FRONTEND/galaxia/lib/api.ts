@@ -59,8 +59,8 @@ async function request<T = any>(
     if (res.status === 401) {
         clearToken();
         if (typeof window !== "undefined") {
-            if (window.location.pathname.startsWith("/admin") && !window.location.pathname.includes("admin-login")) {
-                window.location.href = "/admin-login";
+            if (window.location.pathname.startsWith("/admin") && !window.location.pathname.includes("login")) {
+                window.location.href = "/login";
             }
         }
         throw new Error("Unauthorized");
@@ -123,7 +123,7 @@ export async function login(username: string, password: string) {
 export function logout() {
     clearToken();
     if (typeof window !== "undefined") {
-        window.location.href = "/admin-login";
+        window.location.href = "/login";
     }
 }
 
