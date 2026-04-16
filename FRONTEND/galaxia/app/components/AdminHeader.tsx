@@ -25,11 +25,18 @@ export default function AdminHeader() {
             if (Array.isArray(data)) setNotifications(data);
         }).catch(() => { });
 
-        // Fetch admin profile
-        api.get("/auth/me").then(data => {
-            if (data?.displayName) setAdminName(data.displayName);
-            if (data?.role) setAdminRole(data.role);
-        }).catch(() => { });
+        // Override name for Digital Diaries reception page
+        const isDDPage = typeof window !== 'undefined' && window.location.pathname.includes('digital-diaries');
+        if (isDDPage) {
+            setAdminName('Digital');
+            setAdminRole('Diaries');
+        } else {
+            // Fetch admin profile
+            api.get("/auth/me").then(data => {
+                if (data?.displayName) setAdminName(data.displayName);
+                if (data?.role) setAdminRole(data.role);
+            }).catch(() => { });
+        }
     }, []);
 
     const markAllRead = async () => {

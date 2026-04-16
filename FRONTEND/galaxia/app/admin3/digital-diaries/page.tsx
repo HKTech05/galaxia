@@ -704,45 +704,6 @@ export default function Admin1Dashboard() {
                                                             </div>
                                                         )}
 
-                                                        {/* Collect buttons for unpaid addons — only for Movie Time */}
-                                                        {unpaidTotal > 0 && !isCelebration && (
-                                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 mb-3">
-                                                                {showUpiProofPicker === 'addons' && (
-                                                                    <div className="mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
-                                                                        <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
-                                                                        <input
-                                                                            type="file"
-                                                                            accept="image/*"
-                                                                            className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
-                                                                            onChange={(e) => {
-                                                                                const file = e.target.files?.[0];
-                                                                                if (file) {
-                                                                                    handleCollectAddonsPayment('UPI', file);
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                        <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
-                                                                    </div>
-                                                                )}
-                                                                {showUpiProofPicker !== 'addons' && (
-                                                                    <div className="flex gap-2">
-                                                                        <button
-                                                                            onClick={() => handleCollectAddonsPayment('Cash')}
-                                                                            className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
-                                                                        >
-                                                                            Collect Cash
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleCollectAddonsPayment('UPI')}
-                                                                            className="flex-1 bg-white border border-indigo-600 text-indigo-600 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors"
-                                                                        >
-                                                                            Collect UPI
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-
                                                         {/* Edit Add-Ons Panel — only for Movie Time */}
                                                         {editingAddOns && !isCelebration && (
                                                             <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
@@ -838,6 +799,12 @@ export default function Admin1Dashboard() {
                         <div className="space-y-6">
                             <div>
                                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><CreditCard size={16} /> Financials</h3>
+                                {(() => {
+                                    const balanceInt = parseInt(activeEvent.amountToCollect.replace(/[₹,]/g, ''));
+                                    const rawAddonsAll = activeEvent.rawAddons || [];
+                                    const unpaidAddonsTotal = rawAddonsAll.filter(a => !a.isPaid).reduce((s, a) => s + a.price, 0);
+                                    const fullTotal = balanceInt + unpaidAddonsTotal;
+                                    return (
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
                                         <div>
@@ -849,10 +816,13 @@ export default function Admin1Dashboard() {
 
                                     <div className="flex justify-between items-center bg-rose-50 p-3 rounded-lg border border-rose-100">
                                         <span className="text-xs text-rose-600 font-bold">Amount to Collect</span>
-                                        <span className={`text-base font-bold ${activeEvent.amountToCollect === '₹0' ? 'text-slate-400' : 'text-rose-700'}`}>{activeEvent.amountToCollect}</span>
+                                        <span className={`text-base font-bold ${fullTotal === 0 ? 'text-slate-400' : 'text-rose-700'}`}>₹{fullTotal.toLocaleString()}</span>
                                     </div>
+                                    {unpaidAddonsTotal > 0 && (
+                                        <p className="text-[10px] text-slate-500 font-medium">Includes ₹{balanceInt.toLocaleString()} balance + ₹{unpaidAddonsTotal.toLocaleString()} unpaid add-ons</p>
+                                    )}
 
-                                    {parseInt(activeEvent.amountToCollect.replace(/[₹,]/g, '')) > 0 && (
+                                    {fullTotal > 0 && (
                                         <>
                                             {showUpiProofPicker === 'balance' && (
                                                 <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
@@ -864,7 +834,9 @@ export default function Admin1Dashboard() {
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
+                                                                // Collect both balance and addon payments
                                                                 handleCollectPayment('UPI', file);
+                                                                if (unpaidAddonsTotal > 0) handleCollectAddonsPayment('UPI', file);
                                                             }
                                                         }}
                                                     />
@@ -874,13 +846,13 @@ export default function Admin1Dashboard() {
                                             {showUpiProofPicker !== 'balance' && (
                                                 <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
                                                     <button
-                                                        onClick={() => handleCollectPayment('Cash')}
+                                                        onClick={() => { handleCollectPayment('Cash'); if (unpaidAddonsTotal > 0) handleCollectAddonsPayment('Cash'); }}
                                                         className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
                                                     >
                                                         Collect Cash
                                                     </button>
                                                     <button
-                                                        onClick={() => handleCollectPayment('UPI')}
+                                                        onClick={() => { handleCollectPayment('UPI'); if (unpaidAddonsTotal > 0) handleCollectAddonsPayment('UPI'); }}
                                                         className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
                                                     >
                                                         Collect UPI
@@ -890,6 +862,8 @@ export default function Admin1Dashboard() {
                                         </>
                                     )}
                                 </div>
+                                    );
+                                })()}
                             </div>
 
                             <div>
@@ -1171,53 +1145,9 @@ export default function Admin1Dashboard() {
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
                                         />
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase">Payment Type</label>
-                                        <div className="flex rounded-xl overflow-hidden border border-slate-200">
-                                            <button type="button" onClick={() => { setCustomPaymentMode(false); }} className={`flex-1 py-3 text-sm font-bold transition-colors ${!customPaymentMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>Full (100%)</button>
-                                            <button type="button" onClick={() => { setCustomPaymentMode(true); setCustomPrepaid(String(totalPrice)); setCustomOnArrival('0'); }} className={`flex-1 py-3 text-sm font-bold transition-colors ${customPaymentMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>Custom Split</button>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment</label>
-                                        <select value={walkInPaymentMethod} onChange={(e) => setWalkInPaymentMethod(e.target.value as "Cash" | "UPI")} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
-                                            <option value="Cash">Cash</option>
-                                            <option value="UPI">UPI</option>
-                                        </select>
-                                    </div>
                                 </div>
 
-                                {customPaymentMode && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-amber-800 uppercase">Amount Prepaid (₹)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={customPrepaid}
-                                                onChange={(e) => setCustomPrepaid(e.target.value)}
-                                                placeholder="0"
-                                                className="w-full bg-white border border-amber-300 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 outline-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-amber-800 uppercase">Amount on Arrival (₹)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={customOnArrival}
-                                                onChange={(e) => setCustomOnArrival(e.target.value)}
-                                                placeholder="0"
-                                                className="w-full bg-white border border-amber-300 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 outline-none"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2 text-xs font-medium text-amber-700">
-                                            Total: ₹{(parseInt(customPrepaid || '0') + parseInt(customOnArrival || '0')).toLocaleString('en-IN')} &nbsp;|&nbsp; System price: ₹{totalPrice.toLocaleString('en-IN')}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Add-Ons Section in Walk-in Form */}
+                                {/* Add-Ons Section — BEFORE payment so total includes add-ons */}
                                 {packageType === "Movie Time" && (
                                     <div className="bg-violet-50/50 p-6 rounded-xl border border-violet-100 space-y-4 animate-in fade-in slide-in-from-top-2">
                                         <h3 className="text-xs font-bold text-violet-900 uppercase tracking-wider">Add-Ons (Optional)</h3>
@@ -1252,6 +1182,57 @@ export default function Admin1Dashboard() {
                                         {addCake && (
                                             <input type="text" value={addOnCakeMessage} onChange={(e) => setAddOnCakeMessage(e.target.value)} maxLength={50} placeholder="Cake message (optional)" className="w-full bg-white border border-violet-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
                                         )}
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700 uppercase">Payment Type</label>
+                                        <div className="flex rounded-xl overflow-hidden border border-slate-200">
+                                            <button type="button" onClick={() => { setCustomPaymentMode(false); }} className={`flex-1 py-3 text-sm font-bold transition-colors ${!customPaymentMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>Full (100%)</button>
+                                            <button type="button" onClick={() => { setCustomPaymentMode(true); setCustomPrepaid(String(totalPrice)); setCustomOnArrival('0'); }} className={`flex-1 py-3 text-sm font-bold transition-colors ${customPaymentMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>Custom Split</button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment</label>
+                                        <select value={walkInPaymentMethod} onChange={(e) => setWalkInPaymentMethod(e.target.value as "Cash" | "UPI")} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                            <option value="Cash">Cash</option>
+                                            <option value="UPI">UPI</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {customPaymentMode && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-amber-800 uppercase">Amount Prepaid (₹)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max={totalPrice}
+                                                value={customPrepaid}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setCustomPrepaid(val);
+                                                    const prepaidNum = parseInt(val || '0');
+                                                    setCustomOnArrival(String(Math.max(0, totalPrice - prepaidNum)));
+                                                }}
+                                                placeholder="0"
+                                                className="w-full bg-white border border-amber-300 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 focus:ring-2 focus:ring-amber-400/30 focus:border-amber-500 outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-amber-800 uppercase">Amount on Arrival (₹)</label>
+                                            <input
+                                                type="number"
+                                                readOnly
+                                                value={customOnArrival}
+                                                className="w-full bg-amber-100/50 border border-amber-300 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 outline-none cursor-not-allowed"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 text-xs font-medium text-amber-700">
+                                            Total: ₹{totalPrice.toLocaleString('en-IN')}
+                                        </div>
                                     </div>
                                 )}
 
