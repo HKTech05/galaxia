@@ -73,11 +73,11 @@ type Event = {
 };
 
 const events: Event[] = [
-    { id: "EV-01", day: 0, startHour: 10, duration: 3, title: "Cine Love - Neha G.", color: "bg-pink-100 text-pink-700 border-pink-200", screen: "Cine Love", customerName: "Neha Gupta", phone: "+91 99887 76655", email: "neha@example.com", dateBooked: "25 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Better Together", cakeMessage: "Happy Anniversary!", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 25 Feb 2026 14:30" },
-    { id: "EV-02", day: 0, startHour: 16, duration: 3, title: "Sandy Screen - Priya P.", color: "bg-yellow-100 text-yellow-700 border-yellow-200", screen: "Sandy Screen", customerName: "Priya Patel", phone: "+91 87654 32109", email: "priya@example.com", dateBooked: "26 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Movie Time", amountPaid: "₹4,200 (100%)", amountToCollect: "₹0", paymentDetails: "Paid via Card on 26 Feb 2026 10:15", addOns: { balloons: true, cake: true, cakeMessage: "Happy Birthday Priya!" } },
-    { id: "EV-03", day: 0, startHour: 19, duration: 3, title: "Cine Love - Rahul S.", color: "bg-pink-100 text-pink-700 border-pink-200", screen: "Cine Love", customerName: "Rahul Sharma", phone: "+91 98765 43210", email: "rahul@example.com", dateBooked: "20 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Proposal", cakeMessage: "Marry Me?", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 20 Feb 2026 09:00" },
+    { id: "EV-01", day: 0, startHour: 10, duration: 3, title: "Cine Love - Neha G.", color: "bg-green-100 text-green-700 border-green-200", screen: "Cine Love", customerName: "Neha Gupta", phone: "+91 99887 76655", email: "neha@example.com", dateBooked: "25 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Better Together", cakeMessage: "Happy Anniversary!", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 25 Feb 2026 14:30" },
+    { id: "EV-02", day: 0, startHour: 16, duration: 3, title: "Sandy Screen - Priya P.", color: "bg-amber-100 text-amber-900 border-amber-300", screen: "Sandy Screen", customerName: "Priya Patel", phone: "+91 87654 32109", email: "priya@example.com", dateBooked: "26 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Movie Time", amountPaid: "₹4,200 (100%)", amountToCollect: "₹0", paymentDetails: "Paid via Card on 26 Feb 2026 10:15", addOns: { balloons: true, cake: true, cakeMessage: "Happy Birthday Priya!" } },
+    { id: "EV-03", day: 0, startHour: 19, duration: 3, title: "Cine Love - Rahul S.", color: "bg-green-100 text-green-700 border-green-200", screen: "Cine Love", customerName: "Rahul Sharma", phone: "+91 98765 43210", email: "rahul@example.com", dateBooked: "20 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Proposal", cakeMessage: "Marry Me?", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 20 Feb 2026 09:00" },
     { id: "EV-04", day: 1, startHour: 11, duration: 2, title: "Park N Watch - Amit S.", color: "bg-orange-100 text-orange-700 border-orange-200", screen: "Park N Watch", customerName: "Amit Singh", phone: "+91 91234 56780", email: "amit.s@example.com", dateBooked: "27 Feb, 2026", reservationDate: "01 Mar, 2026", packageType: "Movie Time", amountPaid: "₹1,400 (50%)", amountToCollect: "₹1,400", paymentDetails: "Paid via UPI on 27 Feb 2026 16:45", addOns: { ledBanner: true, ledBannerType: "Better Together" } },
-    { id: "EV-05", day: 2, startHour: 14, duration: 3, title: "Baywatch - Karan J.", color: "bg-sky-100 text-sky-700 border-sky-200", screen: "Baywatch", customerName: "Karan Johar", phone: "+91 99999 88888", email: "kj@example.com", dateBooked: "21 Feb, 2026", reservationDate: "02 Mar, 2026", packageType: "Celebration", occasion: "Happy Birthday", cakeMessage: "Happy Birthday Karan!", amountPaid: "₹2,500 (50%)", amountToCollect: "₹2,500", paymentDetails: "Paid via UPI on 21 Feb 2026 11:20" },
+    { id: "EV-05", day: 2, startHour: 14, duration: 3, title: "Baywatch - Karan J.", color: "bg-blue-100 text-blue-700 border-blue-200", screen: "Baywatch", customerName: "Karan Johar", phone: "+91 99999 88888", email: "kj@example.com", dateBooked: "21 Feb, 2026", reservationDate: "02 Mar, 2026", packageType: "Celebration", occasion: "Happy Birthday", cakeMessage: "Happy Birthday Karan!", amountPaid: "₹2,500 (50%)", amountToCollect: "₹2,500", paymentDetails: "Paid via UPI on 21 Feb 2026 11:20" },
 ];
 
 export default function Admin1Dashboard() {
@@ -121,10 +121,10 @@ export default function Admin1Dashboard() {
                     packageType: b.package?.name || "Movie Time",
                     color: (() => {
                         const sName = ((b.screen?.name || "") as string).replace(" (Digital Diaries)", "").replace(/ \(15 x 8 sq ft\)/g, "");
-                        if (sName === "Cine Love") return "bg-pink-100 text-pink-700 border-pink-200";
-                        if (sName === "Sandy Screen") return "bg-yellow-100 text-yellow-700 border-yellow-200";
+                        if (sName === "Cine Love") return "bg-green-100 text-green-700 border-green-200";
+                        if (sName === "Sandy Screen") return "bg-amber-100 text-amber-900 border-amber-300";
                         if (sName === "Park N Watch") return "bg-orange-100 text-orange-700 border-orange-200";
-                        return "bg-sky-100 text-sky-700 border-sky-200";
+                        return "bg-blue-100 text-blue-700 border-blue-200";
                     })(),
                     amountPaid: `₹${(b.amountPaid || 0).toLocaleString()}`,
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
@@ -253,6 +253,7 @@ export default function Admin1Dashboard() {
     const [addOnCakeMessage, setAddOnCakeMessage] = useState("");
     const [walkInIdFiles, setWalkInIdFiles] = useState<(File | null)[]>([null, null]);
     const [walkInPaymentMethod, setWalkInPaymentMethod] = useState<"Cash" | "UPI">("Cash");
+    const [walkInUpiProof, setWalkInUpiProof] = useState<File | null>(null);
     const [customPaymentMode, setCustomPaymentMode] = useState(false);
     const [customPrepaid, setCustomPrepaid] = useState("");
     const [customOnArrival, setCustomOnArrival] = useState("");
@@ -388,11 +389,35 @@ export default function Admin1Dashboard() {
                         } catch (e) { console.error("Walk-in ID upload failed:", e); }
                     }
                 }
+
+                // Upload UPI proof if payment method is UPI
+                if (walkInPaymentMethod === "UPI" && walkInUpiProof) {
+                    try {
+                        const employees = await api.get("/employees?propertyId=7");
+                        const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
+                        if (empId) {
+                            const fd = new FormData();
+                            fd.append("employeeId", String(empId));
+                            fd.append("bookingRef", result.bookingRef || `DD-${result.id}`);
+                            fd.append("guestName", (document.querySelector('input[placeholder="John Doe"]') as HTMLInputElement)?.value || "Walk-in Guest");
+                            fd.append("amount", String(customPaymentMode ? parseInt(customPrepaid || '0') : totalPrice));
+                            fd.append("paymentType", "balance");
+                            fd.append("note", `DD Walk-in UPI payment — ${selectedScreen}`);
+                            fd.append("file", walkInUpiProof, walkInUpiProof.name);
+                            await fetch("/api/uploads/upi-proof", {
+                                method: "POST",
+                                headers: { Authorization: `Bearer ${token}` },
+                                body: fd,
+                            });
+                        }
+                    } catch (e) { console.error("UPI proof upload failed:", e); }
+                }
             }
 
             fetchEvents(startDate);
             setDraftSlot(null);
             setWalkInIdFiles([null, null]);
+            setWalkInUpiProof(null);
             alert("Booking created successfully!");
         } catch (err: any) {
             console.error("Failed to create manual booking:", err);
@@ -400,13 +425,16 @@ export default function Admin1Dashboard() {
         }
     };
 
-    const handleCollectPayment = async (mode: "Cash" | "UPI", proofFile?: File) => {
+    const handleCollectAll = async (mode: "Cash" | "UPI", proofFile?: File) => {
         if (!activeEvent) return;
         if (mode === "UPI" && !proofFile) {
             setShowUpiProofPicker('balance');
             return;
         }
         try {
+            let totalCollected = 0;
+
+            // Step 1: Collect booking balance (if any)
             const balanceStr = activeEvent.amountToCollect.replace(/[₹,]/g, '');
             const balanceInt = parseInt(balanceStr);
             if (balanceInt > 0) {
@@ -414,8 +442,18 @@ export default function Admin1Dashboard() {
                     amount: balanceInt,
                     method: mode
                 });
+                totalCollected += balanceInt;
+            }
 
-                // Create payment record for tracking
+            // Step 2: Collect unpaid add-ons (sequentially, after balance)
+            const unpaidAddons = (activeEvent.rawAddons || []).filter(a => !a.isPaid);
+            for (const addon of unpaidAddons) {
+                await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: mode });
+                totalCollected += addon.price;
+            }
+
+            // Step 3: Create payment record for tracking
+            if (totalCollected > 0) {
                 try {
                     const employees = await api.get("/employees?propertyId=7");
                     const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
@@ -425,9 +463,9 @@ export default function Admin1Dashboard() {
                         fd.append("employeeId", String(empId));
                         fd.append("bookingRef", `DD-${activeEvent.id}`);
                         fd.append("guestName", activeEvent.customerName || '');
-                        fd.append("amount", String(balanceInt));
+                        fd.append("amount", String(totalCollected));
                         fd.append("paymentType", "balance");
-                        fd.append("note", `DD Balance — ${activeEvent.screen} via ${mode}`);
+                        fd.append("note", `DD Collection — ${activeEvent.screen} via ${mode}`);
                         if (mode === "UPI" && proofFile) {
                             fd.append("file", proofFile, proofFile.name);
                         } else {
@@ -444,73 +482,14 @@ export default function Admin1Dashboard() {
                     console.error("Failed to record payment:", trackErr);
                 }
             }
-            alert(`Collected ₹${balanceInt.toLocaleString()} via ${mode}`);
+
+            alert(`Collected ₹${totalCollected.toLocaleString()} via ${mode}`);
             setUpiProofFile(null);
             setShowUpiProofPicker(null);
             fetchEvents(startDate);
         } catch (err: any) {
             console.error("Failed to collect payment:", err);
             alert(err.response?.data?.error || "Failed to collect payment");
-        }
-    };
-
-    const handleCollectAddonsPayment = async (mode: "Cash" | "UPI", proofFile?: File) => {
-        if (!activeEvent || !activeEvent.rawAddons) return;
-        const unpaidAddons = activeEvent.rawAddons.filter(a => !a.isPaid);
-        if (unpaidAddons.length === 0) {
-            alert("All add-ons are already marked as paid.");
-            return;
-        }
-        if (mode === "UPI" && !proofFile) {
-            setShowUpiProofPicker('addons');
-            return;
-        }
-
-        try {
-            let totalAddonAmount = 0;
-            for (const addon of unpaidAddons) {
-                await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: mode });
-                totalAddonAmount += addon.price;
-            }
-
-            // Create payment record for tracking
-            if (totalAddonAmount > 0) {
-                try {
-                    const employees = await api.get("/employees?propertyId=7");
-                    const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
-                    if (empId) {
-                        const token = localStorage.getItem("galaxia_token") || "";
-                        const fd = new FormData();
-                        fd.append("employeeId", String(empId));
-                        fd.append("bookingRef", `DD-${activeEvent.id}`);
-                        fd.append("guestName", activeEvent.customerName || '');
-                        fd.append("amount", String(totalAddonAmount));
-                        fd.append("paymentType", "balance");
-                        fd.append("note", `DD Add-ons — ${activeEvent.screen} via ${mode}`);
-                        if (mode === "UPI" && proofFile) {
-                            fd.append("file", proofFile, proofFile.name);
-                        } else {
-                            const blob = new Blob([`${mode} add-on payment collected at reception`], { type: "text/plain" });
-                            fd.append("file", blob, `${mode.toLowerCase()}-addon-collected.txt`);
-                        }
-                        await fetch("/api/uploads/upi-proof", {
-                            method: "POST",
-                            headers: { Authorization: `Bearer ${token}` },
-                            body: fd,
-                        });
-                    }
-                } catch (trackErr) {
-                    console.error("Failed to record addon payment:", trackErr);
-                }
-            }
-
-            alert(`Collected ₹${totalAddonAmount.toLocaleString()} for ${unpaidAddons.length} add-on(s) via ${mode}`);
-            setUpiProofFile(null);
-            setShowUpiProofPicker(null);
-            fetchEvents(startDate);
-        } catch (err: any) {
-            console.error("Failed to collect addon payment:", err);
-            alert(err.response?.data?.error || "Failed to collect addon payment");
         }
     };
 
@@ -834,9 +813,7 @@ export default function Admin1Dashboard() {
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
-                                                                // Collect both balance and addon payments
-                                                                handleCollectPayment('UPI', file);
-                                                                if (unpaidAddonsTotal > 0) handleCollectAddonsPayment('UPI', file);
+                                                                handleCollectAll('UPI', file);
                                                             }
                                                         }}
                                                     />
@@ -846,13 +823,13 @@ export default function Admin1Dashboard() {
                                             {showUpiProofPicker !== 'balance' && (
                                                 <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
                                                     <button
-                                                        onClick={() => { handleCollectPayment('Cash'); if (unpaidAddonsTotal > 0) handleCollectAddonsPayment('Cash'); }}
+                                                        onClick={() => handleCollectAll('Cash')}
                                                         className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
                                                     >
                                                         Collect Cash
                                                     </button>
                                                     <button
-                                                        onClick={() => { handleCollectPayment('UPI'); if (unpaidAddonsTotal > 0) handleCollectAddonsPayment('UPI'); }}
+                                                        onClick={() => handleCollectAll('UPI')}
                                                         className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
                                                     >
                                                         Collect UPI
@@ -1015,10 +992,10 @@ export default function Admin1Dashboard() {
                                             onChange={(e) => setMaintScreen(e.target.value as any)}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-red-600/20 focus:border-red-600 outline-none"
                                         >
-                                            <option value="Cine Love">Cine Love (Pink)</option>
-                                            <option value="Sandy Screen">Sandy Screen (Yellow)</option>
+                                            <option value="Cine Love">Cine Love (Green)</option>
+                                            <option value="Sandy Screen">Sandy Screen (Brown)</option>
                                             <option value="Park N Watch">Park N Watch (Orange)</option>
-                                            <option value="Baywatch">Baywatch (Light Blue)</option>
+                                            <option value="Baywatch">Baywatch (Blue)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
@@ -1195,12 +1172,43 @@ export default function Admin1Dashboard() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 uppercase">Mode of Payment</label>
-                                        <select value={walkInPaymentMethod} onChange={(e) => setWalkInPaymentMethod(e.target.value as "Cash" | "UPI")} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                        <select value={walkInPaymentMethod} onChange={(e) => { setWalkInPaymentMethod(e.target.value as "Cash" | "UPI"); setWalkInUpiProof(null); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
                                             <option value="Cash">Cash</option>
                                             <option value="UPI">UPI</option>
                                         </select>
                                     </div>
                                 </div>
+
+                                {walkInPaymentMethod === "UPI" && (
+                                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2">
+                                        <label className="text-xs font-bold text-indigo-800 uppercase flex items-center gap-2">
+                                            <Upload size={14} /> Upload UPI Payment Proof
+                                        </label>
+                                        <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${walkInUpiProof ? 'border-emerald-300 bg-emerald-50' : 'border-indigo-300 bg-white hover:bg-indigo-50'}`}>
+                                            {walkInUpiProof ? (
+                                                <>
+                                                    <CheckCircle2 size={20} className="text-emerald-600" />
+                                                    <span className="text-sm font-bold text-emerald-700 truncate max-w-[200px]">{walkInUpiProof.name}</span>
+                                                    <button type="button" onClick={(e) => { e.preventDefault(); setWalkInUpiProof(null); }} className="text-xs text-red-500 font-bold ml-2 hover:text-red-700">Remove</button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Camera size={20} className="text-indigo-500" />
+                                                    <span className="text-sm font-medium text-indigo-700">Select photo from gallery</span>
+                                                </>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) setWalkInUpiProof(file);
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+                                )}
 
                                 {customPaymentMode && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
