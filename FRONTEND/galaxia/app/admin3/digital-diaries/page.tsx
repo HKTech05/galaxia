@@ -140,7 +140,7 @@ export default function Admin1Dashboard() {
                         balloons: b.addons?.some((a: any) => a.addonType === "balloons"),
                         ledBanner: b.addons?.some((a: any) => a.addonType === "ledBanner" || a.addonType === "led_banner"),
                         ledBannerType: b.addons?.find((a: any) => a.addonType === "ledBanner" || a.addonType === "led_banner")?.addonValue || b.occasion || "Happy Birthday",
-                        cake: b.addons?.some((a: any) => a.addonType === "cake"),
+                        cake: b.addons?.some((a: any) => a.addonType === "cake") || (b.package?.slug === "celebration" || b.package?.name?.toLowerCase().includes("celebration")),
                         cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || b.cakeMessage || ""
                     },
                     status: b.status || 'confirmed',
@@ -160,7 +160,7 @@ export default function Admin1Dashboard() {
     useEffect(() => {
         const timer = setTimeout(() => fetchEvents(new Date()), 300);
         return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const shiftDates = (daysToShift: number) => {
@@ -251,12 +251,19 @@ export default function Admin1Dashboard() {
     const [ledBannerType, setLedBannerType] = useState("Happy Birthday");
     const [addCake, setAddCake] = useState(false);
     const [addOnCakeMessage, setAddOnCakeMessage] = useState("");
+    const [walkInOccasion, setWalkInOccasion] = useState("Happy Birthday");
+    const [walkInCakeMessage, setWalkInCakeMessage] = useState("");
     const [walkInIdFiles, setWalkInIdFiles] = useState<(File | null)[]>([null, null]);
     const [walkInPaymentMethod, setWalkInPaymentMethod] = useState<"Cash" | "UPI">("Cash");
     const [walkInUpiProof, setWalkInUpiProof] = useState<File | null>(null);
     const [customPaymentMode, setCustomPaymentMode] = useState(false);
     const [customPrepaid, setCustomPrepaid] = useState("");
     const [customOnArrival, setCustomOnArrival] = useState("");
+    // Coupon state for walk-in
+    const [walkInCouponCode, setWalkInCouponCode] = useState("");
+    const [walkInAppliedCoupon, setWalkInAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [walkInCouponError, setWalkInCouponError] = useState("");
+    const [walkInCouponLoading, setWalkInCouponLoading] = useState(false);
 
     // Add-on state for editing existing bookings
     const [editingAddOns, setEditingAddOns] = useState(false);
@@ -281,7 +288,17 @@ export default function Admin1Dashboard() {
 
     const extraGuestFee = guestsCount > 2 ? (guestsCount - 2) * 300 : 0;
     const addOnsCharge = (addBalloons ? 400 : 0) + (addLedBanner ? 400 : 0) + (addCake ? 400 : 0);
-    const totalPrice = basePrice + extraGuestFee + addOnsCharge;
+    // Walk-in coupon discount
+    let walkInCouponDiscount = 0;
+    if (walkInAppliedCoupon) {
+        const subtotalForCoupon = basePrice + extraGuestFee + addOnsCharge;
+        if (walkInAppliedCoupon.discountType === "percentage") {
+            walkInCouponDiscount = Math.round(subtotalForCoupon * walkInAppliedCoupon.discountValue / 100);
+        } else {
+            walkInCouponDiscount = walkInAppliedCoupon.discountValue;
+        }
+    }
+    const totalPrice = basePrice + extraGuestFee + addOnsCharge - walkInCouponDiscount;
 
     const handleSlotClick = (screenIndex: number, hourIndex: number) => {
         setDraftSlot({
@@ -347,6 +364,8 @@ export default function Admin1Dashboard() {
         const packageId = packageMap[packageType] || 1;
 
         try {
+            const actualAmountPaid = customPaymentMode ? parseInt(customPrepaid || '0') : totalPrice;
+            const actualAmountToCollect = customPaymentMode ? parseInt(customOnArrival || '0') : 0;
             const result = await api.post("/bookings/dd", {
                 screenId,
                 packageId,
@@ -356,19 +375,24 @@ export default function Admin1Dashboard() {
                 customerName: (document.querySelector('input[placeholder="John Doe"]') as HTMLInputElement)?.value || "Walk-in Guest",
                 customerPhone: (document.querySelector('input[placeholder="+91"]') as HTMLInputElement)?.value || "0000000000",
                 customerEmail: (document.querySelector('input[placeholder="john@example.com"]') as HTMLInputElement)?.value || "",
+                occasion: packageType === "Celebration" ? walkInOccasion : undefined,
+                cakeMessage: packageType === "Celebration" ? walkInCakeMessage : (addCake ? addOnCakeMessage : undefined),
                 numGuests: guestsCount,
-                totalAmount: totalPrice,
-                amountPaid: customPaymentMode ? parseInt(customPrepaid || '0') : totalPrice,
-                amountToCollect: customPaymentMode ? parseInt(customOnArrival || '0') : 0,
+                totalAmount: totalPrice + walkInCouponDiscount,
+                discountAmount: walkInCouponDiscount,
+                amountPaid: actualAmountPaid,
+                amountToCollect: actualAmountToCollect,
                 paymentMethod: walkInPaymentMethod,
                 paymentDetails: customPaymentMode
                     ? `Custom split — Prepaid ₹${customPrepaid || '0'} via ${walkInPaymentMethod}, ₹${customOnArrival || '0'} on arrival`
                     : `Walk-in, full payment via ${walkInPaymentMethod}`,
                 source: "reception",
+                couponCode: walkInAppliedCoupon?.code || null,
                 addons: [
                     ...(addBalloons ? [{ type: "balloons", value: "yes", price: 400 }] : []),
                     ...(addLedBanner ? [{ type: "led_banner", value: ledBannerType, price: 400 }] : []),
-                    ...(addCake ? [{ type: "cake", value: addOnCakeMessage || "Yes", price: 400 }] : [])
+                    ...(addCake ? [{ type: "cake", value: addOnCakeMessage || "Yes", price: 400 }] : []),
+                    ...(packageType === "Celebration" ? [{ type: "cake", value: walkInCakeMessage || "Yes", price: 0 }] : [])
                 ]
             });
 
@@ -416,8 +440,28 @@ export default function Admin1Dashboard() {
 
             fetchEvents(startDate);
             setDraftSlot(null);
+            // Reset ALL walk-in form state to prevent data persistence
+            setGuestsCount(2);
+            setPackageType("Movie Time");
+            setDuration("3");
+            setSelectedScreen("Cine Love");
+            setAddBalloons(false);
+            setAddLedBanner(false);
+            setLedBannerType("Happy Birthday");
+            setAddCake(false);
+            setAddOnCakeMessage("");
+            setWalkInOccasion("Happy Birthday");
+            setWalkInCakeMessage("");
             setWalkInIdFiles([null, null]);
             setWalkInUpiProof(null);
+            setWalkInPaymentMethod("Cash");
+            setCustomPaymentMode(false);
+            setCustomPrepaid("");
+            setCustomOnArrival("");
+            setWalkInCouponCode("");
+            setWalkInAppliedCoupon(null);
+            setWalkInCouponError("");
+            setShowOverlapWarning(false);
             alert("Booking created successfully!");
         } catch (err: any) {
             console.error("Failed to create manual booking:", err);
@@ -497,449 +541,449 @@ export default function Admin1Dashboard() {
     if (activeEvent) {
         return (
             <>
-            <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-200">
-                <button
-                    onClick={() => setSelectedEventId(null)}
-                    className="flex items-center gap-2 text-indigo-600 font-semibold mb-6 hover:text-indigo-700 transition-colors"
-                >
-                    <ArrowLeft size={18} /> Back to Schedule
-                </button>
+                <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-200">
+                    <button
+                        onClick={() => setSelectedEventId(null)}
+                        className="flex items-center gap-2 text-indigo-600 font-semibold mb-6 hover:text-indigo-700 transition-colors"
+                    >
+                        <ArrowLeft size={18} /> Back to Schedule
+                    </button>
 
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    {/* Header */}
-                    <div className={`${activeEvent.color.split(' ')[0]} p-6 md:p-8 border-b border-slate-200/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`}>
-                        <div>
-                            <div className="flex flex-wrap items-center gap-4">
-                                <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${activeEvent.color.split(' ')[1]}`}>{activeEvent.customerName}</h1>
-                                <span className={`px-4 py-1.5 rounded-lg text-sm md:text-base font-black uppercase tracking-widest bg-white/60 border-2 shadow-sm ${activeEvent.color}`}>
-                                    {activeEvent.screen}
-                                </span>
-                                {activeEvent.isMaintenance && (
-                                    <span className="px-4 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest bg-red-100 text-red-700 border-2 border-red-200 flex items-center gap-1 shadow-sm">
-                                        <Ban size={16} /> Maintenance
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        {/* Header */}
+                        <div className={`${activeEvent.color.split(' ')[0]} p-6 md:p-8 border-b border-slate-200/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`}>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${activeEvent.color.split(' ')[1]}`}>{activeEvent.customerName}</h1>
+                                    <span className={`px-4 py-1.5 rounded-lg text-sm md:text-base font-black uppercase tracking-widest bg-white/60 border-2 shadow-sm ${activeEvent.color}`}>
+                                        {activeEvent.screen}
                                     </span>
-                                )}
+                                    {activeEvent.isMaintenance && (
+                                        <span className="px-4 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest bg-red-100 text-red-700 border-2 border-red-200 flex items-center gap-1 shadow-sm">
+                                            <Ban size={16} /> Maintenance
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className={`text-right ${activeEvent.color.split(' ')[1]}`}>
+                                <p className="text-sm font-bold">{activeEvent.reservationDate}</p>
+                                <p className="text-xl font-bold flex items-center gap-1.5"><Clock size={18} /> {hours[activeEvent.startHour - 10]} ({activeEvent.duration} hrs)</p>
                             </div>
                         </div>
-                        <div className={`text-right ${activeEvent.color.split(' ')[1]}`}>
-                            <p className="text-sm font-bold">{activeEvent.reservationDate}</p>
-                            <p className="text-xl font-bold flex items-center gap-1.5"><Clock size={18} /> {hours[activeEvent.startHour - 10]} ({activeEvent.duration} hrs)</p>
-                        </div>
-                    </div>
 
-                    {/* Unblock Button for Maintenance */}
-                    {activeEvent.isMaintenance && (
-                        <div className="px-8 py-4 bg-red-50 border-b border-red-100">
-                            <button
-                                onClick={() => handleUnblock(activeEvent.id)}
-                                className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Ban size={18} /> Unblock This Screen Slot
-                            </button>
-                        </div>
-                    )}
+                        {/* Unblock Button for Maintenance */}
+                        {activeEvent.isMaintenance && (
+                            <div className="px-8 py-4 bg-red-50 border-b border-red-100">
+                                <button
+                                    onClick={() => handleUnblock(activeEvent.id)}
+                                    className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Ban size={18} /> Unblock This Screen Slot
+                                </button>
+                            </div>
+                        )}
 
-                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50">
-                        {/* Customer Details */}
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><User size={16} /> Contact Information</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-slate-500 font-medium">Phone Number</span>
-                                        <span className="text-sm font-bold text-slate-800">{activeEvent.phone}</span>
+                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50">
+                            {/* Customer Details */}
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><User size={16} /> Contact Information</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-slate-500 font-medium">Phone Number</span>
+                                            <span className="text-sm font-bold text-slate-800">{activeEvent.phone}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-slate-500 font-medium">Email Address</span>
+                                            <span className="text-sm font-bold text-slate-800">{activeEvent.email}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-slate-500 font-medium">Date Booked</span>
+                                            <span className="text-sm font-bold text-slate-800">{activeEvent.dateBooked}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-slate-500 font-medium">Email Address</span>
-                                        <span className="text-sm font-bold text-slate-800">{activeEvent.email}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-slate-500 font-medium">Date Booked</span>
-                                        <span className="text-sm font-bold text-slate-800">{activeEvent.dateBooked}</span>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><FileText size={16} /> Package / Event Details</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-slate-500 font-medium">Package Type</span>
+                                            <span className="text-sm font-bold text-slate-800">{activeEvent.packageType}</span>
+                                        </div>
+                                        {(activeEvent.packageType !== "Movie Time") && (
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-slate-500 font-medium">Occasion</span>
+                                                    <span className="text-sm font-bold text-slate-800">{activeEvent.occasion}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-slate-500 font-medium">Cake Message</span>
+                                                    <span className="text-sm font-bold text-slate-800 italic">"{activeEvent.cakeMessage}"</span>
+                                                </div>
+                                            </>
+                                        )}
+                                        {activeEvent.specialRequests && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm text-slate-500 font-medium">Special Requests</span>
+                                                <span className="text-sm font-bold text-amber-700 italic max-w-[60%] text-right">"{activeEvent.specialRequests}"</span>
+                                            </div>
+                                        )}
+
+                                        {/* Add-Ons Section — Separate from Financials */}
+                                        {!activeEvent.isMaintenance && (
+                                            <div className="pt-4 border-t-2 border-indigo-100">
+                                                {(() => {
+                                                    const rawAddons = activeEvent.rawAddons || [];
+                                                    const paidAddons = rawAddons.filter(a => a.isPaid);
+                                                    const unpaidAddons = rawAddons.filter(a => !a.isPaid);
+                                                    const unpaidTotal = unpaidAddons.reduce((sum, a) => sum + a.price, 0);
+                                                    const paidTotal = paidAddons.reduce((sum, a) => sum + a.price, 0);
+                                                    const hasAnyAddon = activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake);
+
+                                                    const isCelebration = activeEvent.packageType !== 'Movie Time' && activeEvent.packageType !== 'Maintenance';
+
+                                                    const addonLabel = (type: string) => {
+                                                        if (type === 'balloons') return '🎈 Balloons';
+                                                        if (type === 'ledBanner' || type === 'led_banner') return '💡 LED Banner';
+                                                        if (type === 'cake') return '🎂 Cake';
+                                                        return type;
+                                                    };
+
+                                                    return (
+                                                        <>
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                                                    <Ticket size={14} /> Add-Ons {isCelebration && <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 normal-case tracking-normal">Included in package</span>}
+                                                                </p>
+                                                                {!isCelebration && (
+                                                                    <button
+                                                                        onClick={() => setEditingAddOns(!editingAddOns)}
+                                                                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wider"
+                                                                    >
+                                                                        {editingAddOns ? '✕ Close' : '+ Add / Edit'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Currently active addons — or default set for Celebration */}
+                                                            {(() => {
+                                                                if (isCelebration) {
+                                                                    // Celebration: always show all 3 addons as included
+                                                                    return (
+                                                                        <div className="space-y-2 mb-3">
+                                                                            <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
+                                                                                <span className="text-sm font-medium">🎈 Balloons</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-sm font-medium">💡 LED Banner</span>
+                                                                                    <span className="text-[10px] text-slate-500">— {activeEvent.addOns?.ledBannerType || activeEvent.occasion || 'Happy Birthday'}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-sm font-medium">🎂 Cake</span>
+                                                                                    {(activeEvent.cakeMessage || activeEvent.addOns?.cakeMessage) && <span className="text-[10px] text-slate-500 italic">— "{activeEvent.cakeMessage || activeEvent.addOns?.cakeMessage}"</span>}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                if (!hasAnyAddon) return null;
+                                                                return (
+                                                                    <div className="space-y-2 mb-3">
+                                                                        {rawAddons.map(addon => (
+                                                                            <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
+                                                                                    {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>
+                                                                                    {addon.isPaid ? (
+                                                                                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">PAID{addon.paymentMethod ? ` · ${addon.paymentMethod}` : ''}</span>
+                                                                                    ) : (
+                                                                                        <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">UNPAID</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                );
+                                                            })()}
+
+                                                            {/* Tally — only for Movie Time */}
+                                                            {hasAnyAddon && !isCelebration && (
+                                                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                                                    <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 text-center">
+                                                                        <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Paid</p>
+                                                                        <p className="text-sm font-black text-emerald-700">₹{paidTotal.toLocaleString()}</p>
+                                                                    </div>
+                                                                    <div className={`p-2.5 rounded-lg border text-center ${unpaidTotal > 0 ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                                        <p className={`text-[9px] font-bold uppercase tracking-wider ${unpaidTotal > 0 ? 'text-amber-600' : 'text-slate-400'}`}>To Collect</p>
+                                                                        <p className={`text-sm font-black ${unpaidTotal > 0 ? 'text-amber-700' : 'text-slate-400'}`}>₹{unpaidTotal.toLocaleString()}</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Edit Add-Ons Panel — only for Movie Time */}
+                                                            {editingAddOns && !isCelebration && (
+                                                                <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                                    {/* Only show addons that don't already exist as unpaid */}
+                                                                    {!rawAddons.some(a => a.addonType === 'balloons' && !a.isPaid) && (
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                try {
+                                                                                    await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
+                                                                                        addons: [{ type: 'balloons', price: 400 }]
+                                                                                    });
+                                                                                    fetchEvents(startDate);
+                                                                                } catch (e) { alert('Failed to add addon'); }
+                                                                            }}
+                                                                            className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-purple-50 hover:border-purple-200 transition-colors"
+                                                                        >
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span>🎈</span>
+                                                                                <span className="text-sm font-medium text-slate-700">Add Balloons (₹400)</span>
+                                                                            </div>
+                                                                            <Plus size={16} className="text-indigo-600" />
+                                                                        </button>
+                                                                    )}
+                                                                    {!rawAddons.some(a => (a.addonType === 'ledBanner' || a.addonType === 'led_banner') && !a.isPaid) && (
+                                                                        <div>
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    const bannerType = (document.getElementById('new-banner-type') as HTMLSelectElement)?.value || 'Happy Birthday';
+                                                                                    try {
+                                                                                        await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
+                                                                                            addons: [{ type: 'ledBanner', value: bannerType, price: 400 }]
+                                                                                        });
+                                                                                        fetchEvents(startDate);
+                                                                                    } catch (e) { alert('Failed to add addon'); }
+                                                                                }}
+                                                                                className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-amber-50 hover:border-amber-200 transition-colors"
+                                                                            >
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span>💡</span>
+                                                                                    <span className="text-sm font-medium text-slate-700">Add LED Banner (₹400)</span>
+                                                                                </div>
+                                                                                <Plus size={16} className="text-indigo-600" />
+                                                                            </button>
+                                                                            <select id="new-banner-type" className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                                                                <option>Happy Birthday</option>
+                                                                                <option>Better Together</option>
+                                                                                <option>Happy Anniversary</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    )}
+                                                                    {!rawAddons.some(a => a.addonType === 'cake' && !a.isPaid) && (
+                                                                        <div>
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    const cakeMsg = (document.getElementById('new-cake-msg') as HTMLInputElement)?.value || '';
+                                                                                    try {
+                                                                                        await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
+                                                                                            addons: [{ type: 'cake', value: cakeMsg, price: 400 }]
+                                                                                        });
+                                                                                        fetchEvents(startDate);
+                                                                                    } catch (e) { alert('Failed to add addon'); }
+                                                                                }}
+                                                                                className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-pink-50 hover:border-pink-200 transition-colors"
+                                                                            >
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span>🎂</span>
+                                                                                    <span className="text-sm font-medium text-slate-700">Add Cake (₹400)</span>
+                                                                                </div>
+                                                                                <Plus size={16} className="text-indigo-600" />
+                                                                            </button>
+                                                                            <input
+                                                                                id="new-cake-msg"
+                                                                                type="text"
+                                                                                placeholder="Cake message (optional)"
+                                                                                maxLength={50}
+                                                                                className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    <p className="text-[10px] text-slate-400 font-medium">Click an add-on to add it. Collect payment separately below.</p>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><FileText size={16} /> Package / Event Details</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-slate-500 font-medium">Package Type</span>
-                                        <span className="text-sm font-bold text-slate-800">{activeEvent.packageType}</span>
-                                    </div>
-                                    {(activeEvent.packageType !== "Movie Time") && (
-                                        <>
-                                            <div className="flex justify-between">
-                                                <span className="text-sm text-slate-500 font-medium">Occasion</span>
-                                                <span className="text-sm font-bold text-slate-800">{activeEvent.occasion}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-sm text-slate-500 font-medium">Cake Message</span>
-                                                <span className="text-sm font-bold text-slate-800 italic">"{activeEvent.cakeMessage}"</span>
-                                            </div>
-                                        </>
-                                    )}
-                                    {activeEvent.specialRequests && (
-                                        <div className="flex justify-between">
-                                            <span className="text-sm text-slate-500 font-medium">Special Requests</span>
-                                            <span className="text-sm font-bold text-amber-700 italic max-w-[60%] text-right">"{activeEvent.specialRequests}"</span>
-                                        </div>
-                                    )}
+                            {/* Financials & IDs */}
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><CreditCard size={16} /> Financials</h3>
+                                    {(() => {
+                                        const balanceInt = parseInt(activeEvent.amountToCollect.replace(/[₹,]/g, ''));
+                                        const rawAddonsAll = activeEvent.rawAddons || [];
+                                        const unpaidAddonsTotal = rawAddonsAll.filter(a => !a.isPaid).reduce((s, a) => s + a.price, 0);
+                                        const fullTotal = balanceInt + unpaidAddonsTotal;
+                                        return (
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                                    <div>
+                                                        <span className="text-xs text-emerald-600 font-bold block">Amount Paid</span>
+                                                        <span className="text-[10px] text-emerald-500 font-medium line-clamp-2">{activeEvent.paymentDetails}</span>
+                                                    </div>
+                                                    <span className="text-base font-bold text-emerald-700 whitespace-nowrap ml-4">{activeEvent.amountPaid}</span>
+                                                </div>
 
-                                    {/* Add-Ons Section — Separate from Financials */}
-                                    {!activeEvent.isMaintenance && (
-                                        <div className="pt-4 border-t-2 border-indigo-100">
-                                            {(() => {
-                                                const rawAddons = activeEvent.rawAddons || [];
-                                                const paidAddons = rawAddons.filter(a => a.isPaid);
-                                                const unpaidAddons = rawAddons.filter(a => !a.isPaid);
-                                                const unpaidTotal = unpaidAddons.reduce((sum, a) => sum + a.price, 0);
-                                                const paidTotal = paidAddons.reduce((sum, a) => sum + a.price, 0);
-                                                const hasAnyAddon = activeEvent.addOns && (activeEvent.addOns.balloons || activeEvent.addOns.ledBanner || activeEvent.addOns.cake);
+                                                <div className="flex justify-between items-center bg-rose-50 p-3 rounded-lg border border-rose-100">
+                                                    <span className="text-xs text-rose-600 font-bold">Amount to Collect</span>
+                                                    <span className={`text-base font-bold ${fullTotal === 0 ? 'text-slate-400' : 'text-rose-700'}`}>₹{fullTotal.toLocaleString()}</span>
+                                                </div>
+                                                {unpaidAddonsTotal > 0 && (
+                                                    <p className="text-[10px] text-slate-500 font-medium">Includes ₹{balanceInt.toLocaleString()} balance + ₹{unpaidAddonsTotal.toLocaleString()} unpaid add-ons</p>
+                                                )}
 
-                                                const isCelebration = activeEvent.packageType !== 'Movie Time' && activeEvent.packageType !== 'Maintenance';
-
-                                                const addonLabel = (type: string) => {
-                                                    if (type === 'balloons') return '🎈 Balloons';
-                                                    if (type === 'ledBanner' || type === 'led_banner') return '💡 LED Banner';
-                                                    if (type === 'cake') return '🎂 Cake';
-                                                    return type;
-                                                };
-
-                                                return (
+                                                {fullTotal > 0 && (
                                                     <>
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                                                                <Ticket size={14} /> Add-Ons {isCelebration && <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 normal-case tracking-normal">Included in package</span>}
-                                                            </p>
-                                                            {!isCelebration && (
-                                                                <button
-                                                                    onClick={() => setEditingAddOns(!editingAddOns)}
-                                                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wider"
-                                                                >
-                                                                    {editingAddOns ? '✕ Close' : '+ Add / Edit'}
-                                                                </button>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Currently active addons — or default set for Celebration */}
-                                                        {(() => {
-                                                            if (isCelebration) {
-                                                                // Celebration: always show all 3 addons as included
-                                                                return (
-                                                                    <div className="space-y-2 mb-3">
-                                                                        <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
-                                                                            <span className="text-sm font-medium">🎈 Balloons</span>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-sm font-medium">💡 LED Banner</span>
-                                                                                <span className="text-[10px] text-slate-500">— {activeEvent.addOns?.ledBannerType || activeEvent.occasion || 'Happy Birthday'}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center p-2.5 rounded-lg border bg-slate-50 border-slate-200">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-sm font-medium">🎂 Cake</span>
-                                                                                {(activeEvent.cakeMessage || activeEvent.addOns?.cakeMessage) && <span className="text-[10px] text-slate-500 italic">— "{activeEvent.cakeMessage || activeEvent.addOns?.cakeMessage}"</span>}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                            if (!hasAnyAddon) return null;
-                                                            return (
-                                                                <div className="space-y-2 mb-3">
-                                                                    {rawAddons.map(addon => (
-                                                                        <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
-                                                                                {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>
-                                                                                {addon.isPaid ? (
-                                                                                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">PAID{addon.paymentMethod ? ` · ${addon.paymentMethod}` : ''}</span>
-                                                                                ) : (
-                                                                                    <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">UNPAID</span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            );
-                                                        })()}
-
-                                                        {/* Tally — only for Movie Time */}
-                                                        {hasAnyAddon && !isCelebration && (
-                                                            <div className="grid grid-cols-2 gap-2 mb-3">
-                                                                <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 text-center">
-                                                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Paid</p>
-                                                                    <p className="text-sm font-black text-emerald-700">₹{paidTotal.toLocaleString()}</p>
-                                                                </div>
-                                                                <div className={`p-2.5 rounded-lg border text-center ${unpaidTotal > 0 ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
-                                                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${unpaidTotal > 0 ? 'text-amber-600' : 'text-slate-400'}`}>To Collect</p>
-                                                                    <p className={`text-sm font-black ${unpaidTotal > 0 ? 'text-amber-700' : 'text-slate-400'}`}>₹{unpaidTotal.toLocaleString()}</p>
-                                                                </div>
+                                                        {showUpiProofPicker === 'balance' && (
+                                                            <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
+                                                                <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) {
+                                                                            handleCollectAll('UPI', file);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
                                                             </div>
                                                         )}
-
-                                                        {/* Edit Add-Ons Panel — only for Movie Time */}
-                                                        {editingAddOns && !isCelebration && (
-                                                            <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                                                                {/* Only show addons that don't already exist as unpaid */}
-                                                                {!rawAddons.some(a => a.addonType === 'balloons' && !a.isPaid) && (
-                                                                    <button
-                                                                        onClick={async () => {
-                                                                            try {
-                                                                                await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
-                                                                                    addons: [{ type: 'balloons', price: 400 }]
-                                                                                });
-                                                                                fetchEvents(startDate);
-                                                                            } catch (e) { alert('Failed to add addon'); }
-                                                                        }}
-                                                                        className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-purple-50 hover:border-purple-200 transition-colors"
-                                                                    >
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span>🎈</span>
-                                                                            <span className="text-sm font-medium text-slate-700">Add Balloons (₹400)</span>
-                                                                        </div>
-                                                                        <Plus size={16} className="text-indigo-600" />
-                                                                    </button>
-                                                                )}
-                                                                {!rawAddons.some(a => (a.addonType === 'ledBanner' || a.addonType === 'led_banner') && !a.isPaid) && (
-                                                                    <div>
-                                                                        <button
-                                                                            onClick={async () => {
-                                                                                const bannerType = (document.getElementById('new-banner-type') as HTMLSelectElement)?.value || 'Happy Birthday';
-                                                                                try {
-                                                                                    await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
-                                                                                        addons: [{ type: 'ledBanner', value: bannerType, price: 400 }]
-                                                                                    });
-                                                                                    fetchEvents(startDate);
-                                                                                } catch (e) { alert('Failed to add addon'); }
-                                                                            }}
-                                                                            className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-amber-50 hover:border-amber-200 transition-colors"
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span>💡</span>
-                                                                                <span className="text-sm font-medium text-slate-700">Add LED Banner (₹400)</span>
-                                                                            </div>
-                                                                            <Plus size={16} className="text-indigo-600" />
-                                                                        </button>
-                                                                        <select id="new-banner-type" className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
-                                                                            <option>Happy Birthday</option>
-                                                                            <option>Better Together</option>
-                                                                            <option>Happy Anniversary</option>
-                                                                        </select>
-                                                                    </div>
-                                                                )}
-                                                                {!rawAddons.some(a => a.addonType === 'cake' && !a.isPaid) && (
-                                                                    <div>
-                                                                        <button
-                                                                            onClick={async () => {
-                                                                                const cakeMsg = (document.getElementById('new-cake-msg') as HTMLInputElement)?.value || '';
-                                                                                try {
-                                                                                    await api.post(`/bookings/dd/${activeEvent.id}/addons`, {
-                                                                                        addons: [{ type: 'cake', value: cakeMsg, price: 400 }]
-                                                                                    });
-                                                                                    fetchEvents(startDate);
-                                                                                } catch (e) { alert('Failed to add addon'); }
-                                                                            }}
-                                                                            className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-pink-50 hover:border-pink-200 transition-colors"
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span>🎂</span>
-                                                                                <span className="text-sm font-medium text-slate-700">Add Cake (₹400)</span>
-                                                                            </div>
-                                                                            <Plus size={16} className="text-indigo-600" />
-                                                                        </button>
-                                                                        <input
-                                                                            id="new-cake-msg"
-                                                                            type="text"
-                                                                            placeholder="Cake message (optional)"
-                                                                            maxLength={50}
-                                                                            className="w-full mt-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none"
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                                <p className="text-[10px] text-slate-400 font-medium">Click an add-on to add it. Collect payment separately below.</p>
+                                                        {showUpiProofPicker !== 'balance' && (
+                                                            <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
+                                                                <button
+                                                                    onClick={() => handleCollectAll('Cash')}
+                                                                    className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
+                                                                >
+                                                                    Collect Cash
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleCollectAll('UPI')}
+                                                                    className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
+                                                                >
+                                                                    Collect UPI
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </>
-                                                );
-                                            })()}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Financials & IDs */}
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><CreditCard size={16} /> Financials</h3>
-                                {(() => {
-                                    const balanceInt = parseInt(activeEvent.amountToCollect.replace(/[₹,]/g, ''));
-                                    const rawAddonsAll = activeEvent.rawAddons || [];
-                                    const unpaidAddonsTotal = rawAddonsAll.filter(a => !a.isPaid).reduce((s, a) => s + a.price, 0);
-                                    const fullTotal = balanceInt + unpaidAddonsTotal;
-                                    return (
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                                        <div>
-                                            <span className="text-xs text-emerald-600 font-bold block">Amount Paid</span>
-                                            <span className="text-[10px] text-emerald-500 font-medium line-clamp-2">{activeEvent.paymentDetails}</span>
-                                        </div>
-                                        <span className="text-base font-bold text-emerald-700 whitespace-nowrap ml-4">{activeEvent.amountPaid}</span>
-                                    </div>
-
-                                    <div className="flex justify-between items-center bg-rose-50 p-3 rounded-lg border border-rose-100">
-                                        <span className="text-xs text-rose-600 font-bold">Amount to Collect</span>
-                                        <span className={`text-base font-bold ${fullTotal === 0 ? 'text-slate-400' : 'text-rose-700'}`}>₹{fullTotal.toLocaleString()}</span>
-                                    </div>
-                                    {unpaidAddonsTotal > 0 && (
-                                        <p className="text-[10px] text-slate-500 font-medium">Includes ₹{balanceInt.toLocaleString()} balance + ₹{unpaidAddonsTotal.toLocaleString()} unpaid add-ons</p>
-                                    )}
-
-                                    {fullTotal > 0 && (
-                                        <>
-                                            {showUpiProofPicker === 'balance' && (
-                                                <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
-                                                    <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                handleCollectAll('UPI', file);
-                                                            }
-                                                        }}
-                                                    />
-                                                    <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
-                                                </div>
-                                            )}
-                                            {showUpiProofPicker !== 'balance' && (
-                                                <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
-                                                    <button
-                                                        onClick={() => handleCollectAll('Cash')}
-                                                        className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
-                                                    >
-                                                        Collect Cash
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleCollectAll('UPI')}
-                                                        className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
-                                                    >
-                                                        Collect UPI
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                                    );
-                                })()}
-                            </div>
-
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Camera size={16} /> Photo IDs Uploaded</h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {activeEvent.guestIds && activeEvent.guestIds.length > 0 ? (
-                                        activeEvent.guestIds.map((gid) => (
-                                            <div
-                                                key={gid.id}
-                                                onClick={() => setPreviewGuestId(gid)}
-                                                className="border border-emerald-200 rounded-lg bg-emerald-50 h-24 flex flex-col items-center justify-center text-emerald-700 group cursor-pointer hover:border-emerald-400 hover:bg-emerald-100 transition-colors"
-                                            >
-                                                <CheckCircle2 size={20} className="mb-1" />
-                                                <span className="text-xs font-medium truncate max-w-[120px] px-1">{gid.fileName || `ID-${gid.id}`}</span>
-                                                <span className="text-[10px] text-emerald-500 mt-0.5">Click to view</span>
+                                                )}
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="col-span-2 text-center py-4 text-slate-400">
-                                            <Camera size={24} className="mx-auto mb-2 opacity-50" />
-                                            <span className="text-xs font-medium">No IDs uploaded yet</span>
-                                        </div>
-                                    )}
-                                    {/* Upload button for receptionist */}
-                                    <label className="border border-slate-200 border-dashed rounded-lg bg-white h-24 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
-                                        <Upload size={20} className="mb-1 group-hover:text-indigo-500" />
-                                        <span className="text-xs font-bold group-hover:text-indigo-600">+ Upload ID</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*,.pdf"
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const file = e.target.files?.[0];
-                                                if (!file || !activeEvent) return;
-                                                try {
-                                                    const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
-                                                    const formData = new FormData();
-                                                    formData.append("file", file);
-                                                    formData.append("ddBookingId", activeEvent.id);
-                                                    const res = await fetch("/api/uploads/guest-id", {
-                                                        method: "POST",
-                                                        headers: { Authorization: `Bearer ${token}` },
-                                                        body: formData,
-                                                    });
-                                                    if (res.ok) {
-                                                        alert("ID uploaded successfully!");
-                                                        fetchEvents(startDate);
-                                                    } else {
-                                                        alert("Upload failed");
-                                                    }
-                                                } catch { alert("Upload failed"); }
-                                                e.target.value = "";
-                                            }}
-                                        />
-                                    </label>
+                                        );
+                                    })()}
+                                </div>
+
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Camera size={16} /> Photo IDs Uploaded</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {activeEvent.guestIds && activeEvent.guestIds.length > 0 ? (
+                                            activeEvent.guestIds.map((gid) => (
+                                                <div
+                                                    key={gid.id}
+                                                    onClick={() => setPreviewGuestId(gid)}
+                                                    className="border border-emerald-200 rounded-lg bg-emerald-50 h-24 flex flex-col items-center justify-center text-emerald-700 group cursor-pointer hover:border-emerald-400 hover:bg-emerald-100 transition-colors"
+                                                >
+                                                    <CheckCircle2 size={20} className="mb-1" />
+                                                    <span className="text-xs font-medium truncate max-w-[120px] px-1">{gid.fileName || `ID-${gid.id}`}</span>
+                                                    <span className="text-[10px] text-emerald-500 mt-0.5">Click to view</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="col-span-2 text-center py-4 text-slate-400">
+                                                <Camera size={24} className="mx-auto mb-2 opacity-50" />
+                                                <span className="text-xs font-medium">No IDs uploaded yet</span>
+                                            </div>
+                                        )}
+                                        {/* Upload button for receptionist */}
+                                        <label className="border border-slate-200 border-dashed rounded-lg bg-white h-24 flex flex-col items-center justify-center text-slate-400 group cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
+                                            <Upload size={20} className="mb-1 group-hover:text-indigo-500" />
+                                            <span className="text-xs font-bold group-hover:text-indigo-600">+ Upload ID</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file || !activeEvent) return;
+                                                    try {
+                                                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                                                        const formData = new FormData();
+                                                        formData.append("file", file);
+                                                        formData.append("ddBookingId", activeEvent.id);
+                                                        const res = await fetch("/api/uploads/guest-id", {
+                                                            method: "POST",
+                                                            headers: { Authorization: `Bearer ${token}` },
+                                                            body: formData,
+                                                        });
+                                                        if (res.ok) {
+                                                            alert("ID uploaded successfully!");
+                                                            fetchEvents(startDate);
+                                                        } else {
+                                                            alert("Upload failed");
+                                                        }
+                                                    } catch { alert("Upload failed"); }
+                                                    e.target.value = "";
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Delete Booking — at the bottom */}
-                {!activeEvent.isMaintenance && (
-                    <div className="px-8 py-5 bg-slate-50 border-t border-slate-200">
-                        <button
-                            onClick={async () => {
-                                if (!confirm(`Are you sure you want to PERMANENTLY DELETE this booking for ${activeEvent.customerName}? This will also reverse any collected cash/UPI and cannot be undone.`)) return;
-                                try {
-                                    await api.delete(`/bookings/dd/${activeEvent.id}`);
-                                    alert('Booking deleted successfully.');
-                                    setSelectedEventId(null);
-                                    fetchEvents(startDate);
-                                } catch (err: any) {
-                                    console.error('Delete booking error:', err);
-                                    alert(err.message || 'Failed to delete booking');
-                                }
-                            }}
-                            className="w-full py-3 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center gap-2"
-                        >
-                            <X size={16} /> Delete Booking Permanently
-                        </button>
-                    </div>
+                    {/* Delete Booking — at the bottom */}
+                    {!activeEvent.isMaintenance && (
+                        <div className="px-8 py-5 bg-slate-50 border-t border-slate-200">
+                            <button
+                                onClick={async () => {
+                                    if (!confirm(`Are you sure you want to PERMANENTLY DELETE this booking for ${activeEvent.customerName}? This will also reverse any collected cash/UPI and cannot be undone.`)) return;
+                                    try {
+                                        await api.delete(`/bookings/dd/${activeEvent.id}`);
+                                        alert('Booking deleted successfully.');
+                                        setSelectedEventId(null);
+                                        fetchEvents(startDate);
+                                    } catch (err: any) {
+                                        console.error('Delete booking error:', err);
+                                        alert(err.message || 'Failed to delete booking');
+                                    }
+                                }}
+                                className="w-full py-3 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center gap-2"
+                            >
+                                <X size={16} /> Delete Booking Permanently
+                            </button>
+                        </div>
+                    )}
+                </div>
+                {previewGuestId && (
+                    <IdProofModal
+                        guestId={previewGuestId}
+                        onClose={() => setPreviewGuestId(null)}
+                        onDelete={async (id) => {
+                            const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                            const res = await fetch(`/api/uploads/guest-id/${id}`, {
+                                method: "DELETE",
+                                headers: { Authorization: `Bearer ${token}` },
+                            });
+                            if (!res.ok) throw new Error("Delete failed");
+                            fetchEvents(startDate);
+                        }}
+                    />
                 )}
-            </div>
-            {previewGuestId && (
-                <IdProofModal
-                    guestId={previewGuestId}
-                    onClose={() => setPreviewGuestId(null)}
-                    onDelete={async (id) => {
-                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
-                        const res = await fetch(`/api/uploads/guest-id/${id}`, {
-                            method: "DELETE",
-                            headers: { Authorization: `Bearer ${token}` },
-                        });
-                        if (!res.ok) throw new Error("Delete failed");
-                        fetchEvents(startDate);
-                    }}
-                />
-            )}
             </>
         );
     }
@@ -1057,7 +1101,7 @@ export default function Admin1Dashboard() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 animate-in fade-in slide-in-from-top-2">
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-indigo-900 uppercase">Occasion</label>
-                                            <select className="w-full bg-white border border-indigo-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
+                                            <select value={walkInOccasion} onChange={(e) => setWalkInOccasion(e.target.value)} className="w-full bg-white border border-indigo-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none">
                                                 <option>Happy Birthday</option>
                                                 <option>Anniversary</option>
                                                 <option>Proposal / Marry Me</option>
@@ -1066,7 +1110,7 @@ export default function Admin1Dashboard() {
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-indigo-900 uppercase">Cake Message</label>
-                                            <input type="text" placeholder="e.g. Happy Birthday Karan!" className="w-full bg-white border border-indigo-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
+                                            <input type="text" value={walkInCakeMessage} onChange={(e) => setWalkInCakeMessage(e.target.value)} placeholder="e.g. Happy Birthday Karan!" className="w-full bg-white border border-indigo-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 outline-none" />
                                         </div>
                                     </div>
                                 )}
@@ -1243,6 +1287,53 @@ export default function Admin1Dashboard() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Coupon Code Section */}
+                                <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100 space-y-3 animate-in fade-in slide-in-from-top-2">
+                                    <h3 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">🎟 Apply Coupon (Optional)</h3>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={walkInCouponCode}
+                                            onChange={(e) => { setWalkInCouponCode(e.target.value.toUpperCase()); setWalkInCouponError(""); }}
+                                            placeholder="Enter coupon code"
+                                            disabled={!!walkInAppliedCoupon}
+                                            className="flex-1 bg-white border border-emerald-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none disabled:opacity-50"
+                                        />
+                                        {walkInAppliedCoupon ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => { setWalkInAppliedCoupon(null); setWalkInCouponCode(""); setWalkInCouponError(""); }}
+                                                className="px-4 py-3 bg-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors"
+                                            >Remove</button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                disabled={walkInCouponLoading || !walkInCouponCode.trim()}
+                                                onClick={async () => {
+                                                    if (!walkInCouponCode.trim()) return;
+                                                    setWalkInCouponLoading(true);
+                                                    setWalkInCouponError("");
+                                                    try {
+                                                        const result = await api.post("/coupons/validate", { code: walkInCouponCode });
+                                                        if (result && result.valid) {
+                                                            setWalkInAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
+                                                        } else {
+                                                            setWalkInCouponError("Invalid or expired coupon code");
+                                                        }
+                                                    } catch (err: any) {
+                                                        setWalkInCouponError(err?.message || "Invalid or expired coupon code");
+                                                    } finally { setWalkInCouponLoading(false); }
+                                                }}
+                                                className="px-5 py-3 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                            >{walkInCouponLoading ? "..." : "Apply"}</button>
+                                        )}
+                                    </div>
+                                    {walkInCouponError && <p className="text-xs text-red-500 font-medium">{walkInCouponError}</p>}
+                                    {walkInAppliedCoupon && (
+                                        <p className="text-xs text-emerald-700 font-bold">✅ Coupon "{walkInAppliedCoupon.code}" applied — {walkInAppliedCoupon.discountType === "percentage" ? `${walkInAppliedCoupon.discountValue}% off` : `₹${walkInAppliedCoupon.discountValue} off`} (−₹{walkInCouponDiscount.toLocaleString()})</p>
+                                    )}
+                                </div>
 
                                 <div className="space-y-3">
                                     <label className="text-xs font-bold text-slate-700 uppercase border-b border-slate-200 pb-2 flex items-center gap-2">

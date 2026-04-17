@@ -405,8 +405,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     }
     const originalPrice = discount > 0 ? basePrice + discount : totalHours * discountHourRate;
 
-    // 50-50 Payment Split
-    const payNow = Math.round(total * 0.5);
+    // 50-50 Payment Split — ceil ensures payNow >= payAtVenue (no ₹1 rounding loss)
+    const payNow = Math.ceil(total / 2);
     const payAtVenue = total - payNow;
 
     // Group slots by period
@@ -555,7 +555,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 basePrice,
                 extraPersonCharge,
                 gstAmount: 0,
-                totalAmount: total,
+                totalAmount: subtotal,
                 amountPaid: payNow,
                 paymentMethod: "online",
                 paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
