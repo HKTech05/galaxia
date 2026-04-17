@@ -143,6 +143,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     // Manual Booking states
     const AMBROSE_VILLAS = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
     const [isManualBookingOpen, setIsManualBookingOpen] = useState(false);
+    const [manualForm, setManualForm] = useState({
         name: "",
         guests: 2,
         pets: 0,
