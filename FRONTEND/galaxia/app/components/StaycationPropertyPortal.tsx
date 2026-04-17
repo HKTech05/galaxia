@@ -152,6 +152,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         villa: "TAKE-1",
         paymentMethod: "Cash"
     });
+    const [customSplitMode, setCustomSplitMode] = useState(false);
+    const [customPrepaid, setCustomPrepaid] = useState("");
+    const [customBalance, setCustomBalance] = useState("");
 
     const calculatePrice = () => {
         let total = 0;
@@ -260,8 +263,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 checkInDate: manualForm.checkInDate.toISOString(),
                 checkOutDate: manualForm.checkOutDate.toISOString(),
                 totalAmount: calculatedTotal,
-                advanceAmount: calculatedTotal, // Full payment for walk-in
-                balanceAmount: 0,
+                advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculatedTotal,
+                balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
                 securityDeposit: 3000,
                 basePrice: Math.round(calculatedTotal / 1.05),
                 gstAmount: Math.round(calculatedTotal - (calculatedTotal / 1.05)),
@@ -271,6 +274,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             });
             fetchBookings();
             setIsManualBookingOpen(false);
+            setCustomSplitMode(false);
+            setCustomPrepaid("");
+            setCustomBalance("");
         } catch (err: any) {
             alert(err?.message || err?.error || "Failed to create manual booking");
         }
@@ -1053,6 +1059,42 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Payment Split Mode */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Split</label>
+                                    <div className="bg-slate-50 rounded-lg p-1 flex">
+                                        <button type="button" onClick={() => { setCustomSplitMode(false); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${!customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Full Payment</button>
+                                        <button type="button" onClick={() => { setCustomSplitMode(true); setCustomPrepaid(String(calculatePrice())); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Custom Split</button>
+                                    </div>
+                                </div>
+                                {customSplitMode && (
+                                    <div className="grid grid-cols-2 gap-3 animate-in fade-in">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prepaid (₹)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                                                value={customPrepaid}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setCustomPrepaid(val);
+                                                    const prepaidNum = parseInt(val || '0');
+                                                    setCustomBalance(String(Math.max(0, calculatePrice() - prepaidNum)));
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Balance (₹)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                                                value={customBalance}
+                                                readOnly
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                                 <button
                                     onClick={handleManualBookingSubmit}
                                     disabled={!manualForm.name}
