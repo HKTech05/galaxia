@@ -465,7 +465,7 @@ export default function Admin1Dashboard() {
             alert("Booking created successfully!");
         } catch (err: any) {
             console.error("Failed to create manual booking:", err);
-            alert(err.response?.data?.error || "Failed to create manual booking");
+            alert(err.message || "Failed to create manual booking");
         }
     };
 
@@ -850,17 +850,18 @@ export default function Admin1Dashboard() {
                                                         {showUpiProofPicker === 'balance' && (
                                                             <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
                                                                 <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (file) {
-                                                                            handleCollectAll('UPI', file);
-                                                                        }
-                                                                    }}
-                                                                />
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
+                                                                        <Camera size={18} className="text-indigo-500" />
+                                                                        <span className="text-[10px] font-bold text-indigo-700">Take Photo</span>
+                                                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleCollectAll('UPI', file); e.target.value = ''; }} />
+                                                                    </label>
+                                                                    <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
+                                                                        <Upload size={18} className="text-indigo-500" />
+                                                                        <span className="text-[10px] font-bold text-indigo-700">From Gallery</span>
+                                                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleCollectAll('UPI', file); e.target.value = ''; }} />
+                                                                    </label>
+                                                                </div>
                                                                 <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
                                                             </div>
                                                         )}
@@ -1228,29 +1229,45 @@ export default function Admin1Dashboard() {
                                         <label className="text-xs font-bold text-indigo-800 uppercase flex items-center gap-2">
                                             <Upload size={14} /> Upload UPI Payment Proof
                                         </label>
-                                        <label className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${walkInUpiProof ? 'border-emerald-300 bg-emerald-50' : 'border-indigo-300 bg-white hover:bg-indigo-50'}`}>
-                                            {walkInUpiProof ? (
-                                                <>
-                                                    <CheckCircle2 size={20} className="text-emerald-600" />
-                                                    <span className="text-sm font-bold text-emerald-700 truncate max-w-[200px]">{walkInUpiProof.name}</span>
-                                                    <button type="button" onClick={(e) => { e.preventDefault(); setWalkInUpiProof(null); }} className="text-xs text-red-500 font-bold ml-2 hover:text-red-700">Remove</button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Camera size={20} className="text-indigo-500" />
-                                                    <span className="text-sm font-medium text-indigo-700">Select photo from gallery</span>
-                                                </>
-                                            )}
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) setWalkInUpiProof(file);
-                                                }}
-                                            />
-                                        </label>
+                                        {walkInUpiProof ? (
+                                            <div className="flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50">
+                                                <CheckCircle2 size={20} className="text-emerald-600" />
+                                                <span className="text-sm font-bold text-emerald-700 truncate max-w-[200px]">{walkInUpiProof.name}</span>
+                                                <button type="button" onClick={() => setWalkInUpiProof(null)} className="text-xs text-red-500 font-bold ml-2 hover:text-red-700">Remove</button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <label className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
+                                                    <Camera size={22} className="text-indigo-500" />
+                                                    <span className="text-xs font-bold text-indigo-700">Take Photo</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        capture="environment"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) setWalkInUpiProof(file);
+                                                            e.target.value = '';
+                                                        }}
+                                                    />
+                                                </label>
+                                                <label className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
+                                                    <Upload size={22} className="text-indigo-500" />
+                                                    <span className="text-xs font-bold text-indigo-700">From Gallery</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) setWalkInUpiProof(file);
+                                                            e.target.value = '';
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

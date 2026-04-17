@@ -255,6 +255,9 @@ router.post("/", async (req, res) => {
         if (error?.message === "SLOT_CONFLICT") {
             return res.status(409).json({ error: "Time slot overlaps with existing booking" });
         }
+        if (error?.message === "PROPERTY_INACTIVE") {
+            return res.status(400).json({ error: "This screen is currently inactive or unavailable" });
+        }
         console.error("Create DD booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }

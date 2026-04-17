@@ -667,13 +667,27 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 </div>
                                             </div>
                                             {collected20 === "UPI" && (
-                                                <div className="mt-2">
-                                                    <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
-                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofBalance(e.target.files[0]); }} />
-                                                        <Upload size={14} className="text-indigo-600" />
-                                                        <span className="text-xs font-bold text-indigo-700 truncate max-w-[200px]">{upiProofBalance ? upiProofBalance.name : 'Upload UPI Proof'}</span>
-                                                        {upiProofBalance && <CheckCircle size={14} className="text-emerald-600 ml-auto" />}
-                                                    </label>
+                                                <div className="mt-2 space-y-2">
+                                                    {upiProofBalance ? (
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                                            <CheckCircle size={14} className="text-emerald-600" />
+                                                            <span className="text-xs font-bold text-emerald-700 truncate max-w-[150px]">{upiProofBalance.name}</span>
+                                                            <button type="button" onClick={() => setUpiProofBalance(null)} className="text-xs text-red-500 font-bold ml-auto">Remove</button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofBalance(e.target.files[0]); e.target.value = ''; }} />
+                                                                <Camera size={14} className="text-indigo-600" />
+                                                                <span className="text-xs font-bold text-indigo-700">Camera</span>
+                                                            </label>
+                                                            <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                                <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofBalance(e.target.files[0]); e.target.value = ''; }} />
+                                                                <Upload size={14} className="text-indigo-600" />
+                                                                <span className="text-xs font-bold text-indigo-700">Gallery</span>
+                                                            </label>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
 
@@ -701,13 +715,27 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 </div>
                                             </div>
                                             {collectedSec === "UPI" && (
-                                                <div className="mt-2">
-                                                    <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
-                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofDeposit(e.target.files[0]); }} />
-                                                        <Upload size={14} className="text-indigo-600" />
-                                                        <span className="text-xs font-bold text-indigo-700 truncate max-w-[200px]">{upiProofDeposit ? upiProofDeposit.name : 'Upload UPI Proof'}</span>
-                                                        {upiProofDeposit && <CheckCircle size={14} className="text-emerald-600 ml-auto" />}
-                                                    </label>
+                                                <div className="mt-2 space-y-2">
+                                                    {upiProofDeposit ? (
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                                            <CheckCircle size={14} className="text-emerald-600" />
+                                                            <span className="text-xs font-bold text-emerald-700 truncate max-w-[150px]">{upiProofDeposit.name}</span>
+                                                            <button type="button" onClick={() => setUpiProofDeposit(null)} className="text-xs text-red-500 font-bold ml-auto">Remove</button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofDeposit(e.target.files[0]); e.target.value = ''; }} />
+                                                                <Camera size={14} className="text-indigo-600" />
+                                                                <span className="text-xs font-bold text-indigo-700">Camera</span>
+                                                            </label>
+                                                            <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                                <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofDeposit(e.target.files[0]); e.target.value = ''; }} />
+                                                                <Upload size={14} className="text-indigo-600" />
+                                                                <span className="text-xs font-bold text-indigo-700">Gallery</span>
+                                                            </label>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
