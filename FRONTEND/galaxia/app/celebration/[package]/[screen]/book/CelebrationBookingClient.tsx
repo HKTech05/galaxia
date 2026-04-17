@@ -550,7 +550,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 customerPhone: phone,
                 customerEmail: email || null,
                 occasion: pkg.id === "celebration" ? ledBannerType : (addLedBanner ? ledBannerType : null),
-                cakeMessage: addCake ? cakeMessage : null,
+                cakeMessage: (addCake || pkg.id === "celebration") ? cakeMessage : null,
                 numGuests: guestCount,
                 basePrice,
                 extraPersonCharge,
