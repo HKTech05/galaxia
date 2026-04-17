@@ -546,7 +546,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             const payload = {
                 screenId: dbScreenId,
                 packageId: dbPackageId,
-                bookingDate: selectedDate.toISOString().split("T")[0],
+                bookingDate: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
                 startHour,
                 durationHours,
                 customerName,
@@ -1014,7 +1014,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({
                                                         screenId: dbScreenId,
-                                                        bookingDate: selectedDate.toISOString().split('T')[0],
+                                                        bookingDate: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
                                                         hours,
                                                     }),
                                                 })

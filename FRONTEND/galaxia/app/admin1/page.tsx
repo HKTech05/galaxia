@@ -76,7 +76,7 @@ export default function Admin1Dashboard() {
     const fetchEvents = useCallback(async (date: Date) => {
         try {
             setLoading(true);
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
             const data = await api.get(`/bookings/dd?date=${dateStr}`);
             if (Array.isArray(data)) {
                 const mapped: Event[] = data.map((b: any) => {
@@ -165,7 +165,7 @@ export default function Admin1Dashboard() {
             await api.post("/bookings/dd", {
                 screenId,
                 packageId: 1,
-                bookingDate: startDate.toISOString().split('T')[0],
+                bookingDate: `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`,
                 startHour: draftSlot.hour,
                 durationHours: parseInt(maintDuration),
                 customerName: "Maintenance Block",
@@ -329,7 +329,7 @@ export default function Admin1Dashboard() {
             await api.post("/bookings/dd", {
                 screenId,
                 packageId,
-                bookingDate: startDate.toISOString().split('T')[0],
+                bookingDate: `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`,
                 startHour: draftSlot!.hour,
                 durationHours: parseInt(duration),
                 customerName: walkinName,

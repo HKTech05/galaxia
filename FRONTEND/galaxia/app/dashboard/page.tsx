@@ -415,16 +415,29 @@ function DashboardContent() {
                     </div>
                 )}
 
-                {/* Past: Full amount paid + Deposit refunded */}
+                {/* Past: Payment breakdown — same as upcoming but labeled as completed */}
                 {!isUpcoming && (
                     <div className={`border-t ${borderMain} pt-4 mb-4`}>
                         <div className="space-y-3">
                             <div className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-green-900/10 border border-green-900/30" : "bg-green-50 border border-green-200"}`}>
                                 <div className="flex items-center gap-2">
                                     <svg className={`w-4 h-4 ${isDark ? "text-green-400" : "text-green-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                    <p className={`font-inter text-xs font-semibold ${isDark ? "text-green-400" : "text-green-700"}`}>Full Amount Paid</p>
+                                    <div>
+                                        <p className={`font-inter text-xs font-semibold ${isDark ? "text-green-400" : "text-green-700"}`}>Paid Online ({isStaycation ? "80%" : "50%"})</p>
+                                        <p className={`font-inter text-[10px] ${isDark ? "text-green-500/70" : "text-green-600/70"}`}>Payment confirmed</p>
+                                    </div>
                                 </div>
-                                <span className={`font-cinzel font-bold text-sm ${isDark ? "text-green-400" : "text-green-700"}`}>{booking.amount}</span>
+                                <span className={`font-cinzel font-bold text-sm ${isDark ? "text-green-400" : "text-green-700"}`}>{booking.payNow}</span>
+                            </div>
+                            <div className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200"}`}>
+                                <div className="flex items-center gap-2">
+                                    <svg className={`w-4 h-4 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <div>
+                                        <p className={`font-inter text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-700"}`}>Venue Payment ({isStaycation ? "20%" : "50%"})</p>
+                                        <p className={`font-inter text-[10px] ${isDark ? "text-amber-500/70" : "text-amber-600/70"}`}>Due at {isStaycation ? "check-in" : "venue"}</p>
+                                    </div>
+                                </div>
+                                <span className={`font-cinzel font-bold text-sm ${isDark ? "text-amber-400" : "text-amber-700"}`}>{booking.payAtVenue}</span>
                             </div>
                             {isStaycation && booking.securityDeposit && (
                                 <div className={`flex justify-between items-center p-3 rounded-lg ${booking.depositRefunded ? (isDark ? "bg-green-900/10 border border-green-900/30" : "bg-green-50 border border-green-200") : (isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200")}`}>

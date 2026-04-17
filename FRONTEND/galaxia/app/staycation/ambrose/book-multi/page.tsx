@@ -219,7 +219,8 @@ export default function BookMultiPage() {
                 const startDate = new Date();
                 const endDate = new Date();
                 endDate.setMonth(endDate.getMonth() + 3);
-                const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${anId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+                const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+                const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${anId}&startDate=${fmt(startDate)}&endDate=${fmt(endDate)}`);
                 if (res.ok) {
                     const data = await res.json();
                     setAmstelBookingCounts(data.bookingCounts || {});
@@ -240,7 +241,7 @@ export default function BookMultiPage() {
             for (let i = 0; i < n; i++) {
                 const d = new Date(checkInDate);
                 d.setDate(d.getDate() + i);
-                const ds = d.toISOString().split("T")[0];
+                const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                 const booked = amstelBookingCounts[ds] || 0;
                 const available = maxUnits - booked;
                 if (units > available) itemConflicts.push({ date: ds, available: Math.max(0, available) });
@@ -490,8 +491,8 @@ export default function BookMultiPage() {
                     notes: {
                         bookingType: "staycation-multi",
                         villaCount: String(cart.length),
-                        checkIn: checkInDate ? checkInDate.toISOString().split('T')[0] : '',
-                        checkOut: checkOutDate ? checkOutDate.toISOString().split('T')[0] : '',
+                        checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
+                        checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
                     },
                 });
             } catch (payErr: any) {

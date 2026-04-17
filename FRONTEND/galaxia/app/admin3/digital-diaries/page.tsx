@@ -505,19 +505,35 @@ export default function Admin1Dashboard() {
                 totalCollected += addon.price;
             }
 
-            // Step 3: Create payment record for tracking
-            // Track UPI payment to UPI logs (only for actual UPI payments with proof)
+            // Step 3: Create UPI payment records for tracking (only for actual UPI payments with proof)
             if (mode === "UPI" && proofFile && totalCollected > 0) {
                 try {
-                    const fd = new FormData();
-                    fd.append("propertySlug", "digital-diaries");
-                    fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
-                    fd.append("guestName", activeEvent.customerName || '');
-                    fd.append("amount", String(totalCollected));
-                    fd.append("paymentType", "balance");
-                    fd.append("note", `DD Collection — ${activeEvent.screen} via UPI`);
-                    fd.append("file", proofFile, proofFile.name);
-                    await api.upload("/upi-payments/upload", fd);
+                    // Log booking balance as a separate UPI entry
+                    if (balanceInt > 0) {
+                        const fd = new FormData();
+                        fd.append("propertySlug", "digital-diaries");
+                        fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
+                        fd.append("guestName", activeEvent.customerName || '');
+                        fd.append("amount", String(balanceInt));
+                        fd.append("paymentType", "balance");
+                        fd.append("note", `DD Balance Collection — ${activeEvent.screen} via UPI`);
+                        fd.append("file", proofFile, proofFile.name);
+                        await api.upload("/upi-payments/upload", fd);
+                    }
+
+                    // Log addon payments as a separate UPI entry (if any)
+                    const addonTotal = unpaidAddons.reduce((sum, a) => sum + a.price, 0);
+                    if (addonTotal > 0) {
+                        const fd2 = new FormData();
+                        fd2.append("propertySlug", "digital-diaries");
+                        fd2.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
+                        fd2.append("guestName", activeEvent.customerName || '');
+                        fd2.append("amount", String(addonTotal));
+                        fd2.append("paymentType", "addon");
+                        fd2.append("note", `DD Addon Collection — ${unpaidAddons.map(a => a.addonType).join(', ')} via UPI`);
+                        fd2.append("file", proofFile, proofFile.name);
+                        await api.upload("/upi-payments/upload", fd2);
+                    }
                 } catch (trackErr) {
                     console.error("Failed to record UPI payment:", trackErr);
                 }

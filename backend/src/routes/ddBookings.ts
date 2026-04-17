@@ -305,6 +305,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 package: true,
                 addons: true,
                 guestIds: true,
+                payments: true,
             },
             orderBy: [{ bookingDate: "desc" }, { startHour: "asc" }],
         });

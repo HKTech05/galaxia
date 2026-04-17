@@ -1643,10 +1643,23 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         
         // Use live DD bookings, filtered by ddViewDate
         const allMapped = ddBookingsLive.length > 0 ? ddBookingsLive.map((b: any) => {
-            const collected = b.collectedAmount || 0;
-            const originalAdvance = (b.amountPaid || 0) - collected;
-            const originalBalance = (b.totalAmount || 0) - originalAdvance;
+            const totalAmt = Number(b.totalAmount || 0);
+            const amtToCollect = Number(b.amountToCollect || 0);
+            // Original advance = total - original balance (amountToCollect at creation)
+            // After balance collection, amountToCollect becomes 0 and amountPaid becomes total
+            // Use collectedAmount from backend to figure out original state
+            const collected = Number(b.collectedAmount || 0);
+            const originalAdvance = totalAmt - (amtToCollect + collected);
+            const originalBalance = totalAmt - originalAdvance;
             const remainingUnpaid = Math.max(0, originalBalance - collected);
+
+            // Determine remaining payment method from payments array
+            let remainingPayMethod = '';
+            if (collected > 0 && b.payments && Array.isArray(b.payments)) {
+                const balancePayment = b.payments.find((p: any) => p.paymentType === 'balance');
+                if (balancePayment) remainingPayMethod = (balancePayment.method || '').toUpperCase();
+            }
+
             return {
             id: b.bookingRef || `#DD-${b.id}`,
             customer: b.customerName,
@@ -1659,7 +1672,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             upfrontAmt: `₹${originalAdvance.toLocaleString('en-IN')}`,
             upfrontMode: b.paymentMethod || "Online",
             remainingAmt: `₹${originalBalance.toLocaleString('en-IN')}`,
-            remainingStatus: remainingUnpaid <= 0 ? "Paid" : "Pending",
+            remainingStatus: remainingUnpaid <= 0 ? (remainingPayMethod ? `Paid by ${remainingPayMethod}` : "Paid") : "Pending",
             status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
             raw: b
             };

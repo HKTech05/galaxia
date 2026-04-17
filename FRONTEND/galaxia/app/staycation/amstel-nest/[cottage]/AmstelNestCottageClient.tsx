@@ -192,23 +192,13 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
                         <div className="flex items-center gap-3 mb-8">
                             <div className="w-10 h-[2px] bg-antique-gold" />
-                            <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-text-primary">Cottage Configuration & Amenities</h2>
+                            <h2 className="font-cinzel text-xl sm:text-2xl font-semibold text-text-primary">Cottage Configuration</h2>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                             {cottage.configuration.map((item, i) => (
                                 <div key={i} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-soft-gray/30 hover:border-antique-gold/30 transition-all">
                                     <span className="w-1.5 h-1.5 rounded-full bg-antique-gold/50 shrink-0" />
                                     <span className="text-text-primary font-inter text-xs sm:text-sm">{item}</span>
-                                </div>
-                            ))}
-                            <div className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-soft-gray/30">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                                <span className="text-text-primary font-inter text-xs sm:text-sm">Max {cottage.maxPersons || 4} Guests</span>
-                            </div>
-                            {parent.amenities.map((amenity, i) => (
-                                <div key={`amenity-${i}`} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-white hover:border-antique-gold/30 hover:shadow-sm transition-all">
-                                    <span className="text-antique-gold">★</span>
-                                    <span className="text-text-primary font-inter text-xs sm:text-sm">{amenity.name}</span>
                                 </div>
                             ))}
                         </div>
