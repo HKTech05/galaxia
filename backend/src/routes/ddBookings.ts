@@ -424,7 +424,7 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
                 customerName: original.customerName,
                 customerPhone: original.customerPhone,
                 customerEmail: original.customerEmail,
-                numberOfGuests: original.numberOfGuests,
+                numGuests: original.numGuests,
                 occasion: original.occasion,
                 cakeMessage: original.cakeMessage,
                 specialRequests: original.specialRequests ? `${original.specialRequests} [Transferred from ${original.bookingRef} — ₹${TRANSFER_FEE} transfer fee]` : `[Transferred from ${original.bookingRef} — ₹${TRANSFER_FEE} transfer fee]`,
@@ -433,7 +433,9 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
                 amountToCollect: original.amountToCollect + TRANSFER_FEE,
                 paymentMethod: original.paymentMethod,
                 paymentStatus: original.amountToCollect + TRANSFER_FEE > 0 ? "partial" : "paid",
-                idVerification: original.idVerification,
+                basePrice: original.basePrice,
+                extraPersonCharge: original.extraPersonCharge,
+                gstAmount: original.gstAmount,
                 bookingRef: newRef,
                 status: "confirmed",
             },
@@ -441,7 +443,7 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
 
         // Copy add-ons to new booking
         if (original.addons && original.addons.length > 0) {
-            await prisma.ddAddon.createMany({
+            await prisma.ddBookingAddon.createMany({
                 data: original.addons.map((a) => ({
                     bookingId: newBooking.id,
                     addonType: a.addonType,
