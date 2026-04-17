@@ -85,7 +85,7 @@ app.post("/webhook", async (req, res) => {
     const from = message.from;
     const phoneId = changes?.value?.metadata?.phone_number_id;
     
-    let botType = "staycation";
+    let botType = "celebration"; // Temporarily switched to Digital Diaries for testing
     if (phoneId && phoneId === process.env.WHATSAPP_CELEBRATION_PHONE_ID) {
       botType = "celebration";
     }

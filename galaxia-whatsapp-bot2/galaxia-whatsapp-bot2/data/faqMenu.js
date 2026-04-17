@@ -9,6 +9,8 @@ const fmt = (n) => "₹" + n.toLocaleString("en-IN");
 
 const BACK_TO_MENU = { label: "🏠 Main Menu", value: "main" };
 const PAYMENT_WARNING = "\n\n⚠️ *Booking Notice:* Payments can only be made securely through our website.";
+const WEBSITE_LINK = "\n\n🌐 Visit our website: https://galaxiaresorts.com";
+const CELEBRATION_WEBSITE_LINK = "\n\n🌐 Visit our website: https://www.galaxiaresorts.com/celebration";
 
 /* ── build property carousels ────────────────── */
 function buildCarousel(slugs) {
@@ -91,6 +93,28 @@ function buildPropertyNodes() {
   return nodes;
 }
 
+/* ── celebration bot helpers ─────────────────── */
+const MOVIE_TIME_MSG = (name, theme) => 
+  `🎭 *${name}* (${theme})\n\n` +
+  `💰 *Movie Time Only (for 2 people):*\n` +
+  `• 1 Hour: ₹999\n` +
+  `• 2 Hours: ₹1,500\n` +
+  `• 3 Hours: ₹2,500\n\n` +
+  `✨ *Includes:*\n• Private Screening\n• Dry Snacks & Popcorn\n• Juice, Chocolates & Water\n\n` +
+  `➕ *Optional Add-ons (₹400 each):*\n` +
+  `• Cake (250g)\n` +
+  `• Balloons Decoration\n` +
+  `• LED Message Tag\n\n` +
+  `🚻 Extra Person: ₹300\n` +
+  `🔒 No CCTV | 🆔 ID Proof Mandatory.`;
+
+const CELEBRATION_MSG = (name, theme) =>
+  `🎉 *${name}* (${theme})\n` +
+  `*Birthday/Anniversary Celebration Package*\n\n` +
+  `💰 *Price: ₹2,950* (for 2 people)\n\n` +
+  `✨ *Includes:*\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n` +
+  `🔒 No CCTV | 🆔 ID Proof Mandatory.`;
+
 /* ── static menu tree ────────────────────────── */
 const staticMenu = {
 
@@ -102,7 +126,8 @@ const staticMenu = {
     options: [
       { label: "💰 Budget Stays", value: "budget_properties" },
       { label: "✨ Premium Stays", value: "premium_properties" },
-      { label: "ℹ️ More Info & FAQs", value: "staycation_more_info" }
+      { label: "ℹ️ More Info & FAQs", value: "staycation_more_info" },
+      { label: "🌐 Visit Website", value: "visit_website" }
     ]
   },
 
@@ -138,6 +163,7 @@ const staticMenu = {
       { label: "🏛️ Santorini", value: "santorini_details", description: "Greece / Mediterranean Theme" },
       { label: "🌴 Bamboosa", value: "bamboosa_details", description: "Bali Inspired 2 BHK Villa" },
       { label: "🌲 Cypress", value: "cypress_details", description: "Machan / Treehouse Theme" },
+      { label: "🌐 Visit Website", value: "visit_website" },
       BACK_TO_MENU
     ]
   },
@@ -237,38 +263,90 @@ const staticMenu = {
     message: "🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala.",
     options: [
       { label: "🎥 Movie Time", value: "movie_time" },
-      { label: "🎉 Celebration Packs", value: "deco_movie" },
-      { label: "❓ FAQs & Support", value: "faqs_celebration" }
+      { label: "🎉 Celebration Packs", value: "deco_screens" },
+      { label: "❓ FAQs & Support", value: "faqs_celebration" },
+      { label: "🌐 Visit Website", value: "visit_cel_website" }
     ]
   },
 
   movie_time: {
-    message: "🎥 *Movie Time – Private Screening*",
+    message: "🎥 *Movie Time – Private Screening*\n\nChoose from our unique themed screens:",
     options: [
-      { label: "🏖️ Sandy Screen", value: "screen_sandy" },
-      { label: "💕 Cine Love", value: "screen_cinelove" },
-      { label: "🚗 Park N Watch", value: "screen_parknwatch" },
-      { label: "🏛️ Baywatch", value: "screen_baywatch" },
+      { label: "🏖️ Sandy Screen", value: "screen_sandy", description: "Beach theme" },
+      { label: "💕 Cine Love", value: "screen_cinelove", description: "Romantic theme" },
+      { label: "🚗 Park N Watch", value: "screen_parknwatch", description: "Car theme" },
+      { label: "🏛️ Baywatch", value: "screen_baywatch", description: "Greece theme" },
       BACK_TO_MENU
     ]
   },
 
-  book_movietime: { message: "🔗 https://galaxiaresorts.com/celebration/movie-time", options: [BACK_TO_MENU] },
-  book_deco: { message: "🔗 https://galaxiaresorts.com/celebration/celebration", options: [BACK_TO_MENU] },
+  screen_parknwatch: {
+    message: MOVIE_TIME_MSG("Park N Watch", "Car Theme"),
+    options: [ { label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU ]
+  },
+  screen_cinelove: {
+    message: MOVIE_TIME_MSG("Cine Love", "Romantic Theme"),
+    options: [ { label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU ]
+  },
+  screen_sandy: {
+    message: MOVIE_TIME_MSG("Sandy Screen", "Beach Theme"),
+    options: [ { label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU ]
+  },
+  screen_baywatch: {
+    message: MOVIE_TIME_MSG("Baywatch", "Greece Theme"),
+    options: [ { label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU ]
+  },
+
+  deco_screens: {
+    message: "🎉 *Celebration Packs*\n\nChoose a screen for your special occasion:",
+    options: [
+      { label: "💕 Cine Love", value: "deco_cinelove", description: "Romantic theme" },
+      { label: "🏖️ Sandy Screen", value: "deco_sandy", description: "Beach theme" },
+      { label: "🚗 Park N Watch", value: "deco_parknwatch", description: "Car theme" },
+      { label: "🏛️ Baywatch", value: "deco_baywatch", description: "Greece theme" },
+      BACK_TO_MENU
+    ]
+  },
+
+  deco_cinelove: { message: CELEBRATION_MSG("Cine Love", "Romantic Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
+  deco_sandy: { message: CELEBRATION_MSG("Sandy Screen", "Beach Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
+  deco_parknwatch: { message: CELEBRATION_MSG("Park N Watch", "Car Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
+  deco_baywatch: { message: CELEBRATION_MSG("Baywatch", "Greece Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
+
+  book_movietime: { message: "🔗 *Book Movie Time Only:*\nhttps://galaxiaresorts.com/celebration/movie-time" + PAYMENT_WARNING, options: [BACK_TO_MENU] },
+  book_deco: { message: "🔗 *Book Celebration Pack:*\nhttps://galaxiaresorts.com/celebration/celebration" + PAYMENT_WARNING, options: [BACK_TO_MENU] },
 
   faqs_celebration: {
-    message: "❓ *FAQs*",
+    message: "❓ *Frequently Asked Questions*",
     options: [
-      { label: "🔒 Privacy", value: "policy_safety" },
-      { label: "💳 Payments", value: "faq_booking" },
+      { label: "🥣 Add-ons & People", value: "faq_cel_food" },
+      { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" },
+      { label: "⏰ Timings & Rules", value: "faq_cel_rules" },
       { label: "👤 Talk to a Human", value: "human" },
       BACK_TO_MENU
     ]
   },
 
-  policy_safety: { message: "🔒 *Privacy*\n\nNo CCTV inside screening rooms.", options: [BACK_TO_MENU] },
+  faq_cel_food: {
+    message: "🍽️ *Add-ons & Extra People*\n\n• *Optional Add-ons (₹400 each):* Extra Cake (250g), Balloons Decoration, or LED Message Tag.\n• _Note: Add-ons are specifically for 'Movie Time Only' bookings._\n• *Extra Person:* ₹300 per head.",
+    options: [ BACK_TO_MENU ]
+  },
 
-  human: { message: "👤 *Talk to a Human*\n\nOur team will reply to this chat shortly.", options: [BACK_TO_MENU] }
+  faq_cel_privacy: {
+    message: "🔒 *Privacy & Safety*\n\n• Your privacy is our priority.\n• *Strictly No CCTV* inside any screening rooms.\n• You have complete privacy for your event.",
+    options: [ BACK_TO_MENU ]
+  },
+
+  faq_cel_rules: {
+    message: "⏰ *Timings & Rules*\n\n• Slots are fixed as per your booking.\n• *ID Proof is Mandatory* for all guests.\n• Valid government ID (18+) required.",
+    options: [ BACK_TO_MENU ]
+  },
+
+  human: { message: "👤 *Talk to a Human*\n\nOur team will reply to this chat shortly.", options: [BACK_TO_MENU] },
+
+  visit_website: { message: "🌐 *Galaxia Resorts Website*\n\nExplore our full range of offerings, book stays, and discover more on our official website." + WEBSITE_LINK, options: [BACK_TO_MENU] },
+
+  visit_cel_website: { message: "🌐 *Digital Diaries Website*\n\nExplore our full range of offerings, book premium screens, and discover more on our official website." + CELEBRATION_WEBSITE_LINK, options: [BACK_TO_MENU] }
 };
 
 const menuTree = { ...staticMenu, ...buildPropertyNodes() };

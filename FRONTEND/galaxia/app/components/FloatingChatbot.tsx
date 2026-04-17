@@ -1,134 +1,369 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+
+/* ═══════════════════════════════════════════════
+   EMBEDDED FAQ DATA — ported from chatbot server
+   ═══════════════════════════════════════════════ */
+
+const fmt = (n: number) => "₹" + n.toLocaleString("en-IN");
+
+interface MenuNode {
+    message: string;
+    options?: { label: string; value: string; description?: string }[];
+    link?: string;
+    image?: string;
+    carousel?: { title: string; rating: string; location: string; price: string; image: string; actionValue: string }[];
+}
+
+const properties = [
+    { name: "Hill View", slug: "hill-view", type: "Budget Mountain View Apartment", rating: "4.6 (854 reviews)", location: "Karjat, Maharashtra", checkIn: "1:00 PM", checkOut: "10:00 AM", pricing: { weekday: 2500, weekend: 3950, prime: 4450 }, extraPerson: 600, kidsCharges: 400, foodPolicy: "Food not included. Society restaurant available (Veg & Non-Veg).", securityDeposit: 2000, petsAllowed: true, amenities: ["Mountain Balcony", "Smart TV", "2 AC", "WiFi", "Free Parking", "Society Pool Access"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/yYBcjkewtYMNXPmY9" },
+    { name: "Mount View", slug: "mount-view", type: "Bathtub Mountain Apartment", rating: "4.5 (612 reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 3500, weekend: 4950, prime: 5950 }, extraPerson: 800, kidsCharges: 500, foodPolicy: "Food not included. Veg & Non-Veg restaurant available.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Bathtub", "Mountain Balcony", "Smart TV", "Music Player", "WiFi"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/yYBcjkewtYMNXPmY9" },
+    { name: "Heavenly Villas", slug: "heavenly-villas", type: "Studio Room Private Indoor Pool Villa", rating: "4.8 (1.1k reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 3950, weekend: 4950, prime: null }, extraPerson: 800, kidsCharges: 500, foodPolicy: "Food not included. Restaurant available nearby.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Indoor Pool", "Swing", "Smart TV", "WiFi"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/yYBcjkewtYMNXPmY9" },
+    { name: "La Paraiso", slug: "la-paraiso", type: "Premium Private Pool Villa", rating: "4.9 (2.3k reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 4950, weekend: 7500, prime: 8500 }, extraPerson: 1200, kidsCharges: 800, foodPolicy: "Restaurant 10 steps away. Veg allowed inside. Non-veg in restaurant only.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Pool", "Private Garden", "Gazebo", "Smart TV"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/EsM9k4zGxDTbSufMA" },
+    { name: "Amstel Nest", slug: "amstel-nest", type: "Indoor Pool Cottages (Meals Included)", rating: "4.7 (945 reviews)", location: "Karjat, Maharashtra", checkIn: "1:00 PM", checkOut: "10:00 AM", pricing: { weekday: 4950, weekend: 6950, prime: null }, extraPerson: 2000, kidsCharges: 1000, foodPolicy: "Meals Included (Veg Only). Jain available on prior notice.", securityDeposit: 2000, petsAllowed: false, amenities: ["Indoor Pool", "Gaming Zone", "Boating", "WiFi"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/RuZGUE9qZTcz7w3S7" },
+    { name: "Ambrose", slug: "ambrose", type: "Themed Private Pool Villas", rating: "4.9 (3.1k reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 5500, weekend: 6500, prime: null }, extraPerson: null, kidsCharges: null, foodPolicy: "Meals Included (Veg Only).", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Pool", "Garden Seating", "Smart TV", "2 AC"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/2NEib4Vz9raNqLY5A" },
+    { name: "Take-1", slug: "take-1", type: "Film-Inspired Themed Villa", rating: "4.8 (432 reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 5500, weekend: 6500, prime: null }, extraPerson: null, kidsCharges: null, foodPolicy: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Pool", "Indian Cinema Decor", "Smart TV", "AC"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/2NEib4Vz9raNqLY5A" },
+    { name: "Alta", slug: "alta", type: "Wooden Countryside Aesthetics Villa", rating: "4.9 (512 reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 5500, weekend: 6500, prime: null }, extraPerson: null, kidsCharges: null, foodPolicy: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Pool", "Earthy Wooden Textures", "Smart TV", "AC"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/2NEib4Vz9raNqLY5A" },
+    { name: "Santorini", slug: "santorini", type: "Mediterranean-Style Themed Villa", rating: "4.9 (893 reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 5500, weekend: 6500, prime: null }, extraPerson: null, kidsCharges: null, foodPolicy: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Pool", "White & Blue Interiors", "Smart TV", "AC"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/2NEib4Vz9raNqLY5A" },
+    { name: "Bamboosa", slug: "bamboosa", type: "Bali-Inspired 2 King Bedroom Villa", rating: "5.0 (201 reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 10500, weekend: 11500, prime: null }, extraPerson: null, kidsCharges: null, foodPolicy: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.", securityDeposit: 3000, petsAllowed: true, amenities: ["Private Pool", "Spacious Living Room", "Bali-Inspired Interiors", "2 Bedrooms", "AC", "Smart TV"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/2NEib4Vz9raNqLY5A" },
+    { name: "Cypress", slug: "cypress", type: "Elevated Treehouse-Style Villa", rating: "4.8 (342 reviews)", location: "Karjat, Maharashtra", checkIn: "2:00 PM", checkOut: "10:00 AM", pricing: { weekday: 5500, weekend: 6500, prime: null }, extraPerson: null, kidsCharges: null, foodPolicy: "Meals Included — Lunch, Dinner & Breakfast. Only Veg.", securityDeposit: 3000, petsAllowed: true, amenities: ["Glass-Bottom Pool", "Mountain Deck", "Treehouse Style", "Smart TV", "AC"], travelInfo: "Auto/cab available from Karjat station ₹400-500. 30-40 mins.", mapLink: "https://maps.app.goo.gl/2NEib4Vz9raNqLY5A" },
+];
+
+const BACK_TO_MENU = { label: "🏠 Main Menu", value: "main" };
+const PAYMENT_WARNING = "\n\n⚠️ Booking Notice: Payments can only be made securely through our website.";
+
+function buildPropertyNodes(): Record<string, MenuNode> {
+    const nodes: Record<string, MenuNode> = {};
+    for (const p of properties) {
+        const k = p.slug;
+        nodes[`${k}_details`] = {
+            message:
+                `🏡 ${p.name}\n${p.type}\n\n` +
+                `💰 Stay Pricing: (Excl. GST)\n` +
+                `  • Weekday: ${fmt(p.pricing.weekday)} + 5% GST\n` +
+                `  • Weekend: ${fmt(p.pricing.weekend)} + 5% GST\n` +
+                (p.extraPerson ? `  • Extra Adult: ${fmt(p.extraPerson)} + 5% GST\n` : "") +
+                (p.kidsCharges ? `  • Kids (5-10 yrs): ${fmt(p.kidsCharges)} + 5% GST\n` : "") +
+                `\n🕒 Check-in: ${p.checkIn} | Check-out: ${p.checkOut}\n` +
+                `🍽️ Food: ${p.foodPolicy}\n` +
+                `🐾 Pets: ${p.petsAllowed ? "Allowed ✅ (₹600 extra)" : "Not Allowed ❌"}\n` +
+                `💵 Security Deposit: ${fmt(p.securityDeposit)}\n` +
+                `✨ Amenities: ${p.amenities.join(", ")}` +
+                PAYMENT_WARNING,
+            options: [
+                { label: "📅 Check Availability", value: `${k}_book` },
+                { label: "👤 Talk to Human", value: "human" },
+                BACK_TO_MENU,
+            ],
+        };
+        nodes[`${k}_book`] = {
+            message: `📅 Check Availability & Book ${p.name}\n\nSelect your dates on our official booking portal:` + PAYMENT_WARNING,
+            link: `https://galaxiaresorts.com/staycation/${p.slug}`,
+            options: [{ label: "📋 Full Details", value: `${k}_details` }, BACK_TO_MENU],
+        };
+    }
+    return nodes;
+}
+
+const menuTree: Record<string, MenuNode> = {
+    /* ── STAYCATION BOT ── */
+    staycation_main: {
+        message: "👋 Welcome to Galaxia Staycations!\n\nExplore our luxury villas in Karjat. Choose a category below:",
+        options: [
+            { label: "💰 Budget Stays", value: "budget_properties" },
+            { label: "✨ Premium Stays", value: "premium_properties" },
+            { label: "ℹ️ More Info & FAQs", value: "staycation_more_info" },
+            { label: "🌐 Visit Website", value: "visit_website" },
+        ],
+    },
+    staycation_more_info: {
+        message: "ℹ️ More Information\n\nChoose a topic below:",
+        options: [
+            { label: "❓ Common Questions", value: "faqs_staycation" },
+            { label: "📍 Location & Travel", value: "staycation_location" },
+            { label: "📜 Resort Policies", value: "policies" },
+            BACK_TO_MENU,
+        ],
+    },
+    budget_properties: {
+        message: "💰 Budget-Friendly Properties (Under ₹5k)",
+        options: [
+            { label: "⛰️ Hill View", value: "hill-view_details", description: "1BHK Apt | Common Pool" },
+            { label: "🛁 Mount View", value: "mount-view_details", description: "Bathtub in Balcony" },
+            { label: "✨ Heavenly Villas", value: "heavenly-villas_details", description: "Studio | Private Indoor Pool" },
+            BACK_TO_MENU,
+        ],
+    },
+    premium_properties: {
+        message: "✨ Premium Collection (₹5k+ / Themed Villas)",
+        options: [
+            { label: "🌴 La Paraiso", value: "la-paraiso_details", description: "Premium Private Pool Villa" },
+            { label: "🏘️ Amstel Nest", value: "amstel-nest_details", description: "Indoor Pool Cottage (Meals Inc.)" },
+            { label: "🎬 Take-1", value: "take-1_details", description: "Bollywood Cinema Theme" },
+            { label: "🪵 Alta", value: "alta_details", description: "Rustic Countryside Theme" },
+            { label: "🏛️ Santorini", value: "santorini_details", description: "Greece / Mediterranean Theme" },
+            { label: "🌴 Bamboosa", value: "bamboosa_details", description: "Bali Inspired 2 BHK Villa" },
+            { label: "🌲 Cypress", value: "cypress_details", description: "Machan / Treehouse Theme" },
+            BACK_TO_MENU,
+        ],
+    },
+    faqs_staycation: {
+        message: "❓ Common Questions\n\nChoose a topic:",
+        options: [
+            { label: "🍽️ Food Options", value: "faq_food" },
+            { label: "⏰ Check-in/out", value: "faq_timings" },
+            { label: "🚗 Driver/Staff", value: "faq_staff" },
+            { label: "🎵 Music & Parties", value: "faq_party" },
+            { label: "🍺 Alcohol Policy", value: "faq_alcohol" },
+            { label: "💳 Booking & Payment", value: "faq_booking" },
+            { label: "👤 Talk to a Human", value: "human" },
+            BACK_TO_MENU,
+        ],
+    },
+    faq_food: { message: "🍽️ Is food available or included?\n\n• Premium Villas: Most themed villas include Breakfast, Lunch & Dinner (Veg Only).\n• Budget Apartments: Not included; society restaurant is 10 steps away.\n• Driver Food: ₹1,000 extra for all meals (Lunch, Dinner & Breakfast).", options: [{ label: "🏡 View Properties", value: "staycation_main" }, BACK_TO_MENU] },
+    faq_staff: { message: "🚗 Can our Driver or Staff stay?\n\n• We do not have separate staff quarters inside the villas.\n• Drivers can stay in their cars within the parking area.\n• Food will be provided for them at ₹1,000 per person (includes Lunch, Dinner, and Breakfast).", options: [{ label: "👤 Talk to Human", value: "human" }, BACK_TO_MENU] },
+    faq_timings: { message: "⏰ Check-in & Check-out\n\n• Standard Check-in: 1:00 PM / 2:00 PM\n• Standard Check-out: 10:00 AM", options: [BACK_TO_MENU] },
+    faq_party: { message: "🎵 Music Policy\n\n• Moderate volume allowed during the day.\n• Loud music after 10 PM must be avoided to respect other guests and neighbors.", options: [BACK_TO_MENU] },
+    faq_alcohol: { message: "🍺 Alcohol Policy\n\nAllowed inside private villas. Please maintain a peaceful environment.", options: [BACK_TO_MENU] },
+    faq_booking: { message: "💳 How to Book & Pay\n\nAll bookings must be made through galaxiaresorts.com.\n\n⚠️ Payments only via official website.", options: [BACK_TO_MENU] },
+    staycation_location: { message: "📍 How to Reach Galaxia Resorts\n\n📌 Google Map Links:\n• Ambrose Villas: maps.app.goo.gl/2NEib4Vz9raNqLY5A\n• Amstel Nest: maps.app.goo.gl/RuZGUE9qZTcz7w3S7\n• La Paraiso: maps.app.goo.gl/EsM9k4zGxDTbSufMA\n• Hill View/Mount View: maps.app.goo.gl/yYBcjkewtYMNXPmY9\n\n🚂 Nearest Station: Karjat (30-40 mins via auto/cab).\n🚗 From Mumbai: ~2 hours via Mumbai-Pune Expressway.", options: [BACK_TO_MENU] },
+    policies: { message: "📜 Resort Policies", options: [{ label: "❌ Cancellation", value: "policy_cancellation" }, { label: "❤️ Couples Policy", value: "policy_couples" }, { label: "🐾 Pet Policy", value: "policy_pets" }, { label: "👤 Talk to Human", value: "human" }, BACK_TO_MENU] },
+    policy_cancellation: { message: "❌ Cancellation & Refund\n\nAll bookings are Non-Refundable and Non-Transferable.", options: [BACK_TO_MENU] },
+    policy_pets: { message: "🐾 Pets Policy\n\n✅ Pets Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose villas.\n💰 Cost: ₹600 extra per pet.\n❌ Not Allowed: Amstel Nest.", options: [BACK_TO_MENU] },
+    policy_couples: { message: "❤️ Couples Policy\n\nUnmarried couples welcome with valid gov ID (18+).", options: [BACK_TO_MENU] },
+    visit_website: { message: "🌐 Galaxia Resorts Website\n\nExplore our full range of offerings, book stays, and discover more on our official website.", link: "https://galaxiaresorts.com", options: [BACK_TO_MENU] },
+
+    /* ── CELEBRATION / DIGITAL DIARIES BOT ── */
+    celebration_main: {
+        message: "🎬 Welcome to Digital Diaries!\n\nPremium private cinema screenings in Wadala.",
+        options: [
+            { label: "🎥 Movie Time", value: "movie_time" },
+            { label: "🎉 Celebration Packs", value: "deco_screens" },
+            { label: "❓ FAQs & Support", value: "faqs_celebration" },
+            { label: "🌐 Visit Website", value: "visit_cel_website" },
+        ],
+    },
+    movie_time: {
+        message: "🎥 Movie Time – Private Screening\n\nChoose from our unique themed screens:",
+        options: [
+            { label: "🏖️ Sandy Screen", value: "screen_sandy", description: "Beach theme" },
+            { label: "💕 Cine Love", value: "screen_cinelove", description: "Romantic theme" },
+            { label: "🚗 Park N Watch", value: "screen_parknwatch", description: "Car theme" },
+            { label: "🏛️ Baywatch", value: "screen_baywatch", description: "Greece theme" },
+            BACK_TO_MENU,
+        ],
+    },
+    screen_sandy: { message: "🎭 Sandy Screen (Beach Theme)\n\n💰 Movie Time Only (for 2 people):\n• 1 Hour: ₹999\n• 2 Hours: ₹1,500\n• 3 Hours: ₹2,500\n\n✨ Includes:\n• Private Screening\n• Dry Snacks & Popcorn\n• Juice, Chocolates & Water\n\n➕ Optional Add-ons (₹400 each):\n• Cake (250g)\n• Balloons Decoration\n• LED Message Tag\n\n🚻 Extra Person: ₹300\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU] },
+    screen_cinelove: { message: "🎭 Cine Love (Romantic Theme)\n\n💰 Movie Time Only (for 2 people):\n• 1 Hour: ₹999\n• 2 Hours: ₹1,500\n• 3 Hours: ₹2,500\n\n✨ Includes:\n• Private Screening\n• Dry Snacks & Popcorn\n• Juice, Chocolates & Water\n\n➕ Optional Add-ons (₹400 each):\n• Cake (250g)\n• Balloons Decoration\n• LED Message Tag\n\n🚻 Extra Person: ₹300\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU] },
+    screen_parknwatch: { message: "🎭 Park N Watch (Car Theme)\n\n💰 Movie Time Only (for 2 people):\n• 1 Hour: ₹999\n• 2 Hours: ₹1,500\n• 3 Hours: ₹2,500\n\n✨ Includes:\n• Private Screening\n• Dry Snacks & Popcorn\n• Juice, Chocolates & Water\n\n➕ Optional Add-ons (₹400 each):\n• Cake (250g)\n• Balloons Decoration\n• LED Message Tag\n\n🚻 Extra Person: ₹300\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU] },
+    screen_baywatch: { message: "🎭 Baywatch (Greece Theme)\n\n💰 Movie Time Only (for 2 people):\n• 1 Hour: ₹999\n• 2 Hours: ₹1,500\n• 3 Hours: ₹2,500\n\n✨ Includes:\n• Private Screening\n• Dry Snacks & Popcorn\n• Juice, Chocolates & Water\n\n➕ Optional Add-ons (₹400 each):\n• Cake (250g)\n• Balloons Decoration\n• LED Message Tag\n\n🚻 Extra Person: ₹300\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU] },
+    deco_screens: {
+        message: "🎉 Celebration Packs\n\nChoose a screen for your special occasion:",
+        options: [
+            { label: "💕 Cine Love", value: "deco_cinelove", description: "Romantic theme" },
+            { label: "🏖️ Sandy Screen", value: "deco_sandy", description: "Beach theme" },
+            { label: "🚗 Park N Watch", value: "deco_parknwatch", description: "Car theme" },
+            { label: "🏛️ Baywatch", value: "deco_baywatch", description: "Greece theme" },
+            BACK_TO_MENU,
+        ],
+    },
+    deco_cinelove: { message: "🎉 Cine Love (Romantic Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
+    deco_sandy: { message: "🎉 Sandy Screen (Beach Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
+    deco_parknwatch: { message: "🎉 Park N Watch (Car Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
+    deco_baywatch: { message: "🎉 Baywatch (Greece Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
+    book_movietime: { message: "🔗 Book Movie Time Only:\nhttps://galaxiaresorts.com/celebration/movie-time" + PAYMENT_WARNING, link: "https://galaxiaresorts.com/celebration/movie-time", options: [BACK_TO_MENU] },
+    book_deco: { message: "🔗 Book Celebration Pack:\nhttps://galaxiaresorts.com/celebration/celebration" + PAYMENT_WARNING, link: "https://galaxiaresorts.com/celebration/celebration", options: [BACK_TO_MENU] },
+    faqs_celebration: { message: "❓ Frequently Asked Questions", options: [{ label: "🥣 Add-ons & People", value: "faq_cel_food" }, { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" }, { label: "⏰ Timings & Rules", value: "faq_cel_rules" }, { label: "👤 Talk to a Human", value: "human" }, BACK_TO_MENU] },
+    faq_cel_food: { message: "🍽️ Add-ons & Extra People\n\n• Optional Add-ons (₹400 each): Extra Cake (250g), Balloons Decoration, or LED Message Tag.\n• Note: Add-ons are specifically for 'Movie Time Only' bookings.\n• Extra Person: ₹300 per head.", options: [BACK_TO_MENU] },
+    faq_cel_privacy: { message: "🔒 Privacy & Safety\n\n• Your privacy is our priority.\n• Strictly No CCTV inside any screening rooms.\n• You have complete privacy for your event.", options: [BACK_TO_MENU] },
+    faq_cel_rules: { message: "⏰ Timings & Rules\n\n• Slots are fixed as per your booking.\n• ID Proof is Mandatory for all guests.\n• Valid government ID (18+) required.", options: [BACK_TO_MENU] },
+    human: { message: "👤 Talk to a Human\n\nOur team will reply to this chat shortly. You can also reach us on WhatsApp or call us directly.", options: [BACK_TO_MENU] },
+    visit_cel_website: { message: "🌐 Digital Diaries Website\n\nExplore our full range of offerings, book premium screens, and discover more on our official website.", link: "https://www.galaxiaresorts.com/celebration", options: [BACK_TO_MENU] },
+    ...buildPropertyNodes(),
+};
+
+/* ═══════════════════════════════════════════════
+   CHATBOT COMPONENT
+   ═══════════════════════════════════════════════ */
 
 export default function FloatingChatbot() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<{ role: "bot" | "user", text: string }[]>([
-        { role: "bot", text: "Hello! Assuming you are looking to book a beautiful stay for an upcoming celebration? 🥂" }
-    ]);
     const [mounted, setMounted] = useState(false);
+    const [messages, setMessages] = useState<{ role: "bot" | "user"; text: string; link?: string }[]>([]);
+    const [currentOptions, setCurrentOptions] = useState<{ label: string; value: string; description?: string }[]>([]);
+    const [navStack, setNavStack] = useState<string[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
+    const [hasInit, setHasInit] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => setMounted(true), []);
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, currentOptions, isTyping]);
 
-    if (pathname && (pathname.startsWith("/admin") || pathname.startsWith("/chatbot"))) return null;
+    // Determine botType + visibility from pathname
+    const isCelebration = pathname?.startsWith("/celebration");
+    const isStaycation = pathname?.startsWith("/staycation");
+    const isAdmin = pathname?.startsWith("/admin") || pathname?.startsWith("/login");
+    const shouldShow = (isCelebration || isStaycation) && !isAdmin;
+    const botType = isCelebration ? "celebration" : "staycation";
+    const rootNode = `${botType}_main`;
 
-    const [input, setInput] = useState("");
+    // Reset chat when switching between celebration/staycation
+    useEffect(() => {
+        if (shouldShow) {
+            setMessages([]);
+            setCurrentOptions([]);
+            setNavStack([]);
+            setHasInit(false);
+            setIsOpen(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [botType]);
 
-    const handleSend = () => {
-        if (!input.trim()) return;
-        const userMsg = input.trim();
-        setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
-        setInput("");
+    const navigateTo = useCallback((nodeKey: string) => {
+        const node = menuTree[nodeKey];
+        if (!node) {
+            const fallback = menuTree[rootNode];
+            setMessages(prev => [...prev, { role: "bot", text: fallback.message, link: fallback.link }]);
+            setCurrentOptions(fallback.options || []);
+            return;
+        }
+        setIsTyping(true);
         setTimeout(() => {
-            setMessages((prev) => [
-                ...prev,
-                { role: "bot", text: "Thank you for your message! Our team will get back to you shortly. In the meantime, feel free to browse our properties or call us directly." },
-            ]);
-        }, 1000);
+            setIsTyping(false);
+            setMessages(prev => [...prev, { role: "bot", text: node.message, link: node.link }]);
+            setCurrentOptions(node.options || []);
+        }, 400);
+    }, [rootNode]);
+
+    const handleToggle = () => {
+        const opening = !isOpen;
+        setIsOpen(opening);
+        if (opening && !hasInit) {
+            setHasInit(true);
+            navigateTo(rootNode);
+        }
     };
 
-    // WhatsApp doodle pattern as inline SVG data URL (subtle icons)
-    const doodleBg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cdefs%3E%3Cstyle%3E.d%7Bfill:%23d4cfc6;opacity:0.25%7D%3C/style%3E%3C/defs%3E%3Ccircle class='d' cx='20' cy='20' r='3'/%3E%3Ccircle class='d' cx='80' cy='40' r='2'/%3E%3Ccircle class='d' cx='150' cy='25' r='3'/%3E%3Ccircle class='d' cx='40' cy='80' r='2'/%3E%3Ccircle class='d' cx='120' cy='90' r='3'/%3E%3Ccircle class='d' cx='180' cy='70' r='2'/%3E%3Ccircle class='d' cx='60' cy='140' r='3'/%3E%3Ccircle class='d' cx='100' cy='160' r='2'/%3E%3Ccircle class='d' cx='160' cy='150' r='3'/%3E%3Ccircle class='d' cx='30' cy='180' r='2'/%3E%3Crect class='d' x='55' y='15' width='6' height='4' rx='1'/%3E%3Crect class='d' x='135' y='55' width='6' height='4' rx='1'/%3E%3Crect class='d' x='15' y='110' width='6' height='4' rx='1'/%3E%3Crect class='d' x='95' y='110' width='6' height='4' rx='1'/%3E%3Crect class='d' x='170' y='120' width='6' height='4' rx='1'/%3E%3Crect class='d' x='45' y='55' width='4' height='6' rx='1'/%3E%3Crect class='d' x='115' y='35' width='4' height='6' rx='1'/%3E%3Crect class='d' x='75' y='175' width='4' height='6' rx='1'/%3E%3Crect class='d' x='145' y='180' width='4' height='6' rx='1'/%3E%3Cpath class='d' d='M10 50l3-3 3 3-3 3z'/%3E%3Cpath class='d' d='M170 40l3-3 3 3-3 3z'/%3E%3Cpath class='d' d='M90 70l3-3 3 3-3 3z'/%3E%3Cpath class='d' d='M50 170l3-3 3 3-3 3z'/%3E%3Cpath class='d' d='M130 170l3-3 3 3-3 3z'/%3E%3Cpath class='d' d='M185 160l2-2 2 2-2 2z'/%3E%3C/svg%3E")`;
+    const handleOptionClick = (opt: { label: string; value: string }) => {
+        // Show user message
+        setMessages(prev => [...prev, { role: "user", text: opt.label }]);
+        setCurrentOptions([]);
 
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+        if (opt.value === "main") {
+            setNavStack([]);
+            navigateTo(rootNode);
+        } else if (opt.value === "back") {
+            const newStack = [...navStack];
+            const prev = newStack.pop() || rootNode;
+            setNavStack(newStack);
+            navigateTo(prev);
+        } else {
+            setNavStack(prev => [...prev, opt.value]);
+            navigateTo(opt.value);
+        }
+    };
+
+    if (!shouldShow || !mounted) return null;
+
+    const headerTitle = isCelebration ? "Digital Diaries" : "Galaxia Staycations";
+    const headerSubtitle = "Always online";
 
     return (
         <>
             {/* Chat window */}
             {isOpen && (
-                <div className="fixed bottom-24 right-4 sm:right-6 z-[70] w-[min(340px,calc(100vw-2rem))] sm:w-[380px] max-h-[70dvh] rounded-2xl shadow-2xl border border-[#d1d1d1] flex flex-col overflow-hidden animate-fade-in-up bg-[#efeae2]">
-                    {/* WhatsApp-style teal header */}
-                    <div className="bg-[#075e54] px-4 py-3 flex items-center justify-between">
+                <div className="fixed bottom-24 right-4 sm:right-6 z-[70] w-[min(380px,calc(100vw-2rem))] max-h-[75dvh] rounded-2xl shadow-2xl border border-[#2a2a2a] flex flex-col overflow-hidden bg-[#f5f7f9]"
+                    style={{ animation: "chatFadeIn 0.25s ease-out" }}>
+                    {/* Header */}
+                    <div className="bg-[#1A1A1A] px-5 py-4 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#DFE5E7] flex items-center justify-center overflow-hidden">
-                                <svg className="w-6 h-6 text-[#075e54]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            </div>
+                            <div className="w-9 h-9 rounded-full bg-[#d4af37] flex items-center justify-center text-[#1A1A1A] font-bold text-lg">G</div>
                             <div>
-                                <p className="text-white font-semibold text-[15px] leading-tight">Galaxia Assistant</p>
-                                <p className="text-[#8EBDB6] text-[11px]">online</p>
+                                <p className="text-white font-semibold text-[15px] leading-tight">{headerTitle}</p>
+                                <p className="text-[#888] text-[11px]">{headerSubtitle}</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors p-1">
+                        <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white transition-colors p-1">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
 
-                    {/* Messages area with WhatsApp doodle wallpaper */}
-                    <div
-                        className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5"
-                        style={{ backgroundImage: doodleBg, backgroundColor: "#efeae2", backgroundRepeat: "repeat" }}
-                    >
-                        {/* Date chip */}
-                        <div className="flex justify-center mb-2">
-                            <span className="bg-white/80 text-[#54656f] text-[10.5px] font-medium px-3 py-1 rounded-lg shadow-sm">Today</span>
-                        </div>
+                    {/* Messages area */}
+                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#E5DDD5]" style={{ minHeight: 200, maxHeight: "50dvh" }}>
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                                <div className={`relative max-w-[82%] px-3 py-1.5 text-[13.5px] leading-[1.35rem] shadow-sm
+                                <div className={`relative max-w-[85%] px-3.5 py-2 text-[13.5px] leading-[1.4] shadow-sm whitespace-pre-wrap
                                     ${msg.role === "user"
-                                        ? "bg-[#d9fdd3] text-[#111b21] rounded-lg rounded-tr-none"
-                                        : "bg-white text-[#111b21] rounded-lg rounded-tl-none"
-                                    }`}
+                                        ? "bg-[#dcf8c6] text-[#111b21] rounded-xl rounded-tr-none"
+                                        : "bg-white text-[#111b21] rounded-xl rounded-tl-none"}`}
                                 >
-                                    {/* WhatsApp tail */}
-                                    {msg.role === "user" ? (
-                                        <span className="absolute -right-2 top-0 w-0 h-0 border-t-[8px] border-t-[#d9fdd3] border-r-[8px] border-r-transparent" />
-                                    ) : (
-                                        <span className="absolute -left-2 top-0 w-0 h-0 border-t-[8px] border-t-white border-l-[8px] border-l-transparent" />
+                                    {msg.text}
+                                    {msg.link && (
+                                        <a href={msg.link} target="_blank" rel="noopener noreferrer"
+                                            className="block mt-2 text-[#d4af37] text-[13px] font-medium hover:underline">
+                                            🔗 Click here
+                                        </a>
                                     )}
-                                    <span>{msg.text}</span>
-                                    <span className={`text-[10px] text-[#667781] ml-2 float-right mt-1.5 leading-none ${msg.role === "user" ? "flex items-center gap-0.5" : ""}`}>
-                                        {timeStr}
-                                        {msg.role === "user" && (
-                                            <svg className="w-3.5 h-3.5 text-[#53bdeb] ml-0.5 inline-block" viewBox="0 0 16 11" fill="currentColor"><path d="M11.071.653a.457.457 0 0 0-.304-.102.493.493 0 0 0-.381.178l-6.19 7.636-2.011-2.095a.46.46 0 0 0-.327-.14.458.458 0 0 0-.33.14l-.477.49a.497.497 0 0 0 0 .681l2.831 2.928a.613.613 0 0 0 .327.178.563.563 0 0 0 .33-.14l.432-.406 6.47-7.953a.46.46 0 0 0 .102-.33.5.5 0 0 0-.178-.356l-.294-.254z"/><path d="M14.757.653a.457.457 0 0 0-.305-.102.493.493 0 0 0-.38.178l-6.19 7.636-1.13-1.178-.477.49 1.95 2.012a.614.614 0 0 0 .327.178.563.563 0 0 0 .33-.14l.432-.406 6.47-7.953a.46.46 0 0 0 .101-.33.5.5 0 0 0-.178-.356l-.293-.254z" opacity=".4"/></svg>
-                                        )}
-                                    </span>
                                 </div>
                             </div>
                         ))}
+                        {isTyping && (
+                            <div className="flex justify-start">
+                                <div className="bg-white px-4 py-3 rounded-xl rounded-tl-none shadow-sm flex gap-1">
+                                    <span className="w-1.5 h-1.5 bg-[#aaa] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                                    <span className="w-1.5 h-1.5 bg-[#aaa] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                                    <span className="w-1.5 h-1.5 bg-[#aaa] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                                </div>
+                            </div>
+                        )}
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* WhatsApp-style input bar */}
-                    <div className="px-2 py-2 bg-[#f0f2f5] flex items-center gap-2">
-                        <div className="flex-1 flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                                placeholder="Type a message"
-                                className="flex-1 outline-none text-base text-[#111b21] placeholder-[#8696a0] font-normal"
-                            />
+                    {/* Options buttons */}
+                    {currentOptions.length > 0 && (
+                        <div className="bg-white border-t border-[#eaeaea] px-4 py-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto shrink-0">
+                            {currentOptions.map((opt, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleOptionClick(opt)}
+                                    className="w-full text-left bg-[#f8f9fa] border border-[#e0e0e0] rounded-lg px-4 py-3 text-sm font-medium text-[#222] hover:bg-[#f0f0f0] hover:border-[#d4af37] transition-all active:scale-[0.98]"
+                                >
+                                    <span className="font-semibold">{opt.label}</span>
+                                    {opt.description && (
+                                        <span className="block text-xs text-[#666] mt-0.5">{opt.description}</span>
+                                    )}
+                                </button>
+                            ))}
                         </div>
-                        <button onClick={handleSend} className="w-11 h-11 rounded-full bg-[#00a884] hover:bg-[#008f72] text-white flex items-center justify-center transition-colors shrink-0 shadow-sm">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                        </button>
-                    </div>
+                    )}
                 </div>
             )}
 
-            {/* WhatsApp-style green floating button */}
-            {mounted && (
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`fixed bottom-6 right-4 sm:right-6 z-[70] w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${isOpen
-                        ? "bg-[#54656f] text-white"
-                        : "bg-[#25D366] text-white hover:bg-[#1fb855] hover:shadow-[0_8px_25px_rgba(37,211,102,0.4)]"
-                    }`}
-                >
-                    {isOpen ? (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    ) : (
-                        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    )}
-                </button>
-            )}
+            {/* Floating support button */}
+            <button
+                onClick={handleToggle}
+                className={`fixed bottom-6 right-4 sm:right-6 z-[70] w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${isOpen
+                    ? "bg-[#333] text-white"
+                    : "bg-gradient-to-br from-[#1A1A1A] to-[#333] text-white hover:shadow-[0_8px_25px_rgba(0,0,0,0.3)] hover:scale-105"
+                }`}
+            >
+                {isOpen ? (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                ) : (
+                    /* Support / Chat bubble icon */
+                    <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+                )}
+            </button>
+
+            <style jsx global>{`
+                @keyframes chatFadeIn {
+                    from { opacity: 0; transform: translateY(16px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </>
     );
 }
