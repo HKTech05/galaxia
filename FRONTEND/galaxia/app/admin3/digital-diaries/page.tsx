@@ -130,6 +130,7 @@ export default function Admin1Dashboard() {
                     amountPaid: `₹${(b.amountPaid || 0).toLocaleString()}`,
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
                     paymentDetails: b.paymentDetails || "N/A",
+                    bookingRef: b.bookingRef || "",
                     isMaintenance: b.customerName.toLowerCase().includes("maintenance") || b.status === "maintenance",
                     dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
                     rawAddons: b.addons || [],
