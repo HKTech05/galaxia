@@ -12,14 +12,19 @@ const router = Router();
 async function generateDdRef(): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const count = await prisma.ddBooking.count({
-        where: {
-            bookedAt: {
-                gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
-            },
-        },
+    const prefix = `DD-${dateStr}-`;
+    // Find the highest existing ref number for today (handles deleted bookings)
+    const latest = await prisma.ddBooking.findFirst({
+        where: { bookingRef: { startsWith: prefix } },
+        orderBy: { bookingRef: "desc" },
+        select: { bookingRef: true },
     });
-    return `DD-${dateStr}-${String(count + 1).padStart(3, "0")}`;
+    let nextNum = 1;
+    if (latest?.bookingRef) {
+        const lastNum = parseInt(latest.bookingRef.split("-").pop() || "0");
+        nextNum = lastNum + 1;
+    }
+    return `${prefix}${String(nextNum).padStart(3, "0")}`;
 }
 
 // POST /api/bookings/dd — Create DD booking (transaction-locked)
