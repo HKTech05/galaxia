@@ -272,6 +272,13 @@ export default function Admin1Dashboard() {
     const [upiProofFile, setUpiProofFile] = useState<File | null>(null);
     const [showUpiProofPicker, setShowUpiProofPicker] = useState<'balance' | 'addons' | null>(null);
 
+    // No Show / Transfer states
+    const [showNoShowModal, setShowNoShowModal] = useState(false);
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [transferDate, setTransferDate] = useState("");
+    const [transferHour, setTransferHour] = useState("10");
+    const [transferLoading, setTransferLoading] = useState(false);
+
     // Calculate pricing based on selection
     let basePrice = 0;
     const durNum = parseInt(duration);
@@ -528,6 +535,44 @@ export default function Admin1Dashboard() {
         } catch (err: any) {
             console.error("Failed to collect payment:", err);
             alert(err.response?.data?.error || "Failed to collect payment");
+        }
+    };
+
+    // No-show handler
+    const handleNoShow = async () => {
+        if (!activeEvent) return;
+        if (!confirm(`Mark ${activeEvent.customerName}'s booking as No Show?`)) return;
+        try {
+            await api.patch(`/bookings/dd/${activeEvent.id}/no-show`);
+            alert(`${activeEvent.customerName} marked as No Show.`);
+            setShowNoShowModal(false);
+            setSelectedEventId(null);
+            fetchEvents(startDate);
+        } catch (err: any) {
+            alert(err.message || "Failed to mark no-show");
+        }
+    };
+
+    // Transfer booking handler
+    const handleTransfer = async () => {
+        if (!activeEvent || !transferDate || !transferHour) return;
+        setTransferLoading(true);
+        try {
+            const result = await api.post(`/bookings/dd/${activeEvent.id}/transfer`, {
+                newDate: transferDate,
+                newStartHour: parseInt(transferHour),
+            });
+            alert(`Booking transferred to ${new Date(transferDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${parseInt(transferHour) > 12 ? parseInt(transferHour) - 12 : parseInt(transferHour)}:00 ${parseInt(transferHour) >= 12 ? "PM" : "AM"}.\n\nNew Ref: ${result.newBooking.bookingRef}\n₹400 transfer fee added to pending.`);
+            setShowTransferModal(false);
+            setShowNoShowModal(false);
+            setSelectedEventId(null);
+            setTransferDate("");
+            setTransferHour("10");
+            fetchEvents(startDate);
+        } catch (err: any) {
+            alert(err.message || "Failed to transfer booking");
+        } finally {
+            setTransferLoading(false);
         }
     };
 
@@ -941,9 +986,17 @@ export default function Admin1Dashboard() {
                         </div>
                     </div>
 
-                    {/* Delete Booking — at the bottom */}
+                    {/* No Show & Delete — at the bottom */}
                     {!activeEvent.isMaintenance && (
-                        <div className="px-8 py-5 bg-slate-50 border-t border-slate-200">
+                        <div className="px-8 py-5 bg-slate-50 border-t border-slate-200 space-y-3">
+                            {/* No Show Button */}
+                            <button
+                                onClick={() => setShowNoShowModal(true)}
+                                className="w-full py-3 bg-amber-50 border-2 border-amber-200 text-amber-700 rounded-xl font-bold text-sm hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Ban size={16} /> No Show
+                            </button>
+                            {/* Delete Button */}
                             <button
                                 onClick={async () => {
                                     if (!confirm(`Are you sure you want to PERMANENTLY DELETE this booking for ${activeEvent.customerName}? This will also reverse any collected cash/UPI and cannot be undone.`)) return;
@@ -964,6 +1017,93 @@ export default function Admin1Dashboard() {
                         </div>
                     )}
                 </div>
+
+                {/* No Show Modal — choose between No Show vs Transfer */}
+                {showNoShowModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
+                            <h3 className="text-xl font-black text-slate-800 mb-2">Customer No Show</h3>
+                            <p className="text-sm text-slate-500 mb-6">What would you like to do with <strong>{activeEvent.customerName}</strong>&apos;s booking?</p>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleNoShow}
+                                    className="w-full py-3.5 bg-red-50 border-2 border-red-200 text-red-700 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Ban size={16} /> Mark as No Show
+                                </button>
+                                <button
+                                    onClick={() => { setShowNoShowModal(false); setShowTransferModal(true); }}
+                                    className="w-full py-3.5 bg-indigo-50 border-2 border-indigo-200 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <CalendarIcon size={16} /> Transfer Booking
+                                </button>
+                            </div>
+                            <button onClick={() => setShowNoShowModal(false)} className="w-full mt-4 py-2 text-sm text-slate-400 hover:text-slate-600 font-medium">Cancel</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Transfer Booking Modal */}
+                {showTransferModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
+                            <h3 className="text-xl font-black text-slate-800 mb-1">Transfer Booking</h3>
+                            <p className="text-sm text-slate-500 mb-1">Reschedule <strong>{activeEvent.customerName}</strong>&apos;s booking.</p>
+                            <p className="text-xs text-amber-600 font-bold mb-5 flex items-center gap-1.5 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                                <IndianRupee size={13} /> ₹400 transfer fee will be added to pending payment
+                            </p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Date</label>
+                                    <input
+                                        type="date"
+                                        value={transferDate}
+                                        onChange={(e) => setTransferDate(e.target.value)}
+                                        min={new Date().toISOString().split("T")[0]}
+                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Start Time</label>
+                                    <select
+                                        value={transferHour}
+                                        onChange={(e) => setTransferHour(e.target.value)}
+                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
+                                    >
+                                        {Array.from({ length: 13 }, (_, i) => i + 10).map((h) => (
+                                            <option key={h} value={h}>
+                                                {h > 12 ? h - 12 : h}:00 {h >= 12 ? "PM" : "AM"}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
+                                    <p><strong>Screen:</strong> {activeEvent.screen}</p>
+                                    <p><strong>Duration:</strong> {activeEvent.duration} hours</p>
+                                    <p><strong>Package:</strong> {activeEvent.packageType}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-5">
+                                <button
+                                    onClick={() => { setShowTransferModal(false); setShowNoShowModal(true); }}
+                                    className="flex-1 py-3 text-sm font-bold text-slate-500 border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                                >
+                                    Back
+                                </button>
+                                <button
+                                    onClick={handleTransfer}
+                                    disabled={!transferDate || transferLoading}
+                                    className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {transferLoading ? "Transferring..." : "Confirm Transfer"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {previewGuestId && (
                     <IdProofModal
                         guestId={previewGuestId}

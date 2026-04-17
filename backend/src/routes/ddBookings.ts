@@ -358,6 +358,131 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
+// ─── PATCH /api/bookings/dd/:id/no-show ─── Mark booking as no-show
+router.patch("/:id/no-show", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        const booking = await prisma.ddBooking.findUnique({ where: { id: bookingId } });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+        const updated = await prisma.ddBooking.update({
+            where: { id: bookingId },
+            data: { status: "no_show" },
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminId: req.admin!.id,
+                action: "no_show",
+                entityType: "dd_booking",
+                entityId: bookingId,
+                details: { bookingRef: booking.bookingRef, customerName: booking.customerName },
+                isDeveloper: req.admin!.role === "developer",
+            },
+        });
+
+        return res.json(updated);
+    } catch (error) {
+        console.error("No-show error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── POST /api/bookings/dd/:id/transfer ─── Transfer booking to new date/time with ₹400 fee
+router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        const { newDate, newStartHour } = req.body;
+        const TRANSFER_FEE = 400;
+
+        if (!newDate || newStartHour === undefined) {
+            return res.status(400).json({ error: "newDate and newStartHour are required" });
+        }
+
+        const original = await prisma.ddBooking.findUnique({
+            where: { id: bookingId },
+            include: { addons: true },
+        });
+        if (!original) return res.status(404).json({ error: "Booking not found" });
+
+        // Generate new booking ref
+        const today = new Date();
+        const datePrefix = `DD-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+        const existingCount = await prisma.ddBooking.count({
+            where: { bookingRef: { startsWith: datePrefix } },
+        });
+        const newRef = `${datePrefix}-${String(existingCount + 1).padStart(3, "0")}`;
+
+        // Create new booking with same details + ₹400 transfer fee added to amountToCollect
+        const newBooking = await prisma.ddBooking.create({
+            data: {
+                screenId: original.screenId,
+                packageId: original.packageId,
+                bookingDate: new Date(newDate),
+                startHour: parseInt(newStartHour),
+                durationHours: original.durationHours,
+                customerName: original.customerName,
+                customerPhone: original.customerPhone,
+                customerEmail: original.customerEmail,
+                numberOfGuests: original.numberOfGuests,
+                occasion: original.occasion,
+                cakeMessage: original.cakeMessage,
+                specialRequests: original.specialRequests ? `${original.specialRequests} [Transferred from ${original.bookingRef} — ₹${TRANSFER_FEE} transfer fee]` : `[Transferred from ${original.bookingRef} — ₹${TRANSFER_FEE} transfer fee]`,
+                totalAmount: original.totalAmount + TRANSFER_FEE,
+                amountPaid: original.amountPaid,
+                amountToCollect: original.amountToCollect + TRANSFER_FEE,
+                paymentMethod: original.paymentMethod,
+                paymentStatus: original.amountToCollect + TRANSFER_FEE > 0 ? "partial" : "paid",
+                idVerification: original.idVerification,
+                bookingRef: newRef,
+                status: "confirmed",
+            },
+        });
+
+        // Copy add-ons to new booking
+        if (original.addons && original.addons.length > 0) {
+            await prisma.ddAddon.createMany({
+                data: original.addons.map((a) => ({
+                    bookingId: newBooking.id,
+                    addonType: a.addonType,
+                    addonValue: a.addonValue,
+                    price: a.price,
+                    isPaid: a.isPaid,
+                    paymentMethod: a.paymentMethod,
+                })),
+            });
+        }
+
+        // Mark original as transferred
+        await prisma.ddBooking.update({
+            where: { id: bookingId },
+            data: { status: "transferred", specialRequests: `${original.specialRequests || ""} [Transferred to ${newRef}]`.trim() },
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminId: req.admin!.id,
+                action: "transfer_booking",
+                entityType: "dd_booking",
+                entityId: bookingId,
+                details: {
+                    originalRef: original.bookingRef,
+                    newRef,
+                    newDate,
+                    newStartHour,
+                    transferFee: TRANSFER_FEE,
+                },
+                isDeveloper: req.admin!.role === "developer",
+            },
+        });
+
+        return res.json({ original: { id: bookingId, status: "transferred" }, newBooking });
+    } catch (error) {
+        console.error("Transfer booking error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // POST /api/bookings/dd/:id/payment
 router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
     try {
