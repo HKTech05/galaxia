@@ -201,30 +201,42 @@ export default function ChatbotDashboard() {
 
     // Fetch real website human requests from API
     const fetchHumanRequests = useCallback(async () => {
+        if (!session) return;
         try {
-            const token = localStorage.getItem("galaxia_token");
-            if (!token) return;
-            const res = await fetch("/api/human-requests", { headers: { Authorization: `Bearer ${token}` } });
+            const res = await fetch("/api/human-requests");
             if (!res.ok) return;
             const data = await res.json();
-            const websiteSessions: ChatSession[] = data.map((req: any) => ({
-                id: `web_${req.id}`,
-                sessionId: req.phone,
-                displayName: req.phone,
-                phoneNumberKey: "website",
-                mode: "human" as const,
-                tags: ["website", req.source === "celebration" ? "dd" : "staycation"],
-                unread: req.status === "pending" ? 1 : 0,
-                lastMessage: `Talk to Human request from ${req.source} page`,
-                lastMessageTime: new Date(req.createdAt),
-                platform: "website",
-            }));
+
+            // Determine which sources this admin can see based on their assigned numbers
+            const nums = session.assignedNumbers || [];
+            const isOwner = session.role === "owner" || (nums.includes("staycation_1") && nums.includes("digital_diaries"));
+            const canSeeCelebration = isOwner || nums.includes("digital_diaries");
+            const canSeeStaycation = isOwner || nums.includes("staycation_1") || nums.includes("staycation_2");
+
+            const websiteSessions: ChatSession[] = data
+                .filter((req: any) => {
+                    if (req.source === "celebration") return canSeeCelebration;
+                    if (req.source === "staycation") return canSeeStaycation;
+                    return isOwner; // fallback: only owner sees unknown sources
+                })
+                .map((req: any) => ({
+                    id: `web_${req.id}`,
+                    sessionId: req.phone,
+                    displayName: req.phone,
+                    phoneNumberKey: "website",
+                    mode: "human" as const,
+                    tags: ["website", req.source === "celebration" ? "dd" : "staycation"],
+                    unread: req.status === "pending" ? 1 : 0,
+                    lastMessage: `Talk to Human request from ${req.source} page`,
+                    lastMessageTime: new Date(req.createdAt),
+                    platform: "website",
+                }));
             setSessions(prev => {
                 const nonWeb = prev.filter(s => !s.id.startsWith("web_"));
                 return [...nonWeb, ...websiteSessions];
             });
         } catch { /* silently fail */ }
-    }, []);
+    }, [session]);
 
     useEffect(() => {
         if (session) {

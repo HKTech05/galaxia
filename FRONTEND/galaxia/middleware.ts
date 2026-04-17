@@ -2,13 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-    // Allow /chatbot login page through (it has its own client-side auth)
-    if (request.nextUrl.pathname === '/chatbot') {
-        return NextResponse.next();
-    }
-
-    // Protect /admin3 and /chatbot/dashboard routes
-    if (request.nextUrl.pathname.startsWith('/admin3') || request.nextUrl.pathname.startsWith('/chatbot/')) {
+    // Protect /admin3 routes only — chatbot pages handle their own auth via client-side localStorage
+    if (request.nextUrl.pathname.startsWith('/admin3')) {
         // Check for the admin_token cookie set by /login
         const adminToken = request.cookies.get('admin_token');
 
@@ -25,7 +20,5 @@ export function middleware(request: NextRequest) {
 export const config = {
     matcher: [
         '/admin3/:path*',
-        '/chatbot',
-        '/chatbot/:path*',
     ],
 };

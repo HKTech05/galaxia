@@ -21,8 +21,8 @@ router.post("/", async (req, res) => {
     }
 });
 
-// GET /api/human-requests — admin fetches pending requests
-router.get("/", authMiddleware, async (req: AuthRequest, res) => {
+// GET /api/human-requests — chatbot dashboard fetches requests (own auth via chatbot login)
+router.get("/", async (req, res) => {
     try {
         const { status } = req.query;
         const where: any = {};
