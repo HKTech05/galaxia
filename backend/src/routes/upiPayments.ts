@@ -151,6 +151,7 @@ router.get("/image/:id", authMiddleware, async (req, res) => {
             res.setHeader("Content-Disposition", `inline; filename="upi-proof-${payment.id}${ext}"`);
             (s3Response.Body as any).pipe(res);
         } else {
+            if (!payment.proofImageUrl) return res.status(404).json({ error: "No proof image available" });
             return res.redirect(payment.proofImageUrl);
         }
     } catch (error) {
@@ -179,6 +180,7 @@ router.get("/download/:id", authMiddleware, async (req, res) => {
             res.setHeader("Content-Disposition", `attachment; filename="upi-proof-${payment.id}${ext}"`);
             (s3Response.Body as any).pipe(res);
         } else {
+            if (!payment.proofImageUrl) return res.status(404).json({ error: "No proof image available" });
             return res.redirect(payment.proofImageUrl);
         }
     } catch (error) {
