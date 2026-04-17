@@ -717,7 +717,7 @@ router.get("/voucher/:ref", async (req, res) => {
         const pdfBuffer = await generateDDBookingPDF(booking);
 
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename="Galaxia-DD-${booking.bookingRef}.pdf"`);
+        res.setHeader("Content-Disposition", `attachment; filename="Galaxia-DD-${booking.bookingRef}.pdf"`);
         return res.send(pdfBuffer);
     } catch (error) {
         console.error("Voucher PDF error:", error);
