@@ -5,6 +5,8 @@ import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
 import { sendBookingConfirmation } from "../lib/emailService";
+import { generateStaycationBookingPDF } from "../lib/pdfService";
+import { sendStaycationBookingConfirmation } from "../lib/whatsappService";
 
 const router = Router();
 
@@ -290,6 +292,14 @@ router.post("/", async (req, res) => {
 
         // Send confirmation email (fire-and-forget)
         sendBookingConfirmation({ ...booking, customerPhone, customerEmail }).catch(() => { });
+
+        // Send WhatsApp confirmation with voucher link (fire-and-forget)
+        if (customerPhone) {
+            const baseUrl = process.env.FRONTEND_URL || "https://galaxiaresorts.com";
+            const voucherUrl = `${baseUrl}/api/bookings/staycation/voucher/${booking.bookingRef}`;
+            // Use stay1 as default chatbot; can be mapped per property later
+            sendStaycationBookingConfirmation("stay1", customerPhone, booking.bookingRef, voucherUrl).catch(() => { });
+        }
 
         return res.status(201).json(booking);
     } catch (error: any) {
@@ -779,6 +789,30 @@ router.delete("/hold/:sessionId", async (req, res) => {
     } catch (error) {
         console.error("Release booking hold error:", error);
         return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── GET /api/bookings/staycation/voucher/:ref ─── Public voucher PDF download
+router.get("/voucher/:ref", async (req, res) => {
+    try {
+        const { ref } = req.params;
+        const booking = await prisma.staycationBooking.findFirst({
+            where: { bookingRef: ref },
+            include: { property: true, subProperty: true },
+        });
+
+        if (!booking) {
+            return res.status(404).json({ error: "Booking not found" });
+        }
+
+        const pdfBuffer = await generateStaycationBookingPDF(booking);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="Galaxia-${booking.bookingRef}.pdf"`);
+        return res.send(pdfBuffer);
+    } catch (error) {
+        console.error("Voucher PDF error:", error);
+        return res.status(500).json({ error: "Failed to generate voucher" });
     }
 });
 

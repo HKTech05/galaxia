@@ -25,6 +25,7 @@
     "@prisma/client": "^5.22.0",
     "@types/archiver": "^7.0.0",
     "@types/nodemailer": "^7.0.11",
+    "@types/pdfkit": "^0.17.6",
     "@types/sharp": "^0.32.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.3",
@@ -36,6 +37,7 @@
     "jwks-rsa": "^3.2.2",
     "multer": "^2.1.0",
     "nodemailer": "^8.0.2",
+    "pdfkit": "^0.18.0",
     "razorpay": "^2.9.6",
     "resend": "^6.9.4",
     "sharp": "^0.34.5"

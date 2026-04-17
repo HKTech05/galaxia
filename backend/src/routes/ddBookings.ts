@@ -4,7 +4,9 @@ import jwt from "jsonwebtoken";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
-import { sendDDBookingConfirmation } from "../lib/emailService";
+import { sendDDBookingConfirmation as sendDDBookingEmail } from "../lib/emailService";
+import { generateDDBookingPDF } from "../lib/pdfService";
+import { sendDDBookingConfirmation as sendDDWhatsApp } from "../lib/whatsappService";
 
 const router = Router();
 
@@ -252,7 +254,14 @@ router.post("/", async (req, res) => {
 
         // Send confirmation email (fire-and-forget) — skip for maintenance blocks
         if (!isMaintenance) {
-            sendDDBookingConfirmation({ ...booking, customerPhone, customerEmail }).catch(() => { });
+            sendDDBookingEmail({ ...booking, customerPhone, customerEmail }).catch(() => { });
+
+            // Send WhatsApp confirmation with voucher link (fire-and-forget)
+            if (customerPhone) {
+                const baseUrl = process.env.FRONTEND_URL || "https://galaxiaresorts.com";
+                const voucherUrl = `${baseUrl}/api/bookings/dd/voucher/${booking.bookingRef}`;
+                sendDDWhatsApp(customerPhone, booking.bookingRef, voucherUrl).catch(() => { });
+            }
         }
 
         return res.status(201).json(booking);
@@ -689,6 +698,30 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     } catch (error) {
         console.error("Delete DD booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── GET /api/bookings/dd/voucher/:ref ─── Public voucher PDF download
+router.get("/voucher/:ref", async (req, res) => {
+    try {
+        const { ref } = req.params;
+        const booking = await prisma.ddBooking.findFirst({
+            where: { bookingRef: ref },
+            include: { screen: true, package: true },
+        });
+
+        if (!booking) {
+            return res.status(404).json({ error: "Booking not found" });
+        }
+
+        const pdfBuffer = await generateDDBookingPDF(booking);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="Galaxia-DD-${booking.bookingRef}.pdf"`);
+        return res.send(pdfBuffer);
+    } catch (error) {
+        console.error("Voucher PDF error:", error);
+        return res.status(500).json({ error: "Failed to generate voucher" });
     }
 });
 
