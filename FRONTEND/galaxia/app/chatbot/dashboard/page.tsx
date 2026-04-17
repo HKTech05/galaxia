@@ -21,51 +21,9 @@ const PHONE_NUMBERS: Record<string, PhoneNumber> = {
 interface ChatSession { id: string; sessionId: string; displayName: string; phoneNumberKey: string; mode: "bot" | "human"; tags: string[]; unread: number; lastMessage: string; lastMessageTime: Date; platform: string }
 interface Message { role: "user" | "assistant"; message: string; time: Date; isHuman: boolean }
 
-const INITIAL_SESSIONS: ChatSession[] = [
-    { id: "sess_1", sessionId: "+91 98765 43210", displayName: "Arjun Mehta", phoneNumberKey: "staycation_1", mode: "bot", tags: ["hot"], unread: 3, lastMessage: "What is the check-in time for La Paraiso?", lastMessageTime: new Date(Date.now() - 2 * 60000), platform: "whatsapp" },
-    { id: "sess_2", sessionId: "+91 87654 32109", displayName: "Priya Sharma", phoneNumberKey: "staycation_1", mode: "human", tags: ["followup"], unread: 0, lastMessage: "Thank you! We will arrive by 3 PM.", lastMessageTime: new Date(Date.now() - 15 * 60000), platform: "whatsapp" },
-    { id: "sess_3", sessionId: "+91 76543 21098", displayName: "Rohan Patel", phoneNumberKey: "staycation_2", mode: "bot", tags: [], unread: 1, lastMessage: "Is Amstel Nest pet friendly?", lastMessageTime: new Date(Date.now() - 45 * 60000), platform: "whatsapp" },
-    { id: "sess_4", sessionId: "+91 65432 10987", displayName: "Sneha Kulkarni", phoneNumberKey: "digital_diaries", mode: "bot", tags: ["new"], unread: 5, lastMessage: "Hi! I want to book Sandy Screen for Saturday", lastMessageTime: new Date(Date.now() - 5 * 60000), platform: "whatsapp" },
-    { id: "sess_5", sessionId: "+91 54321 09876", displayName: "Amit Desai", phoneNumberKey: "staycation_1", mode: "human", tags: ["resolved"], unread: 0, lastMessage: "Booking confirmed. Ref: STY-2024-0341", lastMessageTime: new Date(Date.now() - 3 * 3600000), platform: "whatsapp" },
-    { id: "sess_6", sessionId: "+91 43210 98765", displayName: "Kavita Joshi", phoneNumberKey: "staycation_2", mode: "bot", tags: [], unread: 0, lastMessage: "Can we bring our pet dog?", lastMessageTime: new Date(Date.now() - 5 * 3600000), platform: "instagram" },
-    { id: "sess_7", sessionId: "+91 32109 87654", displayName: "Nikhil Rao", phoneNumberKey: "digital_diaries", mode: "human", tags: ["hot"], unread: 2, lastMessage: "Is Park N Watch available for a birthday party?", lastMessageTime: new Date(Date.now() - 30 * 60000), platform: "whatsapp" },
-    { id: "sess_8", sessionId: "+91 21098 76543", displayName: "Meera Iyer", phoneNumberKey: "staycation_1", mode: "bot", tags: [], unread: 0, lastMessage: "What are the weekend prices for Santorini?", lastMessageTime: new Date(Date.now() - 8 * 3600000), platform: "whatsapp" },
-];
+const INITIAL_SESSIONS: ChatSession[] = [];
 
-const INITIAL_MESSAGES: Record<string, Message[]> = {
-    sess_1: [
-        { role: "user", message: "Hi", time: new Date(Date.now() - 10 * 60000), isHuman: false },
-        { role: "assistant", message: "👋 *Welcome to Galaxia Staycations!*\n\nExplore our luxury villas in Karjat.", time: new Date(Date.now() - 10 * 60000 + 2000), isHuman: false },
-        { role: "user", message: "I want to see La Paraiso", time: new Date(Date.now() - 8 * 60000), isHuman: false },
-        { role: "assistant", message: "🏡 *La Paraiso*\nPremium Private Pool Villa\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Weekday: ₹4,950 + 5% GST\n  • Weekend: ₹7,500 + 5% GST\n\n🕒 Check-in: 2:00 PM | Check-out: 10:00 AM\n🐾 Pets: Allowed ✅ (₹600 extra)\n💵 Security Deposit: ₹3,000", time: new Date(Date.now() - 8 * 60000 + 3000), isHuman: false },
-        { role: "user", message: "What is the check-in time for La Paraiso?", time: new Date(Date.now() - 2 * 60000), isHuman: false },
-    ],
-    sess_2: [
-        { role: "user", message: "Hello, we want to book Heavenly Villas for this weekend", time: new Date(Date.now() - 2 * 3600000), isHuman: false },
-        { role: "assistant", message: "Great news! Heavenly Villas is available. The rate is ₹4,950 + GST per night.", time: new Date(Date.now() - 1.5 * 3600000), isHuman: true },
-        { role: "user", message: "Yes please! 2 adults, checking in Saturday 2 PM", time: new Date(Date.now() - 1 * 3600000), isHuman: false },
-        { role: "assistant", message: "Perfect! I've reserved Heavenly Villas for you:\n📅 Sat → Sun\n👥 2 Adults\n💰 ₹4,950 + 5% GST = ₹5,198", time: new Date(Date.now() - 50 * 60000), isHuman: true },
-        { role: "user", message: "Thank you! We will arrive by 3 PM.", time: new Date(Date.now() - 15 * 60000), isHuman: false },
-    ],
-    sess_3: [
-        { role: "user", message: "Hi is Amstel Nest pet friendly?", time: new Date(Date.now() - 50 * 60000), isHuman: false },
-        { role: "assistant", message: "🐾 *Pets Policy*\n\n✅ Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose.\n❌ Not Allowed: Amstel Nest.", time: new Date(Date.now() - 50 * 60000 + 2000), isHuman: false },
-    ],
-    sess_4: [
-        { role: "user", message: "Hi! I want to book Sandy Screen for Saturday", time: new Date(Date.now() - 5 * 60000), isHuman: false },
-        { role: "assistant", message: "🎬 *Welcome to Digital Diaries!*\n\nLet me help you with Sandy Screen booking!", time: new Date(Date.now() - 5 * 60000 + 2000), isHuman: false },
-    ],
-    sess_5: [
-        { role: "user", message: "Can I speak to someone?", time: new Date(Date.now() - 5 * 3600000), isHuman: false },
-        { role: "assistant", message: "Let me connect you with our team.", time: new Date(Date.now() - 4 * 3600000), isHuman: true },
-        { role: "assistant", message: "Done! Booking moved to next weekend. Enjoy your stay! 🎉", time: new Date(Date.now() - 3 * 3600000), isHuman: true },
-    ],
-    sess_7: [
-        { role: "user", message: "Hey, is Park N Watch available for a birthday party on 30th?", time: new Date(Date.now() - 60 * 60000), isHuman: false },
-        { role: "assistant", message: "🎬 Let me check Park N Watch availability!", time: new Date(Date.now() - 60 * 60000 + 2000), isHuman: false },
-        { role: "user", message: "Also, can we get decoration?", time: new Date(Date.now() - 55 * 60000), isHuman: false },
-    ],
-};
+const INITIAL_MESSAGES: Record<string, Message[]> = {};
 
 function formatTime(d: Date) {
     const diff = Date.now() - d.getTime();
@@ -79,14 +37,6 @@ function formatMsg(text: string) {
     return text.replace(/\*([^*]+)\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
 }
 
-// Stable offsets for mock data so they are consistent
-function getOffsetMs(id: string): number {
-    const offsets: Record<string, number> = {
-        sess_1: 2 * 60000, sess_2: 15 * 60000, sess_3: 45 * 60000, sess_4: 5 * 60000,
-        sess_5: 3 * 3600000, sess_6: 5 * 3600000, sess_7: 30 * 60000, sess_8: 8 * 3600000,
-    };
-    return offsets[id] || 0;
-}
 
 const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123" };
 const ACCOUNTS = [
@@ -190,12 +140,9 @@ export default function ChatbotDashboard() {
             const s = JSON.parse(localStorage.getItem("chatbot_session") || "null");
             if (!s) { router.replace("/chatbot"); return; }
             setSession(s);
-            // Initialize mock data on the client only to avoid hydration mismatch
-            setSessions(INITIAL_SESSIONS.map(sess => ({
-                ...sess,
-                lastMessageTime: new Date(Date.now() - getOffsetMs(sess.id)),
-            })));
-            setMessages(INITIAL_MESSAGES);
+            // Start with empty sessions — real data comes from fetchHumanRequests
+            setSessions([]);
+            setMessages({});
         } catch { router.replace("/chatbot"); }
     }, [router]);
 
