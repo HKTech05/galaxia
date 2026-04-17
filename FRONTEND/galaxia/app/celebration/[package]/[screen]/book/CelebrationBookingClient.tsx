@@ -83,6 +83,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         }
     }, [pkg.id]);
 
+    // Strip country code prefix to get bare 10-digit number
+    const stripPhone = (p: string) => (p || "").replace(/^\+?91/, "").replace(/\D/g, "").slice(-10);
+
     // Load user data if logged in
     useEffect(() => {
         const token = localStorage.getItem("galaxia_token");
@@ -91,7 +94,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             try {
                 const user = JSON.parse(userStr);
                 setEmail(user.email || "");
-                setPhone(user.phone || "");
+                setPhone(stripPhone(user.phone));
             } catch {}
         }
     }, []);
@@ -106,7 +109,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                     try {
                         const user = JSON.parse(userStr);
                         setEmail(user.email || "");
-                        setPhone(user.phone || "");
+                        setPhone(stripPhone(user.phone));
                     } catch {}
                 }
             }
@@ -145,7 +148,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             localStorage.setItem("galaxia_token", data.token);
             localStorage.setItem("galaxia_user", JSON.stringify(data.user));
             setEmail(data.user.email || "");
-            setPhone(data.user.phone || "");
+            setPhone(stripPhone(data.user.phone));
             setShowLoginPrompt(false);
             setEmailMode(false);
         } catch (err: any) {
@@ -171,7 +174,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             localStorage.setItem("galaxia_token", data.token);
             localStorage.setItem("galaxia_user", JSON.stringify(data.user));
             setEmail(authEmail);
-            setPhone(authPhone);
+            setPhone(stripPhone(authPhone));
             setShowLoginPrompt(false);
             setEmailMode(false);
         } catch (err: any) {
@@ -730,9 +733,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                                 return (
                                                     <div
                                                         key={slot.id}
-                                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isSlotSelected
-                                                            ? "border-rose-medium/50 bg-rose-dark/15"
-                                                            : isDisabled ? "border-cel-border opacity-30 cursor-not-allowed bg-cel-card/50" : "border-cel-border hover:border-cel-border-light cursor-pointer"
+                                                        className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border transition-all ${isDisabled
+                                                            ? "border-cel-border opacity-30 cursor-not-allowed bg-cel-card/50"
+                                                            : isSlotSelected ? "border-rose-medium/50 bg-rose-dark/15" : "border-cel-border hover:border-cel-border-light cursor-pointer"
                                                             }`}
                                                         onClick={() => !isDisabled && toggleSlot(slot.id)}
                                                     >
@@ -1385,7 +1388,23 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         {showPhoneAuth && (
             <PhoneAuthModal
                 onClose={() => setShowPhoneAuth(false)}
-                onSuccess={() => { setShowPhoneAuth(false); window.location.reload(); }}
+                onSuccess={() => {
+                    setShowPhoneAuth(false);
+                    // Read user data without reloading — preserves selected slots
+                    const userStr = localStorage.getItem("galaxia_user");
+                    if (userStr) {
+                        try {
+                            const user = JSON.parse(userStr);
+                            setEmail(user.email || "");
+                            setPhone(stripPhone(user.phone));
+                            if (user.fullName) {
+                                const parts = user.fullName.split(" ");
+                                setFirstName(parts[0] || "");
+                                setLastName(parts.slice(1).join(" ") || "");
+                            }
+                        } catch {}
+                    }
+                }}
             />
         )}
     </>

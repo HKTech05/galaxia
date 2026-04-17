@@ -76,7 +76,7 @@ export default function UpiManagementClient() {
     // Fetch image with auth and return blob URL
     const fetchImageBlob = async (logId: number): Promise<string | null> => {
         try {
-            const token = localStorage.getItem("galaxia_token") || "";
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
             const res = await fetch(`/api/upi-payments/image/${logId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -94,7 +94,7 @@ export default function UpiManagementClient() {
 
     const handleDownloadProof = async (logId: number) => {
         try {
-            const token = localStorage.getItem("galaxia_token") || "";
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
             const res = await fetch(`/api/upi-payments/download/${logId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -204,7 +204,7 @@ export default function UpiManagementClient() {
         if (!emp) return;
 
         try {
-            const token = localStorage.getItem("galaxia_token") || "";
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
             const res = await fetch(`/api/upi-payments/download-all/${viewEmployeeId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });

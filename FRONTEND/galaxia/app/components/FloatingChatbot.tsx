@@ -74,7 +74,6 @@ const menuTree: Record<string, MenuNode> = {
             { label: "💰 Budget Stays", value: "budget_properties" },
             { label: "✨ Premium Stays", value: "premium_properties" },
             { label: "ℹ️ More Info & FAQs", value: "staycation_more_info" },
-            { label: "👤 Talk to a Human", value: "human" },
         ],
     },
     staycation_more_info: {
@@ -83,6 +82,7 @@ const menuTree: Record<string, MenuNode> = {
             { label: "❓ Common Questions", value: "faqs_staycation" },
             { label: "📍 Location & Travel", value: "staycation_location" },
             { label: "📜 Resort Policies", value: "policies" },
+            { label: "👤 Talk to a Human", value: "human" },
             BACK_TO_MENU,
         ],
     },
@@ -141,7 +141,6 @@ const menuTree: Record<string, MenuNode> = {
             { label: "🎥 Movie Time", value: "movie_time" },
             { label: "🎉 Celebration Packs", value: "deco_screens" },
             { label: "❓ FAQs & Support", value: "faqs_celebration" },
-            { label: "👤 Talk to a Human", value: "human" },
         ],
     },
     movie_time: {

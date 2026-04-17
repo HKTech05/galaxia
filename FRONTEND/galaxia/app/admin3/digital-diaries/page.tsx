@@ -420,7 +420,9 @@ export default function Admin1Dashboard() {
                 // Upload UPI proof if payment method is UPI
                 if (walkInPaymentMethod === "UPI" && walkInUpiProof) {
                     try {
-                        const employees = await api.get("/employees?propertyId=7");
+                        const props = await api.get("/properties");
+                        const ddProp = Array.isArray(props) ? props.find((p: any) => p.slug === "digital-diaries") : null;
+                        const employees = ddProp ? await api.get(`/employees?propertyId=${ddProp.id}`) : [];
                         const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
                         if (empId) {
                             const fd = new FormData();
@@ -431,11 +433,7 @@ export default function Admin1Dashboard() {
                             fd.append("paymentType", "balance");
                             fd.append("note", `DD Walk-in UPI payment — ${selectedScreen}`);
                             fd.append("file", walkInUpiProof, walkInUpiProof.name);
-                            await fetch("/api/upi-payments/upload", {
-                                method: "POST",
-                                headers: { Authorization: `Bearer ${token}` },
-                                body: fd,
-                            });
+                            await api.upload("/upi-payments/upload", fd);
                         }
                     } catch (e) { console.error("UPI proof upload failed:", e); }
                 }
@@ -503,10 +501,11 @@ export default function Admin1Dashboard() {
             // Track UPI payment to UPI logs (only for actual UPI payments with proof)
             if (mode === "UPI" && proofFile && totalCollected > 0) {
                 try {
-                    const employees = await api.get("/employees?propertyId=7");
+                    const props = await api.get("/properties");
+                    const ddProp = Array.isArray(props) ? props.find((p: any) => p.slug === "digital-diaries") : null;
+                    const employees = ddProp ? await api.get(`/employees?propertyId=${ddProp.id}`) : [];
                     const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
                     if (empId) {
-                        const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                         const fd = new FormData();
                         fd.append("employeeId", String(empId));
                         fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
@@ -515,11 +514,7 @@ export default function Admin1Dashboard() {
                         fd.append("paymentType", "balance");
                         fd.append("note", `DD Collection — ${activeEvent.screen} via UPI`);
                         fd.append("file", proofFile, proofFile.name);
-                        await fetch("/api/upi-payments/upload", {
-                            method: "POST",
-                            headers: { Authorization: `Bearer ${token}` },
-                            body: fd,
-                        });
+                        await api.upload("/upi-payments/upload", fd);
                     }
                 } catch (trackErr) {
                     console.error("Failed to record UPI payment:", trackErr);
