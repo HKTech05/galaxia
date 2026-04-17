@@ -463,7 +463,7 @@ model UpiPayment {
   guestName       String?  @map("guest_name") @db.VarChar(200)
   amount          Int
   paymentType     String   @map("payment_type") @db.VarChar(30)
-  proofImageUrl   String   @map("proof_image_url")
+  proofImageUrl   String?  @map("proof_image_url")
   proofImageKey   String?  @map("proof_image_key") @db.VarChar(500)
   note            String?
   createdAt       DateTime @default(now()) @map("created_at")
