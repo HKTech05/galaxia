@@ -334,7 +334,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 });
 
                 // Upload UPI proof images if UPI was used
-                const token = localStorage.getItem("galaxia_token") || "";
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                 const employee = await api.get(`/employees?propertyId=${selectedBooking.propertyId || ''}`);
                 const empId = Array.isArray(employee) && employee[0] ? employee[0].id : null;
 
@@ -506,7 +506,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     const file = e.target.files?.[0];
                                                     if (!file) return;
                                                     try {
-                                                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                                                        const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                                                         const formData = new FormData();
                                                         formData.append("file", file);
                                                         formData.append("bookingId", String(booking.rawId));
@@ -1073,7 +1073,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     guestId={previewGuestId}
                     onClose={() => setPreviewGuestId(null)}
                     onDelete={async (id) => {
-                        const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                        const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                         const res = await fetch(`/api/uploads/guest-id/${id}`, {
                             method: "DELETE",
                             headers: { Authorization: `Bearer ${token}` },

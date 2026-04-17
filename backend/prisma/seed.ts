@@ -268,7 +268,7 @@ async function main() {
         update: {},
         create: {
             slug: "celebration", name: "Decoration + Movie Time", tagline: "Decoration + Movie Time",
-            extraPersonPrice: 300, extraHourRate: 1000, minHours: 2,
+            extraPersonPrice: 300, extraHourRate: 1000, minHours: 1,
             inclusions: [
                 { icon: "film", label: "Private Movie Screening" },
                 { icon: "cake", label: "Celebration Cake (250g)" },
@@ -286,6 +286,7 @@ async function main() {
         { packageId: movieTime.id, hours: 1, label: "1 Hour", weekdayPrice: 999, weekendPrice: 999 },
         { packageId: movieTime.id, hours: 2, label: "2 Hours", weekdayPrice: 1500, weekendPrice: 1500 },
         { packageId: movieTime.id, hours: 3, label: "3 Hours", weekdayPrice: 2500, weekendPrice: 2500 },
+        { packageId: celebration.id, hours: 1, label: "1 Hour", weekdayPrice: 2200, weekendPrice: 2200 },
         { packageId: celebration.id, hours: 2, label: "2 Hours", weekdayPrice: 2950, weekendPrice: 2950 },
         { packageId: celebration.id, hours: 3, label: "3 Hours", weekdayPrice: 3450, weekendPrice: 3950 },
     ];

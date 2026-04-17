@@ -281,7 +281,8 @@ export default function Admin1Dashboard() {
         else basePrice = 2500 + ((durNum - 3) * 1000);
     } else {
         const isWeekend = startDate.getDay() === 0 || startDate.getDay() === 6;
-        if (durNum === 2) basePrice = 2950;
+        if (durNum === 1) basePrice = 2200;
+        else if (durNum === 2) basePrice = 2950;
         else if (durNum === 3) basePrice = isWeekend ? 3950 : 3450;
         else basePrice = (isWeekend ? 3950 : 3450) + ((durNum - 3) * 1000);
     }
@@ -310,7 +311,7 @@ export default function Admin1Dashboard() {
         setSelectedScreen(screens[screenIndex]);
         setMaintScreen(screens[screenIndex]);
         setShowOverlapWarning(false);
-        setDuration(packageType === "Celebration" ? "3" : "3");
+        setDuration(packageType === "Celebration" ? "2" : "3");
     };
 
     const handleEventClick = (e: React.MouseEvent, ev: Event) => {
@@ -398,7 +399,7 @@ export default function Admin1Dashboard() {
 
             // Upload walk-in ID files after booking (fire-and-forget)
             if (result?.id) {
-                const token = localStorage.getItem("galaxia_token") || localStorage.getItem("adminToken");
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                 for (const file of walkInIdFiles) {
                     if (file) {
                         try {
@@ -497,25 +498,21 @@ export default function Admin1Dashboard() {
             }
 
             // Step 3: Create payment record for tracking
-            if (totalCollected > 0) {
+            // Track UPI payment to UPI logs (only for actual UPI payments with proof)
+            if (mode === "UPI" && proofFile && totalCollected > 0) {
                 try {
                     const employees = await api.get("/employees?propertyId=7");
                     const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
                     if (empId) {
-                        const token = localStorage.getItem("galaxia_token") || "";
+                        const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                         const fd = new FormData();
                         fd.append("employeeId", String(empId));
-                        fd.append("bookingRef", `DD-${activeEvent.id}`);
+                        fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
                         fd.append("guestName", activeEvent.customerName || '');
                         fd.append("amount", String(totalCollected));
                         fd.append("paymentType", "balance");
-                        fd.append("note", `DD Collection — ${activeEvent.screen} via ${mode}`);
-                        if (mode === "UPI" && proofFile) {
-                            fd.append("file", proofFile, proofFile.name);
-                        } else {
-                            const blob = new Blob([`${mode} payment collected at reception`], { type: "text/plain" });
-                            fd.append("file", blob, `${mode.toLowerCase()}-collected.txt`);
-                        }
+                        fd.append("note", `DD Collection — ${activeEvent.screen} via UPI`);
+                        fd.append("file", proofFile, proofFile.name);
                         await fetch("/api/upi-payments/upload", {
                             method: "POST",
                             headers: { Authorization: `Bearer ${token}` },
@@ -523,7 +520,7 @@ export default function Admin1Dashboard() {
                         });
                     }
                 } catch (trackErr) {
-                    console.error("Failed to record payment:", trackErr);
+                    console.error("Failed to record UPI payment:", trackErr);
                 }
             }
 
@@ -826,7 +823,7 @@ export default function Admin1Dashboard() {
                                         const balanceInt = parseInt(activeEvent.amountToCollect.replace(/[₹,]/g, ''));
                                         const rawAddonsAll = activeEvent.rawAddons || [];
                                         const unpaidAddonsTotal = rawAddonsAll.filter(a => !a.isPaid).reduce((s, a) => s + a.price, 0);
-                                        const fullTotal = balanceInt + unpaidAddonsTotal;
+                                        const fullTotal = balanceInt;
                                         return (
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
@@ -842,7 +839,7 @@ export default function Admin1Dashboard() {
                                                     <span className={`text-base font-bold ${fullTotal === 0 ? 'text-slate-400' : 'text-rose-700'}`}>₹{fullTotal.toLocaleString()}</span>
                                                 </div>
                                                 {unpaidAddonsTotal > 0 && (
-                                                    <p className="text-[10px] text-slate-500 font-medium">Includes ₹{balanceInt.toLocaleString()} balance + ₹{unpaidAddonsTotal.toLocaleString()} unpaid add-ons</p>
+                                                    <p className="text-[10px] text-slate-500 font-medium">+ ₹{unpaidAddonsTotal.toLocaleString()} in unpaid add-ons (collect separately above)</p>
                                                 )}
 
                                                 {fullTotal > 0 && (
@@ -1129,7 +1126,7 @@ export default function Admin1Dashboard() {
                                         >
                                             {packageType === "Movie Time"
                                                 ? Array.from({ length: 10 }, (_, i) => i + 1).map(h => <option key={h} value={h}>{h} Hour{h > 1 ? 's' : ''}</option>)
-                                                : Array.from({ length: 9 }, (_, i) => i + 2).map(h => <option key={h} value={h}>{h} Hours</option>)
+                                                : Array.from({ length: 10 }, (_, i) => i + 1).map(h => <option key={h} value={h}>{h} Hour{h > 1 ? 's' : ''}</option>)
                                             }
                                         </select>
                                     </div>

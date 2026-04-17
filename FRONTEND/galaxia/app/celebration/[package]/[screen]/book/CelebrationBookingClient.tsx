@@ -766,7 +766,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         )}
                                         <p className="font-inter text-[10px] text-cel-text-muted mt-2 flex items-center gap-1.5">
                                             <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            Minimum booking: {isMovieTime ? '1 hour' : '2 hours'}
+                                            Minimum booking: 1 hour
                                         </p>
                                     </div>
                                 ))}
@@ -995,7 +995,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                 </div>
                                 <button
                                     onClick={() => {
-                                        if (totalHours >= (isMovieTime ? 1 : 2)) {
+                                        if (totalHours >= 1) {
                                             const token = localStorage.getItem("galaxia_token");
                                             if (!token) {
                                                 setShowLoginPrompt(true);
@@ -1021,10 +1021,10 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                             }
                                         }
                                     }}
-                                    disabled={totalHours < (isMovieTime ? 1 : 2)}
-                                    className={`w-full font-cinzel font-semibold text-sm py-3.5 rounded-lg transition-all duration-300 ${(totalHours >= (isMovieTime ? 1 : 2)) ? 'bg-gradient-to-r from-rose-medium to-rose-dark text-white hover:shadow-lg hover:shadow-rose-dark/30' : 'bg-cel-border text-cel-text-muted cursor-not-allowed'}`}
+                                    disabled={totalHours < 1}
+                                    className={`w-full font-cinzel font-semibold text-sm py-3.5 rounded-lg transition-all duration-300 ${(totalHours >= 1) ? 'bg-gradient-to-r from-rose-medium to-rose-dark text-white hover:shadow-lg hover:shadow-rose-dark/30' : 'bg-cel-border text-cel-text-muted cursor-not-allowed'}`}
                                 >
-                                    {totalHours < (isMovieTime ? 1 : 2) ? `Select at least ${(isMovieTime ? 1 : 2) - totalHours} more hour${(isMovieTime ? 1 : 2) - totalHours > 1 ? 's' : ''}` : 'BOOK NOW'}
+                                    {totalHours < 1 ? 'Select at least 1 hour' : 'BOOK NOW'}
                                 </button>
                             </div>
                         )}
