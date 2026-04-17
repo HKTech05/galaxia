@@ -59,8 +59,7 @@ function buildPropertyNodes(): Record<string, MenuNode> {
             ],
         };
         nodes[`${k}_book`] = {
-            message: `📅 Check Availability & Book ${p.name}\n\nSelect your dates on our official booking portal:` + PAYMENT_WARNING,
-            link: `https://galaxiaresorts.com/staycation/${p.slug}`,
+            message: `📅 Check Availability & Book ${p.name}\n\nYou can check availability and book directly from our Staycation section on this website.\n\nNavigate to: Staycation → ${p.name}` + PAYMENT_WARNING,
             options: [{ label: "📋 Full Details", value: `${k}_details` }, BACK_TO_MENU],
         };
     }
@@ -75,7 +74,7 @@ const menuTree: Record<string, MenuNode> = {
             { label: "💰 Budget Stays", value: "budget_properties" },
             { label: "✨ Premium Stays", value: "premium_properties" },
             { label: "ℹ️ More Info & FAQs", value: "staycation_more_info" },
-            { label: "🌐 Visit Website", value: "visit_website" },
+            { label: "👤 Talk to a Human", value: "human" },
         ],
     },
     staycation_more_info: {
@@ -133,7 +132,7 @@ const menuTree: Record<string, MenuNode> = {
     policy_cancellation: { message: "❌ Cancellation & Refund\n\nAll bookings are Non-Refundable and Non-Transferable.", options: [BACK_TO_MENU] },
     policy_pets: { message: "🐾 Pets Policy\n\n✅ Pets Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose villas.\n💰 Cost: ₹600 extra per pet.\n❌ Not Allowed: Amstel Nest.", options: [BACK_TO_MENU] },
     policy_couples: { message: "❤️ Couples Policy\n\nUnmarried couples welcome with valid gov ID (18+).", options: [BACK_TO_MENU] },
-    visit_website: { message: "🌐 Galaxia Resorts Website\n\nExplore our full range of offerings, book stays, and discover more on our official website.", link: "https://galaxiaresorts.com", options: [BACK_TO_MENU] },
+
 
     /* ── CELEBRATION / DIGITAL DIARIES BOT ── */
     celebration_main: {
@@ -142,7 +141,7 @@ const menuTree: Record<string, MenuNode> = {
             { label: "🎥 Movie Time", value: "movie_time" },
             { label: "🎉 Celebration Packs", value: "deco_screens" },
             { label: "❓ FAQs & Support", value: "faqs_celebration" },
-            { label: "🌐 Visit Website", value: "visit_cel_website" },
+            { label: "👤 Talk to a Human", value: "human" },
         ],
     },
     movie_time: {
@@ -173,14 +172,13 @@ const menuTree: Record<string, MenuNode> = {
     deco_sandy: { message: "🎉 Sandy Screen (Beach Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
     deco_parknwatch: { message: "🎉 Park N Watch (Car Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
     deco_baywatch: { message: "🎉 Baywatch (Greece Theme)\nBirthday/Anniversary Celebration Package\n\n💰 Price: ₹2,950 (for 2 people)\n\n✨ Includes:\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n🔒 No CCTV | 🆔 ID Proof Mandatory.", options: [{ label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU] },
-    book_movietime: { message: "🔗 Book Movie Time Only:\nhttps://galaxiaresorts.com/celebration/movie-time" + PAYMENT_WARNING, link: "https://galaxiaresorts.com/celebration/movie-time", options: [BACK_TO_MENU] },
-    book_deco: { message: "🔗 Book Celebration Pack:\nhttps://galaxiaresorts.com/celebration/celebration" + PAYMENT_WARNING, link: "https://galaxiaresorts.com/celebration/celebration", options: [BACK_TO_MENU] },
+    book_movietime: { message: "📅 Book Movie Time Only\n\nYou can book directly from our Celebration section on this website.\n\nNavigate to: Celebration → Movie Time" + PAYMENT_WARNING, options: [BACK_TO_MENU] },
+    book_deco: { message: "📅 Book Celebration Pack\n\nYou can book directly from our Celebration section on this website.\n\nNavigate to: Celebration → Celebration Pack" + PAYMENT_WARNING, options: [BACK_TO_MENU] },
     faqs_celebration: { message: "❓ Frequently Asked Questions", options: [{ label: "🥣 Add-ons & People", value: "faq_cel_food" }, { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" }, { label: "⏰ Timings & Rules", value: "faq_cel_rules" }, { label: "👤 Talk to a Human", value: "human" }, BACK_TO_MENU] },
     faq_cel_food: { message: "🍽️ Add-ons & Extra People\n\n• Optional Add-ons (₹400 each): Extra Cake (250g), Balloons Decoration, or LED Message Tag.\n• Note: Add-ons are specifically for 'Movie Time Only' bookings.\n• Extra Person: ₹300 per head.", options: [BACK_TO_MENU] },
     faq_cel_privacy: { message: "🔒 Privacy & Safety\n\n• Your privacy is our priority.\n• Strictly No CCTV inside any screening rooms.\n• You have complete privacy for your event.", options: [BACK_TO_MENU] },
     faq_cel_rules: { message: "⏰ Timings & Rules\n\n• Slots are fixed as per your booking.\n• ID Proof is Mandatory for all guests.\n• Valid government ID (18+) required.", options: [BACK_TO_MENU] },
-    human: { message: "👤 Talk to a Human\n\nOur team will reply to this chat shortly. You can also reach us on WhatsApp or call us directly.", options: [BACK_TO_MENU] },
-    visit_cel_website: { message: "🌐 Digital Diaries Website\n\nExplore our full range of offerings, book premium screens, and discover more on our official website.", link: "https://www.galaxiaresorts.com/celebration", options: [BACK_TO_MENU] },
+    human: { message: "👤 Talk to a Human\n\nPlease share your phone number and our team will connect with you shortly.", options: [] },
     ...buildPropertyNodes(),
 };
 
@@ -197,6 +195,9 @@ export default function FloatingChatbot() {
     const [navStack, setNavStack] = useState<string[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [hasInit, setHasInit] = useState(false);
+    const [waitingForPhone, setWaitingForPhone] = useState(false);
+    const [phoneInput, setPhoneInput] = useState("");
+    const [phoneSubmitting, setPhoneSubmitting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => setMounted(true), []);
@@ -254,16 +255,45 @@ export default function FloatingChatbot() {
 
         if (opt.value === "main") {
             setNavStack([]);
+            setWaitingForPhone(false);
             navigateTo(rootNode);
         } else if (opt.value === "back") {
             const newStack = [...navStack];
             const prev = newStack.pop() || rootNode;
             setNavStack(newStack);
+            setWaitingForPhone(false);
             navigateTo(prev);
+        } else if (opt.value === "human") {
+            setNavStack(prev => [...prev, opt.value]);
+            setWaitingForPhone(true);
+            navigateTo("human");
         } else {
             setNavStack(prev => [...prev, opt.value]);
             navigateTo(opt.value);
         }
+    };
+
+    const handlePhoneSubmit = async () => {
+        const cleaned = phoneInput.replace(/\s+/g, "");
+        if (cleaned.length < 10) return;
+        setPhoneSubmitting(true);
+        setMessages(prev => [...prev, { role: "user", text: cleaned }]);
+        try {
+            await fetch("/api/human-requests", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: cleaned, source: botType }),
+            });
+        } catch { /* silently fail */ }
+        setWaitingForPhone(false);
+        setPhoneInput("");
+        setPhoneSubmitting(false);
+        setIsTyping(true);
+        setTimeout(() => {
+            setIsTyping(false);
+            setMessages(prev => [...prev, { role: "bot", text: "✅ Thank you! Our team will connect with you shortly." }]);
+            setCurrentOptions([BACK_TO_MENU]);
+        }, 500);
     };
 
     if (!shouldShow || !mounted) return null;
@@ -301,12 +331,6 @@ export default function FloatingChatbot() {
                                         : "bg-white text-[#111b21] rounded-xl rounded-tl-none"}`}
                                 >
                                     {msg.text}
-                                    {msg.link && (
-                                        <a href={msg.link} target="_blank" rel="noopener noreferrer"
-                                            className="block mt-2 text-[#d4af37] text-[13px] font-medium hover:underline">
-                                            🔗 Click here
-                                        </a>
-                                    )}
                                 </div>
                             </div>
                         ))}
@@ -337,6 +361,31 @@ export default function FloatingChatbot() {
                                     )}
                                 </button>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Phone input for Talk to Human */}
+                    {waitingForPhone && (
+                        <div className="bg-white border-t border-[#eaeaea] px-4 py-3 shrink-0">
+                            <div className="flex gap-2">
+                                <input
+                                    type="tel"
+                                    value={phoneInput}
+                                    onChange={e => setPhoneInput(e.target.value)}
+                                    onKeyDown={e => e.key === "Enter" && handlePhoneSubmit()}
+                                    placeholder="Enter your phone number"
+                                    className="flex-1 border border-[#e0e0e0] rounded-lg px-3 py-2.5 text-sm text-[#222] outline-none focus:border-[#d4af37] transition-colors"
+                                    disabled={phoneSubmitting}
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={handlePhoneSubmit}
+                                    disabled={phoneInput.replace(/\s+/g, "").length < 10 || phoneSubmitting}
+                                    className="bg-[#d4af37] text-white px-4 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 hover:bg-[#c29f30] transition-colors"
+                                >
+                                    {phoneSubmitting ? "..." : "Send"}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

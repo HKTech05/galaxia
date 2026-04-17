@@ -15,6 +15,7 @@ const PHONE_NUMBERS: Record<string, PhoneNumber> = {
     staycation_1: { id: "PLACEHOLDER_STAYCATION_1_PHONE_ID", label: "Staycation 1", icon: "🏡", color: "#7c3aed" },
     staycation_2: { id: "PLACEHOLDER_STAYCATION_2_PHONE_ID", label: "Staycation 2", icon: "🏘️", color: "#3b82f6" },
     digital_diaries: { id: "PLACEHOLDER_DIGITAL_DIARIES_PHONE_ID", label: "Digital Diaries", icon: "🎬", color: "#f59e0b" },
+    website: { id: "website", label: "Website", icon: "🌐", color: "#10b981" },
 };
 
 interface ChatSession { id: string; sessionId: string; displayName: string; phoneNumberKey: string; mode: "bot" | "human"; tags: string[]; unread: number; lastMessage: string; lastMessageTime: Date; platform: string }
@@ -198,6 +199,41 @@ export default function ChatbotDashboard() {
         } catch { router.replace("/chatbot"); }
     }, [router]);
 
+    // Fetch real website human requests from API
+    const fetchHumanRequests = useCallback(async () => {
+        try {
+            const token = localStorage.getItem("galaxia_token");
+            if (!token) return;
+            const res = await fetch("/api/human-requests", { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) return;
+            const data = await res.json();
+            const websiteSessions: ChatSession[] = data.map((req: any) => ({
+                id: `web_${req.id}`,
+                sessionId: req.phone,
+                displayName: req.phone,
+                phoneNumberKey: "website",
+                mode: "human" as const,
+                tags: ["website", req.source === "celebration" ? "dd" : "staycation"],
+                unread: req.status === "pending" ? 1 : 0,
+                lastMessage: `Talk to Human request from ${req.source} page`,
+                lastMessageTime: new Date(req.createdAt),
+                platform: "website",
+            }));
+            setSessions(prev => {
+                const nonWeb = prev.filter(s => !s.id.startsWith("web_"));
+                return [...nonWeb, ...websiteSessions];
+            });
+        } catch { /* silently fail */ }
+    }, []);
+
+    useEffect(() => {
+        if (session) {
+            fetchHumanRequests();
+            const interval = setInterval(fetchHumanRequests, 30000); // refresh every 30s
+            return () => clearInterval(interval);
+        }
+    }, [session, fetchHumanRequests]);
+
     useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat, messages]);
 
     const allowed = session?.assignedNumbers || Object.keys(PHONE_NUMBERS);
@@ -315,7 +351,7 @@ export default function ChatbotDashboard() {
                                             <div className="cb-chat-tags">
                                                 {s.tags.map(t => (
                                                     <span key={t} className={`cb-tag cb-tag-${t}`}>
-                                                        {t === "hot" ? "🔥 Hot Lead" : t === "followup" ? "📌 Follow-up" : t === "resolved" ? "✅ Resolved" : "🆕 New"}
+                                                        {t === "hot" ? "🔥 Hot Lead" : t === "followup" ? "📌 Follow-up" : t === "resolved" ? "✅ Resolved" : t === "website" ? "🌐 Website" : t === "dd" ? "🎬 DD" : t === "staycation" ? "🏡 Staycation" : "🆕 New"}
                                                     </span>
                                                 ))}
                                             </div>
@@ -349,9 +385,9 @@ export default function ChatbotDashboard() {
                                 </div>
                                 <div className="cb-header-right">
                                     <div className="cb-tag-btns">
-                                        {["hot", "followup", "resolved"].map(t => (
+                                        {["hot", "followup", "resolved", "website"].map(t => (
                                             <button key={t} className={`cb-tag-btn ${active.tags.includes(t) ? `active-${t}` : ""}`} onClick={() => toggleTag(t)}>
-                                                {t === "hot" ? "🔥 Hot" : t === "followup" ? "📌 Follow-up" : "✅ Resolved"}
+                                                {t === "hot" ? "🔥 Hot" : t === "followup" ? "📌 Follow-up" : t === "website" ? "🌐 Website" : "✅ Resolved"}
                                             </button>
                                         ))}
                                     </div>

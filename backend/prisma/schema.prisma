@@ -582,3 +582,14 @@ model BookingHold {
   @@index([screenId, holdDate])
   @@map("booking_holds")
 }
+
+model HumanRequest {
+  id        Int      @id @default(autoincrement())
+  phone     String   @db.VarChar(20)
+  source    String   @db.VarChar(30) // "celebration" or "staycation"
+  status    String   @default("pending") @db.VarChar(20) // "pending", "contacted", "resolved"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([status])
+  @@map("human_requests")
+}
