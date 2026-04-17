@@ -428,7 +428,7 @@ export default function Admin1Dashboard() {
                             fd.append("paymentType", "balance");
                             fd.append("note", `DD Walk-in UPI payment — ${selectedScreen}`);
                             fd.append("file", walkInUpiProof, walkInUpiProof.name);
-                            await fetch("/api/uploads/upi-proof", {
+                            await fetch("/api/upi-payments/upload", {
                                 method: "POST",
                                 headers: { Authorization: `Bearer ${token}` },
                                 body: fd,
@@ -516,7 +516,7 @@ export default function Admin1Dashboard() {
                             const blob = new Blob([`${mode} payment collected at reception`], { type: "text/plain" });
                             fd.append("file", blob, `${mode.toLowerCase()}-collected.txt`);
                         }
-                        await fetch("/api/uploads/upi-proof", {
+                        await fetch("/api/upi-payments/upload", {
                             method: "POST",
                             headers: { Authorization: `Bearer ${token}` },
                             body: fd,
@@ -853,6 +853,7 @@ export default function Admin1Dashboard() {
                                                                 <input
                                                                     type="file"
                                                                     accept="image/*"
+                                                                    capture="environment"
                                                                     className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
                                                                     onChange={(e) => {
                                                                         const file = e.target.files?.[0];
@@ -1244,6 +1245,7 @@ export default function Admin1Dashboard() {
                                             <input
                                                 type="file"
                                                 accept="image/*"
+                                                capture="environment"
                                                 className="hidden"
                                                 onChange={(e) => {
                                                     const file = e.target.files?.[0];
@@ -1555,7 +1557,7 @@ export default function Admin1Dashboard() {
                                                 height: `${height - 8}px`,
                                                 left: left,
                                                 width: width,
-                                                zIndex: 30
+                                                zIndex: 20
                                             }}
                                         >
                                             <div className="flex items-center gap-1.5 mb-1">

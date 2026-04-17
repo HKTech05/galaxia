@@ -347,7 +347,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     fd.append("amount", String(balanceAmt));
                     fd.append("paymentType", "balance");
                     fd.append("note", `Balance — ${selectedBooking.property}`);
-                    await fetch("/api/uploads/upi-proof", {
+                    await fetch("/api/upi-payments/upload", {
                         method: "POST",
                         headers: { Authorization: `Bearer ${token}` },
                         body: fd,
@@ -362,7 +362,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     fd.append("amount", String(depositAmt));
                     fd.append("paymentType", "deposit");
                     fd.append("note", `Security deposit — ${selectedBooking.property}`);
-                    await fetch("/api/uploads/upi-proof", {
+                    await fetch("/api/upi-payments/upload", {
                         method: "POST",
                         headers: { Authorization: `Bearer ${token}` },
                         body: fd,
@@ -669,7 +669,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             {collected20 === "UPI" && (
                                                 <div className="mt-2">
                                                     <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
-                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofBalance(e.target.files[0]); }} />
+                                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofBalance(e.target.files[0]); }} />
                                                         <Upload size={14} className="text-indigo-600" />
                                                         <span className="text-xs font-bold text-indigo-700 truncate max-w-[200px]">{upiProofBalance ? upiProofBalance.name : 'Upload UPI Proof'}</span>
                                                         {upiProofBalance && <CheckCircle size={14} className="text-emerald-600 ml-auto" />}
@@ -703,7 +703,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             {collectedSec === "UPI" && (
                                                 <div className="mt-2">
                                                     <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
-                                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofDeposit(e.target.files[0]); }} />
+                                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { if (e.target.files?.[0]) setUpiProofDeposit(e.target.files[0]); }} />
                                                         <Upload size={14} className="text-indigo-600" />
                                                         <span className="text-xs font-bold text-indigo-700 truncate max-w-[200px]">{upiProofDeposit ? upiProofDeposit.name : 'Upload UPI Proof'}</span>
                                                         {upiProofDeposit && <CheckCircle size={14} className="text-emerald-600 ml-auto" />}
