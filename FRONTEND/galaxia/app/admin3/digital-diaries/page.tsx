@@ -48,6 +48,7 @@ type Event = {
     amountPaid: string;
     amountToCollect: string;
     paymentDetails: string;
+    bookingRef?: string;
     isMaintenance?: boolean;
     addOns?: {
         balloons?: boolean;
