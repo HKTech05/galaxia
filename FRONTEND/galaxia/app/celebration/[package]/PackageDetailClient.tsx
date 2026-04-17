@@ -67,7 +67,7 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
         })();
     }, [pkg.id]);
 
-    const pricingTiers = livePricing || pkg.pricing;
+    const pricingTiers = (livePricing || pkg.pricing).slice().sort((a, b) => a.hours - b.hours);
     const extraPersonPrice = liveExtraPerson ?? pkg.extraPerson;
 
     return (

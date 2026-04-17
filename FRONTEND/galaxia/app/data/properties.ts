@@ -364,8 +364,8 @@ export const properties: Record<string, PropertyData> = {
                 maxAdults: 6,
                 maxKids: 4,
                 pricing: {
-                    weekday: { price: "4,950", persons: "2 persons with meals" },
-                    weekend: { price: "6,950", persons: "2 persons with meals" },
+                    weekday: { price: "9,000", persons: "upto 4 with meals" },
+                    weekend: { price: "9,000", persons: "upto 4 with meals" },
                 },
             },
         ],

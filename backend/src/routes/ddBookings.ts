@@ -68,7 +68,7 @@ router.post("/", async (req, res) => {
         // Use serializable transaction to prevent double-booking
         const booking = await prisma.$transaction(async (tx) => {
             // 0. Check if screen is active
-            const screen = await tx.subProperty.findUnique({ 
+            const screen = await tx.subProperty.findUnique({
                 where: { id: parseInt(screenId) },
                 include: { property: true }
             });
@@ -564,9 +564,9 @@ router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest
 
         const addon = await prisma.ddBookingAddon.update({
             where: { id: addonId },
-            data: { 
+            data: {
                 isPaid: true,
-                paymentMethod: method 
+                paymentMethod: method
             },
             include: { booking: true }
         });

@@ -816,4 +816,65 @@ router.get("/voucher/:ref", async (req, res) => {
     }
 });
 
+// ─── POST /api/bookings/staycation/:id/refund-deposit ─── Record security deposit refund
+router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        const { method } = req.body; // "cash" or "upi"
+
+        const booking = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId },
+            include: { property: true },
+        });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+        const depositAmt = booking.securityDeposit || 0;
+        if (depositAmt <= 0) return res.status(400).json({ error: "No security deposit to refund" });
+
+        // Find the employee for this property
+        const employee = await prisma.employee.findFirst({
+            where: { propertyId: booking.propertyId, isActive: true },
+        });
+
+        if (method === "upi" && employee) {
+            // Create negative UPI payment record for refund
+            await prisma.upiPayment.create({
+                data: {
+                    employeeId: employee.id,
+                    bookingRef: booking.bookingRef || `ST-${bookingId}`,
+                    guestName: booking.customerName || null,
+                    amount: -depositAmt,
+                    paymentType: "deposit_refund",
+                    note: `Security deposit refund — ${booking.property?.name || "Staycation"}`,
+                },
+            });
+        } else if (method === "cash" && employee) {
+            // Deduct from employee cash collected
+            await prisma.employee.update({
+                where: { id: employee.id },
+                data: { cashCollected: { decrement: depositAmt } },
+            });
+            await prisma.cashTransaction.create({
+                data: {
+                    employeeId: employee.id,
+                    amount: depositAmt,
+                    transactionType: "refund",
+                    note: `Security deposit refund — ${booking.property?.name || "Staycation"} (${booking.bookingRef})`,
+                },
+            });
+        }
+
+        // Mark booking deposit as refunded
+        await prisma.staycationBooking.update({
+            where: { id: bookingId },
+            data: { depositRefunded: true },
+        });
+
+        return res.json({ success: true, method, amount: depositAmt });
+    } catch (error) {
+        console.error("Refund deposit error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

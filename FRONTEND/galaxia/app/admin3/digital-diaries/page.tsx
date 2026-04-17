@@ -49,6 +49,7 @@ type Event = {
     amountToCollect: string;
     paymentDetails: string;
     bookingRef?: string;
+    status?: string;
     isMaintenance?: boolean;
     addOns?: {
         balloons?: boolean;
@@ -131,6 +132,7 @@ export default function Admin1Dashboard() {
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
                     paymentDetails: b.paymentDetails || "N/A",
                     bookingRef: b.bookingRef || "",
+                    status: b.status || "confirmed",
                     isMaintenance: b.customerName.toLowerCase().includes("maintenance") || b.status === "maintenance",
                     dateBooked: new Date(b.bookedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
                     rawAddons: b.addons || [],
@@ -508,21 +510,15 @@ export default function Admin1Dashboard() {
             // Track UPI payment to UPI logs (only for actual UPI payments with proof)
             if (mode === "UPI" && proofFile && totalCollected > 0) {
                 try {
-                    const props = await api.get("/properties");
-                    const ddProp = Array.isArray(props) ? props.find((p: any) => p.slug === "digital-diaries") : null;
-                    const employees = ddProp ? await api.get(`/employees?propertyId=${ddProp.id}`) : [];
-                    const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
-                    if (empId) {
-                        const fd = new FormData();
-                        fd.append("employeeId", String(empId));
-                        fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
-                        fd.append("guestName", activeEvent.customerName || '');
-                        fd.append("amount", String(totalCollected));
-                        fd.append("paymentType", "balance");
-                        fd.append("note", `DD Collection — ${activeEvent.screen} via UPI`);
-                        fd.append("file", proofFile, proofFile.name);
-                        await api.upload("/upi-payments/upload", fd);
-                    }
+                    const fd = new FormData();
+                    fd.append("propertySlug", "digital-diaries");
+                    fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
+                    fd.append("guestName", activeEvent.customerName || '');
+                    fd.append("amount", String(totalCollected));
+                    fd.append("paymentType", "balance");
+                    fd.append("note", `DD Collection — ${activeEvent.screen} via UPI`);
+                    fd.append("file", proofFile, proofFile.name);
+                    await api.upload("/upi-payments/upload", fd);
                 } catch (trackErr) {
                     console.error("Failed to record UPI payment:", trackErr);
                 }
@@ -1024,13 +1020,20 @@ export default function Admin1Dashboard() {
                         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
                             <h3 className="text-xl font-black text-slate-800 mb-2">Customer No Show</h3>
                             <p className="text-sm text-slate-500 mb-6">What would you like to do with <strong>{activeEvent.customerName}</strong>&apos;s booking?</p>
+                            {activeEvent.status === 'no_show' && (
+                                <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-600 flex items-center gap-2">
+                                    <Ban size={14} /> Already marked as No Show
+                                </div>
+                            )}
                             <div className="space-y-3">
-                                <button
-                                    onClick={handleNoShow}
-                                    className="w-full py-3.5 bg-red-50 border-2 border-red-200 text-red-700 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <Ban size={16} /> Mark as No Show
-                                </button>
+                                {activeEvent.status !== 'no_show' && (
+                                    <button
+                                        onClick={handleNoShow}
+                                        className="w-full py-3.5 bg-red-50 border-2 border-red-200 text-red-700 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Ban size={16} /> Mark as No Show
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => { setShowNoShowModal(false); setShowTransferModal(true); }}
                                     className="w-full py-3.5 bg-indigo-50 border-2 border-indigo-200 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all flex items-center justify-center gap-2"

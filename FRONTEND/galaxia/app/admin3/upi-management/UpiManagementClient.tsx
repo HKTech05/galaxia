@@ -443,16 +443,18 @@ export default function UpiManagementClient() {
                                                     </td>
                                                     <td className="px-4 py-3.5 font-bold text-slate-800">{log.guestName || '—'}</td>
                                                     <td className="px-4 py-3.5 text-xs font-medium text-slate-500">{log.bookingRef || '—'}</td>
-                                                    <td className="px-4 py-3.5 font-black text-indigo-700">
-                                                        ₹{log.amount.toLocaleString('en-IN')}
+                                                    <td className={`px-4 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : 'text-indigo-700'}`}>
+                                                        {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
                                                     </td>
                                                     <td className="px-4 py-3.5">
                                                         <span className={`text-xs font-bold px-2.5 py-1 rounded border ${
-                                                            log.paymentType === 'deposit'
-                                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            log.paymentType === 'deposit_refund'
+                                                                ? 'bg-red-50 text-red-700 border-red-200'
+                                                                : log.paymentType === 'deposit'
+                                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                         }`}>
-                                                            {log.paymentType === 'deposit' ? 'Deposit' : 'Balance'}
+                                                            {log.paymentType === 'deposit_refund' ? 'Refund' : log.paymentType === 'deposit' ? 'Deposit' : 'Balance'}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3.5">
@@ -493,17 +495,19 @@ export default function UpiManagementClient() {
                                                 <p className="text-xs font-medium text-slate-500">
                                                     {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
-                                                <p className="text-sm font-black text-indigo-700">₹{log.amount.toLocaleString('en-IN')}</p>
+                                                <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : 'text-indigo-700'}`}>{log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}</p>
                                             </div>
                                             <p className="text-sm font-bold text-slate-800">{log.guestName || '—'}</p>
                                             {log.bookingRef && <p className="text-[10px] text-slate-400 font-medium mt-0.5">{log.bookingRef}</p>}
                                             <div className="flex items-center justify-between mt-3">
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                                                    log.paymentType === 'deposit'
-                                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    log.paymentType === 'deposit_refund'
+                                                        ? 'bg-red-50 text-red-700 border-red-200'
+                                                        : log.paymentType === 'deposit'
+                                                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                 }`}>
-                                                    {log.paymentType === 'deposit' ? 'Deposit' : 'Balance'}
+                                                    {log.paymentType === 'deposit_refund' ? 'Refund' : log.paymentType === 'deposit' ? 'Deposit' : 'Balance'}
                                                 </span>
                                                 <button
                                                     onClick={() => handleViewProof(log.id)}

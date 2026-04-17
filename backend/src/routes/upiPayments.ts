@@ -58,10 +58,20 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req: AuthRe
             return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const { employeeId, bookingRef, guestName, amount, paymentType, note } = req.body;
+        const { employeeId, propertySlug, bookingRef, guestName, amount, paymentType, note } = req.body;
 
-        if (!employeeId || !amount || !paymentType) {
-            return res.status(400).json({ error: "employeeId, amount, and paymentType are required" });
+        // Resolve employeeId: accept directly OR via propertySlug
+        let resolvedEmployeeId = employeeId ? parseInt(employeeId) : null;
+        if (!resolvedEmployeeId && propertySlug) {
+            const prop = await prisma.property.findFirst({ where: { slug: propertySlug } });
+            if (prop) {
+                const emp = await prisma.employee.findFirst({ where: { propertyId: prop.id, isActive: true } });
+                if (emp) resolvedEmployeeId = emp.id;
+            }
+        }
+
+        if (!resolvedEmployeeId || !amount || !paymentType) {
+            return res.status(400).json({ error: "employeeId (or propertySlug), amount, and paymentType are required" });
         }
 
         // Upload to S3
@@ -70,7 +80,7 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req: AuthRe
         // Create UPI payment record
         const upiPayment = await prisma.upiPayment.create({
             data: {
-                employeeId: parseInt(employeeId),
+                employeeId: resolvedEmployeeId,
                 bookingRef: bookingRef || null,
                 guestName: guestName || null,
                 amount: parseInt(amount),
