@@ -28,6 +28,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         : (b.property?.name || "Unknown"),
                     parentProperty: b.property?.name || "Unknown",
                     guests: b.numGuests || 0,
+                    pets: b.numPets || 0,
                     checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkInTime: "1:00 PM",
@@ -142,9 +143,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     // Manual Booking states
     const AMBROSE_VILLAS = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
     const [isManualBookingOpen, setIsManualBookingOpen] = useState(false);
-    const [manualForm, setManualForm] = useState({
         name: "",
         guests: 2,
+        pets: 0,
         phone: "",
         checkInDate: new Date(),
         checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
@@ -232,6 +233,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
         // Add 5% GST
         total = total + (total * 0.05);
+        // Add pet charges (₹600/pet flat)
+        total += manualForm.pets * 600;
         return Math.round(total);
     };
 
@@ -260,6 +263,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 customerPhone: manualForm.phone || "0000000000",
                 propertyId: propId,
                 numGuests: manualForm.guests,
+                numPets: manualForm.pets || 0,
                 checkInDate: manualForm.checkInDate.toISOString(),
                 checkOutDate: manualForm.checkOutDate.toISOString(),
                 totalAmount: calculatedTotal,
@@ -456,7 +460,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Number of Guests</p>
-                                        <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests}</p>
+                                        <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests}{booking.pets > 0 && <span className="text-sm font-bold text-purple-600 ml-2">+ {booking.pets} pet{booking.pets > 1 ? 's' : ''}</span>}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Check-in</p>
@@ -1000,6 +1004,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <input type="number" min="1" max="15" value={manualForm.guests} onChange={e => setManualForm({ ...manualForm, guests: parseInt(e.target.value) || 2 })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
                                         </div>
                                     </div>
+                                    {['Ambrose', 'La Paraiso', 'Mount View', 'Hill View'].some(p => manualForm.property.includes(p)) && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Pets (₹600/pet)</label>
+                                        <div className="relative">
+                                            <input type="number" min="0" max="2" value={manualForm.pets} onChange={e => setManualForm({ ...manualForm, pets: Math.min(2, parseInt(e.target.value) || 0) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Max 2" />
+                                        </div>
+                                    </div>
+                                    )}
                                 </div>
                             </div>
 

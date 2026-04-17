@@ -146,6 +146,8 @@ export default function BookingClient({ property }: BookingClientProps) {
     // Guest state
     const [adults, setAdults] = useState(2);
     const [kids, setKids] = useState(0);
+    const [pets, setPets] = useState(0);
+    const PET_CHARGE = 600; // ₹600 per pet per stay
 
     // Form state
     const [formData, setFormData] = useState({
@@ -371,7 +373,8 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     const roomPrice = nightlyRate * nights;
     const extraCharges = (extraAdultTotal + kidsTotal) * nights;
-    const perUnitSubtotal = roomPrice + extraCharges;
+    const petCharges = pets * PET_CHARGE;
+    const perUnitSubtotal = roomPrice + extraCharges + petCharges;
     const subtotal = perUnitSubtotal * (isAmstelNest ? unitCount : 1);
 
     // Discount
@@ -634,6 +637,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     propertyId: dbPropertyId,
                     subPropertyId: subPropertyId || null,
                     numGuests: adults + kids,
+                    numPets: pets,
                     checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
                     checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
                     nightlyRate,
@@ -951,6 +955,26 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         )}
                                     </div>
 
+                                    {/* Pet Input (pet-friendly properties only) */}
+                                    {property.petsAllowed && (
+                                        <div className="mb-6 p-4 border border-border-light rounded-lg bg-soft-gray/30">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h4 className="font-inter text-xs font-semibold text-text-primary uppercase tracking-wider">Bringing Pets?</h4>
+                                                    <p className="font-inter text-[10px] text-text-muted mt-1">₹{PET_CHARGE}/pet · Max 2 pets allowed</p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button type="button" onClick={() => setPets(Math.max(0, pets - 1))} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm">−</button>
+                                                    <span className="font-inter text-sm text-text-primary w-4 text-center">{pets}</span>
+                                                    <button type="button" onClick={() => setPets(Math.min(2, pets + 1))} disabled={pets >= 2} className="w-7 h-7 rounded-full border border-border-medium flex items-center justify-center text-text-muted hover:border-antique-gold hover:text-antique-gold transition-all text-sm disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                </div>
+                                            </div>
+                                            {pets > 0 && (
+                                                <p className="mt-2 text-[10px] font-inter text-text-muted">Pet charges: {pets} × ₹{PET_CHARGE} = ₹{(pets * PET_CHARGE).toLocaleString('en-IN')}</p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Celebration Add-on (Ambrose only) */}
                                     {isAmbrose && (
                                         <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
@@ -1117,6 +1141,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                 <div className="p-5 border-b border-border-light space-y-3 font-inter text-sm text-text-primary">
                                     <div className="flex justify-between items-center"><span>Room Price</span><span>{formatPrice(roomPrice)}</span></div>
                                     {extraCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Extra Guests</span><span>{formatPrice(extraCharges)}</span></div>}
+                                    {petCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Pets ({pets} × ₹{PET_CHARGE})</span><span>{formatPrice(petCharges)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     {celebrationAddon && <div className="flex justify-between items-center text-xs text-amber-700"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
                                     <div className="flex justify-between items-center"><span>Taxes ({property.gstPercent}% GST)</span><span>{formatPrice(taxesAndFees)}</span></div>

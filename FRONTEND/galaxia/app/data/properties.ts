@@ -116,6 +116,7 @@ export const properties: Record<string, PropertyData> = {
             "Garden Seating",
             "2 AC",
             "Smart TV",
+            "Meals Included",
         ],
         facilities: [
             {
@@ -233,7 +234,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Machan Theme",
                 description: "Elevated treehouse-style villa with a glass-bottom pool view and mountain deck.",
                 image: "",
-                configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Mountain Deck"],
+                configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Private Pool", "Kids Sleeping Area", "Mountain Deck"],
                 maxPersons: 4,
                 maxAdults: 3,
                 maxKids: 1,
@@ -428,9 +429,16 @@ export const properties: Record<string, PropertyData> = {
             "1 Sofa Cum Bed Room",
             "2 Washrooms",
             "Kitchen",
+            "Smart TV",
+            "Sony Music Player",
+            "2 AC",
             "Private Pool (25x10 ft)",
             "600 sq ft Private Garden",
             "Private Gazebo",
+            "Self Check-in Lock",
+            "Inverter",
+            "Free WiFi",
+            "Free Parking",
         ],
         facilities: [
             {
@@ -525,6 +533,12 @@ export const properties: Record<string, PropertyData> = {
             "Private Indoor Swimming Pool",
             "Swing Near Pool",
             "Kitchen (Basic Utensils)",
+            "Smart TV",
+            "Music Player",
+            "1 AC",
+            "Inverter",
+            "Free WiFi",
+            "Free Parking",
         ],
         facilities: [
             {
@@ -627,6 +641,12 @@ export const properties: Record<string, PropertyData> = {
             "Huge Mountain Balcony",
             "Small Kitchen",
             "2 Washrooms",
+            "Smart TV",
+            "Music Player",
+            "2 AC",
+            "Inverter",
+            "WiFi",
+            "Free Parking",
         ],
         facilities: [
             {
@@ -723,6 +743,13 @@ export const properties: Record<string, PropertyData> = {
             "Huge Open Balcony with Mountain View",
             "Small Kitchen with Basic Utensils",
             "2 Washrooms",
+            "Smart TV",
+            "Induction",
+            "2 Air Conditioners",
+            "Battery Backup Inverter",
+            "Free WiFi",
+            "Free Parking",
+            "Society Pool Access",
         ],
         facilities: [
             {

@@ -308,6 +308,7 @@ model StaycationBooking {
   customerPhone      String           @map("customer_phone") @db.VarChar(255)
   customerEmail      String?          @map("customer_email") @db.VarChar(255)
   numGuests          Int              @default(2) @map("num_guests")
+  numPets            Int              @default(0) @map("num_pets")
   checkInDate        DateTime         @map("check_in_date") @db.Date
   checkOutDate       DateTime         @map("check_out_date") @db.Date
   checkInTime        DateTime?        @map("check_in_time") @db.Time(6)

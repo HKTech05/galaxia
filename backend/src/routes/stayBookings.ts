@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
     try {
         const {
             customerName, customerPhone, customerEmail,
-            propertyId, subPropertyId, numGuests,
+            propertyId, subPropertyId, numGuests, numPets,
             checkInDate, checkOutDate,
             nightlyRate, basePrice, extraPersonCharge,
             gstAmount, totalAmount,
@@ -251,6 +251,7 @@ router.post("/", async (req, res) => {
                     customerPhone: encryptedPhone,
                     customerEmail: encryptedEmail,
                     numGuests: numGuests || 2,
+                    numPets: numPets || 0,
                     checkInDate: checkIn,
                     checkOutDate: checkOut,
                     numNights,
