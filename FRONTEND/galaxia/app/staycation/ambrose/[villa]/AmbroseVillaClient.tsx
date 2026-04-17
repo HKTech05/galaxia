@@ -36,6 +36,9 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
 
+    // Site images from admin panel
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+
     // Cart state
     const [cartCount, setCartCount] = useState(0);
     const [isInCart, setIsInCart] = useState(false);
@@ -50,6 +53,14 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     }, [villa.id]);
 
     useEffect(() => { refreshCart(); }, [refreshCart]);
+
+    // Fetch site images
+    useEffect(() => {
+        const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+        fetch(`${baseUrl}/site-images`).then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
 
     const addToCart = () => {
         try {
@@ -127,7 +138,9 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
         })();
     }, [villa.id]);
 
-    const images = [villa.image, ...parent.images.slice(1, 4)];
+    // Use dynamic site-images if available, otherwise static fallback
+    const dynamicSlideshow = (siteImages[`ambrose/${villa.id}/slideshow`] || []).map(i => i.url);
+    const images = dynamicSlideshow.length > 0 ? dynamicSlideshow : [villa.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = liveWeekday || villa.pricing?.weekday.price || "5,500";
     const weekendPrice = liveWeekend || villa.pricing?.weekend.price || "6,500";
 
