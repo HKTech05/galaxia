@@ -437,7 +437,7 @@ export default function UpiManagementClient() {
                                     <tbody className="divide-y divide-slate-100">
                                         {activeEmployeeLogs.length > 0 ? (
                                             activeEmployeeLogs.map(log => (
-                                                <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <tr key={log.id} className={`transition-colors ${log.paymentType === 'deposit_refund' ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-slate-50/50'}`}>
                                                     <td className="px-4 py-3.5 font-medium text-slate-600">
                                                         {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </td>
@@ -458,6 +458,7 @@ export default function UpiManagementClient() {
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3.5">
+                                                        {log.proofImageKey || log.proofImageUrl ? (
                                                         <div className="flex items-center justify-center gap-2">
                                                             <button
                                                                 onClick={() => handleViewProof(log.id)}
@@ -474,6 +475,9 @@ export default function UpiManagementClient() {
                                                                 <Download size={14} />
                                                             </button>
                                                         </div>
+                                                        ) : (
+                                                        <span className="text-xs text-slate-400 italic">{log.paymentType === 'deposit_refund' ? 'Refund' : 'No proof'}</span>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))

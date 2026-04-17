@@ -306,7 +306,7 @@ export default function Admin1Dashboard() {
         if (walkInAppliedCoupon.discountType === "percentage") {
             walkInCouponDiscount = Math.round(subtotalForCoupon * walkInAppliedCoupon.discountValue / 100);
         } else {
-            walkInCouponDiscount = walkInAppliedCoupon.discountValue;
+            walkInCouponDiscount = Number(walkInAppliedCoupon.discountValue);
         }
     }
     const totalPrice = basePrice + extraGuestFee + addOnsCharge - walkInCouponDiscount;
@@ -389,7 +389,7 @@ export default function Admin1Dashboard() {
                 occasion: packageType === "Celebration" ? walkInOccasion : undefined,
                 cakeMessage: packageType === "Celebration" ? walkInCakeMessage : (addCake ? addOnCakeMessage : undefined),
                 numGuests: guestsCount,
-                totalAmount: totalPrice + walkInCouponDiscount,
+                totalAmount: Number(totalPrice) + Number(walkInCouponDiscount),
                 discountAmount: walkInCouponDiscount,
                 amountPaid: actualAmountPaid,
                 amountToCollect: actualAmountToCollect,
@@ -1475,7 +1475,7 @@ export default function Admin1Dashboard() {
                                                     try {
                                                         const result = await api.post("/coupons/validate", { code: walkInCouponCode });
                                                         if (result && result.valid) {
-                                                            setWalkInAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
+                                                            setWalkInAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: Number(result.discountValue) });
                                                         } else {
                                                             setWalkInCouponError("Invalid or expired coupon code");
                                                         }

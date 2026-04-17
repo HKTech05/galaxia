@@ -1642,7 +1642,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const selectedDateStr = `${ddViewDate.getFullYear()}-${String(ddViewDate.getMonth()+1).padStart(2,'0')}-${String(ddViewDate.getDate()).padStart(2,'0')}`;
         
         // Use live DD bookings, filtered by ddViewDate
-        const allMapped = ddBookingsLive.length > 0 ? ddBookingsLive.map((b: any) => ({
+        const allMapped = ddBookingsLive.length > 0 ? ddBookingsLive.map((b: any) => {
+            const collected = b.collectedAmount || 0;
+            const originalAdvance = (b.amountPaid || 0) - collected;
+            const originalBalance = (b.totalAmount || 0) - originalAdvance;
+            const remainingUnpaid = Math.max(0, originalBalance - collected);
+            return {
             id: b.bookingRef || `#DD-${b.id}`,
             customer: b.customerName,
             phone: b.customerPhone,
@@ -1651,13 +1656,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             rawDate: b.bookingDate ? (() => { const d = new Date(b.bookingDate); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
             slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
             source: b.source === 'website' ? 'Online' : 'Walk-in',
-            upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
+            upfrontAmt: `₹${originalAdvance.toLocaleString('en-IN')}`,
             upfrontMode: b.paymentMethod || "Online",
-            remainingAmt: `₹${(b.actualRemaining != null ? b.actualRemaining : (b.amountToCollect || 0)).toLocaleString('en-IN')}`,
-            remainingStatus: (b.actualRemaining != null ? b.actualRemaining : (b.amountToCollect || 0)) <= 0 ? "Paid" : "Pending",
+            remainingAmt: `₹${originalBalance.toLocaleString('en-IN')}`,
+            remainingStatus: remainingUnpaid <= 0 ? "Paid" : "Pending",
             status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
             raw: b
-        })) : [];
+            };
+        }) : [];
 
         // Filter by selected date
         const bookingsToDisplay = allMapped.filter((b: any) => b.rawDate === selectedDateStr);

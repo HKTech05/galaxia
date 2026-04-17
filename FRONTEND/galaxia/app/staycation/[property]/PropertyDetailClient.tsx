@@ -328,7 +328,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
             )}
 
 
-            {/* Property Info Grid */}
+            {/* Property Info Grid — hidden for Ambrose (info shown per-villa) */}
+            {property.id !== "ambrose" && (
             <section className="border-t border-border-light bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
                     <div className="flex items-center gap-3 mb-8 sm:mb-10">
@@ -368,25 +369,6 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                 {property.googleMap && <a href={property.googleMap} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-antique-gold hover:text-dark-gold transition-colors"><svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>View on Google Maps</a>}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Amenities — hidden for Ambrose (shown only in Facilities) */}
-            {property.id !== "ambrose" && (
-            <section className="border-t border-border-light">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-                    <div className="flex items-center gap-3 mb-8 sm:mb-10">
-                        <div className="w-10 h-[2px] bg-antique-gold" />
-                        <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-text-primary">Amenities</h2>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                        {property.amenities.map((amenity, i) => (
-                            <div key={i} className="flex items-center gap-3 p-3 sm:p-4 rounded-lg border border-border-light bg-white hover:border-antique-gold/30 hover:shadow-sm transition-all duration-300">
-                                <div className="text-antique-gold shrink-0">{getAmenityIcon(amenity.icon)}</div>
-                                <span className="text-text-primary font-inter text-xs sm:text-sm">{amenity.name}</span>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>
