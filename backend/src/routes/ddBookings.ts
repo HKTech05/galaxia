@@ -405,13 +405,12 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
         });
         if (!original) return res.status(404).json({ error: "Booking not found" });
 
-        // Generate new booking ref
+        // Generate unique transfer booking ref using timestamp + random suffix
+        const crypto = require("crypto");
         const today = new Date();
         const datePrefix = `DD-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
-        const existingCount = await prisma.ddBooking.count({
-            where: { bookingRef: { startsWith: datePrefix } },
-        });
-        const newRef = `${datePrefix}-${String(existingCount + 1).padStart(3, "0")}`;
+        const randomSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
+        const newRef = `${datePrefix}-T${randomSuffix}`;
 
         // Create new booking with same details + ₹400 transfer fee added to amountToCollect
         const newBooking = await prisma.ddBooking.create({

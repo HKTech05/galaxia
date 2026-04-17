@@ -597,6 +597,11 @@ export default function Admin1Dashboard() {
                                             <Ban size={16} /> Maintenance
                                         </span>
                                     )}
+                                    {activeEvent.status === 'no_show' && (
+                                        <span className="px-4 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest bg-red-100 text-red-700 border-2 border-red-200 shadow-sm">
+                                            No Show
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className={`text-right ${activeEvent.color.split(' ')[1]}`}>
@@ -1567,10 +1572,10 @@ export default function Admin1Dashboard() {
             </div>
 
             {/* Header Info */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Digital Diaries Schedule</h1>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <p className="text-sm font-medium text-slate-500">Review theater bookings and upcoming slots day-by-day.</p>
                         {eventsList.filter(e => e.addOns?.cake).length > 0 && (
                             <div className="relative">
@@ -1583,7 +1588,7 @@ export default function Admin1Dashboard() {
                                 >
                                     🎂 {eventsList.filter(e => e.addOns?.cake).length} Cake{eventsList.filter(e => e.addOns?.cake).length > 1 ? 's' : ''} Today
                                 </button>
-                                <div id="cake-tooltip" className="hidden absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-3 z-50">
+                                <div id="cake-tooltip" className="hidden absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-3 z-50">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cake Orders</p>
                                     <div className="space-y-2 max-h-40 overflow-y-auto">
                                         {eventsList.filter(e => e.addOns?.cake).map((ev) => (
@@ -1604,7 +1609,7 @@ export default function Admin1Dashboard() {
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 self-start sm:self-auto">
                     <CustomDatePicker
                         date={startDate}
                         onDateChange={(d) => {
@@ -1702,7 +1707,7 @@ export default function Admin1Dashboard() {
                                         <div
                                             key={ev.id}
                                             onClick={(e) => handleEventClick(e, ev)}
-                                            className={`absolute rounded-xl p-3 border shadow-sm flex flex-col items-start overflow-hidden cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] ${ev.color}`}
+                                            className={`absolute rounded-xl ${ev.duration === 1 ? 'p-1.5' : 'p-3'} border shadow-sm flex flex-col items-start overflow-hidden cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] ${ev.color}`}
                                             style={{
                                                 top: `${top + 4}px`,
                                                 height: `${height - 8}px`,
@@ -1711,21 +1716,38 @@ export default function Admin1Dashboard() {
                                                 zIndex: 20
                                             }}
                                         >
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen}</span>
-                                            </div>
-                                            <span className="text-sm font-bold leading-tight line-clamp-2">{ev.customerName}</span>
-
-                                            {ev.isMaintenance ? (
-                                                <div className="mt-auto flex items-center gap-1">
-                                                    <Ban size={12} /> <span className="text-[11px] font-bold">Maintenance</span>
-                                                </div>
+                                            {ev.duration === 1 ? (
+                                                /* Compact layout for 1hr slots */
+                                                <>
+                                                    <div className="flex items-center gap-1 w-full">
+                                                        <div className="w-1 h-1 rounded-full bg-current opacity-70 shrink-0"></div>
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider truncate">{ev.screen}</span>
+                                                    </div>
+                                                    <span className="text-[11px] font-bold leading-tight truncate w-full">{ev.customerName}</span>
+                                                    {ev.status === 'no_show' && <span className="text-[8px] font-bold text-red-600 uppercase">No Show</span>}
+                                                    <span className="text-[9px] font-semibold opacity-70 truncate w-full">{hours[ev.startHour - 10]} • 1hr</span>
+                                                </>
                                             ) : (
-                                                <div className="mt-auto flex flex-col">
-                                                    <span className="text-[11px] font-bold opacity-80">{hours[ev.startHour - 10]} • {ev.duration} hrs</span>
-                                                    <span className="text-[10px] font-semibold opacity-60">{ev.packageType}</span>
-                                                </div>
+                                                /* Standard layout for 2hr+ slots */
+                                                <>
+                                                    <div className="flex items-center gap-1.5 mb-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen}</span>
+                                                    </div>
+                                                    <span className="text-sm font-bold leading-tight line-clamp-2">{ev.customerName}</span>
+                                                    {ev.status === 'no_show' && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-0.5 uppercase">No Show</span>}
+
+                                                    {ev.isMaintenance ? (
+                                                        <div className="mt-auto flex items-center gap-1">
+                                                            <Ban size={12} /> <span className="text-[11px] font-bold">Maintenance</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mt-auto flex flex-col">
+                                                            <span className="text-[11px] font-bold opacity-80">{hours[ev.startHour - 10]} • {ev.duration} hrs</span>
+                                                            <span className="text-[10px] font-semibold opacity-60">{ev.packageType}</span>
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     );
