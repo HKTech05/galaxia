@@ -853,7 +853,6 @@ export default function Admin1Dashboard() {
                                                                 <input
                                                                     type="file"
                                                                     accept="image/*"
-                                                                    capture="environment"
                                                                     className="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold file:text-xs file:cursor-pointer"
                                                                     onChange={(e) => {
                                                                         const file = e.target.files?.[0];
@@ -1245,7 +1244,6 @@ export default function Admin1Dashboard() {
                                             <input
                                                 type="file"
                                                 accept="image/*"
-                                                capture="environment"
                                                 className="hidden"
                                                 onChange={(e) => {
                                                     const file = e.target.files?.[0];
