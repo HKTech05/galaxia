@@ -219,7 +219,8 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                         for (const p of dbPackage.pricing) {
                             if (p.overrides && Array.isArray(p.overrides)) {
                                 for (const ov of p.overrides) {
-                                    const dateKey = new Date(ov.overrideDate).toISOString().split('T')[0];
+                                    const ovd = new Date(ov.overrideDate);
+                                    const dateKey = `${ovd.getFullYear()}-${String(ovd.getMonth()+1).padStart(2,'0')}-${String(ovd.getDate()).padStart(2,'0')}`;
                                     ovMap[`${p.id}-${dateKey}`] = ov.price;
                                 }
                             }
@@ -275,7 +276,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         
         const fetchAvailability = async () => {
             try {
-                const dateStr = selectedDate.toISOString().split('T')[0];
+                const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
                 const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
                 const res = await fetch(`${baseUrl}/dd/availability/${dateStr}`);
                 if (res.ok && isMounted) {
@@ -531,7 +532,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                         bookingType: "dd",
                         screen: screen.name,
                         package: pkg.name,
-                        date: selectedDate.toISOString().split("T")[0],
+                        date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
                     },
                 });
             } catch (payErr: any) {

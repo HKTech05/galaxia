@@ -245,6 +245,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             totalAmount: v.totalAmount ?? (villaBooking?.totalAmount || null),
                             addons: v.addons ?? (villaBooking?.addons || null),
                             phone: v.phone ?? (villaBooking?.customerPhone || null),
+                            depositRefunded: v.depositRefunded ?? (villaBooking?.depositRefunded || false),
+                            depositRefundMethod: v.depositRefundMethod ?? (villaBooking?.depositRefundMethod || null),
+                            depositRefundedAt: v.depositRefundedAt ?? (villaBooking?.depositRefundedAt || null),
                             _allBookings: villaBookings, // Store all bookings for this sub-property
                         };
                     });
@@ -627,6 +630,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     </p>
                                 )}
                             </div>
+                            {item.depositRefunded && (
+                                <div className="p-3 rounded-lg border bg-rose-50 border-rose-200">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600">
+                                        Security Deposit ↩ Refunded
+                                    </p>
+                                    {item.depositAmount && <p className="text-xs font-bold text-rose-700 mt-0.5">₹{Number(item.depositAmount).toLocaleString('en-IN')}</p>}
+                                    <p className="text-xs font-medium text-slate-600 mt-1">
+                                        via {(item.depositRefundMethod || 'N/A').toUpperCase()}{item.depositRefundedAt ? ` · ${new Date(item.depositRefundedAt).toLocaleString('en-IN', { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                                    </p>
+                                </div>
+                            )}
                             {item.addons && Array.isArray(item.addons) && item.addons.length > 0 && (
                                 <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
@@ -1584,6 +1598,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     {villa.depositAmount && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(villa.depositAmount).toLocaleString('en-IN')}</p>}
                                                     {villa.depositCollected && <p className="text-xs font-medium text-slate-600 mt-1">via {villa.depositMode} · {villa.depositTime}</p>}
                                                 </div>
+                                                {villa.depositRefunded && (
+                                                    <div className="p-3 rounded-lg border bg-rose-50 border-rose-200">
+                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600">
+                                                            Security Deposit ↩ Refunded
+                                                        </p>
+                                                        {villa.depositAmount && <p className="text-xs font-bold text-rose-700 mt-0.5">₹{Number(villa.depositAmount).toLocaleString('en-IN')}</p>}
+                                                        <p className="text-xs font-medium text-slate-600 mt-1">
+                                                            via {(villa.depositRefundMethod || 'N/A').toUpperCase()}{villa.depositRefundedAt ? ` · ${new Date(villa.depositRefundedAt).toLocaleString('en-IN', { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 {villa.addons && Array.isArray(villa.addons) && villa.addons.length > 0 && (
                                                     <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
                                                         <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>

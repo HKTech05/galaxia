@@ -310,31 +310,13 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             orderBy: [{ bookingDate: "desc" }, { startHour: "asc" }],
         });
 
-        // Fetch all cash/UPI collections for DD booking refs to compute actual remaining
-        const ddRefs = bookings.map(b => b.bookingRef).filter(Boolean);
-        const [cashCollections, upiCollections] = await Promise.all([
-            prisma.cashTransaction.findMany({
-                where: { bookingRef: { in: ddRefs } },
-                select: { bookingRef: true, amount: true },
-            }),
-            prisma.upiPayment.findMany({
-                where: { bookingRef: { in: ddRefs } },
-                select: { bookingRef: true, amount: true },
-            }),
-        ]);
-
-        // Build a map of total collected per booking ref
-        const collectedMap: Record<string, number> = {};
-        for (const c of cashCollections) {
-            if (c.bookingRef) collectedMap[c.bookingRef] = (collectedMap[c.bookingRef] || 0) + c.amount;
-        }
-        for (const u of upiCollections) {
-            if (u.bookingRef) collectedMap[u.bookingRef] = (collectedMap[u.bookingRef] || 0) + u.amount;
-        }
-
-        // Decrypt sensitive fields for admin view + add actual remaining
+        // Compute collected amounts from BookingPayment records (balance collections only)
+        // These are the actual post-booking payments — NOT the advance paid at creation
         const decrypted = bookings.map(b => {
-            const collected = collectedMap[b.bookingRef] || 0;
+            // Sum only "balance" payments from BookingPayment table
+            const collected = (b.payments || [])
+                .filter((p: any) => p.paymentType === "balance" && p.status === "completed")
+                .reduce((sum: number, p: any) => sum + p.amount, 0);
             const actualRemaining = Math.max(0, b.amountToCollect - collected);
             return {
                 ...b,

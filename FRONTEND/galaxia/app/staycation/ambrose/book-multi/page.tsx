@@ -377,8 +377,8 @@ export default function BookMultiPage() {
                         body: JSON.stringify({
                             propertyId: propId,
                             subPropertyId: subPropId,
-                            checkInDate: checkInDate.toISOString().split('T')[0],
-                            checkOutDate: checkOutDate.toISOString().split('T')[0],
+                            checkInDate: `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}`,
+                            checkOutDate: `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}`,
                         }),
                     })
                         .then(r => r.json())

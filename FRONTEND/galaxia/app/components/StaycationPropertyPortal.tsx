@@ -48,6 +48,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     addons: b.addons || null,
                     totalAmount: b.totalAmount || 0,
                     propertyId: b.propertyId || null,
+                    depositRefunded: b.depositRefunded || false,
+                    depositRefundMethod: b.depositRefundMethod || null,
+                    depositRefundedAt: b.depositRefundedAt || null,
                 }));
                 setBookings(mapped);
             }

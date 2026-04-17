@@ -333,6 +333,7 @@ model StaycationBooking {
   depositCollectedAt DateTime?        @map("deposit_collected_at")
   depositRefunded    Boolean          @default(false) @map("deposit_refunded")
   depositRefundedAt  DateTime?        @map("deposit_refunded_at")
+  depositRefundMethod String?         @map("deposit_refund_method") @db.VarChar(30)
   status             String           @default("confirmed") @db.VarChar(30)
   source             String           @default("website") @db.VarChar(30)
   isAdminBooking     Boolean          @default(false) @map("is_admin_booking")

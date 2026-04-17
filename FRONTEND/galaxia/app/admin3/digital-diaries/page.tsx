@@ -182,9 +182,7 @@ export default function Admin1Dashboard() {
     };
 
     const formatHtmlDate = (date: Date) => {
-        const d = new Date(date);
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().split('T')[0];
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
     };
 
     const [draftSlot, setDraftSlot] = useState<{ screenIndex: number, hour: number, dateStr: string, timeStr: string } | null>(null);
@@ -1083,7 +1081,7 @@ export default function Admin1Dashboard() {
                                         type="date"
                                         value={transferDate}
                                         onChange={(e) => setTransferDate(e.target.value)}
-                                        min={new Date().toISOString().split("T")[0]}
+                                        min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })()}
                                         className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
                                     />
                                 </div>

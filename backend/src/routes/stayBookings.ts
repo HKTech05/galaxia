@@ -868,7 +868,7 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
         // Mark booking deposit as refunded
         await prisma.staycationBooking.update({
             where: { id: bookingId },
-            data: { depositRefunded: true },
+            data: { depositRefunded: true, depositRefundMethod: method },
         });
 
         return res.json({ success: true, method, amount: depositAmt });
