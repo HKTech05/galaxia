@@ -309,20 +309,48 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             orderBy: [{ bookingDate: "desc" }, { startHour: "asc" }],
         });
 
-        // Decrypt sensitive fields for admin view
-        const decrypted = bookings.map(b => ({
-            ...b,
-            screen: b.screen ? { ...b.screen, name: `${b.screen.name} (Digital Diaries)` } : b.screen,
-            customerPhone: decrypt(b.customerPhone),
-            customerEmail: b.customerEmail ? decrypt(b.customerEmail) : null,
-            guestIds: (b.guestIds || []).map((g: any) => ({
-                id: g.id,
-                fileName: g.fileName ? decrypt(g.fileName) : null,
-                fileType: g.fileType,
-                ddBookingId: g.ddBookingId,
-                createdAt: g.createdAt,
-            })),
-        }));
+        // Fetch all cash/UPI collections for DD booking refs to compute actual remaining
+        const ddRefs = bookings.map(b => b.bookingRef).filter(Boolean);
+        const [cashCollections, upiCollections] = await Promise.all([
+            prisma.cashTransaction.findMany({
+                where: { bookingRef: { in: ddRefs } },
+                select: { bookingRef: true, amount: true },
+            }),
+            prisma.upiPayment.findMany({
+                where: { bookingRef: { in: ddRefs } },
+                select: { bookingRef: true, amount: true },
+            }),
+        ]);
+
+        // Build a map of total collected per booking ref
+        const collectedMap: Record<string, number> = {};
+        for (const c of cashCollections) {
+            if (c.bookingRef) collectedMap[c.bookingRef] = (collectedMap[c.bookingRef] || 0) + c.amount;
+        }
+        for (const u of upiCollections) {
+            if (u.bookingRef) collectedMap[u.bookingRef] = (collectedMap[u.bookingRef] || 0) + u.amount;
+        }
+
+        // Decrypt sensitive fields for admin view + add actual remaining
+        const decrypted = bookings.map(b => {
+            const collected = collectedMap[b.bookingRef] || 0;
+            const actualRemaining = Math.max(0, b.amountToCollect - collected);
+            return {
+                ...b,
+                screen: b.screen ? { ...b.screen, name: `${b.screen.name} (Digital Diaries)` } : b.screen,
+                customerPhone: decrypt(b.customerPhone),
+                customerEmail: b.customerEmail ? decrypt(b.customerEmail) : null,
+                guestIds: (b.guestIds || []).map((g: any) => ({
+                    id: g.id,
+                    fileName: g.fileName ? decrypt(g.fileName) : null,
+                    fileType: g.fileType,
+                    ddBookingId: g.ddBookingId,
+                    createdAt: g.createdAt,
+                })),
+                collectedAmount: collected,
+                actualRemaining,
+            };
+        });
 
         return res.json(decrypted);
     } catch (error) {

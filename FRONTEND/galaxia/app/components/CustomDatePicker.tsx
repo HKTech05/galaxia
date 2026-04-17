@@ -69,6 +69,60 @@ export default function CustomDatePicker({ date, onDateChange, className, openAb
 
     const daysOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+    // Calendar content (shared between mobile overlay and desktop dropdown)
+    const calendarContent = (
+        <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-4 w-[280px]">
+            <div className="flex justify-between items-center mb-4">
+                <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"><ChevronLeft size={18} /></button>
+                <h3 className="text-sm font-bold text-slate-800">
+                    {viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}
+                </h3>
+                <button onClick={nextMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"><ChevronRight size={18} /></button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 mb-2">
+                {daysOfWeek.map(day => (
+                    <div key={day} className="text-center text-[11px] font-bold text-slate-400">
+                        {day}
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+                {getDaysArray.map((d, i) => {
+                    if (!d) return <div key={i} className="h-8" />;
+                    const h = isSelected(d);
+                    const t = isToday(d);
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => handleSelect(d)}
+                            className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors mx-auto
+                                ${h ? 'bg-indigo-600 text-white shadow-md' :
+                                    t ? 'bg-indigo-50 text-indigo-700 font-bold' :
+                                        'text-slate-700 hover:bg-slate-100 hover:text-slate-900'}
+                            `}
+                        >
+                            {d.getDate()}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between">
+                <button
+                    onClick={() => {
+                        onDateChange(new Date());
+                        setIsOpen(false);
+                    }}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                >
+                    Today
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="relative group" ref={menuRef}>
             <button
@@ -85,56 +139,16 @@ export default function CustomDatePicker({ date, onDateChange, className, openAb
             </button>
 
             {isOpen && (
-                <div className={`absolute left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-[100] w-[280px] animate-in fade-in zoom-in duration-200 ${openAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
-                    <div className="flex justify-between items-center mb-4">
-                        <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"><ChevronLeft size={18} /></button>
-                        <h3 className="text-sm font-bold text-slate-800">
-                            {viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}
-                        </h3>
-                        <button onClick={nextMonth} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"><ChevronRight size={18} /></button>
+                <>
+                    {/* Mobile: fixed centered overlay */}
+                    <div className="sm:hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
+                        {calendarContent}
                     </div>
-
-                    <div className="grid grid-cols-7 gap-1 mb-2">
-                        {daysOfWeek.map(day => (
-                            <div key={day} className="text-center text-[11px] font-bold text-slate-400">
-                                {day}
-                            </div>
-                        ))}
+                    {/* Desktop: absolute dropdown */}
+                    <div className={`hidden sm:block absolute left-1/2 -translate-x-1/2 z-[100] animate-in fade-in zoom-in duration-200 ${openAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+                        {calendarContent}
                     </div>
-
-                    <div className="grid grid-cols-7 gap-1">
-                        {getDaysArray.map((d, i) => {
-                            if (!d) return <div key={i} className="h-8" />;
-                            const h = isSelected(d);
-                            const t = isToday(d);
-                            return (
-                                <button
-                                    key={i}
-                                    onClick={() => handleSelect(d)}
-                                    className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors mx-auto
-                                        ${h ? 'bg-indigo-600 text-white shadow-md' :
-                                            t ? 'bg-indigo-50 text-indigo-700 font-bold' :
-                                                'text-slate-700 hover:bg-slate-100 hover:text-slate-900'}
-                                    `}
-                                >
-                                    {d.getDate()}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between">
-                        <button
-                            onClick={() => {
-                                onDateChange(new Date());
-                                setIsOpen(false);
-                            }}
-                            className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
-                        >
-                            Today
-                        </button>
-                    </div>
-                </div>
+                </>
             )}
         </div>
     );

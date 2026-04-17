@@ -1653,8 +1653,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             source: b.source === 'website' ? 'Online' : 'Walk-in',
             upfrontAmt: `₹${(b.amountPaid || 0).toLocaleString('en-IN')}`,
             upfrontMode: b.paymentMethod || "Online",
-            remainingAmt: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
-            remainingStatus: b.amountToCollect <= 0 ? "Paid" : "Pending",
+            remainingAmt: `₹${(b.actualRemaining != null ? b.actualRemaining : (b.amountToCollect || 0)).toLocaleString('en-IN')}`,
+            remainingStatus: (b.actualRemaining != null ? b.actualRemaining : (b.amountToCollect || 0)) <= 0 ? "Paid" : "Pending",
             status: b.status === "confirmed" ? "Confirmed" : b.status === "cancelled" ? "Cancelled" : "Draft",
             raw: b
         })) : [];

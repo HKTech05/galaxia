@@ -372,7 +372,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                 </div>
             </section>
 
-            {/* Amenities */}
+            {/* Amenities — hidden for Ambrose (shown only in Facilities) */}
+            {property.id !== "ambrose" && (
             <section className="border-t border-border-light">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
                     <div className="flex items-center gap-3 mb-8 sm:mb-10">
@@ -389,6 +390,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                     </div>
                 </div>
             </section>
+            )}
 
             {/* Facilities */}
             <section className="border-t border-border-light bg-white">
