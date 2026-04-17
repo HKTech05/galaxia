@@ -147,7 +147,6 @@ export default function Admin1Dashboard() {
                         cake: b.addons?.some((a: any) => a.addonType === "cake") || (b.package?.slug === "celebration" || b.package?.name?.toLowerCase().includes("celebration")),
                         cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || b.cakeMessage || ""
                     },
-                    status: b.status || 'confirmed',
                 }));
                 setEventsList(mapped.filter(ev => (ev as any).status !== 'cancelled'));
             }
