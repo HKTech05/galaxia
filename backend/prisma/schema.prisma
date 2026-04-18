@@ -29,6 +29,7 @@ model AdminAccount {
   extraGuestsAdded    ExtraGuest[]
   guestIdsUploaded    GuestId[]
   stayBookingsCreated StaycationBooking[] @relation("StayBookingCreator")
+  foodBillsCreated    FoodBill[]          @relation("FoodBillCreator")
 
   @@map("admin_accounts")
 }
@@ -277,6 +278,7 @@ model DdBooking {
   screen            DdScreen         @relation(fields: [screenId], references: [id])
   user              User?            @relation(fields: [userId], references: [id])
   guestIds          GuestId[]
+  foodBills         FoodBill[]
 
   @@index([bookingDate])
   @@index([screenId, bookingDate])
@@ -632,4 +634,25 @@ model ChatMessage {
 
   @@index([sessionId, createdAt])
   @@map("chat_messages")
+}
+
+model FoodBill {
+  id              Int       @id @default(autoincrement())
+  date            DateTime  @db.Date
+  ddBookingId     Int?      @map("dd_booking_id")
+  guestName       String    @map("guest_name") @db.VarChar(200)
+  screenName      String    @map("screen_name") @db.VarChar(100)
+  satkarAmount    Int       @map("satkar_amount")
+  guestBillAmount Int       @map("guest_bill_amount")
+  paymentMethod   String    @map("payment_method") @db.VarChar(30) // cash or upi
+  upiProofUrl     String?   @map("upi_proof_url")
+  upiProofKey     String?   @map("upi_proof_key") @db.VarChar(500)
+  createdBy       Int?      @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  booking         DdBooking? @relation(fields: [ddBookingId], references: [id])
+  creator         AdminAccount? @relation("FoodBillCreator", fields: [createdBy], references: [id])
+
+  @@index([date])
+  @@map("food_bills")
 }

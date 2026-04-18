@@ -128,12 +128,18 @@ export default function Admin3DDBookingsPage() {
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Digital Diaries Sub-Nav */}
-            <div className="flex gap-6 border-b border-slate-200 pb-1 mb-2">
-                <Link href="/admin3/digital-diaries" className="text-slate-500 hover:text-slate-800 pb-2 text-sm font-bold uppercase tracking-widest transition-colors">
+            <div className="flex gap-4 sm:gap-6 border-b border-slate-200 pb-1 mb-2 overflow-x-auto">
+                <Link href="/admin3/digital-diaries" className="text-slate-500 hover:text-slate-800 pb-2 text-sm font-bold uppercase tracking-widest transition-colors whitespace-nowrap">
                     Daily Schedule
                 </Link>
-                <Link href="/admin3/digital-diaries/bookings" className="text-indigo-600 border-b-2 border-indigo-600 pb-2 text-sm font-bold uppercase tracking-widest">
+                <Link href="/admin3/digital-diaries/bookings" className="text-indigo-600 border-b-2 border-indigo-600 pb-2 text-sm font-bold uppercase tracking-widest whitespace-nowrap">
                     All Walk-ins & Bookings
+                </Link>
+                <Link href="/admin3/digital-diaries/food-billing" className="text-slate-500 hover:text-slate-800 pb-2 text-sm font-bold uppercase tracking-widest transition-colors whitespace-nowrap">
+                    Create Food Bill
+                </Link>
+                <Link href="/admin3/digital-diaries/food-history" className="text-slate-500 hover:text-slate-800 pb-2 text-sm font-bold uppercase tracking-widest transition-colors whitespace-nowrap">
+                    Food Bill History
                 </Link>
             </div>
 
