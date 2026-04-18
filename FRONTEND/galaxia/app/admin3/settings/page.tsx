@@ -108,9 +108,9 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium text-slate-500 mt-1">Manage security, sub-admins, and system configurations.</p>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col md:flex-row overflow-hidden min-h-[600px]">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col lg:flex-row overflow-hidden min-h-[600px]">
                 {/* Sidebar */}
-                <div className="w-full md:w-64 bg-slate-50 border-r border-slate-200 p-4 space-y-1">
+                <div className="w-full lg:w-64 bg-slate-50 border-r border-slate-200 p-4 space-y-1">
                     <button onClick={() => setActiveTab("security")}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${activeTab === "security" ? "bg-purple-100 text-purple-700 shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
                         <Shield size={18} /> Security & Roles
@@ -139,7 +139,7 @@ export default function SettingsPage() {
                                     ) : (
                                         <>
                                         {/* Desktop table */}
-                                        <div className="border border-slate-200 rounded-xl overflow-hidden hidden md:block">
+                                        <div className="border border-slate-200 rounded-xl overflow-hidden hidden lg:block">
                                             <table className="w-full text-sm">
                                                 <thead>
                                                     <tr className="bg-slate-50 border-b border-slate-200">
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                                         </div>
 
                                         {/* Mobile card layout */}
-                                        <div className="md:hidden space-y-3">
+                                        <div className="lg:hidden space-y-3">
                                             {subAdmins.map(admin => (
                                                 <div key={admin.id} className="border border-slate-200 rounded-xl p-4 bg-white">
                                                     <div className="flex items-start justify-between mb-3">

@@ -140,12 +140,12 @@ export default function CustomDatePicker({ date, onDateChange, className, openAb
 
             {isOpen && (
                 <>
-                    {/* Mobile: fixed centered overlay */}
-                    <div className="sm:hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
+                    {/* Mobile/Tablet: fixed centered overlay */}
+                    <div className="lg:hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-150">
                         {calendarContent}
                     </div>
                     {/* Desktop: absolute dropdown */}
-                    <div className={`hidden sm:block absolute left-1/2 -translate-x-1/2 z-[100] animate-in fade-in zoom-in duration-200 ${openAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+                    <div className={`hidden lg:block absolute left-1/2 -translate-x-1/2 z-[100] animate-in fade-in zoom-in duration-200 ${openAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                         {calendarContent}
                     </div>
                 </>
