@@ -38,6 +38,9 @@ interface StayBooking {
     couponCode: string | null;
     extraGuests: any[];
     addons: any[] | null;
+    isDd?: boolean;
+    startHour?: number;
+    durationHours?: number;
 }
 
 const statusColors: Record<string, string> = {
@@ -130,14 +133,17 @@ export default function StayBookingsPage() {
     const fetchDdBookings = useCallback(async () => {
         try {
             setDdLoading(true);
-            const data = await api.get('/bookings/dd');
+            const params = new URLSearchParams();
+            if (dateFrom) params.set('startDate', dateFrom);
+            if (dateTo) params.set('endDate', dateTo);
+            const data = await api.get(`/bookings/dd?${params.toString()}`);
             const mapped: StayBooking[] = (Array.isArray(data) ? data : []).map((b: any) => ({
                 id: b.id,
                 bookingRef: b.bookingRef || `DD-${b.id}`,
                 customerName: b.customerName || "Unknown",
                 customerPhone: b.customerPhone || "",
                 customerEmail: b.customerEmail || null,
-                propertyName: `DD: ${b.screen?.name || 'Unknown Screen'}`,
+                propertyName: `DD: ${(b.screen?.name || 'Unknown Screen').replace(/\s*\(.*?\)/g, '')}`,
                 subPropertyName: b.package?.name || null,
                 checkIn: b.bookingDate,
                 checkOut: b.bookingDate,
@@ -149,13 +155,13 @@ export default function StayBookingsPage() {
                 securityDeposit: 0,
                 status: b.status || "confirmed",
                 source: b.source || "website",
-                bookedAt: b.createdAt,
+                bookedAt: b.bookedAt || b.createdAt,
                 nightlyRate: 0,
                 basePrice: b.basePrice || 0,
                 extraPersonCharge: 0,
                 gstAmount: b.gstAmount || 0,
                 discountAmount: b.discountAmount || 0,
-                advancePaid: b.advancePaid || false,
+                advancePaid: (b.amountPaid || 0) > 0,
                 advanceMethod: b.paymentMethod || null,
                 balanceCollected: (b.amountToCollect || 0) <= 0,
                 balanceMethod: null,
@@ -164,6 +170,9 @@ export default function StayBookingsPage() {
                 couponCode: b.coupon?.code || null,
                 extraGuests: [],
                 addons: b.addons || null,
+                isDd: true,
+                startHour: b.startHour,
+                durationHours: b.durationHours,
             }));
             setDdBookings(mapped);
         } catch (err) {
@@ -171,7 +180,7 @@ export default function StayBookingsPage() {
         } finally {
             setDdLoading(false);
         }
-    }, []);
+    }, [dateFrom, dateTo]);
 
     useEffect(() => {
         if (viewTab === 'dd' || viewTab === 'all') fetchDdBookings();
@@ -212,6 +221,10 @@ export default function StayBookingsPage() {
     });
 
     const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
+    const formatSlot = (startHour: number, durationHours: number) => {
+        const fmt = (h: number) => { const p = h >= 12 ? "PM" : "AM"; const hr = h > 12 ? h - 12 : h === 0 ? 12 : h; return `${hr}:00 ${p}`; };
+        return `${fmt(startHour)} – ${fmt(startHour + durationHours)}`;
+    };
     const formatDateTime = (d: string) => {
         if (!d) return "N/A";
         const dt = new Date(d);
@@ -423,10 +436,19 @@ export default function StayBookingsPage() {
                                                 <span className="text-sm font-medium text-slate-700">{formatDateTime(b.bookedAt)}</span>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className="text-sm font-bold text-slate-800">{formatDate(b.checkIn)}</span>
-                                                <span className="text-slate-400 mx-1">→</span>
-                                                <span className="text-sm font-medium text-slate-600">{formatDate(b.checkOut)}</span>
-                                                <p className="text-[11px] text-slate-400 mt-0.5">{b.nights} night{b.nights !== 1 ? "s" : ""}</p>
+                                                {b.isDd ? (
+                                                    <>
+                                                        <span className="text-sm font-bold text-slate-800">{formatDate(b.checkIn)}</span>
+                                                        <p className="text-[11px] text-indigo-600 font-bold mt-0.5">{b.startHour !== undefined && b.durationHours !== undefined ? formatSlot(b.startHour, b.durationHours) : ""}</p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-sm font-bold text-slate-800">{formatDate(b.checkIn)}</span>
+                                                        <span className="text-slate-400 mx-1">→</span>
+                                                        <span className="text-sm font-medium text-slate-600">{formatDate(b.checkOut)}</span>
+                                                        <p className="text-[11px] text-slate-400 mt-0.5">{b.nights} night{b.nights !== 1 ? "s" : ""}</p>
+                                                    </>
+                                                )}
                                             </td>
                                             <td className="px-5 py-4">
                                                 <span className="text-sm font-bold text-slate-800">{b.guests}</span>
@@ -509,27 +531,42 @@ export default function StayBookingsPage() {
                                 </div>
                             </div>
 
-                            {/* Stay Info */}
+                            {/* Stay / Booking Info */}
                             <div>
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Stay Information</h4>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">{selectedBooking.isDd ? "Booking Information" : "Stay Information"}</h4>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Property</p>
                                         <p className="text-sm font-bold text-slate-800">{selectedBooking.propertyName}</p>
                                         {selectedBooking.subPropertyName && <p className="text-xs text-slate-500">{selectedBooking.subPropertyName}</p>}
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400 font-medium">Check-in</p>
-                                        <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkIn)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400 font-medium">Check-out</p>
-                                        <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkOut)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400 font-medium">Nights</p>
-                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.nights}</p>
-                                    </div>
+                                    {selectedBooking.isDd ? (
+                                        <>
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-medium">Date</p>
+                                                <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkIn)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-medium">Time Slot</p>
+                                                <p className="text-sm font-bold text-indigo-700">{selectedBooking.startHour !== undefined && selectedBooking.durationHours !== undefined ? formatSlot(selectedBooking.startHour, selectedBooking.durationHours) : "N/A"}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-medium">Check-in</p>
+                                                <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkIn)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-medium">Check-out</p>
+                                                <p className="text-sm font-bold text-slate-800">{formatDate(selectedBooking.checkOut)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-medium">Nights</p>
+                                                <p className="text-sm font-bold text-slate-800">{selectedBooking.nights}</p>
+                                            </div>
+                                        </>
+                                    )}
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Guests</p>
                                         <p className="text-sm font-bold text-slate-800">{selectedBooking.guests} People</p>
@@ -545,10 +582,12 @@ export default function StayBookingsPage() {
                             <div>
                                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Pricing Breakdown</h4>
                                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-2">
+                                    {selectedBooking.basePrice > 0 && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Base Price</span>
                                         <span className="font-bold text-slate-800">{formatPrice(selectedBooking.basePrice)}</span>
                                     </div>
+                                    )}
                                     {selectedBooking.extraPersonCharge > 0 && (
                                         <div className="flex justify-between text-sm">
                                             <span className="text-slate-600">Extra Person Charge</span>
@@ -581,10 +620,12 @@ export default function StayBookingsPage() {
                                             )}
                                         </div>
                                     ))}
+                                    {selectedBooking.gstAmount > 0 && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">GST (5%)</span>
                                         <span className="font-bold text-slate-800">{formatPrice(selectedBooking.gstAmount)}</span>
                                     </div>
+                                    )}
                                     <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
                                         <span className="font-bold text-slate-800">Total Amount</span>
                                         <span className="font-black text-lg text-slate-900">{formatPrice(selectedBooking.totalAmount)}</span>
@@ -610,6 +651,7 @@ export default function StayBookingsPage() {
                                         <p className="text-sm font-bold text-slate-800 mt-1">{formatPrice(selectedBooking.balanceAmount)}</p>
                                         {selectedBooking.balanceMethod && <p className="text-[10px] text-slate-500">via {selectedBooking.balanceMethod}</p>}
                                     </div>
+                                    {!selectedBooking.isDd && (
                                     <div className={`p-3 rounded-lg border ${selectedBooking.depositCollected ? "bg-emerald-50 border-emerald-100" : "bg-sky-50 border-sky-100"}`}>
                                         <p className={`text-[10px] font-bold uppercase ${selectedBooking.depositCollected ? "text-emerald-600" : "text-sky-600"}`}>
                                             Security Deposit {selectedBooking.depositCollected ? "✓ Collected" : "⏳ At Check-in"}
@@ -617,6 +659,7 @@ export default function StayBookingsPage() {
                                         <p className="text-sm font-bold text-slate-800 mt-1">{formatPrice(selectedBooking.securityDeposit)}</p>
                                         {selectedBooking.depositMethod && <p className="text-[10px] text-slate-500">via {selectedBooking.depositMethod}</p>}
                                     </div>
+                                    )}
                                 </div>
                             </div>
 

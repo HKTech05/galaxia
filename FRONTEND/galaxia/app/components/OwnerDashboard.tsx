@@ -1709,22 +1709,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const bookingsToDisplay = allMapped.filter((b: any) => b.rawDate === selectedDateStr);
 
         bookingsToDisplay.forEach((b: any) => {
-            if (!screenGroups[b.screen]) screenGroups[b.screen] = [];
-            screenGroups[b.screen].push(b);
+            const cleanScreen = (b.screen || '').replace(/\s*\(.*?\)/g, '').trim();
+            if (!screenGroups[cleanScreen]) screenGroups[cleanScreen] = [];
+            screenGroups[cleanScreen].push(b);
         });
 
         return (
             <div className="space-y-6">
-                {/* Date View Selector with Booking Counter */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-sm font-bold">
-                            {bookingsToDisplay.length} Booking{bookingsToDisplay.length !== 1 ? 's' : ''}
-                        </div>
-                        <span className="text-xs text-slate-400 font-medium">
-                            {Object.keys(screenGroups).length} screen{Object.keys(screenGroups).length !== 1 ? 's' : ''} booked
-                        </span>
-                    </div>
+                {/* Date View Selector */}
+                <div className="flex items-center justify-end">
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
                 </div>
 
