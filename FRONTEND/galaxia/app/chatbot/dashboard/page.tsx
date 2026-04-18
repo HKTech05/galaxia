@@ -334,7 +334,12 @@ export default function ChatbotDashboard() {
                 return s.displayName.toLowerCase().includes(q) || s.sessionId.includes(q) || s.lastMessage.toLowerCase().includes(q);
             }
             return true;
-        }).sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
+        }).sort((a, b) => {
+            // Pin human-mode chats to top
+            if (a.mode === "human" && b.mode !== "human") return -1;
+            if (a.mode !== "human" && b.mode === "human") return 1;
+            return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
+        });
     }, [sessions, allowed, search]);
 
     // ─── Open chat — load messages from API ───
@@ -512,10 +517,14 @@ export default function ChatbotDashboard() {
                                 <p style={{ fontSize: 13, fontWeight: 600 }}>No conversations found</p>
                             </div>
                         ) : getFiltered(tab).map(s => {
+                            // Deterministic soft hue per phone number
+                            const AVATAR_COLORS = ["#e8d5ef", "#d5e8ef", "#efdfd5", "#d5efdb", "#efe5d5", "#d5ddef", "#efd5d5", "#d5efe8", "#e5d5ef", "#efeed5"];
+                            const colorIdx = s.sessionId.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length;
+                            const avatarBg = AVATAR_COLORS[colorIdx];
                             return (
                                 <div key={s.id} className={`cb-chat-item ${activeChat === s.id ? "active" : ""}`} onClick={() => openChat(s.id)}>
-                                    <div className={`cb-avatar ${s.mode === "bot" ? "bot-border" : "human-border"}`}>
-                                        {s.displayName.charAt(0)}
+                                    <div className="cb-avatar" style={{ background: avatarBg, border: "none", padding: 8 }}>
+                                        <img src="/accounticon.png" alt="" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.55 }} />
                                     </div>
                                     <div className="cb-chat-info">
                                         <div className="cb-chat-top">
@@ -525,20 +534,16 @@ export default function ChatbotDashboard() {
                                         <div className="cb-chat-bottom">
                                             <span className="cb-chat-preview">{s.lastMessage}</span>
                                             {s.unread > 0 && <span className="cb-unread">{s.unread}</span>}
-                                            <span className="cb-mode-icon">{s.mode === "bot" ? "🤖" : "👤"}</span>
+                                            <span style={{
+                                                fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 4,
+                                                textTransform: "uppercase" as const, letterSpacing: 0.5, marginLeft: 6, flexShrink: 0,
+                                                background: s.mode === "human" ? "rgba(0,168,132,0.12)" : "rgba(245,158,11,0.12)",
+                                                color: s.mode === "human" ? "#00a884" : "#f59e0b",
+                                                animation: s.mode === "human" ? "pulse 2s infinite" : "none"
+                                            }}>
+                                                {s.mode === "human" ? "HUMAN" : "BOT"}
+                                            </span>
                                         </div>
-                                        {s.mode === "human" && (
-                                            <div style={{ marginTop: 4 }}>
-                                                <span style={{
-                                                    display: "inline-flex", alignItems: "center", gap: 4,
-                                                    background: "#ff5252", color: "white", fontSize: 10,
-                                                    fontWeight: 700, padding: "2px 8px", borderRadius: 10,
-                                                    letterSpacing: 0.3, animation: "pulse 2s infinite"
-                                                }}>
-                                                    🆘 Needs Human Support
-                                                </span>
-                                            </div>
-                                        )}
                                         {s.tags.length > 0 && (
                                             <div className="cb-chat-tags">
                                                 {s.tags.map(t => (

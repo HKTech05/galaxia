@@ -260,11 +260,11 @@ const staticMenu = {
      CELEBRATION BOT TREE
   ========================================================== */
   celebration_main: {
-    message: "🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala.",
+    message: "🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala.\n\n🤖 _I'm an automated assistant here to help you explore our screens, pricing, and book your experience. Choose an option below to get started!_",
     options: [
       { label: "🎥 Movie Time", value: "movie_time" },
       { label: "🎉 Celebration Packs", value: "deco_screens" },
-      { label: "❓ FAQs & Support", value: "faqs_celebration" },
+      { label: "❓ FAQs & Live Chat Support", value: "faqs_celebration" },
       { label: "🌐 Visit Website", value: "visit_cel_website" }
     ]
   },

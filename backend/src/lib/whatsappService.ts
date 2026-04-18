@@ -63,7 +63,7 @@ export async function sendWhatsAppMessage(chatbot: ChatbotId, phone: string, mes
     const bare = waPhone.startsWith("+") ? waPhone.substring(1) : waPhone;
 
     try {
-        const res = await fetch(`https://graph.facebook.com/v18.0/${config.phoneNumberId}/messages`, {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${config.phoneNumberId}/messages`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${config.token}`,
