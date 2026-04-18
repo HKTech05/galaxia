@@ -150,8 +150,8 @@ export default function Admin3DDBookingsPage() {
                     <input type="text" placeholder="Search ID or Customer" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                    <div className="relative">
+                <div className="grid grid-cols-1 md:flex md:items-center gap-3 w-full md:w-auto">
+                    <div className="relative w-full md:w-auto">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <select value={screenFilter} onChange={(e) => setScreenFilter(e.target.value)}
                             className="pl-9 pr-8 py-2 w-full appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
@@ -160,7 +160,7 @@ export default function Admin3DDBookingsPage() {
                         </select>
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
-                    <div className="relative">
+                    <div className="relative w-full md:w-auto">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}
                             className="pl-9 pr-8 py-2 w-full appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
@@ -170,10 +170,10 @@ export default function Admin3DDBookingsPage() {
                         </select>
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
-                    <div className="flex items-center bg-slate-100 rounded-lg p-1">
+                    <div className="flex items-center bg-slate-100 rounded-lg p-1 w-full md:w-auto">
                         {["All", "Confirmed", "Cancelled"].map(status => (
                             <button key={status} onClick={() => setStatusFilter(status)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-colors whitespace-nowrap ${statusFilter === status ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                                className={`flex-1 md:flex-none px-4 py-1.5 rounded-md text-sm font-semibold transition-colors whitespace-nowrap ${statusFilter === status ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                                 {status}
                             </button>
                         ))}

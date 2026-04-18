@@ -151,7 +151,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
             where: { bookedAt: { gte: startDate }, source: "website", status: { notIn: ["cancelled", "no_show"] } },
         });
         const ddWalkInCount = await prisma.ddBooking.count({
-            where: { bookedAt: { gte: startDate }, source: "walk_in", status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, source: "reception", status: { notIn: ["cancelled", "no_show"] } },
         });
 
         // ── DD screen & package chart data ──
