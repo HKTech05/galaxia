@@ -535,10 +535,10 @@ export default function ChatbotDashboard() {
                                             <span className="cb-chat-preview">{s.lastMessage}</span>
                                             {s.unread > 0 && <span className="cb-unread">{s.unread}</span>}
                                             <span style={{
-                                                fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 4,
+                                                fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 4,
                                                 textTransform: "uppercase" as const, letterSpacing: 0.5, marginLeft: 6, flexShrink: 0,
-                                                background: s.mode === "human" ? "rgba(0,168,132,0.12)" : "rgba(245,158,11,0.12)",
-                                                color: s.mode === "human" ? "#00a884" : "#f59e0b",
+                                                background: s.mode === "human" ? "rgba(220,38,38,0.12)" : "rgba(245,158,11,0.12)",
+                                                color: s.mode === "human" ? "#dc2626" : "#f59e0b",
                                                 animation: s.mode === "human" ? "pulse 2s infinite" : "none"
                                             }}>
                                                 {s.mode === "human" ? "HUMAN" : "BOT"}
@@ -589,11 +589,11 @@ export default function ChatbotDashboard() {
                                         ))}
                                     </div>
                                     <div className="cb-mode-toggle" onClick={toggleMode}>
-                                        <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(245,158,11,0.12)", color: "#f59e0b" }}>BOT</span>
+                                        <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(245,158,11,0.12)", color: "#f59e0b" }}>BOT</span>
                                         <div className={`cb-toggle-track ${active.mode === "human" ? "human-mode" : "bot-mode"}`}>
                                             <div className="cb-toggle-thumb" />
                                         </div>
-                                        <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(0,168,132,0.12)", color: "#00a884" }}>HUMAN</span>
+                                        <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(220,38,38,0.12)", color: "#dc2626" }}>HUMAN</span>
                                     </div>
                                 </div>
                             </div>
