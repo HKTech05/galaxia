@@ -22,18 +22,17 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    // Determine the backend base URL (remove trailing /api if present, as path* already contains it)
     const apiUrl = "http://65.1.183.241:4000/api";
-    // Proxy all /api/* requests to the external backend API
     return [
       {
         source: "/api/:path*",
         destination: `${apiUrl.replace(/\/$/, '')}/:path*`, 
       },
       {
-        // Proxy /bot/* to the WhatsApp chatbot service on port 4001
+        // Proxy /bot/* through the main backend (port 4000) which internally
+        // reverse-proxies to the wa-chatbot service on port 4001
         source: "/bot/:path*",
-        destination: "http://65.1.183.241:4001/:path*",
+        destination: "http://65.1.183.241:4000/bot/:path*",
       },
     ];
   },

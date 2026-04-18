@@ -17,8 +17,8 @@
             </div>
             <div class="top-header-right">
                 <div class="connection-status">
-                    <div class="connection-dot" id="connDot"></div>
-                    <span id="connText">Template Mode</span>
+                    <div class="connection-dot offline" id="connDot"></div>
+                    <span id="connText">Connecting…</span>
                 </div>
                 <button class="btn-logout" id="logoutBtn" onclick="handleLogout()">Log Out</button>
             </div>
@@ -58,7 +58,7 @@
                             <div class="chat-header-avatar" id="chatHeaderAvatar">?</div>
                             <div class="chat-header-info">
                                 <h3 id="chatHeaderName">+91 98765 43210</h3>
-                                <p id="chatHeaderSub">Staycation 1 · Last seen 2m ago</p>
+                                <p id="chatHeaderSub">Digital Diaries · Last seen 2m ago</p>
                             </div>
                         </div>
                         <div class="chat-header-right">
@@ -93,30 +93,21 @@
         </div>
     </div>
 
+    <!-- Socket.IO Client -->
+    <script src="http://localhost:4000/socket.io/socket.io.js"></script>
+
     <script>
     /* ═══════════════════════════════════════════════════════
-       GALAXIA CHAT DASHBOARD
-       Full template with mock data. Replace API calls with
-       real endpoints when integrating.
+       GALAXIA CHAT DASHBOARD — LIVE API MODE
+       Connected to chatbot backend at API_BASE via REST + Socket.IO
        ═══════════════════════════════════════════════════════ */
 
+    const API_BASE = 'http://localhost:4000';
+
     // ─── CONFIG: Phone Number Mapping ────────────────────
-    // UPDATE THESE with real phone_number_ids when ready
     const PHONE_NUMBERS = {
-        staycation_1: {
-            id: 'PLACEHOLDER_STAYCATION_1_PHONE_ID',
-            label: 'Staycation 1',
-            icon: '🏡',
-            color: '#7c3aed'
-        },
-        staycation_2: {
-            id: 'PLACEHOLDER_STAYCATION_2_PHONE_ID',
-            label: 'Staycation 2',
-            icon: '🏘️',
-            color: '#3b82f6'
-        },
         digital_diaries: {
-            id: 'PLACEHOLDER_DIGITAL_DIARIES_PHONE_ID',
+            id: '1117204771469353',
             label: 'Digital Diaries',
             icon: '🎬',
             color: '#f59e0b'
@@ -135,176 +126,105 @@
 
     // ─── STATE ───────────────────────────────────────────
     let currentTab = 'all';
-    let currentChatId = null;
+    let currentChatId = null; // This is the session_id string like "wa_919876543210"
     let searchQuery = '';
+    let chatSessions = []; // Live data from API
+    let currentMessages = []; // Messages for the currently open chat
 
-    // ─── MOCK DATA ───────────────────────────────────────
-    const MOCK_SESSIONS = [
-        {
-            id: 'sess_1',
-            sessionId: '+91 98765 43210',
-            displayName: 'Arjun Mehta',
-            phoneNumberKey: 'staycation_1',
-            mode: 'bot',
-            tags: ['hot'],
-            unread: 3,
-            lastMessage: 'What is the check-in time for La Paraiso?',
-            lastMessageTime: new Date(Date.now() - 2 * 60 * 1000),
-            platform: 'whatsapp'
-        },
-        {
-            id: 'sess_2',
-            sessionId: '+91 87654 32109',
-            displayName: 'Priya Sharma',
-            phoneNumberKey: 'staycation_1',
-            mode: 'human',
-            tags: ['followup'],
-            unread: 0,
-            lastMessage: 'Thank you! We will arrive by 3 PM.',
-            lastMessageTime: new Date(Date.now() - 15 * 60 * 1000),
-            platform: 'whatsapp'
-        },
-        {
-            id: 'sess_3',
-            sessionId: '+91 76543 21098',
-            displayName: 'Rohan Patel',
-            phoneNumberKey: 'staycation_2',
-            mode: 'bot',
-            tags: [],
-            unread: 1,
-            lastMessage: 'Is Amstel Nest pet friendly?',
-            lastMessageTime: new Date(Date.now() - 45 * 60 * 1000),
-            platform: 'whatsapp'
-        },
-        {
-            id: 'sess_4',
-            sessionId: '+91 65432 10987',
-            displayName: 'Sneha Kulkarni',
-            phoneNumberKey: 'digital_diaries',
-            mode: 'bot',
-            tags: ['new'],
-            unread: 5,
-            lastMessage: 'Hi! I want to book Sandy Screen for Saturday',
-            lastMessageTime: new Date(Date.now() - 5 * 60 * 1000),
-            platform: 'whatsapp'
-        },
-        {
-            id: 'sess_5',
-            sessionId: '+91 54321 09876',
-            displayName: 'Amit Desai',
-            phoneNumberKey: 'staycation_1',
-            mode: 'human',
-            tags: ['resolved'],
-            unread: 0,
-            lastMessage: 'Booking confirmed. Ref: STY-2024-0341',
-            lastMessageTime: new Date(Date.now() - 3 * 3600 * 1000),
-            platform: 'whatsapp'
-        },
-        {
-            id: 'sess_6',
-            sessionId: '+91 43210 98765',
-            displayName: 'Kavita Joshi',
-            phoneNumberKey: 'staycation_2',
-            mode: 'bot',
-            tags: [],
-            unread: 0,
-            lastMessage: 'Can we bring our pet dog?',
-            lastMessageTime: new Date(Date.now() - 5 * 3600 * 1000),
-            platform: 'instagram'
-        },
-        {
-            id: 'sess_7',
-            sessionId: '+91 32109 87654',
-            displayName: 'Nikhil Rao',
-            phoneNumberKey: 'digital_diaries',
-            mode: 'human',
-            tags: ['hot'],
-            unread: 2,
-            lastMessage: 'Is Park N Watch available for a birthday party?',
-            lastMessageTime: new Date(Date.now() - 30 * 60 * 1000),
-            platform: 'whatsapp'
-        },
-        {
-            id: 'sess_8',
-            sessionId: '+91 21098 76543',
-            displayName: 'Meera Iyer',
-            phoneNumberKey: 'staycation_1',
-            mode: 'bot',
-            tags: [],
-            unread: 0,
-            lastMessage: 'What are the weekend prices for Santorini?',
-            lastMessageTime: new Date(Date.now() - 8 * 3600 * 1000),
-            platform: 'whatsapp'
+    // ─── SOCKET.IO ───────────────────────────────────────
+    let socket = null;
+
+    function initSocket() {
+        socket = io(API_BASE);
+
+        socket.on('connect', () => {
+            console.log('[Socket.IO] Connected:', socket.id);
+            document.getElementById('connDot').classList.remove('offline');
+            document.getElementById('connText').textContent = 'Connected';
+        });
+
+        socket.on('disconnect', () => {
+            console.log('[Socket.IO] Disconnected');
+            document.getElementById('connDot').classList.add('offline');
+            document.getElementById('connText').textContent = 'Disconnected';
+        });
+
+        // New message received
+        socket.on('new_message', (data) => {
+            console.log('[Socket.IO] new_message:', data);
+            const { sessionId, message, session: updatedSession } = data;
+
+            // Update local sessions cache
+            updateLocalSession(updatedSession);
+
+            // If this chat is currently open, append the message
+            if (currentChatId === sessionId) {
+                currentMessages.push(message);
+                renderMessages();
+            }
+
+            // Re-render chat list
+            renderChatList();
+            buildNumberTabs();
+        });
+
+        // Session updated (mode change, tags change, etc.)
+        socket.on('session_updated', (updatedSession) => {
+            console.log('[Socket.IO] session_updated:', updatedSession);
+            updateLocalSession(updatedSession);
+            renderChatList();
+            buildNumberTabs();
+        });
+    }
+
+    function updateLocalSession(updatedSession) {
+        if (!updatedSession) return;
+        const idx = chatSessions.findIndex(s => s.session_id === updatedSession.session_id);
+        if (idx >= 0) {
+            chatSessions[idx] = updatedSession;
+        } else {
+            chatSessions.unshift(updatedSession);
         }
-    ];
+    }
 
-    const MOCK_MESSAGES = {
-        'sess_1': [
-            { role: 'user', message: 'Hi', time: new Date(Date.now() - 10 * 60 * 1000), isHuman: false },
-            { role: 'assistant', message: '👋 *Welcome to Galaxia Staycations!*\n\nExplore our luxury villas in Karjat. Choose a category below:', time: new Date(Date.now() - 10 * 60 * 1000 + 2000), isHuman: false },
-            { role: 'user', message: 'I want to see La Paraiso', time: new Date(Date.now() - 8 * 60 * 1000), isHuman: false },
-            { role: 'assistant', message: '🏡 *La Paraiso*\nPremium Private Pool Villa\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Weekday: ₹4,950 + 5% GST\n  • Weekend: ₹7,500 + 5% GST\n  • Extra Adult: ₹1,200 + 5% GST\n  • Kids (5-10 yrs): ₹800 + 5% GST\n\n🕒 Check-in: 2:00 PM | Check-out: 10:00 AM\n🍽️ Food: Restaurant 10 steps away.\n🐾 Pets: Allowed ✅ (₹600 extra)\n💵 Security Deposit: ₹3,000\n✨ Amenities: Private Pool, Private Garden, Gazebo, Smart TV', time: new Date(Date.now() - 8 * 60 * 1000 + 3000), isHuman: false },
-            { role: 'user', message: 'What is the check-in time for La Paraiso?', time: new Date(Date.now() - 2 * 60 * 1000), isHuman: false },
-        ],
-        'sess_2': [
-            { role: 'user', message: 'Hello, we want to book Heavenly Villas for this weekend', time: new Date(Date.now() - 2 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: '👋 Welcome! Let me check availability for Heavenly Villas this weekend.', time: new Date(Date.now() - 2 * 3600 * 1000 + 2000), isHuman: false },
-            { role: 'assistant', message: 'Great news! Heavenly Villas is available for Saturday-Sunday. The rate is ₹4,950 + GST per night. Shall I proceed with the booking?', time: new Date(Date.now() - 1.5 * 3600 * 1000), isHuman: true },
-            { role: 'user', message: 'Yes please! 2 adults, checking in Saturday 2 PM', time: new Date(Date.now() - 1 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: 'Perfect! I\'ve reserved Heavenly Villas for you:\n📅 Sat → Sun\n👥 2 Adults\n💰 ₹4,950 + 5% GST = ₹5,198\n\nPlease complete payment on galaxiaresorts.com to confirm. I\'ll send you the link!', time: new Date(Date.now() - 50 * 60 * 1000), isHuman: true },
-            { role: 'user', message: 'Thank you! We will arrive by 3 PM.', time: new Date(Date.now() - 15 * 60 * 1000), isHuman: false },
-        ],
-        'sess_3': [
-            { role: 'user', message: 'Hi is Amstel Nest pet friendly?', time: new Date(Date.now() - 50 * 60 * 1000), isHuman: false },
-            { role: 'assistant', message: '🐾 *Pets Policy*\n\n✅ Pets Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose villas.\n💰 Cost: ₹600 extra per pet.\n❌ Not Allowed: Amstel Nest.', time: new Date(Date.now() - 50 * 60 * 1000 + 2000), isHuman: false },
-            { role: 'user', message: 'Is Amstel Nest pet friendly?', time: new Date(Date.now() - 45 * 60 * 1000), isHuman: false },
-        ],
-        'sess_4': [
-            { role: 'user', message: 'Hi! I want to book Sandy Screen for Saturday', time: new Date(Date.now() - 5 * 60 * 1000), isHuman: false },
-            { role: 'assistant', message: '🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala. Let me help you with Sandy Screen booking!', time: new Date(Date.now() - 5 * 60 * 1000 + 2000), isHuman: false },
-        ],
-        'sess_5': [
-            { role: 'user', message: 'Hi, we need to cancel our booking STY-2024-0341', time: new Date(Date.now() - 6 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: '❌ *Cancellation & Refund*\n\nAll bookings are *Non-Refundable* and *Non-Transferable*.', time: new Date(Date.now() - 6 * 3600 * 1000 + 2000), isHuman: false },
-            { role: 'user', message: 'Can I speak to someone?', time: new Date(Date.now() - 5 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: 'I understand your concern. Let me connect you with our team.', time: new Date(Date.now() - 4 * 3600 * 1000), isHuman: true },
-            { role: 'assistant', message: 'Hi! I checked with the team. Since your check-in is more than 7 days away, we can offer you a one-time date change instead of cancellation. Would that work?', time: new Date(Date.now() - 3.5 * 3600 * 1000), isHuman: true },
-            { role: 'user', message: 'Yes! That would be great. Can we move to next weekend?', time: new Date(Date.now() - 3.2 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: 'Done! Your booking STY-2024-0341 has been moved to next Saturday-Sunday. Same property, same rate. Enjoy your stay! 🎉', time: new Date(Date.now() - 3 * 3600 * 1000), isHuman: true },
-            { role: 'user', message: 'Booking confirmed. Ref: STY-2024-0341', time: new Date(Date.now() - 3 * 3600 * 1000), isHuman: false },
-        ],
-        'sess_6': [
-            { role: 'user', message: 'Can we bring our pet dog?', time: new Date(Date.now() - 5 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: '🐾 *Pets Policy*\n\n✅ Pets Allowed: Hill View, Mount View, Heavenly Villas, La Paraiso, Ambrose villas.\n💰 Cost: ₹600 extra per pet.\n❌ Not Allowed: Amstel Nest.', time: new Date(Date.now() - 5 * 3600 * 1000 + 2000), isHuman: false },
-        ],
-        'sess_7': [
-            { role: 'user', message: 'Hey, is Park N Watch available for a birthday party on 30th?', time: new Date(Date.now() - 60 * 60 * 1000), isHuman: false },
-            { role: 'assistant', message: '🎬 *Welcome to Digital Diaries!*\n\nLet me check Park N Watch availability for the 30th!', time: new Date(Date.now() - 60 * 60 * 1000 + 2000), isHuman: false },
-            { role: 'user', message: 'Also, can we get decoration?', time: new Date(Date.now() - 55 * 60 * 1000), isHuman: false },
-            { role: 'assistant', message: 'Yes! We have celebration packs with decorations. Let me get our team to help you with the details.', time: new Date(Date.now() - 50 * 60 * 1000), isHuman: false },
-            { role: 'user', message: 'Is Park N Watch available for a birthday party?', time: new Date(Date.now() - 30 * 60 * 1000), isHuman: false },
-        ],
-        'sess_8': [
-            { role: 'user', message: 'What are the weekend prices for Santorini?', time: new Date(Date.now() - 8 * 3600 * 1000), isHuman: false },
-            { role: 'assistant', message: '🏡 *Santorini*\nMediterranean-Style Themed Villa\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Weekday: ₹5,500 + 5% GST\n  • Weekend: ₹6,500 + 5% GST\n\n🕒 Check-in: 2:00 PM | Check-out: 10:00 AM\n🍽️ Food: Meals Included — Lunch, Dinner & Breakfast. Only Veg.\n✨ Amenities: Private Pool, White & Blue Interiors, Smart TV, AC', time: new Date(Date.now() - 8 * 3600 * 1000 + 2000), isHuman: false },
-        ],
-    };
+    // ─── API HELPERS ─────────────────────────────────────
+    async function apiGet(path) {
+        const res = await fetch(`${API_BASE}${path}`);
+        if (!res.ok) throw new Error(`API ${path} failed: ${res.status}`);
+        return res.json();
+    }
+
+    async function apiPost(path, body) {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`API POST ${path} failed: ${res.status}`);
+        return res.json();
+    }
+
+    async function apiPatch(path, body) {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`API PATCH ${path} failed: ${res.status}`);
+        return res.json();
+    }
 
     // ─── INIT ────────────────────────────────────────────
-    function init() {
+    async function init() {
         // Set role badge
         document.getElementById('roleBadge').textContent = session.role === 'owner' ? 'Owner' : session.displayName;
-        
-        // Set connection status to template mode
-        document.getElementById('connDot').classList.add('offline');
-        document.getElementById('connText').textContent = 'Template Mode';
 
-        // Build number tabs based on access
+        // Build number tabs
         buildNumberTabs();
-        
-        // Render chat list
-        renderChatList();
-        
+
+        // Load chats from API
+        await loadChats();
+
         // Search handler
         document.getElementById('searchInput').addEventListener('input', (e) => {
             searchQuery = e.target.value.toLowerCase();
@@ -314,6 +234,20 @@
         // Mobile responsiveness
         handleResize();
         window.addEventListener('resize', handleResize);
+
+        // Connect Socket.IO
+        initSocket();
+    }
+
+    // ─── LOAD CHATS ──────────────────────────────────────
+    async function loadChats() {
+        try {
+            chatSessions = await apiGet('/api/chats');
+            renderChatList();
+            buildNumberTabs();
+        } catch (err) {
+            console.error('Failed to load chats:', err);
+        }
     }
 
     // ─── NUMBER TABS ─────────────────────────────────────
@@ -322,16 +256,15 @@
         const allowedNumbers = session.assignedNumbers || Object.keys(PHONE_NUMBERS);
 
         let html = `<button class="number-tab ${currentTab === 'all' ? 'active' : ''}" onclick="switchTab('all')">All`;
-        
-        // Calculate total unread for "All"
-        const totalUnread = getFilteredSessions('all').reduce((sum, s) => sum + s.unread, 0);
+
+        const totalUnread = getFilteredSessions('all').reduce((sum, s) => sum + (s.unread_count || 0), 0);
         if (totalUnread > 0) html += `<span class="tab-count">${totalUnread}</span>`;
         html += `</button>`;
 
         for (const key of allowedNumbers) {
             const num = PHONE_NUMBERS[key];
             if (!num) continue;
-            const unread = getFilteredSessions(key).reduce((sum, s) => sum + s.unread, 0);
+            const unread = getFilteredSessions(key).reduce((sum, s) => sum + (s.unread_count || 0), 0);
             html += `<button class="number-tab ${currentTab === key ? 'active' : ''}" onclick="switchTab('${key}')">${num.icon} ${num.label}`;
             if (unread > 0) html += `<span class="tab-count">${unread}</span>`;
             html += `</button>`;
@@ -348,13 +281,11 @@
 
     // ─── FILTER SESSIONS ─────────────────────────────────
     function getFilteredSessions(tab) {
-        const allowedNumbers = session.assignedNumbers || Object.keys(PHONE_NUMBERS);
-        
-        return MOCK_SESSIONS.filter(s => {
-            // Filter by access
-            if (!allowedNumbers.includes(s.phoneNumberKey)) return false;
-            // Filter by tab
-            if (tab !== 'all' && s.phoneNumberKey !== tab) return false;
+        return chatSessions.filter(s => {
+            if (tab !== 'all') {
+                const num = PHONE_NUMBERS[tab];
+                if (num && s.phone_number_id !== num.id) return false;
+            }
             return true;
         });
     }
@@ -367,48 +298,55 @@
         // Apply search filter
         if (searchQuery) {
             sessions = sessions.filter(s =>
-                s.displayName.toLowerCase().includes(searchQuery) ||
-                s.sessionId.includes(searchQuery) ||
-                s.lastMessage.toLowerCase().includes(searchQuery)
+                (s.display_name || '').toLowerCase().includes(searchQuery) ||
+                (s.customer_phone || '').includes(searchQuery) ||
+                (s.last_message || '').toLowerCase().includes(searchQuery)
             );
         }
 
         // Sort by last message time (newest first)
-        sessions.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+        sessions.sort((a, b) => {
+            const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+            const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+            return timeB - timeA;
+        });
 
         if (sessions.length === 0) {
             container.innerHTML = `
                 <div style="padding:40px 20px; text-align:center; color:var(--text-dim);">
                     <p style="font-size:32px; margin-bottom:12px;">📭</p>
-                    <p style="font-size:13px; font-weight:600;">No conversations found</p>
+                    <p style="font-size:13px; font-weight:600;">No conversations yet</p>
+                    <p style="font-size:11px; margin-top:8px; color:var(--text-muted);">Send a test webhook to create one!</p>
                 </div>`;
             return;
         }
 
         container.innerHTML = sessions.map(s => {
-            const num = PHONE_NUMBERS[s.phoneNumberKey];
-            const initial = s.displayName.charAt(0).toUpperCase();
-            const modeClass = s.mode === 'bot' ? 'bot-active' : 'human-active';
-            const modeIcon = s.mode === 'bot' ? '🤖' : '👤';
-            const timeStr = formatTime(s.lastMessageTime);
+            const initial = (s.display_name || s.customer_phone || '?').charAt(0).toUpperCase();
+            const mode = s.is_human_active ? 'human' : 'bot';
+            const modeClass = mode === 'bot' ? 'bot-active' : 'human-active';
+            const modeIcon = mode === 'bot' ? '🤖' : '👤';
+            const timeStr = s.last_message_at ? formatTime(new Date(s.last_message_at)) : '';
+            const tags = s.tags || [];
             const platformIcon = s.platform === 'instagram' ? '📷' : '';
+            const unread = s.unread_count || 0;
 
             return `
-            <div class="chat-item ${currentChatId === s.id ? 'active' : ''}" onclick="openChat('${s.id}')">
+            <div class="chat-item ${currentChatId === s.session_id ? 'active' : ''}" onclick="openChat('${s.session_id}')">
                 <div class="chat-avatar ${modeClass}">${initial}</div>
                 <div class="chat-info">
                     <div class="chat-info-top">
-                        <span class="chat-name">${platformIcon} ${s.displayName}</span>
-                        <span class="chat-time ${s.unread > 0 ? 'has-unread' : ''}">${timeStr}</span>
+                        <span class="chat-name">${platformIcon} ${escapeHtml(s.display_name || s.customer_phone)}</span>
+                        <span class="chat-time ${unread > 0 ? 'has-unread' : ''}">${timeStr}</span>
                     </div>
                     <div class="chat-info-bottom">
-                        <span class="chat-preview">${escapeHtml(s.lastMessage)}</span>
-                        ${s.unread > 0 ? `<span class="unread-badge">${s.unread}</span>` : ''}
+                        <span class="chat-preview">${escapeHtml(s.last_message || 'No messages')}</span>
+                        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
                         <span class="chat-mode-indicator">${modeIcon}</span>
                     </div>
-                    ${s.tags.length > 0 ? `
+                    ${tags.length > 0 ? `
                     <div class="chat-tags">
-                        ${s.tags.map(t => `<span class="tag tag-${t}">${t === 'hot' ? '🔥 Hot Lead' : t === 'followup' ? '📌 Follow-up' : t === 'resolved' ? '✅ Resolved' : '🆕 New'}</span>`).join('')}
+                        ${tags.map(t => `<span class="tag tag-${t}">${t === 'hot' ? '🔥 Hot Lead' : t === 'followup' ? '📌 Follow-up' : t === 'resolved' ? '✅ Resolved' : '🆕 New'}</span>`).join('')}
                     </div>` : ''}
                 </div>
             </div>`;
@@ -416,35 +354,46 @@
     }
 
     // ─── OPEN CHAT ───────────────────────────────────────
-    function openChat(chatId) {
-        currentChatId = chatId;
-        const chat = MOCK_SESSIONS.find(s => s.id === chatId);
+    async function openChat(sessionId) {
+        currentChatId = sessionId;
+        const chat = chatSessions.find(s => s.session_id === sessionId);
         if (!chat) return;
 
-        // Mark as read
-        chat.unread = 0;
-
-        // Update UI
+        // Show chat view
         document.getElementById('emptyState').style.display = 'none';
         const chatView = document.getElementById('chatView');
         chatView.style.display = 'flex';
 
         // Header
-        const num = PHONE_NUMBERS[chat.phoneNumberKey];
-        document.getElementById('chatHeaderAvatar').textContent = chat.displayName.charAt(0);
-        document.getElementById('chatHeaderName').textContent = `${chat.displayName} · ${chat.sessionId}`;
-        document.getElementById('chatHeaderSub').textContent = `${num.icon} ${num.label} · ${chat.platform} · Last seen ${formatTime(chat.lastMessageTime)}`;
+        document.getElementById('chatHeaderAvatar').textContent = (chat.display_name || '?').charAt(0);
+        document.getElementById('chatHeaderName').textContent = `${chat.display_name || chat.customer_phone}`;
+        const timeAgo = chat.last_message_at ? formatTime(new Date(chat.last_message_at)) : 'never';
+        document.getElementById('chatHeaderSub').textContent = `🎬 Digital Diaries · ${chat.platform} · Last seen ${timeAgo}`;
 
         // Mode toggle
-        updateModeUI(chat.mode);
+        updateModeUI(chat.is_human_active ? 'human' : 'bot');
 
         // Tags
-        updateTagButtons(chat.tags);
+        updateTagButtons(chat.tags || []);
 
-        // Messages
-        renderMessages(chatId);
+        // Load messages
+        try {
+            const data = await apiGet(`/api/chats/${sessionId}`);
+            currentMessages = data.messages || [];
+            renderMessages();
+        } catch (err) {
+            console.error('Failed to load messages:', err);
+        }
 
-        // Re-render chat list to update active state + unread
+        // Mark as read
+        try {
+            await apiPatch(`/api/chats/${sessionId}/read`, {});
+            chat.unread_count = 0;
+        } catch (err) {
+            console.error('Failed to mark read:', err);
+        }
+
+        // Re-render chat list
         renderChatList();
         buildNumberTabs();
 
@@ -457,11 +406,10 @@
     }
 
     // ─── RENDER MESSAGES ─────────────────────────────────
-    function renderMessages(chatId) {
+    function renderMessages() {
         const container = document.getElementById('messagesArea');
-        const messages = MOCK_MESSAGES[chatId] || [];
 
-        if (messages.length === 0) {
+        if (currentMessages.length === 0) {
             container.innerHTML = `<div style="text-align:center; color:var(--text-dim); padding:40px;"><p>No messages yet</p></div>`;
             return;
         }
@@ -469,18 +417,19 @@
         let html = '';
         let lastDate = '';
 
-        for (const msg of messages) {
-            const dateStr = msg.time.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+        for (const msg of currentMessages) {
+            const msgTime = new Date(msg.created_at);
+            const dateStr = msgTime.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
             if (dateStr !== lastDate) {
                 html += `<div class="date-divider"><span>${dateStr}</span></div>`;
                 lastDate = dateStr;
             }
 
             const isUser = msg.role === 'user';
-            const rowClass = isUser ? 'user' : (msg.isHuman ? 'admin' : 'bot');
-            const senderLabel = isUser ? 'Customer' : (msg.isHuman ? 'Admin' : 'Bot');
-            const senderClass = isUser ? 'user-label' : (msg.isHuman ? 'human-label' : 'bot-label');
-            const timeStr = msg.time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const rowClass = isUser ? 'user' : (msg.is_human ? 'admin' : 'bot');
+            const senderLabel = isUser ? 'Customer' : (msg.is_human ? 'Admin' : 'Bot');
+            const senderClass = isUser ? 'user-label' : (msg.is_human ? 'human-label' : 'bot-label');
+            const timeStr = msgTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
             // Convert markdown-like bold (*text*) to <strong>
             const formatted = escapeHtml(msg.message)
@@ -504,42 +453,42 @@
     }
 
     // ─── SEND MESSAGE ────────────────────────────────────
-    function sendMessage() {
+    async function sendMessage() {
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if (!text || !currentChatId) return;
 
-        const chat = MOCK_SESSIONS.find(s => s.id === currentChatId);
-        if (!chat) return;
-
-        // Add to messages
-        if (!MOCK_MESSAGES[currentChatId]) MOCK_MESSAGES[currentChatId] = [];
-        MOCK_MESSAGES[currentChatId].push({
-            role: 'assistant',
-            message: text,
-            time: new Date(),
-            isHuman: true
-        });
-
-        // Update last message
-        chat.lastMessage = text;
-        chat.lastMessageTime = new Date();
-
-        // Clear input and re-render
         input.value = '';
-        renderMessages(currentChatId);
-        renderChatList();
+        input.disabled = true;
+
+        try {
+            await apiPost(`/api/chats/${currentChatId}/send`, { message: text });
+            // The Socket.IO event will handle appending the message
+        } catch (err) {
+            console.error('Failed to send message:', err);
+            input.value = text; // Restore on failure
+        } finally {
+            input.disabled = false;
+            input.focus();
+        }
     }
 
     // ─── MODE TOGGLE ─────────────────────────────────────
-    function toggleMode() {
+    async function toggleMode() {
         if (!currentChatId) return;
-        const chat = MOCK_SESSIONS.find(s => s.id === currentChatId);
+        const chat = chatSessions.find(s => s.session_id === currentChatId);
         if (!chat) return;
 
-        chat.mode = chat.mode === 'bot' ? 'human' : 'bot';
-        updateModeUI(chat.mode);
-        renderChatList();
+        const newMode = !chat.is_human_active;
+
+        try {
+            await apiPatch(`/api/chats/${currentChatId}/mode`, { is_human_active: newMode });
+            chat.is_human_active = newMode;
+            updateModeUI(newMode ? 'human' : 'bot');
+            renderChatList();
+        } catch (err) {
+            console.error('Failed to toggle mode:', err);
+        }
     }
 
     function updateModeUI(mode) {
@@ -559,19 +508,27 @@
     }
 
     // ─── TAGS ────────────────────────────────────────────
-    function toggleTag(tag) {
+    async function toggleTag(tag) {
         if (!currentChatId) return;
-        const chat = MOCK_SESSIONS.find(s => s.id === currentChatId);
+        const chat = chatSessions.find(s => s.session_id === currentChatId);
         if (!chat) return;
 
-        const idx = chat.tags.indexOf(tag);
+        let tags = chat.tags || [];
+        const idx = tags.indexOf(tag);
         if (idx >= 0) {
-            chat.tags.splice(idx, 1);
+            tags.splice(idx, 1);
         } else {
-            chat.tags.push(tag);
+            tags.push(tag);
         }
-        updateTagButtons(chat.tags);
-        renderChatList();
+
+        try {
+            await apiPatch(`/api/chats/${currentChatId}/tags`, { tags });
+            chat.tags = tags;
+            updateTagButtons(tags);
+            renderChatList();
+        } catch (err) {
+            console.error('Failed to update tags:', err);
+        }
     }
 
     function updateTagButtons(tags) {
@@ -597,7 +554,7 @@
 
     function escapeHtml(text) {
         const div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = text || '';
         return div.innerHTML;
     }
 
@@ -614,7 +571,7 @@
     function handleResize() {
         const mobile = window.innerWidth <= 768;
         const backBtn = document.getElementById('btnBackMobile');
-        
+
         if (!mobile) {
             document.getElementById('leftPanel').classList.remove('hidden');
             document.getElementById('rightPanel').classList.remove('hidden');
