@@ -148,7 +148,7 @@ export default function Admin1Dashboard() {
                         cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || b.cakeMessage || ""
                     },
                 }));
-                setEventsList(mapped.filter(ev => (ev as any).status !== 'cancelled'));
+                setEventsList(mapped.filter(ev => (ev as any).status !== 'cancelled' && (ev as any).status !== 'no_show' && (ev as any).status !== 'transferred'));
             }
         } catch (err) {
             console.error("Failed to fetch DD events:", err);

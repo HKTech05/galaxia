@@ -108,7 +108,7 @@ export default function Admin3DDBookingsPage() {
 
     const filteredBookings = bookings.filter(b => {
         const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || `#DD-${b.id}`.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === "All" || b.status === statusFilter.toLowerCase();
+        const matchesStatus = statusFilter === "All" || b.status === statusFilter.toLowerCase().replace(' ', '_');
         const matchesScreen = screenFilter === "All" || b.screen?.name === screenFilter;
         const matchesSource = sourceFilter === "All" || (sourceFilter === "Website" ? b.source === "website" : b.source === "reception");
         return matchesSearch && matchesStatus && matchesScreen && matchesSource;
@@ -171,7 +171,7 @@ export default function Admin3DDBookingsPage() {
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
                     <div className="flex items-center bg-slate-100 rounded-lg p-1 w-full md:w-auto">
-                        {["All", "Confirmed", "Cancelled"].map(status => (
+                        {["All", "Confirmed", "No Show", "Transferred", "Cancelled"].map(status => (
                             <button key={status} onClick={() => setStatusFilter(status)}
                                 className={`flex-1 md:flex-none px-4 py-1.5 rounded-md text-sm font-semibold transition-colors whitespace-nowrap ${statusFilter === status ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                                 {status}
@@ -236,10 +236,16 @@ export default function Admin3DDBookingsPage() {
                                         </div>
                                     </td>
                                     <td className="px-3 md:px-6 py-4 hidden md:table-cell">
-                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${b.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                            b.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                            b.status === 'no_show' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                            b.status === 'transferred' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                            'bg-red-50 border-red-200 text-red-700'
+                                        }`}>
                                             {b.status === 'confirmed' && <CheckCircle size={14} />}
                                             {b.status === 'cancelled' && <XCircle size={14} />}
-                                            {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                                            {b.status === 'no_show' && <Ban size={14} />}
+                                            {b.status === 'no_show' ? 'No Show' : b.status === 'transferred' ? 'Transferred' : b.status.charAt(0).toUpperCase() + b.status.slice(1)}
                                         </div>
                                     </td>
                                     <td className="px-3 md:px-6 py-4 text-right hidden md:table-cell">
@@ -359,10 +365,16 @@ export default function Admin3DDBookingsPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 mt-2">
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${detailBooking.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                    detailBooking.status === 'confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                    detailBooking.status === 'no_show' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                    detailBooking.status === 'transferred' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                    'bg-red-50 border-red-200 text-red-700'
+                                }`}>
                                     {detailBooking.status === 'confirmed' && <CheckCircle size={14} />}
                                     {detailBooking.status === 'cancelled' && <XCircle size={14} />}
-                                    {detailBooking.status.charAt(0).toUpperCase() + detailBooking.status.slice(1)}
+                                    {detailBooking.status === 'no_show' && <Ban size={14} />}
+                                    {detailBooking.status === 'no_show' ? 'No Show' : detailBooking.status === 'transferred' ? 'Transferred' : detailBooking.status.charAt(0).toUpperCase() + detailBooking.status.slice(1)}
                                 </span>
                             </div>
                         </div>

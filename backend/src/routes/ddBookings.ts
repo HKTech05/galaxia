@@ -81,7 +81,7 @@ router.post("/", async (req, res) => {
                 where: {
                     screenId: parseInt(screenId),
                     bookingDate: new Date(bookingDate + 'T12:00:00'),
-                    status: { notIn: ["cancelled", "no_show"] },
+                    status: { notIn: ["cancelled", "no_show", "transferred"] },
                 },
             });
 
@@ -700,7 +700,7 @@ router.post("/hold", async (req, res) => {
             where: {
                 screenId: parsedScreenId,
                 bookingDate: date,
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
             },
             select: { startHour: true, durationHours: true },
         });
