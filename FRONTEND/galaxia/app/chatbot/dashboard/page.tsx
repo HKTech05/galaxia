@@ -527,6 +527,18 @@ export default function ChatbotDashboard() {
                                             {s.unread > 0 && <span className="cb-unread">{s.unread}</span>}
                                             <span className="cb-mode-icon">{s.mode === "bot" ? "🤖" : "👤"}</span>
                                         </div>
+                                        {s.mode === "human" && (
+                                            <div style={{ marginTop: 4 }}>
+                                                <span style={{
+                                                    display: "inline-flex", alignItems: "center", gap: 4,
+                                                    background: "#ff5252", color: "white", fontSize: 10,
+                                                    fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                                                    letterSpacing: 0.3, animation: "pulse 2s infinite"
+                                                }}>
+                                                    🆘 Needs Human Support
+                                                </span>
+                                            </div>
+                                        )}
                                         {s.tags.length > 0 && (
                                             <div className="cb-chat-tags">
                                                 {s.tags.map(t => (

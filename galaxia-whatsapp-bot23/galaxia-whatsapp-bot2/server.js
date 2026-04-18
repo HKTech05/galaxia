@@ -160,6 +160,14 @@ app.post("/webhook", async (req, res) => {
       ? getMainMenu(botType)
       : getResponse(choice, sessionId, botType);
 
+    // 5b. If user chose "human", auto-enable human mode
+    if (choice === "human") {
+      console.log(`[WhatsApp] User ${from} requested human support — enabling human mode.`);
+      await db.setHumanMode(sessionId, true);
+      const updatedSession = await db.getSession(sessionId);
+      io.emit("session_updated", updatedSession);
+    }
+
     // Build reply text
     let replyText = response.message || "";
     if (response.link) {
@@ -185,7 +193,13 @@ app.post("/webhook", async (req, res) => {
 
     // 8. Send via WhatsApp API (only if live)
     if (WHATSAPP_LIVE) {
-      await sendChatResponse(from, response, botType, phoneId);
+      console.log(`[WhatsApp] Sending reply to ${from} via Meta API...`);
+      try {
+        await sendChatResponse(from, response, botType, phoneId);
+        console.log(`[WhatsApp] ✅ Reply sent successfully to ${from}`);
+      } catch (sendErr) {
+        console.error(`[WhatsApp] ❌ Failed to send reply to ${from}:`, sendErr.response?.status, sendErr.response?.data || sendErr.message);
+      }
     } else {
       console.log(`[WhatsApp] WHATSAPP_LIVE=false — skipping Meta API send.`);
     }
@@ -267,12 +281,14 @@ app.post("/api/chats/:sessionId/send", async (req, res) => {
     // Send via WhatsApp API if live
     if (WHATSAPP_LIVE) {
       const { sendChatResponse } = require("./utils/whatsapp");
-      // For human messages, send as plain text
+      // Use env phone ID to avoid stale session data
+      const phoneId = process.env.WHATSAPP_PHONE_ID || session.phone_number_id;
+      console.log(`[Admin Send] Sending to ${session.customer_phone} via phone_id=${phoneId}`);
       await sendChatResponse(
         session.customer_phone,
         { message: message.trim(), options: [] },
         session.bot_type || "celebration",
-        session.phone_number_id
+        phoneId
       );
     }
 
