@@ -33,6 +33,28 @@ const PORT = process.env.PORT || 4000;
 // trust proxy is required for express-rate-limit to work correctly behind AWS ALB/Vercel
 app.set("trust proxy", true);
 
+// Proxy /bot/* to the WhatsApp chatbot service on port 4001
+// MUST be before express.json() so the raw body stream is forwarded intact
+app.use("/bot", (req: express.Request, res: express.Response) => {
+    const http = require("http");
+    const targetPath = req.originalUrl.replace(/^\/bot/, "") || "/";
+    const proxyReq = http.request({
+        hostname: "127.0.0.1",
+        port: 4001,
+        path: targetPath,
+        method: req.method,
+        headers: { ...req.headers, host: "127.0.0.1:4001" },
+    }, (proxyRes: any) => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res, { end: true });
+    });
+    proxyReq.on("error", (err: any) => {
+        console.error("[Bot Proxy] Error:", err.message);
+        res.status(502).json({ error: "WhatsApp chatbot service unavailable" });
+    });
+    req.pipe(proxyReq, { end: true });
+});
+
 // Middleware
 app.use(cors({
     origin: [
@@ -94,26 +116,7 @@ app.post("/api/contact", async (req, res) => {
     }
 });
 
-// Proxy /bot/* to the WhatsApp chatbot service running on port 4001
-app.use("/bot", (req: express.Request, res: express.Response) => {
-    const http = require("http");
-    const targetPath = req.originalUrl.replace(/^\/bot/, "") || "/";
-    const proxyReq = http.request({
-        hostname: "127.0.0.1",
-        port: 4001,
-        path: targetPath,
-        method: req.method,
-        headers: { ...req.headers, host: "127.0.0.1:4001" },
-    }, (proxyRes: any) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
-        proxyRes.pipe(res, { end: true });
-    });
-    proxyReq.on("error", (err: any) => {
-        console.error("[Bot Proxy] Error:", err.message);
-        res.status(502).json({ error: "WhatsApp chatbot service unavailable" });
-    });
-    req.pipe(proxyReq, { end: true });
-});
+
 
 // 404
 app.use((_req, res) => {
