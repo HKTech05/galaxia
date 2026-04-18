@@ -443,6 +443,13 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
         const randomSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
         const newRef = `${datePrefix}-T${randomSuffix}`;
 
+        // Build transfer metadata with original date/slot info
+        const origDate = original.bookingDate.toISOString().slice(0, 10);
+        const origSlotStart = original.startHour;
+        const origSlotEnd = original.startHour + original.durationHours;
+        const fmtHr = (h: number) => `${h > 12 ? h - 12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`;
+        const transferMeta = `[TRANSFER:${original.bookingRef}|${origDate}|${fmtHr(origSlotStart)}-${fmtHr(origSlotEnd)}|${TRANSFER_FEE}]`;
+
         // Create new booking with same details + ₹400 transfer fee added to amountToCollect
         const newBooking = await prisma.ddBooking.create({
             data: {
@@ -457,7 +464,9 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
                 numGuests: original.numGuests,
                 occasion: original.occasion,
                 cakeMessage: original.cakeMessage,
-                specialRequests: original.specialRequests ? `${original.specialRequests} [Transferred from ${original.bookingRef} — ₹${TRANSFER_FEE} transfer fee]` : `[Transferred from ${original.bookingRef} — ₹${TRANSFER_FEE} transfer fee]`,
+                specialRequests: original.specialRequests
+                    ? `${original.specialRequests.replace(/\[TRANSFER:.*?\]/g, '').trim()} ${transferMeta}`.trim()
+                    : transferMeta,
                 totalAmount: original.totalAmount + TRANSFER_FEE,
                 amountPaid: original.amountPaid,
                 amountToCollect: original.amountToCollect + TRANSFER_FEE,
@@ -486,9 +495,10 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
         }
 
         // Mark original as transferred
+        const newSlotFmt = `${fmtHr(parseInt(newStartHour))}-${fmtHr(parseInt(newStartHour) + original.durationHours)}`;
         await prisma.ddBooking.update({
             where: { id: bookingId },
-            data: { status: "transferred", specialRequests: `${original.specialRequests || ""} [Transferred to ${newRef}]`.trim() },
+            data: { status: "transferred", specialRequests: `${original.specialRequests || ""} [Transferred to ${newRef} on ${newDate} ${newSlotFmt}]`.trim() },
         });
 
         await prisma.auditLog.create({

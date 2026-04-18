@@ -676,12 +676,38 @@ export default function Admin1Dashboard() {
                                                 </div>
                                             </>
                                         )}
-                                        {activeEvent.specialRequests && (
-                                            <div className="flex justify-between">
-                                                <span className="text-sm text-slate-500 font-medium">Special Requests</span>
-                                                <span className="text-sm font-bold text-amber-700 italic max-w-[60%] text-right">"{activeEvent.specialRequests}"</span>
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const raw = activeEvent.specialRequests || '';
+                                            // Extract transfer metadata
+                                            const transferMatch = raw.match(/\[TRANSFER:([^|]+)\|([^|]+)\|([^|]+)\|(\d+)\]/);
+                                            const legacyMatch = !transferMatch && raw.match(/\[Transferred from ([^\]]+)\]/);
+                                            // Clean special requests (remove transfer tags)
+                                            const cleanRequests = raw.replace(/\[TRANSFER:.*?\]/g, '').replace(/\[Transferred from[^\]]*\]/g, '').replace(/\[Transferred to[^\]]*\]/g, '').trim();
+                                            return (
+                                                <>
+                                                    {transferMatch && (
+                                                        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mt-1 space-y-1">
+                                                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">🔄 Transferred Booking</p>
+                                                            <p className="text-xs text-indigo-700 font-medium">From <strong>{transferMatch[1]}</strong> on <strong>{new Date(transferMatch[2]).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></p>
+                                                            <p className="text-xs text-indigo-700 font-medium">Original Slot: <strong>{transferMatch[3]}</strong></p>
+                                                            <p className="text-xs text-amber-600 font-bold">₹{transferMatch[4]} transfer fee included</p>
+                                                        </div>
+                                                    )}
+                                                    {legacyMatch && (
+                                                        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mt-1">
+                                                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">🔄 Transferred Booking</p>
+                                                            <p className="text-xs text-indigo-700 font-medium">{legacyMatch[0].replace(/[\[\]]/g, '')}</p>
+                                                        </div>
+                                                    )}
+                                                    {cleanRequests && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-sm text-slate-500 font-medium">Special Requests</span>
+                                                            <span className="text-sm font-bold text-amber-700 italic max-w-[60%] text-right">&quot;{cleanRequests}&quot;</span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
 
                                         {/* Add-Ons Section — Separate from Financials */}
                                         {!activeEvent.isMaintenance && (
