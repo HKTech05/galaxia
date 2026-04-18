@@ -111,8 +111,11 @@ const MOVIE_TIME_MSG = (name, theme) =>
 const CELEBRATION_MSG = (name, theme) =>
   `🎉 *${name}* (${theme})\n` +
   `*Birthday/Anniversary Celebration Package*\n\n` +
-  `💰 *Price: ₹2,950* (for 2 people)\n\n` +
-  `✨ *Includes:*\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n` +
+  `💰 *Celebration Package Price* (for 2 people):\n` +
+  `• 2 Hours: ₹2,950\n` +
+  `• 3 Hours: ₹3,450 (Weekday) / ₹3,950 (Weekend)\n\n` +
+  `✨ *Includes:*\n• Private Screening\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n` +
+  `🚻 Extra Person: ₹300\n` +
   `🔒 No CCTV | 🆔 ID Proof Mandatory.`;
 
 /* ── static menu tree ────────────────────────── */
@@ -319,7 +322,8 @@ const staticMenu = {
   faqs_celebration: {
     message: "❓ *Frequently Asked Questions*",
     options: [
-      { label: "🥣 Add-ons & People", value: "faq_cel_food" },
+      { label: "🍽️ Food & Menu", value: "faq_cel_food" },
+      { label: "🥣 Add-ons & People", value: "faq_cel_food_addons" },
       { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" },
       { label: "⏰ Timings & Rules", value: "faq_cel_rules" },
       { label: "👤 Talk to a Human", value: "human" },
@@ -327,7 +331,7 @@ const staticMenu = {
     ]
   },
 
-  faq_cel_food: {
+  faq_cel_food_addons: {
     message: "🍽️ *Add-ons & Extra People*\n\n• *Optional Add-ons (₹400 each):* Extra Cake (250g), Balloons Decoration, or LED Message Tag.\n• _Note: Add-ons are specifically for 'Movie Time Only' bookings._\n• *Extra Person:* ₹300 per head.",
     options: [ BACK_TO_MENU ]
   },
@@ -339,6 +343,15 @@ const staticMenu = {
 
   faq_cel_rules: {
     message: "⏰ *Timings & Rules*\n\n• Slots are fixed as per your booking.\n• *ID Proof is Mandatory* for all guests.\n• Valid government ID (18+) required.",
+    options: [ BACK_TO_MENU ]
+  },
+
+  faq_cel_food: {
+    message: "🍽️ *Food & Beverages*\n\n" +
+             "🎉 *Celebration Package* includes a complimentary snacks hamper (Popcorn, Dry Snacks, Juice, Chocolates & Water).\n\n" +
+             "🎥 *Movie Time* includes Dry Snacks, Popcorn, Juice, Chocolates & Water.\n\n" +
+             "🍕 *Additional Food Menu (Satkar):*\nWe offer a variety of snacks and beverages at the venue. Outside food is *not allowed*.\n\n" +
+             "📄 *Download our full food menu here:*\nhttps://galaxiaresorts.com/menus/DigitalDiariesMenu.pdf",
     options: [ BACK_TO_MENU ]
   },
 
