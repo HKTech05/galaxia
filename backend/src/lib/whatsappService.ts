@@ -54,8 +54,10 @@ function normalizePhone(phone: string): string {
 
 /**
  * Send a text message via a specific chatbot's WhatsApp number.
+ * After sending, logs the message to the chatbot DB (chat_sessions / chat_messages)
+ * so it appears in the chatbot dashboard.
  */
-export async function sendWhatsAppMessage(chatbot: ChatbotId, phone: string, message: string): Promise<boolean> {
+export async function sendWhatsAppMessage(chatbot: ChatbotId, phone: string, message: string, addBookedTag: boolean = false): Promise<boolean> {
     const config = getChatbotConfig(chatbot);
     if (!config) return false;
 
@@ -85,10 +87,68 @@ export async function sendWhatsAppMessage(chatbot: ChatbotId, phone: string, mes
 
         const data: any = await res.json();
         console.log(`[WhatsApp:${chatbot}] Message sent to ${bare}:`, data.messages?.[0]?.id);
+
+        // ── Log confirmation to chatbot DB ──
+        try {
+            await logConfirmationToChat(config.phoneNumberId, bare, message, addBookedTag);
+        } catch (dbErr: any) {
+            console.warn(`[WhatsApp:${chatbot}] Failed to log to chat DB:`, dbErr.message);
+        }
+
         return true;
     } catch (err: any) {
         console.error(`[WhatsApp:${chatbot}] Error:`, err.message);
         return false;
+    }
+}
+
+/**
+ * Log a sent confirmation message to the chatbot's chat_sessions/chat_messages tables.
+ * This ensures the confirmation shows up in the chatbot dashboard.
+ */
+async function logConfirmationToChat(phoneNumberId: string, customerPhone: string, message: string, addBookedTag: boolean) {
+    const prisma = (await import("../lib/prisma")).default;
+    const sessionId = `${phoneNumberId}_${customerPhone}`;
+
+    // Check if session exists
+    const existingSessions: any[] = await prisma.$queryRawUnsafe(
+        `SELECT * FROM chat_sessions WHERE session_id = $1`, sessionId
+    );
+
+    if (existingSessions.length > 0) {
+        // Session exists — insert message and update last_message
+        await prisma.$queryRawUnsafe(
+            `INSERT INTO chat_messages (session_id, role, message, is_human) VALUES ($1, 'assistant', $2, false)`,
+            sessionId, message
+        );
+        await prisma.$queryRawUnsafe(
+            `UPDATE chat_sessions SET last_message = $2, last_message_at = NOW(), updated_at = NOW() WHERE session_id = $1`,
+            sessionId, message.substring(0, 500)
+        );
+
+        // Add "booked" tag if not already present
+        if (addBookedTag) {
+            await prisma.$queryRawUnsafe(
+                `UPDATE chat_sessions SET tags = COALESCE(tags, '[]'::jsonb) || '["booked"]'::jsonb, updated_at = NOW() WHERE session_id = $1 AND NOT (COALESCE(tags, '[]'::jsonb) @> '["booked"]'::jsonb)`,
+                sessionId
+            );
+        }
+    } else {
+        // Create session + message
+        const displayName = customerPhone.length === 12 && customerPhone.startsWith("91")
+            ? `+${customerPhone.substring(0, 2)} ${customerPhone.substring(2, 7)} ${customerPhone.substring(7)}`
+            : customerPhone;
+
+        const tags = addBookedTag ? '["booked"]' : '[]';
+        await prisma.$queryRawUnsafe(
+            `INSERT INTO chat_sessions (session_id, customer_phone, display_name, phone_number_id, bot_type, platform, tags, last_message, last_message_at)
+             VALUES ($1, $2, $3, $4, 'celebration', 'whatsapp', $5::jsonb, $6, NOW())`,
+            sessionId, customerPhone, displayName, phoneNumberId, tags, message.substring(0, 500)
+        );
+        await prisma.$queryRawUnsafe(
+            `INSERT INTO chat_messages (session_id, role, message, is_human) VALUES ($1, 'assistant', $2, false)`,
+            sessionId, message
+        );
     }
 }
 
@@ -109,7 +169,7 @@ We look forward to hosting you! 🎬
 — _Galaxia Resorts_
 www.galaxiaresorts.com`;
 
-    return sendWhatsAppMessage("dd", phone, message);
+    return sendWhatsAppMessage("dd", phone, message, true);
 }
 
 export async function sendStaycationBookingConfirmation(
@@ -132,5 +192,5 @@ We look forward to welcoming you! 🏡
 — _Galaxia Resorts_
 www.galaxiaresorts.com`;
 
-    return sendWhatsAppMessage(chatbot, phone, message);
+    return sendWhatsAppMessage(chatbot, phone, message, true);
 }

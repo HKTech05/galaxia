@@ -552,12 +552,21 @@ export default function ChatbotDashboard() {
                                             }}>
                                                 {s.mode === "human" ? "HUMAN" : "BOT"}
                                             </span>
+                                            {s.tags.includes("booked") && (
+                                                <span style={{
+                                                    fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 4,
+                                                    textTransform: "uppercase" as const, letterSpacing: 0.5, marginLeft: 4, flexShrink: 0,
+                                                    background: "rgba(16,185,129,0.12)", color: "#059669",
+                                                }}>
+                                                    ✓ BOOKED
+                                                </span>
+                                            )}
                                         </div>
                                         {s.tags.length > 0 && (
                                             <div className="cb-chat-tags">
                                                 {s.tags.map(t => (
                                                     <span key={t} className={`cb-tag cb-tag-${t}`}>
-                                                        {t === "hot" ? "🔥 Hot Lead" : t === "followup" ? "📌 Follow-up" : t === "resolved" ? "✅ Resolved" : t === "website" ? "🌐 Website" : t === "dd" ? "🎬 DD" : t === "staycation" ? "🏡 Staycation" : "🆕 New"}
+                                                        {t === "hot" ? "🔥 Hot Lead" : t === "followup" ? "📌 Follow-up" : t === "resolved" ? "✅ Resolved" : t === "booked" ? "🎫 Booked" : t === "website" ? "🌐 Website" : t === "dd" ? "🎬 DD" : t === "staycation" ? "🏡 Staycation" : "🆕 New"}
                                                     </span>
                                                 ))}
                                             </div>
