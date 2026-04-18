@@ -5,25 +5,73 @@ import { useRouter } from "next/navigation";
 import "../chatbot.css";
 
 /* ═══════════════════════════════════════════════════════
-   CHATBOT DASHBOARD — Full WhatsApp-style chat UI
+   CHATBOT DASHBOARD — WhatsApp-style chat UI
    Route: /chatbot/dashboard
+   
+   Connected to the chatbot bot server via REST API.
+   The BOT_API_BASE points to the bot server proxied through Vercel.
+   Uses fast REST polling (5s) for real-time updates.
    ═══════════════════════════════════════════════════════ */
+
+// Bot server — proxied through Vercel rewrites (/bot/* → EC2:4001/*)
+const BOT_API_BASE = "/bot";
 
 interface PhoneNumber { id: string; label: string; icon: string; color: string }
 
 const PHONE_NUMBERS: Record<string, PhoneNumber> = {
-    staycation_1: { id: "PLACEHOLDER_STAYCATION_1_PHONE_ID", label: "Staycation 1", icon: "🏡", color: "#7c3aed" },
-    staycation_2: { id: "PLACEHOLDER_STAYCATION_2_PHONE_ID", label: "Staycation 2", icon: "🏘️", color: "#3b82f6" },
-    digital_diaries: { id: "PLACEHOLDER_DIGITAL_DIARIES_PHONE_ID", label: "Digital Diaries", icon: "🎬", color: "#f59e0b" },
+    digital_diaries: { id: "1117204771469353", label: "Digital Diaries", icon: "🎬", color: "#f59e0b" },
     website: { id: "website", label: "Website", icon: "🌐", color: "#10b981" },
 };
 
-interface ChatSession { id: string; sessionId: string; displayName: string; phoneNumberKey: string; mode: "bot" | "human"; tags: string[]; unread: number; lastMessage: string; lastMessageTime: Date; platform: string }
-interface Message { role: "user" | "assistant"; message: string; time: Date; isHuman: boolean }
+// DB session shape from the bot server
+interface DbChatSession {
+    id: number;
+    session_id: string;
+    customer_phone: string;
+    display_name: string;
+    phone_number_id: string;
+    bot_type: string;
+    platform: string;
+    is_human_active: boolean;
+    tags: string[];
+    unread_count: number;
+    last_message: string | null;
+    last_message_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
 
-const INITIAL_SESSIONS: ChatSession[] = [];
+interface DbChatMessage {
+    id: number;
+    session_id: string;
+    role: "user" | "assistant";
+    message: string;
+    is_human: boolean;
+    created_at: string;
+}
 
-const INITIAL_MESSAGES: Record<string, Message[]> = {};
+// Unified session shape used by the UI (merges WhatsApp + website human requests)
+interface ChatSession {
+    id: string;
+    sessionId: string;
+    displayName: string;
+    phoneNumberKey: string;
+    mode: "bot" | "human";
+    tags: string[];
+    unread: number;
+    lastMessage: string;
+    lastMessageTime: Date;
+    platform: string;
+    // Keep DB session_id for API calls
+    dbSessionId?: string;
+}
+
+interface Message {
+    role: "user" | "assistant";
+    message: string;
+    time: Date;
+    isHuman: boolean;
+}
 
 function formatTime(d: Date) {
     const diff = Date.now() - d.getTime();
@@ -37,6 +85,31 @@ function formatMsg(text: string) {
     return text.replace(/\*([^*]+)\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
 }
 
+// Map DB session → UI session
+function dbToUiSession(db: DbChatSession): ChatSession {
+    return {
+        id: db.session_id,
+        sessionId: db.customer_phone,
+        displayName: db.display_name || db.customer_phone,
+        phoneNumberKey: "digital_diaries",
+        mode: db.is_human_active ? "human" : "bot",
+        tags: db.tags || [],
+        unread: db.unread_count || 0,
+        lastMessage: db.last_message || "",
+        lastMessageTime: db.last_message_at ? new Date(db.last_message_at) : new Date(db.created_at),
+        platform: db.platform || "whatsapp",
+        dbSessionId: db.session_id,
+    };
+}
+
+function dbToUiMessage(db: DbChatMessage): Message {
+    return {
+        role: db.role,
+        message: db.message,
+        time: new Date(db.created_at),
+        isHuman: db.is_human,
+    };
+}
 
 const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123" };
 const ACCOUNTS = [
@@ -132,21 +205,38 @@ export default function ChatbotDashboard() {
     const [msgInput, setMsgInput] = useState("");
     const [mobileShowChat, setMobileShowChat] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [connected, setConnected] = useState(false);
+    const [sending, setSending] = useState(false);
     const msgEndRef = useRef<HTMLDivElement>(null);
 
+    // ─── Auth check ───
     useEffect(() => {
         setMounted(true);
         try {
             const s = JSON.parse(localStorage.getItem("chatbot_session") || "null");
             if (!s) { router.replace("/chatbot"); return; }
             setSession(s);
-            // Start with empty sessions — real data comes from fetchHumanRequests
-            setSessions([]);
-            setMessages({});
         } catch { router.replace("/chatbot"); }
     }, [router]);
 
-    // Fetch real website human requests from API
+    // ─── Load chats from bot server ───
+    const loadChats = useCallback(async () => {
+        try {
+            const res = await fetch(`${BOT_API_BASE}/api/chats`);
+            if (!res.ok) return;
+            const data: DbChatSession[] = await res.json();
+            const whatsappSessions = data.map(dbToUiSession);
+
+            setSessions(prev => {
+                const webSessions = prev.filter(s => s.id.startsWith("web_"));
+                return [...whatsappSessions, ...webSessions];
+            });
+        } catch (err) {
+            console.error("Failed to load chats from bot server:", err);
+        }
+    }, []);
+
+    // ─── Load website human requests ───
     const fetchHumanRequests = useCallback(async () => {
         if (!session) return;
         try {
@@ -154,7 +244,6 @@ export default function ChatbotDashboard() {
             if (!res.ok) return;
             const data = await res.json();
 
-            // Determine which sources this admin can see based on their assigned numbers
             const nums = session.assignedNumbers || [];
             const isOwner = session.role === "owner" || (nums.includes("staycation_1") && nums.includes("digital_diaries"));
             const canSeeCelebration = isOwner || nums.includes("digital_diaries");
@@ -164,7 +253,7 @@ export default function ChatbotDashboard() {
                 .filter((req: any) => {
                     if (req.source === "celebration") return canSeeCelebration;
                     if (req.source === "staycation") return canSeeStaycation;
-                    return isOwner; // fallback: only owner sees unknown sources
+                    return isOwner;
                 })
                 .map((req: any) => ({
                     id: `web_${req.id}`,
@@ -178,6 +267,7 @@ export default function ChatbotDashboard() {
                     lastMessageTime: new Date(req.createdAt),
                     platform: "website",
                 }));
+
             setSessions(prev => {
                 const nonWeb = prev.filter(s => !s.id.startsWith("web_"));
                 return [...nonWeb, ...websiteSessions];
@@ -185,14 +275,52 @@ export default function ChatbotDashboard() {
         } catch { /* silently fail */ }
     }, [session]);
 
-    useEffect(() => {
-        if (session) {
-            fetchHumanRequests();
-            const interval = setInterval(fetchHumanRequests, 30000); // refresh every 30s
-            return () => clearInterval(interval);
-        }
-    }, [session, fetchHumanRequests]);
+    // ─── Real-time updates via fast REST polling ───
+    // (Vercel serverless doesn't support WebSocket, so we poll the REST API)
+    const activeChatRef = useRef<string | null>(null);
+    activeChatRef.current = activeChat;
 
+    useEffect(() => {
+        if (!session) return;
+
+        // Initial load
+        loadChats();
+        fetchHumanRequests();
+        setConnected(true); // Mark connected once we start polling
+
+        // Fast polling for chat list (every 5s)
+        const chatPoll = setInterval(() => {
+            loadChats();
+        }, 5000);
+
+        // Refresh active chat messages (every 5s)
+        const msgPoll = setInterval(async () => {
+            const chatId = activeChatRef.current;
+            if (!chatId || chatId.startsWith("web_")) return;
+            try {
+                const res = await fetch(`${BOT_API_BASE}/api/chats/${chatId}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const uiMessages = (data.messages || []).map(dbToUiMessage);
+                setMessages(prev => {
+                    // Only update if message count changed (avoid re-renders)
+                    if (prev[chatId]?.length === uiMessages.length) return prev;
+                    return { ...prev, [chatId]: uiMessages };
+                });
+            } catch { /* ignore */ }
+        }, 5000);
+
+        // Human requests poll (every 30s)
+        const hrPoll = setInterval(fetchHumanRequests, 30000);
+
+        return () => {
+            clearInterval(chatPoll);
+            clearInterval(msgPoll);
+            clearInterval(hrPoll);
+        };
+    }, [session, loadChats, fetchHumanRequests]);
+
+    // ─── Auto-scroll messages ───
     useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat, messages]);
 
     const allowed = session?.assignedNumbers || Object.keys(PHONE_NUMBERS);
@@ -209,32 +337,120 @@ export default function ChatbotDashboard() {
         }).sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
     }, [sessions, allowed, search]);
 
-    const openChat = (id: string) => {
+    // ─── Open chat — load messages from API ───
+    const openChat = async (id: string) => {
         setActiveChat(id);
-        setSessions(prev => prev.map(s => s.id === id ? { ...s, unread: 0 } : s));
         setMobileShowChat(true);
+
+        const chat = sessions.find(s => s.id === id);
+        if (!chat) return;
+
+        // Mark read locally
+        setSessions(prev => prev.map(s => s.id === id ? { ...s, unread: 0 } : s));
+
+        // For WhatsApp chats, load messages from bot server
+        if (chat.dbSessionId) {
+            try {
+                const res = await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const uiMessages = (data.messages || []).map(dbToUiMessage);
+                    setMessages(prev => ({ ...prev, [id]: uiMessages }));
+                }
+
+                // Mark read on server
+                await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/read`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: "{}",
+                });
+            } catch (err) {
+                console.error("Failed to load chat messages:", err);
+            }
+        }
     };
 
-    const toggleMode = () => {
+    // ─── Toggle mode — call bot server API ───
+    const toggleMode = async () => {
         if (!activeChat) return;
-        setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, mode: s.mode === "bot" ? "human" : "bot" } : s));
+        const chat = sessions.find(s => s.id === activeChat);
+        if (!chat) return;
+
+        const newMode = chat.mode === "bot" ? "human" : "bot";
+
+        // Optimistic update
+        setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, mode: newMode } : s));
+
+        if (chat.dbSessionId) {
+            try {
+                await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/mode`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ is_human_active: newMode === "human" }),
+                });
+            } catch (err) {
+                console.error("Failed to toggle mode:", err);
+                // Revert
+                setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, mode: chat.mode } : s));
+            }
+        }
     };
 
-    const toggleTag = (tag: string) => {
+    // ─── Toggle tag — call bot server API ───
+    const toggleTag = async (tag: string) => {
         if (!activeChat) return;
-        setSessions(prev => prev.map(s => {
-            if (s.id !== activeChat) return s;
-            const tags = s.tags.includes(tag) ? s.tags.filter(t => t !== tag) : [...s.tags, tag];
-            return { ...s, tags };
-        }));
+        const chat = sessions.find(s => s.id === activeChat);
+        if (!chat) return;
+
+        const newTags = chat.tags.includes(tag) ? chat.tags.filter(t => t !== tag) : [...chat.tags, tag];
+
+        // Optimistic update
+        setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, tags: newTags } : s));
+
+        if (chat.dbSessionId) {
+            try {
+                await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/tags`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tags: newTags }),
+                });
+            } catch (err) {
+                console.error("Failed to update tags:", err);
+                setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, tags: chat.tags } : s));
+            }
+        }
     };
 
-    const sendMessage = () => {
-        if (!msgInput.trim() || !activeChat) return;
-        const newMsg: Message = { role: "assistant", message: msgInput.trim(), time: new Date(), isHuman: true };
-        setMessages(prev => ({ ...prev, [activeChat]: [...(prev[activeChat] || []), newMsg] }));
-        setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, lastMessage: msgInput.trim(), lastMessageTime: new Date() } : s));
+    // ─── Send message — call bot server API (sends to WhatsApp too) ───
+    const sendMessage = async () => {
+        if (!msgInput.trim() || !activeChat || sending) return;
+        const text = msgInput.trim();
+        const chat = sessions.find(s => s.id === activeChat);
+        if (!chat) return;
+
         setMsgInput("");
+        setSending(true);
+
+        if (chat.dbSessionId) {
+            try {
+                await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/send`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text }),
+                });
+                // Polling will pick up the new message
+            } catch (err) {
+                console.error("Failed to send message:", err);
+                setMsgInput(text); // Restore on failure
+            }
+        } else {
+            // Website human requests — local only
+            const newMsg: Message = { role: "assistant", message: text, time: new Date(), isHuman: true };
+            setMessages(prev => ({ ...prev, [activeChat]: [...(prev[activeChat] || []), newMsg] }));
+            setSessions(prev => prev.map(s => s.id === activeChat ? { ...s, lastMessage: text, lastMessageTime: new Date() } : s));
+        }
+
+        setSending(false);
     };
 
     const handleLogout = () => { localStorage.removeItem("chatbot_session"); router.push("/chatbot"); };
@@ -254,6 +470,12 @@ export default function ChatbotDashboard() {
                     <span className="cb-role-badge">{session.role === "owner" ? "Owner" : session.displayName}</span>
                 </div>
                 <div className="cb-topbar-right">
+                    <div className="cb-conn-status">
+                        <div className="cb-conn-dot" style={{ background: connected ? "#00e676" : "#8696a0" }} />
+                        <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 600 }}>
+                            {connected ? "Connected" : "Connecting…"}
+                        </span>
+                    </div>
                     <button className="cb-btn-settings" onClick={() => setShowSettings(true)} title="Settings">
                         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" /><circle cx="12" cy="12" r="3" /></svg>
                     </button>
@@ -290,7 +512,6 @@ export default function ChatbotDashboard() {
                                 <p style={{ fontSize: 13, fontWeight: 600 }}>No conversations found</p>
                             </div>
                         ) : getFiltered(tab).map(s => {
-                            const num = PHONE_NUMBERS[s.phoneNumberKey];
                             return (
                                 <div key={s.id} className={`cb-chat-item ${activeChat === s.id ? "active" : ""}`} onClick={() => openChat(s.id)}>
                                     <div className={`cb-avatar ${s.mode === "bot" ? "bot-border" : "human-border"}`}>
@@ -338,15 +559,15 @@ export default function ChatbotDashboard() {
                                     <button className="cb-btn-back" onClick={goBack} style={mobileShowChat ? { display: "block" } : undefined}>←</button>
                                     <div className="cb-header-avatar">{active.displayName.charAt(0)}</div>
                                     <div>
-                                        <div className="cb-header-name">{active.displayName} · {active.sessionId}</div>
+                                        <div className="cb-header-name">{active.displayName}</div>
                                         <div className="cb-header-sub">{PHONE_NUMBERS[active.phoneNumberKey]?.icon} {PHONE_NUMBERS[active.phoneNumberKey]?.label} · {active.platform} · {formatTime(active.lastMessageTime)}</div>
                                     </div>
                                 </div>
                                 <div className="cb-header-right">
                                     <div className="cb-tag-btns">
-                                        {["hot", "followup", "resolved", "website"].map(t => (
+                                        {["hot", "followup", "resolved"].map(t => (
                                             <button key={t} className={`cb-tag-btn ${active.tags.includes(t) ? `active-${t}` : ""}`} onClick={() => toggleTag(t)}>
-                                                {t === "hot" ? "🔥 Hot" : t === "followup" ? "📌 Follow-up" : t === "website" ? "🌐 Website" : "✅ Resolved"}
+                                                {t === "hot" ? "🔥 Hot" : t === "followup" ? "📌 Follow-up" : "✅ Resolved"}
                                             </button>
                                         ))}
                                     </div>
@@ -398,8 +619,9 @@ export default function ChatbotDashboard() {
                                         onChange={e => setMsgInput(e.target.value)}
                                         onKeyDown={e => e.key === "Enter" && sendMessage()}
                                         placeholder="Type a message..."
+                                        disabled={sending}
                                     />
-                                    <button className="cb-btn-send" onClick={sendMessage}>➤</button>
+                                    <button className="cb-btn-send" onClick={sendMessage} disabled={sending}>➤</button>
                                 </div>
                             ) : (
                                 <div className="cb-bot-banner">

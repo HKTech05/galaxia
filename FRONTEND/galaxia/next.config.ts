@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${apiUrl.replace(/\/$/, '')}/:path*`, 
       },
+      {
+        // Proxy /bot/* to the WhatsApp chatbot service on port 4001
+        source: "/bot/:path*",
+        destination: "http://65.1.183.241:4001/:path*",
+      },
     ];
   },
 };
