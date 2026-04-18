@@ -596,3 +596,40 @@ model HumanRequest {
   @@index([status])
   @@map("human_requests")
 }
+
+// WhatsApp chatbot tables — managed by raw SQL in the bot service.
+// Defined here so Prisma doesn't drop them during `db push`.
+model ChatSession {
+  id             Int       @id @default(autoincrement())
+  sessionId      String    @unique @map("session_id") @db.VarChar(100)
+  customerPhone  String    @map("customer_phone") @db.VarChar(30)
+  displayName    String?   @map("display_name") @db.VarChar(200)
+  phoneNumberId  String?   @map("phone_number_id") @db.VarChar(50)
+  botType        String?   @default("celebration") @map("bot_type") @db.VarChar(30)
+  platform       String?   @default("whatsapp") @map("platform") @db.VarChar(20)
+  isHumanActive  Boolean   @default(false) @map("is_human_active")
+  tags           Json?     @default("[]")
+  unreadCount    Int       @default(0) @map("unread_count")
+  lastMessage    String?   @map("last_message")
+  lastMessageAt  DateTime? @map("last_message_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @map("updated_at")
+  messages       ChatMessage[]
+
+  @@index([phoneNumberId])
+  @@index([lastMessageAt(sort: Desc)])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  sessionId String   @map("session_id") @db.VarChar(100)
+  role      String   @db.VarChar(20)
+  message   String
+  isHuman   Boolean  @default(false) @map("is_human")
+  createdAt DateTime @default(now()) @map("created_at")
+  session   ChatSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
