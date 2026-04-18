@@ -38,12 +38,18 @@ app.set("trust proxy", true);
 app.use("/bot", (req: express.Request, res: express.Response) => {
     const http = require("http");
     const targetPath = req.originalUrl.replace(/^\/bot/, "") || "/";
+    console.log(`[Bot Proxy] ${req.method} ${targetPath}`);
+    
+    // Clean headers for proxy — remove hop-by-hop headers
+    const fwdHeaders = { ...req.headers, host: "127.0.0.1:4001" };
+    delete fwdHeaders["transfer-encoding"];
+    
     const proxyReq = http.request({
         hostname: "127.0.0.1",
         port: 4001,
         path: targetPath,
         method: req.method,
-        headers: { ...req.headers, host: "127.0.0.1:4001" },
+        headers: fwdHeaders,
     }, (proxyRes: any) => {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res, { end: true });
