@@ -190,6 +190,8 @@ router.post("/", async (req, res) => {
             });
 
             // Create add-ons
+            // Note: These addons' prices are already included in totalAmount above,
+            // so mark them as isPaid=true to avoid double-counting at check-in.
             if (addons && Array.isArray(addons)) {
                 for (const addon of addons) {
                     await tx.ddBookingAddon.create({
@@ -198,6 +200,7 @@ router.post("/", async (req, res) => {
                             addonType: addon.type,
                             addonValue: addon.value,
                             price: addon.price || 0,
+                            isPaid: true,
                         },
                     });
                 }

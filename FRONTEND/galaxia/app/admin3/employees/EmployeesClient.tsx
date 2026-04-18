@@ -41,7 +41,7 @@ export default function EmployeesClient() {
                 role: emp.role,
                 location: emp.property?.name || "Unknown",
                 cashCollected: emp.cashCollected || 0,
-                lastCollectedAt: emp.lastCollectedAt ? new Date(emp.lastCollectedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Never",
+                lastCollectedAt: emp.lastCollectedAt ? new Date(emp.lastCollectedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Never",
             }));
             setEmployees(mapped);
         } catch (err) {
@@ -145,7 +145,7 @@ export default function EmployeesClient() {
 
         const tableColumn = ["Date & Time", "Guest", "Booking Ref", "Amount", "Type"];
         const tableRows = empLogs.map(log => [
-            new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            new Date(log.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
             log.guestName || '—',
             log.bookingRef || '—',
             `${log.amount < 0 ? '-' : ''}Rs. ${Math.abs(log.amount).toLocaleString('en-IN')}`,
@@ -368,7 +368,7 @@ export default function EmployeesClient() {
                                                         'hover:bg-slate-50/50'
                                                     }`}>
                                                         <td className="px-5 py-3.5 font-medium text-slate-600">
-                                                            {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                            {new Date(log.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                         </td>
                                                         <td className="px-5 py-3.5 font-bold text-slate-800">{log.guestName || '—'}</td>
                                                         <td className={`px-5 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
@@ -409,7 +409,7 @@ export default function EmployeesClient() {
                                             }`}>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <p className="text-xs font-medium text-slate-500">
-                                                        {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        {new Date(log.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                     <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
                                                         {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}

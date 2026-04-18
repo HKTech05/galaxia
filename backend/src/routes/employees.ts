@@ -46,13 +46,14 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
         if (!employee) return res.status(404).json({ error: "Employee not found" });
 
         if (employee.cashCollected > 0) {
-            // Log the owner pickup transaction
+            // Log the owner pickup transaction with IST timestamp
+            const istNow = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
             await prisma.cashTransaction.create({
                 data: {
                     employeeId,
                     amount: employee.cashCollected,
                     transactionType: "owner_pickup",
-                    note: `Collected by owner at ${new Date().toLocaleString("en-IN")}`,
+                    note: `Collected by owner at ${istNow}`,
                 },
             });
         }

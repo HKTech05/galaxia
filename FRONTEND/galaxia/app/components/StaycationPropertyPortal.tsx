@@ -23,6 +23,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     id: b.bookingRef || `#ST-${b.id}`,
                     rawId: b.id,
                     customer: b.customerName || "Unknown",
+                    phone: b.customerPhone || "",
                     property: b.subProperty 
                         ? b.subProperty.name 
                         : (b.property?.name || "Unknown"),
@@ -508,6 +509,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Guest</p>
                                         <p className="text-sm font-bold text-slate-800 flex items-center gap-2">{booking.customer}</p>
+                                        {booking.phone && (
+                                            <p className="text-xs font-medium text-slate-500 mt-0.5 flex items-center gap-1">
+                                                <Phone size={11} className="text-slate-400" />
+                                                {booking.phone}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Number of Guests</p>
@@ -1103,6 +1110,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Ambrose Villa Theme</label>
                                             <select value={manualForm.villa} onChange={e => setManualForm({ ...manualForm, villa: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none font-medium text-slate-800">
                                                 {AMBROSE_VILLAS.map(v => <option key={v} value={v}>{v}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {manualForm.property.includes("Amstel") && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Cottage Type</label>
+                                            <select value={manualForm.villa} onChange={e => setManualForm({ ...manualForm, villa: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none font-medium text-slate-800">
+                                                <option value="Standard Cottage">Standard Cottage</option>
+                                                <option value="Family Cottage">Family Cottage</option>
                                             </select>
                                         </div>
                                     )}

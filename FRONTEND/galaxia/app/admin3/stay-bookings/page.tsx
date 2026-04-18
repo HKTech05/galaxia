@@ -144,7 +144,7 @@ export default function StayBookingsPage() {
                 nights: 0,
                 guests: b.numGuests || 1,
                 totalAmount: b.totalAmount || 0,
-                advanceAmount: b.advanceAmount || 0,
+                advanceAmount: b.amountPaid || 0,
                 balanceAmount: b.amountToCollect || 0,
                 securityDeposit: 0,
                 status: b.status || "confirmed",
@@ -185,8 +185,18 @@ export default function StayBookingsPage() {
             || b.bookingRef.toLowerCase().includes(searchTerm.toLowerCase())
             || b.customerPhone.includes(searchTerm);
         const matchesProperty = propertyFilter === "All" || b.propertyName === propertyFilter;
-        const matchesStatus = statusFilter === "All" || b.status === statusFilter.toLowerCase().replace(" ", "_");
-        return matchesSearch && matchesProperty && matchesStatus;
+        // DD tab uses source filter (All/Website/Walk-in), Staycation uses status filter
+        let matchesFilter = true;
+        if (viewTab === 'dd') {
+            if (statusFilter === 'Website') matchesFilter = b.source === 'website';
+            else if (statusFilter === 'Walk-in') matchesFilter = b.source !== 'website';
+        } else if (viewTab === 'staycation') {
+            matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
+        } else {
+            // 'all' tab — no extra filter
+            matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
+        }
+        return matchesSearch && matchesProperty && matchesFilter;
     });
 
     const sortedBookings = [...filteredBookings].sort((a, b) => {
@@ -224,7 +234,7 @@ export default function StayBookingsPage() {
                 {(["staycation", "dd", "all"] as const).map(tab => (
                     <button
                         key={tab}
-                        onClick={() => setViewTab(tab)}
+                        onClick={() => { setViewTab(tab); setStatusFilter('All'); }}
                         className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
                             viewTab === tab
                                 ? 'bg-white shadow text-purple-700'
@@ -302,32 +312,37 @@ export default function StayBookingsPage() {
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
 
-                    {/* Status — dropdown on mobile, pills on desktop */}
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="lg:hidden py-2 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    >
-                        {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
-                            <option key={status} value={status}>{status}</option>
-                        ))}
-                    </select>
-
-                    {/* Status pills — desktop only */}
-                    <div className="hidden lg:flex flex-1 items-center bg-slate-100 rounded-lg p-1 gap-1 ml-3">
-                        {["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"].map(status => (
-                            <button
-                                key={status}
-                                onClick={() => setStatusFilter(status)}
-                                className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap text-center ${statusFilter === status
-                                    ? "bg-white text-indigo-700 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                            >
-                                {status}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Filter pills — Source for DD tab, Status for Staycation tab */}
+                    {(() => {
+                        const filterOptions = viewTab === 'dd' ? ["All", "Website", "Walk-in"] : ["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"];
+                        return (
+                            <>
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="lg:hidden py-2 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                >
+                                    {filterOptions.map(opt => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                                <div className="hidden lg:flex flex-1 items-center bg-slate-100 rounded-lg p-1 gap-1 ml-3">
+                                    {filterOptions.map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => setStatusFilter(opt)}
+                                            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap text-center ${statusFilter === opt
+                                                ? "bg-white text-indigo-700 shadow-sm"
+                                                : "text-slate-500 hover:text-slate-700"
+                                                }`}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
 
