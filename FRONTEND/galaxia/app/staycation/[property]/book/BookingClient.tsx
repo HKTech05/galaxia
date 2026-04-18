@@ -161,13 +161,14 @@ export default function BookingClient({ property }: BookingClientProps) {
     });
     const [idProofError, setIdProofError] = useState("");
 
-    // Celebration Add-on (Ambrose only)
+    // Celebration Add-on (all properties) + Food Preference (Ambrose/Amstel Nest)
     const isAmbrose = property.id === 'ambrose' || property.id.startsWith('ambrose/');
     const isAmstelNest = property.id.startsWith('amstel-nest/');
     const [celebrationAddon, setCelebrationAddon] = useState(false);
     const [celebrationCakeMsg, setCelebrationCakeMsg] = useState('');
     const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
     const CELEBRATION_ADDON_PRICE = 1200;
+    const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
 
     // Amstel Nest multi-unit cart state
     const [unitCount, setUnitCount] = useState(1);
@@ -536,6 +537,10 @@ export default function BookingClient({ property }: BookingClientProps) {
             alert("Please upload a valid file size (Max 2MB)");
             return;
         }
+        if ((isAmbrose || isAmstelNest) && !foodType) {
+            alert("Please select a food preference (Jain or Regular)");
+            return;
+        }
         setCurrentStep(3);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -652,7 +657,13 @@ export default function BookingClient({ property }: BookingClientProps) {
                     advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                     source: "website",
                     couponCode: i === 0 ? (appliedCoupon?.code || null) : null,
-                    addons: i === 0 && celebrationAddon ? [{ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion }] : null,
+                    addons: (() => {
+                        if (i !== 0) return null;
+                        const arr: any[] = [];
+                        if (celebrationAddon) arr.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                        if (isAmbrose || isAmstelNest) arr.push({ name: 'Food Preference', foodType });
+                        return arr.length > 0 ? arr : null;
+                    })(),
                 };
 
                 const result = await api.post("/bookings/staycation", payload);
@@ -975,8 +986,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         </div>
                                     )}
 
-                                    {/* Celebration Add-on (Ambrose only) */}
-                                    {isAmbrose && (
+                                    {/* Celebration Add-on (all properties) */}
+                                    {(
                                         <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
                                             <div className="flex items-start gap-3">
                                                 <input
@@ -1013,6 +1024,18 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* Food Preference — Ambrose & Amstel Nest only (compulsory) */}
+                                    {(isAmbrose || isAmstelNest) && (
+                                        <div className="mb-6 p-4 border border-emerald-200 rounded-lg bg-emerald-50/50">
+                                            <h4 className="font-inter text-sm font-semibold text-text-primary mb-1">Food Preference <span className="text-red-500">*</span></h4>
+                                            <p className="font-inter text-[10px] text-text-muted mb-3 uppercase tracking-wider">Both options are vegetarian only</p>
+                                            <div className="flex gap-3">
+                                                <button type="button" onClick={() => setFoodType('Regular')} className={`flex-1 py-2.5 rounded-lg text-sm font-inter font-semibold transition-all border ${foodType === 'Regular' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-text-secondary border-border-medium hover:border-emerald-300'}`}>Regular (Veg)</button>
+                                                <button type="button" onClick={() => setFoodType('Jain')} className={`flex-1 py-2.5 rounded-lg text-sm font-inter font-semibold transition-all border ${foodType === 'Jain' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-text-secondary border-border-medium hover:border-emerald-300'}`}>Jain (Veg)</button>
+                                            </div>
                                         </div>
                                     )}
 

@@ -470,12 +470,22 @@ export default function StayBookingsPage() {
                                     )}
                                     {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.length > 0 && selectedBooking.addons.map((addon: any, i: number) => (
                                         <div key={i}>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-amber-700">{addon.name}</span>
-                                                <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
-                                            </div>
-                                            {addon.cakeMessage && <p className="text-xs text-slate-500 mt-0.5 ml-1">Cake: {addon.cakeMessage}</p>}
-                                            {addon.occasion && <p className="text-xs text-slate-500 ml-1">Occasion: {addon.occasion}</p>}
+                                            {addon.name === 'Celebration Add-on' && (
+                                                <>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-amber-700">{addon.name}</span>
+                                                        <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
+                                                    </div>
+                                                    {addon.cakeMessage && <p className="text-xs text-slate-500 mt-0.5 ml-1">Cake: {addon.cakeMessage}</p>}
+                                                    {addon.occasion && <p className="text-xs text-slate-500 ml-1">Occasion: {addon.occasion}</p>}
+                                                </>
+                                            )}
+                                            {addon.name === 'Food Preference' && (
+                                                <div className="flex justify-between text-sm items-center">
+                                                    <span className="text-emerald-700">Food Preference</span>
+                                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg)</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     <div className="flex justify-between text-sm">

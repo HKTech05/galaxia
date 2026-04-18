@@ -91,6 +91,13 @@ export default function BookMultiPage() {
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
 
+    // Celebration Add-on + Food Preference
+    const [celebrationAddon, setCelebrationAddon] = useState(false);
+    const [celebrationCakeMsg, setCelebrationCakeMsg] = useState('');
+    const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
+    const CELEBRATION_ADDON_PRICE = 1200;
+    const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
+
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
     const [villaConflicts, setVillaConflicts] = useState<Record<string, string[]>>({});
@@ -343,8 +350,9 @@ export default function BookMultiPage() {
         }
     }
     const afterDiscount = grandSubtotal - discountAmount;
-    const gst = Math.round(afterDiscount * 0.05);
-    const grandTotal = afterDiscount + gst;
+    const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+    const gst = Math.round((afterDiscount + addonTotal) * 0.05);
+    const grandTotal = afterDiscount + addonTotal + gst;
     const payNow = Math.round(grandTotal * 0.8);
     const payAtVenue = grandTotal - payNow;
 
@@ -544,6 +552,15 @@ export default function BookMultiPage() {
                         amstelDepositAssigned = true;
                     }
 
+                    const isFirstItem = cart.indexOf(item) === 0;
+                    const itemAddons: any[] = [];
+                    if (isFirstItem && celebrationAddon) {
+                        itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                    }
+                    if (isFirstItem) {
+                        itemAddons.push({ name: 'Food Preference', foodType });
+                    }
+
                     const booking = await api.post("/bookings/staycation", {
                         customerName,
                         customerPhone: formData.phone,
@@ -564,6 +581,7 @@ export default function BookMultiPage() {
                         advancePaid: true,
                         advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                         source: "website",
+                        addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
                     });
 
                     // Upload guest ID proof for this booking
@@ -986,6 +1004,48 @@ export default function BookMultiPage() {
                                         <input type="file" accept="image/*" onChange={handleIdUpload} className="hidden" />
                                     </label>
                                     {idError && <p className="font-inter text-xs text-red-500 mt-1">{idError}</p>}
+                                </div>
+
+                                {/* Celebration Add-on */}
+                                <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
+                                    <div className="flex items-start gap-3">
+                                        <input type="checkbox" id="multi-celebration" checked={celebrationAddon} onChange={(e) => setCelebrationAddon(e.target.checked)} className="mt-1 w-4 h-4 accent-[#B8860B] cursor-pointer" />
+                                        <label htmlFor="multi-celebration" className="cursor-pointer flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-inter text-sm font-semibold text-text-primary">Celebration Add-on</h4>
+                                                <span className="font-cinzel text-sm font-semibold text-dark-gold">+ ₹{CELEBRATION_ADDON_PRICE.toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner</p>
+                                        </label>
+                                    </div>
+                                    {celebrationAddon && (
+                                        <div className="mt-4 space-y-3 pl-7 animate-in fade-in">
+                                            <div>
+                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Cake Message</label>
+                                                <input value={celebrationCakeMsg} onChange={(e) => setCelebrationCakeMsg(e.target.value)} maxLength={50} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none" placeholder="e.g. Happy Birthday!" />
+                                            </div>
+                                            <div>
+                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Occasion</label>
+                                                <select value={celebrationOccasion} onChange={(e) => setCelebrationOccasion(e.target.value)} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none">
+                                                    <option>Birthday</option>
+                                                    <option>Anniversary</option>
+                                                    <option>Proposal</option>
+                                                    <option>Welcome Party</option>
+                                                    <option>Other</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Food Preference (compulsory for Ambrose & Amstel Nest) */}
+                                <div className="mb-6 p-4 border border-emerald-200 rounded-lg bg-emerald-50/50">
+                                    <h4 className="font-inter text-sm font-semibold text-text-primary mb-1">Food Preference <span className="text-red-500">*</span></h4>
+                                    <p className="font-inter text-[10px] text-text-muted mb-3 uppercase tracking-wider">Both options are vegetarian only</p>
+                                    <div className="flex gap-3">
+                                        <button type="button" onClick={() => setFoodType('Regular')} className={`flex-1 py-2.5 rounded-lg text-sm font-inter font-semibold transition-all border ${foodType === 'Regular' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-text-secondary border-border-medium hover:border-emerald-300'}`}>Regular (Veg)</button>
+                                        <button type="button" onClick={() => setFoodType('Jain')} className={`flex-1 py-2.5 rounded-lg text-sm font-inter font-semibold transition-all border ${foodType === 'Jain' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-text-secondary border-border-medium hover:border-emerald-300'}`}>Jain (Veg)</button>
+                                    </div>
                                 </div>
 
                                 <label className="flex items-start gap-3 mt-6 cursor-pointer">

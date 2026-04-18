@@ -161,6 +161,23 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [customPrepaid, setCustomPrepaid] = useState("");
     const [customBalance, setCustomBalance] = useState("");
 
+    // Decoration Add-on states
+    const [manualDecoration, setManualDecoration] = useState(false);
+    const [manualCakeMsg, setManualCakeMsg] = useState("");
+    const [manualOccasion, setManualOccasion] = useState("Birthday");
+    const DECORATION_PRICE = 1200;
+
+    // Food Preference state (Ambrose & Amstel Nest only)
+    const [manualFoodType, setManualFoodType] = useState<"Regular" | "Jain">("Regular");
+
+    // Coupon states
+    const [manualCouponCode, setManualCouponCode] = useState("");
+    const [manualAppliedCoupon, setManualAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [manualCouponError, setManualCouponError] = useState("");
+    const [manualCouponLoading, setManualCouponLoading] = useState(false);
+
+    const isAmbroseOrAmstel = manualForm.property.includes("Ambrose") || manualForm.property.includes("Amstel");
+
     const calculatePrice = () => {
         let total = 0;
         const start = new Date(manualForm.checkInDate);
@@ -235,6 +252,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             total += nightPrice;
         }
 
+        // Add decoration price
+        if (manualDecoration) total += DECORATION_PRICE;
+        // Apply coupon discount
+        let manualCouponDiscount = 0;
+        if (manualAppliedCoupon) {
+            if (manualAppliedCoupon.discountType === "percentage") {
+                manualCouponDiscount = Math.round(total * manualAppliedCoupon.discountValue / 100);
+            } else {
+                manualCouponDiscount = Number(manualAppliedCoupon.discountValue);
+            }
+            total -= manualCouponDiscount;
+        }
         // Add 5% GST
         total = total + (total * 0.05);
         // Add pet charges (₹600/pet flat)
@@ -262,6 +291,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             };
             const propId = Object.entries(propertyMap).find(([name]) => manualForm.property.includes(name))?.[1] || 1;
 
+            // Build addons array
+            const bookingAddons: any[] = [];
+            if (manualDecoration) {
+                bookingAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+            }
+            if (isAmbroseOrAmstel) {
+                bookingAddons.push({ name: 'Food Preference', foodType: manualFoodType });
+            }
+
             await api.post("/bookings/staycation", {
                 customerName: manualForm.name,
                 customerPhone: manualForm.phone || "0000000000",
@@ -279,12 +317,21 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 advancePaid: true,
                 advanceMethod: manualForm.paymentMethod,
                 source: "reception",
+                couponCode: manualAppliedCoupon?.code || null,
+                addons: bookingAddons.length > 0 ? bookingAddons : null,
             });
             fetchBookings();
             setIsManualBookingOpen(false);
             setCustomSplitMode(false);
             setCustomPrepaid("");
             setCustomBalance("");
+            setManualDecoration(false);
+            setManualCakeMsg("");
+            setManualOccasion("Birthday");
+            setManualFoodType("Regular");
+            setManualCouponCode("");
+            setManualAppliedCoupon(null);
+            setManualCouponError("");
         } catch (err: any) {
             alert(err?.message || err?.error || "Failed to create manual booking");
         }
@@ -495,15 +542,25 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     )}
 
                                     {booking.addons && Array.isArray(booking.addons) && booking.addons.length > 0 && (
-                                        <div className="mt-2 col-span-2 sm:col-span-5 bg-amber-50 p-2.5 rounded-lg border border-amber-100 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Celebration Add-on</p>
-                                                <p className="text-sm font-bold text-amber-800 mt-0.5">₹{Number(booking.addons[0].price || 1200).toLocaleString('en-IN')}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                {booking.addons[0].cakeMessage && <p className="text-xs text-slate-700">Cake: <span className="font-bold">{booking.addons[0].cakeMessage}</span></p>}
-                                                {booking.addons[0].occasion && <p className="text-xs text-slate-700">Occasion: <span className="font-bold">{booking.addons[0].occasion}</span></p>}
-                                            </div>
+                                        <div className="mt-2 col-span-2 sm:col-span-5 space-y-2">
+                                            {booking.addons.filter((a: any) => a.name === 'Celebration Add-on').map((addon: any, i: number) => (
+                                                <div key={i} className="bg-amber-50 p-2.5 rounded-lg border border-amber-100 flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Celebration Add-on</p>
+                                                        <p className="text-sm font-bold text-amber-800 mt-0.5">₹{Number(addon.price || 1200).toLocaleString('en-IN')}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {addon.cakeMessage && <p className="text-xs text-slate-700">Cake: <span className="font-bold">{addon.cakeMessage}</span></p>}
+                                                        {addon.occasion && <p className="text-xs text-slate-700">Occasion: <span className="font-bold">{addon.occasion}</span></p>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {booking.addons.filter((a: any) => a.name === 'Food Preference').map((addon: any, i: number) => (
+                                                <div key={`food-${i}`} className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 flex items-center gap-2">
+                                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Food:</span>
+                                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg)</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -1003,9 +1060,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Number of Guests</label>
-                                        <div className="relative">
-                                            <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input type="number" min="1" max="15" value={manualForm.guests} onChange={e => setManualForm({ ...manualForm, guests: parseInt(e.target.value) || 2 })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                                        <div className="flex items-center gap-2">
+                                            <Users size={14} className="text-slate-400" />
+                                            <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.max(1, manualForm.guests - 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">−</button>
+                                            <span className="w-10 text-center text-sm font-bold text-slate-800">{manualForm.guests}</span>
+                                            <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.min(15, manualForm.guests + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
                                         </div>
                                     </div>
                                     {['Ambrose', 'La Paraiso', 'Mount View', 'Hill View'].some(p => manualForm.property.includes(p)) && (
@@ -1050,6 +1109,56 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                 </div>
                             </div>
 
+                            {/* Celebration Decoration Add-on */}
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3 p-4 border border-amber-200 rounded-xl bg-amber-50">
+                                    <input
+                                        type="checkbox"
+                                        id="manual-decoration"
+                                        checked={manualDecoration}
+                                        onChange={(e) => setManualDecoration(e.target.checked)}
+                                        className="mt-0.5 w-4 h-4 accent-purple-600 cursor-pointer"
+                                    />
+                                    <label htmlFor="manual-decoration" className="cursor-pointer flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-sm font-bold text-slate-800">Celebration Add-on</h4>
+                                            <span className="text-sm font-bold text-amber-700">+ ₹{DECORATION_PRICE.toLocaleString('en-IN')}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">Cake, balloons & banner</p>
+                                    </label>
+                                </div>
+                                {manualDecoration && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 animate-in fade-in">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Cake Message</label>
+                                            <input value={manualCakeMsg} onChange={(e) => setManualCakeMsg(e.target.value)} maxLength={50} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="e.g. Happy Birthday!" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Occasion</label>
+                                            <select value={manualOccasion} onChange={(e) => setManualOccasion(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none">
+                                                <option>Birthday</option>
+                                                <option>Anniversary</option>
+                                                <option>Proposal</option>
+                                                <option>Welcome Party</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Food Preference — Ambrose & Amstel Nest only */}
+                            {isAmbroseOrAmstel && (
+                                <div className="p-4 border border-emerald-200 rounded-xl bg-emerald-50 space-y-2">
+                                    <h4 className="text-sm font-bold text-slate-800">Food Preference</h4>
+                                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Both options are vegetarian only</p>
+                                    <div className="flex gap-3">
+                                        <button type="button" onClick={() => setManualFoodType("Regular")} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border ${manualFoodType === "Regular" ? "bg-emerald-600 text-white border-emerald-700 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}>Regular (Veg)</button>
+                                        <button type="button" onClick={() => setManualFoodType("Jain")} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border ${manualFoodType === "Jain" ? "bg-emerald-600 text-white border-emerald-700 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}>Jain (Veg)</button>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Summary & Payment */}
                             <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 mt-2">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -1074,6 +1183,56 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             UPI
                                         </button>
                                     </div>
+                                </div>
+
+                                {/* Coupon Code */}
+                                <div className="mb-4">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Coupon Code</label>
+                                    {manualAppliedCoupon ? (
+                                        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+                                            <div>
+                                                <span className="text-sm font-bold text-emerald-700">✓ {manualAppliedCoupon.code}</span>
+                                                <span className="text-xs text-emerald-600 ml-2">
+                                                    ({manualAppliedCoupon.discountType === 'percentage' ? `${manualAppliedCoupon.discountValue}% off` : `₹${manualAppliedCoupon.discountValue} off`})
+                                                </span>
+                                            </div>
+                                            <button onClick={() => { setManualAppliedCoupon(null); setManualCouponCode(""); setManualCouponError(""); }} className="text-xs font-bold text-red-500 hover:text-red-700">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={manualCouponCode}
+                                                onChange={e => { setManualCouponCode(e.target.value.toUpperCase()); setManualCouponError(""); }}
+                                                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold uppercase focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                                                placeholder="ENTER CODE"
+                                            />
+                                            <button
+                                                onClick={async () => {
+                                                    if (!manualCouponCode.trim()) return;
+                                                    setManualCouponLoading(true);
+                                                    setManualCouponError("");
+                                                    try {
+                                                        const result = await api.post("/coupons/validate", { code: manualCouponCode });
+                                                        if (result?.valid) {
+                                                            setManualAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
+                                                        } else {
+                                                            setManualCouponError("Invalid or expired");
+                                                        }
+                                                    } catch (err: any) {
+                                                        setManualCouponError(err?.message || "Invalid code");
+                                                    } finally {
+                                                        setManualCouponLoading(false);
+                                                    }
+                                                }}
+                                                disabled={manualCouponLoading || !manualCouponCode.trim()}
+                                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors"
+                                            >
+                                                {manualCouponLoading ? "..." : "Apply"}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {manualCouponError && <p className="text-xs text-red-500 font-bold mt-1">{manualCouponError}</p>}
                                 </div>
 
                                 {/* Payment Split Mode */}
