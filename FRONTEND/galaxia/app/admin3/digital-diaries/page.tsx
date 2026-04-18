@@ -1723,17 +1723,23 @@ export default function Admin1Dashboard() {
                                             }}
                                         >
                                             {ev.duration === 1 ? (
-                                                /* Compact layout for 1hr slots — p - c - s - b */
+                                                /* Compact layout for 1hr slots */
                                                 <>
-                                                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-80 truncate w-full">{ev.packageType}</span>
+                                                    <div className="flex items-center gap-1 w-full">
+                                                        <div className="w-1 h-1 rounded-full bg-current opacity-70 shrink-0"></div>
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider truncate">{ev.screen}</span>
+                                                    </div>
                                                     <span className="text-[11px] font-bold leading-tight truncate w-full">{ev.customerName}</span>
-                                                    <span className="text-[9px] font-semibold opacity-70 truncate w-full">{ev.screen} • {ev.bookingRef}</span>
                                                     {ev.status === 'no_show' && <span className="text-[8px] font-bold text-red-600 uppercase">No Show</span>}
+                                                    <span className="text-[9px] font-semibold opacity-70 truncate w-full">{hours[ev.startHour - 10]} • 1hr</span>
                                                 </>
                                             ) : (
-                                                /* Standard layout for 2hr+ slots — p - c - s - b */
+                                                /* Standard layout for 2hr+ slots */
                                                 <>
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">{ev.packageType}</span>
+                                                    <div className="flex items-center gap-1.5 mb-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen}</span>
+                                                    </div>
                                                     <span className="text-sm font-bold leading-tight line-clamp-2">{ev.customerName}</span>
                                                     {ev.status === 'no_show' && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-0.5 uppercase">No Show</span>}
 
@@ -1743,8 +1749,8 @@ export default function Admin1Dashboard() {
                                                         </div>
                                                     ) : (
                                                         <div className="mt-auto flex flex-col">
-                                                            <span className="text-[11px] font-bold opacity-80">{ev.screen} • {hours[ev.startHour - 10]} • {ev.duration}hrs</span>
-                                                            <span className="text-[10px] font-semibold opacity-60">{ev.bookingRef}</span>
+                                                            <span className="text-[11px] font-bold opacity-80">{hours[ev.startHour - 10]} • {ev.duration} hrs</span>
+                                                            <span className="text-[10px] font-semibold opacity-60">{ev.packageType}</span>
                                                         </div>
                                                     )}
                                                 </>

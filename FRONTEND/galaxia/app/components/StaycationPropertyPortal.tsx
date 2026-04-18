@@ -1046,7 +1046,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
                             {/* Guest Details */}
                             <div className="space-y-4">
                                 <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Guest Details</h4>
@@ -1170,7 +1170,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             )}
 
                             {/* Summary & Payment */}
-                            <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 mt-2">
+                            <div className="bg-purple-50 rounded-xl p-4 sm:p-5 border border-purple-100 mt-2">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                     <div>
                                         <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Calculated Total (Inc. 5% GST)</p>
@@ -1182,13 +1182,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <div className="bg-white p-1 rounded-lg border border-purple-200 flex">
                                         <button
                                             onClick={() => setManualForm({ ...manualForm, paymentMethod: "Cash" })}
-                                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'Cash' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'Cash' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                         >
                                             Cash
                                         </button>
                                         <button
                                             onClick={() => setManualForm({ ...manualForm, paymentMethod: "UPI" })}
-                                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'UPI' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'UPI' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                         >
                                             UPI
                                         </button>
@@ -1214,7 +1214,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 type="text"
                                                 value={manualCouponCode}
                                                 onChange={e => { setManualCouponCode(e.target.value.toUpperCase()); setManualCouponError(""); }}
-                                                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold uppercase focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                                                className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold uppercase focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                                                 placeholder="ENTER CODE"
                                             />
                                             <button
@@ -1236,7 +1236,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     }
                                                 }}
                                                 disabled={manualCouponLoading || !manualCouponCode.trim()}
-                                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors"
+                                                className="shrink-0 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors"
                                             >
                                                 {manualCouponLoading ? "..." : "Apply"}
                                             </button>

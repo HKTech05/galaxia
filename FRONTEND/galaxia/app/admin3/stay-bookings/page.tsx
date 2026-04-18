@@ -298,13 +298,13 @@ export default function StayBookingsPage() {
                 </div>
 
                 {/* Row 3: Property filter + Status pills — evenly spaced on desktop */}
-                <div className="flex flex-wrap gap-3 items-center lg:justify-between">
-                    <div className="relative">
+                <div className="flex gap-3 items-center lg:justify-between">
+                    <div className="relative flex-1 lg:flex-none">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <select
                             value={propertyFilter}
                             onChange={(e) => setPropertyFilter(e.target.value)}
-                            className="pl-9 pr-8 py-2 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                            className="w-full lg:w-auto pl-9 pr-8 py-2 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                         >
                             <option value="All">All Properties</option>
                             {properties.map(p => <option key={p} value={p}>{p}</option>)}
@@ -317,15 +317,18 @@ export default function StayBookingsPage() {
                         const filterOptions = viewTab === 'dd' ? ["All", "Website", "Walk-in"] : ["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"];
                         return (
                             <>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="lg:hidden py-2 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                >
-                                    {filterOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                </select>
+                                <div className="relative flex-1 lg:hidden">
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="w-full py-2 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    >
+                                        {filterOptions.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
+                                </div>
                                 <div className="hidden lg:flex flex-1 items-center bg-slate-100 rounded-lg p-1 gap-1 ml-3">
                                     {filterOptions.map(opt => (
                                         <button

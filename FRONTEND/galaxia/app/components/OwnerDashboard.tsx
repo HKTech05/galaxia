@@ -301,6 +301,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const ambroseVillas: string[] = [];
         const amstelNest: string[] = [];
         propertyList.forEach(p => {
+            // Exclude Digital Diaries from the calendar dropdown
+            if (p.slug === 'digital-diaries' || p.name === 'Digital Diaries') return;
             if (p.subProperties && p.subProperties.length > 0) {
                 p.subProperties.forEach((sp: any) => {
                     const label = `${p.name} — ${sp.name}`;
@@ -1724,6 +1726,28 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </span>
                     </div>
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
+                </div>
+
+                {/* Per-Screen Booking Counter — P C S B */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    {[
+                        { name: "Park N Watch", short: "P", color: "bg-orange-50 border-orange-200 text-orange-700" },
+                        { name: "Cine Love", short: "C", color: "bg-green-50 border-green-200 text-green-700" },
+                        { name: "Sandy Screen", short: "S", color: "bg-amber-50 border-amber-200 text-amber-800" },
+                        { name: "Baywatch", short: "B", color: "bg-blue-50 border-blue-200 text-blue-700" },
+                    ].map(screen => {
+                        const count = (screenGroups[screen.name] || []).length;
+                        return (
+                            <div key={screen.name} className={`${screen.color} border rounded-xl p-3 text-center`}>
+                                <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{screen.name}</p>
+                                <p className="text-2xl font-black mt-0.5">{count}</p>
+                            </div>
+                        );
+                    })}
+                    <div className="bg-slate-800 text-white border border-slate-700 rounded-xl p-3 text-center">
+                        <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">Total</p>
+                        <p className="text-2xl font-black mt-0.5">{bookingsToDisplay.length}</p>
+                    </div>
                 </div>
 
                 {/* DD Detail Modal */}
