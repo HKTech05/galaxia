@@ -66,6 +66,7 @@ export default function StayBookingsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+    const [ddSourceFilter, setDdSourceFilter] = useState("All");
     const [propertyFilter, setPropertyFilter] = useState("All");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
@@ -195,15 +196,20 @@ export default function StayBookingsPage() {
             || b.bookingRef.toLowerCase().includes(searchTerm.toLowerCase())
             || b.customerPhone.includes(searchTerm);
         const matchesProperty = propertyFilter === "All" || b.propertyName === propertyFilter;
-        // DD tab uses source filter (All/Website/Walk-in), Staycation uses status filter
+        // DD tab uses both status filter AND source filter
         let matchesFilter = true;
         if (viewTab === 'dd') {
-            if (statusFilter === 'Website') matchesFilter = b.source === 'website';
-            else if (statusFilter === 'Walk-in') matchesFilter = b.source !== 'website';
+            // Status filter
+            if (statusFilter !== 'All') matchesFilter = b.status === statusFilter.toLowerCase().replace(' ', '_');
+            // Source filter
+            if (matchesFilter && ddSourceFilter !== 'All') {
+                if (ddSourceFilter === 'Website') matchesFilter = b.source === 'website';
+                else if (ddSourceFilter === 'Walk-in') matchesFilter = b.source !== 'website';
+            }
         } else if (viewTab === 'staycation') {
             matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
         } else {
-            // 'all' tab — no extra filter
+            // 'all' tab
             matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
         }
         return matchesSearch && matchesProperty && matchesFilter;
@@ -248,7 +254,7 @@ export default function StayBookingsPage() {
                 {(["staycation", "dd", "all"] as const).map(tab => (
                     <button
                         key={tab}
-                        onClick={() => { setViewTab(tab); setStatusFilter('All'); }}
+                        onClick={() => { setViewTab(tab); setStatusFilter('All'); setDdSourceFilter('All'); }}
                         className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
                             viewTab === tab
                                 ? 'bg-white shadow text-purple-700'
@@ -326,9 +332,11 @@ export default function StayBookingsPage() {
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
 
-                    {/* Filter pills — Source for DD tab, Status for Staycation tab */}
+                    {/* Filter pills — Status filter for all tabs */}
                     {(() => {
-                        const filterOptions = viewTab === 'dd' ? ["All", "Website", "Walk-in"] : ["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"];
+                        const filterOptions = viewTab === 'dd'
+                            ? ["All", "Confirmed", "No Show", "Transferred", "Cancelled"]
+                            : ["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"];
                         return (
                             <>
                                 <div className="relative flex-1 lg:hidden">
@@ -360,6 +368,22 @@ export default function StayBookingsPage() {
                             </>
                         );
                     })()}
+
+                    {/* DD Source dropdown — only shows for DD tab */}
+                    {viewTab === 'dd' && (
+                        <div className="relative flex-shrink-0 ml-3">
+                            <select
+                                value={ddSourceFilter}
+                                onChange={(e) => setDdSourceFilter(e.target.value)}
+                                className="pl-3 pr-8 py-2 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="All">All Sources</option>
+                                <option value="Website">Website</option>
+                                <option value="Walk-in">Walk-in</option>
+                            </select>
+                            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
+                        </div>
+                    )}
                 </div>
             </div>
 
