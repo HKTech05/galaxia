@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -69,6 +69,9 @@ export default function StayBookingsPage() {
     const [selectedBooking, setSelectedBooking] = useState<StayBooking | null>(null);
     const [sortField, setSortField] = useState<"bookedAt" | "checkIn">("bookedAt");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+    const [viewTab, setViewTab] = useState<"staycation" | "dd" | "all">("staycation");
+    const [ddBookings, setDdBookings] = useState<StayBooking[]>([]);
+    const [ddLoading, setDdLoading] = useState(false);
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -123,14 +126,67 @@ export default function StayBookingsPage() {
 
     useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-    const properties = [...new Set(bookings.map(b => b.propertyName))];
+    // Fetch DD bookings
+    const fetchDdBookings = useCallback(async () => {
+        try {
+            setDdLoading(true);
+            const data = await api.get('/bookings/dd');
+            const mapped: StayBooking[] = (Array.isArray(data) ? data : []).map((b: any) => ({
+                id: b.id,
+                bookingRef: b.bookingRef || `DD-${b.id}`,
+                customerName: b.customerName || "Unknown",
+                customerPhone: b.customerPhone || "",
+                customerEmail: b.customerEmail || null,
+                propertyName: `DD: ${b.screen?.name || 'Unknown Screen'}`,
+                subPropertyName: b.package?.name || null,
+                checkIn: b.bookingDate,
+                checkOut: b.bookingDate,
+                nights: 0,
+                guests: b.numGuests || 1,
+                totalAmount: b.totalAmount || 0,
+                advanceAmount: b.advanceAmount || 0,
+                balanceAmount: b.amountToCollect || 0,
+                securityDeposit: 0,
+                status: b.status || "confirmed",
+                source: b.source || "website",
+                bookedAt: b.createdAt,
+                nightlyRate: 0,
+                basePrice: b.basePrice || 0,
+                extraPersonCharge: 0,
+                gstAmount: b.gstAmount || 0,
+                discountAmount: b.discountAmount || 0,
+                advancePaid: b.advancePaid || false,
+                advanceMethod: b.paymentMethod || null,
+                balanceCollected: (b.amountToCollect || 0) <= 0,
+                balanceMethod: null,
+                depositCollected: false,
+                depositMethod: null,
+                couponCode: b.coupon?.code || null,
+                extraGuests: [],
+                addons: b.addons || null,
+            }));
+            setDdBookings(mapped);
+        } catch (err) {
+            console.error("Failed to fetch DD bookings:", err);
+        } finally {
+            setDdLoading(false);
+        }
+    }, []);
 
-    const filteredBookings = bookings.filter(b => {
+    useEffect(() => {
+        if (viewTab === 'dd' || viewTab === 'all') fetchDdBookings();
+    }, [viewTab, fetchDdBookings]);
+
+    // Combine based on active tab
+    const sourceBookings = viewTab === 'staycation' ? bookings : viewTab === 'dd' ? ddBookings : [...bookings, ...ddBookings];
+
+    const filteredBookings = sourceBookings.filter(b => {
         const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase())
             || b.bookingRef.toLowerCase().includes(searchTerm.toLowerCase())
             || b.customerPhone.includes(searchTerm);
         const matchesProperty = propertyFilter === "All" || b.propertyName === propertyFilter;
-        return matchesSearch && matchesProperty;
+        const matchesStatus = statusFilter === "All" || b.status === statusFilter.toLowerCase().replace(" ", "_");
+        return matchesSearch && matchesProperty && matchesStatus;
     });
 
     const sortedBookings = [...filteredBookings].sort((a, b) => {
@@ -154,11 +210,30 @@ export default function StayBookingsPage() {
     const formatPrice = (n: number) => `₹${n.toLocaleString("en-IN")}`;
     const statusLabel = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
+    const properties = [...new Set(sourceBookings.map(b => b.propertyName))];
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Staycation Bookings</h1>
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Bookings</h1>
                 <p className="text-sm font-medium text-slate-500 mt-1">All bookings across all properties</p>
+            </div>
+
+            {/* Tab Switcher */}
+            <div className="flex bg-slate-100 rounded-xl p-1 w-fit">
+                {(["staycation", "dd", "all"] as const).map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setViewTab(tab)}
+                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                            viewTab === tab
+                                ? 'bg-white shadow text-purple-700'
+                                : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        {tab === 'staycation' ? 'Staycation' : tab === 'dd' ? 'Digital Diaries' : 'All'}
+                    </button>
+                ))}
             </div>
 
             {/* Filters */}

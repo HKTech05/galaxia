@@ -12,6 +12,8 @@ interface Coupon {
     maxUses: number;
     currentUses: number;
     expiryDate: string;
+    expiryHours?: number | null;
+    createdAt?: string;
 }
 
 interface UsageLog {
@@ -40,6 +42,8 @@ export default function CouponsClient() {
         maxUses: "",
         expiryDate: ""
     });
+    const [expiryType, setExpiryType] = useState<"date" | "hours">("date");
+    const [expiryHours, setExpiryHours] = useState("");
 
     // Fetch coupons from API
     const fetchCoupons = useCallback(async () => {
@@ -53,6 +57,8 @@ export default function CouponsClient() {
                 maxUses: c.maxUses,
                 currentUses: c.currentUses || 0,
                 expiryDate: new Date(c.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                expiryHours: c.expiryHours || null,
+                createdAt: c.createdAt,
             }));
             setCoupons(mapped);
         } catch (err) {
@@ -65,8 +71,16 @@ export default function CouponsClient() {
     useEffect(() => { fetchCoupons(); }, [fetchCoupons]);
 
     const handleCreateCoupon = async () => {
-        if (!newCoupon.code || !newCoupon.discount || !newCoupon.maxUses || !newCoupon.expiryDate) {
-            alert("Please fill all fields");
+        if (!newCoupon.code || !newCoupon.discount || !newCoupon.maxUses) {
+            alert("Please fill all required fields");
+            return;
+        }
+        if (expiryType === "date" && !newCoupon.expiryDate) {
+            alert("Please select an expiry date");
+            return;
+        }
+        if (expiryType === "hours" && !expiryHours) {
+            alert("Please enter expiry hours");
             return;
         }
         // Parse discount: "10%" → percentage/10, "₹500" or "500" → flat/500
@@ -86,11 +100,14 @@ export default function CouponsClient() {
                 discountType,
                 discountValue,
                 maxUses: parseInt(newCoupon.maxUses),
-                expiryDate: newCoupon.expiryDate
+                expiryDate: expiryType === "date" ? newCoupon.expiryDate : undefined,
+                expiryHours: expiryType === "hours" ? parseInt(expiryHours) : undefined,
             });
             await fetchCoupons();
             setIsCreateModalOpen(false);
             setNewCoupon({ code: "", discount: "", maxUses: "", expiryDate: "" });
+            setExpiryHours("");
+            setExpiryType("date");
         } catch (err) {
             console.error("Failed to create coupon:", err);
         }
@@ -194,7 +211,18 @@ export default function CouponsClient() {
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <span className="text-sm font-medium text-slate-600">{coupon.expiryDate}</span>
+                                                {coupon.expiryHours ? (
+                                                    <div>
+                                                        <span className="text-sm font-medium text-purple-600">{coupon.expiryHours}h from creation</span>
+                                                        {coupon.createdAt && (
+                                                            <p className="text-[10px] text-slate-400 mt-0.5">
+                                                                Expires: {new Date(new Date(coupon.createdAt).getTime() + coupon.expiryHours * 3600000).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-sm font-medium text-slate-600">{coupon.expiryDate}</span>
+                                                )}
                                             </td>
                                             <td className="p-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
@@ -287,17 +315,35 @@ export default function CouponsClient() {
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Expiry Date</label>
-                                <CustomDatePicker
-                                    date={newCoupon.expiryDate ? new Date(newCoupon.expiryDate + 'T00:00:00') : new Date()}
-                                    onDateChange={(d) => {
-                                        const y = d.getFullYear();
-                                        const m = String(d.getMonth() + 1).padStart(2, '0');
-                                        const day = String(d.getDate()).padStart(2, '0');
-                                        setNewCoupon({ ...newCoupon, expiryDate: `${y}-${m}-${day}` });
-                                    }}
-                                    openAbove
-                                />
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Expiry Type</label>
+                                <div className="flex bg-slate-100 rounded-lg p-1">
+                                    <button type="button" onClick={() => setExpiryType("date")} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${expiryType === 'date' ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>By Date</button>
+                                    <button type="button" onClick={() => setExpiryType("hours")} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${expiryType === 'hours' ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>By Hours</button>
+                                </div>
+                                {expiryType === "date" ? (
+                                    <CustomDatePicker
+                                        date={newCoupon.expiryDate ? new Date(newCoupon.expiryDate + 'T00:00:00') : new Date()}
+                                        onDateChange={(d) => {
+                                            const y = d.getFullYear();
+                                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                                            const day = String(d.getDate()).padStart(2, '0');
+                                            setNewCoupon({ ...newCoupon, expiryDate: `${y}-${m}-${day}` });
+                                        }}
+                                        openAbove
+                                    />
+                                ) : (
+                                    <div className="relative">
+                                        <CalendarDays size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={expiryHours}
+                                            onChange={e => setExpiryHours(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                                            placeholder="e.g. 24 (hours from now)"
+                                        />
+                                    </div>
+                                )}
                             </div>
                             <button
                                 onClick={handleCreateCoupon}

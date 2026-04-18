@@ -268,7 +268,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         total = total + (total * 0.05);
         // Add pet charges (₹600/pet flat)
         total += manualForm.pets * 600;
-        return Math.round(total);
+        return Math.round(Math.round(total) / 10) * 10;
     };
 
     const handleManualBookingSubmit = async () => {
@@ -1128,19 +1128,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     </label>
                                 </div>
                                 {manualDecoration && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 animate-in fade-in">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Cake Message</label>
-                                            <input value={manualCakeMsg} onChange={(e) => setManualCakeMsg(e.target.value)} maxLength={50} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="e.g. Happy Birthday!" />
-                                        </div>
+                                    <div className="grid grid-cols-1 gap-3 pl-2 animate-in fade-in">
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Occasion</label>
                                             <select value={manualOccasion} onChange={(e) => setManualOccasion(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none">
                                                 <option>Birthday</option>
                                                 <option>Anniversary</option>
-                                                <option>Proposal</option>
-                                                <option>Welcome Party</option>
-                                                <option>Other</option>
                                             </select>
                                         </div>
                                     </div>

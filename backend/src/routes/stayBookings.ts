@@ -430,11 +430,11 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
         if (paymentType === "balance") {
             updateData.balanceCollected = true;
             updateData.balanceMethod = method;
-            updateData.balanceCollectedAt = new Date();
+            updateData.balanceCollectedAt = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
         } else if (paymentType === "deposit") {
             updateData.depositCollected = true;
             updateData.depositMethod = method;
-            updateData.depositCollectedAt = new Date();
+            updateData.depositCollectedAt = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
         }
 
         if (Object.keys(updateData).length > 0) {

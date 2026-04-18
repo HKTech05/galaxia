@@ -417,6 +417,7 @@ model Coupon {
   maxUses       Int                 @map("max_uses")
   currentUses   Int                 @default(0) @map("current_uses")
   expiryDate    DateTime            @map("expiry_date") @db.Date
+  expiryHours   Int?                @map("expiry_hours")
   isActive      Boolean             @default(true) @map("is_active")
   createdBy     Int?                @map("created_by")
   createdAt     DateTime            @default(now()) @map("created_at")

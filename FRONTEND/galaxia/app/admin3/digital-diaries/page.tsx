@@ -1634,16 +1634,8 @@ export default function Admin1Dashboard() {
             </div>
 
             {/* Main Content Area: Calendar */}
-            <div className="flex items-start md:items-start justify-center gap-4 md:gap-8 lg:gap-12 w-full pt-4">
-                {/* Floating Navigation Arrows - Outsides */}
-                <button
-                    onClick={() => shiftDates(-1)}
-                    className="mt-[55px] bg-white shadow-md rounded-full p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition-all hidden md:block shrink-0"
-                >
-                    <ChevronLeft size={24} />
-                </button>
-
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col w-full flex-1">
+            <div className="flex items-start justify-center w-full pt-4">
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col w-full">
 
                     {/* Centered Date Header */}
                     <div className="bg-indigo-50/40 py-3.5 border-b border-slate-200 flex items-center justify-center">
@@ -1772,13 +1764,6 @@ export default function Admin1Dashboard() {
                         </div>
                     </div>
                 </div>
-
-                <button
-                    onClick={() => shiftDates(1)}
-                    className="mt-[55px] bg-white shadow-md rounded-full p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition-all hidden md:block shrink-0"
-                >
-                    <ChevronRight size={24} />
-                </button>
             </div>
         </div>
     );

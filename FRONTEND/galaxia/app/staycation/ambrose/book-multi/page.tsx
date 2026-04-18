@@ -352,8 +352,8 @@ export default function BookMultiPage() {
     const afterDiscount = grandSubtotal - discountAmount;
     const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
     const gst = Math.round((afterDiscount + addonTotal) * 0.05);
-    const grandTotal = afterDiscount + addonTotal + gst;
-    const payNow = Math.round(grandTotal * 0.8);
+    const grandTotal = Math.round((afterDiscount + addonTotal + gst) / 10) * 10;
+    const payNow = Math.round(Math.round(grandTotal * 0.8) / 10) * 10;
     const payAtVenue = grandTotal - payNow;
 
     // Calculate total security deposit for display
@@ -524,8 +524,8 @@ export default function BookMultiPage() {
                 const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
                 const itemSubtotal = getItemPrice(item) + getExtraCharges(item);
                 const itemGst = Math.round(itemSubtotal * 0.05);
-                const itemTotal = itemSubtotal + itemGst;
-                const itemPayNow = Math.round(itemTotal * 0.8);
+                const itemTotal = Math.round((itemSubtotal + itemGst) / 10) * 10;
+                const itemPayNow = Math.round(Math.round(itemTotal * 0.8) / 10) * 10;
                 const itemPayAtVenue = itemTotal - itemPayNow;
 
                 const isAmstel = item.property === "amstel-nest";
@@ -540,8 +540,8 @@ export default function BookMultiPage() {
                     const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
                     const perUnitSubtotal = perUnitPrice + perUnitExtra;
                     const perUnitGst = Math.round(perUnitSubtotal * 0.05);
-                    const perUnitTotal = perUnitSubtotal + perUnitGst;
-                    const perUnitPayNow = Math.round(perUnitTotal * 0.8);
+                    const perUnitTotal = Math.round((perUnitSubtotal + perUnitGst) / 10) * 10;
+                    const perUnitPayNow = Math.round(Math.round(perUnitTotal * 0.8) / 10) * 10;
                     const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
 
                     // Amstel Nest: put total tiered deposit on first booking, 0 on rest
@@ -1021,17 +1021,10 @@ export default function BookMultiPage() {
                                     {celebrationAddon && (
                                         <div className="mt-4 space-y-3 pl-7 animate-in fade-in">
                                             <div>
-                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Cake Message</label>
-                                                <input value={celebrationCakeMsg} onChange={(e) => setCelebrationCakeMsg(e.target.value)} maxLength={50} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none" placeholder="e.g. Happy Birthday!" />
-                                            </div>
-                                            <div>
                                                 <label className="block font-inter text-xs text-text-secondary mb-1.5">Occasion</label>
                                                 <select value={celebrationOccasion} onChange={(e) => setCelebrationOccasion(e.target.value)} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none">
                                                     <option>Birthday</option>
                                                     <option>Anniversary</option>
-                                                    <option>Proposal</option>
-                                                    <option>Welcome Party</option>
-                                                    <option>Other</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -1192,7 +1185,7 @@ export default function BookMultiPage() {
                                         }}
                                         className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
                                     >
-                                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                        <svg className="w-[18px] h-[18px]" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                                         Continue with Google
                                     </button>
                                     

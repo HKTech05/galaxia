@@ -1713,8 +1713,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
         return (
             <div className="space-y-6">
-                {/* Date View Selector */}
-                <div className="flex items-center justify-end">
+                {/* Date View Selector with Booking Counter */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-sm font-bold">
+                            {bookingsToDisplay.length} Booking{bookingsToDisplay.length !== 1 ? 's' : ''}
+                        </div>
+                        <span className="text-xs text-slate-400 font-medium">
+                            {Object.keys(screenGroups).length} screen{Object.keys(screenGroups).length !== 1 ? 's' : ''} booked
+                        </span>
+                    </div>
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
                 </div>
 

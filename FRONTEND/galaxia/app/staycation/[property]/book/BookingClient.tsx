@@ -390,7 +390,7 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
     const taxesAndFees = Math.round((subtotal - discountAmount) * property.gstPercent / 100);
-    const totalAmount = subtotal - discountAmount + addonTotal + taxesAndFees;
+    const totalAmount = Math.round((subtotal - discountAmount + addonTotal + taxesAndFees) / 10) * 10;
 
     const totalGuests = adults + kids;
     const maxGuests = selectedRoom?.maxPersons || property.maxPersons || 4;
@@ -401,8 +401,8 @@ export default function BookingClient({ property }: BookingClientProps) {
     const effectiveMaxAdults = Math.min(maxAdultsCap, maxGuests - kids);
     const effectiveMaxKids = Math.min(maxKidsCap, maxGuests - 1); // at least 1 adult required
 
-    // 80-20 Payment Split
-    const payNow = Math.round(totalAmount * 0.8);
+    // 80-20 Payment Split (rounded to nearest 10)
+    const payNow = Math.round(Math.round(totalAmount * 0.8) / 10) * 10;
     const payAtVenue = totalAmount - payNow;
 
     const handleRoomSelect = (room: any) => {
@@ -631,8 +631,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                 }
                 const unitAddon = i === 0 && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
                 const unitTaxes = Math.round((unitSubtotal - unitDiscount) * property.gstPercent / 100);
-                const unitTotal = unitSubtotal - unitDiscount + unitAddon + unitTaxes;
-                const unitPayNow = Math.round(unitTotal * 0.8);
+                const unitTotal = Math.round((unitSubtotal - unitDiscount + unitAddon + unitTaxes) / 10) * 10;
+                const unitPayNow = Math.round(Math.round(unitTotal * 0.8) / 10) * 10;
                 const unitPayAtVenue = unitTotal - unitPayNow;
 
                 const payload = {
@@ -813,7 +813,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                         }}
                                                         className="w-full bg-white text-black hover:bg-gray-100 flex items-center justify-center gap-3 py-[14px] px-4 rounded-md font-inter text-[15px] font-medium transition-colors border border-transparent hover:border-gray-200"
                                                     >
-                                                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                                        <svg className="w-[18px] h-[18px]" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                                                         Continue with Google
                                                     </button>
                                                     
@@ -1008,18 +1008,10 @@ export default function BookingClient({ property }: BookingClientProps) {
                                             {celebrationAddon && (
                                                 <div className="mt-4 space-y-3 pl-7 animate-in fade-in slide-in-from-top-2">
                                                     <div>
-                                                        <label className="block font-inter text-xs text-text-secondary mb-1.5">Cake Message</label>
-                                                        <input value={celebrationCakeMsg} onChange={(e) => setCelebrationCakeMsg(e.target.value)} maxLength={50} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary placeholder-text-muted focus:border-antique-gold focus:outline-none transition-colors" placeholder="e.g. Happy Birthday Neha!" />
-                                                        <p className="text-right text-[10px] text-text-muted font-inter mt-1">{celebrationCakeMsg.length}/50</p>
-                                                    </div>
-                                                    <div>
                                                         <label className="block font-inter text-xs text-text-secondary mb-1.5">Banner / Occasion</label>
                                                         <select value={celebrationOccasion} onChange={(e) => setCelebrationOccasion(e.target.value)} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none transition-colors">
                                                             <option>Birthday</option>
                                                             <option>Anniversary</option>
-                                                            <option>Proposal</option>
-                                                            <option>Welcome Party</option>
-                                                            <option>Other</option>
                                                         </select>
                                                     </div>
                                                 </div>

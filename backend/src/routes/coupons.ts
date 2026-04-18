@@ -22,10 +22,13 @@ router.get("/", authMiddleware, requireRole("owner", "developer"), async (_req, 
 // Allows same code if old coupon is exhausted or expired; old coupon stays visible
 router.post("/", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
-        const { code, discountType, discountValue, maxUses, expiryDate } = req.body;
+        const { code, discountType, discountValue, maxUses, expiryDate, expiryHours } = req.body;
 
-        if (!code || !discountType || !discountValue || !maxUses || !expiryDate) {
-            return res.status(400).json({ error: "All fields required" });
+        if (!code || !discountType || !discountValue || !maxUses) {
+            return res.status(400).json({ error: "Code, discount type, value, and max uses are required" });
+        }
+        if (!expiryDate && !expiryHours) {
+            return res.status(400).json({ error: "Either expiry date or expiry hours is required" });
         }
 
         // Check if there's an active, non-exhausted, non-expired coupon with same code
@@ -33,11 +36,18 @@ router.post("/", authMiddleware, requireRole("owner", "developer"), async (req: 
             where: {
                 code: code.toUpperCase(),
                 isActive: true,
-                expiryDate: { gte: new Date() },
             },
         });
-        // Filter in JS: only block if any has remaining uses
-        const hasActiveUsable = activeCoupons.some(c => c.currentUses < c.maxUses);
+        // Filter in JS: only block if any has remaining uses and is not expired
+        const now = new Date();
+        const hasActiveUsable = activeCoupons.some(c => {
+            if (c.currentUses >= c.maxUses) return false;
+            if (c.expiryHours) {
+                const expiresAt = new Date(c.createdAt.getTime() + c.expiryHours * 3600000);
+                return expiresAt > now;
+            }
+            return c.expiryDate >= now;
+        });
         if (hasActiveUsable) {
             return res.status(409).json({ error: "An active coupon with this code already exists" });
         }
@@ -48,7 +58,8 @@ router.post("/", authMiddleware, requireRole("owner", "developer"), async (req: 
                 discountType,
                 discountValue: parseFloat(discountValue),
                 maxUses: parseInt(maxUses),
-                expiryDate: new Date(expiryDate),
+                expiryDate: expiryDate ? new Date(expiryDate) : new Date('2099-12-31'),
+                expiryHours: expiryHours ? parseInt(expiryHours) : null,
                 createdBy: req.admin!.id,
             },
         });
@@ -141,13 +152,22 @@ router.post("/validate", async (req, res) => {
             where: {
                 code: code.toUpperCase(),
                 isActive: true,
-                expiryDate: { gte: new Date() },
             },
             orderBy: { createdAt: "desc" },
         });
 
-        // Pick the first one that still has uses remaining
-        const coupon = coupons.find(c => c.currentUses < c.maxUses);
+        const now = new Date();
+
+        // Pick the first one that still has uses remaining and is not expired
+        const coupon = coupons.find(c => {
+            if (c.currentUses >= c.maxUses) return false;
+            // Hours-based expiry takes priority
+            if (c.expiryHours) {
+                const expiresAt = new Date(c.createdAt.getTime() + c.expiryHours * 3600000);
+                return expiresAt > now;
+            }
+            return c.expiryDate >= now;
+        });
 
         if (!coupon) {
             // Check why it failed for a better error message
@@ -155,7 +175,13 @@ router.post("/validate", async (req, res) => {
             if (!any) return res.status(404).json({ error: "Coupon not found" });
             if (!any.isActive) return res.status(400).json({ error: "Coupon is inactive" });
             if (any.currentUses >= any.maxUses) return res.status(400).json({ error: "Coupon exhausted" });
-            if (new Date(any.expiryDate) < new Date()) return res.status(400).json({ error: "Coupon expired" });
+            // Check expiry
+            if (any.expiryHours) {
+                const expiresAt = new Date(any.createdAt.getTime() + any.expiryHours * 3600000);
+                if (expiresAt <= now) return res.status(400).json({ error: "Coupon expired" });
+            } else if (new Date(any.expiryDate) < now) {
+                return res.status(400).json({ error: "Coupon expired" });
+            }
             return res.status(400).json({ error: "Coupon not available" });
         }
 

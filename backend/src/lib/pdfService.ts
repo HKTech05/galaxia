@@ -1,4 +1,6 @@
 import PDFDocument from "pdfkit";
+import path from "path";
+import fs from "fs";
 
 // ───────────────────────────────────────────────────────────────
 //  Color Palette
@@ -38,21 +40,43 @@ const formatHour = (h: number) => {
 //  Shared PDF Helpers
 // ───────────────────────────────────────────────────────────────
 
-function drawHeader(doc: PDFKit.PDFDocument, subtitle: string) {
+function drawHeader(doc: PDFKit.PDFDocument, subtitle: string, isDD = false) {
     // Navy header background
-    doc.rect(0, 0, doc.page.width, 100).fill(NAVY);
+    doc.rect(0, 0, doc.page.width, isDD ? 110 : 100).fill(NAVY);
 
-    // GALAXIA
-    doc.fontSize(28).fill(GOLD).font("Helvetica-Bold");
-    doc.text("GALAXIA", 0, 30, { align: "center", width: doc.page.width });
+    if (isDD) {
+        // DD logo
+        try {
+            const logoPath = path.join(__dirname, "../../public/logos/digital-diaries.png");
+            if (fs.existsSync(logoPath)) {
+                doc.image(logoPath, doc.page.width / 2 - 15, 12, { width: 30, height: 30 });
+            }
+        } catch (_) { /* logo not found, skip */ }
 
-    // Gold divider
-    const cx = doc.page.width / 2;
-    doc.moveTo(cx - 30, 62).lineTo(cx + 30, 62).strokeColor(GOLD).lineWidth(1).stroke();
+        // DIGITAL DIARIES — large
+        doc.fontSize(22).fill(GOLD).font("Helvetica-Bold");
+        doc.text("DIGITAL DIARIES", 0, 48, { align: "center", width: doc.page.width, characterSpacing: 2 });
 
-    // Subtitle
-    doc.fontSize(8).fill(GOLD).font("Helvetica");
-    doc.text(subtitle.toUpperCase(), 0, 70, { align: "center", width: doc.page.width, characterSpacing: 3 });
+        // Gold divider
+        const cx = doc.page.width / 2;
+        doc.moveTo(cx - 30, 74).lineTo(cx + 30, 74).strokeColor(GOLD).lineWidth(1).stroke();
+
+        // GALAXIA — small
+        doc.fontSize(8).fill(GOLD).font("Helvetica");
+        doc.text("GALAXIA", 0, 82, { align: "center", width: doc.page.width, characterSpacing: 3 });
+    } else {
+        // GALAXIA
+        doc.fontSize(28).fill(GOLD).font("Helvetica-Bold");
+        doc.text("GALAXIA", 0, 30, { align: "center", width: doc.page.width });
+
+        // Gold divider
+        const cx = doc.page.width / 2;
+        doc.moveTo(cx - 30, 62).lineTo(cx + 30, 62).strokeColor(GOLD).lineWidth(1).stroke();
+
+        // Subtitle
+        doc.fontSize(8).fill(GOLD).font("Helvetica");
+        doc.text(subtitle.toUpperCase(), 0, 70, { align: "center", width: doc.page.width, characterSpacing: 3 });
+    }
 }
 
 function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
@@ -92,19 +116,27 @@ function drawInfoBlock(doc: PDFKit.PDFDocument, title: string, items: string[], 
     return y;
 }
 
-function drawFooter(doc: PDFKit.PDFDocument, y: number, location: string) {
+function drawFooter(doc: PDFKit.PDFDocument, y: number, location: string, isDD = false) {
     // Footer bar
     const footerY = Math.max(y + 30, doc.page.height - 80);
     doc.rect(0, footerY, doc.page.width, 80).fill(NAVY);
 
-    doc.fontSize(12).fill(GOLD).font("Helvetica-Bold")
-        .text("GALAXIA", 0, footerY + 15, { align: "center", width: doc.page.width, characterSpacing: 3 });
+    if (isDD) {
+        doc.fontSize(12).fill(GOLD).font("Helvetica-Bold")
+            .text("DIGITAL DIARIES", 0, footerY + 12, { align: "center", width: doc.page.width, characterSpacing: 2 });
+
+        doc.fontSize(7).fill("#888").font("Helvetica")
+            .text("GALAXIA", 0, footerY + 30, { align: "center", width: doc.page.width, characterSpacing: 2 });
+    } else {
+        doc.fontSize(12).fill(GOLD).font("Helvetica-Bold")
+            .text("GALAXIA", 0, footerY + 15, { align: "center", width: doc.page.width, characterSpacing: 3 });
+    }
 
     doc.fontSize(7).fill("#666").font("Helvetica")
-        .text(location, 0, footerY + 35, { align: "center", width: doc.page.width });
+        .text(location, 0, footerY + (isDD ? 42 : 35), { align: "center", width: doc.page.width });
 
     doc.fontSize(7).fill("#666").font("Helvetica")
-        .text("www.galaxiaresorts.com | This is an automated booking voucher.", 0, footerY + 48, { align: "center", width: doc.page.width });
+        .text("www.galaxiaresorts.com | This is an automated booking voucher.", 0, footerY + (isDD ? 55 : 48), { align: "center", width: doc.page.width });
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -126,10 +158,10 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         const endTime = formatHour(booking.startHour + booking.durationHours);
 
         // Header
-        drawHeader(doc, "Digital Diaries");
+        drawHeader(doc, "Digital Diaries", true);
 
         // Confirmed badge
-        let y = 120;
+        let y = 130;
         doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("BOOKING CONFIRMED", 50, y, { characterSpacing: 2 });
         y += 18;
         doc.fontSize(16).fill(TEXT_DARK).font("Helvetica").text(`Dear ${booking.customerName},`, 50, y);
@@ -202,7 +234,7 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         ], y);
 
         // Footer
-        drawFooter(doc, y, "Digital Diaries — Wadala, Mumbai, India");
+        drawFooter(doc, y, "Digital Diaries — Wadala, Mumbai, India", true);
 
         doc.end();
     });
