@@ -18,7 +18,7 @@ function getCreds(botType, fallbackPhoneId) {
   }
 
   return {
-    url: `https://graph.facebook.com/v18.0/${phoneId}/messages`,
+    url: `https://graph.facebook.com/v21.0/${phoneId}/messages`,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json"
@@ -30,12 +30,14 @@ function getCreds(botType, fallbackPhoneId) {
  * Send a plain text message.
  */
 async function sendText(to, text, creds) {
-  await axios.post(creds.url, {
+  console.log(`[WA-API] sendText to=${to}, url=${creds.url}, textLen=${text.length}`);
+  const resp = await axios.post(creds.url, {
     messaging_product: "whatsapp",
     to,
     type: "text",
     text: { body: text }
   }, { headers: creds.headers });
+  console.log(`[WA-API] sendText response:`, JSON.stringify(resp.data));
 }
 
 /**
@@ -89,7 +91,8 @@ async function sendList(to, bodyText, buttonLabel, options, creds) {
     description: opt.description ? opt.description.substring(0, 72) : ""
   }));
 
-  await axios.post(creds.url, {
+  console.log(`[WA-API] sendList to=${to}, rows=${rows.length}`);
+  const resp = await axios.post(creds.url, {
     messaging_product: "whatsapp",
     to,
     type: "interactive",
@@ -102,6 +105,7 @@ async function sendList(to, bodyText, buttonLabel, options, creds) {
       }
     }
   }, { headers: creds.headers });
+  console.log(`[WA-API] sendList response:`, JSON.stringify(resp.data));
 }
 
 /**

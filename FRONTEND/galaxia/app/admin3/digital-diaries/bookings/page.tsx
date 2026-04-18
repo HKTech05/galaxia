@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreVertical, ChevronRight, CheckCircle, XCircle, X, IndianRupee, Ban, Loader2 } from "lucide-react";
+import { Search, Filter, MoreVertical, ChevronRight, CheckCircle, XCircle, X, IndianRupee, Ban, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 
@@ -39,6 +39,9 @@ export default function Admin3DDBookingsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [screenFilter, setScreenFilter] = useState("All");
+    const [sourceFilter, setSourceFilter] = useState("All");
+    const [sortField, setSortField] = useState<"date" | "slot" | null>(null);
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [selectedBooking, setSelectedBooking] = useState<DDBooking | null>(null);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
@@ -89,11 +92,37 @@ export default function Admin3DDBookingsPage() {
 
     const screens = [...new Set(bookings.map(b => b.screen?.name).filter(Boolean))];
 
+    const toggleSort = (field: "date" | "slot") => {
+        if (sortField === field) {
+            setSortDir(prev => prev === "asc" ? "desc" : "asc");
+        } else {
+            setSortField(field);
+            setSortDir("desc");
+        }
+    };
+
+    const SortIcon = ({ field }: { field: "date" | "slot" }) => {
+        if (sortField !== field) return <ArrowUpDown size={12} className="ml-1 inline text-slate-400" />;
+        return sortDir === "asc" ? <ArrowUp size={12} className="ml-1 inline text-indigo-500" /> : <ArrowDown size={12} className="ml-1 inline text-indigo-500" />;
+    };
+
     const filteredBookings = bookings.filter(b => {
         const matchesSearch = b.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || `#DD-${b.id}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === "All" || b.status === statusFilter.toLowerCase();
         const matchesScreen = screenFilter === "All" || b.screen?.name === screenFilter;
-        return matchesSearch && matchesStatus && matchesScreen;
+        const matchesSource = sourceFilter === "All" || (sourceFilter === "Website" ? b.source === "website" : b.source === "reception");
+        return matchesSearch && matchesStatus && matchesScreen && matchesSource;
+    }).sort((a, b) => {
+        if (!sortField) return 0;
+        if (sortField === "date") {
+            const da = new Date(a.bookingDate).getTime();
+            const db = new Date(b.bookingDate).getTime();
+            return sortDir === "asc" ? da - db : db - da;
+        }
+        if (sortField === "slot") {
+            return sortDir === "asc" ? a.startHour - b.startHour : b.startHour - a.startHour;
+        }
+        return 0;
     });
 
     return (
@@ -131,6 +160,16 @@ export default function Admin3DDBookingsPage() {
                         </select>
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
+                    <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                        <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}
+                            className="pl-9 pr-8 py-2 w-full appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="All">All Sources</option>
+                            <option value="Website">Website</option>
+                            <option value="Walk-in">Walk-in</option>
+                        </select>
+                        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
+                    </div>
                     <div className="flex items-center bg-slate-100 rounded-lg p-1">
                         {["All", "Confirmed", "Cancelled"].map(status => (
                             <button key={status} onClick={() => setStatusFilter(status)}
@@ -149,7 +188,11 @@ export default function Admin3DDBookingsPage() {
                             <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</th>
                                 <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Screen</th>
-                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Slot</th>
+                                <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <button onClick={() => toggleSort("date")} className="flex items-center gap-0.5 hover:text-indigo-600 transition-colors">
+                                        Date & Slot <SortIcon field="date" />
+                                    </button>
+                                </th>
                                 <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Upfront</th>
                                 <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Remaining</th>
                                 <th className="px-3 md:px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Status</th>

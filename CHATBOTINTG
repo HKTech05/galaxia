@@ -1,0 +1,221 @@
+# WhatsApp Chatbot — Production Setup & Troubleshooting Guide
+
+> [!IMPORTANT]
+> This document covers the complete setup for connecting a WhatsApp Business Number to the Galaxia chatbot system. Use this when adding new numbers (Staycation 1, Staycation 2, etc.).
+
+---
+
+## Architecture
+
+```
+WhatsApp User → Meta Cloud API → Webhook POST → galaxiaresorts.com/bot/webhook
+                                                        ↓
+                                              Vercel API Route (Next.js)
+                                                        ↓
+                                              EC2:4000 (Main Backend Proxy)
+                                                        ↓
+                                              EC2:4001 (wa-chatbot PM2 service)
+                                                        ↓
+                                              Bot Logic → Meta Send API → Reply to User
+```
+
+### Key Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **Vercel API Route** | `FRONTEND/galaxia/app/bot/webhook/route.ts` | HTTPS webhook endpoint — forwards POST to EC2 |
+| **Main Backend Proxy** | `backend/src/index.ts` (line ~38) | Reverse proxies `/bot/*` to localhost:4001 |
+| **Bot Server** | `galaxia-whatsapp-bot23/galaxia-whatsapp-bot2/server.js` | Handles webhook, bot logic, DB, Meta API |
+| **WhatsApp Utils** | `galaxia-whatsapp-bot23/galaxia-whatsapp-bot2/utils/whatsapp.js` | Sends messages via Meta Graph API (v21.0) |
+| **Dashboard** | `FRONTEND/galaxia/app/chatbot/dashboard/page.tsx` | Admin chat dashboard |
+| **Bot Menu Data** | `galaxia-whatsapp-bot23/galaxia-whatsapp-bot2/data/faqMenu.js` | All bot responses & menu structure |
+| **PDF Service** | `backend/src/lib/pdfService.ts` | Generates booking confirmation PDFs |
+| **WA Booking Service** | `backend/src/lib/whatsappService.ts` | Sends booking confirmation via WhatsApp |
+
+---
+
+## Step-by-Step Setup for a New WhatsApp Number
+
+### 1. Meta Developer Dashboard
+
+1. Go to [Meta for Developers](https://developers.facebook.com)
+2. Open your app → **WhatsApp** → **Configuration**
+3. Set **Callback URL**: `https://galaxiaresorts.com/bot/webhook`
+4. Set **Verify Token**: `galaxia_verify_token`
+5. Click **Verify and Save**
+6. Subscribe to **`messages`** field (toggle ON)
+
+### 2. CRITICAL: Subscribe the App to the WABA
+
+> [!CAUTION]
+> **This is the most important step.** Without this, Meta will NEVER deliver webhooks to your server, even if the webhook URL and messages subscription are configured correctly. This was the root cause of the original failure.
+
+Run this script on EC2 (replace WABA_ID with your actual ID):
+
+```bash
+cd ~/galaxia/wa-chatbot
+node -r dotenv/config -e "
+const https = require('https');
+const TOKEN = process.env.WHATSAPP_TOKEN;
+const WABA_ID = '1498006532042145'; // Your WhatsApp Business Account ID
+
+const data = 'access_token=' + TOKEN;
+const req = https.request({
+  hostname: 'graph.facebook.com',
+  path: '/v21.0/' + WABA_ID + '/subscribed_apps',
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': data.length }
+}, (res) => {
+  let d=''; res.on('data',c=>d+=c); res.on('end',()=>console.log('Result:', d));
+});
+req.write(data); req.end();
+"
+```
+
+**Expected output:** `{"success": true}`
+
+#### How to Find the WABA ID
+
+- Go to Meta Developer Dashboard → WhatsApp → **API Setup** page
+- The WABA ID appears on the page
+- Current WABA ID: **`1498006532042145`**
+
+### 3. Environment Variables
+
+#### wa-chatbot `.env` (port 4001):
+```env
+PORT=4001
+WHATSAPP_PHONE_ID=1117204771469353         # DD Phone Number ID
+WHATSAPP_TOKEN=EAAa...ZAgZDZD               # DD System User Token
+WHATSAPP_CELEBRATION_PHONE_ID=1117204771469353
+WHATSAPP_CELEBRATION_TOKEN=EAAa...ZAgZDZD
+VERIFY_TOKEN=galaxia_verify_token
+DATABASE_URL=postgres://galaxia_admin:...
+```
+
+#### Backend `.env` (port 4000) — add these for new numbers:
+```env
+DD_WHATSAPP_TOKEN=<same as above>
+DD_WHATSAPP_PHONE_NUMBER_ID=1117204771469353
+# For future staycation numbers:
+# STAY1_WHATSAPP_TOKEN=<token>
+# STAY1_WHATSAPP_PHONE_NUMBER_ID=<phone_id>
+# STAY2_WHATSAPP_TOKEN=<token>
+# STAY2_WHATSAPP_PHONE_NUMBER_ID=<phone_id>
+```
+
+### 4. Deploy Bot Changes
+
+```bash
+cd ~/galaxia && git pull
+cd wa-chatbot
+cp ~/galaxia/galaxia-whatsapp-bot23/galaxia-whatsapp-bot2/server.js .
+cp ~/galaxia/galaxia-whatsapp-bot23/galaxia-whatsapp-bot2/data/faqMenu.js data/
+pm2 restart wa-chatbot
+pm2 logs wa-chatbot --lines 5
+```
+
+### 5. Deploy Backend Changes
+
+```bash
+cd ~/galaxia/backend
+git pull
+npm run build
+pm2 restart galaxia-api
+```
+
+### 6. Test End-to-End
+
+```bash
+# Test webhook directly on EC2
+curl -s -X POST http://localhost:4001/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"entry":[{"changes":[{"value":{"messages":[{"from":"919999999999","type":"text","text":{"body":"hi"}}],"metadata":{"phone_number_id":"1117204771469353"}}}]}]}'
+
+# Test via Vercel (full chain)
+curl -s -X POST https://galaxiaresorts.com/bot/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"entry":[{"changes":[{"value":{"messages":[{"from":"919999999999","type":"text","text":{"body":"hi"}}],"metadata":{"phone_number_id":"1117204771469353"}}}]}]}'
+```
+
+---
+
+## Troubleshooting Checklist
+
+### Bot not receiving messages
+
+| # | Check | Command | Expected |
+|---|-------|---------|----------|
+| 1 | Bot server running? | `pm2 status` | wa-chatbot: online |
+| 2 | Bot healthy? | `curl http://localhost:4001/webhook?hub.mode=subscribe&hub.verify_token=galaxia_verify_token&hub.challenge=OK` | `OK` |
+| 3 | Backend proxying? | `pm2 logs galaxia-api --lines 10` | Shows `[Bot Proxy] POST /webhook` |
+| 4 | **WABA subscribed?** | Run subscribe script above | `{"success": true}` |
+| 5 | Messages field on? | Check Meta Dashboard → Webhook fields | Toggle = blue |
+
+### Admin replies not delivered
+
+| Check | Fix |
+|-------|-----|
+| Wrong `phone_number_id` in DB | Admin send uses `process.env.WHATSAPP_PHONE_ID` as fallback |
+| Token expired | Generate new System User token in Meta Business Manager |
+
+---
+
+## Booking Confirmation Flow (Digital Diaries)
+
+When a DD booking is created:
+1. **Email** sent via `sendDDBookingEmail()` 
+2. **WhatsApp** message sent via `sendDDBookingConfirmation()` with clickable PDF link
+3. PDF link: `https://galaxiaresorts.com/api/bookings/dd/voucher/{bookingRef}`
+4. PDF opens **inline** in browser (viewable), downloads as `Galaxia-DD-{ref}.pdf`
+
+---
+
+## Changes Made in This Session
+
+### 1. Webhook Fix (Root Cause)
+- **Problem:** App was not subscribed to WABA — Meta never delivered webhooks
+- **Fix:** `POST /{WABA_ID}/subscribed_apps` via Graph API
+- **File:** One-time API call, no code change needed
+
+### 2. Admin Reply Fix
+- **Problem:** Wrong `phone_number_id` stored in session caused 404s
+- **Fix:** Admin send now uses `process.env.WHATSAPP_PHONE_ID` as primary
+- **File:** `server.js` line ~280
+
+### 3. Talk to Human Auto-Flag
+- When user clicks "Talk to Human", bot auto-sets `is_human_active = true`
+- Dashboard immediately shows the chat as needing support
+- **File:** `server.js` line ~163
+
+### 4. Dashboard UI Overhaul
+- Replaced `+` letter avatars with `accounticon.png` + soft pastel backgrounds
+- Each phone number gets a deterministic color (10 soft hues)
+- Replaced 🤖/👤 emojis with `BOT` (orange) / `HUMAN` (green pulsing) text badges
+- Human-mode chats pinned to top of sidebar
+- **Files:** `page.tsx`, `chatbot.css`, `public/accounticon.png`
+
+### 5. Bot Text Updates
+- "FAQs & Support" → "FAQs & Live Chat Support"
+- Added bot disclaimer: "I'm an automated assistant..."
+- **File:** `faqMenu.js`
+
+### 6. PDF Voucher
+- Changed `Content-Disposition` from `attachment` to `inline` so PDF opens in browser
+- Downloads still save as `.pdf`
+- **File:** `ddBookings.ts` line ~857
+
+---
+
+## Adding a New WhatsApp Number (Quick Checklist)
+
+- [ ] Get Phone Number ID and Access Token from Meta Business Manager
+- [ ] Add to wa-chatbot `.env` on EC2
+- [ ] Add to backend `.env` on EC2 (`STAY1_WHATSAPP_*` etc.)
+- [ ] Add to `PHONE_NUMBERS` in dashboard `page.tsx`
+- [ ] Update `getCreds()` in wa-chatbot `utils/whatsapp.js`
+- [ ] Set webhook URL: `https://galaxiaresorts.com/bot/webhook` in Meta Dashboard
+- [ ] **Run `subscribed_apps` API call** for the WABA
+- [ ] Subscribe to `messages` field in Meta Dashboard
+- [ ] Restart: `pm2 restart wa-chatbot && pm2 restart galaxia-api`
+- [ ] Test: Send "Hi" from the new number

@@ -350,7 +350,7 @@ const staticMenu = {
     message: "🍽️ *Food & Beverages*\n\n" +
              "🎉 *Celebration Package* includes a complimentary snacks hamper (Popcorn, Dry Snacks, Juice, Chocolates & Water).\n\n" +
              "🎥 *Movie Time* includes Dry Snacks, Popcorn, Juice, Chocolates & Water.\n\n" +
-             "🍕 *Additional Food Menu (Satkar):*\nWe offer a variety of snacks and beverages at the venue. Outside food is *not allowed*.\n\n" +
+             "🍕 *Additional Food Menu:*\nWe offer a variety of snacks and beverages at the venue. Outside food is *not allowed*.\n\n" +
              "📄 *Download our full food menu here:*\nhttps://galaxiaresorts.com/menus/DigitalDiariesMenu.pdf",
     options: [ BACK_TO_MENU ]
   },

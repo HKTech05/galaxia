@@ -1743,10 +1743,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <p className="text-sm font-bold text-emerald-800">{ddSelectedBooking.upfrontAmt}</p>
                                         <p className="text-[10px] text-emerald-600 mt-0.5">via {ddSelectedBooking.upfrontMode}</p>
                                     </div>
-                                    <div className={`p-3 rounded-lg border ${ddSelectedBooking.remainingStatus === "Paid" ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
-                                        <p className={`text-[10px] font-bold uppercase ${ddSelectedBooking.remainingStatus === "Paid" ? 'text-emerald-600' : 'text-amber-600'}`}>Remaining (50%)</p>
-                                        <p className={`text-sm font-bold ${ddSelectedBooking.remainingStatus === "Paid" ? 'text-emerald-800' : 'text-amber-800'}`}>{ddSelectedBooking.remainingAmt}</p>
-                                        <p className={`text-[10px] mt-0.5 ${ddSelectedBooking.remainingStatus === "Paid" ? 'text-emerald-600' : 'text-amber-600'}`}>{ddSelectedBooking.remainingStatus}</p>
+                                    <div className={`p-3 rounded-lg border ${ddSelectedBooking.remainingStatus !== "Pending" ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                                        <p className={`text-[10px] font-bold uppercase ${ddSelectedBooking.remainingStatus !== "Pending" ? 'text-emerald-600' : 'text-amber-600'}`}>Remaining (50%)</p>
+                                        <p className={`text-sm font-bold ${ddSelectedBooking.remainingStatus !== "Pending" ? 'text-emerald-800' : 'text-amber-800'}`}>{ddSelectedBooking.remainingAmt}</p>
+                                        <p className={`text-[10px] mt-0.5 ${ddSelectedBooking.remainingStatus !== "Pending" ? 'text-emerald-600' : 'text-amber-600'}`}>{ddSelectedBooking.remainingStatus}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 pt-2">
@@ -1800,8 +1800,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 <p className="text-[10px] text-slate-400">{b.upfrontMode}</p>
                                             </td>
                                             <td className="px-6 py-3">
-                                                <p className={`text-sm font-bold ${b.remainingStatus === "Paid" ? 'text-emerald-700' : 'text-amber-700'}`}>{b.remainingAmt}</p>
-                                                <p className={`text-[10px] ${b.remainingStatus === "Paid" ? 'text-emerald-500' : 'text-amber-500'}`}>{b.remainingStatus}</p>
+                                                <p className={`text-sm font-bold ${b.remainingStatus !== "Pending" ? 'text-emerald-700' : 'text-amber-700'}`}>{b.remainingAmt}</p>
+                                                <p className={`text-[10px] ${b.remainingStatus !== "Pending" ? 'text-emerald-500' : 'text-amber-500'}`}>{b.remainingStatus}</p>
                                             </td>
                                             <td className="px-6 py-3 hidden sm:table-cell">
                                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${b.status === "Confirmed" ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>

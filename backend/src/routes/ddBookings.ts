@@ -529,7 +529,6 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
                 amountPaid: { increment: collectAmount },
                 amountToCollect: { decrement: collectAmount },
                 paymentStatus: "paid",
-                paymentMethod: method,
             },
         });
 
