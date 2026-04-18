@@ -283,17 +283,34 @@ router.post("/", async (req, res) => {
 // GET /api/bookings/dd — List DD bookings (admin)
 router.get("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { status, screenId, date, startDate, endDate } = req.query;
+        const { status, screenId, date, startDate, endDate, filterBy } = req.query;
 
         const where: any = {};
         if (status) where.status = status;
         if (screenId) where.screenId = parseInt(screenId as string);
+
+        // Determine which date field to filter on
+        const dateField = filterBy === 'bookedAt' ? 'bookedAt' : 'bookingDate';
+
         if (date) {
-            where.bookingDate = new Date((date as string) + 'T12:00:00');
+            if (dateField === 'bookedAt') {
+                // For bookedAt, use start-of-day to end-of-day range
+                const dayStart = new Date((date as string) + 'T00:00:00');
+                const dayEnd = new Date((date as string) + 'T23:59:59.999');
+                where.bookedAt = { gte: dayStart, lte: dayEnd };
+            } else {
+                where.bookingDate = new Date((date as string) + 'T12:00:00');
+            }
         } else if (startDate || endDate) {
-            where.bookingDate = {};
-            if (startDate) where.bookingDate.gte = new Date((startDate as string) + 'T12:00:00');
-            if (endDate) where.bookingDate.lte = new Date((endDate as string) + 'T12:00:00');
+            if (dateField === 'bookedAt') {
+                where.bookedAt = {};
+                if (startDate) where.bookedAt.gte = new Date((startDate as string) + 'T00:00:00');
+                if (endDate) where.bookedAt.lte = new Date((endDate as string) + 'T23:59:59.999');
+            } else {
+                where.bookingDate = {};
+                if (startDate) where.bookingDate.gte = new Date((startDate as string) + 'T12:00:00');
+                if (endDate) where.bookingDate.lte = new Date((endDate as string) + 'T12:00:00');
+            }
         }
 
         // Role-based filtering

@@ -136,6 +136,7 @@ export default function StayBookingsPage() {
             const params = new URLSearchParams();
             if (dateFrom) params.set('startDate', dateFrom);
             if (dateTo) params.set('endDate', dateTo);
+            params.set('filterBy', 'bookedAt');
             const data = await api.get(`/bookings/dd?${params.toString()}`);
             const mapped: StayBooking[] = (Array.isArray(data) ? data : []).map((b: any) => ({
                 id: b.id,

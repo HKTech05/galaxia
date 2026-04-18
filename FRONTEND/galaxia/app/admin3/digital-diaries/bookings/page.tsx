@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreVertical, ChevronRight, CheckCircle, XCircle, X, IndianRupee, Ban, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Filter, MoreVertical, ChevronRight, CheckCircle, XCircle, X, IndianRupee, Ban, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar as CalendarIcon, ArrowRightLeft } from "lucide-react";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 
@@ -22,6 +22,7 @@ interface DDBooking {
     paymentStatus: string;
     source: string;
     status: string;
+    bookingRef: string;
 }
 
 function formatSlot(startHour: number, durationHours: number): string {
@@ -46,6 +47,12 @@ export default function Admin3DDBookingsPage() {
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [detailBooking, setDetailBooking] = useState<DDBooking | null>(null);
+
+    // Transfer states
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [transferDate, setTransferDate] = useState("");
+    const [transferHour, setTransferHour] = useState("10");
+    const [transferLoading, setTransferLoading] = useState(false);
 
     useEffect(() => { fetchBookings(); }, []);
 
@@ -72,6 +79,28 @@ export default function Admin3DDBookingsPage() {
             alert("Failed to record payment");
         } finally {
             setActionLoading(false);
+        }
+    };
+
+    // Transfer booking handler
+    const handleTransfer = async () => {
+        if (!detailBooking || !transferDate || !transferHour) return;
+        setTransferLoading(true);
+        try {
+            const result = await api.post(`/bookings/dd/${detailBooking.id}/transfer`, {
+                newDate: transferDate,
+                newStartHour: parseInt(transferHour),
+            });
+            alert(`Booking transferred to ${new Date(transferDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${parseInt(transferHour) > 12 ? parseInt(transferHour) - 12 : parseInt(transferHour)}:00 ${parseInt(transferHour) >= 12 ? "PM" : "AM"}.\n\nNew Ref: ${result.newBooking.bookingRef}\n₹400 transfer fee added.`);
+            setShowTransferModal(false);
+            setTransferDate("");
+            setTransferHour("10");
+            setDetailBooking(null);
+            fetchBookings();
+        } catch (err: any) {
+            alert(err.message || "Failed to transfer booking");
+        } finally {
+            setTransferLoading(false);
         }
     };
 
@@ -382,7 +411,77 @@ export default function Admin3DDBookingsPage() {
                                     {detailBooking.status === 'no_show' && <Ban size={14} />}
                                     {detailBooking.status === 'no_show' ? 'No Show' : detailBooking.status === 'transferred' ? 'Transferred' : detailBooking.status.charAt(0).toUpperCase() + detailBooking.status.slice(1)}
                                 </span>
+                                {detailBooking.status === 'no_show' && (
+                                    <button
+                                        onClick={() => setShowTransferModal(true)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all cursor-pointer"
+                                    >
+                                        <ArrowRightLeft size={13} /> Transfer
+                                    </button>
+                                )}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Transfer Booking Modal */}
+            {showTransferModal && detailBooking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
+                        <h3 className="text-xl font-black text-slate-800 mb-1">Transfer Booking</h3>
+                        <p className="text-sm text-slate-500 mb-1">Reschedule <strong>{detailBooking.customerName}</strong>&apos;s booking to a new date/time.</p>
+                        <p className="text-xs text-amber-600 font-bold mb-5 flex items-center gap-1.5 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                            <IndianRupee size={13} /> ₹400 transfer fee will be added to pending payment
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Date</label>
+                                <input
+                                    type="date"
+                                    value={transferDate}
+                                    onChange={(e) => setTransferDate(e.target.value)}
+                                    min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })()}
+                                    className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Start Time</label>
+                                <select
+                                    value={transferHour}
+                                    onChange={(e) => setTransferHour(e.target.value)}
+                                    className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
+                                >
+                                    {Array.from({ length: 13 }, (_, i) => i + 10).map((h) => (
+                                        <option key={h} value={h}>
+                                            {h > 12 ? h - 12 : h}:00 {h >= 12 ? "PM" : "AM"}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
+                                <p><strong>Screen:</strong> {detailBooking.screen?.name || '—'}</p>
+                                <p><strong>Duration:</strong> {detailBooking.durationHours} hours</p>
+                                <p><strong>Package:</strong> {detailBooking.package?.name || '—'}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-5">
+                            <button
+                                onClick={() => setShowTransferModal(false)}
+                                className="flex-1 py-3 text-sm font-bold text-slate-500 border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleTransfer}
+                                disabled={!transferDate || transferLoading}
+                                className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {transferLoading ? "Transferring..." : "Confirm Transfer"}
+                            </button>
                         </div>
                     </div>
                 </div>
