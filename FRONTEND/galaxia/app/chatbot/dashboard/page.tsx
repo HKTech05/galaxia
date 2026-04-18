@@ -517,14 +517,23 @@ export default function ChatbotDashboard() {
                                 <p style={{ fontSize: 13, fontWeight: 600 }}>No conversations found</p>
                             </div>
                         ) : getFiltered(tab).map(s => {
-                            // Deterministic soft hue per phone number
-                            const AVATAR_COLORS = ["#e8d5ef", "#d5e8ef", "#efdfd5", "#d5efdb", "#efe5d5", "#d5ddef", "#efd5d5", "#d5efe8", "#e5d5ef", "#efeed5"];
-                            const colorIdx = s.sessionId.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length;
-                            const avatarBg = AVATAR_COLORS[colorIdx];
+                            // Deterministic dark hue per phone number (WhatsApp dark mode style)
+                            const AVATAR_PAIRS = [
+                                { bg: "#1a3a36", fg: "#00d26a" },
+                                { bg: "#1a2d44", fg: "#53bdeb" },
+                                { bg: "#3d3524", fg: "#ffd279" },
+                                { bg: "#3d302a", fg: "#ffb8a0" },
+                                { bg: "#2a1a3d", fg: "#c4a0ff" },
+                                { bg: "#1a3636", fg: "#00bfa5" },
+                                { bg: "#3d1a2a", fg: "#ff8fa3" },
+                                { bg: "#2d3a1a", fg: "#b8e655" },
+                            ];
+                            const colorIdx = s.sessionId.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_PAIRS.length;
+                            const { bg: avatarBg, fg: avatarFg } = AVATAR_PAIRS[colorIdx];
                             return (
                                 <div key={s.id} className={`cb-chat-item ${activeChat === s.id ? "active" : ""}`} onClick={() => openChat(s.id)}>
-                                    <div className="cb-avatar" style={{ background: avatarBg, border: "none", padding: 8 }}>
-                                        <img src="/accounticon.png" alt="" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.55 }} />
+                                    <div className="cb-avatar" style={{ background: avatarBg, border: "none", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill={avatarFg}><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
                                     </div>
                                     <div className="cb-chat-info">
                                         <div className="cb-chat-top">
