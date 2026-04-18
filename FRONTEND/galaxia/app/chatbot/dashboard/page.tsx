@@ -589,11 +589,11 @@ export default function ChatbotDashboard() {
                                         ))}
                                     </div>
                                     <div className="cb-mode-toggle" onClick={toggleMode}>
-                                        <span className="cb-mode-lbl bot">🤖</span>
+                                        <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(245,158,11,0.12)", color: "#f59e0b" }}>BOT</span>
                                         <div className={`cb-toggle-track ${active.mode === "human" ? "human-mode" : "bot-mode"}`}>
                                             <div className="cb-toggle-thumb" />
                                         </div>
-                                        <span className="cb-mode-lbl human">👤</span>
+                                        <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(0,168,132,0.12)", color: "#00a884" }}>HUMAN</span>
                                     </div>
                                 </div>
                             </div>
