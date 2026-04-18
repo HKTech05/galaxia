@@ -28,6 +28,12 @@ export default function BulkBookingsTab() {
     const [bulkError, setBulkError] = useState("");
     const [discountAmount, setDiscountAmount] = useState(0);
 
+    // Coupon state
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [couponError, setCouponError] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
+
     // Sub-property data for cottage type filtering
     const [subProperties, setSubProperties] = useState<SubProperty[]>([]);
     const [amstelPropertyId, setAmstelPropertyId] = useState<number | null>(null);
@@ -152,6 +158,16 @@ export default function BulkBookingsTab() {
 
     const pricing = calculateBulkPrice();
 
+    // Coupon discount calculation
+    let couponDiscount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.discountType === "percentage") {
+            couponDiscount = Math.round(pricing.subtotal * appliedCoupon.discountValue / 100);
+        } else {
+            couponDiscount = Number(appliedCoupon.discountValue);
+        }
+    }
+
     const handleBulkSubmit = async () => {
         if (!bulkForm.customerName || !bulkForm.phone || !bulkForm.checkIn || !bulkForm.checkOut) {
             setBulkError("Please fill all required fields.");
@@ -172,7 +188,8 @@ export default function BulkBookingsTab() {
                 throw new Error(`Only ${eligibleIds.length} ${bulkForm.cottageType} cottage(s) available, but ${bulkForm.numCottages} requested.`);
             }
 
-            const discountedTotal = pricing.total - discountAmount;
+            const totalDiscount = discountAmount + couponDiscount;
+            const discountedTotal = pricing.total - totalDiscount;
             const finalTotal = Math.max(0, discountedTotal);
             const perCottageTotal = Math.round(finalTotal / bulkForm.numCottages);
             const perCottageGst = Math.round(pricing.gst / bulkForm.numCottages);
@@ -197,12 +214,17 @@ export default function BulkBookingsTab() {
                     advancePaid: true,
                     advanceMethod: bulkForm.paymentMethod,
                     source: "admin-bulk",
+                    couponCode: appliedCoupon?.code || null,
                     notes: `Admin Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}.`.trim(),
                 });
             }
-            setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}! ${discountAmount > 0 ? `(₹${discountAmount.toLocaleString('en-IN')} discount applied)` : ""}`);
+            const totalDiscApplied = discountAmount + couponDiscount;
+            setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}! ${totalDiscApplied > 0 ? `(₹${totalDiscApplied.toLocaleString('en-IN')} discount applied)` : ""}`);
             setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: 1, cottageType: "standard", guestsPerCottage: 2, paymentMethod: "UPI" });
             setDiscountAmount(0);
+            setCouponCode("");
+            setAppliedCoupon(null);
+            setCouponError("");
         } catch (err: any) {
             setBulkError(err?.message || "Failed to create bulk booking.");
         } finally {
@@ -441,6 +463,48 @@ export default function BulkBookingsTab() {
                                 <div className="flex justify-between"><span className="text-slate-500">GST (5%)</span><span className="text-slate-800">₹{pricing.gst.toLocaleString("en-IN")}</span></div>
                                 <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-black"><span className="text-slate-800">Grand Total</span><span className="text-emerald-600">₹{pricing.total.toLocaleString("en-IN")}</span></div>
 
+                                {/* Coupon Code */}
+                                <div className="border border-dashed border-emerald-200 rounded-xl p-3 bg-emerald-50/50 mt-3">
+                                    <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1.5 block">🎟 Coupon Code</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={couponCode}
+                                            onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                                            placeholder="Enter code"
+                                            disabled={!!appliedCoupon}
+                                            className="flex-1 pl-3 pr-2 py-2 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500/20 outline-none bg-white disabled:opacity-50"
+                                        />
+                                        {appliedCoupon ? (
+                                            <button onClick={() => { setAppliedCoupon(null); setCouponCode(""); setCouponError(""); }} className="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors">Remove</button>
+                                        ) : (
+                                            <button
+                                                disabled={couponLoading || !couponCode.trim()}
+                                                onClick={async () => {
+                                                    if (!couponCode.trim()) return;
+                                                    setCouponLoading(true);
+                                                    setCouponError("");
+                                                    try {
+                                                        const result = await api.post("/coupons/validate", { code: couponCode });
+                                                        if (result && result.valid) {
+                                                            setAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: Number(result.discountValue) });
+                                                        } else {
+                                                            setCouponError("Invalid or expired coupon");
+                                                        }
+                                                    } catch (err: any) {
+                                                        setCouponError(err?.message || "Invalid coupon");
+                                                    } finally { setCouponLoading(false); }
+                                                }}
+                                                className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                            >{couponLoading ? "..." : "Apply"}</button>
+                                        )}
+                                    </div>
+                                    {couponError && <p className="text-[10px] text-red-500 font-medium mt-1">{couponError}</p>}
+                                    {appliedCoupon && (
+                                        <p className="text-[10px] text-emerald-700 font-bold mt-1">✅ "{appliedCoupon.code}" — {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`} (−₹{couponDiscount.toLocaleString('en-IN')})</p>
+                                    )}
+                                </div>
+
                                 {/* Discount Option */}
                                 <div className="border border-dashed border-purple-200 rounded-xl p-3 bg-purple-50/50 mt-3">
                                     <label className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-1.5 block">Admin Discount (₹)</label>
@@ -468,15 +532,15 @@ export default function BulkBookingsTab() {
                                 </div>
 
                                 {/* Discounted Total */}
-                                {discountAmount > 0 && (
+                                {(discountAmount > 0 || couponDiscount > 0) && (
                                     <div className="flex justify-between text-base font-black pt-1">
                                         <span className="text-purple-700">After Discount</span>
-                                        <span className="text-purple-600">₹{Math.max(0, pricing.total - discountAmount).toLocaleString("en-IN")}</span>
+                                        <span className="text-purple-600">₹{Math.max(0, pricing.total - discountAmount - couponDiscount).toLocaleString("en-IN")}</span>
                                     </div>
                                 )}
 
                                 <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mt-2">
-                                    <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(Math.max(0, pricing.total - discountAmount) / bulkForm.numCottages).toLocaleString("en-IN")}</p>
+                                    <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(Math.max(0, pricing.total - discountAmount - couponDiscount) / bulkForm.numCottages).toLocaleString("en-IN")}</p>
                                     <p className="text-[10px] text-amber-600 mt-0.5">Security deposit: ₹3,000 per cottage (separate)</p>
                                 </div>
                             </div>
