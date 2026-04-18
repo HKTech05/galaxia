@@ -95,7 +95,7 @@ app.post("/api/contact", async (req, res) => {
 });
 
 // Proxy /bot/* to the WhatsApp chatbot service running on port 4001
-app.all("/bot/*", (req: express.Request, res: express.Response) => {
+app.use("/bot", (req: express.Request, res: express.Response) => {
     const http = require("http");
     const targetPath = req.originalUrl.replace(/^\/bot/, "") || "/";
     const proxyReq = http.request({
