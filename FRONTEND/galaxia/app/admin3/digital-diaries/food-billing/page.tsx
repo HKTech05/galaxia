@@ -1,15 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { IndianRupee, CheckCircle, Loader2, UtensilsCrossed } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { IndianRupee, CheckCircle, Loader2, UtensilsCrossed, ChevronDown, User } from "lucide-react";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
+import CustomDatePicker from "../../../components/CustomDatePicker";
 
 export default function FoodBillingPage() {
-    const [date, setDate] = useState(() => {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    });
+    const [dateObj, setDateObj] = useState(() => new Date());
+    const date = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+
+    // Guest dropdown state
+    const [guestDropOpen, setGuestDropOpen] = useState(false);
+    const [screenDropOpen, setScreenDropOpen] = useState(false);
+    const guestDropRef = useRef<HTMLDivElement>(null);
+    const screenDropRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (guestDropRef.current && !guestDropRef.current.contains(e.target as Node)) setGuestDropOpen(false);
+            if (screenDropRef.current && !screenDropRef.current.contains(e.target as Node)) setScreenDropOpen(false);
+        };
+        if (guestDropOpen || screenDropOpen) document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [guestDropOpen, screenDropOpen]);
     const [guestName, setGuestName] = useState("");
     const [screenName, setScreenName] = useState("");
     const [satkarAmount, setSatkarAmount] = useState("");
@@ -147,39 +161,67 @@ export default function FoodBillingPage() {
             {/* Form Card */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 max-w-2xl">
                 <div className="space-y-6">
-                    {/* Date Picker */}
+                    {/* Date Picker — Custom */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Date</label>
-                        <input
-                            type="date"
-                            value={date}
-                            onChange={e => setDate(e.target.value)}
-                            className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
-                        />
+                        <CustomDatePicker date={dateObj} onDateChange={setDateObj} className="w-full !py-3 !text-sm" />
                     </div>
 
-                    {/* Guest Selection */}
+                    {/* Guest Selection — Custom Dropdown */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Guest</label>
                         {loadingBookings ? (
                             <div className="flex items-center gap-2 text-slate-400 py-3"><Loader2 className="animate-spin" size={16} /> Loading bookings…</div>
                         ) : guestOptions.length > 0 ? (
-                            <select
-                                value={guestName}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    setGuestName(val);
-                                    const opt = guestOptions.find(o => o.label === val);
-                                    if (opt) setScreenName(opt.screen);
-                                }}
-                                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors bg-white"
-                            >
-                                <option value="">Select a guest</option>
-                                {guestOptions.map((opt, i) => (
-                                    <option key={i} value={opt.label}>{opt.label}</option>
-                                ))}
-                                <option value="__custom__">+ Enter manually</option>
-                            </select>
+                            <div className="relative" ref={guestDropRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setGuestDropOpen(!guestDropOpen)}
+                                    className={`w-full flex items-center justify-between border-2 rounded-xl px-4 py-3 text-sm font-medium bg-white transition-all cursor-pointer ${
+                                        guestDropOpen ? "border-indigo-400 ring-2 ring-indigo-600/10" : "border-slate-200 hover:border-slate-300"
+                                    }`}
+                                >
+                                    <span className={guestName && guestName !== "__custom__" ? "text-slate-800 font-semibold" : "text-slate-400"}>
+                                        {guestName && guestName !== "__custom__" ? guestName : "Select a guest"}
+                                    </span>
+                                    <ChevronDown size={16} className={`text-slate-400 transition-transform ${guestDropOpen ? "rotate-180" : ""}`} />
+                                </button>
+                                {guestDropOpen && (
+                                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                                        <div className="max-h-64 overflow-y-auto py-1">
+                                            <p className="px-4 pt-2.5 pb-1.5 text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Today&apos;s Bookings</p>
+                                            {guestOptions.map((opt, i) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setGuestName(opt.label);
+                                                        setScreenName(opt.screen);
+                                                        setGuestDropOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2.5 ${
+                                                        guestName === opt.label
+                                                            ? "bg-indigo-50 text-indigo-700 font-bold"
+                                                            : "text-slate-700 hover:bg-slate-50"
+                                                    }`}
+                                                >
+                                                    <User size={14} className="text-slate-400 shrink-0" />
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                            <div className="border-t border-slate-100 mt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setGuestName("__custom__"); setGuestDropOpen(false); }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                                >
+                                                    + Enter manually
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <p className="text-sm text-slate-400 font-medium py-2">No bookings for this date. Enter guest details manually below.</p>
                         )}
@@ -192,17 +234,37 @@ export default function FoodBillingPage() {
                                     className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
                                     placeholder="Guest Name"
                                 />
-                                <select
-                                    value={screenName}
-                                    onChange={e => setScreenName(e.target.value)}
-                                    className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors bg-white"
-                                >
-                                    <option value="">Select Screen</option>
-                                    <option value="Park N Watch">Park N Watch</option>
-                                    <option value="Cine Love">Cine Love</option>
-                                    <option value="Sandy Screen">Sandy Screen</option>
-                                    <option value="Baywatch">Baywatch</option>
-                                </select>
+                                <div className="relative" ref={screenDropRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setScreenDropOpen(!screenDropOpen)}
+                                        className={`w-full flex items-center justify-between border-2 rounded-xl px-4 py-3 text-sm font-medium bg-white transition-all cursor-pointer ${
+                                            screenDropOpen ? "border-indigo-400 ring-2 ring-indigo-600/10" : "border-slate-200 hover:border-slate-300"
+                                        }`}
+                                    >
+                                        <span className={screenName ? "text-slate-800 font-semibold" : "text-slate-400"}>
+                                            {screenName || "Select Screen"}
+                                        </span>
+                                        <ChevronDown size={16} className={`text-slate-400 transition-transform ${screenDropOpen ? "rotate-180" : ""}`} />
+                                    </button>
+                                    {screenDropOpen && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                                            <div className="py-1">
+                                                <p className="px-4 pt-2.5 pb-1.5 text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Screens</p>
+                                                {["Park N Watch", "Cine Love", "Sandy Screen", "Baywatch"].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        type="button"
+                                                        onClick={() => { setScreenName(s); setScreenDropOpen(false); }}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                                                            screenName === s ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-700 hover:bg-slate-50"
+                                                        }`}
+                                                    >{s}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
