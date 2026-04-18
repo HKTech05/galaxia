@@ -4,10 +4,17 @@ import { authMiddleware, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
+// Helper: find DD employee
+async function getDdEmployee() {
+    const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
+    if (!ddProperty) return null;
+    return prisma.employee.findFirst({ where: { propertyId: ddProperty.id, isActive: true } });
+}
+
 // POST /api/food-bills — Create a new food bill
 router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { date, ddBookingId, guestName, screenName, satkarAmount, paymentMethod, upiProofUrl, upiProofKey } = req.body;
+        const { date, ddBookingId, guestName, screenName, satkarAmount, satkarPaymentMethod, paymentMethod, upiProofUrl, upiProofKey } = req.body;
 
         if (!date || !guestName || !screenName || !satkarAmount || !paymentMethod) {
             return res.status(400).json({ error: "date, guestName, screenName, satkarAmount, paymentMethod required" });
@@ -15,6 +22,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
 
         const satkarAmt = parseInt(satkarAmount);
         const guestBillAmount = Math.round(satkarAmt * 1.25); // 25% markup
+        const satkarMethod = satkarPaymentMethod || "cash";
 
         const foodBill = await prisma.foodBill.create({
             data: {
@@ -24,6 +32,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                 screenName,
                 satkarAmount: satkarAmt,
                 guestBillAmount,
+                satkarPaymentMethod: satkarMethod,
                 paymentMethod,
                 upiProofUrl: upiProofUrl || null,
                 upiProofKey: upiProofKey || null,
@@ -31,51 +40,62 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
             },
         });
 
-        // --- Cash flow logic ---
-        // Find DD employee for cash/UPI logging
-        const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
-        if (ddProperty) {
-            const ddEmployee = await prisma.employee.findFirst({
-                where: { propertyId: ddProperty.id, isActive: true },
-            });
+        const ddEmployee = await getDdEmployee();
+        if (ddEmployee) {
+            // ── Satkar side (payment OUT) ──
+            // Cash paid to Satkar → log as cash expense in Cash Management
+            if (satkarMethod === "cash") {
+                await prisma.cashTransaction.create({
+                    data: {
+                        employeeId: ddEmployee.id,
+                        bookingRef: `FB-${foodBill.id}-SAT`,
+                        guestName: `Satkar (${guestName})`,
+                        amount: satkarAmt,
+                        transactionType: "food_expense",
+                        note: `Paid to Satkar for ${guestName} (${screenName}) — ₹${satkarAmt}`,
+                    },
+                });
+                // Satkar cash expense reduces employee cash
+                await prisma.employee.update({
+                    where: { id: ddEmployee.id },
+                    data: { cashCollected: { decrement: satkarAmt } },
+                });
+            }
+            // UPI paid to Satkar → stored in DB only, NOT in UPI management
 
-            if (ddEmployee) {
-                // 1. Satkar payment (cash only — UPI to satkar is just stored in DB, no UPI management entry)
-                if (paymentMethod === "cash") {
-                    // Guest paid cash → log cash collection for guest bill
-                    await prisma.cashTransaction.create({
-                        data: {
-                            employeeId: ddEmployee.id,
-                            bookingRef: `FB-${foodBill.id}`,
-                            guestName,
-                            amount: guestBillAmount,
-                            transactionType: "food_collection",
-                            note: `Food bill collection from ${guestName} (${screenName}) — Satkar: ₹${satkarAmt}, Guest: ₹${guestBillAmount}`,
-                        },
-                    });
+            // ── Guest side (collection IN) ──
+            if (paymentMethod === "cash") {
+                // Guest paid cash → log cash collection
+                await prisma.cashTransaction.create({
+                    data: {
+                        employeeId: ddEmployee.id,
+                        bookingRef: `FB-${foodBill.id}-GUEST`,
+                        guestName,
+                        amount: guestBillAmount,
+                        transactionType: "food_collection",
+                        note: `Food bill collection from ${guestName} (${screenName}) — ₹${guestBillAmount}`,
+                    },
+                });
+                await prisma.employee.update({
+                    where: { id: ddEmployee.id },
+                    data: { cashCollected: { increment: guestBillAmount } },
+                });
+            }
 
-                    // Update employee cash collected
-                    await prisma.employee.update({
-                        where: { id: ddEmployee.id },
-                        data: { cashCollected: { increment: guestBillAmount } },
-                    });
-                }
-
-                // 2. If guest paid UPI → log to UPI management
-                if (paymentMethod === "upi") {
-                    await prisma.upiPayment.create({
-                        data: {
-                            employeeId: ddEmployee.id,
-                            bookingRef: `FB-${foodBill.id}`,
-                            guestName,
-                            amount: guestBillAmount,
-                            paymentType: "food_collection",
-                            proofImageUrl: upiProofUrl || null,
-                            proofImageKey: upiProofKey || null,
-                            note: `Food bill UPI from ${guestName} (${screenName})`,
-                        },
-                    });
-                }
+            if (paymentMethod === "upi") {
+                // Guest paid UPI → log to UPI management
+                await prisma.upiPayment.create({
+                    data: {
+                        employeeId: ddEmployee.id,
+                        bookingRef: `FB-${foodBill.id}-GUEST`,
+                        guestName,
+                        amount: guestBillAmount,
+                        paymentType: "food_collection",
+                        proofImageUrl: upiProofUrl || null,
+                        proofImageKey: upiProofKey || null,
+                        note: `Food bill UPI from ${guestName} (${screenName})`,
+                    },
+                });
             }
         }
 
@@ -153,39 +173,43 @@ router.get("/summary", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
-// DELETE /api/food-bills/:id — Delete a food bill
+// DELETE /api/food-bills/:id — Delete a food bill (reverse all logs)
 router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
         const bill = await prisma.foodBill.findUnique({ where: { id } });
         if (!bill) return res.status(404).json({ error: "Food bill not found" });
 
-        // Reverse cash transaction if it was cash
-        if (bill.paymentMethod === "cash") {
-            const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
-            if (ddProperty) {
-                const ddEmployee = await prisma.employee.findFirst({
-                    where: { propertyId: ddProperty.id, isActive: true },
+        const ddEmployee = await getDdEmployee();
+        if (ddEmployee) {
+            // Reverse Satkar cash expense
+            if (bill.satkarPaymentMethod === "cash") {
+                await prisma.cashTransaction.deleteMany({
+                    where: { bookingRef: `FB-${id}-SAT`, employeeId: ddEmployee.id },
                 });
-                if (ddEmployee) {
-                    // Delete the cash transaction
-                    await prisma.cashTransaction.deleteMany({
-                        where: { bookingRef: `FB-${id}`, employeeId: ddEmployee.id },
-                    });
-                    // Reverse employee cash
-                    await prisma.employee.update({
-                        where: { id: ddEmployee.id },
-                        data: { cashCollected: { decrement: bill.guestBillAmount } },
-                    });
-                }
+                await prisma.employee.update({
+                    where: { id: ddEmployee.id },
+                    data: { cashCollected: { increment: bill.satkarAmount } },
+                });
             }
-        }
 
-        // Delete UPI payment record if UPI
-        if (bill.paymentMethod === "upi") {
-            await prisma.upiPayment.deleteMany({
-                where: { bookingRef: `FB-${id}` },
-            });
+            // Reverse Guest cash collection
+            if (bill.paymentMethod === "cash") {
+                await prisma.cashTransaction.deleteMany({
+                    where: { bookingRef: `FB-${id}-GUEST`, employeeId: ddEmployee.id },
+                });
+                await prisma.employee.update({
+                    where: { id: ddEmployee.id },
+                    data: { cashCollected: { decrement: bill.guestBillAmount } },
+                });
+            }
+
+            // Reverse Guest UPI
+            if (bill.paymentMethod === "upi") {
+                await prisma.upiPayment.deleteMany({
+                    where: { bookingRef: `FB-${id}-GUEST` },
+                });
+            }
         }
 
         await prisma.foodBill.delete({ where: { id } });

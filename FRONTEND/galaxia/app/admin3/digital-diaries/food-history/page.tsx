@@ -12,6 +12,7 @@ interface FoodBill {
     screenName: string;
     satkarAmount: number;
     guestBillAmount: number;
+    satkarPaymentMethod: string;
     paymentMethod: string;
     upiProofUrl: string | null;
     createdAt: string;
@@ -149,7 +150,8 @@ export default function FoodHistoryPage() {
                                 <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Screen</th>
                                 <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Satkar</th>
                                 <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Guest Bill</th>
-                                <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Method</th>
+                                <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Satkar Pay</th>
+                                <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Guest Pay</th>
                                 <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Created By</th>
                                 <th className="px-4 md:px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right"></th>
                             </tr>
@@ -178,6 +180,15 @@ export default function FoodHistoryPage() {
                                     </td>
                                     <td className="px-4 md:px-6 py-3">
                                         <p className="text-sm font-bold text-emerald-700">₹{bill.guestBillAmount.toLocaleString("en-IN")}</p>
+                                    </td>
+                                    <td className="px-4 md:px-6 py-3 hidden md:table-cell">
+                                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                                            bill.satkarPaymentMethod === "cash"
+                                                ? "bg-red-50 text-red-700 border-red-200"
+                                                : "bg-purple-50 text-purple-700 border-purple-200"
+                                        }`}>
+                                            {bill.satkarPaymentMethod}
+                                        </span>
                                     </td>
                                     <td className="px-4 md:px-6 py-3 hidden md:table-cell">
                                         <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${

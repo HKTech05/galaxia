@@ -13,6 +13,7 @@ export default function FoodBillingPage() {
     const [guestName, setGuestName] = useState("");
     const [screenName, setScreenName] = useState("");
     const [satkarAmount, setSatkarAmount] = useState("");
+    const [satkarPaymentMethod, setSatkarPaymentMethod] = useState("cash");
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [upiProofFile, setUpiProofFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -78,6 +79,7 @@ export default function FoodBillingPage() {
                 guestName: guestName.includes(" - ") ? guestName.split(" - ")[0] : guestName,
                 screenName,
                 satkarAmount: parseInt(satkarAmount),
+                satkarPaymentMethod,
                 paymentMethod,
                 upiProofUrl,
                 upiProofKey,
@@ -89,6 +91,7 @@ export default function FoodBillingPage() {
             setGuestName("");
             setScreenName("");
             setPaymentMethod("cash");
+            setSatkarPaymentMethod("cash");
             setUpiProofFile(null);
 
             setTimeout(() => setSuccess(false), 3000);
@@ -238,6 +241,28 @@ export default function FoodBillingPage() {
                             </p>
                         </div>
                     )}
+
+                    {/* Satkar Payment Method */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Paid to Satkar via</label>
+                        <div className="bg-slate-50 rounded-xl p-1 flex border border-slate-200">
+                            <button
+                                type="button"
+                                onClick={() => setSatkarPaymentMethod("cash")}
+                                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${satkarPaymentMethod === "cash" ? "bg-white shadow text-red-700" : "text-slate-500"}`}
+                            >
+                                Cash
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSatkarPaymentMethod("upi")}
+                                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${satkarPaymentMethod === "upi" ? "bg-white shadow text-purple-700" : "text-slate-500"}`}
+                            >
+                                UPI
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1 font-medium">{satkarPaymentMethod === "cash" ? "Cash payment will be logged in Cash Management" : "UPI payment will be stored in records only"}</p>
+                    </div>
 
                     {/* Payment Method */}
                     <div>

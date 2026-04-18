@@ -644,7 +644,8 @@ model FoodBill {
   screenName      String    @map("screen_name") @db.VarChar(100)
   satkarAmount    Int       @map("satkar_amount")
   guestBillAmount Int       @map("guest_bill_amount")
-  paymentMethod   String    @map("payment_method") @db.VarChar(30) // cash or upi
+  satkarPaymentMethod String @default("cash") @map("satkar_payment_method") @db.VarChar(30)
+  paymentMethod   String    @map("payment_method") @db.VarChar(30) // guest payment: cash or upi
   upiProofUrl     String?   @map("upi_proof_url")
   upiProofKey     String?   @map("upi_proof_key") @db.VarChar(500)
   createdBy       Int?      @map("created_by")
