@@ -11,12 +11,13 @@ import { sendDDBookingConfirmation as sendDDWhatsApp } from "../lib/whatsappServ
 const router = Router();
 
 // Generate booking ref: DD-YYYYMMDD-NNN
-async function generateDdRef(): Promise<string> {
+// Accepts an optional Prisma client (e.g. transaction client `tx`) for consistency inside transactions
+async function generateDdRef(client: any = prisma): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
     const prefix = `DD-${dateStr}-`;
     // Find the highest existing ref number for today (handles deleted bookings)
-    const latest = await prisma.ddBooking.findFirst({
+    const latest = await client.ddBooking.findFirst({
         where: { bookingRef: { startsWith: prefix } },
         orderBy: { bookingRef: "desc" },
         select: { bookingRef: true },
@@ -170,7 +171,7 @@ router.post("/", async (req, res) => {
                 encryptedEmail = customerEmail ? encrypt(customerEmail) : null;
             }
 
-            const bookingRef = await generateDdRef();
+            const bookingRef = await generateDdRef(tx);
 
             const created = await tx.ddBooking.create({
                 data: {

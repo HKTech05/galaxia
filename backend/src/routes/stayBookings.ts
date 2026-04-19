@@ -11,10 +11,11 @@ import { sendStaycationBookingConfirmation } from "../lib/whatsappService";
 const router = Router();
 
 // Generate booking ref: ST-YYYYMMDD-NNN
-async function generateStayRef(): Promise<string> {
+// Accepts an optional Prisma client (e.g. transaction client `tx`) for consistency inside transactions
+async function generateStayRef(client: any = prisma): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const count = await prisma.staycationBooking.count({
+    const count = await client.staycationBooking.count({
         where: {
             bookedAt: {
                 gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
@@ -252,7 +253,7 @@ router.post("/", async (req, res) => {
                 }
             }
 
-            const bookingRef = await generateStayRef();
+            const bookingRef = await generateStayRef(tx);
 
             // Encrypt sensitive data
             const encryptedPhone = encrypt(customerPhone);
