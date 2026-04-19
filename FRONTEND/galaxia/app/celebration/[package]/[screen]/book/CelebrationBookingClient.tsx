@@ -517,9 +517,34 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             if (addBalloons) addons.push({ type: "balloons", price: getAddonPrice('balloons') });
             if (addLedBanner) addons.push({ type: "ledBanner", price: getAddonPrice('led_banner'), message: ledBannerType });
             if (addCake) addons.push({ type: "cake", value: cakeMessage, price: getAddonPrice('cake') });
-            // Build booking payload BEFORE payment (for webhook fallback)
+
+            // Initiate Razorpay payment
             const customerName = `${firstName} ${lastName}`.trim();
-            const bookingPayload: any = {
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: email || undefined,
+                    customerPhone: phone,
+                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
+                    notes: {
+                        bookingType: "dd",
+                        screen: screen.name,
+                        package: pkg.name,
+                        date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
+                    },
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
+            const payload = {
                 screenId: dbScreenId,
                 packageId: dbPackageId,
                 bookingDate: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
@@ -537,6 +562,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 totalAmount: subtotal,
                 amountPaid: payNow,
                 paymentMethod: "online",
+                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 addons,
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
@@ -544,77 +570,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 specialRequests: specialRequests || null,
             };
 
-            // Initiate Razorpay payment
-            let paymentResult;
-            try {
-                paymentResult = await initiateRazorpayPayment({
-                    amount: payNow,
-                    customerName,
-                    customerEmail: email || undefined,
-                    customerPhone: phone,
-                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
-                    notes: {
-                        bookingType: "dd",
-                        screen: screen.name,
-                        package: pkg.name,
-                        date: bookingPayload.bookingDate,
-                    },
-                    pendingBooking: {
-                        bookingType: "dd",
-                        payload: bookingPayload,
-                    },
-                });
-            } catch (payErr: any) {
-                if (payErr?.message === "Payment cancelled by user") {
-                    setBookingError("");
-                    setIsSubmitting(false);
-                    return;
-                }
-                throw payErr;
-            }
-
-            // Set payment details after successful payment
-            const payload = {
-                ...bookingPayload,
-                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
-            };
-
-            // Retry booking creation up to 3 times with exponential backoff.
-            // Backend has idempotency guard — retries with the same Razorpay payment ID
-            // will return the existing booking instead of creating duplicates.
-            let result: any = null;
-            let lastBookingError: any = null;
-            const MAX_RETRIES = 3;
-            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                try {
-                    result = await api.post("/bookings/dd", payload);
-                    lastBookingError = null;
-                    break; // Success — exit retry loop
-                } catch (retryErr: any) {
-                    lastBookingError = retryErr;
-                    // Don't retry 409 conflicts — those are genuine slot conflicts
-                    if (retryErr?.message?.includes("409") || retryErr?.message?.includes("overlap")) {
-                        break;
-                    }
-                    // Wait before retrying: 1s, 2s, 4s
-                    if (attempt < MAX_RETRIES) {
-                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
-                    }
-                }
-            }
-
-            // If booking creation failed after all retries
-            if (lastBookingError || !result) {
-                const payId = paymentResult.razorpay_payment_id;
-                if (lastBookingError?.message?.includes("409") || lastBookingError?.message?.includes("overlap")) {
-                    setBookingError(`This time slot is no longer available. Your payment (${payId}) has been captured — please contact us on WhatsApp for an immediate refund.`);
-                    setCurrentStep(1);
-                } else {
-                    setBookingError(`Your payment was successful (Payment ID: ${payId}), but we encountered an issue creating your booking. Please contact us immediately on WhatsApp with your Payment ID for assistance. Do NOT make another payment.`);
-                }
-                setIsSubmitting(false);
-                return;
-            }
+            const result = await api.post("/bookings/dd", payload);
 
             // Upload ID proofs to S3 (fire-and-forget)
             if (result?.id) {

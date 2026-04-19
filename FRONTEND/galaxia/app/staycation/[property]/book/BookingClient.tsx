@@ -584,38 +584,6 @@ export default function BookingClient({ property }: BookingClientProps) {
         try {
             const customerName = `${formData.firstName} ${formData.lastName}`.trim();
 
-            // Build pending booking payload for webhook fallback (first unit)
-            const pendingStayPayload: any = {
-                customerName,
-                customerPhone: formData.phone,
-                customerEmail: formData.email,
-                propertyId: dbPropertyId,
-                subPropertyId: selectedRoom
-                    ? (dbSubPropertyMap[selectedRoom.id] || dbSubPropertyMap[selectedRoom.id.split('/').pop() || ''] || undefined)
-                    : undefined,
-                numGuests: adults + kids,
-                numPets: pets,
-                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
-                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
-                nightlyRate,
-                basePrice: roomPrice,
-                extraPersonCharge: extraCharges,
-                gstAmount: taxesAndFees,
-                totalAmount: totalAmount,
-                advanceAmount: payNow,
-                balanceAmount: payAtVenue,
-                securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
-                advancePaid: true,
-                source: "website",
-                couponCode: appliedCoupon?.code || null,
-                addons: (() => {
-                    const arr: any[] = [];
-                    if (celebrationAddon) arr.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
-                    if (isAmbrose || isAmstelNest) arr.push({ name: 'Food Preference', foodType });
-                    return arr.length > 0 ? arr : null;
-                })(),
-            };
-
             // Initiate Razorpay payment for the advance amount
             let paymentResult;
             try {
@@ -628,12 +596,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                     notes: {
                         bookingType: "staycation",
                         property: property.name,
-                        checkIn: pendingStayPayload.checkInDate || '',
-                        checkOut: pendingStayPayload.checkOutDate || '',
-                    },
-                    pendingBooking: {
-                        bookingType: "staycation",
-                        payload: pendingStayPayload,
+                        checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
+                        checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
                     },
                 });
             } catch (payErr: any) {
@@ -702,39 +666,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     })(),
                 };
 
-                // Retry booking creation up to 3 times with exponential backoff.
-                // Backend has idempotency guard — retries with the same Razorpay payment ID
-                // will return the existing booking instead of creating duplicates.
-                let result: any = null;
-                let lastBookingError: any = null;
-                const MAX_RETRIES = 3;
-                for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                    try {
-                        result = await api.post("/bookings/staycation", payload);
-                        lastBookingError = null;
-                        break;
-                    } catch (retryErr: any) {
-                        lastBookingError = retryErr;
-                        if (retryErr?.message?.includes("409")) break; // Don't retry genuine conflicts
-                        if (attempt < MAX_RETRIES) {
-                            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
-                        }
-                    }
-                }
-
-                // If booking creation failed after all retries
-                if (lastBookingError || !result) {
-                    const payId = paymentResult.razorpay_payment_id;
-                    if (lastBookingError?.message?.includes("409")) {
-                        setBookingError(`This property is already booked for your dates. Your payment (${payId}) has been captured — please contact us on WhatsApp for an immediate refund.`);
-                        setCurrentStep(1);
-                    } else {
-                        setBookingError(`Your payment was successful (Payment ID: ${payId}), but we encountered an issue creating your booking. Please contact us immediately on WhatsApp with your Payment ID for assistance. Do NOT make another payment.`);
-                    }
-                    setIsSubmitting(false);
-                    return;
-                }
-
+                const result = await api.post("/bookings/staycation", payload);
                 if (i === 0) firstResult = result;
             }
 
