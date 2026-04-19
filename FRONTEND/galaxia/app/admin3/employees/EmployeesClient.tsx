@@ -61,6 +61,8 @@ export default function EmployeesClient() {
     const [editingEmployee, setEditingEmployee] = useState<number | null>(null);
     const [editName, setEditName] = useState("");
     const [viewEmployeeId, setViewEmployeeId] = useState<number | null>(null);
+    const [cashDateFrom, setCashDateFrom] = useState("");
+    const [cashDateTo, setCashDateTo] = useState("");
 
     const handlePropertyToggle = (prop: string) => {
         if (selectedProperties.includes(prop)) {
@@ -123,13 +125,21 @@ export default function EmployeesClient() {
     };
 
     // 4. Dedicated PDF Download
-    const downloadEmployeePDF = async () => {
+    const downloadEmployeePDF = async (filterByRange = false) => {
         if (!viewEmployeeId) return;
 
         const emp = employees.find(e => e.id === viewEmployeeId);
         if (!emp) return;
 
-        const empLogs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+        let empLogs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+        if (filterByRange && (cashDateFrom || cashDateTo)) {
+            empLogs = empLogs.filter(log => {
+                const d = new Date(log.createdAt);
+                if (cashDateFrom && d < new Date(cashDateFrom + 'T00:00:00')) return false;
+                if (cashDateTo && d > new Date(cashDateTo + 'T23:59:59')) return false;
+                return true;
+            });
+        }
 
         const { default: jsPDF } = await import("jspdf");
         const { default: autoTable } = await import("jspdf-autotable");
@@ -185,7 +195,18 @@ export default function EmployeesClient() {
     // Filter employees based on selected properties
     const filteredEmployees = employees.filter(emp => selectedProperties.includes(emp.location));
     const activeEmployee = employees.find(e => e.id === viewEmployeeId);
-    const activeEmployeeLogs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+    const activeEmployeeLogs = (() => {
+        let logs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+        if (cashDateFrom || cashDateTo) {
+            logs = logs.filter(log => {
+                const d = new Date(log.createdAt);
+                if (cashDateFrom && d < new Date(cashDateFrom + 'T00:00:00')) return false;
+                if (cashDateTo && d > new Date(cashDateTo + 'T23:59:59')) return false;
+                return true;
+            });
+        }
+        return logs;
+    })();
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300 pb-12">
@@ -318,13 +339,21 @@ export default function EmployeesClient() {
                             </div>
                             <div className="flex items-center gap-3">
                                 <button
-                                    onClick={downloadEmployeePDF}
+                                    onClick={() => downloadEmployeePDF(false)}
                                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
                                 >
-                                    <Download size={16} /> Export Logs
+                                    <Download size={16} /> Export All Logs
                                 </button>
+                                {(cashDateFrom || cashDateTo) && (
                                 <button
-                                    onClick={() => setViewEmployeeId(null)}
+                                    onClick={() => downloadEmployeePDF(true)}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
+                                >
+                                    <Download size={16} /> Export Range
+                                </button>
+                                )}
+                                <button
+                                    onClick={() => { setViewEmployeeId(null); setCashDateFrom(''); setCashDateTo(''); }}
                                     className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors"
                                 >
                                     <X size={20} />
@@ -346,6 +375,17 @@ export default function EmployeesClient() {
                             </div>
 
                             <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><FileText size={18} className="text-indigo-500" /> Lifetime Transactions</h3>
+
+                            {/* Date Range Filter */}
+                            <div className="flex items-center gap-3 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Date Range</span>
+                                <input type="date" value={cashDateFrom} onChange={e => setCashDateFrom(e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                <span className="text-xs text-slate-400">to</span>
+                                <input type="date" value={cashDateTo} onChange={e => setCashDateTo(e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                {(cashDateFrom || cashDateTo) && (
+                                    <button onClick={() => { setCashDateFrom(''); setCashDateTo(''); }} className="text-xs font-bold text-slate-400 hover:text-red-500 px-2 py-1 rounded hover:bg-red-50 transition-colors">Clear</button>
+                                )}
+                            </div>
                             <div className="border border-slate-200 rounded-xl overflow-hidden hidden sm:block">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-slate-100 text-xs uppercase text-slate-600 font-bold border-b border-slate-200">

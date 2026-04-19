@@ -507,21 +507,33 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [calendarProperty, setCalendarProperty] = useState("Heavenly Villa");
     const [calendarViewMonth, setCalendarViewMonth] = useState(new Date());
     const [calendarBookedDays, setCalendarBookedDays] = useState<number[]>([]);
+    const [calendarDayCounts, setCalendarDayCounts] = useState<Record<number, number>>({});
+    const [calendarCapacity, setCalendarCapacity] = useState(1);
     // Sync blackout property key with calendar property on initial load
     useEffect(() => { if (!blackoutPropertyKey) setBlackoutPropertyKey("Heavenly Villa"); }, []);
 
     // Fetch booked days for the live calendar (separate from blackout calendar)
     useEffect(() => {
         const fetchCalendarBookings = async () => {
-            if (!calendarProperty || propertyList.length === 0) { setCalendarBookedDays([]); return; }
+            if (!calendarProperty || propertyList.length === 0) { setCalendarBookedDays([]); setCalendarDayCounts({}); setCalendarCapacity(1); return; }
             const { propertyId, subPropertyId } = resolvePropertyIds(calendarProperty);
-            if (!propertyId) { setCalendarBookedDays([]); return; }
+            if (!propertyId) { setCalendarBookedDays([]); setCalendarDayCounts({}); setCalendarCapacity(1); return; }
+            
+            // Get capacity for this property/sub-property
+            const prop = propertyList.find((p: any) => p.id === propertyId);
+            let cap = 1;
+            if (prop && prop.subProperties && subPropertyId) {
+                const sp = prop.subProperties.find((s: any) => s.id === subPropertyId);
+                cap = sp?.unitCount || 1;
+            }
+            setCalendarCapacity(cap);
+            
             const year = calendarViewMonth.getFullYear();
             const month = String(calendarViewMonth.getMonth() + 1).padStart(2, '0');
             try {
                 const bookings = await api.get(`/blocked-dates/bookings?propertyId=${propertyId}${subPropertyId ? `&subPropertyId=${subPropertyId}` : ''}&month=${year}-${month}`);
-                if (!Array.isArray(bookings)) { setCalendarBookedDays([]); return; }
-                const days = new Set<number>();
+                if (!Array.isArray(bookings)) { setCalendarBookedDays([]); setCalendarDayCounts({}); return; }
+                const dayCounts: Record<number, number> = {};
                 const monthStart = new Date(year, calendarViewMonth.getMonth(), 1);
                 const monthEnd = new Date(year, calendarViewMonth.getMonth() + 1, 0);
                 for (const b of bookings) {
@@ -532,11 +544,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     const start = checkIn < monthStart ? monthStart : checkIn;
                     const end = checkOut > monthEnd ? monthEnd : checkOut;
                     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                        days.add(d.getDate());
+                        dayCounts[d.getDate()] = (dayCounts[d.getDate()] || 0) + 1;
                     }
                 }
-                setCalendarBookedDays(Array.from(days));
-            } catch { setCalendarBookedDays([]); }
+                setCalendarDayCounts(dayCounts);
+                // A day is "fully booked" when count >= capacity
+                const fullyBooked = Object.entries(dayCounts)
+                    .filter(([, count]) => count >= cap)
+                    .map(([day]) => parseInt(day));
+                setCalendarBookedDays(fullyBooked);
+            } catch { setCalendarBookedDays([]); setCalendarDayCounts({}); }
         };
         fetchCalendarBookings();
     }, [calendarProperty, calendarViewMonth, propertyList]);
@@ -1259,6 +1276,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         const isSelected = blackoutDates.some(bd => bd.getDate() === d && bd.getMonth() === calendarMonth && bd.getFullYear() === calendarYear);
                                         const isToday = new Date().getDate() === d && new Date().getMonth() === calendarMonth && new Date().getFullYear() === calendarYear;
                                         const isClickable = !isBooked;
+                                        const dayCount = calendarDayCounts[d] || 0;
+                                        const showOccupancy = calendarCapacity > 1 && dayCount > 0;
                                         return (
                                             <button
                                                 key={d}
@@ -1280,13 +1299,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
                                             >
                                                 <span className={`font-bold ${isToday && !isSelected ? 'text-indigo-700' : ''}`}>{d}</span>
-                                                <span className={`text-[9px] font-medium ${
-                                                    isSelected ? 'text-indigo-200' :
-                                                    isBooked ? 'text-blue-500' :
-                                                    isBlocked ? 'text-rose-500' :
-                                                    isWeekend ? 'text-stone-400' : 'text-slate-400'}`}>
-                                                    {isSelected ? 'Selected' : isBooked ? 'Booked' : isBlocked ? 'Blocked' : 'Free'}
-                                                </span>
+                                                {showOccupancy ? (
+                                                    <span className={`text-[8px] font-black ${
+                                                        isBooked ? 'text-blue-600' :
+                                                        dayCount >= calendarCapacity * 0.8 ? 'text-amber-600' :
+                                                        'text-emerald-600'}`}>
+                                                        {dayCount}/{calendarCapacity}
+                                                    </span>
+                                                ) : (
+                                                    <span className={`text-[9px] font-medium ${
+                                                        isSelected ? 'text-indigo-200' :
+                                                        isBooked ? 'text-blue-500' :
+                                                        isBlocked ? 'text-rose-500' :
+                                                        isWeekend ? 'text-stone-400' : 'text-slate-400'}`}>
+                                                        {isSelected ? 'Selected' : isBooked ? 'Booked' : isBlocked ? 'Blocked' : 'Free'}
+                                                    </span>
+                                                )}
                                             </button>
                                         );
                                     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2 } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -68,8 +68,12 @@ export default function StayBookingsPage() {
     const [statusFilter, setStatusFilter] = useState("All");
     const [ddSourceFilter, setDdSourceFilter] = useState("All");
     const [propertyFilter, setPropertyFilter] = useState("All");
-    const [dateFrom, setDateFrom] = useState("");
-    const [dateTo, setDateTo] = useState("");
+    const [bookedOnFrom, setBookedOnFrom] = useState("");
+    const [bookedOnTo, setBookedOnTo] = useState("");
+    const [datesFrom, setDatesFrom] = useState("");
+    const [datesTo, setDatesTo] = useState("");
+    const [deleteConfirmBooking, setDeleteConfirmBooking] = useState<StayBooking | null>(null);
+    const [deleting, setDeleting] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<StayBooking | null>(null);
     const [sortField, setSortField] = useState<"bookedAt" | "checkIn">("bookedAt");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -82,8 +86,12 @@ export default function StayBookingsPage() {
             setLoading(true);
             const params = new URLSearchParams();
             if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase().replace(" ", "_"));
-            if (dateFrom) params.set("startDate", dateFrom);
-            if (dateTo) params.set("endDate", dateTo);
+            // Booked On range filters by bookedAt on backend
+            if (bookedOnFrom) params.set("bookedOnFrom", bookedOnFrom);
+            if (bookedOnTo) params.set("bookedOnTo", bookedOnTo);
+            // Dates range filters by checkInDate on backend
+            if (datesFrom) params.set("startDate", datesFrom);
+            if (datesTo) params.set("endDate", datesTo);
             
             const data = await api.get(`/bookings/staycation?${params.toString()}`);
             const mapped: StayBooking[] = (Array.isArray(data) ? data : []).map((b: any) => ({
@@ -126,7 +134,7 @@ export default function StayBookingsPage() {
         } finally {
             setLoading(false);
         }
-    }, [statusFilter, dateFrom, dateTo]);
+    }, [statusFilter, bookedOnFrom, bookedOnTo, datesFrom, datesTo]);
 
     useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -135,9 +143,11 @@ export default function StayBookingsPage() {
         try {
             setDdLoading(true);
             const params = new URLSearchParams();
-            if (dateFrom) params.set('startDate', dateFrom);
-            if (dateTo) params.set('endDate', dateTo);
-            params.set('filterBy', 'bookedAt');
+            if (bookedOnFrom) { params.set('startDate', bookedOnFrom); params.set('filterBy', 'bookedAt'); }
+            if (bookedOnTo) { params.set('endDate', bookedOnTo); if (!bookedOnFrom) params.set('filterBy', 'bookedAt'); }
+            if (datesFrom) { params.set('startDate', datesFrom); params.set('filterBy', 'bookingDate'); }
+            if (datesTo) { params.set('endDate', datesTo); if (!datesFrom) params.set('filterBy', 'bookingDate'); }
+            if (!bookedOnFrom && !bookedOnTo && !datesFrom && !datesTo) params.set('filterBy', 'bookedAt');
             const data = await api.get(`/bookings/dd?${params.toString()}`);
             const mapped: StayBooking[] = (Array.isArray(data) ? data : []).map((b: any) => ({
                 id: b.id,
@@ -182,7 +192,7 @@ export default function StayBookingsPage() {
         } finally {
             setDdLoading(false);
         }
-    }, [dateFrom, dateTo]);
+    }, [bookedOnFrom, bookedOnTo, datesFrom, datesTo]);
 
     useEffect(() => {
         if (viewTab === 'dd' || viewTab === 'all') fetchDdBookings();
@@ -254,7 +264,7 @@ export default function StayBookingsPage() {
                 {(["staycation", "dd", "all"] as const).map(tab => (
                     <button
                         key={tab}
-                        onClick={() => { setViewTab(tab); setStatusFilter('All'); setDdSourceFilter('All'); }}
+                        onClick={() => { setViewTab(tab); setStatusFilter('All'); setDdSourceFilter('All'); setBookedOnFrom(''); setBookedOnTo(''); setDatesFrom(''); setDatesTo(''); }}
                         className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
                             viewTab === tab
                                 ? 'bg-white shadow text-purple-700'
@@ -280,41 +290,88 @@ export default function StayBookingsPage() {
                     />
                 </div>
 
-                {/* Row 2: Date pickers — full width on desktop */}
-                <div className="flex items-center gap-2 w-full">
-                    <div className="flex-1">
-                        <CustomDatePicker
-                            date={dateFrom ? new Date(dateFrom + 'T00:00:00') : new Date()}
-                            onDateChange={(d) => {
-                                const y = d.getFullYear();
-                                const m = String(d.getMonth() + 1).padStart(2, '0');
-                                const day = String(d.getDate()).padStart(2, '0');
-                                setDateFrom(`${y}-${m}-${day}`);
-                            }}
-                            className="w-full"
-                        />
+                {/* Row 2: Booked On date range */}
+                <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Booked On</p>
+                    <div className="flex items-center gap-2 w-full">
+                        <div className="flex-1">
+                            <CustomDatePicker
+                                date={bookedOnFrom ? new Date(bookedOnFrom + 'T00:00:00') : new Date()}
+                                onDateChange={(d) => {
+                                    const y = d.getFullYear();
+                                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                                    const day = String(d.getDate()).padStart(2, '0');
+                                    setBookedOnFrom(`${y}-${m}-${day}`);
+                                    setDatesFrom(''); setDatesTo('');
+                                }}
+                                className="w-full"
+                            />
+                        </div>
+                        <span className="text-slate-400 text-xs flex-shrink-0">to</span>
+                        <div className="flex-1">
+                            <CustomDatePicker
+                                date={bookedOnTo ? new Date(bookedOnTo + 'T00:00:00') : new Date()}
+                                onDateChange={(d) => {
+                                    const y = d.getFullYear();
+                                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                                    const day = String(d.getDate()).padStart(2, '0');
+                                    setBookedOnTo(`${y}-${m}-${day}`);
+                                    setDatesFrom(''); setDatesTo('');
+                                }}
+                                className="w-full"
+                            />
+                        </div>
+                        {(bookedOnFrom || bookedOnTo) && (
+                            <button
+                                onClick={() => { setBookedOnFrom(''); setBookedOnTo(''); }}
+                                className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                            >
+                                Clear
+                            </button>
+                        )}
                     </div>
-                    <span className="text-slate-400 text-xs flex-shrink-0">to</span>
-                    <div className="flex-1">
-                        <CustomDatePicker
-                            date={dateTo ? new Date(dateTo + 'T00:00:00') : new Date()}
-                            onDateChange={(d) => {
-                                const y = d.getFullYear();
-                                const m = String(d.getMonth() + 1).padStart(2, '0');
-                                const day = String(d.getDate()).padStart(2, '0');
-                                setDateTo(`${y}-${m}-${day}`);
-                            }}
-                            className="w-full"
-                        />
+                </div>
+
+                {/* Row 3: Dates (check-in/booking date) range */}
+                <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Dates</p>
+                    <div className="flex items-center gap-2 w-full">
+                        <div className="flex-1">
+                            <CustomDatePicker
+                                date={datesFrom ? new Date(datesFrom + 'T00:00:00') : new Date()}
+                                onDateChange={(d) => {
+                                    const y = d.getFullYear();
+                                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                                    const day = String(d.getDate()).padStart(2, '0');
+                                    setDatesFrom(`${y}-${m}-${day}`);
+                                    setBookedOnFrom(''); setBookedOnTo('');
+                                }}
+                                className="w-full"
+                            />
+                        </div>
+                        <span className="text-slate-400 text-xs flex-shrink-0">to</span>
+                        <div className="flex-1">
+                            <CustomDatePicker
+                                date={datesTo ? new Date(datesTo + 'T00:00:00') : new Date()}
+                                onDateChange={(d) => {
+                                    const y = d.getFullYear();
+                                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                                    const day = String(d.getDate()).padStart(2, '0');
+                                    setDatesTo(`${y}-${m}-${day}`);
+                                    setBookedOnFrom(''); setBookedOnTo('');
+                                }}
+                                className="w-full"
+                            />
+                        </div>
+                        {(datesFrom || datesTo) && (
+                            <button
+                                onClick={() => { setDatesFrom(''); setDatesTo(''); }}
+                                className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
+                            >
+                                Clear
+                            </button>
+                        )}
                     </div>
-                    {(dateFrom || dateTo) && (
-                        <button
-                            onClick={() => { setDateFrom(''); setDateTo(''); }}
-                            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50"
-                        >
-                            Clear
-                        </button>
-                    )}
                 </div>
 
                 {/* Row 3: Property filter + Status pills — evenly spaced on desktop */}
@@ -709,14 +766,77 @@ export default function StayBookingsPage() {
                                 </div>
                             )}
 
-                            {/* Status */}
+                            {/* Status + Delete */}
                             <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                                 <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${statusColors[selectedBooking.status] || "bg-slate-100 border-slate-300 text-slate-600"}`}>
                                     {(() => { const Icon = statusIcons[selectedBooking.status] || CheckCircle; return <Icon size={14} />; })()}
                                     {statusLabel(selectedBooking.status)}
                                 </div>
-                                <span className="text-xs text-slate-400 font-medium">DB ID: {selectedBooking.id}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-slate-400 font-medium">DB ID: {selectedBooking.id}</span>
+                                    <button
+                                        onClick={() => setDeleteConfirmBooking(selectedBooking)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+                                    >
+                                        <Trash2 size={13} /> Delete
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmBooking && (
+                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => !deleting && setDeleteConfirmBooking(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 text-center">
+                            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={28} className="text-red-500" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Booking</h3>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                Are you sure you want to <strong className="text-red-600">permanently</strong> delete booking <strong>{deleteConfirmBooking.bookingRef}</strong>?
+                            </p>
+                            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                                This will remove the booking from the database along with all associated cash logs, UPI logs, payment records, and financial data. This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="flex gap-3 p-4 pt-0">
+                            <button
+                                onClick={() => setDeleteConfirmBooking(null)}
+                                disabled={deleting}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setDeleting(true);
+                                    try {
+                                        const isDd = deleteConfirmBooking.isDd;
+                                        const endpoint = isDd
+                                            ? `/bookings/dd/${deleteConfirmBooking.id}`
+                                            : `/bookings/staycation/${deleteConfirmBooking.id}`;
+                                        await api.delete(endpoint);
+                                        setDeleteConfirmBooking(null);
+                                        setSelectedBooking(null);
+                                        // Refresh
+                                        if (isDd) fetchDdBookings();
+                                        else fetchBookings();
+                                    } catch (err) {
+                                        console.error("Delete failed:", err);
+                                        alert("Failed to delete booking. Please try again.");
+                                    } finally {
+                                        setDeleting(false);
+                                    }
+                                }}
+                                disabled={deleting}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
+                            >
+                                {deleting ? 'Deleting...' : 'Delete Permanently'}
+                            </button>
                         </div>
                     </div>
                 </div>

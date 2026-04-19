@@ -318,7 +318,7 @@ router.post("/", async (req, res) => {
 // GET /api/bookings/staycation — List bookings (admin)
 router.get("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { status, propertyId, startDate, endDate } = req.query;
+        const { status, propertyId, startDate, endDate, bookedOnFrom, bookedOnTo } = req.query;
 
         const where: any = {};
         if (status) where.status = status;
@@ -328,6 +328,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 where.propertyId = parsed;
             }
         }
+        // Filter by check-in dates
         if (startDate || endDate) {
             where.checkInDate = {};
             if (startDate) {
@@ -339,6 +340,20 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 const e = new Date(endDate as string);
                 e.setHours(23, 59, 59, 999);
                 where.checkInDate.lte = e;
+            }
+        }
+        // Filter by booked-on (createdAt) dates
+        if (bookedOnFrom || bookedOnTo) {
+            where.createdAt = {};
+            if (bookedOnFrom) {
+                const s = new Date(bookedOnFrom as string);
+                s.setHours(0, 0, 0, 0);
+                where.createdAt.gte = s;
+            }
+            if (bookedOnTo) {
+                const e = new Date(bookedOnTo as string);
+                e.setHours(23, 59, 59, 999);
+                where.createdAt.lte = e;
             }
         }
 
@@ -874,6 +889,72 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
         return res.json({ success: true, method, amount: depositAmt });
     } catch (error) {
         console.error("Refund deposit error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// DELETE /api/bookings/staycation/:id — Permanently delete booking + cascade
+router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
+
+        const booking = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId },
+            include: { property: true },
+        });
+        if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+        const bookingRef = booking.bookingRef;
+
+        // 1. Reverse cash tracking: find all cash transactions for this booking
+        const cashTxns = await prisma.cashTransaction.findMany({ where: { bookingRef } });
+        for (const tx of cashTxns) {
+            if (tx.transactionType === "collection") {
+                await prisma.employee.update({
+                    where: { id: tx.employeeId },
+                    data: { cashCollected: { decrement: tx.amount } },
+                });
+            } else if (tx.transactionType === "refund") {
+                // Undo refund decrement (re-add)
+                await prisma.employee.update({
+                    where: { id: tx.employeeId },
+                    data: { cashCollected: { increment: Math.abs(tx.amount) } },
+                });
+            }
+        }
+        await prisma.cashTransaction.deleteMany({ where: { bookingRef } });
+
+        // 2. Delete UPI payment logs
+        await prisma.upiPayment.deleteMany({ where: { bookingRef } });
+        await prisma.upiPayment.deleteMany({ where: { bookingRef: `ST-${bookingId}` } });
+        await prisma.cashTransaction.deleteMany({ where: { bookingRef: `ST-${bookingId}` } });
+
+        // 3. Delete booking payments
+        await prisma.bookingPayment.deleteMany({ where: { staycationBookingId: bookingId } });
+
+        // 4. Delete extra guests
+        await prisma.extraGuest.deleteMany({ where: { bookingId } });
+
+        // 5. Delete guest IDs
+        await prisma.guestId.deleteMany({ where: { bookingId } });
+
+        // 6. Delete coupon usage
+        await prisma.couponUsage.deleteMany({ where: { bookingRef } });
+
+        // 7. Delete food bills if any
+        try {
+            await prisma.foodBill.deleteMany({ where: { bookingRef } });
+        } catch {}
+
+        // 8. Delete the booking itself
+        await prisma.staycationBooking.delete({ where: { id: bookingId } });
+
+        auditLog({ adminId: req.admin!.id, action: "booking_deleted", entityType: "staycation_booking", entityId: bookingId, details: { bookingRef } });
+
+        return res.json({ success: true, deletedRef: bookingRef });
+    } catch (error) {
+        console.error("Delete staycation booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

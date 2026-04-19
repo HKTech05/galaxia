@@ -72,6 +72,8 @@ export default function UpiManagementClient() {
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
     const [editName, setEditName] = useState("");
+    const [upiDateFrom, setUpiDateFrom] = useState("");
+    const [upiDateTo, setUpiDateTo] = useState("");
 
     // Fetch image with auth and return blob URL
     const fetchImageBlob = async (logId: number): Promise<string | null> => {
@@ -149,13 +151,37 @@ export default function UpiManagementClient() {
         }
     };
 
+    // Cash out UPI
+    const handleCashOut = async (empId: number) => {
+        if (!confirm('Zero out all UPI records for this employee? This will mark all as collected.')) return;
+        try {
+            await api.post(`/upi-payments/cashout/${empId}`);
+            await fetchAllUpiLogs();
+            if (viewEmployeeId === empId) {
+                const logs = await api.get(`/upi-payments/by-employee/${empId}`);
+                setUpiLogs(Array.isArray(logs) ? logs : []);
+            }
+        } catch (err) {
+            console.error('Cashout failed:', err);
+            alert('Failed to cash out');
+        }
+    };
+
     // PDF download
-    const downloadPDF = async () => {
+    const downloadPDF = async (filterByRange = false) => {
         if (!viewEmployeeId) return;
         const emp = employees.find(e => e.id === viewEmployeeId);
         if (!emp) return;
 
-        const empLogs = upiLogs.filter(log => log.employeeId === viewEmployeeId);
+        let empLogs = upiLogs.filter(log => log.employeeId === viewEmployeeId);
+        if (filterByRange && (upiDateFrom || upiDateTo)) {
+            empLogs = empLogs.filter(log => {
+                const d = new Date(log.createdAt);
+                if (upiDateFrom && d < new Date(upiDateFrom + 'T00:00:00')) return false;
+                if (upiDateTo && d > new Date(upiDateTo + 'T23:59:59')) return false;
+                return true;
+            });
+        }
 
         const { default: jsPDF } = await import("jspdf");
         const { default: autoTable } = await import("jspdf-autotable");
@@ -241,7 +267,18 @@ export default function UpiManagementClient() {
     // Filter employees
     const filteredEmployees = employees.filter(emp => selectedProperties.includes(emp.location));
     const activeEmployee = employees.find(e => e.id === viewEmployeeId);
-    const activeEmployeeLogs = upiLogs.filter(log => log.employeeId === viewEmployeeId);
+    const activeEmployeeLogs = (() => {
+        let logs = upiLogs.filter(log => log.employeeId === viewEmployeeId);
+        if (upiDateFrom || upiDateTo) {
+            logs = logs.filter(log => {
+                const d = new Date(log.createdAt);
+                if (upiDateFrom && d < new Date(upiDateFrom + 'T00:00:00')) return false;
+                if (upiDateTo && d > new Date(upiDateTo + 'T23:59:59')) return false;
+                return true;
+            });
+        }
+        return logs;
+    })();
     const totalUpiCollection = filteredEmployees.reduce((s, e) => s + getEmployeeUpiTotal(e.id), 0);
 
     return (
@@ -381,7 +418,7 @@ export default function UpiManagementClient() {
                                     <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">UPI payment history & proof images</p>
                                 </div>
                                 <button
-                                    onClick={() => setViewEmployeeId(null)}
+                                    onClick={() => { setViewEmployeeId(null); setUpiDateFrom(''); setUpiDateTo(''); }}
                                     className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors flex-shrink-0"
                                 >
                                     <X size={20} />
@@ -389,10 +426,24 @@ export default function UpiManagementClient() {
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-3">
                                 <button
-                                    onClick={downloadPDF}
+                                    onClick={() => downloadPDF(false)}
                                     className="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
                                 >
-                                    <Download size={16} /> Export Logs
+                                    <Download size={16} /> Export All Logs
+                                </button>
+                                {(upiDateFrom || upiDateTo) && (
+                                <button
+                                    onClick={() => downloadPDF(true)}
+                                    className="px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
+                                >
+                                    <Download size={16} /> Export Range
+                                </button>
+                                )}
+                                <button
+                                    onClick={() => handleCashOut(viewEmployeeId!)}
+                                    className="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
+                                >
+                                    <IndianRupee size={16} /> Cash Out
                                 </button>
                                 <button
                                     onClick={downloadAllProofs}
@@ -422,6 +473,17 @@ export default function UpiManagementClient() {
                             </div>
 
                             <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><FileText size={18} className="text-indigo-500" /> UPI Transactions</h3>
+
+                            {/* Date Range Filter */}
+                            <div className="flex items-center gap-3 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Date Range</span>
+                                <input type="date" value={upiDateFrom} onChange={e => setUpiDateFrom(e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                <span className="text-xs text-slate-400">to</span>
+                                <input type="date" value={upiDateTo} onChange={e => setUpiDateTo(e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                {(upiDateFrom || upiDateTo) && (
+                                    <button onClick={() => { setUpiDateFrom(''); setUpiDateTo(''); }} className="text-xs font-bold text-slate-400 hover:text-red-500 px-2 py-1 rounded hover:bg-red-50 transition-colors">Clear</button>
+                                )}
+                            </div>
                             <div className="border border-slate-200 rounded-xl overflow-hidden hidden sm:block">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-slate-100 text-xs uppercase text-slate-600 font-bold border-b border-slate-200">

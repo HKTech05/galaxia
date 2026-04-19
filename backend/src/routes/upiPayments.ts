@@ -254,4 +254,40 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
     }
 });
 
+// ─── POST /api/upi-payments/cashout/:employeeId ─── Cash out UPI for employee
+router.post("/cashout/:employeeId", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const employeeId = parseInt(String(req.params.employeeId));
+        const employee = await prisma.employee.findUnique({
+            where: { id: employeeId },
+            include: { property: { select: { name: true } } },
+        });
+        if (!employee) return res.status(404).json({ error: "Employee not found" });
+
+        // Calculate total pending UPI
+        const payments = await prisma.upiPayment.findMany({
+            where: { employeeId },
+        });
+        const total = payments.reduce((s, p) => s + p.amount, 0);
+
+        if (total <= 0) return res.status(400).json({ error: "No UPI balance to cash out" });
+
+        // Create a "cashout" record with negative amount to zero out
+        await prisma.upiPayment.create({
+            data: {
+                employeeId,
+                amount: -total,
+                paymentType: "cashout",
+                note: `Owner UPI collection — ${employee.property?.name || "Property"} (${new Date().toLocaleDateString('en-IN')})`,
+                proofImageUrl: "",
+            },
+        });
+
+        return res.json({ success: true, cashedOut: total });
+    } catch (error) {
+        console.error("UPI cashout error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;
