@@ -561,28 +561,57 @@ export default function BookMultiPage() {
                         itemAddons.push({ name: 'Food Preference', foodType });
                     }
 
-                    const booking = await api.post("/bookings/staycation", {
-                        customerName,
-                        customerPhone: formData.phone,
-                        customerEmail: formData.email,
-                        propertyId,
-                        subPropertyId,
-                        numGuests: guests.adults + guests.kids,
-                        checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
-                        checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
-                        nightlyRate: perUnitPrice / Math.max(nights, 1),
-                        basePrice: perUnitPrice,
-                        extraPersonCharge: perUnitExtra,
-                        gstAmount: perUnitGst,
-                        totalAmount: perUnitTotal,
-                        advanceAmount: perUnitPayNow,
-                        balanceAmount: perUnitPayAtVenue,
-                        securityDeposit: deposit,
-                        advancePaid: true,
-                        advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
-                        source: "website",
-                        addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
-                    });
+                    // Retry booking creation up to 3 times with exponential backoff.
+                    // Backend has idempotency guard — retries with the same Razorpay payment ID
+                    // will return the existing booking instead of creating duplicates.
+                    let booking: any = null;
+                    let lastBookingError: any = null;
+                    const MAX_RETRIES = 3;
+                    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                        try {
+                            booking = await api.post("/bookings/staycation", {
+                                customerName,
+                                customerPhone: formData.phone,
+                                customerEmail: formData.email,
+                                propertyId,
+                                subPropertyId,
+                                numGuests: guests.adults + guests.kids,
+                                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
+                                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
+                                nightlyRate: perUnitPrice / Math.max(nights, 1),
+                                basePrice: perUnitPrice,
+                                extraPersonCharge: perUnitExtra,
+                                gstAmount: perUnitGst,
+                                totalAmount: perUnitTotal,
+                                advanceAmount: perUnitPayNow,
+                                balanceAmount: perUnitPayAtVenue,
+                                securityDeposit: deposit,
+                                advancePaid: true,
+                                advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
+                                source: "website",
+                                addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
+                            });
+                            lastBookingError = null;
+                            break;
+                        } catch (retryErr: any) {
+                            lastBookingError = retryErr;
+                            if (retryErr?.message?.includes("409")) break;
+                            if (attempt < MAX_RETRIES) {
+                                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                            }
+                        }
+                    }
+
+                    if (lastBookingError || !booking) {
+                        const payId = paymentResult.razorpay_payment_id;
+                        if (lastBookingError?.message?.includes("409")) {
+                            setBookingError(`One or more villas are already booked for your dates. Your payment (${payId}) has been captured — please contact us on WhatsApp for an immediate refund.`);
+                        } else {
+                            setBookingError(`Your payment was successful (Payment ID: ${payId}), but we encountered an issue creating your booking. Please contact us immediately on WhatsApp with your Payment ID for assistance. Do NOT make another payment.`);
+                        }
+                        setIsSubmitting(false);
+                        return;
+                    }
 
                     // Upload guest ID proof for this booking
                     if (idFile && booking?.id) {

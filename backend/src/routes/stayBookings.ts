@@ -63,6 +63,23 @@ router.post("/", async (req, res) => {
             }
         }
 
+        // ── Razorpay Idempotency Guard ──────────────────────────
+        // If this is a Razorpay payment, check if a booking already exists with this payment ID.
+        // This prevents duplicate bookings when the frontend retries after a network failure.
+        if (advanceMethod && typeof advanceMethod === 'string' && advanceMethod.startsWith('Razorpay:')) {
+            const razorpayId = advanceMethod.replace('Razorpay:', '').trim();
+            if (razorpayId) {
+                const existingBooking = await prisma.staycationBooking.findFirst({
+                    where: { advanceMethod: { contains: razorpayId } },
+                    include: { property: true, subProperty: true },
+                });
+                if (existingBooking) {
+                    console.log(`[Idempotency] Returning existing staycation booking ${existingBooking.bookingRef} for payment ${razorpayId}`);
+                    return res.status(200).json(existingBooking);
+                }
+            }
+        }
+
         // Use serializable transaction to prevent double-booking (race-condition safe)
         const booking = await prisma.$transaction(async (tx) => {
             // 0. Check if property is active

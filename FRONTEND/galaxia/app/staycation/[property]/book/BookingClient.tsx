@@ -666,7 +666,39 @@ export default function BookingClient({ property }: BookingClientProps) {
                     })(),
                 };
 
-                const result = await api.post("/bookings/staycation", payload);
+                // Retry booking creation up to 3 times with exponential backoff.
+                // Backend has idempotency guard — retries with the same Razorpay payment ID
+                // will return the existing booking instead of creating duplicates.
+                let result: any = null;
+                let lastBookingError: any = null;
+                const MAX_RETRIES = 3;
+                for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                    try {
+                        result = await api.post("/bookings/staycation", payload);
+                        lastBookingError = null;
+                        break;
+                    } catch (retryErr: any) {
+                        lastBookingError = retryErr;
+                        if (retryErr?.message?.includes("409")) break; // Don't retry genuine conflicts
+                        if (attempt < MAX_RETRIES) {
+                            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                        }
+                    }
+                }
+
+                // If booking creation failed after all retries
+                if (lastBookingError || !result) {
+                    const payId = paymentResult.razorpay_payment_id;
+                    if (lastBookingError?.message?.includes("409")) {
+                        setBookingError(`This property is already booked for your dates. Your payment (${payId}) has been captured — please contact us on WhatsApp for an immediate refund.`);
+                        setCurrentStep(1);
+                    } else {
+                        setBookingError(`Your payment was successful (Payment ID: ${payId}), but we encountered an issue creating your booking. Please contact us immediately on WhatsApp with your Payment ID for assistance. Do NOT make another payment.`);
+                    }
+                    setIsSubmitting(false);
+                    return;
+                }
+
                 if (i === 0) firstResult = result;
             }
 

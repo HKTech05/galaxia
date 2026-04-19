@@ -570,7 +570,42 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 specialRequests: specialRequests || null,
             };
 
-            const result = await api.post("/bookings/dd", payload);
+            // Retry booking creation up to 3 times with exponential backoff.
+            // Backend has idempotency guard — retries with the same Razorpay payment ID
+            // will return the existing booking instead of creating duplicates.
+            let result: any = null;
+            let lastBookingError: any = null;
+            const MAX_RETRIES = 3;
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    result = await api.post("/bookings/dd", payload);
+                    lastBookingError = null;
+                    break; // Success — exit retry loop
+                } catch (retryErr: any) {
+                    lastBookingError = retryErr;
+                    // Don't retry 409 conflicts — those are genuine slot conflicts
+                    if (retryErr?.message?.includes("409") || retryErr?.message?.includes("overlap")) {
+                        break;
+                    }
+                    // Wait before retrying: 1s, 2s, 4s
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                    }
+                }
+            }
+
+            // If booking creation failed after all retries
+            if (lastBookingError || !result) {
+                const payId = paymentResult.razorpay_payment_id;
+                if (lastBookingError?.message?.includes("409") || lastBookingError?.message?.includes("overlap")) {
+                    setBookingError(`This time slot is no longer available. Your payment (${payId}) has been captured — please contact us on WhatsApp for an immediate refund.`);
+                    setCurrentStep(1);
+                } else {
+                    setBookingError(`Your payment was successful (Payment ID: ${payId}), but we encountered an issue creating your booking. Please contact us immediately on WhatsApp with your Payment ID for assistance. Do NOT make another payment.`);
+                }
+                setIsSubmitting(false);
+                return;
+            }
 
             // Upload ID proofs to S3 (fire-and-forget)
             if (result?.id) {

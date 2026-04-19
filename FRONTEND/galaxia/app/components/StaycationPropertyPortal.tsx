@@ -150,6 +150,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [manualForm, setManualForm] = useState({
         name: "",
         guests: 2,
+        kids: 0,
         pets: 0,
         phone: "",
         checkInDate: new Date(),
@@ -267,8 +268,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         }
         // Add 5% GST
         total = total + (total * 0.05);
-        // Add pet charges (₹600/pet flat)
-        total += manualForm.pets * 600;
+        // Add pet charges (₹600/pet/night)
+        total += manualForm.pets * 600 * nights;
+        // Add kids charges (per property per night)
+        let kidsPrice = 0;
+        const prop2 = manualForm.property;
+        if (prop2.includes("Hill View")) kidsPrice = 400;
+        else if (prop2.includes("Mount View")) kidsPrice = 500;
+        else if (prop2.includes("Heavenly Villa")) kidsPrice = 500;
+        else if (prop2.includes("La Paraiso")) kidsPrice = 800;
+        else if (prop2.includes("Amstel")) kidsPrice = 1000;
+        else if (prop2.includes("Ambrose")) kidsPrice = 1000;
+        total += manualForm.kids * kidsPrice * nights;
         return Math.round(Math.round(total) / 10) * 10;
     };
 
@@ -306,9 +317,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 customerPhone: manualForm.phone || "0000000000",
                 propertyId: propId,
                 numGuests: manualForm.guests,
+                numKids: manualForm.kids || 0,
                 numPets: manualForm.pets || 0,
-                checkInDate: manualForm.checkInDate.toISOString(),
-                checkOutDate: manualForm.checkOutDate.toISOString(),
+                checkInDate: `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth()+1).padStart(2,'0')}-${String(manualForm.checkInDate.getDate()).padStart(2,'0')}`,
+                checkOutDate: `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth()+1).padStart(2,'0')}-${String(manualForm.checkOutDate.getDate()).padStart(2,'0')}`,
                 totalAmount: calculatedTotal,
                 advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculatedTotal,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
@@ -323,6 +335,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             });
             fetchBookings();
             setIsManualBookingOpen(false);
+            // Reset ALL form state to defaults
+            setManualForm({
+                name: "", guests: 2, kids: 0, pets: 0, phone: "",
+                checkInDate: new Date(),
+                checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
+                property: properties[0] || "Hill View",
+                villa: "TAKE-1",
+                paymentMethod: "Cash"
+            });
             setCustomSplitMode(false);
             setCustomPrepaid("");
             setCustomBalance("");
@@ -1074,14 +1095,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.min(15, manualForm.guests + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
                                         </div>
                                     </div>
-                                    {['Ambrose', 'La Paraiso', 'Mount View', 'Hill View'].some(p => manualForm.property.includes(p)) && (
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Pets (₹600/pet)</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Kids (5-12 yrs)</label>
+                                        <div className="flex items-center gap-2">
+                                            <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.max(0, manualForm.kids - 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">−</button>
+                                            <span className="w-10 text-center text-sm font-bold text-slate-800">{manualForm.kids}</span>
+                                            <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.min(5, manualForm.kids + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Pets (₹600/pet/night)</label>
                                         <div className="relative">
                                             <input type="number" min="0" max="2" value={manualForm.pets} onChange={e => setManualForm({ ...manualForm, pets: Math.min(2, parseInt(e.target.value) || 0) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Max 2" />
                                         </div>
                                     </div>
-                                    )}
                                 </div>
                             </div>
 
