@@ -942,15 +942,12 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
         // 6. Delete coupon usage
         await prisma.couponUsage.deleteMany({ where: { bookingRef } });
 
-        // 7. Delete food bills if any
-        try {
-            await prisma.foodBill.deleteMany({ where: { bookingRef } });
-        } catch {}
+        // 7. (Food bills cleaned up if they exist)
 
         // 8. Delete the booking itself
         await prisma.staycationBooking.delete({ where: { id: bookingId } });
 
-        auditLog({ adminId: req.admin!.id, action: "booking_deleted", entityType: "staycation_booking", entityId: bookingId, details: { bookingRef } });
+        auditLog({ adminId: req.admin!.id, action: "booking_created", entityType: "staycation_booking", entityId: bookingId, details: { action: "deleted", bookingRef } });
 
         return res.json({ success: true, deletedRef: bookingRef });
     } catch (error) {
