@@ -487,6 +487,40 @@ export default function BookMultiPage() {
         try {
             const customerName = `${formData.firstName} ${formData.lastName}`.trim();
 
+            // Build pending booking payload for webhook fallback (first cart item)
+            const firstItem = cart[0];
+            const firstGuests = guestsPerVilla[firstItem.villaId] || { adults: 2, kids: 0 };
+            const firstIsAmstel = firstItem.property === "amstel-nest";
+            const firstPropertyId = firstIsAmstel ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"];
+            const firstSubPropertyId = dbSubPropertyMap[firstItem.villaId] || null;
+            const firstPerUnitPrice = getItemPrice({ ...firstItem, unitCount: 1 });
+            const firstPerUnitExtra = getExtraCharges({ ...firstItem, unitCount: 1 });
+            const firstPerUnitSubtotal = firstPerUnitPrice + firstPerUnitExtra;
+            const firstPerUnitGst = Math.round(firstPerUnitSubtotal * 0.05);
+            const firstPerUnitTotal = Math.round((firstPerUnitSubtotal + firstPerUnitGst) / 10) * 10;
+            const firstPerUnitPayNow = Math.round(Math.round(firstPerUnitTotal * 0.8) / 10) * 10;
+            const firstPerUnitPayAtVenue = firstPerUnitTotal - firstPerUnitPayNow;
+            const pendingMultiPayload: any = {
+                customerName,
+                customerPhone: formData.phone,
+                customerEmail: formData.email,
+                propertyId: firstPropertyId,
+                subPropertyId: firstSubPropertyId,
+                numGuests: firstGuests.adults + firstGuests.kids,
+                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
+                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
+                nightlyRate: firstPerUnitPrice / Math.max(nights, 1),
+                basePrice: firstPerUnitPrice,
+                extraPersonCharge: firstPerUnitExtra,
+                gstAmount: firstPerUnitGst,
+                totalAmount: firstPerUnitTotal,
+                advanceAmount: firstPerUnitPayNow,
+                balanceAmount: firstPerUnitPayAtVenue,
+                securityDeposit: 3000,
+                advancePaid: true,
+                source: "website",
+            };
+
             // Initiate single Razorpay payment for total advance
             let paymentResult;
             try {
@@ -501,6 +535,10 @@ export default function BookMultiPage() {
                         villaCount: String(cart.length),
                         checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
                         checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
+                    },
+                    pendingBooking: {
+                        bookingType: "staycation",
+                        payload: pendingMultiPayload,
                     },
                 });
             } catch (payErr: any) {

@@ -29,6 +29,11 @@ interface RazorpayPaymentOptions {
     description?: string;
     receipt?: string;
     notes?: Record<string, string>;
+    // Pending booking data — saved to DB for webhook fallback
+    pendingBooking?: {
+        bookingType: "dd" | "staycation";
+        payload: Record<string, any>;
+    };
 }
 
 interface RazorpayPaymentResult {
@@ -44,7 +49,7 @@ export async function initiateRazorpayPayment(
     // 1. Load Razorpay SDK
     await loadRazorpayScript();
 
-    // 2. Create order on our backend
+    // 2. Create order on our backend (+ save pending booking if provided)
     const orderRes = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,6 +57,7 @@ export async function initiateRazorpayPayment(
             amount: options.amount,
             receipt: options.receipt || `rcpt_${Date.now()}`,
             notes: options.notes || {},
+            pendingBooking: options.pendingBooking || undefined,
         }),
     });
 

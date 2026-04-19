@@ -517,34 +517,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             if (addBalloons) addons.push({ type: "balloons", price: getAddonPrice('balloons') });
             if (addLedBanner) addons.push({ type: "ledBanner", price: getAddonPrice('led_banner'), message: ledBannerType });
             if (addCake) addons.push({ type: "cake", value: cakeMessage, price: getAddonPrice('cake') });
-
-            // Initiate Razorpay payment
+            // Build booking payload BEFORE payment (for webhook fallback)
             const customerName = `${firstName} ${lastName}`.trim();
-            let paymentResult;
-            try {
-                paymentResult = await initiateRazorpayPayment({
-                    amount: payNow,
-                    customerName,
-                    customerEmail: email || undefined,
-                    customerPhone: phone,
-                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
-                    notes: {
-                        bookingType: "dd",
-                        screen: screen.name,
-                        package: pkg.name,
-                        date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
-                    },
-                });
-            } catch (payErr: any) {
-                if (payErr?.message === "Payment cancelled by user") {
-                    setBookingError("");
-                    setIsSubmitting(false);
-                    return;
-                }
-                throw payErr;
-            }
-
-            const payload = {
+            const bookingPayload: any = {
                 screenId: dbScreenId,
                 packageId: dbPackageId,
                 bookingDate: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
@@ -562,12 +537,46 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 totalAmount: subtotal,
                 amountPaid: payNow,
                 paymentMethod: "online",
-                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 addons,
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
                 discountAmount: couponDiscount,
                 specialRequests: specialRequests || null,
+            };
+
+            // Initiate Razorpay payment
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: email || undefined,
+                    customerPhone: phone,
+                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
+                    notes: {
+                        bookingType: "dd",
+                        screen: screen.name,
+                        package: pkg.name,
+                        date: bookingPayload.bookingDate,
+                    },
+                    pendingBooking: {
+                        bookingType: "dd",
+                        payload: bookingPayload,
+                    },
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
+            // Set payment details after successful payment
+            const payload = {
+                ...bookingPayload,
+                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
             };
 
             // Retry booking creation up to 3 times with exponential backoff.

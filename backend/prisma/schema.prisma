@@ -657,3 +657,17 @@ model FoodBill {
   @@index([date])
   @@map("food_bills")
 }
+
+model PendingBooking {
+  id              Int       @id @default(autoincrement())
+  razorpayOrderId String    @unique @map("razorpay_order_id") @db.VarChar(100)
+  bookingType     String    @map("booking_type") @db.VarChar(20) // "dd" or "staycation"
+  payload         Json      // Full booking payload (all fields needed to create the booking)
+  status          String    @default("pending") @db.VarChar(20) // pending, completed, failed
+  razorpayPaymentId String? @map("razorpay_payment_id") @db.VarChar(100)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  completedAt     DateTime? @map("completed_at")
+
+  @@index([status])
+  @@map("pending_bookings")
+}

@@ -584,6 +584,38 @@ export default function BookingClient({ property }: BookingClientProps) {
         try {
             const customerName = `${formData.firstName} ${formData.lastName}`.trim();
 
+            // Build pending booking payload for webhook fallback (first unit)
+            const pendingStayPayload: any = {
+                customerName,
+                customerPhone: formData.phone,
+                customerEmail: formData.email,
+                propertyId: dbPropertyId,
+                subPropertyId: selectedRoom
+                    ? (dbSubPropertyMap[selectedRoom.id] || dbSubPropertyMap[selectedRoom.id.split('/').pop() || ''] || undefined)
+                    : undefined,
+                numGuests: adults + kids,
+                numPets: pets,
+                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
+                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
+                nightlyRate,
+                basePrice: roomPrice,
+                extraPersonCharge: extraCharges,
+                gstAmount: taxes,
+                totalAmount: total,
+                advanceAmount: payNow,
+                balanceAmount: payAtVenue,
+                securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
+                advancePaid: true,
+                source: "website",
+                couponCode: appliedCoupon?.code || null,
+                addons: (() => {
+                    const arr: any[] = [];
+                    if (celebrationAddon) arr.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                    if (isAmbrose || isAmstelNest) arr.push({ name: 'Food Preference', foodType });
+                    return arr.length > 0 ? arr : null;
+                })(),
+            };
+
             // Initiate Razorpay payment for the advance amount
             let paymentResult;
             try {
@@ -596,8 +628,12 @@ export default function BookingClient({ property }: BookingClientProps) {
                     notes: {
                         bookingType: "staycation",
                         property: property.name,
-                        checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
-                        checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
+                        checkIn: pendingStayPayload.checkInDate || '',
+                        checkOut: pendingStayPayload.checkOutDate || '',
+                    },
+                    pendingBooking: {
+                        bookingType: "staycation",
+                        payload: pendingStayPayload,
                     },
                 });
             } catch (payErr: any) {
