@@ -26,7 +26,8 @@ async function generateDdRef(): Promise<string> {
         const lastNum = parseInt(latest.bookingRef.split("-").pop() || "0");
         nextNum = lastNum + 1;
     }
-    return `${prefix}${String(nextNum).padStart(3, "0")}`;
+    const rand = Math.random().toString(36).substring(2, 4);
+    return `${prefix}${String(nextNum).padStart(3, "0")}${rand}`;
 }
 
 // POST /api/bookings/dd — Create DD booking (transaction-locked)
