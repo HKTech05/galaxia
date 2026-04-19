@@ -291,21 +291,23 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 
         // Determine which date field to filter on
         const dateField = filterBy === 'bookedAt' ? 'bookedAt' : 'bookingDate';
+        // IST offset: UTC+5:30 = 5.5 hours = 330 minutes
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
         if (date) {
             if (dateField === 'bookedAt') {
-                // For bookedAt, use start-of-day to end-of-day range
-                const dayStart = new Date((date as string) + 'T00:00:00');
-                const dayEnd = new Date((date as string) + 'T23:59:59.999');
-                where.bookedAt = { gte: dayStart, lte: dayEnd };
+                // For bookedAt, use IST day boundaries (midnight IST = 18:30 UTC prev day)
+                const dayStartIST = new Date(new Date((date as string) + 'T00:00:00Z').getTime() - IST_OFFSET_MS);
+                const dayEndIST = new Date(new Date((date as string) + 'T23:59:59.999Z').getTime() - IST_OFFSET_MS);
+                where.bookedAt = { gte: dayStartIST, lte: dayEndIST };
             } else {
                 where.bookingDate = new Date((date as string) + 'T12:00:00');
             }
         } else if (startDate || endDate) {
             if (dateField === 'bookedAt') {
                 where.bookedAt = {};
-                if (startDate) where.bookedAt.gte = new Date((startDate as string) + 'T00:00:00');
-                if (endDate) where.bookedAt.lte = new Date((endDate as string) + 'T23:59:59.999');
+                if (startDate) where.bookedAt.gte = new Date(new Date((startDate as string) + 'T00:00:00Z').getTime() - IST_OFFSET_MS);
+                if (endDate) where.bookedAt.lte = new Date(new Date((endDate as string) + 'T23:59:59.999Z').getTime() - IST_OFFSET_MS);
             } else {
                 where.bookingDate = {};
                 if (startDate) where.bookingDate.gte = new Date((startDate as string) + 'T12:00:00');

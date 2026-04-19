@@ -714,11 +714,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest'].includes(p.name));
 
         const occupiedAmbroseCount = liveAmbrose.filter((v: any) => v.booked).length;
-        const occupiedAmstelCount = liveAmstel.filter((v: any) => v.booked).length;
+        // Amstel Nest: Standard Cottage may have multiple bookings (14 units), count them
+        const amstelStdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
+        const amstelStdBooked = amstelStdCottage?._allBookings?.length || (amstelStdCottage?.booked ? 1 : 0);
+        const amstelOthersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
+        const occupiedAmstelCount = amstelStdBooked + amstelOthersBooked;
+        const totalAmstelUnits = 14 + liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
         const occupiedStandaloneCount = liveStandalone.filter((p: any) => p.booked).length;
 
         const totalOccupied = occupiedAmbroseCount + occupiedAmstelCount + occupiedStandaloneCount;
-        const totalUnits = liveAmbrose.length + liveAmstel.length + liveStandalone.length;
+        const totalUnits = liveAmbrose.length + totalAmstelUnits + liveStandalone.length;
 
         // KPI cards data
         const totalRevenue = dashboardKPIs?.kpis?.totalRevenue || 0;
@@ -773,8 +778,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {dashboardSubTab === "insights" && (
                     <>
                         {/* Occupancy Alerts  */}
-                        {(occupiedAmbroseCount === liveAmbrose.length ||
-                            occupiedAmstelCount === liveAmstel.length) && (
+                        {(occupiedAmbroseCount > 0 && occupiedAmbroseCount === liveAmbrose.length ||
+                            occupiedAmstelCount > 0 && occupiedAmstelCount === totalAmstelUnits) && (
                                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm flex items-start gap-3 animate-in fade-in zoom-in-95 duration-300">
                                     <span className="bg-amber-100 text-amber-600 p-1.5 rounded-lg shrink-0 mt-0.5">
                                         <CheckCircle size={18} className="text-amber-600" />
@@ -782,16 +787,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <div>
                                         <h4 className="text-sm font-bold text-amber-800 tracking-tight">Fully Booked Properties Alert</h4>
                                         <div className="mt-1 space-y-1">
-                                            {occupiedAmbroseCount === liveAmbrose.length && (
+                                            {occupiedAmbroseCount > 0 && occupiedAmbroseCount === liveAmbrose.length && (
                                                 <p className="text-xs text-amber-700 font-medium font-semibold flex flex-wrap items-center gap-1.5">
                                                     <span>Ambrose is <span className="underline decoration-amber-400 underline-offset-2">100% occupied</span> today.</span>
-                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">{liveAmbrose.length}/{liveAmbrose.length} VILLAS FULL</span>
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">{occupiedAmbroseCount}/{liveAmbrose.length} VILLAS FULL</span>
                                                 </p>
                                             )}
-                                            {occupiedAmstelCount === liveAmstel.length && (
+                                            {occupiedAmstelCount > 0 && occupiedAmstelCount === totalAmstelUnits && (
                                                 <p className="text-xs text-amber-700 font-medium font-semibold flex flex-wrap items-center gap-1.5">
                                                     <span>Amstel Nest is <span className="underline decoration-amber-400 underline-offset-2">100% occupied</span> today.</span>
-                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">{liveAmstel.length}/{liveAmstel.length} VILLAS FULL</span>
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-200/50 text-[9px] font-bold tracking-wider">{occupiedAmstelCount}/{totalAmstelUnits} VILLAS FULL</span>
                                                 </p>
                                             )}
                                         </div>
