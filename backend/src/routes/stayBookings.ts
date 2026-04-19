@@ -21,8 +21,7 @@ async function generateStayRef(): Promise<string> {
             },
         },
     });
-    const rand = Math.random().toString(36).substring(2, 4);
-    return `ST-${dateStr}-${String(count + 1).padStart(3, "0")}${rand}`;
+    return `ST-${dateStr}-${String(count + 1).padStart(3, "0")}`;
 }
 
 // POST /api/bookings/staycation — Create booking (transaction-locked, capacity-aware)
