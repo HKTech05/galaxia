@@ -81,8 +81,12 @@ router.post("/", async (req, res) => {
             }
         }
 
-        // Use serializable transaction to prevent double-booking (race-condition safe)
-        const booking = await prisma.$transaction(async (tx) => {
+        // Wrap transaction in retry loop: if booking_ref collides (P2002), retry with a new ref
+        let booking: any = null;
+        const MAX_REF_RETRIES = 5;
+        for (let refAttempt = 0; refAttempt < MAX_REF_RETRIES; refAttempt++) {
+            try {
+                booking = await prisma.$transaction(async (tx) => {
             // 0. Check if property is active
             const property = await tx.property.findUnique({ where: { id: parsedPropertyId } });
             if (!property || !property.isActive) {
@@ -306,6 +310,16 @@ router.post("/", async (req, res) => {
 
             return created;
         }, { isolationLevel: "Serializable" });
+                break; // Transaction succeeded — exit retry loop
+            } catch (txErr: any) {
+                // If booking_ref collision, retry (generateStayRef will pick next number)
+                if (txErr?.code === 'P2002' && txErr?.meta?.target?.includes('booking_ref') && refAttempt < MAX_REF_RETRIES - 1) {
+                    console.log(`[Stay Booking] booking_ref collision, retrying (attempt ${refAttempt + 2}/${MAX_REF_RETRIES})`);
+                    continue;
+                }
+                throw txErr; // Re-throw all other errors
+            }
+        }
 
         auditLog({ action: "booking_created", entityType: "staycation_booking", entityId: booking.id, details: { source: source || "website" } });
 
