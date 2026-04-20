@@ -86,6 +86,10 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                 maxKids: (villa as any).maxKids ?? parent.maxKids ?? 2,
             });
             localStorage.setItem("ambrose_cart", JSON.stringify(cart));
+            if (calCheckIn && calCheckOut) {
+                const fmtD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                localStorage.setItem("ambrose_cart_dates", JSON.stringify({ checkIn: fmtD(calCheckIn), checkOut: fmtD(calCheckOut) }));
+            }
             refreshCart();
             setCartMessage("Added to cart!");
             setTimeout(() => setCartMessage(""), 2000);

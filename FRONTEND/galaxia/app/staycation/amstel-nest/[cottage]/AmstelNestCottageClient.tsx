@@ -80,6 +80,10 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                 unitCount: 1,
             });
             localStorage.setItem("ambrose_cart", JSON.stringify(cart));
+            if (calCheckIn && calCheckOut) {
+                const fmtD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                localStorage.setItem("ambrose_cart_dates", JSON.stringify({ checkIn: fmtD(calCheckIn), checkOut: fmtD(calCheckOut) }));
+            }
             refreshCart();
             window.dispatchEvent(new Event("cart-update"));
             setCartMessage("Added to cart!"); setTimeout(() => setCartMessage(""), 2000);

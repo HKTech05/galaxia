@@ -132,10 +132,16 @@ export default function BookMultiPage() {
             setGuestsPerVilla(guests);
         } catch { setCart([]); }
 
-        // Read dates from URL params
+        // Read dates from URL params or localStorage
         const params = new URLSearchParams(window.location.search);
-        const ciStr = params.get("checkIn");
-        const coStr = params.get("checkOut");
+        let ciStr = params.get("checkIn");
+        let coStr = params.get("checkOut");
+        if (!ciStr || !coStr) {
+            try {
+                const savedDates = JSON.parse(localStorage.getItem("ambrose_cart_dates") || "null");
+                if (savedDates) { ciStr = savedDates.checkIn; coStr = savedDates.checkOut; }
+            } catch {}
+        }
         if (ciStr && coStr) {
             const ci = new Date(ciStr + "T00:00:00");
             const co = new Date(coStr + "T00:00:00");
@@ -750,26 +756,27 @@ export default function BookMultiPage() {
                                                         const totalG = guests.adults + guests.kids;
                                                         return (
                                                     <div className="mb-4">
-                                                        <div className="grid grid-cols-2 gap-4 mb-2">
-                                                        <div>
-                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Adults</label>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(effMaxAdults, guests.adults + 1) } }))} disabled={guests.adults >= effMaxAdults} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                        <div className="bg-soft-gray/40 rounded-lg border border-border-light p-4">
+                                                            <div className="grid grid-cols-2 gap-6">
+                                                                <div>
+                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Adults</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                        <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{guests.adults}</span>
+                                                                        <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(effMaxAdults, guests.adults + 1) } }))} disabled={guests.adults >= effMaxAdults} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Kids (5-12 yrs)</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                        <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{guests.kids}</span>
+                                                                        <button onClick={() => { const nk = Math.min(effMaxKids, guests.kids + 1); const na = Math.min(guests.adults, maxTotal - nk); setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { adults: Math.max(1, na), kids: nk } })); }} disabled={guests.kids >= effMaxKids || totalG >= maxTotal} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
+                                                            <p className="text-[10px] font-inter text-text-muted mt-3">{totalG >= maxTotal ? <span className="text-amber-600 font-medium">Max {maxTotal} guests reached.</span> : <>Max {maxTotal} guests (up to {limits.maxAdults} adults, {limits.maxKids} kids)</>}</p>
                                                         </div>
-                                                        <div>
-                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Kids (5-12 yrs)</label>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
-                                                                <button onClick={() => { const nk = Math.min(effMaxKids, guests.kids + 1); const na = Math.min(guests.adults, maxTotal - nk); setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { adults: Math.max(1, na), kids: nk } })); }} disabled={guests.kids >= effMaxKids || totalG >= maxTotal} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {totalG >= maxTotal && <p className="text-[10px] font-inter text-amber-600 font-medium">Max {maxTotal} guests reached.</p>}
-                                                    <p className="text-[10px] font-inter text-text-muted">Max {maxTotal} guests (up to {limits.maxAdults} adults, {limits.maxKids} kids)</p>
                                                     </div>
                                                         );
                                                     })()}
@@ -817,12 +824,14 @@ export default function BookMultiPage() {
 
                                                     {/* Unit count selector */}
                                                     <div className="mb-4">
-                                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-2 block">Number of Cottages {item.villaId === 'standard-cottage' ? '(max 14)' : ''}</label>
-                                                        <div className="flex items-center gap-3">
-                                                            <button onClick={() => updateUnitCount(item.villaId, units - 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                            <span className="font-inter text-xl font-bold text-text-primary w-8 text-center">{units}</span>
-                                                            <button onClick={() => updateUnitCount(item.villaId, units + 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
-                                                            <span className="font-inter text-xs text-text-muted">× {item.villaName}</span>
+                                                        <div className="bg-emerald-50/50 rounded-lg border border-emerald-200/50 p-4">
+                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Number of Cottages {item.villaId === 'standard-cottage' ? '(max 14)' : ''}</label>
+                                                            <div className="flex items-center gap-3">
+                                                                <button onClick={() => updateUnitCount(item.villaId, units - 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                <span className="font-inter text-xl font-bold text-text-primary w-6 text-center">{units}</span>
+                                                                <button onClick={() => updateUnitCount(item.villaId, units + 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                                <span className="font-inter text-xs text-text-muted">× {item.villaName}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -864,26 +873,27 @@ export default function BookMultiPage() {
                                                         const totalG = guests.adults + guests.kids;
                                                         return (
                                                     <div className="mb-4">
-                                                        <div className="grid grid-cols-2 gap-4 mb-2">
-                                                        <div>
-                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Adults per cottage</label>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.adults}</span>
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(effMaxAdults, guests.adults + 1) } }))} disabled={guests.adults >= effMaxAdults} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                        <div className="bg-soft-gray/40 rounded-lg border border-border-light p-4">
+                                                            <div className="grid grid-cols-2 gap-6">
+                                                                <div>
+                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Adults per cottage</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                        <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{guests.adults}</span>
+                                                                        <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.min(effMaxAdults, guests.adults + 1) } }))} disabled={guests.adults >= effMaxAdults} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Kids per cottage</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                        <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{guests.kids}</span>
+                                                                        <button onClick={() => { const nk = Math.min(effMaxKids, guests.kids + 1); const na = Math.min(guests.adults, maxTotal - nk); setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { adults: Math.max(1, na), kids: nk } })); }} disabled={guests.kids >= effMaxKids || totalG >= maxTotal} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
+                                                            <p className="text-[10px] font-inter text-text-muted mt-3">{totalG >= maxTotal ? <span className="text-amber-600 font-medium">Max {maxTotal} guests per cottage reached.</span> : <>Max {maxTotal} guests per cottage (up to {limits.maxAdults} adults, {limits.maxKids} kids)</>}</p>
                                                         </div>
-                                                        <div>
-                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider mb-1 block">Kids per cottage</label>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
-                                                                <span className="font-inter text-lg font-semibold text-text-primary w-8 text-center">{guests.kids}</span>
-                                                                <button onClick={() => { const nk = Math.min(effMaxKids, guests.kids + 1); const na = Math.min(guests.adults, maxTotal - nk); setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { adults: Math.max(1, na), kids: nk } })); }} disabled={guests.kids >= effMaxKids || totalG >= maxTotal} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {totalG >= maxTotal && <p className="text-[10px] font-inter text-amber-600 font-medium">Max {maxTotal} guests per cottage reached.</p>}
-                                                    <p className="text-[10px] font-inter text-text-muted">Max {maxTotal} guests per cottage (up to {limits.maxAdults} adults, {limits.maxKids} kids)</p>
                                                     </div>
                                                         );
                                                     })()}
@@ -960,9 +970,9 @@ export default function BookMultiPage() {
                         )}
 
                         {/* Back to Staycation button */}
-                        <Link href="/staycation" className="inline-flex items-center justify-center w-full px-5 py-3 bg-[#1A1A1A] text-white font-inter text-sm font-medium rounded-lg hover:bg-[#333] transition-colors">
+                        <a href="/staycation" className="inline-flex items-center justify-center w-full px-5 py-3 bg-[#1A1A1A] text-white font-inter text-sm font-medium rounded-lg hover:bg-[#333] transition-colors">
                             Back to Staycation
-                        </Link>
+                        </a>
                     </div>
                 )}
 
