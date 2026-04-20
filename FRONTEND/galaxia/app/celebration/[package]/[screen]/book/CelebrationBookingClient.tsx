@@ -528,6 +528,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                     customerEmail: email || undefined,
                     customerPhone: phone,
                     description: `Digital Diaries - ${pkg.name} (${screen.name})`,
+                    type: "dd",
                     notes: {
                         bookingType: "dd",
                         screen: screen.name,

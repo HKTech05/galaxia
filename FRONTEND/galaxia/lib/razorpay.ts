@@ -1,7 +1,5 @@
 // Razorpay integration helper for frontend
-// Key ID is public — safe to expose in browser
-
-const RAZORPAY_KEY_ID = "rzp_live_SX8ZYJXcRBJV2x";
+// Supports two accounts: Staycation (default) and Digital Diaries ("dd")
 
 // Dynamically load the Razorpay checkout script
 let razorpayScriptLoaded = false;
@@ -29,6 +27,7 @@ interface RazorpayPaymentOptions {
     description?: string;
     receipt?: string;
     notes?: Record<string, string>;
+    type?: "stay" | "dd"; // "dd" for Digital Diaries, default is Staycation
 }
 
 interface RazorpayPaymentResult {
@@ -44,7 +43,7 @@ export async function initiateRazorpayPayment(
     // 1. Load Razorpay SDK
     await loadRazorpayScript();
 
-    // 2. Create order on our backend
+    // 2. Create order on our backend (pass type so correct account is used)
     const orderRes = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,6 +51,7 @@ export async function initiateRazorpayPayment(
             amount: options.amount,
             receipt: options.receipt || `rcpt_${Date.now()}`,
             notes: options.notes || {},
+            type: options.type || "stay", // default to staycation account
         }),
     });
 
@@ -60,16 +60,16 @@ export async function initiateRazorpayPayment(
         throw new Error(err.error || "Failed to create payment order");
     }
 
-    const { orderId } = await orderRes.json();
+    const { orderId, keyId } = await orderRes.json();
 
-    // 3. Open Razorpay checkout modal
+    // 3. Open Razorpay checkout modal (keyId from backend ensures correct account)
     return new Promise<RazorpayPaymentResult>((resolve, reject) => {
         const rzp = new (window as any).Razorpay({
-            key: RAZORPAY_KEY_ID,
+            key: keyId,
             order_id: orderId,
             amount: Math.round(options.amount * 100), // paise for display
             currency: "INR",
-            name: "Galaxia Resorts",
+            name: options.type === "dd" ? "Digital Diaries" : "Galaxia Resorts",
             description: options.description || "Booking Payment",
             image: "/logo.png", // will fall back gracefully if missing
             prefill: {
@@ -79,15 +79,18 @@ export async function initiateRazorpayPayment(
             },
             notes: options.notes || {},
             theme: {
-                color: "#C4A265", // antique gold
+                color: options.type === "dd" ? "#4F46E5" : "#C4A265", // indigo for DD, gold for stay
             },
             handler: async function (response: RazorpayPaymentResult) {
-                // 4. Verify payment signature on backend
+                // 4. Verify payment signature on backend (pass type for correct secret)
                 try {
                     const verifyRes = await fetch("/api/payments/verify", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(response),
+                        body: JSON.stringify({
+                            ...response,
+                            type: options.type || "stay",
+                        }),
                     });
                     const verifyData = await verifyRes.json();
                     if (verifyData.verified) {
