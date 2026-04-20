@@ -497,10 +497,15 @@ export default function Admin1Dashboard() {
             }
 
             // Step 2: Collect unpaid add-ons (sequentially, after balance)
-            const unpaidAddons = (activeEvent.rawAddons || []).filter(a => !a.isPaid);
+            const allAddons = activeEvent.rawAddons || [];
+            const unpaidAddons = allAddons.filter(a => !a.isPaid);
             for (const addon of unpaidAddons) {
                 await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: mode });
-                totalCollected += addon.price;
+                // Only count addon price if it's genuinely extra (no paid duplicate of same type)
+                const hasPaidDuplicate = allAddons.some(a => a.id !== addon.id && a.addonType === addon.addonType && a.isPaid);
+                if (!hasPaidDuplicate) {
+                    totalCollected += addon.price;
+                }
             }
 
             // Step 3: Create UPI payment records for tracking (only for actual UPI payments with proof)
@@ -519,8 +524,9 @@ export default function Admin1Dashboard() {
                         await api.upload("/upi-payments/upload", fd);
                     }
 
-                    // Log addon payments as a separate UPI entry (if any)
-                    const addonTotal = unpaidAddons.reduce((sum, a) => sum + a.price, 0);
+                    // Log addon payments as a separate UPI entry (only for genuinely extra addons)
+                    const extraAddons = unpaidAddons.filter(a => !allAddons.some(x => x.id !== a.id && x.addonType === a.addonType && x.isPaid));
+                    const addonTotal = extraAddons.reduce((sum, a) => sum + a.price, 0);
                     if (addonTotal > 0) {
                         const fd2 = new FormData();
                         fd2.append("propertySlug", "digital-diaries");
@@ -528,7 +534,7 @@ export default function Admin1Dashboard() {
                         fd2.append("guestName", activeEvent.customerName || '');
                         fd2.append("amount", String(addonTotal));
                         fd2.append("paymentType", "addon");
-                        fd2.append("note", `DD Addon Collection — ${unpaidAddons.map(a => a.addonType).join(', ')} via UPI`);
+                        fd2.append("note", `DD Addon Collection — ${extraAddons.map(a => a.addonType).join(', ')} via UPI`);
                         fd2.append("file", proofFile, proofFile.name);
                         await api.upload("/upi-payments/upload", fd2);
                     }

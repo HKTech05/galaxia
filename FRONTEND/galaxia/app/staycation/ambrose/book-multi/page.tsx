@@ -979,6 +979,31 @@ export default function BookMultiPage() {
                 {/* STEP 2: Personal Details */}
                 {currentStep === 2 && (
                     <div className="space-y-6">
+                        {/* Date summary — same as Step 3 */}
+                        {checkInDate && checkOutDate && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                    <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Check-in</span>
+                                    <span className="font-cinzel text-base font-semibold text-text-primary block">{`${checkInDate.getDate()} ${MONTH_SHORT[checkInDate.getMonth()]}`}</span>
+                                    <span className="font-inter text-xs text-text-muted">1:00 PM</span>
+                                </div>
+                                <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                    <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Check-out</span>
+                                    <span className="font-cinzel text-base font-semibold text-text-primary block">{`${checkOutDate.getDate()} ${MONTH_SHORT[checkOutDate.getMonth()]}`}</span>
+                                    <span className="font-inter text-xs text-text-muted">10:00 AM</span>
+                                </div>
+                                <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                    <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Duration</span>
+                                    <span className="font-cinzel text-2xl font-bold text-text-primary block">{nights}</span>
+                                    <span className="font-inter text-xs text-text-muted">Night{nights > 1 ? "s" : ""}</span>
+                                </div>
+                                <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
+                                    <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Properties</span>
+                                    <span className="font-cinzel text-2xl font-bold text-text-primary block">{cart.length}</span>
+                                    <span className="font-inter text-xs text-text-muted">Item{cart.length > 1 ? "s" : ""}</span>
+                                </div>
+                            </div>
+                        )}
                         <div className="bg-white border border-border-light p-6 sm:p-8 shadow-sm rounded-xl">
                             <h2 className="font-cinzel text-lg sm:text-xl text-text-primary uppercase mb-1">Primary Guest Details</h2>
                             <p className="font-inter text-xs sm:text-sm text-text-secondary mb-8 pb-4 border-b border-border-light">These details apply to all {cart.length} bookings.</p>

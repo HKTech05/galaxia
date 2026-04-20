@@ -621,44 +621,51 @@ router.patch("/addons/:addonId/collect", authMiddleware, async (req: AuthRequest
 
         const effectiveMethod = method || "cash";
 
-        // Record payment in ledger
-        await prisma.bookingPayment.create({
-            data: {
-                ddBookingId: addon.bookingId,
-                paymentType: `addon_${addon.addonType}`,
-                amount: addon.price,
-                method: effectiveMethod,
-                collectedBy: req.admin!.id,
-                notes: `Addon payment: ${addon.addonType}`
-            }
+        // Record payment in ledger — but only if this addon's price is truly extra
+        // (i.e., not already included in the booking total via a paid duplicate)
+        const paidDuplicate = await prisma.ddBookingAddon.findFirst({
+            where: { bookingId: addon.bookingId, addonType: addon.addonType, isPaid: true, id: { not: addonId } }
         });
 
-        // NOTE: Do NOT modify booking amountPaid/amountToCollect here.
-        // Financials section reflects booking-only amounts from the website.
-        // Addon payments are tracked separately via the addon's isPaid/paymentMethod fields.
+        if (!paidDuplicate) {
+            await prisma.bookingPayment.create({
+                data: {
+                    ddBookingId: addon.bookingId,
+                    paymentType: `addon_${addon.addonType}`,
+                    amount: addon.price,
+                    method: effectiveMethod,
+                    collectedBy: req.admin!.id,
+                    notes: `Addon payment: ${addon.addonType}`
+                }
+            });
 
-        // Track cash collection for employee
-        if (effectiveMethod.toLowerCase() === "cash" && addon.price > 0) {
-            const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
-            if (ddProperty) {
-                const employee = await prisma.employee.findFirst({
-                    where: { propertyId: ddProperty.id, isActive: true },
-                });
-                if (employee) {
-                    await prisma.employee.update({
-                        where: { id: employee.id },
-                        data: { cashCollected: { increment: addon.price } },
+            // NOTE: Do NOT modify booking amountPaid/amountToCollect here.
+            // Financials section reflects booking-only amounts from the website.
+            // Addon payments are tracked separately via the addon's isPaid/paymentMethod fields.
+
+            // Track cash collection for employee
+            if (effectiveMethod.toLowerCase() === "cash" && addon.price > 0) {
+                const ddProperty = await prisma.property.findFirst({ where: { slug: "digital-diaries" } });
+                if (ddProperty) {
+                    const employee = await prisma.employee.findFirst({
+                        where: { propertyId: ddProperty.id, isActive: true },
                     });
-                    await prisma.cashTransaction.create({
-                        data: {
-                            employeeId: employee.id,
-                            bookingRef: addon.booking.bookingRef,
-                            guestName: addon.booking.customerName,
-                            amount: addon.price,
-                            transactionType: "collection",
-                            note: `DD addon (${addon.addonType}) — ₹${addon.price}`,
-                        },
-                    });
+                    if (employee) {
+                        await prisma.employee.update({
+                            where: { id: employee.id },
+                            data: { cashCollected: { increment: addon.price } },
+                        });
+                        await prisma.cashTransaction.create({
+                            data: {
+                                employeeId: employee.id,
+                                bookingRef: addon.booking.bookingRef,
+                                guestName: addon.booking.customerName,
+                                amount: addon.price,
+                                transactionType: "collection",
+                                note: `DD addon (${addon.addonType}) — ₹${addon.price}`,
+                            },
+                        });
+                    }
                 }
             }
         }
@@ -685,9 +692,9 @@ router.post("/:id/addons", authMiddleware, async (req: AuthRequest, res) => {
 
         const created = [];
         for (const addon of addons) {
-            // Check if addon of this type already exists (unpaid)
+            // Check if addon of this type already exists (paid OR unpaid)
             const existing = await prisma.ddBookingAddon.findFirst({
-                where: { bookingId, addonType: addon.type, isPaid: false }
+                where: { bookingId, addonType: addon.type }
             });
             if (!existing) {
                 const record = await prisma.ddBookingAddon.create({
