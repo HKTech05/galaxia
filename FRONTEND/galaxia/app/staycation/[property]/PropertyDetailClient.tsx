@@ -452,7 +452,11 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     <h3 className="font-cinzel text-base sm:text-lg font-semibold text-text-primary mb-4">Booking & Deposit</h3>
                                     <div className="space-y-2 text-sm font-inter">
                                         <div className="flex justify-between"><span className="text-text-secondary">Security Deposit</span><span className="text-text-primary">₹{property.securityDeposit}</span></div>
-                                        <div className="pt-2 mt-2 border-t border-border-light"><p className="text-warning text-xs">{property.bookingPolicy}</p></div>
+                                        <div className="flex justify-between"><span className="text-text-secondary">Refund</span><span className="text-text-primary">Refund at checkout</span></div>
+                                        <div className="pt-3 mt-3 border-t border-border-light">
+                                            <p className="text-text-muted text-[10px] uppercase tracking-wider font-semibold mb-1">Booking Amount Payment</p>
+                                            <p className="text-text-secondary text-xs">80% payable online at booking · 20% payable at the venue</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
