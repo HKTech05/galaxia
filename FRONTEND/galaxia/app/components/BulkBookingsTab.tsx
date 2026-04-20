@@ -17,9 +17,9 @@ export default function BulkBookingsTab() {
         email: "",
         checkIn: "",
         checkOut: "",
-        numCottages: 1,
+        numCottages: "" as any,
         cottageType: "standard" as "standard" | "family" | "mix",
-        guestsPerCottage: 2,
+        guestsPerCottage: "" as any,
         paymentMethod: "UPI" as "Cash" | "UPI" | "Online",
     });
     const [bulkHistory, setBulkHistory] = useState<any[]>([]);
@@ -225,7 +225,7 @@ export default function BulkBookingsTab() {
             }
             const totalDiscApplied = discountAmount + couponDiscount;
             setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}! ${totalDiscApplied > 0 ? `(₹${totalDiscApplied.toLocaleString('en-IN')} discount applied)` : ""}`);
-            setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: 1, cottageType: "standard", guestsPerCottage: 2, paymentMethod: "UPI" });
+            setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: "" as any, cottageType: "standard", guestsPerCottage: "" as any, paymentMethod: "UPI" });
             setDiscountAmount(0);
             setCouponCode("");
             setAppliedCoupon(null);
@@ -419,11 +419,11 @@ export default function BulkBookingsTab() {
                                 <input type="date" value={bulkForm.checkOut} onChange={e => setBulkForm({ ...bulkForm, checkOut: e.target.value })} min={bulkForm.checkIn} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Number of Cottages (1–{bulkForm.cottageType === "family" ? "1" : bulkForm.cottageType === "standard" ? "14" : "15"})</label>
-                                <input type="text" inputMode="numeric" pattern="[0-9]*" min={1} max={bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15} value={bulkForm.numCottages} onChange={e => {
-                                    const max = bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15;
-                                    setBulkForm({ ...bulkForm, numCottages: Math.min(max, Math.max(1, parseInt(e.target.value) || 1)) });
-                                }} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Number of Cottages</label>
+                                <input type="text" inputMode="numeric" value={bulkForm.numCottages} onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setBulkForm({ ...bulkForm, numCottages: val === '' ? '' as any : parseInt(val) });
+                                }} placeholder="e.g. 3" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Cottage Type</label>
@@ -439,7 +439,10 @@ export default function BulkBookingsTab() {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Guests per Cottage</label>
-                                <input type="text" inputMode="numeric" pattern="[0-9]*" min={1} max={6} value={bulkForm.guestsPerCottage} onChange={e => setBulkForm({ ...bulkForm, guestsPerCottage: Math.min(6, Math.max(1, parseInt(e.target.value) || 2)) })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                <input type="text" inputMode="numeric" value={bulkForm.guestsPerCottage} onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setBulkForm({ ...bulkForm, guestsPerCottage: val === '' ? '' as any : parseInt(val) });
+                                }} placeholder="e.g. 2" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Payment Method</label>
