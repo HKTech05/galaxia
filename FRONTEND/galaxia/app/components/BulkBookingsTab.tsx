@@ -34,6 +34,11 @@ export default function BulkBookingsTab() {
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
 
+    // Custom split state
+    const [customSplitMode, setCustomSplitMode] = useState(false);
+    const [customPrepaid, setCustomPrepaid] = useState("");
+    const [customBalance, setCustomBalance] = useState("");
+
     // Sub-property data for cottage type filtering
     const [subProperties, setSubProperties] = useState<SubProperty[]>([]);
     const [amstelPropertyId, setAmstelPropertyId] = useState<number | null>(null);
@@ -206,8 +211,8 @@ export default function BulkBookingsTab() {
                     checkInDate: bulkForm.checkIn,
                     checkOutDate: bulkForm.checkOut,
                     totalAmount: perCottageTotal,
-                    advanceAmount: perCottageTotal,
-                    balanceAmount: 0,
+                    advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : perCottageTotal,
+                    balanceAmount: customSplitMode ? Math.round(parseInt(customBalance || '0') / bulkForm.numCottages) : 0,
                     securityDeposit: 3000,
                     basePrice: perCottageBase,
                     gstAmount: perCottageGst,
@@ -225,6 +230,9 @@ export default function BulkBookingsTab() {
             setCouponCode("");
             setAppliedCoupon(null);
             setCouponError("");
+            setCustomSplitMode(false);
+            setCustomPrepaid("");
+            setCustomBalance("");
         } catch (err: any) {
             setBulkError(err?.message || "Failed to create bulk booking.");
         } finally {
@@ -543,6 +551,43 @@ export default function BulkBookingsTab() {
                                     <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(Math.max(0, pricing.total - discountAmount - couponDiscount) / bulkForm.numCottages).toLocaleString("en-IN")}</p>
                                     <p className="text-[10px] text-amber-600 mt-0.5">Security deposit: ₹3,000 per cottage (separate)</p>
                                 </div>
+
+                                {/* Payment Split Mode */}
+                                <div className="mt-3">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Payment Split</label>
+                                    <div className="bg-slate-50 rounded-lg p-1 flex">
+                                        <button type="button" onClick={() => { setCustomSplitMode(false); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${!customSplitMode ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}>Full Payment</button>
+                                        <button type="button" onClick={() => { setCustomSplitMode(true); const finalTotal = Math.max(0, pricing.total - discountAmount - couponDiscount); setCustomPrepaid(String(finalTotal)); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}>Custom Split</button>
+                                    </div>
+                                </div>
+                                {customSplitMode && (
+                                    <div className="grid grid-cols-2 gap-3 mt-2 animate-in fade-in">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prepaid (₹)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                                                value={customPrepaid}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setCustomPrepaid(val);
+                                                    const prepaidNum = parseInt(val || '0');
+                                                    const finalTotal = Math.max(0, pricing.total - discountAmount - couponDiscount);
+                                                    setCustomBalance(String(Math.max(0, finalTotal - prepaidNum)));
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Balance (₹)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                                                value={customBalance}
+                                                readOnly
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                         <button

@@ -150,6 +150,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [manualForm, setManualForm] = useState({
         name: "",
         guests: 2,
+        kids: 0,
         pets: 0,
         phone: "",
         checkInDate: new Date(),
@@ -194,6 +195,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
             let basePrice = 0;
             let extraAdultPrice = 0;
+            let kidsPrice = 0;
             let baseGuests = 2;
 
             const prop = manualForm.property;
@@ -201,12 +203,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             if (prop.includes("Hill View")) {
                 basePrice = isWeekend ? 3950 : 2500;
                 extraAdultPrice = 600;
+                kidsPrice = 400;
             } else if (prop.includes("Mount View")) {
                 basePrice = isWeekend ? 4950 : 3500;
                 extraAdultPrice = 800;
+                kidsPrice = 500;
             } else if (prop.includes("Heavenly Villa")) {
                 basePrice = isWeekend ? 4950 : 3950;
                 extraAdultPrice = 800;
+                kidsPrice = 500;
             } else if (prop.includes("La Paraiso")) {
                 if (isWeekend) {
                     basePrice = 7500;
@@ -216,9 +221,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     baseGuests = manualForm.guests > 2 ? 4 : 2;
                 }
                 extraAdultPrice = 1200;
+                kidsPrice = 800;
             } else if (prop.includes("Amstel Nest")) {
-                basePrice = isWeekend ? 6950 : 4950;
-                extraAdultPrice = 2000;
+                // Family Cottage: ₹9,000 base for up to 4 persons (weekday & weekend)
+                if (manualForm.villa === "Family Cottage") {
+                    basePrice = 9000;
+                    baseGuests = 4;
+                    extraAdultPrice = 2000;
+                } else {
+                    basePrice = isWeekend ? 6950 : 4950;
+                    extraAdultPrice = 2000;
+                }
+                kidsPrice = 1000;
             } else if (prop.includes("Ambrose")) {
                 const villa = manualForm.villa;
                 if (villa === "BAMBOOSA") {
@@ -243,12 +257,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     }
                     extraAdultPrice = 2000;
                 }
+                kidsPrice = 1000;
             }
 
             let nightPrice = basePrice;
             if (manualForm.guests > baseGuests) {
                 nightPrice += (manualForm.guests - baseGuests) * extraAdultPrice;
             }
+            // Kids charge per night (before GST)
+            nightPrice += manualForm.kids * kidsPrice;
 
             total += nightPrice;
         }
@@ -267,7 +284,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         }
         // Add 5% GST
         total = total + (total * 0.05);
-        // Add pet charges (₹600/pet flat)
+        // Add pet charges (₹600/pet flat — no GST)
         total += manualForm.pets * 600;
         return Math.round(Math.round(total) / 10) * 10;
     };
@@ -1066,12 +1083,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Number of Guests</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Adults</label>
                                         <div className="flex items-center gap-2">
                                             <Users size={14} className="text-slate-400" />
                                             <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.max(1, manualForm.guests - 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">−</button>
                                             <span className="w-10 text-center text-sm font-bold text-slate-800">{manualForm.guests}</span>
                                             <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.min(15, manualForm.guests + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Kids (5–12 yrs) — ₹{manualForm.property.includes('Hill View') ? '400' : manualForm.property.includes('Mount View') ? '500' : manualForm.property.includes('Heavenly') ? '500' : manualForm.property.includes('La Paraiso') ? '800' : '1,000'}/kid/night</label>
+                                        <div className="flex items-center gap-2">
+                                            <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.max(0, manualForm.kids - 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">−</button>
+                                            <span className="w-10 text-center text-sm font-bold text-slate-800">{manualForm.kids}</span>
+                                            <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.min(6, manualForm.kids + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
                                         </div>
                                     </div>
                                     {['Ambrose', 'La Paraiso', 'Mount View', 'Hill View'].some(p => manualForm.property.includes(p)) && (

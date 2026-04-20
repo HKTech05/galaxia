@@ -295,12 +295,12 @@ router.post("/", async (req, res) => {
         sendBookingConfirmation({ ...booking, customerPhone, customerEmail }).catch(() => { });
 
         // Send WhatsApp confirmation with voucher link (fire-and-forget)
-        if (customerPhone) {
-            const baseUrl = process.env.FRONTEND_URL || "https://galaxiaresorts.com";
-            const voucherUrl = `${baseUrl}/api/bookings/staycation/voucher/${booking.bookingRef}`;
-            // Use stay1 as default chatbot; can be mapped per property later
-            sendStaycationBookingConfirmation("stay1", customerPhone, booking.bookingRef, voucherUrl).catch(() => { });
-        }
+        // DISABLED: Do not send staycation confirmations until staycation WhatsApp numbers are provided.
+        // if (customerPhone) {
+        //     const baseUrl = process.env.FRONTEND_URL || "https://galaxiaresorts.com";
+        //     const voucherUrl = `${baseUrl}/api/bookings/staycation/voucher/${booking.bookingRef}`;
+        //     sendStaycationBookingConfirmation("stay1", customerPhone, booking.bookingRef, voucherUrl).catch(() => { });
+        // }
 
         return res.status(201).json(booking);
     } catch (error: any) {
