@@ -36,6 +36,15 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
 
+    // Site images from admin Photo Manager
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api');
+        fetch(`${baseUrl}/site-images`).then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+
     // Cart state
     const [cartCount, setCartCount] = useState(0);
     const [isInCart, setIsInCart] = useState(false);
@@ -134,7 +143,10 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     }, [cottage.id]);
 
 
-    const images = [cottage.image, ...parent.images.slice(1, 4)];
+    // Use admin-uploaded slideshow images if available, then thumbnail, then static fallback
+    const slideshowKey = `amstel-nest/${cottage.id}/slideshow`;
+    const dynamicSlideshow = (siteImages[slideshowKey] || []).map(i => i.url);
+    const images = dynamicSlideshow.length > 0 ? dynamicSlideshow : [cottage.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = liveWeekday || cottage.pricing?.weekday.price || parent.pricing.weekday.price;
     const weekendPrice = liveWeekend || cottage.pricing?.weekend.price || parent.pricing.weekend.price;
 
