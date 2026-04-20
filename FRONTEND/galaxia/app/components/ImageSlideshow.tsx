@@ -61,7 +61,7 @@ export default function ImageSlideshow({ images, alt }: ImageSlideshowProps) {
             {lightboxOpen && (
                 <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
                     {/* Close button */}
-                    <button className="absolute top-4 right-4 z-[60] w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }} aria-label="Close">
+                    <button className="absolute top-16 right-4 z-[60] w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all" onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }} aria-label="Close">
                         <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                     {/* Counter */}

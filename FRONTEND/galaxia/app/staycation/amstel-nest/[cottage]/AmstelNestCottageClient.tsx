@@ -147,6 +147,9 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const slideshowKey = `amstel-nest/${cottage.id}/slideshow`;
     const dynamicSlideshow = (siteImages[slideshowKey] || []).map(i => i.url);
     const images = dynamicSlideshow.length > 0 ? dynamicSlideshow : [cottage.image, ...parent.images.slice(1, 4)];
+    const thumbnailKey = `amstel-nest/${cottage.id}/thumbnail`;
+    const dynamicThumbnail = (siteImages[thumbnailKey] || [])[0]?.url;
+    const cottageThumb = dynamicThumbnail || cottage.image;
     const weekdayPrice = liveWeekday || cottage.pricing?.weekday.price || parent.pricing.weekday.price;
     const weekendPrice = liveWeekend || cottage.pricing?.weekend.price || parent.pricing.weekend.price;
 
@@ -193,7 +196,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                         </div>
                     </div>
                     <div className="relative h-64 sm:h-80 md:h-96 rounded-xl overflow-hidden shadow-lg">
-                        <Image src={cottage.image} alt={cottage.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                        <Image src={cottageThumb} alt={cottage.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
                     </div>
                 </div>
             </section>
