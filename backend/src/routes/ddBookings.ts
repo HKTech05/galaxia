@@ -453,54 +453,61 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
         const transferMeta = `[TRANSFER:${original.bookingRef}|${origDate}|${fmtHr(origSlotStart)}-${fmtHr(origSlotEnd)}|${TRANSFER_FEE}]`;
 
         // Create new booking with same details + ₹400 transfer fee added to amountToCollect
-        const newBooking = await prisma.ddBooking.create({
-            data: {
-                screenId: original.screenId,
-                packageId: original.packageId,
-                bookingDate: new Date(newDate),
-                startHour: parseInt(newStartHour),
-                durationHours: original.durationHours,
-                customerName: original.customerName,
-                customerPhone: original.customerPhone,
-                customerEmail: original.customerEmail,
-                numGuests: original.numGuests,
-                occasion: original.occasion,
-                cakeMessage: original.cakeMessage,
-                specialRequests: original.specialRequests
-                    ? `${original.specialRequests.replace(/\[TRANSFER:.*?\]/g, '').trim()} ${transferMeta}`.trim()
-                    : transferMeta,
-                totalAmount: original.totalAmount + TRANSFER_FEE,
-                amountPaid: original.amountPaid,
-                amountToCollect: original.amountToCollect + TRANSFER_FEE,
-                paymentMethod: original.paymentMethod,
-                paymentStatus: original.amountToCollect + TRANSFER_FEE > 0 ? "partial" : "paid",
-                basePrice: original.basePrice,
-                extraPersonCharge: original.extraPersonCharge,
-                gstAmount: original.gstAmount,
-                bookingRef: newRef,
-                status: "confirmed",
-            },
-        });
-
-        // Copy add-ons to new booking
-        if (original.addons && original.addons.length > 0) {
-            await prisma.ddBookingAddon.createMany({
-                data: original.addons.map((a) => ({
-                    bookingId: newBooking.id,
-                    addonType: a.addonType,
-                    addonValue: a.addonValue,
-                    price: a.price,
-                    isPaid: a.isPaid,
-                    paymentMethod: a.paymentMethod,
-                })),
+        // Use transaction to ensure both create + original update succeed atomically
+        const { newBooking } = await prisma.$transaction(async (tx) => {
+            const created = await tx.ddBooking.create({
+                data: {
+                    screenId: original.screenId,
+                    packageId: original.packageId,
+                    bookingDate: new Date(newDate + "T00:00:00"),
+                    startHour: parseInt(newStartHour),
+                    durationHours: original.durationHours,
+                    customerName: original.customerName,
+                    customerPhone: original.customerPhone,
+                    customerEmail: original.customerEmail,
+                    numGuests: original.numGuests,
+                    occasion: original.occasion,
+                    cakeMessage: original.cakeMessage,
+                    specialRequests: original.specialRequests
+                        ? `${original.specialRequests.replace(/\[TRANSFER:.*?\]/g, '').trim()} ${transferMeta}`.trim()
+                        : transferMeta,
+                    totalAmount: original.totalAmount + TRANSFER_FEE,
+                    amountPaid: original.amountPaid,
+                    amountToCollect: original.amountToCollect + TRANSFER_FEE,
+                    paymentMethod: original.paymentMethod,
+                    paymentStatus: original.amountToCollect + TRANSFER_FEE > 0 ? "partial" : "paid",
+                    basePrice: original.basePrice,
+                    extraPersonCharge: original.extraPersonCharge,
+                    gstAmount: original.gstAmount,
+                    bookingRef: newRef,
+                    status: "confirmed",
+                    source: original.source || "website",
+                    couponId: original.couponId || null,
+                },
             });
-        }
 
-        // Mark original as transferred
-        const newSlotFmt = `${fmtHr(parseInt(newStartHour))}-${fmtHr(parseInt(newStartHour) + original.durationHours)}`;
-        await prisma.ddBooking.update({
-            where: { id: bookingId },
-            data: { status: "transferred", specialRequests: `${original.specialRequests || ""} [Transferred to ${newRef} on ${newDate} ${newSlotFmt}]`.trim() },
+            // Copy add-ons to new booking
+            if (original.addons && original.addons.length > 0) {
+                await tx.ddBookingAddon.createMany({
+                    data: original.addons.map((a) => ({
+                        bookingId: created.id,
+                        addonType: a.addonType,
+                        addonValue: a.addonValue,
+                        price: a.price,
+                        isPaid: a.isPaid,
+                        paymentMethod: a.paymentMethod,
+                    })),
+                });
+            }
+
+            // Mark original as transferred
+            const newSlotFmt = `${fmtHr(parseInt(newStartHour))}-${fmtHr(parseInt(newStartHour) + original.durationHours)}`;
+            await tx.ddBooking.update({
+                where: { id: bookingId },
+                data: { status: "transferred", specialRequests: `${original.specialRequests || ""} [Transferred to ${newRef} on ${newDate} ${newSlotFmt}]`.trim() },
+            });
+
+            return { newBooking: created };
         });
 
         await prisma.auditLog.create({
