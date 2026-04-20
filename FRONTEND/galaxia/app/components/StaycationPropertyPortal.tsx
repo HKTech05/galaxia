@@ -223,9 +223,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 extraAdultPrice = 1200;
                 kidsPrice = 800;
             } else if (prop.includes("Amstel Nest")) {
-                // Family Cottage: ₹9,000 base for up to 4 persons (weekday & weekend)
+                // Family Cottage: ₹9,000 weekday / ₹12,000 weekend, base for up to 4 persons
                 if (manualForm.villa === "Family Cottage") {
-                    basePrice = 9000;
+                    basePrice = isWeekend ? 12000 : 9000;
                     baseGuests = 4;
                     extraAdultPrice = 2000;
                 } else {
@@ -1099,14 +1099,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.min(6, manualForm.kids + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
                                         </div>
                                     </div>
-                                    {['Ambrose', 'La Paraiso', 'Mount View', 'Hill View'].some(p => manualForm.property.includes(p)) && (
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Pets (₹600/pet)</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Pets (₹600/pet/trip)</label>
                                         <div className="relative">
-                                            <input type="number" min="0" max="2" value={manualForm.pets} onChange={e => setManualForm({ ...manualForm, pets: Math.min(2, parseInt(e.target.value) || 0) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Max 2" />
+                                            <input type="number" min="0" max="3" value={manualForm.pets} onChange={e => setManualForm({ ...manualForm, pets: Math.min(3, parseInt(e.target.value) || 0) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Max 3" />
                                         </div>
                                     </div>
-                                    )}
                                 </div>
                             </div>
 

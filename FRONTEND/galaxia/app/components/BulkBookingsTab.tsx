@@ -189,9 +189,9 @@ export default function BulkBookingsTab() {
             // Get eligible sub-property IDs based on cottage type
             const eligibleIds = getSubPropertyIds(bulkForm.cottageType);
             if (eligibleIds.length === 0) throw new Error("No cottages available for selected type");
-            if (bulkForm.numCottages > eligibleIds.length) {
-                throw new Error(`Only ${eligibleIds.length} ${bulkForm.cottageType} cottage(s) available, but ${bulkForm.numCottages} requested.`);
-            }
+            // For standard cottages: unitCount=14 but eligibleIds has only 1 record.
+            // The backend handles capacity checks, so we just need to pass the correct sub-property ID.
+            const targetSubPropertyId = eligibleIds[0]; // Use the first matching sub-property record
 
             const totalDiscount = discountAmount + couponDiscount;
             const discountedTotal = pricing.total - totalDiscount;
@@ -206,7 +206,7 @@ export default function BulkBookingsTab() {
                     customerPhone: bulkForm.phone,
                     customerEmail: bulkForm.email || undefined,
                     propertyId: amstelProp.id,
-                    subPropertyId: eligibleIds[i], // Assign specific sub-property
+                    subPropertyId: bulkForm.cottageType === "mix" ? eligibleIds[Math.min(i, eligibleIds.length - 1)] : targetSubPropertyId,
                     numGuests: bulkForm.guestsPerCottage,
                     checkInDate: bulkForm.checkIn,
                     checkOutDate: bulkForm.checkOut,
@@ -398,7 +398,7 @@ export default function BulkBookingsTab() {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Phone *</label>
-                                <input type="tel" value={bulkForm.phone} onChange={e => setBulkForm({ ...bulkForm, phone: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="9876543210" />
+                                <input type="text" inputMode="tel" value={bulkForm.phone} onChange={e => setBulkForm({ ...bulkForm, phone: e.target.value })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="9876543210" />
                             </div>
                             <div className="sm:col-span-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Email</label>
@@ -420,7 +420,7 @@ export default function BulkBookingsTab() {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Number of Cottages (1–{bulkForm.cottageType === "family" ? "1" : bulkForm.cottageType === "standard" ? "14" : "15"})</label>
-                                <input type="number" min={1} max={bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15} value={bulkForm.numCottages} onChange={e => {
+                                <input type="text" inputMode="numeric" pattern="[0-9]*" min={1} max={bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15} value={bulkForm.numCottages} onChange={e => {
                                     const max = bulkForm.cottageType === "family" ? 1 : bulkForm.cottageType === "standard" ? 14 : 15;
                                     setBulkForm({ ...bulkForm, numCottages: Math.min(max, Math.max(1, parseInt(e.target.value) || 1)) });
                                 }} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
@@ -439,7 +439,7 @@ export default function BulkBookingsTab() {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Guests per Cottage</label>
-                                <input type="number" min={1} max={6} value={bulkForm.guestsPerCottage} onChange={e => setBulkForm({ ...bulkForm, guestsPerCottage: Math.min(6, Math.max(1, parseInt(e.target.value) || 2)) })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                <input type="text" inputMode="numeric" pattern="[0-9]*" min={1} max={6} value={bulkForm.guestsPerCottage} onChange={e => setBulkForm({ ...bulkForm, guestsPerCottage: Math.min(6, Math.max(1, parseInt(e.target.value) || 2)) })} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Payment Method</label>
