@@ -334,7 +334,7 @@ export default function StayBookingsPage() {
 
                 {/* Row 3: Dates (check-in/booking date) range */}
                 <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Dates</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Check-in Dates</p>
                     <div className="flex items-center gap-2 w-full">
                         <div className="flex-1">
                             <CustomDatePicker

@@ -24,6 +24,7 @@ import reviewRoutes from "./routes/reviews";
 import paymentRoutes from "./routes/payments";
 import humanRequestRoutes from "./routes/humanRequests";
 import foodBillRoutes from "./routes/foodBills";
+import ddExpenseRoutes from "./routes/ddExpenses";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { sendTestEmail, sendContactFormEmail } from "./lib/emailService";
 import { authMiddleware, requireRole, AuthRequest } from "./middleware/auth";
@@ -102,6 +103,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/human-requests", humanRequestRoutes);
 app.use("/api/food-bills", foodBillRoutes);
+app.use("/api/dd-expenses", ddExpenseRoutes);
 
 // Test email route (owner/dev only)
 app.post("/api/test-email", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {

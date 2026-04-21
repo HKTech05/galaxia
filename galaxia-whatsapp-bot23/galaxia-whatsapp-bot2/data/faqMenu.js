@@ -326,6 +326,7 @@ const staticMenu = {
       { label: "🥣 Add-ons & People", value: "faq_cel_food_addons" },
       { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" },
       { label: "⏰ Timings & Rules", value: "faq_cel_rules" },
+      { label: "📍 Location", value: "dd_location" },
       { label: "👤 Talk to a Human", value: "human" },
       BACK_TO_MENU
     ]
@@ -353,6 +354,11 @@ const staticMenu = {
              "🍕 *Additional Food Menu:*\nWe offer a variety of snacks and beverages at the venue. Outside food is *not allowed*.\n\n" +
              "📄 *Download our full food menu here:*\nhttps://galaxiaresorts.com/menus/DigitalDiariesMenu.pdf",
     options: [ BACK_TO_MENU ]
+  },
+
+  dd_location: {
+    message: "📍 *Digital Diaries Location*\n\nWe are located in Wadala, Mumbai.\n\n🗺️ *Google Maps:* https://maps.app.goo.gl/ghU28kHARPrpa4a89",
+    options: [BACK_TO_MENU]
   },
 
   human: { message: "👤 *Talk to a Human*\n\nOur team will reply to this chat shortly.", options: [BACK_TO_MENU] },

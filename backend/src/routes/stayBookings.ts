@@ -42,8 +42,12 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const checkIn = new Date(checkInDate);
-        const checkOut = new Date(checkOutDate);
+        // Parse dates with explicit time to prevent UTC-offset shifting
+        // Without T00:00:00, "2026-04-22" is parsed as UTC midnight → April 21 in IST
+        const ciStr = typeof checkInDate === 'string' && !checkInDate.includes('T') ? checkInDate + 'T00:00:00' : checkInDate;
+        const coStr = typeof checkOutDate === 'string' && !checkOutDate.includes('T') ? checkOutDate + 'T00:00:00' : checkOutDate;
+        const checkIn = new Date(ciStr);
+        const checkOut = new Date(coStr);
         const numNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
         const parsedPropertyId = parseInt(propertyId);
         if (isNaN(parsedPropertyId)) return res.status(400).json({ error: "Invalid property ID" });

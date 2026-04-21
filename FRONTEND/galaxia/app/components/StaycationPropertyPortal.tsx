@@ -42,7 +42,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         fileName: g.fileName,
                         fileType: g.fileType,
                     })),
-                    status: (b.status === "checked_out" || new Date(b.checkOutDate) < new Date()) ? "Completed" : 
+                    status: b.status === "checked_out" ? "Completed" : 
                             b.status === "confirmed" ? "Pending Arrival" : 
                             b.status === "checked_in" ? "Checked In" : 
                             b.status || "Pending Arrival",

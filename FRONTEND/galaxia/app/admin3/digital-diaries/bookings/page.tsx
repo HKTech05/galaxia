@@ -170,6 +170,9 @@ export default function Admin3DDBookingsPage() {
                 <Link href="/admin3/digital-diaries/food-history" className="text-slate-500 hover:text-slate-800 pb-2 text-sm font-bold uppercase tracking-widest transition-colors whitespace-nowrap">
                     Food Bill History
                 </Link>
+                <Link href="/admin3/digital-diaries/expenses" className="text-slate-500 hover:text-slate-800 pb-2 text-sm font-bold uppercase tracking-widest transition-colors whitespace-nowrap">
+                    Expenses
+                </Link>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

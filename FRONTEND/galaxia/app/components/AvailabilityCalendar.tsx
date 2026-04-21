@@ -299,7 +299,7 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                                                 if (avail <= 0) return <span className="font-inter text-[7px] sm:text-[8px] text-red-500 font-bold block">Booked</span>;
                                                 return (
                                                     <>
-                                                        <span className={`font-inter text-[7px] sm:text-[8px] ${count > 0 ? 'text-amber-600' : 'text-emerald-600'} font-medium block`}>
+                                                        <span className={`font-inter text-[7px] sm:text-[8px] ${count >= 10 ? 'text-red-600' : count >= 5 ? 'text-amber-600' : 'text-emerald-600'} font-medium block`}>
                                                             {count > 0 ? `${count} booked` : '0'} / {totalUnits}
                                                         </span>
                                                         {!hidePrice && (

@@ -30,6 +30,7 @@ model AdminAccount {
   guestIdsUploaded    GuestId[]
   stayBookingsCreated StaycationBooking[] @relation("StayBookingCreator")
   foodBillsCreated    FoodBill[]          @relation("FoodBillCreator")
+  ddExpensesCreated   DdExpense[]         @relation("DdExpenseCreator")
 
   @@map("admin_accounts")
 }
@@ -656,4 +657,17 @@ model FoodBill {
 
   @@index([date])
   @@map("food_bills")
+}
+
+model DdExpense {
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(200)
+  amount        Int
+  paymentMethod String        @map("payment_method") @db.VarChar(30)
+  createdBy     Int?          @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  creator       AdminAccount? @relation("DdExpenseCreator", fields: [createdBy], references: [id])
+
+  @@index([createdAt])
+  @@map("dd_expenses")
 }

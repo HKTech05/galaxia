@@ -322,6 +322,7 @@ const staticMenu = {
       { label: "🥣 Add-ons & People", value: "faq_cel_food" },
       { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" },
       { label: "⏰ Timings & Rules", value: "faq_cel_rules" },
+      { label: "📍 Location", value: "dd_location" },
       { label: "👤 Talk to a Human", value: "human" },
       BACK_TO_MENU
     ]
@@ -340,6 +341,11 @@ const staticMenu = {
   faq_cel_rules: {
     message: "⏰ *Timings & Rules*\n\n• Slots are fixed as per your booking.\n• *ID Proof is Mandatory* for all guests.\n• Valid government ID (18+) required.",
     options: [ BACK_TO_MENU ]
+  },
+
+  dd_location: {
+    message: "📍 *Digital Diaries Location*\n\nWe are located in Wadala, Mumbai.\n\n🗺️ *Google Maps:* https://maps.app.goo.gl/ghU28kHARPrpa4a89",
+    options: [BACK_TO_MENU]
   },
 
   human: { message: "👤 *Talk to a Human*\n\nOur team will reply to this chat shortly.", options: [BACK_TO_MENU] },
