@@ -98,7 +98,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 // DELETE /api/dd-expenses/:id — Delete expense and reverse cash impact
 router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseInt(String(req.params.id));
         if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
 
         const expense = await prisma.ddExpense.findUnique({ where: { id } });
