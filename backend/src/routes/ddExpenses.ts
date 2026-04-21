@@ -95,4 +95,54 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
+// DELETE /api/dd-expenses/:id — Delete expense and reverse cash impact
+router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+        const expense = await prisma.ddExpense.findUnique({ where: { id } });
+        if (!expense) return res.status(404).json({ error: "Expense not found" });
+
+        // If it was a cash expense, reverse the cash impact
+        if (expense.paymentMethod === "cash") {
+            const ddProperty = await prisma.property.findFirst({
+                where: { slug: "digital-diaries" },
+            });
+
+            if (ddProperty) {
+                const employee = await prisma.employee.findFirst({
+                    where: { propertyId: ddProperty.id, isActive: true },
+                });
+
+                if (employee) {
+                    // Delete the matching cash transaction
+                    await prisma.cashTransaction.deleteMany({
+                        where: {
+                            employeeId: employee.id,
+                            guestName: `Expense: ${expense.name}`,
+                            amount: expense.amount,
+                            transactionType: "expense",
+                        },
+                    });
+
+                    // Reverse the decrement — add the amount back
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: { cashCollected: { increment: expense.amount } },
+                    });
+                }
+            }
+        }
+
+        // Delete the expense record
+        await prisma.ddExpense.delete({ where: { id } });
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Delete DD expense error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { IndianRupee, Plus, Clock, ArrowLeft } from "lucide-react";
+import { IndianRupee, Plus, Clock, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { api } from "../../../../lib/api";
 
@@ -17,6 +17,7 @@ interface DdExpense {
 export default function DdExpensesPage() {
     const [expenses, setExpenses] = useState<DdExpense[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
 
     // Form state
     const [expenseName, setExpenseName] = useState("");
@@ -60,15 +61,30 @@ export default function DdExpensesPage() {
         }
     };
 
+    const handleDelete = async (id: number) => {
+        if (!confirm("Delete this expense? This will also reverse any cash logs.")) return;
+        setDeleteLoading(id);
+        try {
+            await api.delete(`/dd-expenses/${id}`);
+            fetchExpenses();
+        } catch (err: any) {
+            alert(err.message || "Failed to delete expense");
+        } finally {
+            setDeleteLoading(null);
+        }
+    };
+
     const formatDate = (d: string) => {
         const dt = new Date(d);
         return `${dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} · ${dt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
     };
 
-    // Today's totals
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const todayExpenses = expenses.filter(e => e.createdAt.startsWith(todayStr));
+    // Today's totals — compare using local date, not UTC string
+    const todayExpenses = expenses.filter(e => {
+        const d = new Date(e.createdAt);
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    });
     const todayCash = todayExpenses.filter(e => e.paymentMethod === "cash").reduce((s, e) => s + e.amount, 0);
     const todayUpi = todayExpenses.filter(e => e.paymentMethod === "upi").reduce((s, e) => s + e.amount, 0);
     const todayTotal = todayCash + todayUpi;
@@ -103,7 +119,7 @@ export default function DdExpensesPage() {
             {/* Today's Summary Cards */}
             <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Today's Total</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Today&apos;s Total</p>
                     <p className="text-xl font-black text-slate-800">₹{todayTotal.toLocaleString("en-IN")}</p>
                 </div>
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
@@ -225,6 +241,13 @@ export default function DdExpensesPage() {
                                         {exp.paymentMethod}
                                     </span>
                                     <span className="text-sm font-black text-slate-800">₹{exp.amount.toLocaleString("en-IN")}</span>
+                                    <button
+                                        onClick={() => handleDelete(exp.id)}
+                                        disabled={deleteLoading === exp.id}
+                                        className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        {deleteLoading === exp.id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                                    </button>
                                 </div>
                             </div>
                         ))}
