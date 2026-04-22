@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, CalendarDays, IndianRupee, FileText, Download, CheckCircle, Pencil, X, Filter, Building, Loader2 } from "lucide-react";
+import { Users, CalendarDays, IndianRupee, FileText, Download, CheckCircle, Pencil, X, Filter, Building, Loader2, Trash2 } from "lucide-react";
 import { api } from "../../../lib/api";
 
 // Type definitions
@@ -121,6 +121,19 @@ export default function EmployeesClient() {
             } catch (err) {
                 console.error("Failed to fetch transaction logs:", err);
             }
+        }
+    };
+
+    const handleDeleteCashTx = async (empId: number, txId: number) => {
+        if (!confirm('Permanently delete this cash transaction? This cannot be undone.')) return;
+        try {
+            await api.delete(`/employees/${empId}/transactions/${txId}`);
+            await fetchEmployees();
+            const logs = await api.get(`/employees/${empId}/transactions`);
+            setCashLogs(logs);
+        } catch (err) {
+            console.error('Failed to delete cash transaction:', err);
+            alert('Failed to delete transaction');
         }
     };
 
@@ -394,6 +407,7 @@ export default function EmployeesClient() {
                                             <th className="px-5 py-3">Guest Name</th>
                                             <th className="px-5 py-3">Amount</th>
                                             <th className="px-5 py-3">Status / Notes</th>
+                                            <th className="px-5 py-3 text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -423,12 +437,15 @@ export default function EmployeesClient() {
                                                                 <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
                                                             )}
                                                         </td>
+                                                        <td className="px-5 py-3.5 text-center">
+                                                            <button onClick={() => handleDeleteCashTx(viewEmployeeId!, log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
+                                                        </td>
                                                     </tr>
                                                 );
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan={4} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this employee.</td>
+                                                <td colSpan={5} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this employee.</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -465,6 +482,7 @@ export default function EmployeesClient() {
                                                         <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
                                                     )}
                                                 </div>
+                                                <button onClick={() => handleDeleteCashTx(viewEmployeeId!, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>
                                             </div>
                                         );
                                     })

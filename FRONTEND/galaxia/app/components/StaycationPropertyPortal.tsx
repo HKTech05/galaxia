@@ -53,6 +53,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     depositRefunded: b.depositRefunded || false,
                     depositRefundMethod: b.depositRefundMethod || null,
                     depositRefundedAt: b.depositRefundedAt || null,
+                    foodBills: b.foodBills || [],
                 }));
                 setBookings(mapped);
             }
@@ -106,7 +107,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                 const formData = new FormData();
                 formData.append("file", foodBillUpiProof);
-                const uploadRes = await fetch("/api/uploads/upi-proof", {
+                formData.append("category", "food-bill-proofs");
+                const uploadRes = await fetch("/api/uploads/general", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
@@ -114,7 +116,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 if (uploadRes.ok) {
                     const uploadData = await uploadRes.json();
                     upiProofUrl = uploadData.url;
-                    upiProofKey = uploadData.key;
+                    upiProofKey = uploadData.url;
                 }
             }
             await api.post("/stay-food-bills", {
@@ -637,6 +639,26 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Food Bills Summary */}
+                                {booking.foodBills && booking.foodBills.length > 0 && (
+                                    <div className="mt-4 col-span-2 sm:col-span-5">
+                                        <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1.5">Food Bills</p>
+                                            {booking.foodBills.map((fb: any, idx: number) => (
+                                                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-amber-100 last:border-0">
+                                                    <span className="font-medium text-amber-800">{fb.description}</span>
+                                                    <span className="font-bold text-amber-800">₹{fb.amount.toLocaleString('en-IN')} <span className="text-[9px] bg-amber-200 text-amber-800 px-1 py-0.5 rounded ml-1 uppercase">{fb.paymentMethod}</span></span>
+                                                </div>
+                                            ))}
+                                            <div className="flex items-center justify-between text-xs font-black text-amber-900 pt-1.5 mt-1 border-t border-amber-200">
+                                                <span>Total</span>
+                                                <span>₹{booking.foodBills.reduce((s: number, f: any) => s + f.amount, 0).toLocaleString('en-IN')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="mt-6 pt-6 border-t border-slate-100">
                                     <div className="flex items-center justify-between mb-3">
                                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Camera size={14} /> ID Proofs</h4>
@@ -709,11 +731,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             className="w-full bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-red-200">
                                             <Ban size={18} /> Cancel Booking
                                         </button>
+                                        {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                         <button
                                             onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
                                             className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
                                             <Plus size={18} /> Add Food Bill
                                         </button>
+                                        )}
                                     </>
                                 )}
 
@@ -729,11 +753,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 mt-2">
                                             <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                         </button>
+                                        {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                         <button
                                             onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
                                             className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
                                             <Plus size={18} /> Add Food Bill
                                         </button>
+                                        )}
                                     </>
                                 )}
 
@@ -744,11 +770,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
                                             <RotateCcw size={18} /> Initiate Checkout
                                         </button>
+                                        {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                         <button
                                             onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
                                             className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
                                             <Plus size={18} /> Add Food Bill
                                         </button>
+                                        )}
                                     </>
                                 )}
 
@@ -1166,7 +1194,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Pets (₹600/pet/trip)</label>
                                         <div className="relative">
-                                            <input type="number" min="0" max="3" value={manualForm.pets} onChange={e => setManualForm({ ...manualForm, pets: Math.min(3, parseInt(e.target.value) || 0) })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Max 3" />
+                                            <input type="text" inputMode="numeric" value={manualForm.pets} onChange={e => { const val = e.target.value.replace(/[^0-9]/g, ''); setManualForm({ ...manualForm, pets: Math.min(3, parseInt(val) || 0) }); }} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Max 3" />
                                         </div>
                                     </div>
                                 </div>

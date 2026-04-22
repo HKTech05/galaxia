@@ -17,6 +17,7 @@ interface StayBooking {
     checkOut: string;
     nights: number;
     guests: number;
+    kids: number;
     totalAmount: number;
     advanceAmount: number;
     balanceAmount: number;
@@ -38,6 +39,7 @@ interface StayBooking {
     couponCode: string | null;
     extraGuests: any[];
     addons: any[] | null;
+    foodBills: any[] | null;
     isDd?: boolean;
     startHour?: number;
     durationHours?: number;
@@ -106,6 +108,7 @@ export default function StayBookingsPage() {
                 checkOut: b.checkOutDate,
                 nights: b.numNights || 1,
                 guests: b.numGuests || 2,
+                kids: b.numKids || 0,
                 totalAmount: b.totalAmount || 0,
                 advanceAmount: b.advanceAmount || 0,
                 balanceAmount: b.balanceAmount || 0,
@@ -127,6 +130,7 @@ export default function StayBookingsPage() {
                 couponCode: b.coupon?.code || null,
                 extraGuests: b.extraGuests || [],
                 addons: b.addons || null,
+                foodBills: b.foodBills || null,
             }));
             setBookings(mapped);
         } catch (err) {
@@ -161,6 +165,7 @@ export default function StayBookingsPage() {
                 checkOut: b.bookingDate,
                 nights: 0,
                 guests: b.numGuests || 1,
+                kids: 0,
                 totalAmount: b.totalAmount || 0,
                 advanceAmount: b.amountPaid || 0,
                 balanceAmount: b.amountToCollect || 0,
@@ -182,6 +187,7 @@ export default function StayBookingsPage() {
                 couponCode: b.coupon?.code || null,
                 extraGuests: [],
                 addons: b.addons || null,
+                foodBills: null,
                 isDd: true,
                 startHour: b.startHour,
                 durationHours: b.durationHours,
@@ -533,7 +539,7 @@ export default function StayBookingsPage() {
                                                 )}
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className="text-sm font-bold text-slate-800">{b.guests}</span>
+                                                <span className="text-sm font-bold text-slate-800">{b.guests}{b.kids > 0 && <span className="text-xs font-medium text-blue-600 ml-1">+{b.kids}k</span>}</span>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <span className="text-sm font-bold text-slate-800">{formatPrice(b.totalAmount)}</span>
@@ -651,7 +657,7 @@ export default function StayBookingsPage() {
                                     )}
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Guests</p>
-                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.guests} People</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.guests} People{selectedBooking.kids > 0 && <span className="text-blue-600 ml-1">+ {selectedBooking.kids} kid{selectedBooking.kids > 1 ? 's' : ''}</span>}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Source</p>
@@ -762,6 +768,28 @@ export default function StayBookingsPage() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Food Bills */}
+                            {selectedBooking.foodBills && selectedBooking.foodBills.length > 0 && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Food Bills</h4>
+                                    <div className="space-y-1.5">
+                                        {selectedBooking.foodBills.map((fb: any, idx: number) => (
+                                            <div key={idx} className="bg-amber-50 p-2.5 rounded-lg border border-amber-100 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-xs font-bold text-amber-800">{fb.description}</p>
+                                                    <p className="text-[10px] text-amber-600 mt-0.5">{fb.paymentMethod === 'upi' ? 'UPI' : 'Cash'}</p>
+                                                </div>
+                                                <p className="text-sm font-bold text-amber-800">₹{fb.amount.toLocaleString('en-IN')}</p>
+                                            </div>
+                                        ))}
+                                        <div className="bg-amber-100 p-2 rounded-lg border border-amber-200 flex items-center justify-between">
+                                            <p className="text-xs font-bold text-amber-900">Total Food Bills</p>
+                                            <p className="text-sm font-black text-amber-900">₹{selectedBooking.foodBills.reduce((s: number, f: any) => s + f.amount, 0).toLocaleString('en-IN')}</p>
+                                        </div>
                                     </div>
                                 </div>
                             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, CalendarDays, IndianRupee, FileText, Download, X, Filter, Building, Loader2, Image, Eye, Archive, Pencil, Check } from "lucide-react";
+import { Users, CalendarDays, IndianRupee, FileText, Download, X, Filter, Building, Loader2, Image, Eye, Archive, Pencil, Check, Trash2 } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface Employee {
@@ -251,6 +251,21 @@ export default function UpiManagementClient() {
         }
     };
 
+    const handleDeleteUpiTx = async (logId: number) => {
+        if (!confirm('Permanently delete this UPI transaction? This cannot be undone.')) return;
+        try {
+            await api.delete(`/upi-payments/${logId}`);
+            await fetchAllUpiLogs();
+            if (viewEmployeeId) {
+                const logs = await api.get(`/upi-payments/by-employee/${viewEmployeeId}`);
+                setUpiLogs(Array.isArray(logs) ? logs : []);
+            }
+        } catch (err) {
+            console.error('Failed to delete UPI transaction:', err);
+            alert('Failed to delete transaction');
+        }
+    };
+
     // Compute totals per employee from allUpiLogs
     const getEmployeeUpiTotal = (empId: number) => {
         return allUpiLogs.filter(l => l.employeeId === empId).reduce((s, l) => s + l.amount, 0);
@@ -494,6 +509,7 @@ export default function UpiManagementClient() {
                                             <th className="px-4 py-3">Amount</th>
                                             <th className="px-4 py-3">Type</th>
                                             <th className="px-4 py-3 text-center">Proof</th>
+                                            <th className="px-4 py-3 text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -541,11 +557,14 @@ export default function UpiManagementClient() {
                                                         <span className="text-xs text-slate-400 italic">{log.paymentType === 'deposit_refund' ? 'Refund' : 'No proof'}</span>
                                                         )}
                                                     </td>
+                                                    <td className="px-4 py-3.5 text-center">
+                                                        <button onClick={() => handleDeleteUpiTx(log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
+                                                    </td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={6} className="px-5 py-8 text-center text-slate-400 font-medium">No UPI transactions recorded for this employee.</td>
+                                                <td colSpan={7} className="px-5 py-8 text-center text-slate-400 font-medium">No UPI transactions recorded for this employee.</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -581,6 +600,7 @@ export default function UpiManagementClient() {
                                                 >
                                                     <Eye size={12} /> View Proof
                                                 </button>
+                                                <button onClick={() => handleDeleteUpiTx(log.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors text-xs font-bold"><Trash2 size={12} /> Delete</button>
                                             </div>
                                         </div>
                                     ))
