@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import "./globals.css";
 import FloatingChatbot from "./components/FloatingChatbot";
 import FloatingCart from "./components/FloatingCart";
+import { Analytics } from "@vercel/analytics/next";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         <FloatingCart />
         <FloatingChatbot />
+        <Analytics />
       </body>
     </html>
   );
