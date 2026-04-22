@@ -31,6 +31,7 @@ model AdminAccount {
   stayBookingsCreated StaycationBooking[] @relation("StayBookingCreator")
   foodBillsCreated    FoodBill[]          @relation("FoodBillCreator")
   ddExpensesCreated   DdExpense[]         @relation("DdExpenseCreator")
+  stayFoodBillsCreated StaycationFoodBill[] @relation("StayFoodBillCreator")
 
   @@map("admin_accounts")
 }
@@ -303,7 +304,7 @@ model DdBookingAddon {
 
 model StaycationBooking {
   id                 Int              @id @default(autoincrement())
-  bookingRef         String           @unique @map("booking_ref") @db.VarChar(20)
+  bookingRef         String           @unique @map("booking_ref") @db.VarChar(25)
   userId             Int?             @map("user_id")
   propertyId         Int              @map("property_id")
   subPropertyId      Int?             @map("sub_property_id")
@@ -311,6 +312,7 @@ model StaycationBooking {
   customerPhone      String           @map("customer_phone") @db.VarChar(255)
   customerEmail      String?          @map("customer_email") @db.VarChar(255)
   numGuests          Int              @default(2) @map("num_guests")
+  numKids            Int              @default(0) @map("num_kids")
   numPets            Int              @default(0) @map("num_pets")
   checkInDate        DateTime         @map("check_in_date") @db.Date
   checkOutDate       DateTime         @map("check_out_date") @db.Date
@@ -349,6 +351,7 @@ model StaycationBooking {
   payments           BookingPayment[]
   extraGuests        ExtraGuest[]
   guestIds           GuestId[]
+  foodBills          StaycationFoodBill[]
   coupon             Coupon?          @relation(fields: [couponId], references: [id])
   creator            AdminAccount?    @relation("StayBookingCreator", fields: [createdBy], references: [id])
   property           Property         @relation(fields: [propertyId], references: [id])
@@ -670,4 +673,21 @@ model DdExpense {
 
   @@index([createdAt])
   @@map("dd_expenses")
+}
+
+model StaycationFoodBill {
+  id            Int                @id @default(autoincrement())
+  bookingId     Int                @map("booking_id")
+  description   String             @db.VarChar(500)
+  amount        Int
+  paymentMethod String             @map("payment_method") @db.VarChar(30)
+  upiProofUrl   String?            @map("upi_proof_url")
+  upiProofKey   String?            @map("upi_proof_key") @db.VarChar(500)
+  createdBy     Int?               @map("created_by")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  booking       StaycationBooking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  creator       AdminAccount?      @relation("StayFoodBillCreator", fields: [createdBy], references: [id])
+
+  @@index([bookingId])
+  @@map("staycation_food_bills")
 }

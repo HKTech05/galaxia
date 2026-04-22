@@ -29,6 +29,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         : (b.property?.name || "Unknown"),
                     parentProperty: b.property?.name || "Unknown",
                     guests: b.numGuests || 0,
+                    kids: b.numKids || 0,
                     pets: b.numPets || 0,
                     checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
@@ -87,6 +88,54 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         paymentMethod: "UPI",
         idFileName: ""
     });
+
+    // Food Bill modal states
+    const [isFoodBillModalOpen, setIsFoodBillModalOpen] = useState(false);
+    const [foodBillBooking, setFoodBillBooking] = useState<any>(null);
+    const [foodBillForm, setFoodBillForm] = useState({ description: "", amount: "", paymentMethod: "cash" });
+    const [foodBillUpiProof, setFoodBillUpiProof] = useState<File | null>(null);
+    const [foodBillSubmitting, setFoodBillSubmitting] = useState(false);
+
+    const handleFoodBillSubmit = async () => {
+        if (!foodBillBooking || !foodBillForm.description || !foodBillForm.amount) return;
+        setFoodBillSubmitting(true);
+        try {
+            let upiProofUrl = null;
+            let upiProofKey = null;
+            if (foodBillForm.paymentMethod === "upi" && foodBillUpiProof) {
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                const formData = new FormData();
+                formData.append("file", foodBillUpiProof);
+                const uploadRes = await fetch("/api/uploads/upi-proof", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    upiProofUrl = uploadData.url;
+                    upiProofKey = uploadData.key;
+                }
+            }
+            await api.post("/stay-food-bills", {
+                bookingId: foodBillBooking.rawId,
+                description: foodBillForm.description,
+                amount: parseInt(foodBillForm.amount),
+                paymentMethod: foodBillForm.paymentMethod,
+                upiProofUrl,
+                upiProofKey,
+            });
+            setIsFoodBillModalOpen(false);
+            setFoodBillForm({ description: "", amount: "", paymentMethod: "cash" });
+            setFoodBillUpiProof(null);
+            fetchBookings();
+            alert("Food bill added successfully!");
+        } catch (err) {
+            alert("Failed to add food bill");
+        } finally {
+            setFoodBillSubmitting(false);
+        }
+    };
 
     const calculateExtraGuestPrice = (includeGuests = true, includePets = true) => {
         if (!selectedBooking) return 0;
@@ -535,7 +584,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Number of Guests</p>
-                                        <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests}{booking.pets > 0 && <span className="text-sm font-bold text-purple-600 ml-2">+ {booking.pets} pet{booking.pets > 1 ? 's' : ''}</span>}</p>
+                                        <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests} adults{booking.kids > 0 && <span className="text-sm font-bold text-blue-600 ml-2">+ {booking.kids} kid{booking.kids > 1 ? 's' : ''}</span>}{booking.pets > 0 && <span className="text-sm font-bold text-purple-600 ml-2">+ {booking.pets} pet{booking.pets > 1 ? 's' : ''}</span>}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Check-in</p>
@@ -582,7 +631,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             {booking.addons.filter((a: any) => a.name === 'Food Preference').map((addon: any, i: number) => (
                                                 <div key={`food-${i}`} className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 flex items-center gap-2">
                                                     <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Food:</span>
-                                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg)</span>
+                                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg){addon.count ? ` × ${addon.count}` : ''}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -660,6 +709,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             className="w-full bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-red-200">
                                             <Ban size={18} /> Cancel Booking
                                         </button>
+                                        <button
+                                            onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                            <Plus size={18} /> Add Food Bill
+                                        </button>
                                     </>
                                 )}
 
@@ -675,6 +729,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 mt-2">
                                             <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                         </button>
+                                        <button
+                                            onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                            <Plus size={18} /> Add Food Bill
+                                        </button>
                                     </>
                                 )}
 
@@ -684,6 +743,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             onClick={() => { setSelectedBooking(booking); setModalType('checkout'); setIsActionModalOpen(true); }}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
                                             <RotateCcw size={18} /> Initiate Checkout
+                                        </button>
+                                        <button
+                                            onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                            <Plus size={18} /> Add Food Bill
                                         </button>
                                     </>
                                 )}
@@ -1332,6 +1396,71 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         fetchBookings();
                     }}
                 />
+            )}
+
+            {/* Food Bill Modal */}
+            {isFoodBillModalOpen && foodBillBooking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Plus size={18} className="text-amber-600" /> Add Food Bill</h3>
+                            <button onClick={() => setIsFoodBillModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</p>
+                                <p className="text-sm font-bold text-slate-800 mt-0.5">{foodBillBooking.id} — {foodBillBooking.customer}</p>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Description *</label>
+                                <input type="text" value={foodBillForm.description} onChange={e => setFoodBillForm({ ...foodBillForm, description: e.target.value })} placeholder="e.g. Dinner for 4, Snacks order" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Amount (₹) *</label>
+                                <input type="text" inputMode="numeric" value={foodBillForm.amount} onChange={e => { const val = e.target.value.replace(/[^0-9]/g, ''); setFoodBillForm({ ...foodBillForm, amount: val }); }} placeholder="e.g. 2500" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Paid via</label>
+                                <div className="bg-slate-50 rounded-lg p-1 flex">
+                                    <button type="button" onClick={() => setFoodBillForm({ ...foodBillForm, paymentMethod: 'cash' })} className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${foodBillForm.paymentMethod === 'cash' ? 'bg-white shadow text-emerald-700' : 'text-slate-500'}`}>Cash</button>
+                                    <button type="button" onClick={() => setFoodBillForm({ ...foodBillForm, paymentMethod: 'upi' })} className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${foodBillForm.paymentMethod === 'upi' ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}>UPI</button>
+                                </div>
+                            </div>
+                            {foodBillForm.paymentMethod === 'upi' && (
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">UPI Proof</label>
+                                    {foodBillUpiProof ? (
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                            <CheckCircle size={14} className="text-emerald-600" />
+                                            <span className="text-xs font-bold text-emerald-700 truncate max-w-[200px]">{foodBillUpiProof.name}</span>
+                                            <button type="button" onClick={() => setFoodBillUpiProof(null)} className="text-xs text-red-500 font-bold ml-auto">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { if (e.target.files?.[0]) setFoodBillUpiProof(e.target.files[0]); e.target.value = ''; }} />
+                                                <Camera size={14} className="text-indigo-600" />
+                                                <span className="text-xs font-bold text-indigo-700">Camera</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setFoodBillUpiProof(e.target.files[0]); e.target.value = ''; }} />
+                                                <Upload size={14} className="text-indigo-600" />
+                                                <span className="text-xs font-bold text-indigo-700">Gallery</span>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <button
+                                onClick={handleFoodBillSubmit}
+                                disabled={foodBillSubmitting || !foodBillForm.description || !foodBillForm.amount}
+                                className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {foodBillSubmitting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus size={16} /> Submit Food Bill</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );

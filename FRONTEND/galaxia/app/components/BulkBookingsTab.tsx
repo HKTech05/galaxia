@@ -19,7 +19,10 @@ export default function BulkBookingsTab() {
         checkOut: "",
         numCottages: "" as any,
         cottageType: "standard" as "standard" | "family" | "mix",
-        guestsPerCottage: "" as any,
+        totalAdults: "" as any,
+        numKids: "" as any,
+        numRegularVeg: "" as any,
+        numJainVeg: "" as any,
         paymentMethod: "UPI" as "Cash" | "UPI" | "Online",
     });
     const [bulkHistory, setBulkHistory] = useState<any[]>([]);
@@ -147,6 +150,8 @@ export default function BulkBookingsTab() {
         const start = new Date(bulkForm.checkIn);
         const end = new Date(bulkForm.checkOut);
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
+        const adults = parseInt(bulkForm.totalAdults) || 0;
+        const kids = parseInt(bulkForm.numKids) || 0;
         let total = 0;
         for (let i = 0; i < nights; i++) {
             const d = new Date(start);
@@ -154,8 +159,8 @@ export default function BulkBookingsTab() {
             const day = d.getDay();
             const isWeekend = day === 0 || day === 5 || day === 6;
             const basePrice = isWeekend ? 6950 : 4950;
-            const extraAdults = Math.max(0, bulkForm.guestsPerCottage - 2);
-            total += (basePrice + extraAdults * 2000) * bulkForm.numCottages;
+            const extraAdults = Math.max(0, adults - 2 * (bulkForm.numCottages || 1));
+            total += basePrice * (bulkForm.numCottages || 1) + extraAdults * 2000 + kids * 1000;
         }
         const gst = Math.round(total * 0.05);
         return { perNight: Math.round(total / nights), nights, subtotal: total, gst, total: total + gst };
@@ -207,7 +212,8 @@ export default function BulkBookingsTab() {
                     customerEmail: bulkForm.email || undefined,
                     propertyId: amstelProp.id,
                     subPropertyId: bulkForm.cottageType === "mix" ? eligibleIds[Math.min(i, eligibleIds.length - 1)] : targetSubPropertyId,
-                    numGuests: bulkForm.guestsPerCottage,
+                    numGuests: parseInt(bulkForm.totalAdults) || 2,
+                    numKids: parseInt(bulkForm.numKids) || 0,
                     checkInDate: bulkForm.checkIn,
                     checkOutDate: bulkForm.checkOut,
                     totalAmount: perCottageTotal,
@@ -221,11 +227,18 @@ export default function BulkBookingsTab() {
                     source: "admin-bulk",
                     couponCode: appliedCoupon?.code || null,
                     notes: `Admin Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}.`.trim(),
+                    addons: [
+                        ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),
+                        ...(parseInt(bulkForm.numJainVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Jain', count: parseInt(bulkForm.numJainVeg) }] : []),
+                    ].length > 0 ? [
+                        ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),
+                        ...(parseInt(bulkForm.numJainVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Jain', count: parseInt(bulkForm.numJainVeg) }] : []),
+                    ] : null,
                 });
             }
             const totalDiscApplied = discountAmount + couponDiscount;
             setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}! ${totalDiscApplied > 0 ? `(₹${totalDiscApplied.toLocaleString('en-IN')} discount applied)` : ""}`);
-            setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: "" as any, cottageType: "standard", guestsPerCottage: "" as any, paymentMethod: "UPI" });
+            setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: "" as any, cottageType: "standard", totalAdults: "" as any, numKids: "" as any, numRegularVeg: "" as any, numJainVeg: "" as any, paymentMethod: "UPI" });
             setDiscountAmount(0);
             setCouponCode("");
             setAppliedCoupon(null);
@@ -438,11 +451,32 @@ export default function BulkBookingsTab() {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Guests per Cottage</label>
-                                <input type="text" inputMode="numeric" value={bulkForm.guestsPerCottage} onChange={e => {
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Total No. of Adults</label>
+                                <input type="text" inputMode="numeric" value={bulkForm.totalAdults} onChange={e => {
                                     const val = e.target.value.replace(/[^0-9]/g, '');
-                                    setBulkForm({ ...bulkForm, guestsPerCottage: val === '' ? '' as any : parseInt(val) });
-                                }} placeholder="e.g. 2" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                                    setBulkForm({ ...bulkForm, totalAdults: val });
+                                }} placeholder="e.g. 4" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">No. of Kids</label>
+                                <input type="text" inputMode="numeric" value={bulkForm.numKids} onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setBulkForm({ ...bulkForm, numKids: val });
+                                }} placeholder="0" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">No. of Regular (Veg)</label>
+                                <input type="text" inputMode="numeric" value={bulkForm.numRegularVeg} onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setBulkForm({ ...bulkForm, numRegularVeg: val });
+                                }} placeholder="0" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">No. of Jain (Veg)</label>
+                                <input type="text" inputMode="numeric" value={bulkForm.numJainVeg} onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setBulkForm({ ...bulkForm, numJainVeg: val });
+                                }} placeholder="0" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Payment Method</label>
@@ -463,7 +497,7 @@ export default function BulkBookingsTab() {
                         <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4">
                             <div className="grid grid-cols-2 gap-4 text-center">
                                 <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Cottages</p><p className="text-2xl font-black text-slate-800">{bulkForm.numCottages}</p></div>
-                                <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Guests</p><p className="text-2xl font-black text-slate-800">{bulkForm.numCottages * bulkForm.guestsPerCottage}</p></div>
+                                <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Guests</p><p className="text-2xl font-black text-slate-800">{(parseInt(bulkForm.totalAdults) || 0) + (parseInt(bulkForm.numKids) || 0)}</p></div>
                                 <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nights</p><p className="text-2xl font-black text-slate-800">{pricing.nights || "-"}</p></div>
                                 <div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Per Night</p><p className="text-lg font-black text-slate-800">{pricing.perNight > 0 ? `₹${pricing.perNight.toLocaleString("en-IN")}` : "-"}</p></div>
                             </div>

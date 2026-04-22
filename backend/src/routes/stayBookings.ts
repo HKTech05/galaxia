@@ -10,18 +10,20 @@ import { sendStaycationBookingConfirmation } from "../lib/whatsappService";
 
 const router = Router();
 
-// Generate booking ref: ST-YYYYMMDD-NNN
-async function generateStayRef(): Promise<string> {
+// Generate booking ref: ST-YYYYMMDD-NNN (transaction-safe)
+async function generateStayRef(tx: any): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-    const count = await prisma.staycationBooking.count({
+    const count = await tx.staycationBooking.count({
         where: {
             bookedAt: {
                 gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
             },
         },
     });
-    return `ST-${dateStr}-${String(count + 1).padStart(3, "0")}`;
+    // Add random suffix to prevent collisions under concurrent load
+    const suffix = Math.random().toString(36).slice(2, 4);
+    return `ST-${dateStr}-${String(count + 1).padStart(3, "0")}${suffix}`;
 }
 
 // POST /api/bookings/staycation — Create booking (transaction-locked, capacity-aware)
@@ -29,7 +31,7 @@ router.post("/", async (req, res) => {
     try {
         const {
             customerName, customerPhone, customerEmail,
-            propertyId, subPropertyId, numGuests, numPets,
+            propertyId, subPropertyId, numGuests, numKids, numPets,
             checkInDate, checkOutDate,
             nightlyRate, basePrice, extraPersonCharge,
             gstAmount, totalAmount,
@@ -239,7 +241,7 @@ router.post("/", async (req, res) => {
                 }
             }
 
-            const bookingRef = await generateStayRef();
+            const bookingRef = await generateStayRef(tx);
 
             // Encrypt sensitive data
             const encryptedPhone = encrypt(customerPhone);
@@ -255,6 +257,7 @@ router.post("/", async (req, res) => {
                     customerPhone: encryptedPhone,
                     customerEmail: encryptedEmail,
                     numGuests: numGuests || 2,
+                    numKids: numKids || 0,
                     numPets: numPets || 0,
                     checkInDate: checkIn,
                     checkOutDate: checkOut,
@@ -373,6 +376,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 subProperty: true,
                 extraGuests: true,
                 guestIds: true,
+                foodBills: true,
             },
             orderBy: { checkInDate: "desc" },
         });
