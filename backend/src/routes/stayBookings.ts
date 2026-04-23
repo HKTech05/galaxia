@@ -918,7 +918,7 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
         // 1. Reverse cash tracking: find all cash transactions for this booking
         const cashTxns = await prisma.cashTransaction.findMany({ where: { bookingRef } });
         for (const tx of cashTxns) {
-            if (tx.transactionType === "collection") {
+            if (tx.transactionType === "collection" || tx.transactionType === "food_collection") {
                 await prisma.employee.update({
                     where: { id: tx.employeeId },
                     data: { cashCollected: { decrement: tx.amount } },
@@ -950,7 +950,8 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
         // 6. Delete coupon usage
         await prisma.couponUsage.deleteMany({ where: { bookingRef } });
 
-        // 7. (Food bills cleaned up if they exist)
+        // 7. Delete food bills
+        await prisma.staycationFoodBill.deleteMany({ where: { bookingId } });
 
         // 8. Delete the booking itself
         await prisma.staycationBooking.delete({ where: { id: bookingId } });
