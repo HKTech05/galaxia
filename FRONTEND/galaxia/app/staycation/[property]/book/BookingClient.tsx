@@ -1119,17 +1119,15 @@ export default function BookingClient({ property }: BookingClientProps) {
                     {currentStep <= 2 && (
                         <div className="flex-1 w-full lg:max-w-[360px] sticky top-24 space-y-4 lg:ml-auto">
                             {/* Date Selection Bar */}
-                            <div className="mb-3">
-                                <DateSelectionBar
-                                    checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
-                                    checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
-                                    onDatesChange={(ci, co) => {
-                                        const ciDate = new Date(ci + 'T12:00:00');
-                                        const coDate = new Date(co + 'T12:00:00');
-                                        handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
-                                    }}
-                                />
-                            </div>
+                            <DateSelectionBar
+                                checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
+                                checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
+                                onDatesChange={(ci, co) => {
+                                    const ciDate = new Date(ci + 'T12:00:00');
+                                    const coDate = new Date(co + 'T12:00:00');
+                                    handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
+                                }}
+                            />
                             {/* Calendar in sidebar */}
                             {selectedRoom && (
                                 <AvailabilityCalendar

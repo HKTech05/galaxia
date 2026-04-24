@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import GoldDatePicker from "./GoldDatePicker";
 
 interface DateSelectionBarProps {
     onDatesChange?: (checkIn: string, checkOut: string) => void;
@@ -10,7 +11,7 @@ interface DateSelectionBarProps {
 
 /**
  * Reusable date selection bar that reads/writes from localStorage for cross-page persistence.
- * Used on staycation landing, property detail, sub-villa, cottage, and booking pages.
+ * Uses the custom GoldDatePicker instead of native <input type="date">.
  */
 export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, checkOut: externalCO }: DateSelectionBarProps) {
     const [ci, setCi] = useState(externalCI || '');
@@ -59,31 +60,35 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
     const today = new Date();
     const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+    // Min for checkout: day after check-in
+    const minCO = (() => {
+        if (!ci) return minDate;
+        const d = new Date(ci + 'T12:00:00');
+        d.setDate(d.getDate() + 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+
     return (
         <div className="p-4 rounded-xl border border-antique-gold/20 bg-gradient-to-r from-[#fdfbf7] to-[#faf6ee] shadow-sm">
             <p className="text-[9px] font-inter font-bold text-antique-gold uppercase tracking-[0.2em] mb-3 text-center">Select Your Dates</p>
             <div className="flex items-center gap-3">
                 <div className="flex-1">
                     <label className="text-[10px] font-inter font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">Check-in</label>
-                    <input
-                        type="date"
+                    <GoldDatePicker
                         value={ci}
+                        onChange={handleCheckIn}
                         min={minDate}
-                        onChange={e => handleCheckIn(e.target.value)}
-                        className="w-full px-3 py-2.5 border-2 border-antique-gold/25 rounded-lg text-sm font-inter text-text-primary bg-white hover:border-antique-gold/40 focus:outline-none focus:ring-2 focus:ring-antique-gold/15 focus:border-antique-gold transition-all"
-                        style={{ accentColor: '#BA9731' }}
+                        placeholder="Select check-in"
                     />
                 </div>
                 <svg className="w-4 h-4 text-antique-gold/50 shrink-0 mt-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                 <div className="flex-1">
                     <label className="text-[10px] font-inter font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">Check-out</label>
-                    <input
-                        type="date"
+                    <GoldDatePicker
                         value={co}
-                        min={ci || minDate}
-                        onChange={e => handleCheckOut(e.target.value)}
-                        className="w-full px-3 py-2.5 border-2 border-antique-gold/25 rounded-lg text-sm font-inter text-text-primary bg-white hover:border-antique-gold/40 focus:outline-none focus:ring-2 focus:ring-antique-gold/15 focus:border-antique-gold transition-all"
-                        style={{ accentColor: '#BA9731' }}
+                        onChange={handleCheckOut}
+                        min={minCO}
+                        placeholder="Select check-out"
                     />
                 </div>
             </div>

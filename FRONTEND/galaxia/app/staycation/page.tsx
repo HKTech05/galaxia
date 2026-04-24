@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ReviewCarousel from "../components/ReviewCarousel";
+import GoldDatePicker from "../components/GoldDatePicker";
 
 const propertiesData = [
     { id: "ambrose", name: "Ambrose", subtitle: "Theme Villa Resort — 5 Themed Villas", startPrice: "5,500", priceNote: "with meals", description: "Five exquisitely themed villas — Bollywood, Rustic, Greek, Bali, and Machan — each with private pool.", highlights: ["5 Themes", "Private Pools", "Meals Included", "Garden"] },
@@ -165,17 +166,12 @@ export default function StaycationPage() {
                                 {/* Check-in */}
                                 <div className="flex-1">
                                     <label className="text-xs font-inter font-bold text-text-primary uppercase tracking-wider mb-2 block">Check-in Date</label>
-                                    <div className="relative">
-                                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-antique-gold/60 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        <input
-                                            type="date"
-                                            value={filterCheckIn}
-                                            min={toLocalDate(new Date())}
-                                            onChange={e => { setFilterCheckIn(e.target.value); setFilterCheckOut(''); setFilterResults(null); }}
-                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-antique-gold/25 rounded-xl text-sm font-inter text-text-primary bg-white hover:border-antique-gold/40 focus:outline-none focus:ring-2 focus:ring-antique-gold/15 focus:border-antique-gold transition-all"
-                                        />
-                                    </div>
-                                    {filterCheckIn && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckIn)}</p>}
+                                    <GoldDatePicker
+                                        value={filterCheckIn}
+                                        onChange={val => { setFilterCheckIn(val); setFilterCheckOut(''); setFilterResults(null); }}
+                                        min={toLocalDate(new Date())}
+                                        placeholder="Select check-in"
+                                    />
                                 </div>
 
                                 {/* Arrow */}
@@ -186,17 +182,12 @@ export default function StaycationPage() {
                                 {/* Check-out */}
                                 <div className="flex-1">
                                     <label className="text-xs font-inter font-bold text-text-primary uppercase tracking-wider mb-2 block">Check-out Date</label>
-                                    <div className="relative">
-                                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-antique-gold/60 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        <input
-                                            type="date"
-                                            value={filterCheckOut}
-                                            min={filterCheckIn || toLocalDate(new Date())}
-                                            onChange={e => { setFilterCheckOut(e.target.value); setFilterResults(null); }}
-                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-antique-gold/25 rounded-xl text-sm font-inter text-text-primary bg-white hover:border-antique-gold/40 focus:outline-none focus:ring-2 focus:ring-antique-gold/15 focus:border-antique-gold transition-all"
-                                        />
-                                    </div>
-                                    {filterCheckOut && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckOut)}</p>}
+                                    <GoldDatePicker
+                                        value={filterCheckOut}
+                                        onChange={val => { setFilterCheckOut(val); setFilterResults(null); }}
+                                        min={filterCheckIn || toLocalDate(new Date())}
+                                        placeholder="Select check-out"
+                                    />
                                 </div>
                             </div>
 
