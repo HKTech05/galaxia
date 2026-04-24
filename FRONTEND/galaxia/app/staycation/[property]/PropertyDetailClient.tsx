@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import DateSelectionBar from "../../components/DateSelectionBar";
 import { PropertyData } from "../../data/properties";
 import ImageSlideshow from "../../components/ImageSlideshow";
 import AvailabilityCalendar from "../../components/AvailabilityCalendar";
@@ -57,14 +58,9 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
 
     // Read search dates from URL params or localStorage
     const searchParams = useSearchParams();
-    const [searchCheckIn, setSearchCheckIn] = useState('');
-    const [searchCheckOut, setSearchCheckOut] = useState('');
     useEffect(() => {
         const ci = searchParams.get('checkIn') || localStorage.getItem('galaxia_search_checkin') || '';
         const co = searchParams.get('checkOut') || localStorage.getItem('galaxia_search_checkout') || '';
-        if (ci) setSearchCheckIn(ci);
-        if (co) setSearchCheckOut(co);
-        // Pre-populate calendar dates
         if (ci) setCalCheckIn(new Date(ci + 'T12:00:00'));
         if (co) setCalCheckOut(new Date(co + 'T12:00:00'));
     }, [searchParams]);
@@ -427,47 +423,15 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                             <div>
                                 {/* Date selection above calendar */}
-                                <div className="mb-4 p-4 rounded-xl border border-antique-gold/15 bg-gradient-to-r from-[#fdfbf7] to-[#faf6ee]">
-                                    <p className="text-[9px] font-inter font-bold text-antique-gold uppercase tracking-[0.2em] mb-3 text-center">Select Your Dates</p>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1">
-                                            <label className="text-[10px] font-inter font-semibold text-text-muted uppercase tracking-wider mb-1 block">Check-in</label>
-                                            <input
-                                                type="date"
-                                                value={searchCheckIn}
-                                                min={new Date().toISOString().split('T')[0]}
-                                                onChange={e => {
-                                                    setSearchCheckIn(e.target.value);
-                                                    setSearchCheckOut('');
-                                                    if (e.target.value) {
-                                                        const d = new Date(e.target.value + 'T12:00:00');
-                                                        setCalCheckIn(d);
-                                                        setCalCheckOut(null);
-                                                        localStorage.setItem('galaxia_search_checkin', e.target.value);
-                                                    }
-                                                }}
-                                                className="w-full px-3 py-2.5 border border-antique-gold/20 rounded-lg text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all"
-                                            />
-                                        </div>
-                                        <svg className="w-4 h-4 text-antique-gold/40 shrink-0 mt-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                        <div className="flex-1">
-                                            <label className="text-[10px] font-inter font-semibold text-text-muted uppercase tracking-wider mb-1 block">Check-out</label>
-                                            <input
-                                                type="date"
-                                                value={searchCheckOut}
-                                                min={searchCheckIn || new Date().toISOString().split('T')[0]}
-                                                onChange={e => {
-                                                    setSearchCheckOut(e.target.value);
-                                                    if (e.target.value) {
-                                                        const d = new Date(e.target.value + 'T12:00:00');
-                                                        setCalCheckOut(d);
-                                                        localStorage.setItem('galaxia_search_checkout', e.target.value);
-                                                    }
-                                                }}
-                                                className="w-full px-3 py-2.5 border border-antique-gold/20 rounded-lg text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all"
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="mb-4">
+                                    <DateSelectionBar
+                                        checkIn={calCheckIn ? fmtDate(calCheckIn) : undefined}
+                                        checkOut={calCheckOut ? fmtDate(calCheckOut) : undefined}
+                                        onDatesChange={(ci, co) => {
+                                            setCalCheckIn(new Date(ci + 'T12:00:00'));
+                                            setCalCheckOut(new Date(co + 'T12:00:00'));
+                                        }}
+                                    />
                                 </div>
 
                                 <AvailabilityCalendar
@@ -480,8 +444,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     initialCheckOut={calCheckOut}
                                     onDatesChange={(ci, co) => {
                                         setCalCheckIn(ci); setCalCheckOut(co);
-                                        if (ci) { const s = fmtDate(ci); setSearchCheckIn(s); localStorage.setItem('galaxia_search_checkin', s); }
-                                        if (co) { const s = fmtDate(co); setSearchCheckOut(s); localStorage.setItem('galaxia_search_checkout', s); }
+                                        if (ci) localStorage.setItem('galaxia_search_checkin', fmtDate(ci));
+                                        if (co) localStorage.setItem('galaxia_search_checkout', fmtDate(co));
                                     }}
                                     isDisabled={isPropertyDisabled}
                                 />

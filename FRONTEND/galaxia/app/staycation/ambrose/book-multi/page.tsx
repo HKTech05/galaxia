@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { properties } from "../../../data/properties";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
+import DateSelectionBar from "../../../components/DateSelectionBar";
 import { api } from "../../../../lib/api";
 import { initiateRazorpayPayment } from "../../../../lib/razorpay";
 import PhoneAuthModal from "../../../components/PhoneAuthModal";
@@ -685,6 +686,17 @@ export default function BookMultiPage() {
                         {/* Date Picker */}
                         <div className="bg-white border border-border-light rounded-xl p-5 sm:p-6 shadow-sm">
                             <h3 className="font-cinzel text-lg font-semibold text-text-primary mb-4">Select Dates</h3>
+                            <div className="mb-4">
+                                <DateSelectionBar
+                                    checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
+                                    checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
+                                    onDatesChange={(ci, co) => {
+                                        const ciDate = new Date(ci + 'T12:00:00');
+                                        const coDate = new Date(co + 'T12:00:00');
+                                        handleDatesChange(ciDate, coDate);
+                                    }}
+                                />
+                            </div>
                             <AvailabilityCalendar
                                 propertyId={hasAmstelOnly ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"]}
                                 weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : ambrose.pricing.weekday.price}

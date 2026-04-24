@@ -95,6 +95,16 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
     const [selectingCheckOut, setSelectingCheckOut] = useState(false);
     const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
 
+    // Sync when parent updates initial dates (e.g. from localStorage load)
+    useEffect(() => {
+        if (initialCheckIn) {
+            setCheckIn(initialCheckIn);
+            setCurrentMonth(initialCheckIn.getMonth());
+            setCurrentYear(initialCheckIn.getFullYear());
+        }
+        if (initialCheckOut) setCheckOut(initialCheckOut);
+    }, [initialCheckIn?.getTime(), initialCheckOut?.getTime()]);
+
     // Fetch booked dates from API (only when we have a valid numeric property ID)
     // Also stores booking counts per date when totalUnits is provided
     const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});

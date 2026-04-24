@@ -6,6 +6,7 @@ import Image from "next/image";
 import { PropertyData } from "../../../data/properties";
 import ImageSlideshow from "../../../components/ImageSlideshow";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
+import DateSelectionBar from "../../../components/DateSelectionBar";
 
 interface AmstelNestCottageClientProps {
     parent: PropertyData;
@@ -35,6 +36,14 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [liveWeekday, setLiveWeekday] = useState<string | null>(null);
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
+
+    // Read persisted search dates
+    useEffect(() => {
+        const ci = localStorage.getItem('galaxia_search_checkin');
+        const co = localStorage.getItem('galaxia_search_checkout');
+        if (ci) setCalCheckIn(new Date(ci + 'T12:00:00'));
+        if (co) setCalCheckOut(new Date(co + 'T12:00:00'));
+    }, []);
 
     // Site images from admin Photo Manager
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
@@ -234,13 +243,29 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         <div>
+                            <div className="mb-4">
+                                <DateSelectionBar
+                                    checkIn={calCheckIn ? fmtDate(calCheckIn) : undefined}
+                                    checkOut={calCheckOut ? fmtDate(calCheckOut) : undefined}
+                                    onDatesChange={(ci, co) => {
+                                        setCalCheckIn(new Date(ci + 'T12:00:00'));
+                                        setCalCheckOut(new Date(co + 'T12:00:00'));
+                                    }}
+                                />
+                            </div>
                             <AvailabilityCalendar
                                 propertyId={dbPropertyId}
                                 subPropertyId={dbSubPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
                                 dateOverrides={dateOverrides}
-                                onDatesChange={(ci, co) => { setCalCheckIn(ci); setCalCheckOut(co); }}
+                                initialCheckIn={calCheckIn}
+                                initialCheckOut={calCheckOut}
+                                onDatesChange={(ci, co) => {
+                                    setCalCheckIn(ci); setCalCheckOut(co);
+                                    if (ci) localStorage.setItem('galaxia_search_checkin', fmtDate(ci));
+                                    if (co) localStorage.setItem('galaxia_search_checkout', fmtDate(co));
+                                }}
                                 isDisabled={isCottageDisabled}
                                 totalUnits={cottage.id === 'standard-cottage' ? 14 : undefined}
                             />

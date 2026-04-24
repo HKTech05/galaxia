@@ -55,17 +55,21 @@ export default function StaycationPage() {
         if (!filterCheckIn || !filterCheckOut) return;
         setFilterLoading(true);
         try {
-            const slugs = propertiesData.map(p => p.id);
+            // Fetch all property IDs first
+            const propsRes = await fetch('/api/properties');
+            const allProps = propsRes.ok ? await propsRes.json() : [];
             const results: Record<string, boolean> = {};
-            await Promise.all(slugs.map(async (slug) => {
+            await Promise.all(propertiesData.map(async (prop) => {
                 try {
-                    const res = await fetch(`/api/properties/${slug}/availability`);
-                    if (!res.ok) { results[slug] = true; return; }
+                    const dbProp = allProps.find((p: any) => p.slug === prop.id);
+                    if (!dbProp) { results[prop.id] = true; return; }
+                    if (!dbProp.isActive) { results[prop.id] = false; return; }
+                    // Use the actual booked-dates endpoint
+                    const url = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
+                    const res = await fetch(url);
+                    if (!res.ok) { results[prop.id] = true; return; }
                     const data = await res.json();
-                    if (data.isActive === false) { results[slug] = false; return; }
-                    const booked: string[] = (data.bookedDates || []);
-                    // For multi-unit properties (ambrose, amstel-nest), check if ALL units are booked
-                    // For single-unit, even 1 booked date blocks
+                    const bookedDates: string[] = data.dates || [];
                     const ci = new Date(filterCheckIn + 'T12:00:00');
                     const co = new Date(filterCheckOut + 'T12:00:00');
                     let available = true;
@@ -74,10 +78,10 @@ export default function StaycationPage() {
                         const m = String(d.getMonth() + 1).padStart(2, '0');
                         const day = String(d.getDate()).padStart(2, '0');
                         const ds = `${y}-${m}-${day}`;
-                        if (booked.includes(ds)) { available = false; break; }
+                        if (bookedDates.includes(ds)) { available = false; break; }
                     }
-                    results[slug] = available;
-                } catch { results[slug] = true; }
+                    results[prop.id] = available;
+                } catch { results[prop.id] = true; }
             }));
             setFilterResults(results);
         } catch { }
@@ -122,7 +126,7 @@ export default function StaycationPage() {
                 </div>
 
                 {/* ── Availability Search Bar ── */}
-                <div className="mb-12 max-w-3xl mx-auto">
+                <div className="mb-12">
                     <div className="relative rounded-2xl bg-white border-2 border-antique-gold/15 shadow-[0_4px_30px_rgba(183,142,58,0.08)] overflow-hidden">
                         {/* Top accent */}
                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-antique-gold to-dark-gold" />
@@ -141,7 +145,7 @@ export default function StaycationPage() {
                                             value={filterCheckIn}
                                             min={new Date().toISOString().split('T')[0]}
                                             onChange={e => { setFilterCheckIn(e.target.value); setFilterCheckOut(''); setFilterResults(null); }}
-                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all"
+                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all [color-scheme:light]"
                                         />
                                     </div>
                                     {filterCheckIn && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckIn)}</p>}
@@ -162,7 +166,7 @@ export default function StaycationPage() {
                                             value={filterCheckOut}
                                             min={filterCheckIn || new Date().toISOString().split('T')[0]}
                                             onChange={e => { setFilterCheckOut(e.target.value); setFilterResults(null); }}
-                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all"
+                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all [color-scheme:light]"
                                         />
                                     </div>
                                     {filterCheckOut && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckOut)}</p>}
