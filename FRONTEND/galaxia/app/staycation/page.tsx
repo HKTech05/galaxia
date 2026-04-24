@@ -20,6 +20,8 @@ const fmtDateDisplay = (dateStr: string) => {
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+const toLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
 export default function StaycationPage() {
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
     const [filterCheckIn, setFilterCheckIn] = useState('');
@@ -59,28 +61,53 @@ export default function StaycationPage() {
             const propsRes = await fetch('/api/properties');
             const allProps = propsRes.ok ? await propsRes.json() : [];
             const results: Record<string, boolean> = {};
+            const todayLocal = new Date();
+            const minDateStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth()+1).padStart(2,'0')}-${String(todayLocal.getDate()).padStart(2,'0')}`;
             await Promise.all(propertiesData.map(async (prop) => {
                 try {
                     const dbProp = allProps.find((p: any) => p.slug === prop.id);
                     if (!dbProp) { results[prop.id] = true; return; }
                     if (!dbProp.isActive) { results[prop.id] = false; return; }
-                    // Use the actual booked-dates endpoint
-                    const url = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
-                    const res = await fetch(url);
-                    if (!res.ok) { results[prop.id] = true; return; }
-                    const data = await res.json();
-                    const bookedDates: string[] = data.dates || [];
-                    const ci = new Date(filterCheckIn + 'T12:00:00');
-                    const co = new Date(filterCheckOut + 'T12:00:00');
-                    let available = true;
-                    for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
-                        const y = d.getFullYear();
-                        const m = String(d.getMonth() + 1).padStart(2, '0');
-                        const day = String(d.getDate()).padStart(2, '0');
-                        const ds = `${y}-${m}-${day}`;
-                        if (bookedDates.includes(ds)) { available = false; break; }
+
+                    // For multi-unit properties (ambrose, amstel-nest), check if at least 1 sub is available
+                    const hasSubs = dbProp.subProperties && dbProp.subProperties.length > 0;
+                    if (hasSubs) {
+                        let anySubAvailable = false;
+                        for (const sub of dbProp.subProperties) {
+                            if (!sub.isActive) continue;
+                            const subUrl = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&subPropertyId=${sub.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
+                            try {
+                                const subRes = await fetch(subUrl);
+                                if (!subRes.ok) { anySubAvailable = true; continue; }
+                                const subData = await subRes.json();
+                                const subBooked: string[] = subData.dates || [];
+                                let subAvail = true;
+                                const ci = new Date(filterCheckIn + 'T12:00:00');
+                                const co = new Date(filterCheckOut + 'T12:00:00');
+                                for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                                    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                    if (subBooked.includes(ds)) { subAvail = false; break; }
+                                }
+                                if (subAvail) { anySubAvailable = true; break; }
+                            } catch { anySubAvailable = true; }
+                        }
+                        results[prop.id] = anySubAvailable;
+                    } else {
+                        // Single-unit property
+                        const url = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
+                        const res = await fetch(url);
+                        if (!res.ok) { results[prop.id] = true; return; }
+                        const data = await res.json();
+                        const bookedDates: string[] = data.dates || [];
+                        const ci = new Date(filterCheckIn + 'T12:00:00');
+                        const co = new Date(filterCheckOut + 'T12:00:00');
+                        let available = true;
+                        for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                            const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                            if (bookedDates.includes(ds)) { available = false; break; }
+                        }
+                        results[prop.id] = available;
                     }
-                    results[prop.id] = available;
                 } catch { results[prop.id] = true; }
             }));
             setFilterResults(results);
@@ -143,9 +170,9 @@ export default function StaycationPage() {
                                         <input
                                             type="date"
                                             value={filterCheckIn}
-                                            min={new Date().toISOString().split('T')[0]}
+                                            min={toLocalDate(new Date())}
                                             onChange={e => { setFilterCheckIn(e.target.value); setFilterCheckOut(''); setFilterResults(null); }}
-                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all [color-scheme:light]"
+                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-antique-gold/25 rounded-xl text-sm font-inter text-text-primary bg-white hover:border-antique-gold/40 focus:outline-none focus:ring-2 focus:ring-antique-gold/15 focus:border-antique-gold transition-all"
                                         />
                                     </div>
                                     {filterCheckIn && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckIn)}</p>}
@@ -164,9 +191,9 @@ export default function StaycationPage() {
                                         <input
                                             type="date"
                                             value={filterCheckOut}
-                                            min={filterCheckIn || new Date().toISOString().split('T')[0]}
+                                            min={filterCheckIn || toLocalDate(new Date())}
                                             onChange={e => { setFilterCheckOut(e.target.value); setFilterResults(null); }}
-                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all [color-scheme:light]"
+                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-antique-gold/25 rounded-xl text-sm font-inter text-text-primary bg-white hover:border-antique-gold/40 focus:outline-none focus:ring-2 focus:ring-antique-gold/15 focus:border-antique-gold transition-all"
                                         />
                                     </div>
                                     {filterCheckOut && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckOut)}</p>}
@@ -211,6 +238,15 @@ export default function StaycationPage() {
                                     · {fmtDateDisplay(filterCheckIn)} — {fmtDateDisplay(filterCheckOut)}
                                 </span>
                             </div>
+                            {(() => {
+                                const unavailable = propertiesData.filter(p => filterResults[p.id] === false);
+                                if (unavailable.length === 0) return null;
+                                return (
+                                    <p className="mt-2 text-xs font-inter text-text-muted">
+                                        Unavailable: {unavailable.map(p => p.name).join(', ')}
+                                    </p>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>
