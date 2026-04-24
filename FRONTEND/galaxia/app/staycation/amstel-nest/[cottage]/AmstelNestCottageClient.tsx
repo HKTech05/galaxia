@@ -36,6 +36,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [liveWeekday, setLiveWeekday] = useState<string | null>(null);
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
+    const [dateWarning, setDateWarning] = useState('');
 
     // Read persisted search dates
     useEffect(() => {
@@ -44,6 +45,34 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
         if (ci) setCalCheckIn(new Date(ci + 'T12:00:00'));
         if (co) setCalCheckOut(new Date(co + 'T12:00:00'));
     }, []);
+
+    // Validate persisted dates against booked dates for this sub-cottage
+    useEffect(() => {
+        if (!dbPropertyId || !dbSubPropertyId || !calCheckIn || !calCheckOut) return;
+        const fmtD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        (async () => {
+            try {
+                const ciStr = fmtD(calCheckIn);
+                const coStr = fmtD(calCheckOut);
+                const url = `/api/bookings/staycation/booked-dates?propertyId=${dbPropertyId}&subPropertyId=${dbSubPropertyId}&startDate=${ciStr}&endDate=${coStr}`;
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const data = await res.json();
+                const booked: string[] = data.dates || [];
+                for (let d = new Date(calCheckIn); d < calCheckOut; d.setDate(d.getDate() + 1)) {
+                    const ds = fmtD(d);
+                    if (booked.includes(ds)) {
+                        setCalCheckIn(null);
+                        setCalCheckOut(null);
+                        setDateWarning('The dates you selected are not available for this cottage. Please select new dates.');
+                        localStorage.removeItem('galaxia_search_checkin');
+                        localStorage.removeItem('galaxia_search_checkout');
+                        return;
+                    }
+                }
+            } catch {}
+        })();
+    }, [dbPropertyId, dbSubPropertyId]);
 
     // Site images from admin Photo Manager
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
@@ -243,6 +272,18 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                         <div>
+                            {dateWarning && (
+                                <div className="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-300/60 flex items-start gap-2.5">
+                                    <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-inter font-semibold text-amber-800">Dates Unavailable</p>
+                                        <p className="text-xs font-inter text-amber-700 mt-0.5">{dateWarning}</p>
+                                    </div>
+                                    <button onClick={() => setDateWarning('')} className="text-amber-400 hover:text-amber-600 transition-colors shrink-0 mt-0.5">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            )}
                             <div className="mb-4">
                                 <DateSelectionBar
                                     checkIn={calCheckIn ? fmtDate(calCheckIn) : undefined}
@@ -250,6 +291,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                     onDatesChange={(ci, co) => {
                                         setCalCheckIn(new Date(ci + 'T12:00:00'));
                                         setCalCheckOut(new Date(co + 'T12:00:00'));
+                                        setDateWarning('');
                                     }}
                                 />
                             </div>
