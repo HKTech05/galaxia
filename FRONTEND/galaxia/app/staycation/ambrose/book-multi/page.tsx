@@ -545,8 +545,10 @@ export default function BookMultiPage() {
                     const perUnitPrice = getItemPrice({ ...item, unitCount: 1 });
                     const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
                     const perUnitSubtotal = perUnitPrice + perUnitExtra;
+                    const isFirstBooking = cart.indexOf(item) === 0 && u === 0;
+                    const unitAddon = isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
                     const perUnitGst = Math.round(perUnitSubtotal * 0.05);
-                    const perUnitTotal = Math.round((perUnitSubtotal + perUnitGst) / 10) * 10;
+                    const perUnitTotal = Math.round((perUnitSubtotal + unitAddon + perUnitGst) / 10) * 10;
                     const perUnitPayNow = Math.round(Math.round(perUnitTotal * 0.8) / 10) * 10;
                     const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
 

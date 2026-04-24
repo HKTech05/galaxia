@@ -226,41 +226,64 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 // Enrich properties client-side with booked/bookingStatus from activeBookings
                 const enriched = data.properties.map((p: any) => {
                     // Find bookings for this property (no sub-property)
-                    const propBooking = bookings.find((b: any) => b.propertyId === p.id && !b.subPropertyId);
+                    const propBookings = bookings.filter((b: any) => b.propertyId === p.id && !b.subPropertyId);
+                    // Separate checkout-only bookings from active/checkin bookings
+                    const propCheckoutOnlyBookings = propBookings.filter((b: any) => b.checkOutDate?.slice(0, 10) === selectedDateStr && b.checkInDate?.slice(0, 10) !== selectedDateStr);
+                    const propActiveBookings = propBookings.filter((b: any) => b.checkOutDate?.slice(0, 10) !== selectedDateStr);
+                    const propCheckinBookings = propBookings.filter((b: any) => b.checkInDate?.slice(0, 10) === selectedDateStr);
+                    const propBooking = propActiveBookings[0] || null;
+                    const propCheckoutBooking = propCheckoutOnlyBookings[0] || null;
+                    const propCheckinBooking = propCheckinBookings[0] || null;
+
                     // Collect ALL bookings for this property's sub-properties
                     const propSubBookings = bookings.filter((b: any) => b.propertyId === p.id && b.subPropertyId);
                     const enrichedVillas = (p.villas || []).map((v: any) => {
                         const villaBookings = bookings.filter((b: any) => b.subPropertyId === v.id);
-                        const villaBooking = villaBookings[0];
+                        // Separate checkout-only vs active bookings for this villa
+                        const checkoutOnlyBookings = villaBookings.filter((b: any) => b.checkOutDate?.slice(0, 10) === selectedDateStr && b.checkInDate?.slice(0, 10) !== selectedDateStr);
+                        const activeBookings = villaBookings.filter((b: any) => b.checkOutDate?.slice(0, 10) !== selectedDateStr);
+                        const checkinBookings = villaBookings.filter((b: any) => b.checkInDate?.slice(0, 10) === selectedDateStr);
+                        const villaBooking = activeBookings[0] || null;
+                        const checkoutBooking = checkoutOnlyBookings[0] || null;
+                        const checkinBooking = checkinBookings[0] || null;
+                        // booked = true only if there's an active (non-checkout-only) booking
+                        const isBooked = villaBooking ? true : (checkinBooking ? true : false);
+                        // Use active/checkin booking for details, fallback to checkout booking for display
+                        const primaryBooking = villaBooking || checkinBooking;
                         return {
                             ...v,
-                            booked: v.booked ?? (villaBooking ? true : false),
-                            bookingStatus: v.bookingStatus ?? (villaBooking?.status || null),
-                            isCheckinDay: v.isCheckinDay ?? (villaBooking ? villaBooking.checkInDate?.slice(0, 10) === selectedDateStr : false),
-                            isCheckoutDay: v.isCheckoutDay ?? (villaBooking ? villaBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
-                            guest: v.guest ?? (villaBooking?.customerName || null),
-                            guests: v.guests || (villaBooking?.numGuests || 0),
-                            balanceAmount: v.balanceAmount ?? (villaBooking?.balanceAmount || null),
-                            depositAmount: v.depositAmount ?? (villaBooking?.securityDeposit || null),
-                            totalAmount: v.totalAmount ?? (villaBooking?.totalAmount || null),
-                            addons: v.addons ?? (villaBooking?.addons || null),
-                            phone: v.phone ?? (villaBooking?.customerPhone || null),
-                            depositRefunded: v.depositRefunded ?? (villaBooking?.depositRefunded || false),
-                            depositRefundMethod: v.depositRefundMethod ?? (villaBooking?.depositRefundMethod || null),
-                            depositRefundedAt: v.depositRefundedAt ?? (villaBooking?.depositRefundedAt || null),
+                            booked: v.booked ?? isBooked,
+                            bookingStatus: v.bookingStatus ?? (primaryBooking?.status || null),
+                            isCheckinDay: v.isCheckinDay ?? (checkinBooking ? true : false),
+                            isCheckoutDay: v.isCheckoutDay ?? (checkoutBooking ? true : false),
+                            guest: v.guest ?? (primaryBooking?.customerName || null),
+                            guests: v.guests || (primaryBooking?.numGuests || 0),
+                            balanceAmount: v.balanceAmount ?? (primaryBooking?.balanceAmount || null),
+                            depositAmount: v.depositAmount ?? (primaryBooking?.securityDeposit || null),
+                            totalAmount: v.totalAmount ?? (primaryBooking?.totalAmount || null),
+                            addons: v.addons ?? (primaryBooking?.addons || null),
+                            phone: v.phone ?? (primaryBooking?.customerPhone || null),
+                            depositRefunded: v.depositRefunded ?? (primaryBooking?.depositRefunded || false),
+                            depositRefundMethod: v.depositRefundMethod ?? (primaryBooking?.depositRefundMethod || null),
+                            depositRefundedAt: v.depositRefundedAt ?? (primaryBooking?.depositRefundedAt || null),
                             _allBookings: villaBookings, // Store all bookings for this sub-property
+                            _checkoutBooking: checkoutBooking, // Separate checkout booking for badge
                         };
                     });
+                    // Standalone property: same checkout-day logic
+                    const isPropBooked = propBooking ? true : (propCheckinBooking ? true : false);
+                    const primaryPropBooking = propBooking || propCheckinBooking;
                     return {
                         ...p,
-                        booked: p.booked ?? (propBooking ? true : false),
-                        bookingStatus: p.bookingStatus ?? (propBooking?.status || null),
-                        isCheckinDay: p.isCheckinDay ?? (propBooking ? propBooking.checkInDate?.slice(0, 10) === selectedDateStr : false),
-                        isCheckoutDay: p.isCheckoutDay ?? (propBooking ? propBooking.checkOutDate?.slice(0, 10) === selectedDateStr : false),
-                        balanceAmount: p.balanceAmount ?? (propBooking?.balanceAmount || null),
-                        depositAmount: p.depositAmount ?? (propBooking?.securityDeposit || null),
-                        totalAmount: p.totalAmount ?? (propBooking?.totalAmount || null),
-                        addons: p.addons ?? (propBooking?.addons || null),
+                        booked: p.booked ?? isPropBooked,
+                        bookingStatus: p.bookingStatus ?? (primaryPropBooking?.status || null),
+                        isCheckinDay: p.isCheckinDay ?? (propCheckinBooking ? true : false),
+                        isCheckoutDay: p.isCheckoutDay ?? (propCheckoutBooking ? true : false),
+                        balanceAmount: p.balanceAmount ?? (primaryPropBooking?.balanceAmount || null),
+                        depositAmount: p.depositAmount ?? (primaryPropBooking?.securityDeposit || null),
+                        totalAmount: p.totalAmount ?? (primaryPropBooking?.totalAmount || null),
+                        addons: p.addons ?? (primaryPropBooking?.addons || null),
+                        _checkoutBooking: propCheckoutBooking,
                         villas: enrichedVillas,
                     };
                 });
@@ -435,7 +458,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 const checkOut = new Date(b.checkOutDate);
                 const start = checkIn < monthStart ? monthStart : checkIn;
                 const end = checkOut > monthEnd ? monthEnd : checkOut;
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
                     days.add(d.getDate());
                 }
             }
@@ -543,7 +566,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     const checkOut = new Date(parseInt(coParts[0]), parseInt(coParts[1]) - 1, parseInt(coParts[2]));
                     const start = checkIn < monthStart ? monthStart : checkIn;
                     const end = checkOut > monthEnd ? monthEnd : checkOut;
-                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
                         dayCounts[d.getDate()] = (dayCounts[d.getDate()] || 0) + 1;
                     }
                 }
@@ -574,13 +597,25 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             else setExpandedProperty(isExpanded ? null : item.name);
         };
 
+        const hasCheckoutBooking = !!item._checkoutBooking || item.isCheckoutDay;
+
         // Status badges
         const renderStatusBadges = () => {
-            if (!item.booked) {
+            const badges = [];
+            if (!item.booked && !hasCheckoutBooking) {
                 return <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>;
             }
-            const badges = [];
-            // Booking status badge — always pair with secondary status
+            if (!item.booked && hasCheckoutBooking) {
+                badges.push(<span key="vacant" className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Vacant</span>);
+                badges.push(<span key="co-today" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+                return <div className="flex items-center gap-1.5 flex-wrap">{badges}</div>;
+            }
+            if (item.booked && hasCheckoutBooking && item.isCheckinDay) {
+                badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
+                badges.push(<span key="co-today" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+                badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                return <div className="flex items-center gap-1.5 flex-wrap">{badges}</div>;
+            }
             if (item.bookingStatus === 'confirmed' && !item.checkedIn) {
                 badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                 badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
@@ -594,7 +629,27 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                 badges.push(<span key="co" className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md border border-slate-200 uppercase">Checked Out</span>);
             }
+            if (hasCheckoutBooking && !item.isCheckinDay) {
+                badges.push(<span key="co-today" className="px-2 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-md border border-orange-200 uppercase">Checkout Today</span>);
+            }
             return <div className="flex items-center gap-1.5 flex-wrap">{badges}</div>;
+        };
+
+        const renderCheckoutBookingCard = () => {
+            const cob = item._checkoutBooking;
+            if (!cob) return null;
+            return (
+                <div className="mt-3 p-3 rounded-lg border border-orange-200 bg-orange-50/50">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[9px] font-bold rounded uppercase">Checkout Booking</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                        <div><p className="text-[9px] font-bold text-slate-400 uppercase">Guest</p><p className="font-bold text-slate-700">{cob.customerName || 'N/A'}</p></div>
+                        <div><p className="text-[9px] font-bold text-slate-400 uppercase">Status</p><p className="font-bold text-orange-600">{cob.status === 'checked_in' ? 'Checked In' : cob.status === 'checked_out' ? 'Checked Out' : 'Confirmed'}</p></div>
+                        <div><p className="text-[9px] font-bold text-slate-400 uppercase">Check-out</p><p className="font-bold text-slate-700">{cob.checkOutDate ? new Date(cob.checkOutDate).toLocaleDateString('en-IN') : 'N/A'}</p></div>
+                    </div>
+                </div>
+            );
         };
 
         return (
@@ -608,6 +663,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 </button>
                 {isExpanded && item.booked && (
                     <div className="p-4 pt-0 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {item.isCheckinDay && hasCheckoutBooking && (
+                            <div className="mb-3 flex items-center gap-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] font-bold rounded uppercase">Check-in Booking</span></div>
+                        )}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guest</p>
@@ -695,9 +753,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </div>
                             </div>
                         )}
+                        {hasCheckoutBooking && renderCheckoutBookingCard()}
                     </div>
                 )}
-                {isExpanded && !item.booked && (
+                {isExpanded && !item.booked && hasCheckoutBooking && (
+                    <div className="p-4 pt-0 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {renderCheckoutBookingCard()}
+                    </div>
+                )}
+                {isExpanded && !item.booked && !hasCheckoutBooking && (
                     <div className="p-4 pt-0 border-t border-slate-100">
                         <p className="text-sm text-slate-400 font-medium py-4 text-center">No active booking for this property.</p>
                     </div>

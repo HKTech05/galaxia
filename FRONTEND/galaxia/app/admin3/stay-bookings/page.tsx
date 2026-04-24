@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2 } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -18,6 +18,7 @@ interface StayBooking {
     nights: number;
     guests: number;
     kids: number;
+    pets: number;
     totalAmount: number;
     advanceAmount: number;
     balanceAmount: number;
@@ -77,6 +78,9 @@ export default function StayBookingsPage() {
     const [deleteConfirmBooking, setDeleteConfirmBooking] = useState<StayBooking | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<StayBooking | null>(null);
+    const [editBooking, setEditBooking] = useState<StayBooking | null>(null);
+    const [editForm, setEditForm] = useState<any>({});
+    const [editSaving, setEditSaving] = useState(false);
     const [sortField, setSortField] = useState<"bookedAt" | "checkIn">("bookedAt");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [viewTab, setViewTab] = useState<"staycation" | "dd" | "all">("staycation");
@@ -109,6 +113,7 @@ export default function StayBookingsPage() {
                 nights: b.numNights || 1,
                 guests: b.numGuests || 2,
                 kids: b.numKids || 0,
+                pets: b.numPets || 0,
                 totalAmount: b.totalAmount || 0,
                 advanceAmount: b.advanceAmount || 0,
                 balanceAmount: b.balanceAmount || 0,
@@ -166,6 +171,7 @@ export default function StayBookingsPage() {
                 nights: 0,
                 guests: b.numGuests || 1,
                 kids: 0,
+                pets: 0,
                 totalAmount: b.totalAmount || 0,
                 advanceAmount: b.amountPaid || 0,
                 balanceAmount: b.amountToCollect || 0,
@@ -803,6 +809,36 @@ export default function StayBookingsPage() {
                                 <div className="flex items-center gap-3">
                                     <span className="text-xs text-slate-400 font-medium">DB ID: {selectedBooking.id}</span>
                                     <button
+                                        onClick={() => {
+                                            const b = selectedBooking;
+                                            setEditForm({
+                                                customerName: b.customerName,
+                                                customerPhone: b.customerPhone,
+                                                customerEmail: b.customerEmail || '',
+                                                numGuests: b.guests,
+                                                numKids: b.kids,
+                                                numPets: b.pets || 0,
+                                                checkInDate: b.checkIn ? b.checkIn.split('T')[0] : '',
+                                                checkOutDate: b.checkOut ? b.checkOut.split('T')[0] : '',
+                                                nightlyRate: b.nightlyRate,
+                                                basePrice: b.basePrice,
+                                                extraPersonCharge: b.extraPersonCharge,
+                                                gstAmount: b.gstAmount,
+                                                totalAmount: b.totalAmount,
+                                                advanceAmount: b.advanceAmount,
+                                                balanceAmount: b.balanceAmount,
+                                                securityDeposit: b.securityDeposit,
+                                                status: b.status,
+                                                source: b.source,
+                                                addons: b.addons || [],
+                                            });
+                                            setEditBooking(b);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+                                    >
+                                        <Pencil size={13} /> Edit
+                                    </button>
+                                    <button
                                         onClick={() => setDeleteConfirmBooking(selectedBooking)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
                                     >
@@ -864,6 +900,263 @@ export default function StayBookingsPage() {
                                 className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
                             >
                                 {deleting ? 'Deleting...' : 'Delete Permanently'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Booking Modal */}
+            {editBooking && (
+                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => !editSaving && setEditBooking(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Edit Booking</h3>
+                                <p className="text-xs font-medium text-slate-500 mt-0.5">{editBooking.bookingRef}</p>
+                            </div>
+                            <button onClick={() => setEditBooking(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors" disabled={editSaving}>
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-5">
+                            {/* Customer Info */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Customer Information</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Name</label>
+                                        <input type="text" value={editForm.customerName || ''} onChange={e => setEditForm({...editForm, customerName: e.target.value})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Phone</label>
+                                        <input type="text" value={editForm.customerPhone || ''} onChange={e => setEditForm({...editForm, customerPhone: e.target.value})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Email</label>
+                                        <input type="text" value={editForm.customerEmail || ''} onChange={e => setEditForm({...editForm, customerEmail: e.target.value})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stay Info */}
+                            {!editBooking.isDd && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Stay Information</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Check-in</label>
+                                            <input type="date" value={editForm.checkInDate || ''} onChange={e => setEditForm({...editForm, checkInDate: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Check-out</label>
+                                            <input type="date" value={editForm.checkOutDate || ''} onChange={e => setEditForm({...editForm, checkOutDate: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Guests</label>
+                                            <input type="number" min={1} value={editForm.numGuests || ''} onChange={e => setEditForm({...editForm, numGuests: parseInt(e.target.value) || 0})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Kids</label>
+                                            <input type="number" min={0} value={editForm.numKids || ''} onChange={e => setEditForm({...editForm, numKids: parseInt(e.target.value) || 0})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Financial Details */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Financial Details</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {!editBooking.isDd && (
+                                        <>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Nightly Rate</label>
+                                                <input type="number" value={editForm.nightlyRate ?? ''} onChange={e => setEditForm({...editForm, nightlyRate: parseFloat(e.target.value) || 0})}
+                                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Base Price</label>
+                                                <input type="number" value={editForm.basePrice ?? ''} onChange={e => setEditForm({...editForm, basePrice: parseFloat(e.target.value) || 0})}
+                                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Extra Person</label>
+                                                <input type="number" value={editForm.extraPersonCharge ?? ''} onChange={e => setEditForm({...editForm, extraPersonCharge: parseFloat(e.target.value) || 0})}
+                                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                            </div>
+                                        </>
+                                    )}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">GST Amount</label>
+                                        <input type="number" value={editForm.gstAmount ?? ''} onChange={e => setEditForm({...editForm, gstAmount: parseFloat(e.target.value) || 0})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-emerald-600 uppercase">Total Amount</label>
+                                        <input type="number" value={editForm.totalAmount ?? ''} onChange={e => setEditForm({...editForm, totalAmount: parseFloat(e.target.value) || 0})}
+                                            className="w-full mt-1 px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-700 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-blue-600 uppercase">Advance Paid</label>
+                                        <input type="number" value={editForm.advanceAmount ?? ''} onChange={e => setEditForm({...editForm, advanceAmount: parseFloat(e.target.value) || 0})}
+                                            className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg text-sm font-bold text-blue-700 bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-amber-600 uppercase">Balance</label>
+                                        <input type="number" value={editForm.balanceAmount ?? ''} onChange={e => setEditForm({...editForm, balanceAmount: parseFloat(e.target.value) || 0})}
+                                            className="w-full mt-1 px-3 py-2 border border-amber-200 rounded-lg text-sm font-bold text-amber-700 bg-amber-50/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500" />
+                                    </div>
+                                    {!editBooking.isDd && (
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Security Deposit</label>
+                                            <input type="number" value={editForm.securityDeposit ?? ''} onChange={e => setEditForm({...editForm, securityDeposit: parseFloat(e.target.value) || 0})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Status & Source */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status & Source</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Status</label>
+                                        <select value={editForm.status || ''} onChange={e => setEditForm({...editForm, status: e.target.value})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                            <option value="confirmed">Confirmed</option>
+                                            <option value="checked_in">Checked In</option>
+                                            <option value="checked_out">Checked Out</option>
+                                            <option value="cancelled">Cancelled</option>
+                                            <option value="no_show">No Show</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Source</label>
+                                        <select value={editForm.source || ''} onChange={e => setEditForm({...editForm, source: e.target.value})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                            <option value="website">Website</option>
+                                            <option value="reception">Reception</option>
+                                            <option value="admin-bulk">Admin Bulk</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Addons — Staycation only, NOT DD */}
+                            {!editBooking.isDd && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Add-ons</h4>
+                                    {editForm.addons && editForm.addons.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {editForm.addons.map((addon: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-bold text-purple-700">{addon.name || 'Add-on'}</span>
+                                                        <button onClick={() => { const a = [...editForm.addons]; a.splice(idx, 1); setEditForm({...editForm, addons: a}); }}
+                                                            className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
+                                                    </div>
+                                                    {addon.name === 'Celebration Add-on' && (
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <div>
+                                                                <label className="text-[9px] font-bold text-purple-500 uppercase">Price</label>
+                                                                <input type="number" value={addon.price || ''} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], price: parseInt(e.target.value) || 0}; setEditForm({...editForm, addons: a}); }}
+                                                                    className="w-full mt-0.5 px-2 py-1.5 border border-purple-200 rounded text-xs font-medium" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[9px] font-bold text-purple-500 uppercase">Occasion</label>
+                                                                <input type="text" value={addon.occasion || ''} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], occasion: e.target.value}; setEditForm({...editForm, addons: a}); }}
+                                                                    className="w-full mt-0.5 px-2 py-1.5 border border-purple-200 rounded text-xs font-medium" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[9px] font-bold text-purple-500 uppercase">Cake Msg</label>
+                                                                <input type="text" value={addon.cakeMessage || ''} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], cakeMessage: e.target.value}; setEditForm({...editForm, addons: a}); }}
+                                                                    className="w-full mt-0.5 px-2 py-1.5 border border-purple-200 rounded text-xs font-medium" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">No add-ons</p>
+                                    )}
+                                    <button onClick={() => setEditForm({...editForm, addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 1200, occasion: '', cakeMessage: '' }]})}
+                                        className="mt-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">+ Add Celebration Add-on</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Save / Cancel */}
+                        <div className="p-5 border-t border-slate-100 flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+                            <button onClick={() => setEditBooking(null)} disabled={editSaving}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancel</button>
+                            <button
+                                disabled={editSaving}
+                                onClick={async () => {
+                                    setEditSaving(true);
+                                    try {
+                                        if (editBooking.isDd) {
+                                            // DD booking edit — use DD endpoint
+                                            await api.patch(`/bookings/dd/${editBooking.id}`, {
+                                                customerName: editForm.customerName,
+                                                customerPhone: editForm.customerPhone,
+                                                customerEmail: editForm.customerEmail || null,
+                                                numGuests: editForm.numGuests,
+                                                totalAmount: editForm.totalAmount,
+                                                amountPaid: editForm.advanceAmount,
+                                                amountToCollect: editForm.balanceAmount,
+                                                gstAmount: editForm.gstAmount,
+                                                status: editForm.status,
+                                                source: editForm.source,
+                                            });
+                                        } else {
+                                            // Staycation booking edit
+                                            await api.patch(`/bookings/staycation/${editBooking.id}`, {
+                                                customerName: editForm.customerName,
+                                                customerPhone: editForm.customerPhone,
+                                                customerEmail: editForm.customerEmail || null,
+                                                numGuests: editForm.numGuests,
+                                                numKids: editForm.numKids,
+                                                numPets: editForm.numPets,
+                                                checkInDate: editForm.checkInDate,
+                                                checkOutDate: editForm.checkOutDate,
+                                                nightlyRate: editForm.nightlyRate,
+                                                basePrice: editForm.basePrice,
+                                                extraPersonCharge: editForm.extraPersonCharge,
+                                                gstAmount: editForm.gstAmount,
+                                                totalAmount: editForm.totalAmount,
+                                                advanceAmount: editForm.advanceAmount,
+                                                balanceAmount: editForm.balanceAmount,
+                                                securityDeposit: editForm.securityDeposit,
+                                                status: editForm.status,
+                                                source: editForm.source,
+                                                addons: editForm.addons && editForm.addons.length > 0 ? editForm.addons : null,
+                                            });
+                                        }
+                                        setEditBooking(null);
+                                        setSelectedBooking(null);
+                                        if (editBooking.isDd) fetchDdBookings();
+                                        else fetchBookings();
+                                        alert('Booking updated successfully!');
+                                    } catch (err) {
+                                        console.error('Edit failed:', err);
+                                        alert('Failed to update booking. Please try again.');
+                                    } finally {
+                                        setEditSaving(false);
+                                    }
+                                }}
+                                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                            >
+                                {editSaving ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     </div>

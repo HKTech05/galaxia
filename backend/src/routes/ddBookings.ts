@@ -1,7 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import jwt from "jsonwebtoken";
-import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
 import { sendDDBookingConfirmation as sendDDBookingEmail } from "../lib/emailService";
@@ -387,6 +387,75 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         return res.json(booking);
     } catch (error) {
         console.error("Update DD booking status error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/bookings/dd/:id — Master Edit (owner only)
+router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
+
+        const existing = await prisma.ddBooking.findUnique({ where: { id: bookingId } });
+        if (!existing) return res.status(404).json({ error: "Booking not found" });
+
+        const {
+            customerName, customerPhone, customerEmail,
+            numGuests, totalAmount, amountPaid, amountToCollect,
+            gstAmount, status, source,
+        } = req.body;
+
+        const updateData: any = {};
+        if (customerName !== undefined) updateData.customerName = customerName;
+        if (customerPhone !== undefined) updateData.customerPhone = encrypt(customerPhone);
+        if (customerEmail !== undefined) updateData.customerEmail = customerEmail ? encrypt(customerEmail) : null;
+        if (numGuests !== undefined) updateData.numGuests = parseInt(numGuests);
+        if (totalAmount !== undefined) updateData.totalAmount = parseFloat(totalAmount) || 0;
+        if (amountPaid !== undefined) updateData.amountPaid = parseFloat(amountPaid) || 0;
+        if (amountToCollect !== undefined) updateData.amountToCollect = parseFloat(amountToCollect) || 0;
+        if (gstAmount !== undefined) updateData.gstAmount = parseFloat(gstAmount) || 0;
+        if (status !== undefined) updateData.status = status;
+        if (source !== undefined) updateData.source = source;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: "No fields to update" });
+        }
+
+        const updated = await prisma.ddBooking.update({
+            where: { id: bookingId },
+            data: updateData,
+        });
+
+        // Audit log
+        const changedFields: Record<string, { before: any; after: any }> = {};
+        for (const key of Object.keys(updateData)) {
+            const beforeVal = (existing as any)[key];
+            const afterVal = (updated as any)[key];
+            if (JSON.stringify(beforeVal) !== JSON.stringify(afterVal)) {
+                changedFields[key] = { before: beforeVal, after: afterVal };
+            }
+        }
+
+        console.log(`[MASTER EDIT DD] Booking #${bookingId} (${existing.bookingRef}) edited by admin #${req.admin!.id}:`, JSON.stringify(changedFields, null, 2));
+
+        auditLog({
+            adminId: req.admin!.id,
+            action: "booking_master_edit",
+            entityType: "dd_booking",
+            entityId: bookingId,
+            details: { bookingRef: existing.bookingRef, changedFields },
+        });
+
+        const decrypted = {
+            ...updated,
+            customerPhone: decrypt(updated.customerPhone),
+            customerEmail: updated.customerEmail ? decrypt(updated.customerEmail) : null,
+        };
+
+        return res.json(decrypted);
+    } catch (error) {
+        console.error("Master edit DD booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

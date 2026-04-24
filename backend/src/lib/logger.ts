@@ -32,7 +32,9 @@ export type AuditAction =
     | "phone_otp_sent"
     | "phone_register"
     | "phone_login"
-    | "phone_user_name_update";
+    | "phone_user_name_update"
+    | "booking_master_edit"
+    | "booking_deleted";
 
 interface LogOptions {
     adminId?: number;

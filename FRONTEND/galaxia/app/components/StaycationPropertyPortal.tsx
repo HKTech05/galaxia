@@ -210,6 +210,30 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         villa: "TAKE-1",
         paymentMethod: "Cash"
     });
+
+    // Fetch DB property list for villa name → subPropertyId resolution
+    const [dbPropertyList, setDbPropertyList] = useState<any[]>([]);
+    useEffect(() => {
+        api.get("/properties").then(data => {
+            if (Array.isArray(data)) setDbPropertyList(data);
+        }).catch(() => {});
+    }, []);
+
+    // Resolve villa name to subPropertyId from DB
+    const resolveSubPropertyId = (propertyName: string, villaName: string): number | null => {
+        for (const p of dbPropertyList) {
+            if (!propertyName.includes(p.name)) continue;
+            if (p.subProperties && p.subProperties.length > 0) {
+                for (const sp of p.subProperties) {
+                    if (sp.name.toUpperCase() === villaName.toUpperCase() ||
+                        sp.name.toLowerCase().replace(/\s+/g, '-') === villaName.toLowerCase().replace(/\s+/g, '-')) {
+                        return sp.id;
+                    }
+                }
+            }
+        }
+        return null;
+    };
     const [customSplitMode, setCustomSplitMode] = useState(false);
     const [customPrepaid, setCustomPrepaid] = useState("");
     const [customBalance, setCustomBalance] = useState("");
@@ -349,16 +373,24 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         const calculatedTotal = calculatePrice();
         
         try {
-            const propertyMap: Record<string, number> = {
-                "Hill View": 1,
-                "Mount View": 2,
-                "Heavenly Villa": 3,
-                "La Paraiso": 4,
-                "Amstel Nest": 5,
-                "Ambrose": 6,
-                "Digital Diaries": 7
-            };
-            const propId = Object.entries(propertyMap).find(([name]) => manualForm.property.includes(name))?.[1] || 1;
+            // Resolve property ID from DB property list
+            let propId: number | null = null;
+            for (const p of dbPropertyList) {
+                if (manualForm.property.includes(p.name)) { propId = p.id; break; }
+            }
+            // Fallback to hardcoded map if DB list not loaded
+            if (!propId) {
+                const fallbackMap: Record<string, number> = {
+                    "Hill View": 1, "Mount View": 2, "Heavenly Villa": 3,
+                    "La Paraiso": 4, "Amstel Nest": 5, "Ambrose": 6, "Digital Diaries": 7
+                };
+                propId = Object.entries(fallbackMap).find(([name]) => manualForm.property.includes(name))?.[1] || 1;
+            }
+
+            // Resolve sub-property ID for Ambrose / Amstel Nest villas
+            const subPropId = (manualForm.property.includes("Ambrose") || manualForm.property.includes("Amstel"))
+                ? resolveSubPropertyId(manualForm.property, manualForm.villa)
+                : null;
 
             // Build addons array
             const bookingAddons: any[] = [];
@@ -373,6 +405,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 customerName: manualForm.name,
                 customerPhone: manualForm.phone || "0000000000",
                 propertyId: propId,
+                subPropertyId: subPropId,
                 numGuests: manualForm.guests,
                 numPets: manualForm.pets || 0,
                 checkInDate: `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`,
