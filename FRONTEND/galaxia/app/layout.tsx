@@ -4,6 +4,7 @@ import "./globals.css";
 import FloatingChatbot from "./components/FloatingChatbot";
 import FloatingCart from "./components/FloatingCart";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <FloatingCart />
         <FloatingChatbot />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

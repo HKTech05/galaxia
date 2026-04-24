@@ -16,6 +16,10 @@ const propertiesData = [
 
 export default function StaycationPage() {
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    const [filterCheckIn, setFilterCheckIn] = useState('');
+    const [filterCheckOut, setFilterCheckOut] = useState('');
+    const [filterResults, setFilterResults] = useState<Record<string, boolean> | null>(null);
+    const [filterLoading, setFilterLoading] = useState(false);
 
     useEffect(() => {
         fetch("/api/site-images").then(r => r.json()).then(data => {
@@ -53,8 +57,85 @@ export default function StaycationPage() {
                     <h2 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-semibold text-text-primary mb-4">Featured Properties</h2>
                     <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-antique-gold to-transparent mx-auto" />
                 </div>
+
+                {/* Availability Filter Bar */}
+                <div className="mb-10 max-w-2xl mx-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch gap-3 p-4 rounded-2xl border border-antique-gold/20 bg-gradient-to-r from-[#fdfbf7] to-[#faf6ee] shadow-sm">
+                        <div className="flex-1">
+                            <label className="text-[9px] font-inter font-bold text-dark-gold uppercase tracking-wider mb-1 block">Check-in</label>
+                            <input
+                                type="date"
+                                value={filterCheckIn}
+                                min={new Date().toISOString().split('T')[0]}
+                                onChange={e => { setFilterCheckIn(e.target.value); setFilterCheckOut(''); setFilterResults(null); }}
+                                className="w-full px-3 py-2 border border-antique-gold/20 rounded-lg text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/30 focus:border-antique-gold"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-[9px] font-inter font-bold text-dark-gold uppercase tracking-wider mb-1 block">Check-out</label>
+                            <input
+                                type="date"
+                                value={filterCheckOut}
+                                min={filterCheckIn || new Date().toISOString().split('T')[0]}
+                                onChange={e => { setFilterCheckOut(e.target.value); setFilterResults(null); }}
+                                className="w-full px-3 py-2 border border-antique-gold/20 rounded-lg text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/30 focus:border-antique-gold"
+                            />
+                        </div>
+                        <div className="flex items-end gap-2">
+                            <button
+                                onClick={async () => {
+                                    if (!filterCheckIn || !filterCheckOut) return;
+                                    setFilterLoading(true);
+                                    try {
+                                        const slugs = propertiesData.map(p => p.id);
+                                        const results: Record<string, boolean> = {};
+                                        await Promise.all(slugs.map(async (slug) => {
+                                            try {
+                                                const res = await fetch(`/api/properties/${slug}/availability`);
+                                                if (!res.ok) { results[slug] = true; return; }
+                                                const data = await res.json();
+                                                if (data.isActive === false) { results[slug] = false; return; }
+                                                const booked: string[] = (data.bookedDates || []);
+                                                const ci = new Date(filterCheckIn + 'T12:00:00');
+                                                const co = new Date(filterCheckOut + 'T12:00:00');
+                                                let available = true;
+                                                for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                                                    const ds = d.toISOString().split('T')[0];
+                                                    if (booked.includes(ds)) { available = false; break; }
+                                                }
+                                                results[slug] = available;
+                                            } catch { results[slug] = true; }
+                                        }));
+                                        setFilterResults(results);
+                                    } catch { }
+                                    setFilterLoading(false);
+                                }}
+                                disabled={!filterCheckIn || !filterCheckOut || filterLoading}
+                                className="px-5 py-2 bg-gradient-to-r from-antique-gold to-dark-gold text-white text-xs font-inter font-semibold rounded-lg shadow-[0_2px_10px_rgba(183,142,58,0.3)] hover:shadow-[0_4px_16px_rgba(183,142,58,0.5)] disabled:opacity-50 transition-all duration-300 whitespace-nowrap"
+                            >
+                                {filterLoading ? 'Checking...' : 'Check Availability'}
+                            </button>
+                            {filterResults && (
+                                <button
+                                    onClick={() => { setFilterCheckIn(''); setFilterCheckOut(''); setFilterResults(null); }}
+                                    className="px-3 py-2 border border-slate-200 text-slate-500 text-xs font-inter rounded-lg hover:bg-slate-50 transition-colors"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    {filterResults && (
+                        <p className="text-center mt-3 text-xs font-inter text-text-muted">
+                            Showing {Object.values(filterResults).filter(v => v).length} of {propertiesData.length} properties available for your dates
+                        </p>
+                    )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 stagger-children">
-                    {propertiesData.map((property) => {
+                    {propertiesData
+                        .filter(p => !filterResults || filterResults[p.id] !== false)
+                        .map((property) => {
                         const thumbUrl = siteImages[`${property.id}/thumbnail`]?.[0]?.url || "";
                         return (
                             <Link key={property.id} href={`/staycation/${property.id}`} className="group block">
@@ -90,7 +171,7 @@ export default function StaycationPage() {
                                                 View Details
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                                             </span>
-                                            <span className="bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium px-4 py-2 rounded-full hover:bg-antique-gold hover:text-white transition-all">Book Now</span>
+                                            <span className="bg-gradient-to-r from-antique-gold via-dark-gold to-antique-gold text-white text-xs font-inter font-semibold px-5 py-2.5 rounded-full shadow-[0_2px_12px_rgba(183,142,58,0.3)] hover:shadow-[0_4px_20px_rgba(183,142,58,0.5)] hover:scale-105 transition-all duration-300">Book Now</span>
                                         </div>
                                     </div>
                                 </div>

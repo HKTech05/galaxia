@@ -237,7 +237,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                             <div className="block w-full text-center bg-red-50 border border-red-200 text-red-600 text-[10px] font-bold py-2.5 rounded-lg uppercase tracking-widest">Under Maintenance</div>
                                         ) : (
                                             <div className="space-y-2">
-                                                <Link href={`/staycation/ambrose/${sub.id}`} className="block w-full text-center bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium py-2.5 rounded-lg hover:bg-antique-gold hover:text-white transition-all duration-300">View Details & Book</Link>
+                                                <Link href={`/staycation/ambrose/${sub.id}`} className="block w-full text-center bg-gradient-to-r from-antique-gold via-dark-gold to-antique-gold text-white text-xs font-inter font-semibold py-2.5 rounded-lg shadow-[0_2px_12px_rgba(183,142,58,0.25)] hover:shadow-[0_4px_20px_rgba(183,142,58,0.45)] hover:scale-[1.02] transition-all duration-300">View Details & Book</Link>
                                                 <button
                                                     onClick={() => toggleCartVilla(sub)}
                                                     className={`w-full text-center text-xs font-inter font-medium py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-1.5 ${
@@ -318,7 +318,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                                 <span className="text-text-muted text-[10px] font-inter">/ {sub.pricing.weekday.persons}</span>
                                             </div>
                                         )}
-                                        <Link href={`/staycation/${property.id}/${sub.id}`} className="block w-full bg-antique-gold/10 border border-antique-gold/30 text-antique-gold text-xs font-inter font-medium py-2.5 rounded-lg hover:bg-antique-gold hover:text-white transition-all duration-300 text-center">View Details & Book</Link>
+                                        <Link href={`/staycation/${property.id}/${sub.id}`} className="block w-full bg-gradient-to-r from-antique-gold via-dark-gold to-antique-gold text-white text-xs font-inter font-semibold py-2.5 rounded-lg shadow-[0_2px_12px_rgba(183,142,58,0.25)] hover:shadow-[0_4px_20px_rgba(183,142,58,0.45)] hover:scale-[1.02] transition-all duration-300 text-center">View Details & Book</Link>
                                     </div>
                                 </div>
                             ))}
