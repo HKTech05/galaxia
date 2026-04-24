@@ -221,20 +221,6 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
 
     const formatDateShort = (d: Date) => `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`;
 
-    const [showMonthPicker, setShowMonthPicker] = useState(false);
-
-    // Generate next 12 months for the jump-to dropdown
-    const monthOptions = useMemo(() => {
-        const opts: { month: number; year: number; label: string }[] = [];
-        const now = new Date();
-        for (let i = 0; i < 12; i++) {
-            const m = (now.getMonth() + i) % 12;
-            const y = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
-            opts.push({ month: m, year: y, label: `${MONTH_SHORT[m]} ${y}` });
-        }
-        return opts;
-    }, []);
-
     return (
         <div className={`rounded-xl border border-border-light bg-white shadow-sm ${compact ? "p-3 sm:p-4" : "p-5 sm:p-6"}`}>
             {/* Header */}
@@ -242,34 +228,9 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                 <button onClick={prevMonth} className="w-7 h-7 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:text-antique-gold text-text-muted transition-all">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </button>
-                <div className="relative">
-                    <button
-                        onClick={() => setShowMonthPicker(!showMonthPicker)}
-                        className={`font-cinzel font-semibold text-text-primary ${compact ? "text-sm" : "text-base sm:text-lg"} flex items-center gap-1.5 hover:text-antique-gold transition-colors`}
-                    >
-                        {MONTH_NAMES[currentMonth]} {currentYear}
-                        <svg className={`w-3 h-3 text-antique-gold transition-transform ${showMonthPicker ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    {showMonthPicker && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-antique-gold/20 rounded-xl shadow-lg z-20 p-2 w-[220px]">
-                            <div className="grid grid-cols-3 gap-1">
-                                {monthOptions.map(opt => (
-                                    <button
-                                        key={`${opt.month}-${opt.year}`}
-                                        onClick={() => { setCurrentMonth(opt.month); setCurrentYear(opt.year); setShowMonthPicker(false); }}
-                                        className={`px-2 py-1.5 text-[10px] font-inter font-medium rounded-lg transition-colors ${
-                                            opt.month === currentMonth && opt.year === currentYear
-                                                ? 'bg-antique-gold text-white'
-                                                : 'text-text-secondary hover:bg-antique-gold/10 hover:text-antique-gold'
-                                        }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <h3 className={`font-cinzel font-semibold text-text-primary ${compact ? "text-sm" : "text-base sm:text-lg"}`}>
+                    {MONTH_NAMES[currentMonth]} {currentYear}
+                </h3>
                 <button onClick={nextMonth} className="w-7 h-7 rounded-full border border-border-light flex items-center justify-center hover:border-antique-gold hover:text-antique-gold text-text-muted transition-all">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>

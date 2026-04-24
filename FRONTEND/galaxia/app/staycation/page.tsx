@@ -14,12 +14,34 @@ const propertiesData = [
     { id: "hill-view", name: "Hill View", subtitle: "Budget Mountain View Apartment", startPrice: "2,500", description: "A cozy apartment with a huge open balcony offering breathtaking mountain views. Perfect for couples seeking a tranquil escape.", highlights: ["Mountain View", "Queen Bed", "Smart TV", "Free WiFi"] },
 ];
 
+const fmtDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 export default function StaycationPage() {
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
     const [filterCheckIn, setFilterCheckIn] = useState('');
     const [filterCheckOut, setFilterCheckOut] = useState('');
     const [filterResults, setFilterResults] = useState<Record<string, boolean> | null>(null);
     const [filterLoading, setFilterLoading] = useState(false);
+
+    // Persist dates to localStorage so property detail pages can read them
+    useEffect(() => {
+        if (filterCheckIn && filterCheckOut) {
+            localStorage.setItem('galaxia_search_checkin', filterCheckIn);
+            localStorage.setItem('galaxia_search_checkout', filterCheckOut);
+        }
+    }, [filterCheckIn, filterCheckOut]);
+
+    // Restore dates from localStorage on mount
+    useEffect(() => {
+        const ci = localStorage.getItem('galaxia_search_checkin');
+        const co = localStorage.getItem('galaxia_search_checkout');
+        if (ci) setFilterCheckIn(ci);
+        if (co) setFilterCheckOut(co);
+    }, []);
 
     useEffect(() => {
         fetch("/api/site-images").then(r => r.json()).then(data => {
@@ -28,6 +50,47 @@ export default function StaycationPage() {
     }, []);
 
     const heroUrl = siteImages["staycation-hero/banner"]?.[0]?.url || "";
+
+    const checkAvailability = async () => {
+        if (!filterCheckIn || !filterCheckOut) return;
+        setFilterLoading(true);
+        try {
+            const slugs = propertiesData.map(p => p.id);
+            const results: Record<string, boolean> = {};
+            await Promise.all(slugs.map(async (slug) => {
+                try {
+                    const res = await fetch(`/api/properties/${slug}/availability`);
+                    if (!res.ok) { results[slug] = true; return; }
+                    const data = await res.json();
+                    if (data.isActive === false) { results[slug] = false; return; }
+                    const booked: string[] = (data.bookedDates || []);
+                    // For multi-unit properties (ambrose, amstel-nest), check if ALL units are booked
+                    // For single-unit, even 1 booked date blocks
+                    const ci = new Date(filterCheckIn + 'T12:00:00');
+                    const co = new Date(filterCheckOut + 'T12:00:00');
+                    let available = true;
+                    for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        const ds = `${y}-${m}-${day}`;
+                        if (booked.includes(ds)) { available = false; break; }
+                    }
+                    results[slug] = available;
+                } catch { results[slug] = true; }
+            }));
+            setFilterResults(results);
+        } catch { }
+        setFilterLoading(false);
+    };
+
+    const clearFilter = () => {
+        setFilterCheckIn('');
+        setFilterCheckOut('');
+        setFilterResults(null);
+        localStorage.removeItem('galaxia_search_checkin');
+        localStorage.removeItem('galaxia_search_checkout');
+    };
 
     return (
         <div>
@@ -58,77 +121,93 @@ export default function StaycationPage() {
                     <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-antique-gold to-transparent mx-auto" />
                 </div>
 
-                {/* Availability Filter Bar */}
-                <div className="mb-10 max-w-2xl mx-auto">
-                    <div className="flex flex-col sm:flex-row items-stretch gap-3 p-4 rounded-2xl border border-antique-gold/20 bg-gradient-to-r from-[#fdfbf7] to-[#faf6ee] shadow-sm">
-                        <div className="flex-1">
-                            <label className="text-[9px] font-inter font-bold text-dark-gold uppercase tracking-wider mb-1 block">Check-in</label>
-                            <input
-                                type="date"
-                                value={filterCheckIn}
-                                min={new Date().toISOString().split('T')[0]}
-                                onChange={e => { setFilterCheckIn(e.target.value); setFilterCheckOut(''); setFilterResults(null); }}
-                                className="w-full px-3 py-2 border border-antique-gold/20 rounded-lg text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/30 focus:border-antique-gold"
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <label className="text-[9px] font-inter font-bold text-dark-gold uppercase tracking-wider mb-1 block">Check-out</label>
-                            <input
-                                type="date"
-                                value={filterCheckOut}
-                                min={filterCheckIn || new Date().toISOString().split('T')[0]}
-                                onChange={e => { setFilterCheckOut(e.target.value); setFilterResults(null); }}
-                                className="w-full px-3 py-2 border border-antique-gold/20 rounded-lg text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/30 focus:border-antique-gold"
-                            />
-                        </div>
-                        <div className="flex items-end gap-2">
-                            <button
-                                onClick={async () => {
-                                    if (!filterCheckIn || !filterCheckOut) return;
-                                    setFilterLoading(true);
-                                    try {
-                                        const slugs = propertiesData.map(p => p.id);
-                                        const results: Record<string, boolean> = {};
-                                        await Promise.all(slugs.map(async (slug) => {
-                                            try {
-                                                const res = await fetch(`/api/properties/${slug}/availability`);
-                                                if (!res.ok) { results[slug] = true; return; }
-                                                const data = await res.json();
-                                                if (data.isActive === false) { results[slug] = false; return; }
-                                                const booked: string[] = (data.bookedDates || []);
-                                                const ci = new Date(filterCheckIn + 'T12:00:00');
-                                                const co = new Date(filterCheckOut + 'T12:00:00');
-                                                let available = true;
-                                                for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
-                                                    const ds = d.toISOString().split('T')[0];
-                                                    if (booked.includes(ds)) { available = false; break; }
-                                                }
-                                                results[slug] = available;
-                                            } catch { results[slug] = true; }
-                                        }));
-                                        setFilterResults(results);
-                                    } catch { }
-                                    setFilterLoading(false);
-                                }}
-                                disabled={!filterCheckIn || !filterCheckOut || filterLoading}
-                                className="px-5 py-2 bg-gradient-to-r from-antique-gold to-dark-gold text-white text-xs font-inter font-semibold rounded-lg shadow-[0_2px_10px_rgba(183,142,58,0.3)] hover:shadow-[0_4px_16px_rgba(183,142,58,0.5)] disabled:opacity-50 transition-all duration-300 whitespace-nowrap"
-                            >
-                                {filterLoading ? 'Checking...' : 'Check Availability'}
-                            </button>
-                            {filterResults && (
+                {/* ── Availability Search Bar ── */}
+                <div className="mb-12 max-w-3xl mx-auto">
+                    <div className="relative rounded-2xl bg-white border-2 border-antique-gold/15 shadow-[0_4px_30px_rgba(183,142,58,0.08)] overflow-hidden">
+                        {/* Top accent */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-antique-gold to-dark-gold" />
+
+                        <div className="p-6 sm:p-8">
+                            <p className="text-center text-antique-gold font-inter text-[10px] tracking-[0.3em] uppercase mb-5 font-semibold">Find Available Properties</p>
+
+                            <div className="flex flex-col sm:flex-row items-stretch gap-4">
+                                {/* Check-in */}
+                                <div className="flex-1">
+                                    <label className="text-xs font-inter font-bold text-text-primary uppercase tracking-wider mb-2 block">Check-in Date</label>
+                                    <div className="relative">
+                                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-antique-gold/60 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <input
+                                            type="date"
+                                            value={filterCheckIn}
+                                            min={new Date().toISOString().split('T')[0]}
+                                            onChange={e => { setFilterCheckIn(e.target.value); setFilterCheckOut(''); setFilterResults(null); }}
+                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all"
+                                        />
+                                    </div>
+                                    {filterCheckIn && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckIn)}</p>}
+                                </div>
+
+                                {/* Arrow */}
+                                <div className="hidden sm:flex items-center justify-center pt-6">
+                                    <svg className="w-5 h-5 text-antique-gold/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                                </div>
+
+                                {/* Check-out */}
+                                <div className="flex-1">
+                                    <label className="text-xs font-inter font-bold text-text-primary uppercase tracking-wider mb-2 block">Check-out Date</label>
+                                    <div className="relative">
+                                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-antique-gold/60 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <input
+                                            type="date"
+                                            value={filterCheckOut}
+                                            min={filterCheckIn || new Date().toISOString().split('T')[0]}
+                                            onChange={e => { setFilterCheckOut(e.target.value); setFilterResults(null); }}
+                                            className="w-full pl-10 pr-4 py-3.5 border-2 border-slate-200 rounded-xl text-sm font-inter text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-antique-gold/20 focus:border-antique-gold transition-all"
+                                        />
+                                    </div>
+                                    {filterCheckOut && <p className="text-[10px] font-inter text-antique-gold mt-1.5 ml-1">{fmtDateDisplay(filterCheckOut)}</p>}
+                                </div>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center justify-center gap-3 mt-6">
                                 <button
-                                    onClick={() => { setFilterCheckIn(''); setFilterCheckOut(''); setFilterResults(null); }}
-                                    className="px-3 py-2 border border-slate-200 text-slate-500 text-xs font-inter rounded-lg hover:bg-slate-50 transition-colors"
+                                    onClick={checkAvailability}
+                                    disabled={!filterCheckIn || !filterCheckOut || filterLoading}
+                                    className="px-8 py-3 bg-gradient-to-r from-antique-gold to-dark-gold text-white text-sm font-inter font-bold rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 disabled:opacity-50 transition-all duration-300"
                                 >
-                                    Clear
+                                    {filterLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                            Searching...
+                                        </span>
+                                    ) : 'Check Availability'}
                                 </button>
-                            )}
+                                {(filterResults || filterCheckIn) && (
+                                    <button
+                                        onClick={clearFilter}
+                                        className="px-5 py-3 border border-slate-300 text-slate-500 text-sm font-inter font-medium rounded-full hover:bg-slate-50 transition-colors"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
+
+                    {/* Results summary */}
                     {filterResults && (
-                        <p className="text-center mt-3 text-xs font-inter text-text-muted">
-                            Showing {Object.values(filterResults).filter(v => v).length} of {propertiesData.length} properties available for your dates
-                        </p>
+                        <div className="mt-4 text-center">
+                            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-antique-gold/5 border border-antique-gold/15">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-sm font-inter font-medium text-text-primary">
+                                    {Object.values(filterResults).filter(v => v).length} of {propertiesData.length} properties available
+                                </span>
+                                <span className="text-xs font-inter text-text-muted">
+                                    · {fmtDateDisplay(filterCheckIn)} — {fmtDateDisplay(filterCheckOut)}
+                                </span>
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -137,9 +216,10 @@ export default function StaycationPage() {
                         .filter(p => !filterResults || filterResults[p.id] !== false)
                         .map((property) => {
                         const thumbUrl = siteImages[`${property.id}/thumbnail`]?.[0]?.url || "";
+                        const isUnavailable = filterResults && filterResults[property.id] === false;
                         return (
-                            <Link key={property.id} href={`/staycation/${property.id}`} className="group block">
-                                <div className="relative overflow-hidden rounded-xl border border-border-light bg-white transition-all duration-500 hover:border-antique-gold/30 hover:shadow-[0_8px_30px_rgba(186,151,49,0.10)]">
+                            <Link key={property.id} href={`/staycation/${property.id}${filterCheckIn ? `?checkIn=${filterCheckIn}` : ''}${filterCheckOut ? `&checkOut=${filterCheckOut}` : ''}`} className="group block">
+                                <div className={`relative overflow-hidden rounded-xl border border-border-light bg-white transition-all duration-500 hover:border-antique-gold/30 hover:shadow-[0_8px_30px_rgba(186,151,49,0.10)] ${isUnavailable ? 'opacity-40' : ''}`}>
                                     <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden">
                                         {thumbUrl ? (
                                             <Image src={thumbUrl} alt={property.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 50vw" />
@@ -171,7 +251,7 @@ export default function StaycationPage() {
                                                 View Details
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                                             </span>
-                                            <span className="bg-gradient-to-r from-antique-gold via-dark-gold to-antique-gold text-white text-xs font-inter font-semibold px-5 py-2.5 rounded-full shadow-[0_2px_12px_rgba(183,142,58,0.3)] hover:shadow-[0_4px_20px_rgba(183,142,58,0.5)] hover:scale-105 transition-all duration-300">Book Now</span>
+                                            <span className="bg-gradient-to-r from-antique-gold to-dark-gold text-white text-xs font-inter font-semibold px-5 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300">Book Now</span>
                                         </div>
                                     </div>
                                 </div>
