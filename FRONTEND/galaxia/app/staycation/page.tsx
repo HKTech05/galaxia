@@ -155,9 +155,9 @@ export default function StaycationPage() {
 
                 {/* ── Availability Search Bar ── */}
                 <div className="mb-12">
-                    <div className="relative rounded-2xl bg-white border-2 border-antique-gold/15 shadow-[0_4px_30px_rgba(183,142,58,0.08)] overflow-hidden">
+                    <div className="relative rounded-2xl bg-white border-2 border-antique-gold/15 shadow-[0_4px_30px_rgba(183,142,58,0.08)]">
                         {/* Top accent */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-antique-gold to-dark-gold" />
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-antique-gold to-dark-gold rounded-t-2xl" />
 
                         <div className="p-6 sm:p-8">
                             <p className="text-center text-antique-gold font-inter text-[10px] tracking-[0.3em] uppercase mb-5 font-semibold">Find Available Properties</p>
