@@ -530,3 +530,46 @@ export async function sendContactFormEmail(data: {
         console.error("[Email] Failed to send contact form email:", error);
     }
 }
+
+// ───────────────────────────────────────────────────────────────
+//  Owner Booking Notification — always send PDF to owner
+//  This runs independently of the customer confirmation flow.
+// ───────────────────────────────────────────────────────────────
+const OWNER_EMAIL = "bookings@galaxiaresorts.com";
+
+export async function sendOwnerBookingNotification(opts: {
+    bookingRef: string;
+    customerName: string;
+    module: "staycation" | "digital-diaries";
+    propertyName: string;
+    pdfBuffer: Buffer;
+}): Promise<void> {
+    if (!process.env.RESEND_API_KEY) return;
+
+    const moduleLabel = opts.module === "digital-diaries" ? "Digital Diaries" : "Staycation";
+    const filename = `Galaxia-${opts.bookingRef}.pdf`;
+
+    try {
+        await getResend()?.emails.send({
+            from: FROM_EMAIL,
+            to: OWNER_EMAIL,
+            replyTo: REPLY_TO,
+            subject: `New Booking | ${opts.bookingRef} — ${opts.customerName} (${moduleLabel})`,
+            html: `<p>A new <strong>${moduleLabel}</strong> booking has been created.</p>
+<p><strong>Booking Ref:</strong> ${opts.bookingRef}<br>
+<strong>Customer:</strong> ${opts.customerName}<br>
+<strong>Property:</strong> ${opts.propertyName}</p>
+<p>The booking confirmation voucher is attached as a PDF.</p>
+<p style="color:#888;font-size:12px;">— Galaxia Automated System</p>`,
+            attachments: [
+                {
+                    filename,
+                    content: opts.pdfBuffer,
+                },
+            ],
+        });
+        console.log(`[Email] Owner notification sent to ${OWNER_EMAIL} for ${opts.bookingRef}`);
+    } catch (error) {
+        console.error("[Email] Failed to send owner notification:", error);
+    }
+}

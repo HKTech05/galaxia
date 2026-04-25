@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
-import { sendDDBookingConfirmation as sendDDBookingEmail } from "../lib/emailService";
+import { sendDDBookingConfirmation as sendDDBookingEmail, sendOwnerBookingNotification } from "../lib/emailService";
 import { generateDDBookingPDF } from "../lib/pdfService";
 import { sendDDBookingConfirmation as sendDDWhatsApp } from "../lib/whatsappService";
 
@@ -265,6 +265,20 @@ router.post("/", async (req, res) => {
                 const voucherUrl = `${baseUrl}/api/bookings/dd/voucher/${booking.bookingRef}`;
                 sendDDWhatsApp(customerPhone, booking.bookingRef, voucherUrl).catch(() => { });
             }
+
+            // Send owner notification with PDF attachment (fire-and-forget)
+            const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
+            generateDDBookingPDF({ ...booking, customerPhone, customerEmail })
+                .then((pdfBuffer) =>
+                    sendOwnerBookingNotification({
+                        bookingRef: booking.bookingRef,
+                        customerName: booking.customerName,
+                        module: "digital-diaries",
+                        propertyName: screenName,
+                        pdfBuffer,
+                    })
+                )
+                .catch((err) => console.error("[Owner Notify] DD PDF/email failed:", err));
         }
 
         return res.status(201).json(booking);

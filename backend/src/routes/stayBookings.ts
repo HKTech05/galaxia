@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
-import { sendBookingConfirmation } from "../lib/emailService";
+import { sendBookingConfirmation, sendOwnerBookingNotification } from "../lib/emailService";
 import { generateStaycationBookingPDF } from "../lib/pdfService";
 import { sendStaycationBookingConfirmation } from "../lib/whatsappService";
 
@@ -308,6 +308,22 @@ router.post("/", async (req, res) => {
         //     const voucherUrl = `${baseUrl}/api/bookings/staycation/voucher/${booking.bookingRef}`;
         //     sendStaycationBookingConfirmation("stay1", customerPhone, booking.bookingRef, voucherUrl).catch(() => { });
         // }
+
+        // Send owner notification with PDF attachment (fire-and-forget)
+        const prop = booking.property || {};
+        const sub = booking.subProperty;
+        const ownerPropertyName = sub ? `${sub.name} — ${prop.name}` : (prop.name || "Galaxia Property");
+        generateStaycationBookingPDF({ ...booking, customerPhone, customerEmail })
+            .then((pdfBuffer) =>
+                sendOwnerBookingNotification({
+                    bookingRef: booking.bookingRef,
+                    customerName: booking.customerName,
+                    module: "staycation",
+                    propertyName: ownerPropertyName,
+                    pdfBuffer,
+                })
+            )
+            .catch((err) => console.error("[Owner Notify] Staycation PDF/email failed:", err));
 
         return res.status(201).json(booking);
     } catch (error: any) {
