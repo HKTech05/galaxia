@@ -573,7 +573,9 @@ export default function BookingClient({ property }: BookingClientProps) {
             setBookingError("Booking system loading, please wait...");
             return;
         }
-        const cleanPhone = formData.phone.replace(/\D/g, '');
+        let cleanPhone = formData.phone.replace(/\D/g, '');
+        // Strip leading 91 country code if present (phone may be stored as +91XXXXXXXXXX from auth)
+        if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) cleanPhone = cleanPhone.slice(2);
         if (cleanPhone.length !== 10) {
             setBookingError("Please enter a valid 10-digit mobile number.");
             return;
@@ -1118,7 +1120,9 @@ export default function BookingClient({ property }: BookingClientProps) {
                     {/* Right Sidebar — shown on steps 1 & 2 only */}
                     {currentStep <= 2 && (
                         <div className="flex-1 w-full lg:max-w-[360px] sticky top-24 space-y-4 lg:ml-auto">
-                            {/* Date Selection Bar */}
+                            {/* Date Selection Bar — Step 1 only */}
+                            {currentStep === 1 && (
+                            <>
                             <DateSelectionBar
                                 checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
                                 checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
@@ -1141,6 +1145,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     isDisabled={isMaintenance}
                                     compact
                                 />
+                            )}
+                            </>
                             )}
 
                             {/* Your Stay */}

@@ -272,18 +272,22 @@ router.post("/cashout/:employeeId", authMiddleware, requireRole("owner", "develo
 
         if (total <= 0) return res.status(400).json({ error: "No UPI balance to cash out" });
 
-        // Create a "cashout" record with negative amount to zero out
+        // Support partial cashout if amount is provided
+        const requestedAmount = req.body?.amount ? parseFloat(req.body.amount) : null;
+        const cashoutAmount = (requestedAmount && requestedAmount > 0 && requestedAmount <= total) ? requestedAmount : total;
+
+        // Create a "cashout" record with negative amount
         await prisma.upiPayment.create({
             data: {
                 employeeId,
-                amount: -total,
+                amount: -cashoutAmount,
                 paymentType: "cashout",
-                note: `Owner UPI collection — ${employee.property?.name || "Property"} (${new Date().toLocaleDateString('en-IN')})`,
+                note: `Owner UPI collection${cashoutAmount < total ? ' (partial)' : ''} — ${employee.property?.name || "Property"} (${new Date().toLocaleDateString('en-IN')})`,
                 proofImageUrl: "",
             },
         });
 
-        return res.json({ success: true, cashedOut: total });
+        return res.json({ success: true, cashedOut: cashoutAmount });
     } catch (error) {
         console.error("UPI cashout error:", error);
         return res.status(500).json({ error: "Internal server error" });

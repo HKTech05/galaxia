@@ -274,6 +274,13 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             .text("Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you.", 50, y, { width: doc.page.width - 100 });
         y += 36;
 
+        // Customer Details
+        y = drawSectionTitle(doc, "Customer Details", y);
+        y = drawRow(doc, "Name", booking.customerName || "—", y, { bold: true });
+        if (booking.customerPhone) y = drawRow(doc, "Phone", booking.customerPhone, y);
+        if (booking.customerEmail) y = drawRow(doc, "Email", booking.customerEmail, y);
+        y = drawDivider(doc, y);
+
         // Reservation
         y = drawSectionTitle(doc, "Reservation Details", y);
         y = drawRow(doc, "Booking Reference", booking.bookingRef || "—", y, { bold: true, color: GOLD });
@@ -299,6 +306,15 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);
         if (booking.extraPersonCharge > 0) {
             y = drawRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
+        }
+        // Add-on line items (e.g. Celebration Package)
+        if (booking.addons && typeof booking.addons === "object") {
+            const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
+            for (const a of addonsData) {
+                if (a && a.name && a.price) {
+                    y = drawRow(doc, a.name, fmtCurrency(a.price), y);
+                }
+            }
         }
         y = drawRow(doc, "Base Amount", fmtCurrency(booking.basePrice), y);
         y = drawRow(doc, "GST", fmtCurrency(booking.gstAmount), y);

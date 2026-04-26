@@ -1344,8 +1344,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         const isBlocked = blockedDays.includes(d);
                                         const isSelected = blackoutDates.some(bd => bd.getDate() === d && bd.getMonth() === calendarMonth && bd.getFullYear() === calendarYear);
                                         const isToday = new Date().getDate() === d && new Date().getMonth() === calendarMonth && new Date().getFullYear() === calendarYear;
-                                        const isClickable = !isBooked;
+                                        // For multi-unit properties (e.g., Amstel Nest), allow clicking on partially booked dates
                                         const dayCount = calendarDayCounts[d] || 0;
+                                        const isFullyBooked = isBooked && (calendarCapacity <= 1 || dayCount >= calendarCapacity);
+                                        const isClickable = !isFullyBooked;
                                         const showOccupancy = calendarCapacity > 1 && dayCount > 0;
                                         return (
                                             <button

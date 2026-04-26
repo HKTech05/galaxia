@@ -5,6 +5,15 @@ import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
 
+// Shared numeric input — defined outside component to keep stable React identity and prevent focus loss
+function NI({ value, onChange, placeholder, className }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
+    return (
+        <div className={`relative ${className || ""}`}><IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" inputMode="numeric" pattern="[0-9]*" value={value} onChange={e => onChange(e.target.value.replace(/[^0-9]/g, ""))} placeholder={placeholder}
+                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-purple-500/20 outline-none" /></div>
+    );
+}
+
 // Standalone override form — manages its own state, fully isolated from parent re-renders
 function DdOverrideForm({ rows, onClose, onSaved }: { rows: any[]; onClose: () => void; onSaved: () => void }) {
     const [date, setDate] = useState("");
@@ -174,13 +183,8 @@ export default function PropertiesMgmtPage() {
     const filtered = getFiltered();
 
     /* ---------- SHARED COMPONENTS ---------- */
-    const NI = ({ value, onChange, placeholder, className }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) => (
-        <div className={`relative ${className || ""}`}><IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" inputMode="numeric" pattern="[0-9]*" value={value} onChange={e => onChange(e.target.value.replace(/[^0-9]/g, ""))} placeholder={placeholder}
-                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-purple-500/20 outline-none" /></div>
-    );
 
-    const PrShow = ({ prop, sub }: { prop: any; sub?: any }) => {
+    const renderPrShow = (prop: any, sub?: any) => {
         const { wd, we, sa } = getPrice(prop, sub);
         return (<div className="space-y-2">
             <div className="flex justify-between text-sm"><span className="text-slate-500">Mon-Thu</span><span className="text-slate-700 font-bold">₹{(wd?.basePrice || 0).toLocaleString("en-IN")}</span></div>
@@ -190,7 +194,8 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
-    const EditForm = ({ editKey }: { editKey: string }) => {
+    // Render inline to avoid React unmounting on re-render (no component identity change)
+    const renderEditForm = (editKey: string) => {
         if (editId !== editKey) return null;
         const hasSat = !!editPr.saturday_base;
         return (<div className="p-4 space-y-3 border-t border-slate-100 bg-purple-50/30">
@@ -200,7 +205,7 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
-    const OverrideUI = ({ oKey }: { oKey: string }) => {
+    const renderOverrideUI = (oKey: string) => {
         if (overrideId !== oKey) return null;
         return (<div className="px-5 py-4 bg-indigo-50/50 border-t border-indigo-100 space-y-3">
             {ovMsg ? <p className="text-sm text-emerald-700 font-bold text-center py-2">✓ {ovMsg}</p> : (<>
@@ -211,7 +216,7 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
-    const CardBtns = ({ editKey, onToggle }: { editKey: string; onToggle: () => void; }) => {
+    const renderCardBtns = (editKey: string, onToggle: () => void) => {
         if (editId === editKey) return null;
         const [type, id] = editKey.split("-");
         return (<div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex gap-2 flex-wrap">
@@ -224,15 +229,15 @@ export default function PropertiesMgmtPage() {
     };
 
     /* ========= STANDALONE VILLAS ========= */
-    const VillaCard = ({ p }: { p: any }) => {
+    const renderVillaCard = (p: any) => {
         const k = `prop-${p.id}`;
-        return (<div className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm hover:shadow-md transition-shadow">
+        return (<div key={p.id} className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm hover:shadow-md transition-shadow">
             <div className="p-5 border-b border-slate-100 flex justify-between items-start">
                 <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">{p.name}</h3><p className="text-xs text-slate-500">{p.type}</p></div></div>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{p.isActive ? "Active" : "Disabled"}</span>
             </div>
-            <div className="p-5"><PrShow prop={p} /></div>
-            <EditForm editKey={k} /><CardBtns editKey={k} onToggle={() => toggleProp(p)} /><OverrideUI oKey={k} />
+            <div className="p-5">{renderPrShow(p)}</div>
+            {renderEditForm(k)}{renderCardBtns(k, () => toggleProp(p))}{renderOverrideUI(k)}
         </div>);
     };
 
@@ -251,7 +256,7 @@ export default function PropertiesMgmtPage() {
                     <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Standard Cottages</h3><p className="text-xs text-slate-500">{stdCount} cottages</p></div></div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{a.isActive ? "Active" : "Disabled"}</span>
                 </div>
-                <div className="p-5"><PrShow prop={a} /></div>
+                <div className="p-5">{renderPrShow(a)}</div>
                 <div className="px-5 pb-4 border-t border-slate-100 pt-4">
                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-3">Villas ({stdActive}/{stdCount} active)</p>
                     <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">{Array.from({ length: stdCount }, (_, i) => {
@@ -267,9 +272,9 @@ export default function PropertiesMgmtPage() {
                         </button>;
                     })}</div>
                 </div>
-                <EditForm editKey={`prop-${a.id}`} />
-                <CardBtns editKey={`prop-${a.id}`} onToggle={() => toggleProp(a)} />
-                <OverrideUI oKey={`prop-${a.id}`} />
+                {renderEditForm(`prop-${a.id}`)}
+                {renderCardBtns(`prop-${a.id}`, () => toggleProp(a))}
+                {renderOverrideUI(`prop-${a.id}`)}
             </div>
             {/* Family Cottage card */}
             {fam && (<div className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm">
@@ -277,10 +282,10 @@ export default function PropertiesMgmtPage() {
                     <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 text-amber-600"><Home size={20} /></div><div><h3 className="font-bold text-slate-800">Family Cottage</h3><p className="text-xs text-slate-500">Premium Family Unit</p></div></div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${fam.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{fam.isActive ? "Active" : "Disabled"}</span>
                 </div>
-                <div className="p-5"><PrShow prop={a} sub={fam} /></div>
-                <EditForm editKey={`sub-${fam.id}`} />
-                <CardBtns editKey={`sub-${fam.id}`} onToggle={() => toggleSub(fam.id)} />
-                <OverrideUI oKey={`sub-${fam.id}`} />
+                <div className="p-5">{renderPrShow(a, fam)}</div>
+                {renderEditForm(`sub-${fam.id}`)}
+                {renderCardBtns(`sub-${fam.id}`, () => toggleSub(fam.id))}
+                {renderOverrideUI(`sub-${fam.id}`)}
             </div>)}
         </div>);
     };
@@ -297,10 +302,10 @@ export default function PropertiesMgmtPage() {
                         <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600"><Home size={18} /></div><h3 className="font-bold text-slate-800">{v.name}</h3></div>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${v.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{v.isActive ? "Active" : "Disabled"}</span>
                     </div>
-                    <div className="p-5"><PrShow prop={a} sub={v} /></div>
-                    <EditForm editKey={k} />
-                    <CardBtns editKey={k} onToggle={() => toggleSub(v.id)} />
-                    <OverrideUI oKey={k} />
+                    <div className="p-5">{renderPrShow(a, v)}</div>
+                    {renderEditForm(k)}
+                    {renderCardBtns(k, () => toggleSub(v.id))}
+                    {renderOverrideUI(k)}
                 </div>);
             })}
         </div>);
@@ -473,6 +478,6 @@ export default function PropertiesMgmtPage() {
             : tab === "ambrose" ? <AmbrosePage />
             : tab === "digitaldiaries" ? <DDPage />
             : filtered.length === 0 ? <Empty />
-            : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{filtered.map(p => <VillaCard key={p.id} p={p} />)}</div>}
+            : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{filtered.map(p => renderVillaCard(p))}</div>}
     </div>);
 }

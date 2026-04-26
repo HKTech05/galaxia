@@ -92,6 +92,17 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         ? row("Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, { color: "#16a34a" })
         : "";
 
+    // Build add-on rows (e.g. Celebration Package ₹1,200)
+    let addonRows = "";
+    if (booking.addons && typeof booking.addons === "object") {
+        const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
+        for (const a of addonsData) {
+            if (a && a.name && a.price) {
+                addonRows += row(a.name, fmtCurrency(a.price));
+            }
+        }
+    }
+
     const foodSection = prop.foodIncluded
         ? `<div style="margin-top: 20px; padding: 18px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
             <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Meals Included</p>
@@ -128,9 +139,19 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         <!-- Greeting -->
         <p style="margin: 0 0 6px; font-size: 13px; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">Booking Confirmed</p>
         <h2 style="margin: 0 0 4px; font-size: 22px; color: ${TEXT_DARK}; font-weight: 400;">Dear ${booking.customerName},</h2>
-        <p style="margin: 0 0 28px; font-size: 14px; color: ${TEXT_MED}; line-height: 1.6;">
+        <p style="margin: 0 0 20px; font-size: 14px; color: ${TEXT_MED}; line-height: 1.6;">
             Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you. Please find your complete booking details below.
         </p>
+
+        <!-- Customer Details -->
+        <div style="margin-bottom: 24px; padding: 18px 22px; background: white; border-radius: 10px; border: 1px solid ${BORDER}; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <table style="width: 100%; border-collapse: collapse;">
+                ${sectionTitle("Customer Details")}
+                ${row("Name", booking.customerName, { bold: true })}
+                ${booking.customerPhone ? row("Phone", booking.customerPhone) : ""}
+                ${booking.customerEmail ? row("Email", booking.customerEmail) : ""}
+            </table>
+        </div>
 
         <!-- Booking Details Card -->
         <div style="background: white; border-radius: 10px; padding: 28px; border: 1px solid ${BORDER}; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
@@ -152,6 +173,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${sectionTitle("Payment Summary")}
                 ${row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`)}
                 ${booking.extraPersonCharge > 0 ? row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}
+                ${addonRows}
                 ${row("Base Amount", fmtCurrency(booking.basePrice))}
                 ${row("GST", fmtCurrency(booking.gstAmount))}
                 ${discountRow}

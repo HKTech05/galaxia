@@ -339,11 +339,17 @@ export default function BookMultiPage() {
 
     const getExtraCharges = (item: CartItem) => {
         const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
-        const extraAdults = Math.max(0, guests.adults - 2);
         const isAmstel = item.property === "amstel-nest";
         const extraAdultCharge = isAmstel ? 1500 : 2000;
         const kidsCharge = isAmstel ? 500 : 1000;
         const units = item.unitCount || 1;
+        if (isAmstel) {
+            // Amstel Nest: guests are totals — base included = 2 adults per unit
+            const extraAdults = Math.max(0, guests.adults - 2 * units);
+            return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1);
+        }
+        // Ambrose: guests are per-villa
+        const extraAdults = Math.max(0, guests.adults - 2);
         return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1) * units;
     };
 
@@ -483,7 +489,9 @@ export default function BookMultiPage() {
     };
 
     const handlePayment = async () => {
-        const cleanPhone = formData.phone.replace(/\D/g, '');
+        let cleanPhone = formData.phone.replace(/\D/g, '');
+        // Strip leading 91 country code if present (phone may be stored as +91XXXXXXXXXX from auth)
+        if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) cleanPhone = cleanPhone.slice(2);
         if (cleanPhone.length !== 10) {
             setBookingError("Please enter a valid 10-digit mobile number.");
             return;
@@ -878,19 +886,23 @@ export default function BookMultiPage() {
                                                         </div>
                                                     )}
 
-                                                    {/* Guest selectors (per unit) */}
+                                                    {/* Guest selectors (total across all cottages) */}
                                                     {(() => {
-                                                        const limits = guestLimits[item.villaId] || { maxAdults: 3, maxKids: 1 };
-                                                        const maxTotal = item.maxPersons || 4;
-                                                        const effMaxAdults = Math.min(limits.maxAdults, maxTotal - guests.kids);
-                                                        const effMaxKids = Math.min(limits.maxKids, maxTotal - 1);
+                                                        const perUnitLimits = guestLimits[item.villaId] || { maxAdults: 3, maxKids: 1 };
+                                                        const perUnitMax = item.maxPersons || 4;
+                                                        // Scale limits by number of units for total guest input
+                                                        const totalMaxAdults = perUnitLimits.maxAdults * units;
+                                                        const totalMaxKids = perUnitLimits.maxKids * units;
+                                                        const totalMaxGuests = perUnitMax * units;
+                                                        const effMaxAdults = Math.min(totalMaxAdults, totalMaxGuests - guests.kids);
+                                                        const effMaxKids = Math.min(totalMaxKids, totalMaxGuests - 1);
                                                         const totalG = guests.adults + guests.kids;
                                                         return (
                                                     <div className="mb-4">
                                                         <div className="bg-soft-gray/40 rounded-lg border border-border-light p-4">
                                                             <div className="grid grid-cols-2 gap-6">
                                                                 <div>
-                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Adults per cottage</label>
+                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Total Number of Adults</label>
                                                                     <div className="flex items-center gap-3">
                                                                         <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, adults: Math.max(1, guests.adults - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                         <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{guests.adults}</span>
@@ -898,15 +910,15 @@ export default function BookMultiPage() {
                                                                     </div>
                                                                 </div>
                                                                 <div>
-                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Kids per cottage</label>
+                                                                    <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Total Number of Kids</label>
                                                                     <div className="flex items-center gap-3">
                                                                         <button onClick={() => setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { ...guests, kids: Math.max(0, guests.kids - 1) } }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                         <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{guests.kids}</span>
-                                                                        <button onClick={() => { const nk = Math.min(effMaxKids, guests.kids + 1); const na = Math.min(guests.adults, maxTotal - nk); setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { adults: Math.max(1, na), kids: nk } })); }} disabled={guests.kids >= effMaxKids || totalG >= maxTotal} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                                        <button onClick={() => { const nk = Math.min(effMaxKids, guests.kids + 1); const na = Math.min(guests.adults, totalMaxGuests - nk); setGuestsPerVilla(prev => ({ ...prev, [item.villaId]: { adults: Math.max(1, na), kids: nk } })); }} disabled={guests.kids >= effMaxKids || totalG >= totalMaxGuests} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <p className="text-[10px] font-inter text-text-muted mt-3">{totalG >= maxTotal ? <span className="text-amber-600 font-medium">Max {maxTotal} guests per cottage reached.</span> : <>Max {maxTotal} guests per cottage (up to {limits.maxAdults} adults, {limits.maxKids} kids)</>}</p>
+                                                            <p className="text-[10px] font-inter text-text-muted mt-3">{totalG >= totalMaxGuests ? <span className="text-amber-600 font-medium">Max {totalMaxGuests} guests across {units} cottage{units > 1 ? 's' : ''} reached.</span> : <>Max {totalMaxGuests} total guests across {units} cottage{units > 1 ? 's' : ''} (up to {totalMaxAdults} adults, {totalMaxKids} kids)</>}</p>
                                                         </div>
                                                     </div>
                                                         );

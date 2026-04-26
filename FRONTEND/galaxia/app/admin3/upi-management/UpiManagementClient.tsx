@@ -75,6 +75,11 @@ export default function UpiManagementClient() {
     const [upiDateFrom, setUpiDateFrom] = useState("");
     const [upiDateTo, setUpiDateTo] = useState("");
 
+    // Cashout modal state
+    const [showCashoutModal, setShowCashoutModal] = useState(false);
+    const [cashoutMode, setCashoutMode] = useState<'full' | 'custom'>('full');
+    const [cashoutCustomAmount, setCashoutCustomAmount] = useState('');
+
     // Fetch image with auth and return blob URL
     const fetchImageBlob = async (logId: number): Promise<string | null> => {
         try {
@@ -152,18 +157,37 @@ export default function UpiManagementClient() {
     };
 
     // Cash out UPI
-    const handleCashOut = async (empId: number) => {
-        if (!confirm('Zero out all UPI records for this employee? This will mark all as collected.')) return;
+    const handleCashOut = async (empId: number, amount?: number) => {
         try {
-            await api.post(`/upi-payments/cashout/${empId}`);
+            await api.post(`/upi-payments/cashout/${empId}`, amount ? { amount } : {});
             await fetchAllUpiLogs();
             if (viewEmployeeId === empId) {
                 const logs = await api.get(`/upi-payments/by-employee/${empId}`);
                 setUpiLogs(Array.isArray(logs) ? logs : []);
             }
+            setShowCashoutModal(false);
+            setCashoutCustomAmount('');
+            setCashoutMode('full');
         } catch (err) {
             console.error('Cashout failed:', err);
             alert('Failed to cash out');
+        }
+    };
+
+    const openCashoutModal = () => {
+        setCashoutMode('full');
+        setCashoutCustomAmount('');
+        setShowCashoutModal(true);
+    };
+
+    const confirmCashout = () => {
+        if (!viewEmployeeId) return;
+        if (cashoutMode === 'custom') {
+            const amt = parseFloat(cashoutCustomAmount);
+            if (!amt || amt <= 0) { alert('Enter a valid amount'); return; }
+            handleCashOut(viewEmployeeId, amt);
+        } else {
+            handleCashOut(viewEmployeeId);
         }
     };
 
@@ -455,7 +479,7 @@ export default function UpiManagementClient() {
                                 </button>
                                 )}
                                 <button
-                                    onClick={() => handleCashOut(viewEmployeeId!)}
+                                    onClick={openCashoutModal}
                                     className="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 transition-colors"
                                 >
                                     <IndianRupee size={16} /> Cash Out
@@ -514,14 +538,17 @@ export default function UpiManagementClient() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {activeEmployeeLogs.length > 0 ? (
-                                            activeEmployeeLogs.map(log => (
-                                                <tr key={log.id} className={`transition-colors ${log.paymentType === 'deposit_refund' ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-slate-50/50'}`}>
+                                            activeEmployeeLogs.map(log => {
+                                                // Red styling for food_collection (Satkar payments) and expense logs
+                                                const isRedLog = log.paymentType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.paymentType === 'expense' || log.note?.toLowerCase().includes('expense');
+                                                return (
+                                                <tr key={log.id} className={`transition-colors ${log.paymentType === 'deposit_refund' ? 'bg-red-50/60 hover:bg-red-50' : isRedLog ? 'bg-red-50/40 hover:bg-red-50' : 'hover:bg-slate-50/50'}`}>
                                                     <td className="px-4 py-3.5 font-medium text-slate-600">
                                                         {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </td>
                                                     <td className="px-4 py-3.5 font-bold text-slate-800">{log.guestName || '—'}</td>
                                                     <td className="px-4 py-3.5 text-xs font-medium text-slate-500">{log.bookingRef || '—'}</td>
-                                                    <td className={`px-4 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : 'text-indigo-700'}`}>
+                                                    <td className={`px-4 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : isRedLog ? 'text-red-600' : 'text-indigo-700'}`}>
                                                         {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
                                                     </td>
                                                     <td className="px-4 py-3.5">
@@ -561,7 +588,8 @@ export default function UpiManagementClient() {
                                                         <button onClick={() => handleDeleteUpiTx(log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
                                                     </td>
                                                 </tr>
-                                            ))
+                                                );
+                                            })
                                         ) : (
                                             <tr>
                                                 <td colSpan={7} className="px-5 py-8 text-center text-slate-400 font-medium">No UPI transactions recorded for this employee.</td>
@@ -574,13 +602,15 @@ export default function UpiManagementClient() {
                             {/* Mobile card layout */}
                             <div className="sm:hidden space-y-3">
                                 {activeEmployeeLogs.length > 0 ? (
-                                    activeEmployeeLogs.map(log => (
-                                        <div key={log.id} className="p-4 rounded-xl border bg-white border-slate-200">
+                                    activeEmployeeLogs.map(log => {
+                                        const isRedLog = log.paymentType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.paymentType === 'expense' || log.note?.toLowerCase().includes('expense');
+                                        return (
+                                        <div key={log.id} className={`p-4 rounded-xl border ${isRedLog ? 'bg-red-50/40 border-red-200' : 'bg-white border-slate-200'}`}>
                                             <div className="flex items-center justify-between mb-2">
                                                 <p className="text-xs font-medium text-slate-500">
                                                     {new Date(log.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
-                                                <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : 'text-indigo-700'}`}>{log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}</p>
+                                                <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : isRedLog ? 'text-red-600' : 'text-indigo-700'}`}>{log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}</p>
                                             </div>
                                             <p className="text-sm font-bold text-slate-800">{log.guestName || '—'}</p>
                                             {log.bookingRef && <p className="text-[10px] text-slate-400 font-medium mt-0.5">{log.bookingRef}</p>}
@@ -603,11 +633,82 @@ export default function UpiManagementClient() {
                                                 <button onClick={() => handleDeleteUpiTx(log.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors text-xs font-bold"><Trash2 size={12} /> Delete</button>
                                             </div>
                                         </div>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <div className="py-8 text-center text-slate-400 font-medium">No UPI transactions recorded.</div>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cashout Modal */}
+            {showCashoutModal && viewEmployeeId && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-black text-slate-800">Cash Out</h3>
+                            <button onClick={() => setShowCashoutModal(false)} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-4">Current UPI balance: <span className="font-bold text-indigo-700">₹{activeEmployeeLogs.reduce((s, l) => s + l.amount, 0).toLocaleString('en-IN')}</span></p>
+
+                        <div className="space-y-3 mb-6">
+                            <button
+                                onClick={() => setCashoutMode('full')}
+                                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                    cashoutMode === 'full'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-slate-200 hover:border-slate-300'
+                                }`}
+                            >
+                                <p className="font-bold text-slate-800 text-sm">Full Amount Cashout</p>
+                                <p className="text-xs text-slate-500 mt-1">Cash out the entire UPI balance</p>
+                            </button>
+                            <button
+                                onClick={() => setCashoutMode('custom')}
+                                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                    cashoutMode === 'custom'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-slate-200 hover:border-slate-300'
+                                }`}
+                            >
+                                <p className="font-bold text-slate-800 text-sm">Custom Amount</p>
+                                <p className="text-xs text-slate-500 mt-1">Enter a specific amount to cash out</p>
+                            </button>
+                        </div>
+
+                        {cashoutMode === 'custom' && (
+                            <div className="mb-6">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Amount to Cash Out (₹)</label>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={cashoutCustomAmount}
+                                    onChange={e => setCashoutCustomAmount(e.target.value)}
+                                    placeholder="Enter amount"
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                    autoFocus
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCashoutModal(false)}
+                                className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmCashout}
+                                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+                            >
+                                <IndianRupee size={16} /> Confirm
+                            </button>
                         </div>
                     </div>
                 </div>
