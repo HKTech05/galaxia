@@ -597,7 +597,7 @@ export default function BookMultiPage() {
                         numCottages: units,
                         checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
                         checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
-                        nightlyRate: totalPrice / Math.max(nights, 1),
+                        nightlyRate: totalPrice / Math.max(nights, 1) / units,
                         basePrice: totalPrice,
                         extraPersonCharge: totalExtra,
                         extraAdultCharge: breakdown.adultCharge,
@@ -1223,8 +1223,8 @@ export default function BookMultiPage() {
                             </div>
                             <div className="bg-white border border-border-light rounded-xl p-4 text-center shadow-sm">
                                 <span className="text-text-muted text-[10px] font-inter uppercase tracking-wider block mb-1">Total Guests</span>
-                                <span className="font-cinzel text-2xl font-bold text-text-primary block">{cart.reduce((s, item) => { const g = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 }; return s + (g.adults + g.kids) * (item.unitCount || 1); }, 0)}</span>
-                                <span className="font-inter text-xs text-text-muted">{cart.reduce((s, item) => s + (guestsPerVilla[item.villaId]?.adults || 2) * (item.unitCount || 1), 0)} Adults</span>
+                                <span className="font-cinzel text-2xl font-bold text-text-primary block">{cart.reduce((s, item) => { const g = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 }; const isAmstel = item.property === 'amstel-nest'; return s + (g.adults + g.kids) * (isAmstel ? 1 : (item.unitCount || 1)); }, 0)}</span>
+                                <span className="font-inter text-xs text-text-muted">{cart.reduce((s, item) => { const isAmstel = item.property === 'amstel-nest'; return s + (guestsPerVilla[item.villaId]?.adults || 2) * (isAmstel ? 1 : (item.unitCount || 1)); }, 0)} Adults</span>
                             </div>
                         </div>
 
@@ -1245,7 +1245,7 @@ export default function BookMultiPage() {
                                             <div>
                                                 <span className="text-[10px] text-dark-gold font-inter uppercase tracking-wider">{item.property === "amstel-nest" ? "Amstel Nest" : "Ambrose"} · {item.theme}</span>
                                                 <h4 className="font-cinzel font-semibold text-text-primary">{item.villaName}{units > 1 ? ` × ${units}` : ""}</h4>
-                                                <p className="text-xs text-text-muted font-inter">{guests.adults} adults{guests.kids > 0 ? `, ${guests.kids} kids` : ""}{units > 1 ? " per cottage" : ""}</p>
+                                                <p className="text-xs text-text-muted font-inter">{guests.adults} adults{guests.kids > 0 ? `, ${guests.kids} kids` : ""}{units > 1 && item.property !== 'amstel-nest' ? " per villa" : ""}{units > 1 && item.property === 'amstel-nest' ? ` across ${units} cottages` : ""}</p>
                                             </div>
                                             <span className="font-inter font-semibold text-text-primary">{formatPrice(itemTotal)}</span>
                                         </div>
