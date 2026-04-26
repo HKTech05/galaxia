@@ -178,6 +178,7 @@ export default function StayBookingsPage() {
                 guests: b.numGuests || 1,
                 kids: 0,
                 pets: 0,
+                numCottages: 1,
                 totalAmount: b.totalAmount || 0,
                 advanceAmount: b.amountPaid || 0,
                 balanceAmount: b.amountToCollect || 0,

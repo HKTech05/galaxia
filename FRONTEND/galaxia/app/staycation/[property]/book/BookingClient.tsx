@@ -367,17 +367,16 @@ export default function BookingClient({ property }: BookingClientProps) {
     const kidsChargeStr = property.pricing.kidsCharge;
     const kidsChargeNum = parseInt(kidsChargeStr.replace(/,/g, ""));
 
-    // Base price includes 1-2 persons, extra charges for above that
-    const baseIncludedPersons = 2;
+    // Base price includes 2 persons per cottage — scale by unitCount for Amstel Nest
+    const baseIncludedPersons = 2 * (isAmstelNest ? unitCount : 1);
     const extraAdults = Math.max(0, adults - baseIncludedPersons);
     const extraAdultTotal = extraAdults * extraAdultCharge;
     const kidsTotal = kids * kidsChargeNum;
 
-    const roomPrice = nightlyRate * nights;
+    const roomPrice = nightlyRate * nights * (isAmstelNest ? unitCount : 1);
     const extraCharges = (extraAdultTotal + kidsTotal) * nights;
     const petCharges = pets * PET_CHARGE;
-    const perUnitSubtotal = roomPrice + extraCharges + petCharges;
-    const subtotal = perUnitSubtotal * (isAmstelNest ? unitCount : 1);
+    const subtotal = roomPrice + extraCharges + petCharges;
 
     // Discount
     let discountAmount = 0;
@@ -617,64 +616,41 @@ export default function BookingClient({ property }: BookingClientProps) {
                 ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
                 : undefined;
 
-            const bookingCount = isAmstelNest ? unitCount : 1;
-            let firstResult: any = null;
+            // Build addons
+            const bookingAddons: any[] = [];
+            if (celebrationAddon) bookingAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+            if (isAmbrose || isAmstelNest) bookingAddons.push({ name: 'Food Preference', foodType });
 
-            for (let i = 0; i < bookingCount; i++) {
-                const unitRoomPrice = roomPrice;
-                const unitExtraCharges = extraCharges;
-                const unitSubtotal = unitRoomPrice + unitExtraCharges;
-                let unitDiscount = 0;
-                if (appliedCoupon) {
-                    if (appliedCoupon.discountType === 'percentage') {
-                        unitDiscount = Math.round(unitSubtotal * appliedCoupon.discountValue / 100);
-                    } else {
-                        unitDiscount = Math.round(appliedCoupon.discountValue / bookingCount);
-                    }
-                }
-                const unitAddon = i === 0 && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
-                const unitTaxes = Math.round((unitSubtotal - unitDiscount) * property.gstPercent / 100);
-                const unitTotal = Math.round((unitSubtotal - unitDiscount + unitAddon + unitTaxes) / 10) * 10;
-                const unitPayNow = Math.round(Math.round(unitTotal * 0.8) / 10) * 10;
-                const unitPayAtVenue = unitTotal - unitPayNow;
+            const payload = {
+                customerName,
+                customerPhone: formData.phone,
+                customerEmail: formData.email,
+                propertyId: dbPropertyId,
+                subPropertyId: subPropertyId || null,
+                numGuests: adults,
+                numKids: kids,
+                numPets: pets,
+                numCottages: isAmstelNest ? unitCount : 1,
+                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
+                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
+                nightlyRate,
+                basePrice: roomPrice,
+                extraPersonCharge: extraCharges,
+                extraAdultCharge: extraAdultTotal * nights,
+                extraKidsCharge: kidsTotal * nights,
+                gstAmount: taxesAndFees,
+                totalAmount,
+                advanceAmount: payNow,
+                balanceAmount: payAtVenue,
+                securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
+                advancePaid: true,
+                advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
+                source: "website",
+                couponCode: appliedCoupon?.code || null,
+                addons: bookingAddons.length > 0 ? bookingAddons : null,
+            };
 
-                const payload = {
-                    customerName,
-                    customerPhone: formData.phone,
-                    customerEmail: formData.email,
-                    propertyId: dbPropertyId,
-                    subPropertyId: subPropertyId || null,
-                    numGuests: adults,
-                    numKids: kids,
-                    numPets: pets,
-                    checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
-                    checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
-                    nightlyRate,
-                    basePrice: unitRoomPrice,
-                    extraPersonCharge: unitExtraCharges,
-                    extraAdultCharge: extraAdultTotal * nights,
-                    extraKidsCharge: kidsTotal * nights,
-                    gstAmount: unitTaxes,
-                    totalAmount: unitTotal,
-                    advanceAmount: unitPayNow,
-                    balanceAmount: unitPayAtVenue,
-                    securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
-                    advancePaid: true,
-                    advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
-                    source: "website",
-                    couponCode: i === 0 ? (appliedCoupon?.code || null) : null,
-                    addons: (() => {
-                        if (i !== 0) return null;
-                        const arr: any[] = [];
-                        if (celebrationAddon) arr.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
-                        if (isAmbrose || isAmstelNest) arr.push({ name: 'Food Preference', foodType });
-                        return arr.length > 0 ? arr : null;
-                    })(),
-                };
-
-                const result = await api.post("/bookings/staycation", payload);
-                if (i === 0) firstResult = result;
-            }
+            const firstResult = await api.post("/bookings/staycation", payload);
 
             // Upload ID proof to S3 (fire-and-forget — booking succeeds even if upload fails)
             if (formData.aadhaarFile && firstResult?.id) {
