@@ -185,7 +185,8 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         y = drawRow(doc, "Date", bookingDate, y);
         y = drawRow(doc, "Time Slot", `${startTime} — ${endTime}`, y);
         y = drawRow(doc, "Duration", `${booking.durationHours} Hour${booking.durationHours > 1 ? "s" : ""}`, y);
-        y = drawRow(doc, "Guests", `${booking.numGuests} Guest${booking.numGuests > 1 ? "s" : ""}`, y);
+        const guestsLabel = `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`;
+        y = drawRow(doc, "Guests", guestsLabel, y);
         if (booking.occasion) {
             y = drawRow(doc, "Occasion", booking.occasion, y);
         }
@@ -298,7 +299,8 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawRow(doc, "Check-in", `${checkInDate}  |  ${checkInTime}`, y);
         y = drawRow(doc, "Check-out", `${checkOutDate}  |  ${checkOutTime}`, y);
         y = drawRow(doc, "Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`, y);
-        y = drawRow(doc, "Guests", `${booking.numGuests} Guest${booking.numGuests > 1 ? "s" : ""}`, y);
+        const stayGuestsLabel = `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`;
+        y = drawRow(doc, "Guests", stayGuestsLabel, y);
         y = drawDivider(doc, y);
 
         // Payment Summary

@@ -258,6 +258,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             isCheckoutDay: v.isCheckoutDay ?? (checkoutBooking ? true : false),
                             guest: v.guest ?? (primaryBooking?.customerName || null),
                             guests: v.guests || (primaryBooking?.numGuests || 0),
+                            kids: v.kids ?? (primaryBooking?.numKids || 0),
                             balanceAmount: v.balanceAmount ?? (primaryBooking?.balanceAmount || null),
                             depositAmount: v.depositAmount ?? (primaryBooking?.securityDeposit || null),
                             totalAmount: v.totalAmount ?? (primaryBooking?.totalAmount || null),
@@ -673,7 +674,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guests</p>
-                                <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1"><Users size={12} /> {item.guests} People</p>
+                                <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1"><Users size={12} /> {item.guests} adult{item.guests !== 1 ? 's' : ''}{item.kids > 0 && <span className="text-blue-600">{item.kids} child{item.kids !== 1 ? 'ren' : ''}</span>}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone</p>
@@ -1601,6 +1602,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     checkedIn: booking.status === 'checked_in',
                                                     guest: booking.customerName || stdCottage.guest,
                                                     guests: booking.numGuests || stdCottage.guests,
+                                                    kids: booking.numKids || stdCottage.kids || 0,
                                                     phone: stdCottage.phone,
                                                     checkInDate: booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : null,
                                                     checkOutDate: booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString('en-IN') : null,
@@ -1673,7 +1675,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guests</p>
-                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{villa.guests} People</p>
+                                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{villa.guests} adult{villa.guests !== 1 ? 's' : ''}{villa.kids > 0 && <span className="text-blue-600 ml-1">{villa.kids} child{villa.kids !== 1 ? 'ren' : ''}</span>}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone</p>

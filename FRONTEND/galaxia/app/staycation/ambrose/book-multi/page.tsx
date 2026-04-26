@@ -340,8 +340,8 @@ export default function BookMultiPage() {
     const getExtraCharges = (item: CartItem) => {
         const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
         const isAmstel = item.property === "amstel-nest";
-        const extraAdultCharge = isAmstel ? 1500 : 2000;
-        const kidsCharge = isAmstel ? 500 : 1000;
+        const extraAdultCharge = 2000;
+        const kidsCharge = 1000;
         const units = item.unitCount || 1;
         if (isAmstel) {
             // Amstel Nest: guests are totals — base included = 2 adults per unit
@@ -584,7 +584,8 @@ export default function BookMultiPage() {
                         customerEmail: formData.email,
                         propertyId,
                         subPropertyId,
-                        numGuests: guests.adults + guests.kids,
+                        numGuests: guests.adults,
+                        numKids: guests.kids,
                         checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
                         checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
                         nightlyRate: perUnitPrice / Math.max(nights, 1),

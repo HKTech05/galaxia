@@ -644,7 +644,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                     customerEmail: formData.email,
                     propertyId: dbPropertyId,
                     subPropertyId: subPropertyId || null,
-                    numGuests: adults + kids,
+                    numGuests: adults,
+                    numKids: kids,
                     numPets: pets,
                     checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
                     checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
@@ -1132,20 +1133,18 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
                                 }}
                             />
-                            {/* Calendar in sidebar */}
-                            {selectedRoom && (
-                                <AvailabilityCalendar
+                            {/* Calendar in sidebar — always show in Step 1 */}
+                            <AvailabilityCalendar
                                     propertyId={dbPropertyId}
-                                    weekdayPrice={selectedRoom.weekdayPrice}
-                                    weekendPrice={selectedRoom.weekendPrice}
-                                    primeDatePrice={selectedRoom.primeDatePrice}
+                                    weekdayPrice={selectedRoom?.weekdayPrice || property.pricing.weekday.price}
+                                    weekendPrice={selectedRoom?.weekendPrice || property.pricing.weekend.price}
+                                    primeDatePrice={selectedRoom?.primeDatePrice || property.pricing.primeDates || ""}
                                     onDatesChange={handleDatesChange}
                                     initialCheckIn={checkInDate}
                                     initialCheckOut={checkOutDate}
                                     isDisabled={isMaintenance}
                                     compact
                                 />
-                            )}
                             </>
                             )}
 

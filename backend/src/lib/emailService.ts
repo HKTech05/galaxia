@@ -168,7 +168,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${row("Check-in", `${checkInDate}  ·  ${checkInTime}`)}
                 ${row("Check-out", `${checkOutDate}  ·  ${checkOutTime}`)}
                 ${row("Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`)}
-                ${row("Guests", `${booking.numGuests} Guest${booking.numGuests > 1 ? "s" : ""}`)}
+                ${row("Guests", `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`)}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`)}

@@ -407,6 +407,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 propertyId: propId,
                 subPropertyId: subPropId,
                 numGuests: manualForm.guests,
+                numKids: manualForm.kids || 0,
                 numPets: manualForm.pets || 0,
                 checkInDate: `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`,
                 checkOutDate: `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkOutDate.getDate()).padStart(2, '0')}`,
