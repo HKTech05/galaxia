@@ -38,30 +38,38 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
     }
 });
 
-// POST /api/employees/:id/collect — Zero-out cash (owner pickup)
+// POST /api/employees/:id/collect — Cash out (full or partial)
 router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const employeeId = parseInt(req.params.id as string);
         const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
         if (!employee) return res.status(404).json({ error: "Employee not found" });
 
-        if (employee.cashCollected > 0) {
-            // Log the owner pickup transaction with IST timestamp
+        const { amount: requestedAmount } = req.body;
+        const total = employee.cashCollected;
+
+        // Support partial cashout if amount is provided
+        const cashoutAmount = (requestedAmount && requestedAmount > 0 && requestedAmount <= total)
+            ? requestedAmount
+            : total;
+
+        if (cashoutAmount > 0) {
             const istNow = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
             await prisma.cashTransaction.create({
                 data: {
                     employeeId,
-                    amount: employee.cashCollected,
+                    amount: cashoutAmount,
                     transactionType: "owner_pickup",
-                    note: `Collected by owner at ${istNow}`,
+                    note: `Collected by owner${cashoutAmount < total ? ' (partial)' : ''} at ${istNow}`,
                 },
             });
         }
 
-        // Zero out the balance
+        // Update the balance
+        const newBalance = Math.max(0, total - cashoutAmount);
         const updated = await prisma.employee.update({
             where: { id: employeeId },
-            data: { cashCollected: 0, lastCollectedAt: new Date() },
+            data: { cashCollected: newBalance, lastCollectedAt: new Date() },
         });
 
         return res.json(updated);

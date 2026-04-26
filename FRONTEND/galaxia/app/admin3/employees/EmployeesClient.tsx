@@ -64,6 +64,12 @@ export default function EmployeesClient() {
     const [cashDateFrom, setCashDateFrom] = useState("");
     const [cashDateTo, setCashDateTo] = useState("");
 
+    // Cashout modal state (for DD employees)
+    const [showCashoutModal, setShowCashoutModal] = useState(false);
+    const [cashoutEmployeeId, setCashoutEmployeeId] = useState<number | null>(null);
+    const [cashoutMode, setCashoutMode] = useState<'full' | 'custom'>('full');
+    const [cashoutCustomAmount, setCashoutCustomAmount] = useState('');
+
     const handlePropertyToggle = (prop: string) => {
         if (selectedProperties.includes(prop)) {
             setSelectedProperties(selectedProperties.filter(p => p !== prop));
@@ -80,10 +86,10 @@ export default function EmployeesClient() {
         }
     };
 
-    const handleCollectCash = async (e: React.MouseEvent, employeeId: number) => {
+    const handleCollectCash = async (e: React.MouseEvent, employeeId: number, amount?: number) => {
         e.stopPropagation();
         try {
-            await api.post(`/employees/${employeeId}/collect`);
+            await api.post(`/employees/${employeeId}/collect`, amount ? { amount } : {});
             await fetchEmployees();
             // Refresh transaction logs if viewing this employee
             if (viewEmployeeId === employeeId) {
@@ -93,6 +99,31 @@ export default function EmployeesClient() {
         } catch (err) {
             console.error("Failed to collect cash:", err);
         }
+    };
+
+    const openCashoutModal = (e: React.MouseEvent, empId: number) => {
+        e.stopPropagation();
+        setCashoutEmployeeId(empId);
+        setCashoutMode('full');
+        setCashoutCustomAmount('');
+        setShowCashoutModal(true);
+    };
+
+    const confirmCashout = async () => {
+        if (!cashoutEmployeeId) return;
+        const emp = employees.find(e => e.id === cashoutEmployeeId);
+        if (!emp) return;
+        const amount = cashoutMode === 'custom' ? parseFloat(cashoutCustomAmount) : undefined;
+        if (cashoutMode === 'custom' && (!amount || amount <= 0 || amount > emp.cashCollected)) {
+            alert(`Please enter a valid amount between 1 and ₹${emp.cashCollected.toLocaleString('en-IN')}`);
+            return;
+        }
+        // Create a synthetic mouse event for the handler
+        const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
+        await handleCollectCash(syntheticEvent, cashoutEmployeeId, amount);
+        setShowCashoutModal(false);
+        setCashoutCustomAmount('');
+        setCashoutMode('full');
     };
 
     const handleSaveName = async (e: React.MouseEvent | React.KeyboardEvent, id: number) => {
@@ -319,16 +350,29 @@ export default function EmployeesClient() {
                                 <span className="text-[10px] font-bold text-slate-400 uppercase group-hover:text-purple-600 transition-colors">Click to view log</span>
                             </div>
                         </div>
-                        <button
-                            onClick={(e) => handleCollectCash(e, emp.id)}
-                            disabled={emp.cashCollected === 0}
-                            className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${emp.cashCollected > 0
-                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]'
-                                : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                }`}
-                        >
-                            {emp.cashCollected > 0 ? 'Collect Cash (Zero Out)' : 'No Cash Pending'}
-                        </button>
+                        {emp.location === 'Digital Diaries' ? (
+                            <button
+                                onClick={(e) => openCashoutModal(e, emp.id)}
+                                disabled={emp.cashCollected === 0}
+                                className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${emp.cashCollected > 0
+                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]'
+                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                    }`}
+                            >
+                                {emp.cashCollected > 0 ? 'Collect Cash' : 'No Cash Pending'}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => handleCollectCash(e, emp.id)}
+                                disabled={emp.cashCollected === 0}
+                                className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${emp.cashCollected > 0
+                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]'
+                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                    }`}
+                            >
+                                {emp.cashCollected > 0 ? 'Collect Cash (Zero Out)' : 'No Cash Pending'}
+                            </button>
+                        )}
                     </div>
                 ))}
                 {filteredEmployees.length === 0 && (
@@ -415,17 +459,19 @@ export default function EmployeesClient() {
                                             activeEmployeeLogs.map(log => {
                                                 const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
                                                 const isRefund = log.transactionType === 'refund' || log.amount < 0;
+                                                const isRedLog = log.transactionType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.note?.toLowerCase().includes('food bill') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
                                                 return (
                                                     <tr key={log.id} className={`transition-colors ${
                                                         isOwnerPickup ? 'bg-blue-50 hover:bg-blue-100/70 border-l-4 border-l-blue-500' :
                                                         isRefund ? 'bg-red-50 hover:bg-red-100/70 border-l-4 border-l-red-400' :
+                                                        isRedLog ? 'bg-red-50/40 hover:bg-red-50 border-l-4 border-l-red-400' :
                                                         'hover:bg-slate-50/50'
                                                     }`}>
                                                         <td className="px-5 py-3.5 font-medium text-slate-600">
                                                             {new Date(log.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                         </td>
                                                         <td className="px-5 py-3.5 font-bold text-slate-800">{log.guestName || '—'}</td>
-                                                        <td className={`px-5 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                                                        <td className={`px-5 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : isRedLog ? 'text-red-600' : 'text-emerald-700'}`}>
                                                             {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
                                                         </td>
                                                         <td className="px-5 py-3.5 text-xs font-medium text-slate-500">
@@ -433,6 +479,8 @@ export default function EmployeesClient() {
                                                                 <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded border border-blue-300 font-bold">{log.note}</span>
                                                             ) : isRefund ? (
                                                                 <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">↩ {log.note}</span>
+                                                            ) : isRedLog ? (
+                                                                <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">{log.note}</span>
                                                             ) : (
                                                                 <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
                                                             )}
@@ -458,17 +506,19 @@ export default function EmployeesClient() {
                                     activeEmployeeLogs.map(log => {
                                         const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
                                         const isRefund = log.transactionType === 'refund' || log.amount < 0;
+                                        const isRedLog = log.transactionType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.note?.toLowerCase().includes('food bill') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
                                         return (
                                             <div key={log.id} className={`p-4 rounded-xl border ${
                                                 isOwnerPickup ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-500' :
                                                 isRefund ? 'bg-red-50 border-red-200 border-l-4 border-l-red-400' :
+                                                isRedLog ? 'bg-red-50/40 border-red-200 border-l-4 border-l-red-400' :
                                                 'bg-white border-slate-200'
                                             }`}>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <p className="text-xs font-medium text-slate-500">
                                                         {new Date(log.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </p>
-                                                    <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                                                    <p className={`text-sm font-black ${log.amount < 0 ? 'text-red-600' : isRedLog ? 'text-red-600' : 'text-emerald-700'}`}>
                                                         {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
                                                     </p>
                                                 </div>
@@ -478,6 +528,8 @@ export default function EmployeesClient() {
                                                         <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-300">{log.note}</span>
                                                     ) : isRefund ? (
                                                         <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">↩ {log.note}</span>
+                                                    ) : isRedLog ? (
+                                                        <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">{log.note}</span>
                                                     ) : (
                                                         <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
                                                     )}
@@ -494,6 +546,81 @@ export default function EmployeesClient() {
                     </div>
                 </div>
             )}
+
+            {/* Cashout Modal for DD */}
+            {showCashoutModal && cashoutEmployeeId && (() => {
+                const emp = employees.find(e => e.id === cashoutEmployeeId);
+                if (!emp) return null;
+                return (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-black text-slate-800">Cash Out</h3>
+                                <button onClick={() => setShowCashoutModal(false)} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <p className="text-sm text-slate-500 mb-4">Current cash balance: <span className="font-bold text-emerald-700">₹{emp.cashCollected.toLocaleString('en-IN')}</span></p>
+
+                            <div className="space-y-3 mb-6">
+                                <button
+                                    onClick={() => setCashoutMode('full')}
+                                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                        cashoutMode === 'full'
+                                            ? 'border-emerald-500 bg-emerald-50'
+                                            : 'border-slate-200 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <p className="font-bold text-slate-800 text-sm">Full Amount Cashout</p>
+                                    <p className="text-xs text-slate-500 mt-1">Collect the entire cash balance (₹{emp.cashCollected.toLocaleString('en-IN')})</p>
+                                </button>
+                                <button
+                                    onClick={() => setCashoutMode('custom')}
+                                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                        cashoutMode === 'custom'
+                                            ? 'border-emerald-500 bg-emerald-50'
+                                            : 'border-slate-200 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <p className="font-bold text-slate-800 text-sm">Custom Amount</p>
+                                    <p className="text-xs text-slate-500 mt-1">Enter a specific amount to cash out</p>
+                                </button>
+                            </div>
+
+                            {cashoutMode === 'custom' && (
+                                <div className="mb-6">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Amount to Cash Out (₹)</label>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={cashoutCustomAmount}
+                                        onChange={e => setCashoutCustomAmount(e.target.value)}
+                                        placeholder="Enter amount"
+                                        max={emp.cashCollected}
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowCashoutModal(false)}
+                                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmCashout}
+                                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <IndianRupee size={16} /> Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }
