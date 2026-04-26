@@ -467,6 +467,38 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             customerEmail: updated.customerEmail ? decrypt(updated.customerEmail) : null,
         };
 
+        // Resend confirmation email & WhatsApp with updated details (fire-and-forget)
+        if (!existing.isMaintenance) {
+            const updatedWithIncludes = await prisma.ddBooking.findUnique({
+                where: { id: bookingId },
+                include: { screen: true, package: true },
+            });
+            if (updatedWithIncludes) {
+                const plainPhone = decrypt(updatedWithIncludes.customerPhone);
+                const plainEmail = updatedWithIncludes.customerEmail ? decrypt(updatedWithIncludes.customerEmail) : null;
+                sendDDBookingEmail({ ...updatedWithIncludes, customerPhone: plainPhone, customerEmail: plainEmail }).catch(() => {});
+
+                if (plainPhone) {
+                    const baseUrl = process.env.FRONTEND_URL || "https://galaxiaresorts.com";
+                    const voucherUrl = `${baseUrl}/api/bookings/dd/voucher/${updatedWithIncludes.bookingRef}`;
+                    sendDDWhatsApp(plainPhone, updatedWithIncludes.bookingRef, voucherUrl).catch(() => {});
+                }
+
+                const screenName = (updatedWithIncludes.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
+                generateDDBookingPDF({ ...updatedWithIncludes, customerPhone: plainPhone, customerEmail: plainEmail })
+                    .then((pdfBuffer) =>
+                        sendOwnerBookingNotification({
+                            bookingRef: updatedWithIncludes.bookingRef,
+                            customerName: updatedWithIncludes.customerName,
+                            module: "digital-diaries",
+                            propertyName: screenName,
+                            pdfBuffer,
+                        })
+                    )
+                    .catch((err) => console.error("[Owner Notify] DD edit resend failed:", err));
+            }
+        }
+
         return res.json(decrypted);
     } catch (error) {
         console.error("Master edit DD booking error:", error);

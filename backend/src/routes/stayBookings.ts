@@ -33,7 +33,7 @@ router.post("/", async (req, res) => {
             customerName, customerPhone, customerEmail,
             propertyId, subPropertyId, numGuests, numKids, numPets,
             checkInDate, checkOutDate,
-            nightlyRate, basePrice, extraPersonCharge,
+            nightlyRate, basePrice, extraPersonCharge, extraAdultCharge, extraKidsCharge,
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             advancePaid, advanceMethod,
@@ -265,6 +265,8 @@ router.post("/", async (req, res) => {
                     nightlyRate: nightlyRate || 0,
                     basePrice: basePrice || 0,
                     extraPersonCharge: extraPersonCharge || 0,
+                    extraAdultCharge: extraAdultCharge || 0,
+                    extraKidsCharge: extraKidsCharge || 0,
                     gstAmount: gstAmount || 0,
                     totalAmount: (totalAmount || 0) - discountAmount,
                     advanceAmount: advanceAmount || 0,
@@ -463,7 +465,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             customerName, customerPhone, customerEmail,
             numGuests, numKids, numPets,
             checkInDate, checkOutDate,
-            nightlyRate, basePrice, extraPersonCharge,
+            nightlyRate, basePrice, extraPersonCharge, extraAdultCharge, extraKidsCharge,
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             status, source, addons,
@@ -481,6 +483,8 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (nightlyRate !== undefined) updateData.nightlyRate = parseFloat(nightlyRate) || 0;
         if (basePrice !== undefined) updateData.basePrice = parseFloat(basePrice) || 0;
         if (extraPersonCharge !== undefined) updateData.extraPersonCharge = parseFloat(extraPersonCharge) || 0;
+        if (extraAdultCharge !== undefined) updateData.extraAdultCharge = parseFloat(extraAdultCharge) || 0;
+        if (extraKidsCharge !== undefined) updateData.extraKidsCharge = parseFloat(extraKidsCharge) || 0;
         if (gstAmount !== undefined) updateData.gstAmount = parseFloat(gstAmount) || 0;
         if (totalAmount !== undefined) updateData.totalAmount = parseFloat(totalAmount) || 0;
         if (advanceAmount !== undefined) updateData.advanceAmount = parseFloat(advanceAmount) || 0;
@@ -540,6 +544,26 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             customerPhone: decrypt(updated.customerPhone),
             customerEmail: updated.customerEmail ? decrypt(updated.customerEmail) : null,
         };
+
+        // Resend confirmation email & owner notification with updated details (fire-and-forget)
+        const plainPhone = decrypt(updated.customerPhone);
+        const plainEmail = updated.customerEmail ? decrypt(updated.customerEmail) : null;
+        sendBookingConfirmation({ ...updated, customerPhone: plainPhone, customerEmail: plainEmail }).catch(() => {});
+
+        const prop = updated.property || {};
+        const sub = updated.subProperty;
+        const ownerPropertyName = sub ? `${sub.name} — ${(prop as any).name}` : ((prop as any).name || "Galaxia Property");
+        generateStaycationBookingPDF({ ...updated, customerPhone: plainPhone, customerEmail: plainEmail })
+            .then((pdfBuffer) =>
+                sendOwnerBookingNotification({
+                    bookingRef: updated.bookingRef,
+                    customerName: updated.customerName,
+                    module: "staycation",
+                    propertyName: ownerPropertyName,
+                    pdfBuffer,
+                })
+            )
+            .catch((err) => console.error("[Owner Notify] Edit resend failed:", err));
 
         return res.json(decrypted);
     } catch (error) {

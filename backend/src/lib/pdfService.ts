@@ -198,7 +198,13 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
         y = drawRow(doc, "Base Price", fmtCurrency(booking.basePrice), y);
-        if (booking.extraPersonCharge > 0) {
+        if ((booking as any).extraAdultCharge > 0) {
+            y = drawRow(doc, "Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge), y);
+        }
+        if ((booking as any).extraKidsCharge > 0) {
+            y = drawRow(doc, "Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge), y);
+        }
+        if (!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0) {
             y = drawRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
         }
         if (booking.gstAmount > 0) {
@@ -306,7 +312,13 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
         y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);
-        if (booking.extraPersonCharge > 0) {
+        if ((booking as any).extraAdultCharge > 0) {
+            y = drawRow(doc, "Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge), y);
+        }
+        if ((booking as any).extraKidsCharge > 0) {
+            y = drawRow(doc, "Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge), y);
+        }
+        if (!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0) {
             y = drawRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
         }
         // Add-on line items (e.g. Celebration Package)

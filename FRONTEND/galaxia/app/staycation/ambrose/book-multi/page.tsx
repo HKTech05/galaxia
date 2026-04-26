@@ -353,6 +353,20 @@ export default function BookMultiPage() {
         return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1) * units;
     };
 
+    const getExtraChargeBreakdown = (item: CartItem) => {
+        const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
+        const isAmstel = item.property === "amstel-nest";
+        const extraAdultRate = 2000;
+        const kidsRate = 1000;
+        const units = item.unitCount || 1;
+        if (isAmstel) {
+            const extraAdults = Math.max(0, guests.adults - 2 * units);
+            return { adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1), kidsCharge: guests.kids * kidsRate * Math.max(nights, 1) };
+        }
+        const extraAdults = Math.max(0, guests.adults - 2);
+        return { adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1) * units, kidsCharge: guests.kids * kidsRate * Math.max(nights, 1) * units };
+    };
+
     const grandSubtotal = cart.reduce((sum, item) => sum + getItemPrice(item) + getExtraCharges(item), 0);
     let discountAmount = 0;
     if (appliedCoupon) {
@@ -578,6 +592,8 @@ export default function BookMultiPage() {
                         itemAddons.push({ name: 'Food Preference', foodType });
                     }
 
+                    const perUnitBreakdown = getExtraChargeBreakdown({ ...item, unitCount: 1 });
+
                     const booking = await api.post("/bookings/staycation", {
                         customerName,
                         customerPhone: formData.phone,
@@ -591,6 +607,8 @@ export default function BookMultiPage() {
                         nightlyRate: perUnitPrice / Math.max(nights, 1),
                         basePrice: perUnitPrice,
                         extraPersonCharge: perUnitExtra,
+                        extraAdultCharge: perUnitBreakdown.adultCharge,
+                        extraKidsCharge: perUnitBreakdown.kidsCharge,
                         gstAmount: perUnitGst,
                         totalAmount: perUnitTotal,
                         advanceAmount: perUnitPayNow,

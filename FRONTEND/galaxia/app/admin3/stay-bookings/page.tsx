@@ -29,6 +29,8 @@ interface StayBooking {
     nightlyRate: number;
     basePrice: number;
     extraPersonCharge: number;
+    extraAdultCharge: number;
+    extraKidsCharge: number;
     gstAmount: number;
     discountAmount: number;
     advancePaid: boolean;
@@ -124,6 +126,8 @@ export default function StayBookingsPage() {
                 nightlyRate: b.nightlyRate || 0,
                 basePrice: b.basePrice || 0,
                 extraPersonCharge: b.extraPersonCharge || 0,
+                extraAdultCharge: b.extraAdultCharge || 0,
+                extraKidsCharge: b.extraKidsCharge || 0,
                 gstAmount: b.gstAmount || 0,
                 discountAmount: b.discountAmount || 0,
                 advancePaid: b.advancePaid || false,
@@ -182,6 +186,8 @@ export default function StayBookingsPage() {
                 nightlyRate: 0,
                 basePrice: b.basePrice || 0,
                 extraPersonCharge: 0,
+            extraAdultCharge: 0,
+            extraKidsCharge: 0,
                 gstAmount: b.gstAmount || 0,
                 discountAmount: b.discountAmount || 0,
                 advancePaid: (b.amountPaid || 0) > 0,
@@ -682,7 +688,19 @@ export default function StayBookingsPage() {
                                         <span className="font-bold text-slate-800">{formatPrice(selectedBooking.basePrice)}</span>
                                     </div>
                                     )}
-                                    {selectedBooking.extraPersonCharge > 0 && (
+                                    {selectedBooking.extraAdultCharge > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-600">Extra Adult Charge</span>
+                                            <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraAdultCharge)}</span>
+                                        </div>
+                                    )}
+                                    {selectedBooking.extraKidsCharge > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-600">Extra Child Charge</span>
+                                            <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraKidsCharge)}</span>
+                                        </div>
+                                    )}
+                                    {!selectedBooking.extraAdultCharge && !selectedBooking.extraKidsCharge && selectedBooking.extraPersonCharge > 0 && (
                                         <div className="flex justify-between text-sm">
                                             <span className="text-slate-600">Extra Person Charge</span>
                                             <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraPersonCharge)}</span>

@@ -652,6 +652,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                     nightlyRate,
                     basePrice: unitRoomPrice,
                     extraPersonCharge: unitExtraCharges,
+                    extraAdultCharge: extraAdultTotal * nights,
+                    extraKidsCharge: kidsTotal * nights,
                     gstAmount: unitTaxes,
                     totalAmount: unitTotal,
                     advanceAmount: unitPayNow,

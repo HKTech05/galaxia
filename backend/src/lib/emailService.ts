@@ -172,7 +172,9 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`)}
-                ${booking.extraPersonCharge > 0 ? row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}
+                ${(booking as any).extraAdultCharge > 0 ? row("Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge)) : ""}
+                ${(booking as any).extraKidsCharge > 0 ? row("Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge)) : ""}
+                ${!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0 ? row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}
                 ${addonRows}
                 ${row("Base Amount", fmtCurrency(booking.basePrice))}
                 ${row("GST", fmtCurrency(booking.gstAmount))}
