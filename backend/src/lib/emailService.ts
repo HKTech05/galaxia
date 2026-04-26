@@ -52,7 +52,7 @@ function row(label: string, value: string, opts?: { bold?: boolean; color?: stri
     const valColor = opts?.color || TEXT_DARK;
     return `<tr>
         <td style="${tdStyle} color: ${TEXT_MED}; font-size: 13px; letter-spacing: 0.3px;">${label}</td>
-        <td style="${tdStyle} text-align: right; font-weight: ${valWeight}; color: ${valColor}; font-size: 14px;">${value}</td>
+        <td style="${tdStyle} text-align: right; font-weight: ${valWeight}; color: ${valColor}; font-size: 14px; font-family: 'Times New Roman', Times, serif;">${value}</td>
     </tr>`;
 }
 
