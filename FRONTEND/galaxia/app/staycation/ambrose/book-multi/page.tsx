@@ -1239,6 +1239,7 @@ export default function BookMultiPage() {
                                 const itemTotal = getItemPrice(item) + getExtraCharges(item);
                                 const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
                                 const units = item.unitCount || 1;
+                                const itemGstInc = Math.round(itemTotal * 1.05);
                                 return (
                                     <div key={item.villaId} className="border border-border-light rounded-lg p-4 mb-3">
                                         <div className="flex justify-between items-center">
@@ -1247,7 +1248,7 @@ export default function BookMultiPage() {
                                                 <h4 className="font-cinzel font-semibold text-text-primary">{item.villaName}{units > 1 ? ` × ${units}` : ""}</h4>
                                                 <p className="text-xs text-text-muted font-inter">{guests.adults} adults{guests.kids > 0 ? `, ${guests.kids} kids` : ""}{units > 1 && item.property !== 'amstel-nest' ? " per villa" : ""}{units > 1 && item.property === 'amstel-nest' ? ` across ${units} cottages` : ""}</p>
                                             </div>
-                                            <span className="font-inter font-semibold text-text-primary">{formatPrice(itemTotal)}</span>
+                                            <span className="font-inter font-semibold text-text-primary">{formatPrice(itemGstInc)}</span>
                                         </div>
                                     </div>
                                 );
