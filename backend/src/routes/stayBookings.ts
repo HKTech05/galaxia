@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
     try {
         const {
             customerName, customerPhone, customerEmail,
-            propertyId, subPropertyId, numGuests, numKids, numPets,
+            propertyId, subPropertyId, numGuests, numKids, numPets, numCottages,
             checkInDate, checkOutDate,
             nightlyRate, basePrice, extraPersonCharge, extraAdultCharge, extraKidsCharge,
             gstAmount, totalAmount,
@@ -259,6 +259,7 @@ router.post("/", async (req, res) => {
                     numGuests: numGuests || 2,
                     numKids: numKids || 0,
                     numPets: numPets || 0,
+                    numCottages: numCottages || 1,
                     checkInDate: checkIn,
                     checkOutDate: checkOut,
                     numNights,
@@ -463,7 +464,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
 
         const {
             customerName, customerPhone, customerEmail,
-            numGuests, numKids, numPets,
+            numGuests, numKids, numPets, numCottages,
             checkInDate, checkOutDate,
             nightlyRate, basePrice, extraPersonCharge, extraAdultCharge, extraKidsCharge,
             gstAmount, totalAmount,
@@ -480,6 +481,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (numGuests !== undefined) updateData.numGuests = parseInt(numGuests);
         if (numKids !== undefined) updateData.numKids = parseInt(numKids);
         if (numPets !== undefined) updateData.numPets = parseInt(numPets);
+        if (numCottages !== undefined) updateData.numCottages = parseInt(numCottages);
         if (nightlyRate !== undefined) updateData.nightlyRate = parseFloat(nightlyRate) || 0;
         if (basePrice !== undefined) updateData.basePrice = parseFloat(basePrice) || 0;
         if (extraPersonCharge !== undefined) updateData.extraPersonCharge = parseFloat(extraPersonCharge) || 0;

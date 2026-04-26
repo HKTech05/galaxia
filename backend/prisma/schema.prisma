@@ -314,6 +314,7 @@ model StaycationBooking {
   numGuests          Int              @default(2) @map("num_guests")
   numKids            Int              @default(0) @map("num_kids")
   numPets            Int              @default(0) @map("num_pets")
+  numCottages        Int              @default(1) @map("num_cottages")
   checkInDate        DateTime         @map("check_in_date") @db.Date
   checkOutDate       DateTime         @map("check_out_date") @db.Date
   checkInTime        DateTime?        @map("check_in_time") @db.Time(6)

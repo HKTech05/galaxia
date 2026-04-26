@@ -94,11 +94,15 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
 
     // Build add-on rows (e.g. Celebration Package ₹1,200)
     let addonRows = "";
+    let foodPreference = "";
     if (booking.addons && typeof booking.addons === "object") {
         const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
         for (const a of addonsData) {
-            if (a && a.name && a.price) {
-                addonRows += row(a.name, fmtCurrency(a.price));
+            if (a && a.name === 'Food Preference' && a.foodType) {
+                foodPreference = a.foodType;
+            } else if (a && a.name && a.price) {
+                const label = a.occasion ? `${a.name} (${a.occasion})` : a.name;
+                addonRows += row(label, fmtCurrency(a.price));
             }
         }
     }
@@ -150,6 +154,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${row("Name", booking.customerName, { bold: true })}
                 ${booking.customerPhone ? row("Phone", booking.customerPhone) : ""}
                 ${booking.customerEmail ? row("Email", booking.customerEmail) : ""}
+                ${foodPreference ? row("Food Preference", foodPreference) : ""}
             </table>
         </div>
 
@@ -169,6 +174,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${row("Check-out", `${checkOutDate}  ·  ${checkOutTime}`)}
                 ${row("Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`)}
                 ${row("Guests", `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`)}
+                ${(booking as any).numCottages > 1 ? row("Cottages", `${(booking as any).numCottages}`) : ""}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`)}

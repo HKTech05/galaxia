@@ -564,26 +564,20 @@ export default function BookMultiPage() {
                 if (!propertyId) { setBookingError("Property not found. Please try again."); return; }
 
                 const units = item.unitCount || 1;
-                for (let u = 0; u < units; u++) {
-                    const perUnitPrice = getItemPrice({ ...item, unitCount: 1 });
-                    const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
-                    const perUnitSubtotal = perUnitPrice + perUnitExtra;
-                    const isFirstBooking = cart.indexOf(item) === 0 && u === 0;
-                    const unitAddon = isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
-                    const perUnitGst = Math.round(perUnitSubtotal * 0.05);
-                    const perUnitTotal = Math.round((perUnitSubtotal + unitAddon + perUnitGst) / 10) * 10;
-                    const perUnitPayNow = Math.round(Math.round(perUnitTotal * 0.8) / 10) * 10;
-                    const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
 
-                    // Amstel Nest: put total tiered deposit on first booking, 0 on rest
-                    // Ambrose: ₹3,000 per villa
-                    let deposit = 3000; // Ambrose default
-                    if (isAmstel) {
-                        deposit = !amstelDepositAssigned ? amstelTotalDeposit : 0;
-                        amstelDepositAssigned = true;
-                    }
-
+                if (isAmstel) {
+                    // Amstel Nest: single booking with numCottages
+                    const totalPrice = getItemPrice(item);
+                    const totalExtra = getExtraCharges(item);
+                    const totalSubtotal = totalPrice + totalExtra;
                     const isFirstItem = cart.indexOf(item) === 0;
+                    const addonAmount = isFirstItem && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                    const totalGst = Math.round(totalSubtotal * 0.05);
+                    const totalTotal = Math.round((totalSubtotal + addonAmount + totalGst) / 10) * 10;
+                    const totalPayNow = Math.round(Math.round(totalTotal * 0.8) / 10) * 10;
+                    const totalPayAtVenue = totalTotal - totalPayNow;
+                    const breakdown = getExtraChargeBreakdown(item);
+
                     const itemAddons: any[] = [];
                     if (isFirstItem && celebrationAddon) {
                         itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
@@ -591,8 +585,6 @@ export default function BookMultiPage() {
                     if (isFirstItem) {
                         itemAddons.push({ name: 'Food Preference', foodType });
                     }
-
-                    const perUnitBreakdown = getExtraChargeBreakdown({ ...item, unitCount: 1 });
 
                     const booking = await api.post("/bookings/staycation", {
                         customerName,
@@ -602,25 +594,25 @@ export default function BookMultiPage() {
                         subPropertyId,
                         numGuests: guests.adults,
                         numKids: guests.kids,
+                        numCottages: units,
                         checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
                         checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
-                        nightlyRate: perUnitPrice / Math.max(nights, 1),
-                        basePrice: perUnitPrice,
-                        extraPersonCharge: perUnitExtra,
-                        extraAdultCharge: perUnitBreakdown.adultCharge,
-                        extraKidsCharge: perUnitBreakdown.kidsCharge,
-                        gstAmount: perUnitGst,
-                        totalAmount: perUnitTotal,
-                        advanceAmount: perUnitPayNow,
-                        balanceAmount: perUnitPayAtVenue,
-                        securityDeposit: deposit,
+                        nightlyRate: totalPrice / Math.max(nights, 1),
+                        basePrice: totalPrice,
+                        extraPersonCharge: totalExtra,
+                        extraAdultCharge: breakdown.adultCharge,
+                        extraKidsCharge: breakdown.kidsCharge,
+                        gstAmount: totalGst,
+                        totalAmount: totalTotal,
+                        advanceAmount: totalPayNow,
+                        balanceAmount: totalPayAtVenue,
+                        securityDeposit: amstelTotalDeposit,
                         advancePaid: true,
                         advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                         source: "website",
                         addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
                     });
 
-                    // Upload guest ID proof for this booking
                     if (idFile && booking?.id) {
                         try {
                             const fd = new FormData();
@@ -629,6 +621,66 @@ export default function BookMultiPage() {
                             await fetch("/api/uploads/guest-id-public", { method: "POST", body: fd });
                         } catch (uploadErr) {
                             console.error("ID upload failed for booking", booking.id, uploadErr);
+                        }
+                    }
+                } else {
+                    // Ambrose: one booking per unit (villa)
+                    for (let u = 0; u < units; u++) {
+                        const perUnitPrice = getItemPrice({ ...item, unitCount: 1 });
+                        const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
+                        const perUnitSubtotal = perUnitPrice + perUnitExtra;
+                        const isFirstBooking = cart.indexOf(item) === 0 && u === 0;
+                        const unitAddon = isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                        const perUnitGst = Math.round(perUnitSubtotal * 0.05);
+                        const perUnitTotal = Math.round((perUnitSubtotal + unitAddon + perUnitGst) / 10) * 10;
+                        const perUnitPayNow = Math.round(Math.round(perUnitTotal * 0.8) / 10) * 10;
+                        const perUnitPayAtVenue = perUnitTotal - perUnitPayNow;
+                        const perUnitBreakdown = getExtraChargeBreakdown({ ...item, unitCount: 1 });
+
+                        const isFirstItem = cart.indexOf(item) === 0;
+                        const itemAddons: any[] = [];
+                        if (isFirstItem && celebrationAddon) {
+                            itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                        }
+                        if (isFirstItem) {
+                            itemAddons.push({ name: 'Food Preference', foodType });
+                        }
+
+                        const booking = await api.post("/bookings/staycation", {
+                            customerName,
+                            customerPhone: formData.phone,
+                            customerEmail: formData.email,
+                            propertyId,
+                            subPropertyId,
+                            numGuests: guests.adults,
+                            numKids: guests.kids,
+                            checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
+                            checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
+                            nightlyRate: perUnitPrice / Math.max(nights, 1),
+                            basePrice: perUnitPrice,
+                            extraPersonCharge: perUnitExtra,
+                            extraAdultCharge: perUnitBreakdown.adultCharge,
+                            extraKidsCharge: perUnitBreakdown.kidsCharge,
+                            gstAmount: perUnitGst,
+                            totalAmount: perUnitTotal,
+                            advanceAmount: perUnitPayNow,
+                            balanceAmount: perUnitPayAtVenue,
+                            securityDeposit: 3000,
+                            advancePaid: true,
+                            advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
+                            source: "website",
+                            addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
+                        });
+
+                        if (idFile && booking?.id) {
+                            try {
+                                const fd = new FormData();
+                                fd.append("file", idFile);
+                                fd.append("bookingId", String(booking.id));
+                                await fetch("/api/uploads/guest-id-public", { method: "POST", body: fd });
+                            } catch (uploadErr) {
+                                console.error("ID upload failed for booking", booking.id, uploadErr);
+                            }
                         }
                     }
                 }

@@ -204,6 +204,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         kids: 0,
         pets: 0,
         phone: "",
+        email: "",
         checkInDate: new Date(),
         checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
         property: properties[0] || "Hill View",
@@ -404,6 +405,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             await api.post("/bookings/staycation", {
                 customerName: manualForm.name,
                 customerPhone: manualForm.phone || "0000000000",
+                customerEmail: manualForm.email || null,
                 propertyId: propId,
                 subPropertyId: subPropId,
                 numGuests: manualForm.guests,
@@ -1206,6 +1208,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <div className="relative">
                                             <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input type="tel" value={manualForm.phone} onChange={e => setManualForm({ ...manualForm, phone: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="+91" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5 sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Email (Optional)</label>
+                                        <div className="relative">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                                            <input type="email" value={manualForm.email} onChange={e => setManualForm({ ...manualForm, email: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="guest@example.com" />
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">

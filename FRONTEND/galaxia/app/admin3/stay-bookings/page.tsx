@@ -19,6 +19,7 @@ interface StayBooking {
     guests: number;
     kids: number;
     pets: number;
+    numCottages: number;
     totalAmount: number;
     advanceAmount: number;
     balanceAmount: number;
@@ -116,6 +117,7 @@ export default function StayBookingsPage() {
                 guests: b.numGuests || 2,
                 kids: b.numKids || 0,
                 pets: b.numPets || 0,
+                numCottages: b.numCottages || 1,
                 totalAmount: b.totalAmount || 0,
                 advanceAmount: b.advanceAmount || 0,
                 balanceAmount: b.balanceAmount || 0,
@@ -671,6 +673,12 @@ export default function StayBookingsPage() {
                                         <p className="text-xs text-slate-400 font-medium">Guests</p>
                                         <p className="text-sm font-bold text-slate-800">{selectedBooking.guests} adult{selectedBooking.guests !== 1 ? 's' : ''}{selectedBooking.kids > 0 && <span className="text-blue-600 ml-1">{selectedBooking.kids} child{selectedBooking.kids !== 1 ? 'ren' : ''}</span>}</p>
                                     </div>
+                                    {selectedBooking.numCottages > 1 && (
+                                        <div>
+                                            <p className="text-xs text-slate-400 font-medium">Cottages</p>
+                                            <p className="text-sm font-bold text-amber-700">{selectedBooking.numCottages}</p>
+                                        </div>
+                                    )}
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Source</p>
                                         <p className="text-sm font-bold text-slate-800">{selectedBooking.source === "website" ? "Online Booking" : "Walk-in / Reception"}</p>
@@ -836,6 +844,7 @@ export default function StayBookingsPage() {
                                                 numGuests: b.guests,
                                                 numKids: b.kids,
                                                 numPets: b.pets || 0,
+                                                numCottages: b.numCottages || 1,
                                                 checkInDate: b.checkIn ? b.checkIn.split('T')[0] : '',
                                                 checkOutDate: b.checkOut ? b.checkOut.split('T')[0] : '',
                                                 nightlyRate: b.nightlyRate,
@@ -985,6 +994,18 @@ export default function StayBookingsPage() {
                                             <input type="number" min={0} value={editForm.numKids || ''} onChange={e => setEditForm({...editForm, numKids: parseInt(e.target.value) || 0})}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Cottages (Amstel Nest only) */}
+                            {editBooking && editBooking.propertyName?.includes('Amstel') && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cottages</h4>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Number of Cottages</label>
+                                        <input type="number" min={1} max={10} value={editForm.numCottages || 1} onChange={e => setEditForm({...editForm, numCottages: parseInt(e.target.value) || 1})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
                                 </div>
                             )}
@@ -1145,6 +1166,7 @@ export default function StayBookingsPage() {
                                                 numGuests: editForm.numGuests,
                                                 numKids: editForm.numKids,
                                                 numPets: editForm.numPets,
+                                                numCottages: editForm.numCottages,
                                                 checkInDate: editForm.checkInDate,
                                                 checkOutDate: editForm.checkOutDate,
                                                 nightlyRate: editForm.nightlyRate,
