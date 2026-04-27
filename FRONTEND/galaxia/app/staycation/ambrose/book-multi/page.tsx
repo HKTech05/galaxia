@@ -195,18 +195,24 @@ export default function BookMultiPage() {
                 if (ambId) {
                     try {
                         const ambData = await api.get(`/properties/ambrose/availability`);
+                        // Get parent-level pricing as fallback
+                        const ambParentWd = ambData.pricing?.weekday?.price || "5500";
+                        const ambParentWe = ambData.pricing?.weekend?.price || "6500";
+                        const ambParentSa = ambData.pricing?.saturday?.price || ambParentWe;
+                        const ambParentPersons = ambData.pricing?.weekday?.personsLabel || "2 guests";
+
                         if (ambData.subPropertyPricing && ambData.subProperties) {
                             for (const sp of ambData.subProperties) {
                                 const spPricing = ambData.subPropertyPricing[sp.id];
-                                if (spPricing) {
-                                    const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
-                                    pricingMap[key] = {
-                                        weekday: spPricing.weekday?.price || "0",
-                                        weekend: spPricing.weekend?.price || "0",
-                                        saturday: spPricing.saturday?.price || spPricing.weekend?.price || "0",
-                                        personsLabel: spPricing.weekday?.personsLabel || "2 guests",
-                                    };
-                                }
+                                const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
+                                // Use sub-property pricing if it has actual values, otherwise fall back to parent
+                                const hasSubPricing = spPricing && (spPricing.weekday?.price || spPricing.weekend?.price);
+                                pricingMap[key] = {
+                                    weekday: (hasSubPricing && spPricing.weekday?.price) || ambParentWd,
+                                    weekend: (hasSubPricing && spPricing.weekend?.price) || ambParentWe,
+                                    saturday: (hasSubPricing && spPricing.saturday?.price) || (hasSubPricing && spPricing.weekend?.price) || ambParentSa,
+                                    personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || ambParentPersons,
+                                };
                             }
                         }
                     } catch {}
@@ -216,18 +222,24 @@ export default function BookMultiPage() {
                 if (anId) {
                     try {
                         const anData = await api.get(`/properties/amstel-nest/availability`);
+                        // Get parent-level pricing as fallback
+                        const anParentWd = anData.pricing?.weekday?.price || "4950";
+                        const anParentWe = anData.pricing?.weekend?.price || "6950";
+                        const anParentSa = anData.pricing?.saturday?.price || anParentWe;
+                        const anParentPersons = anData.pricing?.weekday?.personsLabel || "2 persons with meals";
+
                         if (anData.subPropertyPricing && anData.subProperties) {
                             for (const sp of anData.subProperties) {
                                 const spPricing = anData.subPropertyPricing[sp.id];
-                                if (spPricing) {
-                                    const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
-                                    pricingMap[key] = {
-                                        weekday: spPricing.weekday?.price || "0",
-                                        weekend: spPricing.weekend?.price || "0",
-                                        saturday: spPricing.saturday?.price || spPricing.weekend?.price || "0",
-                                        personsLabel: spPricing.weekday?.personsLabel || "2 guests",
-                                    };
-                                }
+                                const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
+                                // Use sub-property pricing if it has actual values, otherwise fall back to parent
+                                const hasSubPricing = spPricing && (spPricing.weekday?.price || spPricing.weekend?.price);
+                                pricingMap[key] = {
+                                    weekday: (hasSubPricing && spPricing.weekday?.price) || anParentWd,
+                                    weekend: (hasSubPricing && spPricing.weekend?.price) || anParentWe,
+                                    saturday: (hasSubPricing && spPricing.saturday?.price) || (hasSubPricing && spPricing.weekend?.price) || anParentSa,
+                                    personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || anParentPersons,
+                                };
                             }
                         }
                     } catch {}
