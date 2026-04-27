@@ -342,6 +342,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     if (k.toUpperCase() === upperKey) { lp = v; break; }
                 }
             }
+            // If sub-property pricing not found, fall back to parent property pricing
+            // (e.g. Amstel Nest Standard Cottage has no sub-property pricing; parent has 4950/6950)
+            if (!lp && (prop.includes("Amstel") || prop.includes("Ambrose"))) {
+                const parentKey = prop.includes("Amstel") ? "Amstel Nest" : "Ambrose";
+                lp = livePricing[parentKey];
+            }
 
             if (lp) {
                 // Use live DB pricing
@@ -1312,7 +1318,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Property</label>
-                                        <select value={manualForm.property} onChange={e => setManualForm({ ...manualForm, property: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none font-medium text-slate-800">
+                                        <select value={manualForm.property} onChange={e => {
+                                            const newProp = e.target.value;
+                                            const newVilla = newProp.includes("Amstel") ? "Standard Cottage" : "TAKE-1";
+                                            setManualForm({ ...manualForm, property: newProp, villa: newVilla });
+                                        }} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none font-medium text-slate-800">
                                             {properties.map(p => <option key={p} value={p}>{p}</option>)}
                                         </select>
                                     </div>

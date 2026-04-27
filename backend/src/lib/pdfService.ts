@@ -338,7 +338,11 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawSectionTitle(doc, "Payment Summary", y);
         // Per-night breakdown — use actual DB pricing (base room rate only, no extra guest charges)
         const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const pricingRecords = (sub?.pricing || prop?.pricing || []) as Array<{ dayType: string; basePrice: number; extraAdultPrice?: number; kidsPrice?: number; personsLabel?: string }>;
+        // Use sub-property pricing if it has records; otherwise fall back to parent-level pricing
+        // Filter parent pricing to exclude records tied to OTHER sub-properties
+        const subPricing = (sub?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null }>;
+        const parentPricing = ((prop?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null; overrideDate?: Date | null }>).filter(p => !p.subPropertyId && !p.overrideDate);
+        const pricingRecords = subPricing.length > 0 ? subPricing : parentPricing;
         const priceByDayType: Record<string, number> = {};
         for (const pr of pricingRecords) {
             priceByDayType[pr.dayType] = pr.basePrice;

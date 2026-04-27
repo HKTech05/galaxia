@@ -179,7 +179,9 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${sectionTitle("Payment Summary")}
                 ${(() => {
                     const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                    const pricingRecords = (sub?.pricing || prop?.pricing || []) as Array<{ dayType: string; basePrice: number }>;
+                    const pricingSubArr = (sub?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null }>;
+                    const pricingParentArr = ((prop?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null; overrideDate?: Date | null }>).filter(p => !p.subPropertyId && !p.overrideDate);
+                    const pricingRecords = pricingSubArr.length > 0 ? pricingSubArr : pricingParentArr;
                     const priceByDayType: Record<string, number> = {};
                     for (const pr of pricingRecords) {
                         priceByDayType[pr.dayType] = pr.basePrice;
