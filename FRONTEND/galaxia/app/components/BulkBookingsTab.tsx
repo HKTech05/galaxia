@@ -46,6 +46,7 @@ export default function BulkBookingsTab() {
     const [subProperties, setSubProperties] = useState<SubProperty[]>([]);
     const [amstelPropertyId, setAmstelPropertyId] = useState<number | null>(null);
     const [allBookings, setAllBookings] = useState<any[]>([]);
+    const [blockedDates, setBlockedDates] = useState<any[]>([]);
 
     // Calendar state
     const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -96,6 +97,11 @@ export default function BulkBookingsTab() {
                         setLiveAmstelPricing(pm);
                     }
                 } catch {}
+            } catch {}
+            // Fetch blocked dates
+            try {
+                const blocked = await api.get("/blocked-dates");
+                if (Array.isArray(blocked)) setBlockedDates(blocked);
             } catch {}
         })();
     }, []);
@@ -178,10 +184,18 @@ export default function BulkBookingsTab() {
                     count += (b.numCottages || 1);
                 }
             }
+            // Also count blocked dates for Amstel Nest
+            for (const bl of blockedDates) {
+                if (bl.propertyId !== amstelPropertyId) continue;
+                const blDate = toLocal(bl.blockedDate);
+                if (blDate.getFullYear() === year && blDate.getMonth() === month && blDate.getDate() === day) {
+                    count += (bl.numUnits || 1);
+                }
+            }
             occupancy[dateStr] = count;
         }
         return occupancy;
-    }, [allBookings, calendarMonth, amstelPropertyId]);
+    }, [allBookings, blockedDates, calendarMonth, amstelPropertyId]);
 
     const calculateBulkPrice = () => {
         if (!bulkForm.checkIn || !bulkForm.checkOut) return { perNight: 0, nights: 0, subtotal: 0, gst: 0, total: 0 };
