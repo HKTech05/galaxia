@@ -15,18 +15,18 @@ async function generateDdRef(client: any = prisma): Promise<string> {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
     const prefix = `DD-${dateStr}-`;
-    // Find the highest existing ref number for today (handles deleted bookings)
-    const latest = await client.ddBooking.findFirst({
+    // Find all refs for today, then filter to only standard numeric refs (not transfer T... or NaN)
+    const todayRefs = await client.ddBooking.findMany({
         where: { bookingRef: { startsWith: prefix } },
-        orderBy: { bookingRef: "desc" },
         select: { bookingRef: true },
     });
-    let nextNum = 1;
-    if (latest?.bookingRef) {
-        const lastNum = parseInt(latest.bookingRef.split("-").pop() || "0");
-        nextNum = lastNum + 1;
+    let maxNum = 0;
+    for (const r of todayRefs) {
+        const suffix = r.bookingRef.slice(prefix.length);
+        const num = parseInt(suffix);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
     }
-    return `${prefix}${String(nextNum).padStart(3, "0")}`;
+    return `${prefix}${String(maxNum + 1).padStart(3, "0")}`;
 }
 
 // POST /api/bookings/dd — Create DD booking (transaction-locked)
