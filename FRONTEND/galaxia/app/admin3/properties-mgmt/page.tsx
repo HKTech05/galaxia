@@ -197,10 +197,9 @@ export default function PropertiesMgmtPage() {
     // Render inline to avoid React unmounting on re-render (no component identity change)
     const renderEditForm = (editKey: string) => {
         if (editId !== editKey) return null;
-        const hasSat = !!editPr.saturday_base;
         return (<div className="p-4 space-y-3 border-t border-slate-100 bg-purple-50/30">
-            {["weekday", "weekend", ...(hasSat ? ["saturday"] : [])].map(dt => (<div key={dt} className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">{dt === "weekday" ? "Mon-Thu" : dt === "weekend" ? "Fri/Sun" : "Saturday"}</label><NI value={editPr[`${dt}_base`] || ""} onChange={v => setEditPr({ ...editPr, [`${dt}_base`]: v })} /></div>))}
-            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Guest</label><NI value={editPr.weekday_extra || ""} onChange={v => setEditPr({ ...editPr, weekday_extra: v })} /></div>
+            {["weekday", "weekend", "saturday"].map(dt => (<div key={dt} className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">{dt === "weekday" ? "Mon-Thu" : dt === "weekend" ? "Fri/Sun" : "Saturday"}</label><NI value={editPr[`${dt}_base`] || ""} onChange={v => setEditPr(prev => ({ ...prev, [`${dt}_base`]: v }))} /></div>))}
+            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Guest</label><NI value={editPr.weekday_extra || ""} onChange={v => setEditPr(prev => ({ ...prev, weekday_extra: v }))} /></div>
             <div className="flex gap-2"><button onClick={saveEdit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button><button onClick={() => setEditId(null)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button></div>
         </div>);
     };

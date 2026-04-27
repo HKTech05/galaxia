@@ -32,7 +32,9 @@ export default function BookingClient({ property }: BookingClientProps) {
         maxKids?: number;
         weekdayPrice: string;
         weekendPrice: string;
+        saturdayPrice: string;
         primeDatePrice: string;
+        personsLabel?: string;
     } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
@@ -103,8 +105,12 @@ export default function BookingClient({ property }: BookingClientProps) {
                         setNights(n);
                         // Determine rate from first night's day of week
                         const day = ci.getDay();
-                        const isWeekend = day === 0 || day === 5 || day === 6;
-                        const rate = parseInt((isWeekend ? property.pricing.weekend.price : property.pricing.weekday.price).replace(/,/g, ""));
+                        const isSat = day === 6;
+                        const isWe = day === 0 || day === 5;
+                        const priceStr = isSat
+                            ? ((property as any).pricing?.saturday?.price || property.pricing.weekend.price)
+                            : isWe ? property.pricing.weekend.price : property.pricing.weekday.price;
+                        const rate = parseInt(priceStr.replace(/,/g, ""));
                         setNightlyRate(rate);
                     }
                 }
@@ -131,8 +137,9 @@ export default function BookingClient({ property }: BookingClientProps) {
                 if (ciStr && coStr && data.pricing) {
                     const ci = new Date(ciStr);
                     const day = ci.getDay();
-                    const isWeekend = day === 0 || day === 5 || day === 6;
-                    const priceData = isWeekend ? data.pricing.weekend : data.pricing.weekday;
+                    const isSat = day === 6;
+                    const isWe = day === 0 || day === 5;
+                    const priceData = isSat ? (data.pricing.saturday || data.pricing.weekend) : isWe ? data.pricing.weekend : data.pricing.weekday;
                     if (priceData) {
                         setNightlyRate(parseInt(priceData.price));
                     }
@@ -334,6 +341,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 price: parseInt(sub.pricing?.weekday.price.replace(/,/g, "") || "0"),
                 weekdayPrice: sub.pricing?.weekday.price || property.pricing.weekday.price,
                 weekendPrice: sub.pricing?.weekend.price || property.pricing.weekend.price,
+                saturdayPrice: sub.pricing?.saturday?.price || sub.pricing?.weekend?.price || property.pricing.weekend.price,
                 primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
                 details: sub.configuration?.slice(0, 3) || [],
                 persons: sub.pricing?.weekday.persons || "2 guests",
@@ -367,13 +375,29 @@ export default function BookingClient({ property }: BookingClientProps) {
     const kidsChargeStr = property.pricing.kidsCharge;
     const kidsChargeNum = parseInt(kidsChargeStr.replace(/,/g, ""));
 
-    // Base price includes 2 persons per cottage — scale by unitCount for Amstel Nest
-    const baseIncludedPersons = 2 * (isAmstelNest ? unitCount : 1);
+    // Base included persons from personsLabel (e.g. "4 with meals" => 4, "2 with meals" => 2)
+    const personsFromLabel = selectedRoom?.personsLabel ? parseInt(selectedRoom.personsLabel) || 2 : 2;
+    const baseIncludedPersons = personsFromLabel * (isAmstelNest ? unitCount : 1);
     const extraAdults = Math.max(0, adults - baseIncludedPersons);
     const extraAdultTotal = extraAdults * extraAdultCharge;
     const kidsTotal = kids * kidsChargeNum;
 
-    const roomPrice = nightlyRate * nights * (isAmstelNest ? unitCount : 1);
+    // Room price: sum per-night prices for accurate multi-day-type bookings
+    const computedRoomPrice = (() => {
+        if (!checkInDate || nights <= 0 || !selectedRoom) return nightlyRate * nights * (isAmstelNest ? unitCount : 1);
+        let total = 0;
+        const wdP = parseInt((selectedRoom.weekdayPrice || '0').toString().replace(/,/g, ''));
+        const weP = parseInt((selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
+        const saP = parseInt((selectedRoom.saturdayPrice || selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
+        for (let i = 0; i < nights; i++) {
+            const d = new Date(checkInDate);
+            d.setDate(d.getDate() + i);
+            const day = d.getDay();
+            total += day === 6 ? saP : (day === 0 || day === 5) ? weP : wdP;
+        }
+        return total * (isAmstelNest ? unitCount : 1);
+    })();
+    const roomPrice = computedRoomPrice;
     const extraCharges = (extraAdultTotal + kidsTotal) * nights;
     const petCharges = pets * PET_CHARGE;
     const subtotal = roomPrice + extraCharges + petCharges;
@@ -413,16 +437,29 @@ export default function BookingClient({ property }: BookingClientProps) {
 
         let currentWeekdayPrice = room.weekdayPrice;
         let currentWeekendPrice = room.weekendPrice;
+        let currentSaturdayPrice = room.saturdayPrice || room.weekendPrice;
+        let currentPersonsLabel = room.persons || '2 guests';
         
-        if (backendData?.pricing) {
-             currentWeekdayPrice = backendData.pricing.weekday?.price || room.weekdayPrice;
-             currentWeekendPrice = backendData.pricing.weekend?.price || room.weekendPrice;
+        // Override from backend DB if available
+        const roomDbId = dbSubPropertyMap[room.id] || dbSubPropertyMap[room.id?.split?.('/')?.pop?.() || ''];
+        const spPricing = roomDbId ? backendData?.subPropertyPricing?.[roomDbId] : null;
+        if (spPricing) {
+            if (spPricing.weekday?.price) currentWeekdayPrice = spPricing.weekday.price;
+            if (spPricing.weekend?.price) currentWeekendPrice = spPricing.weekend.price;
+            if (spPricing.saturday?.price) currentSaturdayPrice = spPricing.saturday.price;
+            if (spPricing.weekday?.personsLabel) currentPersonsLabel = spPricing.weekday.personsLabel;
+        } else if (backendData?.pricing) {
+            if (backendData.pricing.weekday?.price) currentWeekdayPrice = backendData.pricing.weekday.price;
+            if (backendData.pricing.weekend?.price) currentWeekendPrice = backendData.pricing.weekend.price;
+            if (backendData.pricing.saturday?.price) currentSaturdayPrice = backendData.pricing.saturday.price;
+            if (backendData.pricing.weekday?.personsLabel) currentPersonsLabel = backendData.pricing.weekday.personsLabel;
         }
 
         const ci = checkInDate || new Date();
         const day = ci.getDay();
-        const isWeekend = day === 0 || day === 5 || day === 6;
-        const initialPriceStr = (isWeekend ? currentWeekendPrice : currentWeekdayPrice).toString();
+        const isSat = day === 6;
+        const isWe = day === 0 || day === 5;
+        const initialPriceStr = (isSat ? currentSaturdayPrice : isWe ? currentWeekendPrice : currentWeekdayPrice).toString();
         const initialPrice = parseInt(initialPriceStr.replace(/,/g, ""));
 
         setSelectedRoom({
@@ -435,7 +472,9 @@ export default function BookingClient({ property }: BookingClientProps) {
             maxKids: room.maxKids,
             weekdayPrice: currentWeekdayPrice,
             weekendPrice: currentWeekendPrice,
-            primeDatePrice: room.primeDatePrice
+            saturdayPrice: currentSaturdayPrice,
+            primeDatePrice: room.primeDatePrice,
+            personsLabel: currentPersonsLabel,
         });
         setNightlyRate(initialPrice);
         if (!nights) setNights(1);
@@ -1116,6 +1155,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     propertyId={dbPropertyId}
                                     weekdayPrice={selectedRoom?.weekdayPrice || property.pricing.weekday.price}
                                     weekendPrice={selectedRoom?.weekendPrice || property.pricing.weekend.price}
+                                    saturdayPrice={selectedRoom?.saturdayPrice}
                                     primeDatePrice={selectedRoom?.primeDatePrice || property.pricing.primeDates || ""}
                                     onDatesChange={handleDatesChange}
                                     initialCheckIn={checkInDate}

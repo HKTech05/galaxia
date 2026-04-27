@@ -16,6 +16,8 @@ interface CartItem {
     theme: string;
     weekdayPrice: string;
     weekendPrice: string;
+    saturdayPrice?: string;
+    personsLabel?: string;
     maxPersons: number;
     maxAdults?: number;
     maxKids?: number;
@@ -330,8 +332,10 @@ export default function BookMultiPage() {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
             const day = d.getDay();
-            const isWeekend = day === 0 || day === 5 || day === 6;
-            const price = parseInt((isWeekend ? item.weekendPrice : item.weekdayPrice).replace(/,/g, ""));
+            const isSat = day === 6;
+            const isWe = day === 0 || day === 5;
+            const priceStr = isSat ? (item.saturdayPrice || item.weekendPrice) : isWe ? item.weekendPrice : item.weekdayPrice;
+            const price = parseInt(priceStr.replace(/,/g, ""));
             total += price;
         }
         return total * units;
@@ -343,13 +347,15 @@ export default function BookMultiPage() {
         const extraAdultCharge = 2000;
         const kidsCharge = 1000;
         const units = item.unitCount || 1;
+        // Parse base included persons from personsLabel (e.g. "4 with meals" => 4)
+        const basePersons = item.personsLabel ? parseInt(item.personsLabel) || 2 : 2;
         if (isAmstel) {
             // Amstel Nest: guests are totals — base included = 2 adults per unit
             const extraAdults = Math.max(0, guests.adults - 2 * units);
             return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1);
         }
         // Ambrose: guests are per-villa
-        const extraAdults = Math.max(0, guests.adults - 2);
+        const extraAdults = Math.max(0, guests.adults - basePersons);
         return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1) * units;
     };
 
@@ -359,11 +365,12 @@ export default function BookMultiPage() {
         const extraAdultRate = 2000;
         const kidsRate = 1000;
         const units = item.unitCount || 1;
+        const basePersons = item.personsLabel ? parseInt(item.personsLabel) || 2 : 2;
         if (isAmstel) {
             const extraAdults = Math.max(0, guests.adults - 2 * units);
             return { adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1), kidsCharge: guests.kids * kidsRate * Math.max(nights, 1) };
         }
-        const extraAdults = Math.max(0, guests.adults - 2);
+        const extraAdults = Math.max(0, guests.adults - basePersons);
         return { adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1) * units, kidsCharge: guests.kids * kidsRate * Math.max(nights, 1) * units };
     };
 

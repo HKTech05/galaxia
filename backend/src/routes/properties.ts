@@ -490,6 +490,7 @@ router.get("/:slug/availability", async (req, res) => {
         const parentPricing = property.pricing.filter(p => !p.overrideDate);
         const weekdayPricing = parentPricing.find(p => p.dayType === 'weekday');
         const weekendPricing = parentPricing.find(p => p.dayType === 'weekend');
+        const saturdayPricing = parentPricing.find(p => p.dayType === 'saturday');
 
         // Date overrides (property-level)
         const overrideRows = property.pricing.filter(p => p.overrideDate);
@@ -523,9 +524,9 @@ router.get("/:slug/availability", async (req, res) => {
                     }
                 }
                 subPropertyPricing[sp.id] = {
-                    weekday: spWd ? { price: spWd.basePrice.toString(), extraAdult: spWd.extraAdultPrice } : null,
-                    weekend: spWe ? { price: spWe.basePrice.toString(), extraAdult: spWe.extraAdultPrice } : null,
-                    saturday: spSa ? { price: spSa.basePrice.toString(), extraAdult: spSa.extraAdultPrice } : null,
+                    weekday: spWd ? { price: spWd.basePrice.toString(), extraAdult: spWd.extraAdultPrice, personsLabel: spWd.personsLabel } : null,
+                    weekend: spWe ? { price: spWe.basePrice.toString(), extraAdult: spWe.extraAdultPrice, personsLabel: spWe.personsLabel } : null,
+                    saturday: spSa ? { price: spSa.basePrice.toString(), extraAdult: spSa.extraAdultPrice, personsLabel: spSa.personsLabel } : null,
                     dateOverrides: spDateOverrides,
                 };
             }
@@ -534,8 +535,9 @@ router.get("/:slug/availability", async (req, res) => {
         res.json({
             isActive: property.isActive,
             pricing: {
-                weekday: weekdayPricing ? { price: weekdayPricing.basePrice.toString(), extraAdult: weekdayPricing.extraAdultPrice } : null,
-                weekend: weekendPricing ? { price: weekendPricing.basePrice.toString(), extraAdult: weekendPricing.extraAdultPrice } : null,
+                weekday: weekdayPricing ? { price: weekdayPricing.basePrice.toString(), extraAdult: weekdayPricing.extraAdultPrice, personsLabel: weekdayPricing.personsLabel } : null,
+                weekend: weekendPricing ? { price: weekendPricing.basePrice.toString(), extraAdult: weekendPricing.extraAdultPrice, personsLabel: weekendPricing.personsLabel } : null,
+                saturday: saturdayPricing ? { price: saturdayPricing.basePrice.toString(), extraAdult: saturdayPricing.extraAdultPrice, personsLabel: saturdayPricing.personsLabel } : null,
                 all: parentPricing,
                 dateOverrides,
             },

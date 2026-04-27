@@ -8,6 +8,7 @@ interface CalendarProps {
     subPropertyId?: number | null;
     weekdayPrice?: string;
     weekendPrice?: string;
+    saturdayPrice?: string;
     primeDatePrice?: string;
     dateOverrides?: Record<string, number>;
     onDatesChange?: (checkIn: Date | null, checkOut: Date | null, nightlyRate: number, nights: number) => void;
@@ -40,7 +41,7 @@ const toLocalDateStr = (d: Date) => {
     return `${y}-${m}-${day}`;
 };
 
-const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, primeDatePrice?: string, bookedDates?: Set<string>, dateOverrides?: Record<string, number>) => {
+const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, saturdayPrice?: string, primeDatePrice?: string, bookedDates?: Set<string>, dateOverrides?: Record<string, number>) => {
     const dateStr = toLocalDateStr(date);
     if (bookedDates?.has(dateStr)) {
         return { price: "Booked", numPrice: 0, type: "booked" as const };
@@ -53,14 +54,16 @@ const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, pri
     }
 
     const day = date.getDay();
-    const isWeekend = day === 0 || day === 5 || day === 6;
-    const priceStr = isWeekend ? weekendPrice : weekdayPrice;
+    // Saturday = 6, Fri = 5 / Sun = 0
+    const isSaturday = day === 6;
+    const isWeekend = day === 0 || day === 5;
+    const priceStr = isSaturday ? (saturdayPrice || weekendPrice) : isWeekend ? weekendPrice : weekdayPrice;
     const numPrice = parseInt(priceStr.replace(/[^0-9]/g, ''));
 
     return {
         price: formatPrice(priceStr),
         numPrice: numPrice,
-        type: (isWeekend ? "weekend" : "weekday") as "weekday" | "weekend" | "prime" | "booked"
+        type: ((isSaturday || isWeekend) ? "weekend" : "weekday") as "weekday" | "weekend" | "prime" | "booked"
     };
 };
 
@@ -68,7 +71,7 @@ const getMaintenancePrice = (date: Date) => {
     return { price: "Maintenance", numPrice: 0, type: "booked" as const };
 };
 
-export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits, hidePrice }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", saturdayPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits, hidePrice }: CalendarProps) {
     // Resolve slug to numeric ID if propertySlug is provided
     const [resolvedId, setResolvedId] = useState<number | null>(null);
     useEffect(() => {
@@ -153,12 +156,12 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
 
         for (let d = 1; d <= daysInMonth; d++) {
             const date = new Date(currentYear, currentMonth, d);
-            const info = isDisabled ? getMaintenancePrice(date) : getDayPrice(date, weekdayPrice, weekendPrice, primeDatePrice, bookedDates, dateOverrides);
+            const info = isDisabled ? getMaintenancePrice(date) : getDayPrice(date, weekdayPrice, weekendPrice, saturdayPrice, primeDatePrice, bookedDates, dateOverrides);
             days.push({ date, ...info });
         }
 
         return days;
-    }, [currentMonth, currentYear, weekdayPrice, weekendPrice, primeDatePrice, bookedDates, dateOverrides]);
+    }, [currentMonth, currentYear, weekdayPrice, weekendPrice, saturdayPrice, primeDatePrice, bookedDates, dateOverrides]);
 
     const isPast = (date: Date) => {
         const t = new Date();
@@ -222,7 +225,7 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                 if (onDatesChange) {
                     const nights = Math.ceil((day.date.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
                     // Average nightly rate based on first night
-                    const firstNightInfo = getDayPrice(checkIn, weekdayPrice, weekendPrice, primeDatePrice, bookedDates);
+                    const firstNightInfo = getDayPrice(checkIn, weekdayPrice, weekendPrice, saturdayPrice, primeDatePrice, bookedDates);
                     onDatesChange(checkIn, day.date, firstNightInfo.numPrice, nights);
                 }
             }

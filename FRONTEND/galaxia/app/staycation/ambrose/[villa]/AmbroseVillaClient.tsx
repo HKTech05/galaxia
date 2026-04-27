@@ -35,6 +35,8 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     const [isVillaDisabled, setIsVillaDisabled] = useState(false);
     const [liveWeekday, setLiveWeekday] = useState<string | null>(null);
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
+    const [liveSaturday, setLiveSaturday] = useState<string | null>(null);
+    const [livePersonsLabel, setLivePersonsLabel] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
     const [dateWarning, setDateWarning] = useState('');
 
@@ -120,6 +122,8 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                 theme: villa.theme,
                 weekdayPrice: liveWeekday || villa.pricing?.weekday.price || "5,500",
                 weekendPrice: liveWeekend || villa.pricing?.weekend.price || "6,500",
+                saturdayPrice: liveSaturday || villa.pricing?.saturday?.price || liveWeekend || villa.pricing?.weekend.price || "6,500",
+                personsLabel: livePersonsLabel || villa.pricing?.weekday.persons || "2 with meals",
                 maxPersons: villa.maxPersons || 8,
                 maxAdults: (villa as any).maxAdults || parent.maxAdults || 6,
                 maxKids: (villa as any).maxKids ?? parent.maxKids ?? 2,
@@ -159,12 +163,14 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                     const subId = sub?.id;
                     const spPricing = subId && data.subPropertyPricing ? data.subPropertyPricing[subId] : null;
                     if (spPricing) {
-                        if (spPricing.weekday) setLiveWeekday(spPricing.weekday.price);
+                        if (spPricing.weekday) { setLiveWeekday(spPricing.weekday.price); if (spPricing.weekday.personsLabel) setLivePersonsLabel(spPricing.weekday.personsLabel); }
                         if (spPricing.weekend) setLiveWeekend(spPricing.weekend.price);
+                        if (spPricing.saturday) setLiveSaturday(spPricing.saturday.price);
                         if (spPricing.dateOverrides) setDateOverrides(spPricing.dateOverrides);
                     } else if (data.pricing) {
-                        if (data.pricing.weekday) setLiveWeekday(data.pricing.weekday.price);
+                        if (data.pricing.weekday) { setLiveWeekday(data.pricing.weekday.price); if (data.pricing.weekday.personsLabel) setLivePersonsLabel(data.pricing.weekday.personsLabel); }
                         if (data.pricing.weekend) setLiveWeekend(data.pricing.weekend.price);
+                        if (data.pricing.saturday) setLiveSaturday(data.pricing.saturday.price);
                         if (data.pricing.dateOverrides) setDateOverrides(data.pricing.dateOverrides);
                     }
 
@@ -186,6 +192,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
     const images = dynamicSlideshow.length > 0 ? dynamicSlideshow : [villa.image, ...parent.images.slice(1, 4)];
     const weekdayPrice = liveWeekday || villa.pricing?.weekday.price || "5,500";
     const weekendPrice = liveWeekend || villa.pricing?.weekend.price || "6,500";
+    const saturdayPrice = liveSaturday || villa.pricing?.saturday?.price || weekendPrice;
 
     const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const bookNowUrl = `/staycation/ambrose/${villa.id}/book${calCheckIn ? `?checkIn=${fmtDate(calCheckIn)}` : ''}${calCheckOut ? `&checkOut=${fmtDate(calCheckOut)}` : ''}`;
@@ -296,6 +303,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                 subPropertyId={dbSubPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
+                                saturdayPrice={saturdayPrice}
                                 dateOverrides={dateOverrides}
                                 initialCheckIn={calCheckIn}
                                 initialCheckOut={calCheckOut}

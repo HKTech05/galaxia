@@ -173,7 +173,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
                     weekend: { price: "6,500", persons: "2 with meals" },
                     weekend4Ppl: { price: "10,500", persons: "4 with meals" },
-                    saturday: { price: "12,000", persons: "Up to 4 with meals" },
+                    saturday: { price: "8,500", persons: "2 with meals" },
                 },
             },
             {
@@ -191,7 +191,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
                     weekend: { price: "6,500", persons: "2 with meals" },
                     weekend4Ppl: { price: "10,500", persons: "4 with meals" },
-                    saturday: { price: "12,000", persons: "Up to 4 with meals" },
+                    saturday: { price: "8,500", persons: "2 with meals" },
                 },
             },
             {
@@ -209,7 +209,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
                     weekend: { price: "6,500", persons: "2 with meals" },
                     weekend4Ppl: { price: "10,500", persons: "4 with meals" },
-                    saturday: { price: "12,000", persons: "Up to 4 with meals" },
+                    saturday: { price: "8,500", persons: "2 with meals" },
                 },
             },
             {
@@ -241,6 +241,7 @@ export const properties: Record<string, PropertyData> = {
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekend: { price: "6,500", persons: "2 with meals" },
+                    saturday: { price: "6,500", persons: "2 with meals" },
                 },
             },
         ],
