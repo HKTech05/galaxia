@@ -7,15 +7,19 @@ interface DateSelectionBarProps {
     onDatesChange?: (checkIn: string, checkOut: string) => void;
     checkIn?: string;
     checkOut?: string;
+    propertyId?: number | null;
+    subPropertyId?: number | null;
 }
 
 /**
  * Reusable date selection bar that reads/writes from localStorage for cross-page persistence.
  * Uses the custom GoldDatePicker instead of native <input type="date">.
+ * When propertyId is provided, fetches booked dates and disables them in the date picker.
  */
-export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, checkOut: externalCO }: DateSelectionBarProps) {
+export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, checkOut: externalCO, propertyId, subPropertyId }: DateSelectionBarProps) {
     const [ci, setCi] = useState(externalCI || '');
     const [co, setCo] = useState(externalCO || '');
+    const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
 
     // Sync external props
     useEffect(() => {
@@ -34,6 +38,30 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
             if (stored) setCo(stored);
         }
     }, []);
+
+    // Fetch booked dates when propertyId is available
+    useEffect(() => {
+        if (!propertyId || propertyId <= 0) { setBookedDates(new Set()); return; }
+        (async () => {
+            try {
+                // Fetch a wide range (next 12 months)
+                const now = new Date();
+                const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+                const endY = now.getFullYear() + 1;
+                const endDate = `${endY}-${String(now.getMonth() + 1).padStart(2, '0')}-28`;
+                const baseUrl = typeof window !== "undefined" ? "/api" : "http://localhost:4000/api";
+                let url = `${baseUrl}/bookings/staycation/booked-dates?propertyId=${propertyId}&startDate=${startDate}&endDate=${endDate}`;
+                if (subPropertyId) url += `&subPropertyId=${subPropertyId}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    setBookedDates(new Set(data.dates || []));
+                }
+            } catch {
+                // Silently fail
+            }
+        })();
+    }, [propertyId, subPropertyId]);
 
     // Notify parent on initial mount if we have stored dates
     useEffect(() => {
@@ -68,6 +96,9 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     })();
 
+    // Only pass disabled dates if we have a propertyId (don't disable for Amstel Nest multi-unit etc)
+    const disabledSet = bookedDates.size > 0 ? bookedDates : undefined;
+
     return (
         <div className="p-4 rounded-xl border border-antique-gold/20 bg-gradient-to-r from-[#fdfbf7] to-[#faf6ee] shadow-sm">
             <p className="text-[9px] font-inter font-bold text-antique-gold uppercase tracking-[0.2em] mb-3 text-center">Select Your Dates</p>
@@ -79,6 +110,7 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
                         onChange={handleCheckIn}
                         min={minDate}
                         placeholder="Select check-in"
+                        disabledDates={disabledSet}
                     />
                 </div>
                 <svg className="w-4 h-4 text-antique-gold/50 shrink-0 mt-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
@@ -89,6 +121,7 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
                         onChange={handleCheckOut}
                         min={minCO}
                         placeholder="Select check-out"
+                        disabledDates={disabledSet}
                     />
                 </div>
             </div>

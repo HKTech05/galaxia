@@ -866,6 +866,7 @@ export default function BookMultiPage() {
                                 <DateSelectionBar
                                     checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
                                     checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
+                                    propertyId={!hasAmstelOnly ? (dbPropertyMap["ambrose"] || null) : undefined}
                                     onDatesChange={(ci, co) => {
                                         const ciDate = new Date(ci + 'T12:00:00');
                                         const coDate = new Date(co + 'T12:00:00');

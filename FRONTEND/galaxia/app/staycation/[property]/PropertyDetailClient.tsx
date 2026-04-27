@@ -468,6 +468,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     <DateSelectionBar
                                         checkIn={calCheckIn ? fmtDate(calCheckIn) : undefined}
                                         checkOut={calCheckOut ? fmtDate(calCheckOut) : undefined}
+                                        propertyId={dbPropertyId}
                                         onDatesChange={(ci, co) => {
                                             setCalCheckIn(new Date(ci + 'T12:00:00'));
                                             setCalCheckOut(new Date(co + 'T12:00:00'));

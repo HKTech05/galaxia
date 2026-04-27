@@ -12,6 +12,7 @@ interface GoldDatePickerProps {
     min?: string;  // YYYY-MM-DD
     label?: string;
     placeholder?: string;
+    disabledDates?: Set<string>; // Set of YYYY-MM-DD strings that should be greyed out
 }
 
 const toLocalDate = (d: Date) =>
@@ -26,7 +27,7 @@ const formatDisplay = (s: string) => {
     return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 };
 
-export default function GoldDatePicker({ value, onChange, min, placeholder }: GoldDatePickerProps) {
+export default function GoldDatePicker({ value, onChange, min, placeholder, disabledDates }: GoldDatePickerProps) {
     const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
@@ -98,12 +99,26 @@ export default function GoldDatePicker({ value, onChange, min, placeholder }: Go
     }, [viewMonth]);
 
     const isDisabled = (day: number) => {
-        if (!minDate) return false;
         const d = new Date(viewYear, viewMonth, day);
         d.setHours(0, 0, 0, 0);
-        const m = new Date(minDate);
-        m.setHours(0, 0, 0, 0);
-        return d < m;
+        // Check min date
+        if (minDate) {
+            const m = new Date(minDate);
+            m.setHours(0, 0, 0, 0);
+            if (d < m) return true;
+        }
+        // Check booked/blocked dates
+        if (disabledDates) {
+            const ds = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (disabledDates.has(ds)) return true;
+        }
+        return false;
+    };
+
+    const isBookedDate = (day: number) => {
+        if (!disabledDates) return false;
+        const ds = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return disabledDates.has(ds);
     };
 
     const isToday = (day: number) => {
@@ -185,6 +200,7 @@ export default function GoldDatePicker({ value, onChange, min, placeholder }: Go
                     const disabled = isDisabled(day);
                     const sel = isSelected(day);
                     const today = isToday(day);
+                    const booked = isBookedDate(day);
                     return (
                         <button
                             key={day}
@@ -192,14 +208,16 @@ export default function GoldDatePicker({ value, onChange, min, placeholder }: Go
                             onClick={() => handleSelect(day)}
                             disabled={disabled}
                             className={`
-                                w-full aspect-square flex items-center justify-center rounded-lg text-xs font-inter font-medium transition-all
+                                w-full aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-inter font-medium transition-all
                                 ${disabled ? "text-text-muted/40 cursor-not-allowed" : "hover:bg-antique-gold/10 cursor-pointer"}
                                 ${sel ? "bg-gradient-to-br from-antique-gold to-dark-gold text-white shadow-sm" : ""}
                                 ${today && !sel ? "ring-1 ring-antique-gold/40 text-antique-gold font-bold" : ""}
                                 ${!sel && !disabled && !today ? "text-text-primary" : ""}
+                                ${booked && !sel ? "!bg-red-50/60 !text-red-300 line-through" : ""}
                             `}
                         >
-                            {day}
+                            <span>{day}</span>
+                            {booked && !sel && <span className="text-[7px] text-red-400 font-semibold leading-none -mt-0.5">Booked</span>}
                         </button>
                     );
                 })}
