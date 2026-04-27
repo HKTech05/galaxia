@@ -329,22 +329,30 @@ export default function BookingClient({ property }: BookingClientProps) {
     // Main thumbnail for this property (used on booking card + summary)
     const mainThumb = (siteImages[`${property.id}/thumbnail`] || [])[0]?.url;
 
-    const roomOptions = property.subProperties && property.subProperties.length > 0
+    const roomOptions = (property.subProperties && property.subProperties.length > 0
         ? property.subProperties.map((sub: any) => {
             const subThumb = (siteImages[`${property.id}/${sub.id}/thumbnail`] || [])[0]?.url;
+            // Override with live DB pricing if available
+            const subSlug = sub.id?.split?.('/')?.pop?.() || sub.id;
+            const dbSub = (backendData?.subProperties || []).find((sp: any) => sp.slug === subSlug || sp.name?.toUpperCase() === sub.name?.toUpperCase());
+            const spPricing = dbSub ? backendData?.subPropertyPricing?.[dbSub.id] : null;
+            const liveWd = spPricing?.weekday?.price;
+            const liveWe = spPricing?.weekend?.price;
+            const liveSa = spPricing?.saturday?.price || spPricing?.weekend?.price;
+            const livePersons = spPricing?.weekday?.personsLabel;
             return {
                 id: sub.id,
                 name: sub.name,
                 theme: sub.theme,
                 image: subThumb || sub.image || mainThumb || '',
                 description: sub.description,
-                price: parseInt(sub.pricing?.weekday.price.replace(/,/g, "") || "0"),
-                weekdayPrice: sub.pricing?.weekday.price || property.pricing.weekday.price,
-                weekendPrice: sub.pricing?.weekend.price || property.pricing.weekend.price,
-                saturdayPrice: sub.pricing?.saturday?.price || sub.pricing?.weekend?.price || property.pricing.weekend.price,
+                price: parseInt((liveWd || sub.pricing?.weekday.price || "0").toString().replace(/,/g, "")),
+                weekdayPrice: liveWd || sub.pricing?.weekday.price || property.pricing.weekday.price,
+                weekendPrice: liveWe || sub.pricing?.weekend.price || property.pricing.weekend.price,
+                saturdayPrice: liveSa || sub.pricing?.saturday?.price || sub.pricing?.weekend?.price || property.pricing.weekend.price,
                 primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
                 details: sub.configuration?.slice(0, 3) || [],
-                persons: sub.pricing?.weekday.persons || "2 guests",
+                persons: livePersons || sub.pricing?.weekday.persons || "2 guests",
                 maxPersons: sub.maxPersons || property.maxPersons || 4,
                 maxAdults: sub.maxAdults || property.maxAdults || undefined,
                 maxKids: sub.maxKids ?? property.maxKids ?? undefined
@@ -356,16 +364,17 @@ export default function BookingClient({ property }: BookingClientProps) {
             theme: property.type === "standalone" ? "Entire Villa" : property.subtitle,
             image: mainThumb || property.images[0] || '',
             description: property.description,
-            price: parseInt(property.pricing.weekday.price.replace(/,/g, "")),
-            weekdayPrice: property.pricing.weekday.price,
-            weekendPrice: property.pricing.weekend.price,
+            price: parseInt((backendData?.pricing?.weekday?.price || property.pricing.weekday.price).toString().replace(/,/g, "")),
+            weekdayPrice: backendData?.pricing?.weekday?.price || property.pricing.weekday.price,
+            weekendPrice: backendData?.pricing?.weekend?.price || property.pricing.weekend.price,
+            saturdayPrice: backendData?.pricing?.saturday?.price || backendData?.pricing?.weekend?.price || property.pricing.weekend.price,
             primeDatePrice: property.pricing.primeDates || "",
             details: property.configuration.slice(0, 3),
-            persons: property.pricing.weekday.persons,
+            persons: backendData?.pricing?.weekday?.personsLabel || property.pricing.weekday.persons,
             maxPersons: property.maxPersons || 4,
             maxAdults: property.maxAdults || undefined,
             maxKids: property.maxKids ?? undefined
-        }];
+        }]);
 
     const formatPrice = (price: number) => `₹ ${price.toLocaleString('en-IN')}`;
     const formatDateShort = (d: Date) => `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;

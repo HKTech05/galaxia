@@ -340,8 +340,8 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Extra Adult</span><span className="text-text-primary">₹{parent.pricing.extraAdult} per person</span></div>
                                     <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Kids</span><span className="text-text-primary">₹{parent.pricing.kidsCharge}</span></div>
-                                    {villa.pricing?.saturday && (
-                                        <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Saturday Rate</span><span className="text-text-primary font-medium">₹{villa.pricing.saturday.price} ({villa.pricing.saturday.persons})</span></div>
+                                    {saturdayPrice && (
+                                        <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Saturday Rate</span><span className="text-text-primary font-medium">₹{parseInt(saturdayPrice.toString().replace(/,/g, '')).toLocaleString('en-IN')} ({livePersonsLabel || villa.pricing?.weekday?.persons || "2 with meals"})</span></div>
                                     )}
                                     <div className="flex justify-between text-sm font-inter"><span className="text-text-secondary">Pets</span><span className="text-text-primary font-medium">{parent.petsAllowed ? "₹600 per pet (Allowed)" : "Not Allowed"}</span></div>
                                 </div>
