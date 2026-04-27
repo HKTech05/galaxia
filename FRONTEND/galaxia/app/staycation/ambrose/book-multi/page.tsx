@@ -115,6 +115,12 @@ export default function BookMultiPage() {
     const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
     const amstelItems = cart.filter(c => c.property === "amstel-nest");
 
+    // Fetch booked dates for the date picker (must be before any early returns)
+    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
+    const bookedDatesForPicker = useBookedDates(
+        hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null)
+    );
+
     // Should we hide prices? Multi Ambrose, or mix of standard + family
     const hasMixedPrices = (() => {
         if (ambroseItems.length > 1) return true;
@@ -819,13 +825,7 @@ export default function BookMultiPage() {
 
     // Which property's calendar to show for date picker
     const calendarPropertyId = dbPropertyMap["ambrose"] || dbPropertyMap["amstel-nest"] || null;
-    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
     const showAmstelCalendar = hasAmstelOnly || amstelItems.length > 0;
-
-    // Fetch booked dates for the date picker
-    const bookedDatesForPicker = useBookedDates(
-        hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null)
-    );
 
     return (
         <>
