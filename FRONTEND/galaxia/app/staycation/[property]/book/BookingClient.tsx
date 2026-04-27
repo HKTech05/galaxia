@@ -1203,6 +1203,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             {/* Calendar in sidebar — always show in Step 1 */}
                             <AvailabilityCalendar
                                     propertyId={dbPropertyId}
+                                    subPropertyId={property.id.includes('/') ? (dbSubPropertyMap[property.id.split('/').pop() || ''] || null) : null}
                                     weekdayPrice={selectedRoom?.weekdayPrice || roomOptions[0]?.weekdayPrice || property.pricing.weekday.price}
                                     weekendPrice={selectedRoom?.weekendPrice || roomOptions[0]?.weekendPrice || property.pricing.weekend.price}
                                     saturdayPrice={selectedRoom?.saturdayPrice || roomOptions[0]?.saturdayPrice}
