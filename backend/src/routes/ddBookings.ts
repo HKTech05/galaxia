@@ -172,7 +172,24 @@ router.post("/", async (req, res) => {
                     cakeMessage,
                     specialRequests: specialRequests || null,
                     numGuests: numGuests || 2,
-                    basePrice: basePrice || 0,
+                    basePrice: basePrice || (() => {
+                        // Server-side fallback: compute basePrice from duration if not provided
+                        const dur = parseInt(durationHours || "1");
+                        const pkgId = parseInt(packageId || "1");
+                        if (pkgId === 2) { // Celebration
+                            const bd = new Date(bookingDate + 'T12:00:00');
+                            const isWe = bd.getDay() === 0 || bd.getDay() === 6;
+                            if (dur === 1) return 2200;
+                            if (dur === 2) return 2950;
+                            if (dur === 3) return isWe ? 3950 : 3450;
+                            return (isWe ? 3950 : 3450) + ((dur - 3) * 1000);
+                        }
+                        // Movie Time
+                        if (dur === 1) return 999;
+                        if (dur === 2) return 1500;
+                        if (dur === 3) return 2500;
+                        return 2500 + ((dur - 3) * 1000);
+                    })(),
                     extraPersonCharge: extraPersonCharge || 0,
                     gstAmount: gstAmount || 0,
                     totalAmount: (totalAmount || 0) - discountAmount,
