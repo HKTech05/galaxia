@@ -311,6 +311,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [activeBlocks, setActiveBlocks] = useState<any[]>([]);
     const [propertyList, setPropertyList] = useState<any[]>([]);
     const [blackoutLoading, setBlackoutLoading] = useState(false);
+    const [blockNumUnits, setBlockNumUnits] = useState(1);
+
+    // Determine if the current calendar property is a multi-unit property
+    const isMultiUnitProperty = calendarCapacity > 1;
 
     // Fetch list of properties for dropdown
     useEffect(() => {
@@ -396,9 +400,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 subPropertyId,
                 dates: blackoutDates.map(d => formatLocalDate(d)),
                 reason: blackoutReason,
+                numUnits: isMultiUnitProperty ? blockNumUnits : 1,
             });
             setBlackoutDates([]);
             setBlackoutReason("");
+            setBlockNumUnits(1);
             fetchBlockedDates();
             fetchBookedDays();
         } catch (err) {
@@ -571,6 +577,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         dayCounts[d.getDate()] = (dayCounts[d.getDate()] || 0) + (b.numCottages || 1);
                     }
                 }
+                // Also count blocked dates towards occupancy (for multi-unit properties)
+                if (cap > 1) {
+                    const blocksForProperty = activeBlocks.filter(bl => {
+                        if (subPropertyId && bl.subPropertyId !== subPropertyId) return false;
+                        if (!subPropertyId && bl.propertyId !== propertyId) return false;
+                        const p = parseDateDay(bl.blockedDate);
+                        return p.year === year && p.month === calendarViewMonth.getMonth();
+                    });
+                    for (const bl of blocksForProperty) {
+                        const p = parseDateDay(bl.blockedDate);
+                        dayCounts[p.day] = (dayCounts[p.day] || 0) + (bl.numUnits || 1);
+                    }
+                }
                 setCalendarDayCounts(dayCounts);
                 // A day is "fully booked" when count >= capacity
                 const fullyBooked = Object.entries(dayCounts)
@@ -580,7 +599,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             } catch { setCalendarBookedDays([]); setCalendarDayCounts({}); }
         };
         fetchCalendarBookings();
-    }, [calendarProperty, calendarViewMonth, propertyList]);
+    }, [calendarProperty, calendarViewMonth, propertyList, activeBlocks]);
 
 
     const timeRanges = [
@@ -1347,15 +1366,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         const isToday = new Date().getDate() === d && new Date().getMonth() === calendarMonth && new Date().getFullYear() === calendarYear;
                                         // For multi-unit properties (e.g., Amstel Nest), allow clicking on partially booked dates
                                         const dayCount = calendarDayCounts[d] || 0;
-                                        const isFullyBooked = isBooked && (calendarCapacity <= 1 || dayCount >= calendarCapacity);
+                                        const isFullyBooked = calendarCapacity <= 1
+                                            ? (isBooked || isBlocked)
+                                            : (dayCount >= calendarCapacity);
                                         const isClickable = !isFullyBooked;
                                         const showOccupancy = calendarCapacity > 1 && dayCount > 0;
                                         return (
                                             <button
                                                 key={d}
-                                                disabled={!isClickable}
+                                                disabled={!isFullyBooked ? false : true}
                                                 onClick={() => {
-                                                    if (!isClickable) return;
+                                                    if (isFullyBooked) return;
                                                     if (isSelected) {
                                                         setBlackoutDates(blackoutDates.filter(bd => !(bd.getDate() === d && bd.getMonth() === calendarMonth && bd.getFullYear() === calendarYear)));
                                                     } else {
@@ -1363,12 +1384,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     }
                                                 }}
                                                 className={`h-16 rounded-xl flex flex-col items-center justify-center text-sm font-semibold border transition-all
-                                                    ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white ring-2 ring-indigo-300 shadow-md' :
-                                                        isToday && !isBlocked && !isBooked ? 'border-indigo-400 bg-white ring-2 ring-indigo-200 text-indigo-700' :
-                                                            isBooked ? 'bg-blue-50 border-blue-300 text-blue-700 cursor-not-allowed' :
-                                                                isBlocked ? 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100 cursor-pointer' :
-                                                                    isWeekend ? 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 cursor-pointer' :
-                                                                        'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                                                    ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white ring-2 ring-indigo-300 shadow-md cursor-pointer' :
+                                                        isToday && !isBlocked && !isFullyBooked ? 'border-indigo-400 bg-white ring-2 ring-indigo-200 text-indigo-700 cursor-pointer' :
+                                                            isFullyBooked ? 'bg-blue-50 border-blue-300 text-blue-700 cursor-not-allowed opacity-60' :
+                                                                (isBooked && calendarCapacity > 1) ? 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100 cursor-pointer' :
+                                                                    isBlocked ? 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100 cursor-pointer' :
+                                                                        isWeekend ? 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 cursor-pointer' :
+                                                                            'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
                                             >
                                                 <span className={`font-bold ${isToday && !isSelected ? 'text-indigo-700' : ''}`}>{d}</span>
                                                 {showOccupancy ? (
@@ -1406,7 +1428,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <h3 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Block / Unblock Dates</h3>
                             <p className="text-sm text-slate-500 font-medium mb-5">Click dates on the calendar above to select them, then choose a reason and block.</p>
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Left: Reason + Selected + Button */}
+                                {/* Left: Reason + Units + Selected + Button */}
                                 <div className="space-y-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 uppercase">Reason</label>
@@ -1416,6 +1438,26 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             options={["Private Event", "Maintenance", "Owner Reservation", "Seasonal Closure", "Other"]}
                                         />
                                     </div>
+                                    {isMultiUnitProperty && (
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-700 uppercase">Cottages to Block</label>
+                                            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
+                                                <button
+                                                    onClick={() => setBlockNumUnits(Math.max(1, blockNumUnits - 1))}
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold text-lg transition-colors"
+                                                >−</button>
+                                                <div className="flex-1 text-center">
+                                                    <span className="text-lg font-bold text-slate-800">{blockNumUnits}</span>
+                                                    <span className="text-xs text-slate-400 font-medium ml-1">/ {calendarCapacity}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => setBlockNumUnits(Math.min(calendarCapacity, blockNumUnits + 1))}
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 font-bold text-lg transition-colors"
+                                                >+</button>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 font-medium">Select how many cottages to block (out of {calendarCapacity} total)</p>
+                                        </div>
+                                    )}
                                     {blackoutDates.length > 0 && (
                                         <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
                                             <p className="text-xs text-purple-600 font-bold uppercase">Selected Dates ({blackoutDates.length})</p>
@@ -1437,7 +1479,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         {blackoutLoading ? (
                                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                         ) : (
-                                            <><Ban size={16} /> Block Property</>
+                                            <><Ban size={16} /> {isMultiUnitProperty ? `Block ${blockNumUnits} Cottage${blockNumUnits > 1 ? 's' : ''}` : 'Block Property'}</>
                                         )}
                                     </button>
                                 </div>
@@ -1453,9 +1495,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
-                                                        <p className="text-xs text-slate-500 mt-0.5">
+                                                        <p className="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-1">
                                                             {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
-                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
+                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100">{block.reason}</span>}
+                                                            {(block.numUnits || 1) > 1 && <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">×{block.numUnits} cottages</span>}
                                                         </p>
                                                     </div>
                                                     <button onClick={() => handleUnblockDate(block.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0">
@@ -1478,9 +1521,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
-                                                        <p className="text-xs text-slate-500 mt-0.5">
+                                                        <p className="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-1">
                                                             {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
-                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1">{block.reason}</span>}
+                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100">{block.reason}</span>}
+                                                            {(block.numUnits || 1) > 1 && <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">×{block.numUnits} cottages</span>}
                                                         </p>
                                                     </div>
                                                     <button onClick={() => handleUnblockDate(block.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0">

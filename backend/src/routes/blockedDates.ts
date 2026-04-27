@@ -25,7 +25,10 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             orderBy: { blockedDate: "asc" },
         });
 
-        return res.json(blocked);
+        // Include numUnits in response
+        const result = blocked.map(b => ({ ...b, numUnits: (b as any).numUnits || 1 }));
+
+        return res.json(result);
     } catch (error) {
         console.error("Get blocked dates error:", error);
         return res.status(500).json({ error: "Internal server error" });
@@ -37,7 +40,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 // dates should be ISO date strings like "2026-03-25"
 router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { propertyId, subPropertyId, screenId, dates, reason } = req.body;
+        const { propertyId, subPropertyId, screenId, dates, reason, numUnits } = req.body;
 
         if (!dates || !Array.isArray(dates) || dates.length === 0) {
             return res.status(400).json({ error: "dates array is required" });
@@ -56,6 +59,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                 screenId: screenId ? parseInt(screenId) : null,
                 blockedDate: new Date(`${d}T12:00:00Z`),
                 reason,
+                numUnits: numUnits ? parseInt(numUnits) : 1,
                 blockedBy: (req as any).adminId || null,
             })),
             skipDuplicates: true,

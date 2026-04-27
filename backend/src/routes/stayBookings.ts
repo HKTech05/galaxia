@@ -813,7 +813,7 @@ router.get("/booked-dates", async (req, res) => {
                     ? { OR: [{ subPropertyId: parsedSubPropertyId }, { subPropertyId: null }] }
                     : {}),
             },
-            select: { blockedDate: true, subPropertyId: true },
+            select: { blockedDate: true, subPropertyId: true, numUnits: true },
         });
 
         // Count bookings + blocks per date
@@ -832,12 +832,13 @@ router.get("/booked-dates", async (req, res) => {
         // Add blocks
         for (const bl of blockedEntries) {
             const dateStr = bl.blockedDate.toISOString().split("T")[0];
+            const blockUnits = (bl as any).numUnits || 1;
             if (bl.subPropertyId === null && !parsedSubPropertyId) {
                 // Global block: counts against total capacity
                 dateCounts[dateStr] = (dateCounts[dateStr] || 0) + totalCapacity;
             } else {
-                // Specific sub-property block or global block when viewing a specific sub
-                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
+                // Specific sub-property block: use numUnits from the block
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + blockUnits;
             }
         }
 

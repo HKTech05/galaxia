@@ -160,6 +160,7 @@ model BlockedDate {
   blockedDate   DateTime      @map("blocked_date") @db.Date
   startHour     Int?          @map("start_hour")
   endHour       Int?          @map("end_hour")
+  numUnits      Int           @default(1) @map("num_units")
   reason        String?       @db.VarChar(200)
   blockedBy     Int?          @map("blocked_by")
   createdAt     DateTime      @default(now()) @map("created_at")
