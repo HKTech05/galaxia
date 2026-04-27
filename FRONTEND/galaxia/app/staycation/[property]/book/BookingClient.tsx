@@ -134,12 +134,24 @@ export default function BookingClient({ property }: BookingClientProps) {
                 // If dates were in URL, update rate from backend pricing
                 const ciStr = searchParams.get("checkIn");
                 const coStr = searchParams.get("checkOut");
-                if (ciStr && coStr && data.pricing) {
+                if (ciStr && coStr) {
                     const ci = new Date(ciStr);
                     const day = ci.getDay();
                     const isSat = day === 6;
                     const isWe = day === 0 || day === 5;
-                    const priceData = isSat ? (data.pricing.saturday || data.pricing.weekend) : isWe ? data.pricing.weekend : data.pricing.weekday;
+                    // For sub-property bookings (ambrose/bamboosa), use sub-property pricing
+                    let priceData = null;
+                    if (property.id.includes('/') && data.subPropertyPricing && data.subProperties) {
+                        const villaSlug = property.id.split('/').pop();
+                        const dbSub = data.subProperties.find((sp: any) => sp.slug === villaSlug || sp.name?.toUpperCase() === property.name?.toUpperCase());
+                        const spP = dbSub ? data.subPropertyPricing[dbSub.id] : null;
+                        if (spP) {
+                            priceData = isSat ? (spP.saturday || spP.weekend) : isWe ? spP.weekend : spP.weekday;
+                        }
+                    }
+                    if (!priceData && data.pricing) {
+                        priceData = isSat ? (data.pricing.saturday || data.pricing.weekend) : isWe ? data.pricing.weekend : data.pricing.weekday;
+                    }
                     if (priceData) {
                         setNightlyRate(parseInt(priceData.price));
                     }
@@ -413,11 +425,13 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     // Room price: sum per-night prices for accurate multi-day-type bookings
     const computedRoomPrice = (() => {
-        if (!checkInDate || nights <= 0 || !selectedRoom) return nightlyRate * nights * (isAmstelNest ? unitCount : 1);
+        // Use selectedRoom prices, or fall back to roomOptions[0] for pre-select display
+        const priceSource = selectedRoom || roomOptions[0];
+        if (!checkInDate || nights <= 0 || !priceSource) return nightlyRate * nights * (isAmstelNest ? unitCount : 1);
         let total = 0;
-        const wdP = parseInt((selectedRoom.weekdayPrice || '0').toString().replace(/,/g, ''));
-        const weP = parseInt((selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
-        const saP = parseInt((selectedRoom.saturdayPrice || selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
+        const wdP = parseInt((priceSource.weekdayPrice || '0').toString().replace(/,/g, ''));
+        const weP = parseInt((priceSource.weekendPrice || '0').toString().replace(/,/g, ''));
+        const saP = parseInt((priceSource.saturdayPrice || priceSource.weekendPrice || '0').toString().replace(/,/g, ''));
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
