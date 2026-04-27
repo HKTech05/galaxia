@@ -377,10 +377,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             total -= manualCouponDiscount;
         }
         // Add 5% GST
-        total = total + (total * 0.05);
+        const baseAmount = Math.round(total);
+        const gstAmount = Math.round(baseAmount * 0.05);
+        let finalTotal = baseAmount + gstAmount;
         // Add pet charges (₹600/pet flat — no GST)
-        total += manualForm.pets * 600;
-        return Math.round(Math.round(total) / 10) * 10;
+        finalTotal += manualForm.pets * 600;
+        // Round to nearest 10
+        finalTotal = Math.round(finalTotal / 10) * 10;
+        return { basePrice: baseAmount, gstAmount, totalAmount: finalTotal };
     };
 
     const handleManualBookingSubmit = async () => {
@@ -389,7 +393,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             return;
         }
         
-        const calculatedTotal = calculatePrice();
+        const calculated = calculatePrice();
         
         try {
             // Resolve property ID from DB property list
@@ -420,6 +424,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 bookingAddons.push({ name: 'Food Preference', foodType: manualFoodType });
             }
 
+            const nights = Math.max(1, Math.ceil((new Date(manualForm.checkOutDate).getTime() - new Date(manualForm.checkInDate).getTime()) / (1000 * 3600 * 24)));
+
             await api.post("/bookings/staycation", {
                 customerName: manualForm.name,
                 customerPhone: manualForm.phone || "0000000000",
@@ -431,13 +437,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 numPets: manualForm.pets || 0,
                 checkInDate: `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`,
                 checkOutDate: `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkOutDate.getDate()).padStart(2, '0')}`,
-                nightlyRate: Math.round(Math.round(calculatedTotal / 1.05) / Math.max(1, Math.ceil((new Date(manualForm.checkOutDate).getTime() - new Date(manualForm.checkInDate).getTime()) / (1000 * 3600 * 24)))),
-                totalAmount: calculatedTotal,
-                advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculatedTotal,
+                nightlyRate: Math.round(calculated.basePrice / nights),
+                totalAmount: calculated.totalAmount,
+                advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
                 securityDeposit: 3000,
-                basePrice: Math.round(calculatedTotal / 1.05),
-                gstAmount: Math.round(calculatedTotal - (calculatedTotal / 1.05)),
+                basePrice: calculated.basePrice,
+                gstAmount: calculated.gstAmount,
                 advancePaid: true,
                 advanceMethod: manualForm.paymentMethod,
                 source: "reception",
@@ -1367,7 +1373,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <div>
                                         <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Calculated Total (Inc. 5% GST)</p>
                                         <h2 className="text-3xl font-black text-purple-900 flex items-center">
-                                            <IndianRupee size={24} className="mr-1" /> {calculatePrice().toLocaleString('en-IN')}
+                                            <IndianRupee size={24} className="mr-1" /> {calculatePrice().totalAmount.toLocaleString('en-IN')}
                                         </h2>
                                     </div>
 
@@ -1442,7 +1448,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Split</label>
                                     <div className="bg-slate-50 rounded-lg p-1 flex">
                                         <button type="button" onClick={() => { setCustomSplitMode(false); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${!customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Full Payment</button>
-                                        <button type="button" onClick={() => { setCustomSplitMode(true); setCustomPrepaid(String(calculatePrice())); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Custom Split</button>
+                                        <button type="button" onClick={() => { setCustomSplitMode(true); setCustomPrepaid(String(calculatePrice().totalAmount)); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Custom Split</button>
                                     </div>
                                 </div>
                                 {customSplitMode && (
@@ -1457,7 +1463,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     const val = e.target.value;
                                                     setCustomPrepaid(val);
                                                     const prepaidNum = parseInt(val || '0');
-                                                    setCustomBalance(String(Math.max(0, calculatePrice() - prepaidNum)));
+                                                    setCustomBalance(String(Math.max(0, calculatePrice().totalAmount - prepaidNum)));
                                                 }}
                                             />
                                         </div>
