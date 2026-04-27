@@ -317,10 +317,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
             const prop = manualForm.property;
 
-            // Look up live DB pricing
+            // Look up live DB pricing (case-insensitive key match)
             let liveKey = "";
             if (prop.includes("Ambrose")) {
-                liveKey = `Ambrose/${manualForm.villa}`;
+                liveKey = `Ambrose/${manualForm.villa.toUpperCase()}`;
             } else if (prop.includes("Amstel")) {
                 liveKey = manualForm.villa === "Family Cottage" ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
             } else {
@@ -329,7 +329,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     if (prop.includes(k)) { liveKey = k; break; }
                 }
             }
-            const lp = livePricing[liveKey];
+            // Case-insensitive fallback: if exact key not found, try matching uppercase
+            let lp = livePricing[liveKey];
+            if (!lp) {
+                const upperKey = liveKey.toUpperCase();
+                for (const [k, v] of Object.entries(livePricing)) {
+                    if (k.toUpperCase() === upperKey) { lp = v; break; }
+                }
+            }
 
             if (lp) {
                 // Use live DB pricing
@@ -439,6 +446,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             });
             fetchBookings();
             setIsManualBookingOpen(false);
+            // Reset all form states for next booking
+            setManualForm({
+                name: "",
+                guests: 2,
+                kids: 0,
+                pets: 0,
+                phone: "",
+                email: "",
+                checkInDate: new Date(),
+                checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
+                property: properties[0] || "Hill View",
+                villa: "TAKE-1",
+                paymentMethod: "Cash"
+            });
             setCustomSplitMode(false);
             setCustomPrepaid("");
             setCustomBalance("");
