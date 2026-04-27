@@ -53,6 +53,9 @@ export default function BulkBookingsTab() {
         return new Date(now.getFullYear(), now.getMonth(), 1);
     });
 
+    // Live pricing from DB for Amstel Nest sub-properties
+    const [liveAmstelPricing, setLiveAmstelPricing] = useState<Record<string, { weekday: number; weekend: number; saturday: number; extraAdult: number; kidsCharge: number; baseGuests: number }>>({});
+
     // Fetch sub-properties and bookings
     useEffect(() => {
         (async () => {
@@ -63,6 +66,36 @@ export default function BulkBookingsTab() {
                     setAmstelPropertyId(amstel.id);
                     setSubProperties(amstel.subProperties || []);
                 }
+                // Fetch live pricing
+                try {
+                    const avail = await api.get("/properties/amstel-nest/availability");
+                    if (avail.subPropertyPricing && avail.subProperties) {
+                        const pm: typeof liveAmstelPricing = {};
+                        // Parent-level
+                        if (avail.pricing) {
+                            const wd = avail.pricing.weekday; const we = avail.pricing.weekend; const sa = avail.pricing.saturday;
+                            pm["standard"] = {
+                                weekday: wd ? parseInt(wd.price) : 4950, weekend: we ? parseInt(we.price) : 6950,
+                                saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : 6950),
+                                extraAdult: wd?.extraAdult || 1000, kidsCharge: 1000, baseGuests: 2,
+                            };
+                        }
+                        for (const sp of avail.subProperties) {
+                            const spP = avail.subPropertyPricing[sp.id];
+                            if (spP) {
+                                const spWd = spP.weekday; const spWe = spP.weekend; const spSa = spP.saturday;
+                                const key = sp.name.toLowerCase().includes("family") ? "family" : "standard";
+                                pm[key] = {
+                                    weekday: spWd ? parseInt(spWd.price) : 4950, weekend: spWe ? parseInt(spWe.price) : 6950,
+                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : 6950),
+                                    extraAdult: spWd?.extraAdult || 1000, kidsCharge: 1000,
+                                    baseGuests: spWd?.personsLabel ? parseInt(spWd.personsLabel) || 2 : 2,
+                                };
+                            }
+                        }
+                        setLiveAmstelPricing(pm);
+                    }
+                } catch {}
             } catch {}
         })();
     }, []);
@@ -165,9 +198,20 @@ export default function BulkBookingsTab() {
             d.setDate(d.getDate() + i);
             const day = d.getDay();
             const isWeekend = day === 0 || day === 5 || day === 6;
-            const basePrice = isWeekend ? 6950 : 4950;
-            const extraAdults = Math.max(0, adults - 2 * (bulkForm.numCottages || 1));
-            total += basePrice * (bulkForm.numCottages || 1) + extraAdults * 2000 + kids * 1000;
+            const isSaturday = day === 6;
+            const cottageType = bulkForm.cottageType || "standard";
+            const lp = liveAmstelPricing[cottageType] || liveAmstelPricing["standard"];
+            let basePrice: number;
+            if (lp) {
+                basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
+            } else {
+                basePrice = isWeekend ? 6950 : 4950;
+            }
+            const baseGuestsPerUnit = lp?.baseGuests || 2;
+            const extraAdults = Math.max(0, adults - baseGuestsPerUnit * (bulkForm.numCottages || 1));
+            const extraAdultRate = lp?.extraAdult || 2000;
+            const kidsRate = lp?.kidsCharge || 1000;
+            total += basePrice * (bulkForm.numCottages || 1) + extraAdults * extraAdultRate + kids * kidsRate;
         }
         const gst = Math.round(total * 0.05);
         return { perNight: Math.round(total / nights), nights, subtotal: total, gst, total: total + gst };

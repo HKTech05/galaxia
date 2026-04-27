@@ -215,10 +215,50 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
     // Fetch DB property list for villa name → subPropertyId resolution
     const [dbPropertyList, setDbPropertyList] = useState<any[]>([]);
+    // Live pricing from DB: { "Ambrose/BAMBOOSA": { weekday: 10500, weekend: 11500, saturday: 13000, extraAdult: 2000, baseGuests: 4 }, ... }
+    const [livePricing, setLivePricing] = useState<Record<string, { weekday: number; weekend: number; saturday: number; extraAdult: number; kidsCharge: number; baseGuests: number }>>({});
     useEffect(() => {
         api.get("/properties").then(data => {
             if (Array.isArray(data)) setDbPropertyList(data);
         }).catch(() => {});
+        // Fetch live pricing for all staycation properties
+        const slugs = ["hill-view", "mount-view", "heavenly-villa", "la-paraiso", "amstel-nest", "ambrose"];
+        (async () => {
+            const pm: Record<string, { weekday: number; weekend: number; saturday: number; extraAdult: number; kidsCharge: number; baseGuests: number }> = {};
+            for (const slug of slugs) {
+                try {
+                    const d = await api.get(`/properties/${slug}/availability`);
+                    const mapName: Record<string, string> = { "hill-view": "Hill View", "mount-view": "Mount View", "heavenly-villa": "Heavenly Villa", "la-paraiso": "La Paraiso", "amstel-nest": "Amstel Nest", "ambrose": "Ambrose" };
+                    const propName = mapName[slug] || slug;
+                    // Parent-level pricing
+                    if (d.pricing) {
+                        const wd = d.pricing.weekday; const we = d.pricing.weekend; const sa = d.pricing.saturday;
+                        const personsNum = wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2;
+                        pm[propName] = {
+                            weekday: wd ? parseInt(wd.price) : 0, weekend: we ? parseInt(we.price) : 0,
+                            saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : 0),
+                            extraAdult: wd?.extraAdult || 0, kidsCharge: 1000, baseGuests: personsNum,
+                        };
+                    }
+                    // Sub-property pricing
+                    if (d.subProperties && d.subPropertyPricing) {
+                        for (const sp of d.subProperties) {
+                            const spP = d.subPropertyPricing[sp.id];
+                            if (spP) {
+                                const spWd = spP.weekday; const spWe = spP.weekend; const spSa = spP.saturday;
+                                const spPersons = spWd?.personsLabel ? parseInt(spWd.personsLabel) || 2 : 2;
+                                pm[`${propName}/${sp.name.toUpperCase()}`] = {
+                                    weekday: spWd ? parseInt(spWd.price) : 0, weekend: spWe ? parseInt(spWe.price) : 0,
+                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : 0),
+                                    extraAdult: spWd?.extraAdult || 2000, kidsCharge: 1000, baseGuests: spPersons,
+                                };
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            setLivePricing(pm);
+        })();
     }, []);
 
     // Resolve villa name to subPropertyId from DB
@@ -266,7 +306,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         for (let i = 0; i < nights; i++) {
             const currentDate = new Date(start);
             currentDate.setDate(start.getDate() + i);
-            const day = currentDate.getDay(); // 0 is Sunday, 5 is Friday, 6 is Saturday
+            const day = currentDate.getDay();
             const isWeekend = day === 0 || day === 5 || day === 6;
             const isSaturday = day === 6;
 
@@ -277,64 +317,34 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
             const prop = manualForm.property;
 
-            if (prop.includes("Hill View")) {
-                basePrice = isWeekend ? 3950 : 2500;
-                extraAdultPrice = 600;
-                kidsPrice = 400;
-            } else if (prop.includes("Mount View")) {
-                basePrice = isWeekend ? 4950 : 3500;
-                extraAdultPrice = 800;
-                kidsPrice = 500;
-            } else if (prop.includes("Heavenly Villa")) {
-                basePrice = isWeekend ? 4950 : 3950;
-                extraAdultPrice = 800;
-                kidsPrice = 500;
-            } else if (prop.includes("La Paraiso")) {
-                if (isWeekend) {
-                    basePrice = 7500;
-                    baseGuests = 4;
-                } else {
-                    basePrice = manualForm.guests > 2 ? 6500 : 4950;
-                    baseGuests = manualForm.guests > 2 ? 4 : 2;
+            // Look up live DB pricing
+            let liveKey = "";
+            if (prop.includes("Ambrose")) {
+                liveKey = `Ambrose/${manualForm.villa}`;
+            } else if (prop.includes("Amstel")) {
+                liveKey = manualForm.villa === "Family Cottage" ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
+            } else {
+                // Direct property match
+                for (const k of Object.keys(livePricing)) {
+                    if (prop.includes(k)) { liveKey = k; break; }
                 }
-                extraAdultPrice = 1200;
-                kidsPrice = 800;
-            } else if (prop.includes("Amstel Nest")) {
-                // Family Cottage: ₹9,000 weekday / ₹12,000 weekend, base for up to 4 persons
-                if (manualForm.villa === "Family Cottage") {
-                    basePrice = isWeekend ? 12000 : 9000;
-                    baseGuests = 4;
-                    extraAdultPrice = 2000;
-                } else {
-                    basePrice = isWeekend ? 6950 : 4950;
-                    extraAdultPrice = 2000;
-                }
-                kidsPrice = 1000;
-            } else if (prop.includes("Ambrose")) {
-                const villa = manualForm.villa;
-                if (villa === "BAMBOOSA") {
-                    baseGuests = 4;
-                    if (isSaturday) basePrice = 13000;
-                    else if (isWeekend) basePrice = 11500;
-                    else basePrice = 10500;
-                    extraAdultPrice = 2000;
-                } else if (villa === "CYPRESS") {
-                    basePrice = isSaturday ? 6500 : isWeekend ? 6500 : 5500;
-                    extraAdultPrice = 2000;
-                } else {
-                    if (isSaturday) {
-                        basePrice = 8500;
-                        baseGuests = 2;
-                    } else if (isWeekend) {
-                        basePrice = manualForm.guests > 2 ? 10500 : 6500;
-                        baseGuests = manualForm.guests > 2 ? 4 : 2;
-                    } else {
-                        basePrice = manualForm.guests > 2 ? 9500 : 5500;
-                        baseGuests = manualForm.guests > 2 ? 4 : 2;
-                    }
-                    extraAdultPrice = 2000;
-                }
-                kidsPrice = 1000;
+            }
+            const lp = livePricing[liveKey];
+
+            if (lp) {
+                // Use live DB pricing
+                basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
+                extraAdultPrice = lp.extraAdult;
+                kidsPrice = lp.kidsCharge;
+                baseGuests = lp.baseGuests;
+            } else {
+                // Fallback hardcoded (only used if API fails)
+                if (prop.includes("Hill View")) { basePrice = isWeekend ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
+                else if (prop.includes("Mount View")) { basePrice = isWeekend ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+                else if (prop.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
+                else if (prop.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
+                else if (prop.includes("Amstel")) { basePrice = isWeekend ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
+                else if (prop.includes("Ambrose")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
             }
 
             let nightPrice = basePrice;
