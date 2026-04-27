@@ -180,6 +180,84 @@ export default function BookMultiPage() {
         })();
     }, []);
 
+    // ── Fetch LIVE DB prices from availability API and sync cart items ──
+    useEffect(() => {
+        const ambId = dbPropertyMap["ambrose"];
+        const anId = dbPropertyMap["amstel-nest"];
+        if (!ambId && !anId) return;
+        if (cart.length === 0) return;
+
+        (async () => {
+            try {
+                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; personsLabel: string }> = {};
+
+                // Fetch Ambrose availability
+                if (ambId) {
+                    try {
+                        const ambData = await api.get(`/properties/ambrose/availability`);
+                        if (ambData.subPropertyPricing && ambData.subProperties) {
+                            for (const sp of ambData.subProperties) {
+                                const spPricing = ambData.subPropertyPricing[sp.id];
+                                if (spPricing) {
+                                    const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
+                                    pricingMap[key] = {
+                                        weekday: spPricing.weekday?.price || "0",
+                                        weekend: spPricing.weekend?.price || "0",
+                                        saturday: spPricing.saturday?.price || spPricing.weekend?.price || "0",
+                                        personsLabel: spPricing.weekday?.personsLabel || "2 guests",
+                                    };
+                                }
+                            }
+                        }
+                    } catch {}
+                }
+
+                // Fetch Amstel Nest availability
+                if (anId) {
+                    try {
+                        const anData = await api.get(`/properties/amstel-nest/availability`);
+                        if (anData.subPropertyPricing && anData.subProperties) {
+                            for (const sp of anData.subProperties) {
+                                const spPricing = anData.subPropertyPricing[sp.id];
+                                if (spPricing) {
+                                    const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
+                                    pricingMap[key] = {
+                                        weekday: spPricing.weekday?.price || "0",
+                                        weekend: spPricing.weekend?.price || "0",
+                                        saturday: spPricing.saturday?.price || spPricing.weekend?.price || "0",
+                                        personsLabel: spPricing.weekday?.personsLabel || "2 guests",
+                                    };
+                                }
+                            }
+                        }
+                    } catch {}
+                }
+
+                // Update cart items with live DB prices
+                if (Object.keys(pricingMap).length > 0) {
+                    setCart(prev => {
+                        const updated = prev.map(item => {
+                            const live = pricingMap[item.villaId];
+                            if (live) {
+                                return {
+                                    ...item,
+                                    weekdayPrice: live.weekday,
+                                    weekendPrice: live.weekend,
+                                    saturdayPrice: live.saturday,
+                                    personsLabel: live.personsLabel,
+                                };
+                            }
+                            return item;
+                        });
+                        // Also update localStorage so prices persist
+                        localStorage.setItem("ambrose_cart", JSON.stringify(updated));
+                        return updated;
+                    });
+                }
+            } catch {}
+        })();
+    }, [dbPropertyMap, cart.length]);
+
     // Fetch per-villa booked dates for conflict detection (Ambrose villas only)
     useEffect(() => {
         const ambId = dbPropertyMap["ambrose"];
