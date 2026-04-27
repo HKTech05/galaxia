@@ -301,7 +301,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const isAmbroseOrAmstel = manualForm.property.includes("Ambrose") || manualForm.property.includes("Amstel");
 
     const calculatePrice = () => {
-        let total = 0;
+        let roomTotal = 0;
+        let extraAdultTotal = 0;
+        let extraKidsTotal = 0;
         const start = new Date(manualForm.checkInDate);
         const end = new Date(manualForm.checkOutDate);
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
@@ -357,37 +359,44 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 else if (prop.includes("Ambrose")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
             }
 
-            let nightPrice = basePrice;
+            roomTotal += basePrice;
             if (manualForm.guests > baseGuests) {
-                nightPrice += (manualForm.guests - baseGuests) * extraAdultPrice;
+                extraAdultTotal += (manualForm.guests - baseGuests) * extraAdultPrice;
             }
-            // Kids charge per night (before GST)
-            nightPrice += manualForm.kids * kidsPrice;
-
-            total += nightPrice;
+            extraKidsTotal += manualForm.kids * kidsPrice;
         }
 
+        let subtotal = roomTotal + extraAdultTotal + extraKidsTotal;
+
         // Add decoration price
-        if (manualDecoration) total += DECORATION_PRICE;
+        if (manualDecoration) subtotal += DECORATION_PRICE;
         // Apply coupon discount
         let manualCouponDiscount = 0;
         if (manualAppliedCoupon) {
             if (manualAppliedCoupon.discountType === "percentage") {
-                manualCouponDiscount = Math.round(total * manualAppliedCoupon.discountValue / 100);
+                manualCouponDiscount = Math.round(subtotal * manualAppliedCoupon.discountValue / 100);
             } else {
                 manualCouponDiscount = Number(manualAppliedCoupon.discountValue);
             }
-            total -= manualCouponDiscount;
+            subtotal -= manualCouponDiscount;
         }
         // Add 5% GST
-        const baseAmount = Math.round(total);
+        const baseAmount = Math.round(subtotal);
         const gstAmount = Math.round(baseAmount * 0.05);
         let finalTotal = baseAmount + gstAmount;
         // Add pet charges (₹600/pet flat — no GST)
         finalTotal += manualForm.pets * 600;
         // Round to nearest 10
         finalTotal = Math.round(finalTotal / 10) * 10;
-        return { basePrice: baseAmount, gstAmount, totalAmount: finalTotal };
+        return {
+            basePrice: baseAmount,
+            gstAmount,
+            totalAmount: finalTotal,
+            roomTotal: Math.round(roomTotal),
+            extraAdultCharge: Math.round(extraAdultTotal),
+            extraKidsCharge: Math.round(extraKidsTotal),
+            nightlyRoomRate: Math.round(roomTotal / nights),
+        };
     };
 
     const handleManualBookingSubmit = async () => {
@@ -440,12 +449,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 numPets: manualForm.pets || 0,
                 checkInDate: `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`,
                 checkOutDate: `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkOutDate.getDate()).padStart(2, '0')}`,
-                nightlyRate: Math.round(calculated.basePrice / nights),
+                nightlyRate: calculated.nightlyRoomRate,
                 totalAmount: calculated.totalAmount,
                 advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
                 securityDeposit: 3000,
                 basePrice: calculated.basePrice,
+                extraAdultCharge: calculated.extraAdultCharge,
+                extraKidsCharge: calculated.extraKidsCharge,
                 gstAmount: calculated.gstAmount,
                 advancePaid: true,
                 advanceMethod: manualForm.paymentMethod,

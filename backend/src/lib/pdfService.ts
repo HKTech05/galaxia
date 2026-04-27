@@ -336,39 +336,45 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
 
         // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
-        // Per-night breakdown — use actual DB pricing when available
+        // Per-night breakdown — use actual DB pricing (base room rate only, no extra guest charges)
         const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const pricingRecords = (sub?.pricing || prop?.pricing || []) as Array<{ dayType: string; basePrice: number }>;
+        const pricingRecords = (sub?.pricing || prop?.pricing || []) as Array<{ dayType: string; basePrice: number; extraAdultPrice?: number; kidsPrice?: number; personsLabel?: string }>;
         const priceByDayType: Record<string, number> = {};
         for (const pr of pricingRecords) {
             priceByDayType[pr.dayType] = pr.basePrice;
         }
         const hasDbPricing = Object.keys(priceByDayType).length > 0;
-        const avgPerNight = booking.numNights > 0 ? Math.round((booking.basePrice || 0) / booking.numNights) : (booking.nightlyRate || 0);
+
+        // Compute per-night room-only rate (excluding extra guest charges)
+        const storedExtraAdult = (booking as any).extraAdultCharge || 0;
+        const storedExtraKids = (booking as any).extraKidsCharge || 0;
+        const roomOnlyTotal = (booking.basePrice || 0) - storedExtraAdult - storedExtraKids;
+        const avgRoomPerNight = booking.numNights > 0 ? Math.round(Math.max(0, roomOnlyTotal) / booking.numNights) : (booking.nightlyRate || 0);
+
         if (booking.numNights > 0 && booking.checkInDate) {
             for (let i = 0; i < booking.numNights; i++) {
                 const d = new Date(booking.checkInDate);
                 d.setDate(d.getDate() + i);
                 const dayName = DAY_NAMES[d.getDay()];
                 const day = d.getDay();
-                let nightPrice = avgPerNight;
+                let nightPrice = avgRoomPerNight;
                 if (hasDbPricing) {
-                    nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgPerNight)
-                        : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgPerNight)
-                        : (priceByDayType['weekday'] || avgPerNight);
+                    nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgRoomPerNight)
+                        : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgRoomPerNight)
+                        : (priceByDayType['weekday'] || avgRoomPerNight);
                 }
                 y = drawRow(doc, dayName, fmtCurrency(nightPrice), y);
             }
         } else {
             y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);
         }
-        if ((booking as any).extraAdultCharge > 0) {
-            y = drawRow(doc, "Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge), y);
+        if (storedExtraAdult > 0) {
+            y = drawRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
         }
-        if ((booking as any).extraKidsCharge > 0) {
-            y = drawRow(doc, "Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge), y);
+        if (storedExtraKids > 0) {
+            y = drawRow(doc, "Extra Child Charge", fmtCurrency(storedExtraKids), y);
         }
-        if (!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0) {
+        if (!storedExtraAdult && !storedExtraKids && booking.extraPersonCharge > 0) {
             y = drawRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
         }
         // Add-on line items (e.g. Celebration Package)
@@ -381,7 +387,6 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
                 }
             }
         }
-        y = drawRow(doc, "Base Amount", fmtCurrency(booking.basePrice), y);
         y = drawRow(doc, "GST", fmtCurrency(booking.gstAmount), y);
         if (booking.discountAmount > 0) {
             y = drawRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });

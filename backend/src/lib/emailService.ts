@@ -185,18 +185,24 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                         priceByDayType[pr.dayType] = pr.basePrice;
                     }
                     const hasDbPricing = Object.keys(priceByDayType).length > 0;
-                    const avgPerNight = booking.numNights > 0 ? Math.round((booking.basePrice || 0) / booking.numNights) : (booking.nightlyRate || 0);
+
+                    // Compute per-night room-only rate (excluding extra guest charges)
+                    const storedExtraAdult = (booking as any).extraAdultCharge || 0;
+                    const storedExtraKids = (booking as any).extraKidsCharge || 0;
+                    const roomOnlyTotal = (booking.basePrice || 0) - storedExtraAdult - storedExtraKids;
+                    const avgRoomPerNight = booking.numNights > 0 ? Math.round(Math.max(0, roomOnlyTotal) / booking.numNights) : (booking.nightlyRate || 0);
+
                     if (booking.numNights > 0 && booking.checkInDate) {
                         let rows = '';
                         for (let i = 0; i < booking.numNights; i++) {
                             const d = new Date(booking.checkInDate);
                             d.setDate(d.getDate() + i);
                             const day = d.getDay();
-                            let nightPrice = avgPerNight;
+                            let nightPrice = avgRoomPerNight;
                             if (hasDbPricing) {
-                                nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgPerNight)
-                                    : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgPerNight)
-                                    : (priceByDayType['weekday'] || avgPerNight);
+                                nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgRoomPerNight)
+                                    : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgRoomPerNight)
+                                    : (priceByDayType['weekday'] || avgRoomPerNight);
                             }
                             rows += row(DAY_NAMES[day], fmtCurrency(nightPrice));
                         }
@@ -204,11 +210,18 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                     }
                     return row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`);
                 })()}
-                ${(booking as any).extraAdultCharge > 0 ? row("Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge)) : ""}
-                ${(booking as any).extraKidsCharge > 0 ? row("Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge)) : ""}
-                ${!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0 ? row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}
+                ${(() => {
+                    const storedExtraAdult = (booking as any).extraAdultCharge || 0;
+                    const storedExtraKids = (booking as any).extraKidsCharge || 0;
+                    let extraRows = '';
+                    if (storedExtraAdult > 0) extraRows += row("Extra Adult Charge", fmtCurrency(storedExtraAdult));
+                    if (storedExtraKids > 0) extraRows += row("Extra Child Charge", fmtCurrency(storedExtraKids));
+                    if (!storedExtraAdult && !storedExtraKids && booking.extraPersonCharge > 0) {
+                        extraRows += row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge));
+                    }
+                    return extraRows;
+                })()}
                 ${addonRows}
-                ${row("Base Amount", fmtCurrency(booking.basePrice))}
                 ${row("GST", fmtCurrency(booking.gstAmount))}
                 ${discountRow}
                 ${row("Total Amount", fmtCurrency(booking.totalAmount), { bold: true, color: GOLD, borderTop: true })}
