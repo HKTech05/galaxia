@@ -128,13 +128,18 @@ export default function BulkBookingsTab() {
             b.status !== "cancelled" && b.status !== "no_show"
         );
 
+        // Helper: parse ISO/date string as LOCAL date (avoids UTC timezone shift)
+        const toLocal = (s: string) => {
+            const parts = s.split('T')[0].split('-');
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        };
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             let count = 0;
             for (const b of amstelBookings) {
-                const checkIn = new Date(b.checkInDate);
-                const checkOut = new Date(b.checkOutDate);
+                const checkIn = toLocal(b.checkInDate);
+                const checkOut = toLocal(b.checkOutDate);
                 // Booking covers this day if checkIn <= date < checkOut
                 if (checkIn <= date && date < checkOut) {
                     count += (b.numCottages || 1);
@@ -147,8 +152,10 @@ export default function BulkBookingsTab() {
 
     const calculateBulkPrice = () => {
         if (!bulkForm.checkIn || !bulkForm.checkOut) return { perNight: 0, nights: 0, subtotal: 0, gst: 0, total: 0 };
-        const start = new Date(bulkForm.checkIn);
-        const end = new Date(bulkForm.checkOut);
+        const sp = bulkForm.checkIn.split('-');
+        const start = new Date(parseInt(sp[0]), parseInt(sp[1]) - 1, parseInt(sp[2]));
+        const ep = bulkForm.checkOut.split('-');
+        const end = new Date(parseInt(ep[0]), parseInt(ep[1]) - 1, parseInt(ep[2]));
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
         const adults = parseInt(bulkForm.totalAdults) || 0;
         const kids = parseInt(bulkForm.numKids) || 0;
