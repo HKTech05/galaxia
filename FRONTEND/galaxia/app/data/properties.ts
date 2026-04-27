@@ -11,6 +11,7 @@ export interface PropertyData {
     pricing: {
         weekday: { price: string; persons: string };
         weekend: { price: string; persons: string };
+        saturday?: { price: string; persons: string };
         primeDates?: string;
         extraAdult: string;
         kidsCharge: string;

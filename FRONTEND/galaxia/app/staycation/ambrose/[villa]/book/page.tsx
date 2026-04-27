@@ -30,6 +30,7 @@ export default async function AmbroseVillaBookingPage(props: { params: Promise<{
             ...data.parent.pricing,
             weekday: data.villa.pricing?.weekday || data.parent.pricing.weekday,
             weekend: data.villa.pricing?.weekend || data.parent.pricing.weekend,
+            saturday: data.villa.pricing?.saturday || data.parent.pricing.saturday,
         },
         subProperties: undefined, // Single villa, no sub-properties
     };

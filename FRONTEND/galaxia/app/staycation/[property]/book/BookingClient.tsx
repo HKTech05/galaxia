@@ -358,23 +358,43 @@ export default function BookingClient({ property }: BookingClientProps) {
                 maxKids: sub.maxKids ?? property.maxKids ?? undefined
             };
         })
-        : [{
-            id: property.id,
-            name: property.name,
-            theme: property.type === "standalone" ? "Entire Villa" : property.subtitle,
-            image: mainThumb || property.images[0] || '',
-            description: property.description,
-            price: parseInt((backendData?.pricing?.weekday?.price || property.pricing.weekday.price).toString().replace(/,/g, "")),
-            weekdayPrice: backendData?.pricing?.weekday?.price || property.pricing.weekday.price,
-            weekendPrice: backendData?.pricing?.weekend?.price || property.pricing.weekend.price,
-            saturdayPrice: backendData?.pricing?.saturday?.price || backendData?.pricing?.weekend?.price || property.pricing.weekend.price,
-            primeDatePrice: property.pricing.primeDates || "",
-            details: property.configuration.slice(0, 3),
-            persons: backendData?.pricing?.weekday?.personsLabel || property.pricing.weekday.persons,
-            maxPersons: property.maxPersons || 4,
-            maxAdults: property.maxAdults || undefined,
-            maxKids: property.maxKids ?? undefined
-        }]);
+        : (() => {
+            // For sub-property single bookings (e.g. ambrose/bamboosa), use sub-property DB pricing
+            let dbWd: string | undefined, dbWe: string | undefined, dbSa: string | undefined, dbPersons: string | undefined;
+            if (property.id.includes('/') && backendData?.subPropertyPricing && backendData?.subProperties) {
+                const villaSlug = property.id.split('/').pop();
+                const dbSub = backendData.subProperties.find((sp: any) => sp.slug === villaSlug || sp.name?.toUpperCase() === property.name?.toUpperCase());
+                const spP = dbSub ? backendData.subPropertyPricing[dbSub.id] : null;
+                if (spP) {
+                    dbWd = spP.weekday?.price;
+                    dbWe = spP.weekend?.price;
+                    dbSa = spP.saturday?.price || spP.weekend?.price;
+                    dbPersons = spP.weekday?.personsLabel;
+                }
+            } else if (backendData?.pricing) {
+                dbWd = backendData.pricing.weekday?.price;
+                dbWe = backendData.pricing.weekend?.price;
+                dbSa = backendData.pricing.saturday?.price || backendData.pricing.weekend?.price;
+                dbPersons = backendData.pricing.weekday?.personsLabel;
+            }
+            return [{
+                id: property.id,
+                name: property.name,
+                theme: property.type === "standalone" ? "Entire Villa" : property.subtitle,
+                image: mainThumb || property.images[0] || '',
+                description: property.description,
+                price: parseInt((dbWd || property.pricing.weekday.price).toString().replace(/,/g, "")),
+                weekdayPrice: dbWd || property.pricing.weekday.price,
+                weekendPrice: dbWe || property.pricing.weekend.price,
+                saturdayPrice: dbSa || property.pricing.saturday?.price || property.pricing.weekend.price,
+                primeDatePrice: property.pricing.primeDates || "",
+                details: property.configuration.slice(0, 3),
+                persons: dbPersons || property.pricing.weekday.persons,
+                maxPersons: property.maxPersons || 4,
+                maxAdults: property.maxAdults || undefined,
+                maxKids: property.maxKids ?? undefined
+            }];
+        })());
 
     const formatPrice = (price: number) => `₹ ${price.toLocaleString('en-IN')}`;
     const formatDateShort = (d: Date) => `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
@@ -450,14 +470,21 @@ export default function BookingClient({ property }: BookingClientProps) {
         let currentPersonsLabel = room.persons || '2 guests';
         
         // Override from backend DB if available
-        const roomDbId = dbSubPropertyMap[room.id] || dbSubPropertyMap[room.id?.split?.('/')?.pop?.() || ''];
+        let roomDbId = dbSubPropertyMap[room.id] || dbSubPropertyMap[room.id?.split?.('/')?.pop?.() || ''];
+        // For ambrose villa single bookings, also try matching by name/slug from backendData
+        if (!roomDbId && room.id?.includes('/') && backendData?.subProperties) {
+            const villaSlug = room.id.split('/').pop();
+            const dbSub = backendData.subProperties.find((sp: any) => sp.slug === villaSlug || sp.name?.toUpperCase() === room.name?.toUpperCase());
+            if (dbSub) roomDbId = dbSub.id;
+        }
         const spPricing = roomDbId ? backendData?.subPropertyPricing?.[roomDbId] : null;
         if (spPricing) {
             if (spPricing.weekday?.price) currentWeekdayPrice = spPricing.weekday.price;
             if (spPricing.weekend?.price) currentWeekendPrice = spPricing.weekend.price;
             if (spPricing.saturday?.price) currentSaturdayPrice = spPricing.saturday.price;
             if (spPricing.weekday?.personsLabel) currentPersonsLabel = spPricing.weekday.personsLabel;
-        } else if (backendData?.pricing) {
+        } else if (!room.id?.includes('/') && backendData?.pricing) {
+            // Only use parent-level pricing for non-sub-property bookings
             if (backendData.pricing.weekday?.price) currentWeekdayPrice = backendData.pricing.weekday.price;
             if (backendData.pricing.weekend?.price) currentWeekendPrice = backendData.pricing.weekend.price;
             if (backendData.pricing.saturday?.price) currentSaturdayPrice = backendData.pricing.saturday.price;
