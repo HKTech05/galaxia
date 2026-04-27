@@ -313,9 +313,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [blackoutLoading, setBlackoutLoading] = useState(false);
     const [blockNumUnits, setBlockNumUnits] = useState(1);
 
-    // Determine if the current calendar property is a multi-unit property
-    const isMultiUnitProperty = calendarCapacity > 1;
-
     // Fetch list of properties for dropdown
     useEffect(() => {
         api.get("/properties").then(data => {
@@ -539,6 +536,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [calendarBookedDays, setCalendarBookedDays] = useState<number[]>([]);
     const [calendarDayCounts, setCalendarDayCounts] = useState<Record<number, number>>({});
     const [calendarCapacity, setCalendarCapacity] = useState(1);
+    // Determine if the current calendar property is a multi-unit property
+    const isMultiUnitProperty = calendarCapacity > 1;
     // Sync blackout property key with calendar property on initial load
     useEffect(() => { if (!blackoutPropertyKey) setBlackoutPropertyKey("Heavenly Villa"); }, []);
 
