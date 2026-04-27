@@ -282,7 +282,7 @@ router.post("/", async (req, res) => {
                     discountAmount,
                     addons: addons || null,
                 },
-                include: { property: true, subProperty: true },
+                include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
             });
 
             // Record coupon usage
@@ -393,7 +393,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             where,
             include: {
                 property: true,
-                subProperty: true,
+                subProperty: { include: { pricing: true } },
                 extraGuests: true,
                 guestIds: true,
                 foodBills: true,
@@ -459,7 +459,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
 
         const existing = await prisma.staycationBooking.findUnique({
             where: { id: bookingId },
-            include: { property: true, subProperty: true },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
         });
         if (!existing) return res.status(404).json({ error: "Booking not found" });
 
@@ -515,7 +515,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         const updated = await prisma.staycationBooking.update({
             where: { id: bookingId },
             data: updateData,
-            include: { property: true, subProperty: true },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
         });
 
         // Comprehensive audit log with before/after snapshot
@@ -966,7 +966,7 @@ router.get("/voucher/:ref", async (req, res) => {
         const { ref } = req.params;
         const booking = await prisma.staycationBooking.findFirst({
             where: { bookingRef: ref },
-            include: { property: true, subProperty: true },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
         });
 
         if (!booking) {

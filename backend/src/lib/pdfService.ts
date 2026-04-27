@@ -336,15 +336,28 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
 
         // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
-        // Per-night breakdown
+        // Per-night breakdown — use actual DB pricing when available
         const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const pricingRecords = (sub?.pricing || prop?.pricing || []) as Array<{ dayType: string; basePrice: number }>;
+        const priceByDayType: Record<string, number> = {};
+        for (const pr of pricingRecords) {
+            priceByDayType[pr.dayType] = pr.basePrice;
+        }
+        const hasDbPricing = Object.keys(priceByDayType).length > 0;
         const avgPerNight = booking.numNights > 0 ? Math.round((booking.basePrice || 0) / booking.numNights) : (booking.nightlyRate || 0);
         if (booking.numNights > 0 && booking.checkInDate) {
             for (let i = 0; i < booking.numNights; i++) {
                 const d = new Date(booking.checkInDate);
                 d.setDate(d.getDate() + i);
                 const dayName = DAY_NAMES[d.getDay()];
-                y = drawRow(doc, dayName, fmtCurrency(avgPerNight), y);
+                const day = d.getDay();
+                let nightPrice = avgPerNight;
+                if (hasDbPricing) {
+                    nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgPerNight)
+                        : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgPerNight)
+                        : (priceByDayType['weekday'] || avgPerNight);
+                }
+                y = drawRow(doc, dayName, fmtCurrency(nightPrice), y);
             }
         } else {
             y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);

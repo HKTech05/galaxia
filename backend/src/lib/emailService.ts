@@ -179,13 +179,26 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${sectionTitle("Payment Summary")}
                 ${(() => {
                     const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const pricingRecords = (sub?.pricing || prop?.pricing || []) as Array<{ dayType: string; basePrice: number }>;
+                    const priceByDayType: Record<string, number> = {};
+                    for (const pr of pricingRecords) {
+                        priceByDayType[pr.dayType] = pr.basePrice;
+                    }
+                    const hasDbPricing = Object.keys(priceByDayType).length > 0;
                     const avgPerNight = booking.numNights > 0 ? Math.round((booking.basePrice || 0) / booking.numNights) : (booking.nightlyRate || 0);
                     if (booking.numNights > 0 && booking.checkInDate) {
                         let rows = '';
                         for (let i = 0; i < booking.numNights; i++) {
                             const d = new Date(booking.checkInDate);
                             d.setDate(d.getDate() + i);
-                            rows += row(DAY_NAMES[d.getDay()], fmtCurrency(avgPerNight));
+                            const day = d.getDay();
+                            let nightPrice = avgPerNight;
+                            if (hasDbPricing) {
+                                nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgPerNight)
+                                    : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgPerNight)
+                                    : (priceByDayType['weekday'] || avgPerNight);
+                            }
+                            rows += row(DAY_NAMES[day], fmtCurrency(nightPrice));
                         }
                         return rows;
                     }
