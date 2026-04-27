@@ -1176,10 +1176,36 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     <div className="p-5 border-b border-border-light">
                                         <p className="font-inter text-xs uppercase tracking-widest text-text-muted mb-2">{selectedRoom.type}</p>
                                         <p className="font-inter text-xs text-text-primary leading-relaxed pb-3 border-b border-border-light mb-3 italic">{selectedRoom.name}</p>
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-inter text-xl text-text-primary">{formatPrice(nightlyRate)}</span>
-                                            <span className="font-inter text-[10px] text-text-muted">/ Night × {nights}</span>
-                                        </div>
+                                        {(() => {
+                                            if (!checkInDate || nights <= 0) return (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-inter text-xl text-text-primary">{formatPrice(nightlyRate)}</span>
+                                                    <span className="font-inter text-[10px] text-text-muted">/ Night</span>
+                                                </div>
+                                            );
+                                            const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                            const wdP = parseInt((selectedRoom.weekdayPrice || '0').toString().replace(/,/g, ''));
+                                            const weP = parseInt((selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
+                                            const saP = parseInt((selectedRoom.saturdayPrice || selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
+                                            const perNight: {day: string; price: number}[] = [];
+                                            for (let i = 0; i < nights; i++) {
+                                                const d = new Date(checkInDate); d.setDate(d.getDate() + i);
+                                                const dw = d.getDay();
+                                                const p = dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP;
+                                                perNight.push({ day: DAY_NAMES[dw], price: p });
+                                            }
+                                            const units = isAmstelNest ? unitCount : 1;
+                                            return (
+                                                <div className="space-y-1.5">
+                                                    {perNight.map((n, i) => (
+                                                        <div key={i} className="flex justify-between items-center">
+                                                            <span className="font-inter text-xs text-text-muted">{n.day}</span>
+                                                            <span className="font-inter text-sm text-text-primary">{formatPrice(n.price * units)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 ) : (
                                     <div className="p-5 border-b border-border-light">

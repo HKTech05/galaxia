@@ -319,12 +319,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     else basePrice = 10500;
                     extraAdultPrice = 2000;
                 } else if (villa === "CYPRESS") {
-                    basePrice = isWeekend ? 6500 : 5500;
+                    basePrice = isSaturday ? 6500 : isWeekend ? 6500 : 5500;
                     extraAdultPrice = 2000;
                 } else {
                     if (isSaturday) {
-                        basePrice = 12000;
-                        baseGuests = 4;
+                        basePrice = 8500;
+                        baseGuests = 2;
                     } else if (isWeekend) {
                         basePrice = manualForm.guests > 2 ? 10500 : 6500;
                         baseGuests = manualForm.guests > 2 ? 4 : 2;
@@ -414,6 +414,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 numPets: manualForm.pets || 0,
                 checkInDate: `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`,
                 checkOutDate: `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkOutDate.getDate()).padStart(2, '0')}`,
+                nightlyRate: Math.round(Math.round(calculatedTotal / 1.05) / Math.max(1, Math.ceil((new Date(manualForm.checkOutDate).getTime() - new Date(manualForm.checkInDate).getTime()) / (1000 * 3600 * 24)))),
                 totalAmount: calculatedTotal,
                 advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculatedTotal,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,

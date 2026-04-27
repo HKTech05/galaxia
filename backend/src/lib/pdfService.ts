@@ -323,7 +323,19 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
 
         // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
-        y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);
+        // Per-night breakdown
+        const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const avgPerNight = booking.numNights > 0 ? Math.round((booking.basePrice || 0) / booking.numNights) : (booking.nightlyRate || 0);
+        if (booking.numNights > 0 && booking.checkInDate) {
+            for (let i = 0; i < booking.numNights; i++) {
+                const d = new Date(booking.checkInDate);
+                d.setDate(d.getDate() + i);
+                const dayName = DAY_NAMES[d.getDay()];
+                y = drawRow(doc, dayName, fmtCurrency(avgPerNight), y);
+            }
+        } else {
+            y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);
+        }
         if ((booking as any).extraAdultCharge > 0) {
             y = drawRow(doc, "Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge), y);
         }

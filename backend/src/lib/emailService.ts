@@ -177,7 +177,20 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${(booking as any).numCottages > 1 ? row("Cottages", `${(booking as any).numCottages}`) : ""}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
-                ${row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`)}
+                ${(() => {
+                    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const avgPerNight = booking.numNights > 0 ? Math.round((booking.basePrice || 0) / booking.numNights) : (booking.nightlyRate || 0);
+                    if (booking.numNights > 0 && booking.checkInDate) {
+                        let rows = '';
+                        for (let i = 0; i < booking.numNights; i++) {
+                            const d = new Date(booking.checkInDate);
+                            d.setDate(d.getDate() + i);
+                            rows += row(DAY_NAMES[d.getDay()], fmtCurrency(avgPerNight));
+                        }
+                        return rows;
+                    }
+                    return row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`);
+                })()}
                 ${(booking as any).extraAdultCharge > 0 ? row("Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge)) : ""}
                 ${(booking as any).extraKidsCharge > 0 ? row("Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge)) : ""}
                 ${!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0 ? row("Extra Person Charges", fmtCurrency(booking.extraPersonCharge)) : ""}

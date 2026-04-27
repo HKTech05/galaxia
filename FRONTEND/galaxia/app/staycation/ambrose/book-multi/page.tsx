@@ -785,8 +785,9 @@ export default function BookMultiPage() {
                             </div>
                             <AvailabilityCalendar
                                 propertyId={hasAmstelOnly ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"]}
-                                weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : ambrose.pricing.weekday.price}
-                                weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "6,950") : ambrose.pricing.weekend.price}
+                                weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : (ambroseItems[0]?.weekdayPrice || ambrose.pricing.weekday.price)}
+                                weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "6,950") : (ambroseItems[0]?.weekendPrice || ambrose.pricing.weekend.price)}
+                                saturdayPrice={hasAmstelOnly ? undefined : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
                                 dateOverrides={{}}
                                 onDatesChange={handleDatesChange}
                                 hidePrice={hasMixedPrices}
@@ -883,7 +884,22 @@ export default function BookMultiPage() {
 
                                                     {villaPrice > 0 && (
                                                         <div className="border-t border-border-light pt-4 space-y-1.5 font-inter text-sm">
-                                                            <div className="flex justify-between"><span className="text-text-secondary">Room ({nights} night{nights > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(villaPrice)}</span></div>
+                                                            {(() => {
+                                                                if (!checkInDate || nights <= 0) return <div className="flex justify-between"><span className="text-text-secondary">Room ({nights} night{nights > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(villaPrice)}</span></div>;
+                                                                const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                                                                const units = item.unitCount || 1;
+                                                                const wdP = parseInt((item.weekdayPrice || '0').replace(/,/g,''));
+                                                                const weP = parseInt((item.weekendPrice || '0').replace(/,/g,''));
+                                                                const saP = parseInt(((item.saturdayPrice || item.weekendPrice) || '0').replace(/,/g,''));
+                                                                return <>
+                                                                    {Array.from({length: nights}, (_, i) => {
+                                                                        const d = new Date(checkInDate); d.setDate(d.getDate() + i);
+                                                                        const dw = d.getDay();
+                                                                        const p = dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP;
+                                                                        return <div key={i} className="flex justify-between"><span className="text-text-secondary text-xs">{DAY_NAMES[dw]}</span><span className="text-text-primary text-xs">{formatPrice(p * units)}</span></div>;
+                                                                    })}
+                                                                </>;
+                                                            })()}
                                                             {extraCharges > 0 && <div className="flex justify-between"><span className="text-text-secondary">Extra guests</span><span className="text-text-primary">{formatPrice(extraCharges)}</span></div>}
                                                             <div className="flex justify-between font-semibold text-text-primary pt-1"><span>Villa Subtotal</span><span>{formatPrice(villaPrice + extraCharges)}</span></div>
                                                         </div>
