@@ -568,7 +568,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     const start = checkIn < monthStart ? monthStart : checkIn;
                     const end = checkOut > monthEnd ? monthEnd : checkOut;
                     for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-                        dayCounts[d.getDate()] = (dayCounts[d.getDate()] || 0) + 1;
+                        dayCounts[d.getDate()] = (dayCounts[d.getDate()] || 0) + (b.numCottages || 1);
                     }
                 }
                 setCalendarDayCounts(dayCounts);
@@ -781,7 +781,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const occupiedAmbroseCount = liveAmbrose.filter((v: any) => v.booked).length;
         // Amstel Nest: Standard Cottage may have multiple bookings (14 units), count them
         const amstelStdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
-        const amstelStdBooked = amstelStdCottage?._allBookings?.length || (amstelStdCottage?.booked ? 1 : 0);
+        const amstelStdBooked = amstelStdCottage?._allBookings?.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (amstelStdCottage?.booked ? 1 : 0);
         const amstelOthersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
         const occupiedAmstelCount = amstelStdBooked + amstelOthersBooked;
         const totalAmstelUnits = 14 + liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
@@ -1554,7 +1554,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase">
                                 {(() => {
                                     const stdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
-                                    const stdBooked = stdCottage?._allBookings?.length || (stdCottage?.booked ? 1 : 0);
+                                    const stdBooked = stdCottage?._allBookings?.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (stdCottage?.booked ? 1 : 0);
                                     const othersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
                                     const othersTotal = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
                                     return `${stdBooked + othersBooked}/${14 + othersTotal} Occupied`;
@@ -1589,10 +1589,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     const stdCottage = rawVillas.find((v: any) => v.name === 'Standard Cottage');
                                     const STANDARD_UNITS = 14;
                                     if (stdCottage) {
-                                        // _allBookings has all bookings for this sub-property ID
+                                        // Expand bookings by numCottages: a booking with numCottages=2 fills 2 unit slots
                                         const stdBookings = stdCottage._allBookings || [];
+                                        const expandedBookings: any[] = [];
+                                        for (const bk of stdBookings) {
+                                            const nc = bk.numCottages || 1;
+                                            for (let c = 0; c < nc; c++) expandedBookings.push(bk);
+                                        }
                                         for (let i = 1; i <= STANDARD_UNITS; i++) {
-                                            const booking = stdBookings[i - 1]; // Assign bookings sequentially to units
+                                            const booking = expandedBookings[i - 1]; // Assign bookings sequentially to units
                                             if (booking) {
                                                 expanded.push({
                                                     ...stdCottage,
@@ -1609,6 +1614,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     balanceAmount: booking.balanceAmount ?? stdCottage.balanceAmount,
                                                     depositAmount: booking.securityDeposit ?? stdCottage.depositAmount,
                                                     totalAmount: booking.totalAmount ?? stdCottage.totalAmount,
+                                                    _numCottages: booking.numCottages || 1,
                                                 });
                                             } else {
                                                 expanded.push({

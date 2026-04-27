@@ -137,7 +137,7 @@ export default function BulkBookingsTab() {
                 const checkOut = new Date(b.checkOutDate);
                 // Booking covers this day if checkIn <= date < checkOut
                 if (checkIn <= date && date < checkOut) {
-                    count++;
+                    count += (b.numCottages || 1);
                 }
             }
             occupancy[dateStr] = count;
@@ -201,41 +201,37 @@ export default function BulkBookingsTab() {
             const totalDiscount = discountAmount + couponDiscount;
             const discountedTotal = pricing.total - totalDiscount;
             const finalTotal = Math.max(0, discountedTotal);
-            const perCottageTotal = Math.round(finalTotal / bulkForm.numCottages);
-            const perCottageGst = Math.round(pricing.gst / bulkForm.numCottages);
-            const perCottageBase = perCottageTotal - perCottageGst;
 
-            for (let i = 0; i < bulkForm.numCottages; i++) {
-                await api.post("/bookings/staycation", {
-                    customerName: bulkForm.customerName,
-                    customerPhone: bulkForm.phone,
-                    customerEmail: bulkForm.email || undefined,
-                    propertyId: amstelProp.id,
-                    subPropertyId: bulkForm.cottageType === "mix" ? eligibleIds[Math.min(i, eligibleIds.length - 1)] : targetSubPropertyId,
-                    numGuests: parseInt(bulkForm.totalAdults) || 2,
-                    numKids: parseInt(bulkForm.numKids) || 0,
-                    checkInDate: bulkForm.checkIn,
-                    checkOutDate: bulkForm.checkOut,
-                    totalAmount: perCottageTotal,
-                    advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : perCottageTotal,
-                    balanceAmount: customSplitMode ? Math.round(parseInt(customBalance || '0') / bulkForm.numCottages) : 0,
-                    securityDeposit: 3000,
-                    basePrice: perCottageBase,
-                    gstAmount: perCottageGst,
-                    advancePaid: true,
-                    advanceMethod: bulkForm.paymentMethod,
-                    source: "admin-bulk",
-                    couponCode: appliedCoupon?.code || null,
-                    notes: `Admin Bulk ${i + 1}/${bulkForm.numCottages}. ${bulkForm.cottageType}.`.trim(),
-                    addons: [
-                        ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),
-                        ...(parseInt(bulkForm.numJainVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Jain', count: parseInt(bulkForm.numJainVeg) }] : []),
-                    ].length > 0 ? [
-                        ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),
-                        ...(parseInt(bulkForm.numJainVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Jain', count: parseInt(bulkForm.numJainVeg) }] : []),
-                    ] : null,
-                });
-            }
+            await api.post("/bookings/staycation", {
+                customerName: bulkForm.customerName,
+                customerPhone: bulkForm.phone,
+                customerEmail: bulkForm.email || undefined,
+                propertyId: amstelProp.id,
+                subPropertyId: targetSubPropertyId,
+                numGuests: parseInt(bulkForm.totalAdults) || 2,
+                numKids: parseInt(bulkForm.numKids) || 0,
+                numCottages: bulkForm.numCottages || 1,
+                checkInDate: bulkForm.checkIn,
+                checkOutDate: bulkForm.checkOut,
+                totalAmount: finalTotal,
+                advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : finalTotal,
+                balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
+                securityDeposit: 3000 * (bulkForm.numCottages || 1),
+                basePrice: pricing.subtotal,
+                gstAmount: pricing.gst,
+                advancePaid: true,
+                advanceMethod: bulkForm.paymentMethod,
+                source: "admin-bulk",
+                couponCode: appliedCoupon?.code || null,
+                notes: `Admin Bulk. ${bulkForm.numCottages} ${bulkForm.cottageType} cottage(s).`.trim(),
+                addons: [
+                    ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),
+                    ...(parseInt(bulkForm.numJainVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Jain', count: parseInt(bulkForm.numJainVeg) }] : []),
+                ].length > 0 ? [
+                    ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),
+                    ...(parseInt(bulkForm.numJainVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Jain', count: parseInt(bulkForm.numJainVeg) }] : []),
+                ] : null,
+            });
             const totalDiscApplied = discountAmount + couponDiscount;
             setBulkSuccess(`Created ${bulkForm.numCottages} ${bulkForm.cottageType} cottage booking(s) for ${bulkForm.customerName}! ${totalDiscApplied > 0 ? `(₹${totalDiscApplied.toLocaleString('en-IN')} discount applied)` : ""}`);
             setBulkForm({ customerName: "", phone: "", email: "", checkIn: "", checkOut: "", numCottages: "" as any, cottageType: "standard", totalAdults: "" as any, numKids: "" as any, numRegularVeg: "" as any, numJainVeg: "" as any, paymentMethod: "UPI" });

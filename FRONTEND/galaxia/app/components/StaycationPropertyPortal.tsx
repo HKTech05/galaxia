@@ -49,6 +49,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             b.status || "Pending Arrival",
                     addons: b.addons || null,
                     totalAmount: b.totalAmount || 0,
+                    numCottages: b.numCottages || 1,
                     propertyId: b.propertyId || null,
                     depositRefunded: b.depositRefunded || false,
                     depositRefundMethod: b.depositRefundMethod || null,
@@ -623,6 +624,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Number of Guests</p>
                                         <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests} adults{booking.kids > 0 && <span className="text-sm font-bold text-blue-600 ml-2">+ {booking.kids} kid{booking.kids > 1 ? 's' : ''}</span>}{booking.pets > 0 && <span className="text-sm font-bold text-purple-600 ml-2">+ {booking.pets} pet{booking.pets > 1 ? 's' : ''}</span>}</p>
+                                        {booking.numCottages > 1 && <p className="text-xs font-bold text-indigo-600 mt-1">× {booking.numCottages} cottages</p>}
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Check-in</p>

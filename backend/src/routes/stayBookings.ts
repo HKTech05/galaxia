@@ -97,7 +97,7 @@ router.post("/", async (req, res) => {
                     checkInDate: { lt: checkOut },
                     checkOutDate: { gt: checkIn },
                 },
-                select: { id: true, subPropertyId: true, checkInDate: true, checkOutDate: true },
+                select: { id: true, subPropertyId: true, checkInDate: true, checkOutDate: true, numCottages: true },
             });
 
             // 2b. Get blocked dates in the range for this property
@@ -135,7 +135,7 @@ router.post("/", async (req, res) => {
                             const bIn = new Date(b.checkInDate);
                             const bOut = new Date(b.checkOutDate);
                             return bIn < dayEnd && bOut > dayStart;
-                        }).length;
+                        }).reduce((sum, b) => sum + (b.numCottages || 1), 0);
 
                         // Count blocks for this sub-property on this day
                         const dayBlocksForSub = blockedInRange.filter(bl => {
@@ -143,7 +143,8 @@ router.post("/", async (req, res) => {
                             return blDate === dateStr && (bl.subPropertyId === assignedSubPropertyId || bl.subPropertyId === null);
                         }).length;
 
-                        if (dayBookingsForSub + dayBlocksForSub >= targetCapacity) {
+                        const newCottages = numCottages || 1;
+                        if (dayBookingsForSub + dayBlocksForSub + newCottages > targetCapacity) {
                             throw new Error("DATE_CONFLICT");
                         }
                     }
@@ -166,14 +167,14 @@ router.post("/", async (req, res) => {
                                 const bIn = new Date(b.checkInDate);
                                 const bOut = new Date(b.checkOutDate);
                                 return bIn < dayEnd && bOut > dayStart;
-                            }).length;
+                            }).reduce((sum, b) => sum + (b.numCottages || 1), 0);
 
                             const dayBlocks = blockedInRange.filter(bl => {
                                 const blDate = bl.blockedDate.toISOString().split('T')[0];
                                 return blDate === dateStr && (bl.subPropertyId === sp.id || bl.subPropertyId === null);
                             }).length;
 
-                            if (dayBookings + dayBlocks >= spCapacity) {
+                            if (dayBookings + dayBlocks + (numCottages || 1) > spCapacity) {
                                 spFreeAllDays = false;
                                 break;
                             }
@@ -799,7 +800,7 @@ router.get("/booked-dates", async (req, res) => {
                 checkInDate: { lte: end },
                 checkOutDate: { gte: start },
             },
-            select: { checkInDate: true, checkOutDate: true, subPropertyId: true },
+            select: { checkInDate: true, checkOutDate: true, subPropertyId: true, numCottages: true },
         });
 
         // 2. Get blocked dates
@@ -824,7 +825,7 @@ router.get("/booked-dates", async (req, res) => {
             const bEnd = new Date(b.checkOutDate);
             for (let d = new Date(bStart); d < bEnd; d.setDate(d.getDate() + 1)) {
                 const dateStr = d.toISOString().split("T")[0];
-                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + (b.numCottages || 1);
             }
         }
 
