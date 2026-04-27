@@ -246,11 +246,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             const spP = d.subPropertyPricing[sp.id];
                             if (spP) {
                                 const spWd = spP.weekday; const spWe = spP.weekend; const spSa = spP.saturday;
+                                // Only use sub-property pricing if at least weekday or weekend has actual data
+                                if (!spWd && !spWe) continue;
                                 const spPersons = spWd?.personsLabel ? parseInt(spWd.personsLabel) || 2 : 2;
                                 pm[`${propName}/${sp.name.toUpperCase()}`] = {
-                                    weekday: spWd ? parseInt(spWd.price) : 0, weekend: spWe ? parseInt(spWe.price) : 0,
-                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : 0),
-                                    extraAdult: spWd?.extraAdult || 2000, kidsCharge: 1000, baseGuests: spPersons,
+                                    weekday: spWd ? parseInt(spWd.price) : (spWe ? parseInt(spWe.price) : 0),
+                                    weekend: spWe ? parseInt(spWe.price) : (spWd ? parseInt(spWd.price) : 0),
+                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : (spWd ? parseInt(spWd.price) : 0)),
+                                    extraAdult: spWd?.extraAdult || spWe?.extraAdult || 2000, kidsCharge: 1000, baseGuests: spPersons,
                                 };
                             }
                         }
