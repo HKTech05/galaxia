@@ -1194,9 +1194,30 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <DateSelectionBar
                                 checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
                                 checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
-                                onDatesChange={(ci, co) => {
+                                onDatesChange={async (ci, co) => {
                                     const ciDate = new Date(ci + 'T12:00:00');
                                     const coDate = new Date(co + 'T12:00:00');
+                                    // Validate against booked dates before accepting
+                                    if (dbPropertyId) {
+                                        try {
+                                            const subId = selectedRoom ? (dbSubPropertyMap[selectedRoom.id] || dbSubPropertyMap[selectedRoom.id.split('/').pop() || '']) : null;
+                                            let url = `/api/bookings/staycation/booked-dates?propertyId=${dbPropertyId}&startDate=${ci}&endDate=${co}`;
+                                            if (subId) url += `&subPropertyId=${subId}`;
+                                            const res = await fetch(url);
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                const bookedSet = new Set<string>(data.dates || []);
+                                                // Check if check-in date or any date in range is fully booked
+                                                for (let d = new Date(ciDate); d < coDate; d.setDate(d.getDate() + 1)) {
+                                                    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                                    if (bookedSet.has(ds)) {
+                                                        alert(`${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} is fully booked. Please choose different dates.`);
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        } catch {}
+                                    }
                                     handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
                                 }}
                             />
