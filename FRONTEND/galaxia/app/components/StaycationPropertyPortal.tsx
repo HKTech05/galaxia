@@ -1375,6 +1375,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <h2 className="text-3xl font-black text-purple-900 flex items-center">
                                             <IndianRupee size={24} className="mr-1" /> {calculatePrice().totalAmount.toLocaleString('en-IN')}
                                         </h2>
+                                        {(() => {
+                                            const p = calculatePrice();
+                                            return <p className="text-xs text-slate-500 mt-1">Base ₹{p.basePrice.toLocaleString('en-IN')} + GST ₹{p.gstAmount.toLocaleString('en-IN')}</p>;
+                                        })()}
                                     </div>
 
                                     <div className="bg-white p-1 rounded-lg border border-purple-200 flex">
