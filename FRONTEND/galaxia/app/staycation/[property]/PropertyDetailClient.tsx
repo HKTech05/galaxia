@@ -8,6 +8,7 @@ import DateSelectionBar from "../../components/DateSelectionBar";
 import { PropertyData } from "../../data/properties";
 import ImageSlideshow from "../../components/ImageSlideshow";
 import AvailabilityCalendar from "../../components/AvailabilityCalendar";
+import { useBookedDates } from "../../hooks/useBookedDates";
 
 const amenityIcons: Record<string, React.ReactNode> = {
     bed: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v11a1 1 0 001 1h16a1 1 0 001-1V7M3 7l9-4 9 4" /></svg>,
@@ -56,6 +57,9 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const [livePricing, setLivePricing] = useState<{ weekday: string; weekend: string } | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
     const [dateWarning, setDateWarning] = useState('');
+
+    // Fetch booked dates for the date picker
+    const bookedDatesForPicker = useBookedDates(dbPropertyId);
 
     // Read search dates from URL params or localStorage
     const searchParams = useSearchParams();
@@ -468,7 +472,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     <DateSelectionBar
                                         checkIn={calCheckIn ? fmtDate(calCheckIn) : undefined}
                                         checkOut={calCheckOut ? fmtDate(calCheckOut) : undefined}
-                                        propertyId={dbPropertyId}
+                                        disabledDates={bookedDatesForPicker.size > 0 ? bookedDatesForPicker : undefined}
                                         onDatesChange={(ci, co) => {
                                             setCalCheckIn(new Date(ci + 'T12:00:00'));
                                             setCalCheckOut(new Date(co + 'T12:00:00'));

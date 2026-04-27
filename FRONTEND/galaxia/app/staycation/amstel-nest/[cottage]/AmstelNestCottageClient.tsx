@@ -7,6 +7,7 @@ import { PropertyData } from "../../../data/properties";
 import ImageSlideshow from "../../../components/ImageSlideshow";
 import AvailabilityCalendar from "../../../components/AvailabilityCalendar";
 import DateSelectionBar from "../../../components/DateSelectionBar";
+import { useBookedDates } from "../../../hooks/useBookedDates";
 
 interface AmstelNestCottageClientProps {
     parent: PropertyData;
@@ -37,6 +38,9 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const [liveWeekend, setLiveWeekend] = useState<string | null>(null);
     const [dateOverrides, setDateOverrides] = useState<Record<string, number>>({});
     const [dateWarning, setDateWarning] = useState('');
+
+    // Fetch booked dates for the date picker (respects multi-unit capacity)
+    const bookedDatesForPicker = useBookedDates(dbPropertyId, dbSubPropertyId);
 
     // Read persisted search dates
     useEffect(() => {
@@ -288,6 +292,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 <DateSelectionBar
                                     checkIn={calCheckIn ? fmtDate(calCheckIn) : undefined}
                                     checkOut={calCheckOut ? fmtDate(calCheckOut) : undefined}
+                                    disabledDates={bookedDatesForPicker.size > 0 ? bookedDatesForPicker : undefined}
                                     onDatesChange={(ci, co) => {
                                         setCalCheckIn(new Date(ci + 'T12:00:00'));
                                         setCalCheckOut(new Date(co + 'T12:00:00'));

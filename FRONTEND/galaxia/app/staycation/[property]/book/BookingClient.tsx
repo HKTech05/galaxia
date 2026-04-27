@@ -10,6 +10,7 @@ import DateSelectionBar from "../../../components/DateSelectionBar";
 import { api } from "../../../../lib/api";
 import { initiateRazorpayPayment } from "../../../../lib/razorpay";
 import PhoneAuthModal from "../../../components/PhoneAuthModal";
+import { useBookedDates } from "../../../hooks/useBookedDates";
 
 interface BookingClientProps {
     property: PropertyData;
@@ -54,6 +55,21 @@ export default function BookingClient({ property }: BookingClientProps) {
     // DB IDs for property and sub-property
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
     const [dbSubPropertyMap, setDbSubPropertyMap] = useState<Record<string, number>>({});
+
+    // Resolve the effective sub-property ID for the current selection
+    const effectiveSubPropertyId = (() => {
+        if (property.id.includes('/')) {
+            const slug = property.id.split('/').pop() || '';
+            return dbSubPropertyMap[slug] || null;
+        }
+        if (selectedRoom) {
+            return dbSubPropertyMap[selectedRoom.id] || dbSubPropertyMap[selectedRoom.id.split('/').pop() || ''] || null;
+        }
+        return null;
+    })();
+
+    // Fetch booked dates for the current property/sub-property (shared with DateSelectionBar)
+    const bookedDatesForPicker = useBookedDates(dbPropertyId, effectiveSubPropertyId);
 
     // Fetch DB property ID on mount
     useEffect(() => {
@@ -1194,8 +1210,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <DateSelectionBar
                                 checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
                                 checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
-                                propertyId={!isAmstelNest ? dbPropertyId : undefined}
-                                subPropertyId={!isAmstelNest && selectedRoom ? (dbSubPropertyMap[selectedRoom.id] || dbSubPropertyMap[selectedRoom.id.split('/').pop() || ''] || null) : undefined}
+                                disabledDates={bookedDatesForPicker.size > 0 ? bookedDatesForPicker : undefined}
                                 onDatesChange={(ci, co) => {
                                     const ciDate = new Date(ci + 'T12:00:00');
                                     const coDate = new Date(co + 'T12:00:00');

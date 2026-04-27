@@ -9,6 +9,7 @@ import DateSelectionBar from "../../../components/DateSelectionBar";
 import { api } from "../../../../lib/api";
 import { initiateRazorpayPayment } from "../../../../lib/razorpay";
 import PhoneAuthModal from "../../../components/PhoneAuthModal";
+import { useBookedDates } from "../../../hooks/useBookedDates";
 
 interface CartItem {
     villaId: string;
@@ -821,6 +822,11 @@ export default function BookMultiPage() {
     const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
     const showAmstelCalendar = hasAmstelOnly || amstelItems.length > 0;
 
+    // Fetch booked dates for the date picker
+    const bookedDatesForPicker = useBookedDates(
+        hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null)
+    );
+
     return (
         <>
         <div className="min-h-screen bg-[#FDFCF9] pb-24 relative z-0">
@@ -866,7 +872,7 @@ export default function BookMultiPage() {
                                 <DateSelectionBar
                                     checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
                                     checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
-                                    propertyId={!hasAmstelOnly ? (dbPropertyMap["ambrose"] || null) : undefined}
+                                    disabledDates={bookedDatesForPicker.size > 0 ? bookedDatesForPicker : undefined}
                                     onDatesChange={(ci, co) => {
                                         const ciDate = new Date(ci + 'T12:00:00');
                                         const coDate = new Date(co + 'T12:00:00');
