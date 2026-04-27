@@ -103,12 +103,25 @@ function drawDivider(doc: PDFKit.PDFDocument, y: number) {
 }
 
 function drawInfoBlock(doc: PDFKit.PDFDocument, title: string, items: string[], y: number, color: string = GOLD) {
+    const pageBottom = doc.page.height - 100; // leave room for footer
+    // Estimate total height needed: title(16) + items(~16 each) + buffer
+    const estimatedHeight = 16 + items.length * 18 + 10;
+    if (y + estimatedHeight > pageBottom) {
+        doc.addPage();
+        y = 50;
+    }
+
     // Section title
     doc.fontSize(8).fill(color).font("Helvetica-Bold")
         .text(title.toUpperCase(), 60, y, { characterSpacing: 2 });
     y += 16;
 
     for (let i = 0; i < items.length; i++) {
+        // Check if we need a page break before this item
+        if (y + 18 > pageBottom) {
+            doc.addPage();
+            y = 50;
+        }
         doc.fontSize(9).fill(TEXT_MED).font("Helvetica")
             .text(`${i + 1}. ${items[i]}`, 60, y, { width: doc.page.width - 120 });
         y += 16;
@@ -117,8 +130,8 @@ function drawInfoBlock(doc: PDFKit.PDFDocument, title: string, items: string[], 
 }
 
 function drawFooter(doc: PDFKit.PDFDocument, y: number, location: string, isDD = false) {
-    // Footer bar
-    const footerY = Math.max(y + 30, doc.page.height - 80);
+    // Always place footer at the bottom of the CURRENT page
+    const footerY = doc.page.height - 80;
     doc.rect(0, footerY, doc.page.width, 80).fill(NAVY);
 
     if (isDD) {
