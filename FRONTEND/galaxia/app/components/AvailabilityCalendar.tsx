@@ -113,7 +113,7 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
     const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
     useEffect(() => {
         if (!propertyId || propertyId <= 0) return;
-        (async () => {
+        const fetchData = async () => {
             try {
                 const startDate = toLocalDateStr(new Date(currentYear, currentMonth, 1));
                 const endDate = toLocalDateStr(new Date(currentYear, currentMonth + 1, 0));
@@ -134,7 +134,11 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
             } catch {
                 // Silently fail — calendar will show all dates as available
             }
-        })();
+        };
+        fetchData();
+        // Auto-refresh every 30s for multi-unit properties to keep counts current
+        const interval = totalUnits && totalUnits > 1 ? setInterval(fetchData, 30000) : null;
+        return () => { if (interval) clearInterval(interval); };
     }, [propertyId, subPropertyId, currentMonth, currentYear, totalUnits]);
 
     const prevMonth = () => {

@@ -598,6 +598,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             } catch { setCalendarBookedDays([]); setCalendarDayCounts({}); }
         };
         fetchCalendarBookings();
+        // Auto-refresh every 30s so new bookings are reflected in real-time
+        const interval = setInterval(fetchCalendarBookings, 30000);
+        return () => clearInterval(interval);
     }, [calendarProperty, calendarViewMonth, propertyList, activeBlocks]);
 
 
