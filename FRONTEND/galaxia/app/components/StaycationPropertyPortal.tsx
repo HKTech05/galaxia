@@ -209,7 +209,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         checkInDate: new Date(),
         checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
         property: properties[0] || "Hill View",
-        villa: "TAKE-1",
+        villa: (properties[0] || "").includes("Amstel") ? "Standard Cottage" : "TAKE-1",
         paymentMethod: "Cash"
     });
 
@@ -483,7 +483,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 checkInDate: new Date(),
                 checkOutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
                 property: properties[0] || "Hill View",
-                villa: "TAKE-1",
+                villa: (properties[0] || "").includes("Amstel") ? "Standard Cottage" : "TAKE-1",
                 paymentMethod: "Cash"
             });
             setCustomSplitMode(false);
