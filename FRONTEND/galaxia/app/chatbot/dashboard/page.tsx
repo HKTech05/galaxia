@@ -20,6 +20,7 @@ interface PhoneNumber { id: string; label: string; icon: string; color: string }
 
 const PHONE_NUMBERS: Record<string, PhoneNumber> = {
     digital_diaries: { id: "1117204771469353", label: "Digital Diaries", icon: "🎬", color: "#f59e0b" },
+    dd_instagram: { id: "instagram", label: "DD Instagram", icon: "📷", color: "#e1306c" },
     website: { id: "website", label: "Website", icon: "🌐", color: "#10b981" },
 };
 
@@ -87,11 +88,13 @@ function formatMsg(text: string) {
 
 // Map DB session → UI session
 function dbToUiSession(db: DbChatSession): ChatSession {
+    // Route Instagram sessions to their own tab
+    const isInstagram = db.platform === "instagram";
     return {
         id: db.session_id,
         sessionId: db.customer_phone,
         displayName: db.display_name || db.customer_phone,
-        phoneNumberKey: "digital_diaries",
+        phoneNumberKey: isInstagram ? "dd_instagram" : "digital_diaries",
         mode: db.is_human_active ? "human" : "bot",
         tags: db.tags || [],
         unread: db.unread_count || 0,
@@ -323,11 +326,13 @@ export default function ChatbotDashboard() {
     // ─── Auto-scroll messages ───
     useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat, messages]);
 
-    const allowed = session?.assignedNumbers || Object.keys(PHONE_NUMBERS);
+    const allowed = session?.role === "owner" ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
 
     const getFiltered = useCallback((t: string) => {
         return sessions.filter(s => {
             if (!allowed.includes(s.phoneNumberKey)) return false;
+            // Hide Instagram sessions from the "All" tab — they have their own tab
+            if (t === "all" && s.phoneNumberKey === "dd_instagram") return false;
             if (t !== "all" && s.phoneNumberKey !== t) return false;
             if (search) {
                 const q = search.toLowerCase();

@@ -10,10 +10,10 @@ import "./chatbot.css";
    ═══════════════════════════════════════════════════════ */
 
 const DEFAULT_USERS: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {
-    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "website"] },
+    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "dd_instagram", "website"] },
     staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: ["staycation_1", "website"] },
     staycation2: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2", "website"] },
-    ddadmin: { password: "dd123", role: "chatbot_admin", displayName: "Digital Diaries Admin", assignedNumbers: ["digital_diaries", "website"] },
+    ddadmin: { password: "dd123", role: "chatbot_admin", displayName: "Digital Diaries Admin", assignedNumbers: ["digital_diaries", "dd_instagram", "website"] },
 };
 
 function getMockUsers() {

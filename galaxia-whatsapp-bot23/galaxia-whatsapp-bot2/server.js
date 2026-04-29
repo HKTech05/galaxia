@@ -6,7 +6,7 @@ const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const path = require("path");
 const chatRoute = require("./routes/chat");
-const instagramRoute = require("./routes/instagram");
+const createInstagramRouter = require("./routes/instagram");
 const { getResponse, getMainMenu } = require("./services/menuEngine");
 const { sendChatResponse } = require("./utils/whatsapp");
 const db = require("./services/db");
@@ -55,7 +55,7 @@ const limiter = rateLimit({
 
 app.use("/chat", limiter);
 app.use("/chat", chatRoute);
-app.use("/instagram", instagramRoute);
+app.use("/instagram", createInstagramRouter(io));
 
 /* =========================
    SERVE WIDGET FILES
@@ -278,8 +278,14 @@ app.post("/api/chats/:sessionId/send", async (req, res) => {
       session: await db.getSession(sessionId),
     });
 
-    // Send via WhatsApp API if live
-    if (WHATSAPP_LIVE) {
+    // Send via the appropriate platform API
+    if (session.platform === "instagram") {
+      // Instagram session — send via Instagram Graph API
+      const { sendInstagramText } = require("./utils/instagram");
+      console.log(`[Admin Send] Sending to Instagram user ${session.customer_phone}`);
+      await sendInstagramText(session.customer_phone, message.trim());
+    } else if (WHATSAPP_LIVE) {
+      // WhatsApp session — send via WhatsApp Cloud API (unchanged)
       const { sendChatResponse } = require("./utils/whatsapp");
       // Use env phone ID to avoid stale session data
       const phoneId = process.env.WHATSAPP_PHONE_ID || session.phone_number_id;
