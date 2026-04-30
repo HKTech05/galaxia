@@ -444,16 +444,16 @@ export default function BookMultiPage() {
         const extraAdultCharge = 2000;
         const kidsCharge = 1000;
         const units = item.unitCount || 1;
-        // Parse base included persons from personsLabel (e.g. "4 with meals" => 4)
-        const basePersons = item.personsLabel ? parseInt(item.personsLabel) || 2 : 2;
-        if (isAmstel) {
-            // Amstel Nest: guests are totals — base included = 2 adults per unit
-            const extraAdults = Math.max(0, guests.adults - 2 * units);
-            return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1);
-        }
-        // Ambrose: guests are per-villa
-        const extraAdults = Math.max(0, guests.adults - basePersons);
-        return (extraAdults * extraAdultCharge + guests.kids * kidsCharge) * Math.max(nights, 1) * units;
+        // Parse base included persons from personsLabel (e.g. "upto 4 with meals" => 4)
+        const basePersons = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
+        const baseIncluded = isAmstel ? basePersons * units : basePersons;
+        // Adults beyond included are charged at adult rate
+        const extraAdults = Math.max(0, guests.adults - baseIncluded);
+        // Remaining free slots absorb kids
+        const freeKidsSlots = Math.max(0, baseIncluded - guests.adults);
+        const extraKids = Math.max(0, guests.kids - freeKidsSlots);
+        const multiplier = isAmstel ? 1 : units;
+        return (extraAdults * extraAdultCharge + extraKids * kidsCharge) * Math.max(nights, 1) * multiplier;
     };
 
     const getExtraChargeBreakdown = (item: CartItem) => {
@@ -462,13 +462,16 @@ export default function BookMultiPage() {
         const extraAdultRate = 2000;
         const kidsRate = 1000;
         const units = item.unitCount || 1;
-        const basePersons = item.personsLabel ? parseInt(item.personsLabel) || 2 : 2;
-        if (isAmstel) {
-            const extraAdults = Math.max(0, guests.adults - 2 * units);
-            return { adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1), kidsCharge: guests.kids * kidsRate * Math.max(nights, 1) };
-        }
-        const extraAdults = Math.max(0, guests.adults - basePersons);
-        return { adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1) * units, kidsCharge: guests.kids * kidsRate * Math.max(nights, 1) * units };
+        const basePersons = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
+        const baseIncluded = isAmstel ? basePersons * units : basePersons;
+        const extraAdults = Math.max(0, guests.adults - baseIncluded);
+        const freeKidsSlots = Math.max(0, baseIncluded - guests.adults);
+        const extraKids = Math.max(0, guests.kids - freeKidsSlots);
+        const multiplier = isAmstel ? 1 : units;
+        return {
+            adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1) * multiplier,
+            kidsCharge: extraKids * kidsRate * Math.max(nights, 1) * multiplier,
+        };
     };
 
     const grandSubtotal = cart.reduce((sum, item) => sum + getItemPrice(item) + getExtraCharges(item), 0);
