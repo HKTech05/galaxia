@@ -432,7 +432,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     const kidsChargeStr = property.pricing.kidsCharge;
     const kidsChargeNum = parseInt(kidsChargeStr.replace(/,/g, ""));
 
-    // Base included persons from personsLabel (e.g. "4 with meals" => 4, "2 with meals" => 2, "upto 4 with meals" => 4)
+    // Base included persons from persons label (e.g. "4 with meals" => 4, "2 with meals" => 2, "upto 4 with meals" => 4)
     const personsFromLabel = selectedRoom?.personsLabel ? (parseInt(selectedRoom.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
     const baseIncludedPersons = personsFromLabel * (isAmstelNest ? unitCount : 1);
     // Adults beyond included persons are charged at adult rate

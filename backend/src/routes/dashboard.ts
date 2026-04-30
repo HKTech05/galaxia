@@ -359,7 +359,13 @@ router.get("/property-status", authMiddleware, async (req, res) => {
             };
         });
 
-        return res.json({ properties: decoratedProperties, activeBookings });
+        // Decrypt phone numbers in activeBookings for frontend display
+        const decryptedBookings = activeBookings.map(b => ({
+            ...b,
+            customerPhone: b.customerPhone ? decrypt(b.customerPhone) : null,
+        }));
+
+        return res.json({ properties: decoratedProperties, activeBookings: decryptedBookings });
     } catch (error) {
         console.error("Property status error:", error);
         return res.status(500).json({ error: "Internal server error" });
