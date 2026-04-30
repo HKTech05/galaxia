@@ -168,6 +168,19 @@ app.post("/webhook", async (req, res) => {
       io.emit("session_updated", updatedSession);
     }
 
+    // 5c. If user chose "collab", flag the session with collab tag
+    if (choice === "collab") {
+      console.log(`[WhatsApp] User ${from} requested collab — tagging session.`);
+      const currentSession = await db.getSession(sessionId);
+      const currentTags = currentSession?.tags || [];
+      if (!currentTags.includes("collab")) {
+        const newTags = [...currentTags, "collab"];
+        await db.updateTags(sessionId, newTags);
+        const updatedSession = await db.getSession(sessionId);
+        io.emit("session_updated", updatedSession);
+      }
+    }
+
     // Build reply text
     let replyText = response.message || "";
     if (response.link) {
@@ -282,8 +295,18 @@ app.post("/api/chats/:sessionId/send", async (req, res) => {
     if (session.platform === "instagram") {
       // Instagram session — send via Instagram Graph API
       const { sendInstagramText } = require("./utils/instagram");
-      console.log(`[Admin Send] Sending to Instagram user ${session.customer_phone}`);
-      await sendInstagramText(session.customer_phone, message.trim());
+      // Determine the correct token for this bot type
+      const igTokenMap = {
+        ambrose_ig: process.env.IG_TOKEN_AMBROSE,
+        amstelnest_ig: process.env.IG_TOKEN_AMSTELNEST,
+        laparaiso_ig: process.env.IG_TOKEN_LAPARAISO,
+        mountview_ig: process.env.IG_TOKEN_MOUNTVIEW,
+        heavenlyvilla_ig: process.env.IG_TOKEN_HEAVENLYVILLA,
+        hillview_ig: process.env.IG_TOKEN_HILLVIEW,
+      };
+      const igToken = igTokenMap[session.bot_type] || process.env.INSTAGRAM_TOKEN;
+      console.log(`[Admin Send] Sending to Instagram user ${session.customer_phone} (bot: ${session.bot_type})`);
+      await sendInstagramText(session.customer_phone, message.trim(), igToken);
     } else if (WHATSAPP_LIVE) {
       // WhatsApp session — send via WhatsApp Cloud API (unchanged)
       const { sendChatResponse } = require("./utils/whatsapp");

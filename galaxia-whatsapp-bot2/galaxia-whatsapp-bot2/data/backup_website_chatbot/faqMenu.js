@@ -51,9 +51,8 @@ function buildPropertyNodes() {
         `🏡 *${p.name}*\n` +
         `${p.type}\n\n` +
         `💰 *Stay Pricing:* (Excl. GST)\n` +
-        `  • Mon-Thu: ${fmt(p.pricing.weekday)} + 5% GST\n` +
-        `  • Fri/Sun: ${fmt(p.pricing.weekend)} + 5% GST\n` +
-        (p.pricing.prime ? `  • Saturday: ${fmt(p.pricing.prime)} + 5% GST\n` : "") +
+        `  • Weekday: ${fmt(p.pricing.weekday)} + 5% GST\n` +
+        `  • Weekend: ${fmt(p.pricing.weekend)} + 5% GST\n` +
         (p.extraPerson ? `  • Extra Adult: ${fmt(p.extraPerson)} + 5% GST\n` : "") +
         (p.kidsCharges ? `  • Kids (5-12 yrs): ${fmt(p.kidsCharges)} + 5% GST\n` : "") +
         `\n🕒 Check-in: ${p.checkIn} | Check-out: ${p.checkOut}\n` +
@@ -112,11 +111,8 @@ const MOVIE_TIME_MSG = (name, theme) =>
 const CELEBRATION_MSG = (name, theme) =>
   `🎉 *${name}* (${theme})\n` +
   `*Birthday/Anniversary Celebration Package*\n\n` +
-  `💰 *Celebration Package Price* (for 2 people):\n` +
-  `• 2 Hours: ₹2,950\n` +
-  `• 3 Hours: ₹3,450 (Weekday) / ₹3,950 (Weekend)\n\n` +
-  `✨ *Includes:*\n• Private Screening\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n` +
-  `🚻 Extra Person: ₹300\n` +
+  `💰 *Price: ₹2,950* (for 2 people)\n\n` +
+  `✨ *Includes:*\n• Private Screening (2 Hours)\n• Cake (250g)\n• LED Message Tag\n• Heart-lit Pathway\n• Fog & Candle Effect\n• Dry Snacks, Popcorn, Juice & Water\n\n` +
   `🔒 No CCTV | 🆔 ID Proof Mandatory.`;
 
 /* ── static menu tree ────────────────────────── */
@@ -264,12 +260,11 @@ const staticMenu = {
      CELEBRATION BOT TREE
   ========================================================== */
   celebration_main: {
-    message: "🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala.\n\n🤖 _I'm an automated assistant here to help you explore our screens, pricing, and book your experience. Choose an option below to get started!_",
+    message: "🎬 *Welcome to Digital Diaries!*\n\nPremium private cinema screenings in Wadala.",
     options: [
       { label: "🎥 Movie Time", value: "movie_time" },
       { label: "🎉 Celebration Packs", value: "deco_screens" },
-      { label: "❓ FAQs & Live Chat Support", value: "faqs_celebration" },
-      { label: "🤝 Collab", value: "collab" },
+      { label: "❓ FAQs & Support", value: "faqs_celebration" },
       { label: "🌐 Visit Website", value: "visit_cel_website" }
     ]
   },
@@ -324,8 +319,7 @@ const staticMenu = {
   faqs_celebration: {
     message: "❓ *Frequently Asked Questions*",
     options: [
-      { label: "🍽️ Food & Menu", value: "faq_cel_food" },
-      { label: "🥣 Add-ons & People", value: "faq_cel_food_addons" },
+      { label: "🥣 Add-ons & People", value: "faq_cel_food" },
       { label: "🔒 Privacy & CCTV", value: "faq_cel_privacy" },
       { label: "⏰ Timings & Rules", value: "faq_cel_rules" },
       { label: "📍 Location", value: "dd_location" },
@@ -334,7 +328,7 @@ const staticMenu = {
     ]
   },
 
-  faq_cel_food_addons: {
+  faq_cel_food: {
     message: "🍽️ *Add-ons & Extra People*\n\n• *Optional Add-ons (₹400 each):* Extra Cake (250g), Balloons Decoration, or LED Message Tag.\n• _Note: Add-ons are specifically for 'Movie Time Only' bookings._\n• *Extra Person:* ₹300 per head.",
     options: [ BACK_TO_MENU ]
   },
@@ -349,23 +343,12 @@ const staticMenu = {
     options: [ BACK_TO_MENU ]
   },
 
-  faq_cel_food: {
-    message: "🍽️ *Food & Beverages*\n\n" +
-             "🎉 *Celebration Package* includes a complimentary snacks hamper (Popcorn, Dry Snacks, Juice, Chocolates & Water).\n\n" +
-             "🎥 *Movie Time* includes Dry Snacks, Popcorn, Juice, Chocolates & Water.\n\n" +
-             "🍕 *Additional Food Menu:*\nWe offer a variety of snacks and beverages at the venue. Outside food is *not allowed*.\n\n" +
-             "📄 *Download our full food menu here:*\nhttps://galaxiaresorts.com/menus/DigitalDiariesMenu.pdf",
-    options: [ BACK_TO_MENU ]
-  },
-
   dd_location: {
     message: "📍 *Digital Diaries Location*\n\nWe are located in Wadala, Mumbai.\n\n🗺️ *Google Maps:* https://maps.app.goo.gl/ghU28kHARPrpa4a89",
     options: [BACK_TO_MENU]
   },
 
   human: { message: "👤 *Talk to a Human*\n\nOur team will reply to this chat shortly.", options: [BACK_TO_MENU] },
-
-  collab: { message: "🤝 *Collaboration Inquiry*\n\nThank you for your interest in collaborating with us! Our team will contact you shortly.\n\nPlease stay tuned — we appreciate your patience!", options: [BACK_TO_MENU] },
 
   visit_website: { message: "🌐 *Galaxia Resorts Website*\n\nExplore our full range of offerings, book stays, and discover more on our official website." + WEBSITE_LINK, options: [BACK_TO_MENU] },
 

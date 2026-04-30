@@ -1,16 +1,16 @@
 /**
  * Instagram DM Webhook Route
  *
- * Handles incoming Instagram DMs and sends automated replies using the
- * same menu engine as the WhatsApp chatbot. Integrates with the dashboard
- * via Socket.IO and persists chats to the database.
+ * Handles incoming Instagram DMs for BOTH Digital Diaries and 6 Staycation IG bots.
+ * Routes each message to the correct bot type based on the recipient (page) ID.
+ * Integrates with the dashboard via Socket.IO and persists chats to the database.
  *
  * NOTE: WhatsApp code is NOT touched. This is a completely separate route.
  */
 
 const express = require("express");
 const router = express.Router();
-const { getResponse, getMainMenu } = require("../services/menuEngine");
+const { getResponse, getMainMenu, IG_BOT_TYPES } = require("../services/menuEngine");
 const { sendInstagramReply } = require("../utils/instagram");
 const db = require("../services/db");
 
@@ -20,17 +20,71 @@ const axios = require("axios");
 // Socket.IO instance — injected by server.js via module.exports function
 let io = null;
 
+/* ── IG Page → Bot Type Mapping ──────────────────────────
+   Each Instagram page has a unique Page ID. The webhook payload
+   contains the recipient page ID so we can route to the right bot.
+   
+   Env vars: IG_PAGE_ID_AMBROSE, IG_PAGE_ID_AMSTELNEST, etc.
+   Until these are configured, we fall back to "celebration" (DD).
+   ────────────────────────────────────────────────────────── */
+function getBotTypeForPage(recipientPageId) {
+  const mapping = {
+    [process.env.IG_PAGE_ID_AMBROSE]: "ambrose_ig",
+    [process.env.IG_PAGE_ID_AMSTELNEST]: "amstelnest_ig",
+    [process.env.IG_PAGE_ID_LAPARAISO]: "laparaiso_ig",
+    [process.env.IG_PAGE_ID_MOUNTVIEW]: "mountview_ig",
+    [process.env.IG_PAGE_ID_HEAVENLYVILLA]: "heavenlyvilla_ig",
+    [process.env.IG_PAGE_ID_HILLVIEW]: "hillview_ig",
+  };
+
+  // Remove undefined keys
+  const pageId = recipientPageId?.toString();
+  if (pageId && mapping[pageId]) {
+    return mapping[pageId];
+  }
+
+  // Default: Digital Diaries
+  return "celebration";
+}
+
+/* ── IG Page → phone_number_id for dashboard routing ───── */
+function getPhoneNumberIdForBot(botType) {
+  const map = {
+    ambrose_ig: "ig_ambrose",
+    amstelnest_ig: "ig_amstelnest",
+    laparaiso_ig: "ig_laparaiso",
+    mountview_ig: "ig_mountview",
+    heavenlyvilla_ig: "ig_heavenlyvilla",
+    hillview_ig: "ig_hillview",
+    celebration: "instagram",
+  };
+  return map[botType] || "instagram";
+}
+
+/* ── Get the correct Instagram token for each bot ──────── */
+function getTokenForBot(botType) {
+  const tokenMap = {
+    ambrose_ig: process.env.IG_TOKEN_AMBROSE,
+    amstelnest_ig: process.env.IG_TOKEN_AMSTELNEST,
+    laparaiso_ig: process.env.IG_TOKEN_LAPARAISO,
+    mountview_ig: process.env.IG_TOKEN_MOUNTVIEW,
+    heavenlyvilla_ig: process.env.IG_TOKEN_HEAVENLYVILLA,
+    hillview_ig: process.env.IG_TOKEN_HILLVIEW,
+  };
+  return tokenMap[botType] || process.env.INSTAGRAM_TOKEN;
+}
+
 /**
  * Fetch Instagram username for an IGSID.
  * Returns "@username" or null if unavailable.
  */
-async function fetchIgUsername(igsid) {
+async function fetchIgUsername(igsid, token) {
   try {
-    const token = process.env.INSTAGRAM_TOKEN;
-    if (!token) return null;
+    const accessToken = token || process.env.INSTAGRAM_TOKEN;
+    if (!accessToken) return null;
     const res = await axios.get(
       `https://graph.instagram.com/v21.0/${igsid}`,
-      { params: { fields: "name,username", access_token: token } }
+      { params: { fields: "name,username", access_token: accessToken } }
     );
     if (res.data?.username) return `@${res.data.username}`;
     if (res.data?.name) return res.data.name;
@@ -70,7 +124,7 @@ router.get("/webhook", (req, res) => {
 /**
  * POST /instagram/webhook
  * Handle incoming Instagram DMs and send quick-reply responses.
- * Mirrors the WhatsApp handler logic: DB persistence, dashboard events, human mode.
+ * Routes to the correct property bot based on recipient page ID.
  */
 router.post("/webhook", async (req, res) => {
   try {
@@ -83,6 +137,7 @@ router.post("/webhook", async (req, res) => {
     if (!messaging) return;
 
     const senderId = messaging.sender?.id;
+    const recipientId = messaging.recipient?.id;
     if (!senderId) return;
 
     // Ignore echo messages (messages sent BY the page, not TO the page)
@@ -99,17 +154,21 @@ router.post("/webhook", async (req, res) => {
 
     if (!userText) return;
 
-    console.log(`[Instagram] Message from ${senderId}: "${userText}"`);
+    // Determine which bot to use based on recipient page ID
+    const botType = getBotTypeForPage(recipientId);
+    const phoneNumberId = getPhoneNumberIdForBot(botType);
+    const igToken = getTokenForBot(botType);
 
-    const sessionId = `ig_${senderId}`;
-    const botType = "celebration";
+    console.log(`[Instagram] Message from ${senderId} to page ${recipientId} → bot: ${botType}`);
+
+    const sessionId = `ig_${botType}_${senderId}`;
 
     // 1. Get or create session (platform = "instagram")
-    const session = await db.getOrCreateSession(sessionId, senderId, "instagram", botType, "instagram");
+    const session = await db.getOrCreateSession(sessionId, senderId, phoneNumberId, botType, "instagram");
 
     // 1b. If new session, try to fetch and store the Instagram username
     if (session.display_name === senderId || !session.display_name) {
-      const igName = await fetchIgUsername(senderId);
+      const igName = await fetchIgUsername(senderId, igToken);
       if (igName) {
         await db.pool.query(
           `UPDATE chat_sessions SET display_name = $2 WHERE session_id = $1`,
@@ -138,7 +197,7 @@ router.post("/webhook", async (req, res) => {
       return;
     }
 
-    // 5. Generate bot reply using the same menu engine
+    // 5. Generate bot reply using the menu engine
     const choice = userText.toLowerCase();
     const isGreeting = ["hi", "hello", "hey", "start", "menu"].includes(choice);
     const response = isGreeting
@@ -152,6 +211,21 @@ router.post("/webhook", async (req, res) => {
       if (io) {
         const updatedSession = await db.getSession(sessionId);
         io.emit("session_updated", updatedSession);
+      }
+    }
+
+    // 5c. If user chose "collab", flag the session with collab tag
+    if (choice === "collab") {
+      console.log(`[Instagram] User ${senderId} requested collab — tagging session.`);
+      const currentSession = await db.getSession(sessionId);
+      const currentTags = currentSession?.tags || [];
+      if (!currentTags.includes("collab")) {
+        const newTags = [...currentTags, "collab"];
+        await db.updateTags(sessionId, newTags);
+        if (io) {
+          const updatedSession = await db.getSession(sessionId);
+          io.emit("session_updated", updatedSession);
+        }
       }
     }
 
@@ -180,9 +254,9 @@ router.post("/webhook", async (req, res) => {
       });
     }
 
-    // 8. Send via Instagram Graph API
-    console.log(`[Instagram] Sending reply to ${senderId} via Instagram API...`);
-    await sendInstagramReply(senderId, response, botType);
+    // 8. Send via Instagram Graph API (use the correct token for this bot)
+    console.log(`[Instagram] Sending reply to ${senderId} via Instagram API (bot: ${botType})...`);
+    await sendInstagramReply(senderId, response, botType, igToken);
 
   } catch (err) {
     console.error("Instagram webhook error:", err.response?.data || err.message, err.stack);

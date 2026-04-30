@@ -51,10 +51,11 @@ function buildPropertyNodes() {
         `🏡 *${p.name}*\n` +
         `${p.type}\n\n` +
         `💰 *Stay Pricing:* (Excl. GST)\n` +
-        `  • Weekday: ${fmt(p.pricing.weekday)} + 5% GST\n` +
-        `  • Weekend: ${fmt(p.pricing.weekend)} + 5% GST\n` +
+        `  • Mon-Thu: ${fmt(p.pricing.weekday)} + 5% GST\n` +
+        `  • Fri/Sun: ${fmt(p.pricing.weekend)} + 5% GST\n` +
+        (p.pricing.prime ? `  • Saturday: ${fmt(p.pricing.prime)} + 5% GST\n` : "") +
         (p.extraPerson ? `  • Extra Adult: ${fmt(p.extraPerson)} + 5% GST\n` : "") +
-        (p.kidsCharges ? `  • Kids (5-10 yrs): ${fmt(p.kidsCharges)} + 5% GST\n` : "") +
+        (p.kidsCharges ? `  • Kids (5-12 yrs): ${fmt(p.kidsCharges)} + 5% GST\n` : "") +
         `\n🕒 Check-in: ${p.checkIn} | Check-out: ${p.checkOut}\n` +
         `🍽️ Food: ${p.foodPolicy}\n` +
         `🐾 Pets: ${p.petsAllowed ? "Allowed ✅ (₹600 extra)" : "Not Allowed ❌"}\n` +

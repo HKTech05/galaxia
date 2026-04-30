@@ -3,17 +3,31 @@
  *
  * Core logic for the button-based FAQ chatbot.
  * getResponse(choice, session, botType) → { message, options, image?, link?, carousel? }
+ *
+ * Supports bot types:
+ *   - "staycation"     → Staycation website chatbot
+ *   - "celebration"    → Digital Diaries chatbot
+ *   - "ambrose_ig"     → Ambrose IG chatbot
+ *   - "amstelnest_ig"  → Amstel Nest IG chatbot
+ *   - "laparaiso_ig"   → La Paraiso IG chatbot
+ *   - "mountview_ig"   → Mount View IG chatbot
+ *   - "heavenlyvilla_ig" → Heavenly Villa IG chatbot
+ *   - "hillview_ig"    → Hill View IG chatbot
  */
 
 const { menuTree } = require("../data/faqMenu");
+const { igMenuTrees, IG_BOT_TYPES } = require("../data/igMenuTrees");
 const { getSession, resetSession } = require("./sessionStore");
+
+// Merge all trees: main chatbot tree + IG bot trees
+const fullTree = { ...menuTree, ...igMenuTrees };
 
 /**
  * Process a user's button choice and return the next menu node.
  *
  * @param {string} choice  - The value of the button the user tapped (e.g. "budget_properties")
  * @param {string} userId  - Unique user identifier
- * @param {string} botType - "staycation" or "celebration"
+ * @param {string} botType - "staycation", "celebration", or an IG bot type
  * @returns {{ message: string, options: Array, image?: string, link?: string, carousel?: Array }}
  */
 function getResponse(choice, userId, botType = "staycation") {
@@ -35,7 +49,7 @@ function getResponse(choice, userId, botType = "staycation") {
   }
 
   /* ── push current location to stack, navigate ─ */
-  if (menuTree[choice]) {
+  if (fullTree[choice]) {
     // Don't push if it's the same menu (avoid duplicate stack entries)
     if (session.currentMenu !== choice) {
       session.navStack.push(session.currentMenu);
@@ -52,7 +66,7 @@ function getResponse(choice, userId, botType = "staycation") {
  * Build the response object from a menu node.
  */
 function buildResponse(nodeKey, rootNodeStr) {
-  const node = menuTree[nodeKey];
+  const node = fullTree[nodeKey];
   if (!node) return buildResponse(rootNodeStr, rootNodeStr); // fallback to root
 
   return {
@@ -71,4 +85,4 @@ function getMainMenu(botType = "staycation") {
   return buildResponse(`${botType}_main`, `${botType}_main`);
 }
 
-module.exports = { getResponse, getMainMenu };
+module.exports = { getResponse, getMainMenu, IG_BOT_TYPES };

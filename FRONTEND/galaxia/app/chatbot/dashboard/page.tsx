@@ -22,6 +22,12 @@ const PHONE_NUMBERS: Record<string, PhoneNumber> = {
     digital_diaries: { id: "1117204771469353", label: "Digital Diaries", icon: "🎬", color: "#f59e0b" },
     dd_instagram: { id: "instagram", label: "DD Instagram", icon: "📷", color: "#e1306c" },
     website: { id: "website", label: "Website", icon: "🌐", color: "#10b981" },
+    ig_ambrose: { id: "ig_ambrose", label: "Ambrose IG", icon: "📷", color: "#8b5cf6" },
+    ig_amstelnest: { id: "ig_amstelnest", label: "Amstelnest IG", icon: "📷", color: "#06b6d4" },
+    ig_laparaiso: { id: "ig_laparaiso", label: "La Paraiso IG", icon: "📷", color: "#f97316" },
+    ig_mountview: { id: "ig_mountview", label: "Mount View IG", icon: "📷", color: "#84cc16" },
+    ig_heavenlyvilla: { id: "ig_heavenlyvilla", label: "Heavenly Villa IG", icon: "📷", color: "#ec4899" },
+    ig_hillview: { id: "ig_hillview", label: "Hill View IG", icon: "📷", color: "#14b8a6" },
 };
 
 // DB session shape from the bot server
@@ -88,13 +94,29 @@ function formatMsg(text: string) {
 
 // Map DB session → UI session
 function dbToUiSession(db: DbChatSession): ChatSession {
-    // Route Instagram sessions to their own tab
+    // Route Instagram sessions to their own tab based on phone_number_id
     const isInstagram = db.platform === "instagram";
+    let phoneNumberKey = "digital_diaries";
+
+    if (isInstagram) {
+        // Map IG bot phone_number_ids to their dashboard tab keys
+        const igPhoneMap: Record<string, string> = {
+            ig_ambrose: "ig_ambrose",
+            ig_amstelnest: "ig_amstelnest",
+            ig_laparaiso: "ig_laparaiso",
+            ig_mountview: "ig_mountview",
+            ig_heavenlyvilla: "ig_heavenlyvilla",
+            ig_hillview: "ig_hillview",
+            instagram: "dd_instagram",
+        };
+        phoneNumberKey = igPhoneMap[db.phone_number_id] || "dd_instagram";
+    }
+
     return {
         id: db.session_id,
         sessionId: db.customer_phone,
         displayName: db.display_name || db.customer_phone,
-        phoneNumberKey: isInstagram ? "dd_instagram" : "digital_diaries",
+        phoneNumberKey,
         mode: db.is_human_active ? "human" : "bot",
         tags: db.tags || [],
         unread: db.unread_count || 0,
@@ -114,12 +136,13 @@ function dbToUiMessage(db: DbChatMessage): Message {
     };
 }
 
-const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123" };
+const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123", igadmin: "ig123" };
 const ACCOUNTS = [
     { key: "owner", label: "Owner", access: "All Numbers" },
     { key: "staycation1", label: "Staycation 1", access: "Staycation 1" },
     { key: "staycation2", label: "Staycation 2", access: "Staycation 2" },
     { key: "ddadmin", label: "DD Admin", access: "Digital Diaries" },
+    { key: "igadmin", label: "IG Admin", access: "All IG Bots" },
 ];
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
@@ -332,7 +355,7 @@ export default function ChatbotDashboard() {
         return sessions.filter(s => {
             if (!allowed.includes(s.phoneNumberKey)) return false;
             // Hide Instagram sessions from the "All" tab — they have their own tab
-            if (t === "all" && s.phoneNumberKey === "dd_instagram") return false;
+            if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_"))) return false;
             if (t !== "all" && s.phoneNumberKey !== t) return false;
             if (search) {
                 const q = search.toLowerCase();
@@ -571,7 +594,7 @@ export default function ChatbotDashboard() {
                                             <div className="cb-chat-tags">
                                                 {s.tags.map(t => (
                                                     <span key={t} className={`cb-tag cb-tag-${t}`}>
-                                                        {t === "hot" ? "🔥 Hot Lead" : t === "followup" ? "📌 Follow-up" : t === "resolved" ? "✅ Resolved" : t === "booked" ? "🎫 Booked" : t === "website" ? "🌐 Website" : t === "dd" ? "🎬 DD" : t === "staycation" ? "🏡 Staycation" : "🆕 New"}
+                                                        {t === "hot" ? "🔥 Hot Lead" : t === "followup" ? "📌 Follow-up" : t === "resolved" ? "✅ Resolved" : t === "booked" ? "🎫 Booked" : t === "website" ? "🌐 Website" : t === "dd" ? "🎬 DD" : t === "staycation" ? "🏡 Staycation" : t === "collab" ? "🤝 Collab" : "🆕 New"}
                                                     </span>
                                                 ))}
                                             </div>

@@ -16,8 +16,8 @@ const IG_API_VERSION = "v21.0";
  * @param {object} response     – Menu engine response { message, options, link?, image? }
  * @param {string} botType      – "celebration" or "staycation"
  */
-async function sendInstagramReply(recipientId, response, botType = "celebration") {
-  const token = process.env.INSTAGRAM_TOKEN;
+async function sendInstagramReply(recipientId, response, botType = "celebration", customToken = null) {
+  const token = customToken || process.env.INSTAGRAM_TOKEN;
   if (!token) {
     console.error("[Instagram] INSTAGRAM_TOKEN not set — cannot send reply.");
     return;
@@ -73,8 +73,8 @@ async function sendInstagramReply(recipientId, response, botType = "celebration"
  * @param {string} recipientId  – Instagram-scoped user ID (IGSID)
  * @param {string} text         – Plain text message
  */
-async function sendInstagramText(recipientId, text) {
-  const token = process.env.INSTAGRAM_TOKEN;
+async function sendInstagramText(recipientId, text, customToken = null) {
+  const token = customToken || process.env.INSTAGRAM_TOKEN;
   if (!token) {
     console.error("[Instagram] INSTAGRAM_TOKEN not set — cannot send reply.");
     return;
