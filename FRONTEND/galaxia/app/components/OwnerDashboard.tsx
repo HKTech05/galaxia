@@ -1654,7 +1654,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     guest: booking.customerName || stdCottage.guest,
                                                     guests: booking.numGuests || stdCottage.guests,
                                                     kids: booking.numKids || stdCottage.kids || 0,
-                                                    phone: stdCottage.phone,
+                                                    phone: booking.customerPhone || stdCottage.phone,
                                                     checkInDate: booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : null,
                                                     checkOutDate: booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString('en-IN') : null,
                                                     balanceAmount: booking.balanceAmount ?? stdCottage.balanceAmount,

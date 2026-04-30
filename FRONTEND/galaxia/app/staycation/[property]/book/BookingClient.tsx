@@ -432,12 +432,16 @@ export default function BookingClient({ property }: BookingClientProps) {
     const kidsChargeStr = property.pricing.kidsCharge;
     const kidsChargeNum = parseInt(kidsChargeStr.replace(/,/g, ""));
 
-    // Base included persons from personsLabel (e.g. "4 with meals" => 4, "2 with meals" => 2)
-    const personsFromLabel = selectedRoom?.personsLabel ? parseInt(selectedRoom.personsLabel) || 2 : 2;
+    // Base included persons from personsLabel (e.g. "4 with meals" => 4, "2 with meals" => 2, "upto 4 with meals" => 4)
+    const personsFromLabel = selectedRoom?.personsLabel ? (parseInt(selectedRoom.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
     const baseIncludedPersons = personsFromLabel * (isAmstelNest ? unitCount : 1);
+    // Adults beyond included persons are charged at adult rate
     const extraAdults = Math.max(0, adults - baseIncludedPersons);
+    // Remaining free slots (after adults) absorb kids before charging
+    const freeKidsSlots = Math.max(0, baseIncludedPersons - adults);
+    const extraKids = Math.max(0, kids - freeKidsSlots);
     const extraAdultTotal = extraAdults * extraAdultCharge;
-    const kidsTotal = kids * kidsChargeNum;
+    const kidsTotal = extraKids * kidsChargeNum;
 
     // Room price: sum per-night prices for accurate multi-day-type bookings
     const computedRoomPrice = (() => {
@@ -1045,10 +1049,10 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         {totalGuests >= maxGuests && (
                                             <p className="mt-2 text-[10px] font-inter text-amber-600 font-medium">Maximum {maxGuests} guests reached.</p>
                                         )}
-                                        {(extraAdults > 0 || kids > 0) && (
+                                        {(extraAdults > 0 || extraKids > 0) && (
                                             <div className="mt-3 pt-3 border-t border-border-light text-[10px] font-inter text-text-muted space-y-1">
                                                 {extraAdults > 0 && <p>Extra adults: {extraAdults} × ₹{property.pricing.extraAdult}/night = ₹{(extraAdultTotal).toLocaleString("en-IN")}/night</p>}
-                                                {kids > 0 && <p>Kids: {kids} × ₹{kidsChargeNum.toLocaleString("en-IN")}/night = ₹{kidsTotal.toLocaleString("en-IN")}/night</p>}
+                                                {extraKids > 0 && <p>Extra kids: {extraKids} × ₹{kidsChargeNum.toLocaleString("en-IN")}/night = ₹{kidsTotal.toLocaleString("en-IN")}/night</p>}
                                             </div>
                                         )}
                                     </div>
