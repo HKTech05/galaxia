@@ -52,8 +52,9 @@ function buildPropertyNodes() {
         `${p.type}\n\n` +
         `💰 *Stay Pricing:* (Excl. GST)\n` +
         `  • Mon-Thu: ${fmt(p.pricing.weekday)} + 5% GST\n` +
-        `  • Fri/Sun: ${fmt(p.pricing.weekend)} + 5% GST\n` +
-        (p.pricing.prime ? `  • Saturday: ${fmt(p.pricing.prime)} + 5% GST\n` : "") +
+        (p.pricing.prime && p.pricing.prime !== p.pricing.weekend
+          ? `  • Fri/Sun: ${fmt(p.pricing.weekend)} + 5% GST\n  • Saturday: ${fmt(p.pricing.prime)} + 5% GST\n`
+          : `  • Fri/Sat/Sun: ${fmt(p.pricing.weekend)} + 5% GST\n`) +
         (p.extraPerson ? `  • Extra Adult: ${fmt(p.extraPerson)} + 5% GST\n` : "") +
         (p.kidsCharges ? `  • Kids (5-12 yrs): ${fmt(p.kidsCharges)} + 5% GST\n` : "") +
         `\n🕒 Check-in: ${p.checkIn} | Check-out: ${p.checkOut}\n` +

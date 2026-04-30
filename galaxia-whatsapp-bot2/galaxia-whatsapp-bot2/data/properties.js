@@ -17,7 +17,7 @@ const properties = [
     checkOut: "10:00 AM",
     pricing: { weekday: 2000, weekend: 3000, prime: 3000, specialDates: {} },
     extraPerson: 800,
-    kidsCharges: 500,
+    kidsCharges: 400,
     foodPolicy: "Food not included. Society restaurant available (Veg & Non-Veg).",
     securityDeposit: 2000,
     bookingPolicy: "Non-refundable & Non-transferable",
