@@ -101,6 +101,7 @@ app.get("/webhook", (req, res) => {
 ========================= */
 app.post("/webhook", async (req, res) => {
   try {
+    console.log("[WEBHOOK DEBUG] body:", JSON.stringify(req.body).substring(0, 500));
     const entry = req.body.entry?.[0];
 
     /* ── Instagram DMs arrive here too (same Meta App) ──
