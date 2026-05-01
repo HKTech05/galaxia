@@ -29,12 +29,12 @@ let io = null;
    ────────────────────────────────────────────────────────── */
 function getBotTypeForPage(recipientPageId) {
   const mapping = {
-    [process.env.IG_PAGE_ID_AMBROSE]: "ambrose_ig",
-    [process.env.IG_PAGE_ID_AMSTELNEST]: "amstelnest_ig",
-    [process.env.IG_PAGE_ID_LAPARAISO]: "laparaiso_ig",
-    [process.env.IG_PAGE_ID_MOUNTVIEW]: "mountview_ig",
-    [process.env.IG_PAGE_ID_HEAVENLYVILLA]: "heavenlyvilla_ig",
-    [process.env.IG_PAGE_ID_HILLVIEW]: "hillview_ig",
+    [process.env.IG_ACCOUNT_ID_AMBROSE]: "ambrose_ig",
+    [process.env.IG_ACCOUNT_ID_AMSTELNEST]: "amstelnest_ig",
+    [process.env.IG_ACCOUNT_ID_LAPARAISO]: "laparaiso_ig",
+    [process.env.IG_ACCOUNT_ID_MOUNTVIEW]: "mountview_ig",
+    [process.env.IG_ACCOUNT_ID_HEAVENLYVILLA]: "heavenlyvilla_ig",
+    [process.env.IG_ACCOUNT_ID_HILLVIEW]: "hillview_ig",
   };
 
   // Remove undefined keys
@@ -130,6 +130,7 @@ router.post("/webhook", async (req, res) => {
   try {
     // Always acknowledge receipt to Meta immediately
     res.sendStatus(200);
+    console.log("[IG WEBHOOK] body:", JSON.stringify(req.body).substring(0, 500));
 
     const entry = req.body.entry?.[0];
     const messaging = entry?.messaging?.[0];
