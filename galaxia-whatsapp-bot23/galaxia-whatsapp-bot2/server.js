@@ -102,6 +102,16 @@ app.get("/webhook", (req, res) => {
 app.post("/webhook", async (req, res) => {
   try {
     const entry = req.body.entry?.[0];
+
+    /* ── Instagram DMs arrive here too (same Meta App) ──
+       Instagram payloads have entry.messaging[], WhatsApp has entry.changes[].
+       Detect and forward to the Instagram handler. */
+    if (entry?.messaging && !entry?.changes) {
+      // Forward to Instagram webhook handler by re-dispatching internally
+      req.url = "/instagram/webhook";
+      return app.handle(req, res);
+    }
+
     const changes = entry?.changes?.[0];
     const message = changes?.value?.messages?.[0];
 
