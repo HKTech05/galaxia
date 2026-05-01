@@ -7,7 +7,7 @@ const pages = [
 
 function apiCall(method, path, token) {
   return new Promise((resolve) => {
-    const url = `https://graph.facebook.com/v21.0${path}?access_token=${token}`;
+    const url = `https://graph.facebook.com/v21.0${path}&access_token=${token}`;
     https.get(url, (res) => {
       let body = "";
       res.on("data", (c) => (body += c));
@@ -18,7 +18,7 @@ function apiCall(method, path, token) {
 
 (async () => {
   for (const p of pages) {
-    const res = await apiCall("GET", `/${p.pageId}&fields=name,instagram_business_account`, p.token);
+    const res = await apiCall("GET", `/${p.pageId}?fields=name,instagram_business_account`, p.token);
     console.log(`Page: ${p.name}`);
     console.log(JSON.stringify(res, null, 2));
   }
