@@ -99,8 +99,8 @@ function buildSinglePropertyIgTree(prefix, slug, welcomeName, websiteLink) {
     [`${prefix}_faq_food`]: {
       message: `🍽️ *Food at ${p.name}*\n\n${p.foodPolicy}` +
                (p.foodPolicy.includes("Meals Included")
-                 ? "\n\n• Driver Food: ₹1,000 extra for all meals."
-                 : "\n\n• Society restaurant available (Veg & Non-Veg), just steps away.\n• Driver Food: ₹1,000 extra for all meals."),
+                 ? (p.slug === 'amstel-nest' ? "\n\n• Driver Food: ₹1,000 extra for all meals." : "")
+                 : "\n\n• Society restaurant available (Veg & Non-Veg), just steps away." + (p.slug === 'amstel-nest' ? "\n• Driver Food: ₹1,000 extra for all meals." : "")),
       options: [BACK_TO_MENU]
     },
 
@@ -286,6 +286,36 @@ const amstelnest_ig_tree = buildSinglePropertyIgTree(
   "amstelnest_ig", "amstel-nest", "Amstel Nest",
   "https://galaxiaresorts.com/staycation/amstel-nest"
 );
+
+// Override Amstel Nest details for IG bot
+amstelnest_ig_tree["amstelnest_ig_details"] = {
+  message: `🏡 *Amstel Nest*\nIndoor Pool Cottages (Meals Included)\n\nWe have 2 types of cottages. Please select one:`,
+  options: [
+    { label: "Standard Cottage", value: "amstelnest_ig_standard_details", description: "Double Bed (2 pax)" },
+    { label: "Family Cottage", value: "amstelnest_ig_family_details", description: "2 Double Beds (4 pax)" },
+    BACK_TO_MENU
+  ]
+};
+
+amstelnest_ig_tree["amstelnest_ig_standard_details"] = {
+  message: `🏡 *Standard Cottage*\nAmsterdam-Inspired (14 Units)\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Mon-Thu: ₹4,950 + 5% GST\n  • Fri/Sat/Sun: ₹6,950 + 5% GST\n  • Extra Adult: ₹2,000 + 5% GST\n  • Kids (5-12 yrs): ₹1,000 + 5% GST\n\n🕒 Check-in: 1:00 PM | Check-out: 10:00 AM\n🍽️ Food: Meals Included (Veg Only). Jain available on prior notice.\n🐾 Pets: Not Allowed ❌\n💵 Security Deposit: ₹2,000\n✨ Amenities: Indoor Pool, Gaming Zone, Boating, WiFi\n📍 Location: https://maps.app.goo.gl/RuZGUE9qZTcz7w3S7\n🚗 Travel: Auto/cab available from Karjat station ₹400-500. 30-40 mins.` + PAYMENT_WARNING,
+  options: [
+    { label: "🌐 Visit Website", value: "amstelnest_ig_website" },
+    { label: "❓ FAQs & Live Chat", value: "amstelnest_ig_faqs" },
+    { label: "🔙 Room Types", value: "amstelnest_ig_details" },
+    BACK_TO_MENU
+  ]
+};
+
+amstelnest_ig_tree["amstelnest_ig_family_details"] = {
+  message: `🏡 *Family Cottage*\nAmsterdam-Inspired (1 Unit, Larger)\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Mon-Sun: ₹9,000 + 5% GST (upto 4 persons)\n  • Extra Adult: ₹2,000 + 5% GST\n  • Kids (5-12 yrs): ₹1,000 + 5% GST\n\n🕒 Check-in: 1:00 PM | Check-out: 10:00 AM\n🍽️ Food: Meals Included (Veg Only). Jain available on prior notice.\n🐾 Pets: Not Allowed ❌\n💵 Security Deposit: ₹2,000\n✨ Amenities: 2 Double Beds, Indoor Pool, Gaming Zone, Boating, WiFi\n📍 Location: https://maps.app.goo.gl/RuZGUE9qZTcz7w3S7\n🚗 Travel: Auto/cab available from Karjat station ₹400-500. 30-40 mins.` + PAYMENT_WARNING,
+  options: [
+    { label: "🌐 Visit Website", value: "amstelnest_ig_website" },
+    { label: "❓ FAQs & Live Chat", value: "amstelnest_ig_faqs" },
+    { label: "🔙 Room Types", value: "amstelnest_ig_details" },
+    BACK_TO_MENU
+  ]
+};
 
 const laparaiso_ig_tree = buildSinglePropertyIgTree(
   "laparaiso_ig", "la-paraiso", "La Paraiso",

@@ -92,6 +92,37 @@ function buildPropertyNodes() {
       ]
     };
   }
+
+  // Override Amstel Nest details to show 2 room types
+  nodes["amstel-nest_details"] = {
+    message: `🏡 *Amstel Nest*\nIndoor Pool Cottages (Meals Included)\n\nWe have 2 types of cottages. Please select one:`,
+    options: [
+      { label: "Standard Cottage", value: "amstel-nest_standard_details", description: "Double Bed (2 pax)" },
+      { label: "Family Cottage", value: "amstel-nest_family_details", description: "2 Double Beds (4 pax)" },
+      BACK_TO_MENU
+    ]
+  };
+
+  nodes["amstel-nest_standard_details"] = {
+    message: `🏡 *Standard Cottage*\nAmsterdam-Inspired (14 Units)\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Mon-Thu: ₹4,950 + 5% GST\n  • Fri/Sat/Sun: ₹6,950 + 5% GST\n  • Extra Adult: ₹2,000 + 5% GST\n  • Kids (5-12 yrs): ₹1,000 + 5% GST\n\n🕒 Check-in: 1:00 PM | Check-out: 10:00 AM\n🍽️ Food: Meals Included (Veg Only). Jain available on prior notice.\n🐾 Pets: Not Allowed ❌\n💵 Security Deposit: ₹2,000\n✨ Amenities: Indoor Pool, Gaming Zone, Boating, WiFi\n📍 Location: https://maps.app.goo.gl/RuZGUE9qZTcz7w3S7\n🚗 Travel: Auto/cab available from Karjat station ₹400-500. 30-40 mins.` + PAYMENT_WARNING,
+    options: [
+      { label: "📸 View Photos", value: "amstel-nest_photos" },
+      { label: "📅 Check Availability", value: "amstel-nest_book" },
+      { label: "🔙 Room Types", value: "amstel-nest_details" },
+      { label: "👤 Talk to Human", value: "human" }
+    ]
+  };
+
+  nodes["amstel-nest_family_details"] = {
+    message: `🏡 *Family Cottage*\nAmsterdam-Inspired (1 Unit, Larger)\n\n💰 *Stay Pricing:* (Excl. GST)\n  • Mon-Sun: ₹9,000 + 5% GST (upto 4 persons)\n  • Extra Adult: ₹2,000 + 5% GST\n  • Kids (5-12 yrs): ₹1,000 + 5% GST\n\n🕒 Check-in: 1:00 PM | Check-out: 10:00 AM\n🍽️ Food: Meals Included (Veg Only). Jain available on prior notice.\n🐾 Pets: Not Allowed ❌\n💵 Security Deposit: ₹2,000\n✨ Amenities: 2 Double Beds, Indoor Pool, Gaming Zone, Boating, WiFi\n📍 Location: https://maps.app.goo.gl/RuZGUE9qZTcz7w3S7\n🚗 Travel: Auto/cab available from Karjat station ₹400-500. 30-40 mins.` + PAYMENT_WARNING,
+    options: [
+      { label: "📸 View Photos", value: "amstel-nest_photos" },
+      { label: "📅 Check Availability", value: "amstel-nest_book" },
+      { label: "🔙 Room Types", value: "amstel-nest_details" },
+      { label: "👤 Talk to Human", value: "human" }
+    ]
+  };
+
   return nodes;
 }
 
@@ -191,7 +222,7 @@ const staticMenu = {
     message: "🍽️ *Is food available or included?*\n\n" +
              "• *Premium Villas:* Most themed villas include Breakfast, Lunch & Dinner (Veg Only).\n" +
              "• *Budget Apartments:* Not included; society restaurant is 10 steps away.\n" +
-             "• *Driver Food:* ₹1,000 extra for all meals (Lunch, Dinner & Breakfast).",
+             "• *Driver Food:* ₹1,000 extra for all meals (Available ONLY at Amstel Nest and Ambrose).",
     options: [ { label: "🏡 View Properties", value: "staycation_main" }, BACK_TO_MENU ]
   },
 
@@ -199,7 +230,7 @@ const staticMenu = {
       message: "🚗 *Can our Driver or Staff stay?*\n\n" +
                "• We do not have separate staff quarters inside the villas.\n" +
                "• Drivers can stay in their cars within the parking area.\n" +
-               "• Food will be provided for them at ₹1,000 per person (includes Lunch, Dinner, and Breakfast).",
+               "• Food will be provided for them at ₹1,000 per person (Available ONLY at Amstel Nest and Ambrose).",
       options: [ { label: "👤 Talk to Human", value: "human" }, BACK_TO_MENU ]
   },
 
