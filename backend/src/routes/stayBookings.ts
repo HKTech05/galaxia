@@ -875,9 +875,9 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
         const grandTotalChildren = ambroseChildren + amstelChildren;
         const grandTotal = grandTotalAdults + grandTotalChildren;
 
-        // Food preference counts
-        const jainCount = mapped.filter(b => b.foodPreference.toLowerCase() === "jain").length;
-        const regularCount = mapped.filter(b => b.foodPreference.toLowerCase() !== "jain").length;
+        // Food preference counts — count actual people, not bookings
+        const jainCount = mapped.filter(b => b.foodPreference.toLowerCase() === "jain").reduce((s, b) => s + b.numAdults + b.numChildren, 0);
+        const regularCount = mapped.filter(b => b.foodPreference.toLowerCase() !== "jain").reduce((s, b) => s + b.numAdults + b.numChildren, 0);
 
         return res.json({
             date: targetDateStr,

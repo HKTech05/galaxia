@@ -398,49 +398,53 @@ export default function StayBookingsPage() {
 
             // Helper: draw a rounded card (valueFontSize defaults to 16)
             const drawCard = (x: number, y: number, w: number, h: number, bgColor: number[], borderColor: number[], label: string, value: string, labelColor: number[], valueColor: number[], valueFontSize = 16) => {
-                // Background fill
                 doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
                 doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
                 doc.setLineWidth(0.4);
                 doc.roundedRect(x, y, w, h, 3, 3, "FD");
-                // Label (top)
                 doc.setFontSize(7);
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
                 doc.text(label, x + w / 2, y + 7, { align: "center" });
-                // Value (bottom)
                 doc.setFontSize(valueFontSize);
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
                 doc.text(value, x + w / 2, y + (valueFontSize >= 14 ? 17 : 16), { align: "center" });
             };
 
-            // --- Row 1: Check-ins, Ambrose Guests, Amstel Guests, Total Guests ---
-            const cardW = 52;
             const cardH = 24;
-            const gap = 6;
+            const gap = 5;
             const startX = 14;
 
-            // Check-ins today — orange tint
-            drawCard(startX, yPos, cardW, cardH,
-                [255, 243, 230], [245, 200, 150],
-                "CHECK-INS TODAY", String(s.totalCheckIns),
-                [180, 100, 20], [200, 80, 0]
-            );
-            // Ambrose guests — green tint
-            drawCard(startX + cardW + gap, yPos, cardW, cardH,
+            // --- Row 1: Ambrose Adults, Ambrose Kids, Amstel Adults, Amstel Kids, Total Guests ---
+            const row1CardW = 48;
+
+            // Ambrose Adults — green tint
+            drawCard(startX, yPos, row1CardW, cardH,
                 [230, 250, 235], [160, 210, 170],
-                "AMBROSE", `${s.ambrose.adults}A + ${s.ambrose.children}C = ${s.ambrose.total}`,
+                "AMBROSE ADULTS", String(s.ambrose.adults),
                 [40, 120, 60], [20, 100, 40]
             );
-            // Amstel Nest guests — blue tint
-            drawCard(startX + (cardW + gap) * 2, yPos, cardW, cardH,
+            // Ambrose Kids — lighter green
+            drawCard(startX + (row1CardW + gap), yPos, row1CardW, cardH,
+                [240, 255, 240], [180, 220, 180],
+                "AMBROSE KIDS", String(s.ambrose.children),
+                [60, 130, 70], [30, 110, 40]
+            );
+            // Amstel Adults — blue tint
+            drawCard(startX + (row1CardW + gap) * 2, yPos, row1CardW, cardH,
                 [230, 240, 255], [150, 180, 230],
-                "AMSTEL NEST", `${s.amstelNest.adults}A + ${s.amstelNest.children}C = ${s.amstelNest.total}`,
+                "AMSTEL ADULTS", String(s.amstelNest.adults),
                 [40, 70, 150], [20, 50, 140]
             );
-            // Grand Total — dark card
-            drawCard(startX + (cardW + gap) * 3, yPos, cardW, cardH,
+            // Amstel Kids — lighter blue
+            drawCard(startX + (row1CardW + gap) * 3, yPos, row1CardW, cardH,
+                [238, 245, 255], [170, 195, 240],
+                "AMSTEL KIDS", String(s.amstelNest.children),
+                [60, 90, 160], [30, 60, 150]
+            );
+            // Total Guests — dark card
+            drawCard(startX + (row1CardW + gap) * 4, yPos, row1CardW, cardH,
                 [35, 40, 65], [35, 40, 65],
                 "TOTAL GUESTS", String(s.grandTotal.total),
                 [180, 190, 220], [255, 255, 255]
@@ -448,51 +452,41 @@ export default function StayBookingsPage() {
 
             yPos += cardH + 8;
 
-            // --- Row 2: detailed breakdown + food preference ---
-            const detailCardW = 80;
-            const detailCardH = 22;
+            // --- Row 2: Check-ins Today, Jain, Regular ---
+            const row2CardW = 60;
 
-            // Ambrose detail card — use smaller font (9) for the value text
-            drawCard(startX, yPos, detailCardW, detailCardH,
-                [245, 250, 245], [200, 220, 200],
-                "AMBROSE DETAIL", `${s.ambrose.bookings} bookings · ${s.ambrose.adults} adults · ${s.ambrose.children} kids`,
-                [80, 100, 80], [30, 70, 30], 9
+            // Check-ins today — orange tint
+            drawCard(startX, yPos, row2CardW, cardH,
+                [255, 243, 230], [245, 200, 150],
+                "CHECK-INS TODAY", String(s.totalCheckIns),
+                [180, 100, 20], [200, 80, 0]
             );
-            // Amstel detail card — use smaller font (9)
-            drawCard(startX + detailCardW + gap, yPos, detailCardW, detailCardH,
-                [240, 245, 255], [190, 200, 230],
-                "AMSTEL NEST DETAIL", `${s.amstelNest.bookings} bookings · ${s.amstelNest.adults} adults · ${s.amstelNest.children} kids`,
-                [60, 80, 140], [30, 50, 120], 9
-            );
-
-            // Food pref cards
-            const foodCardW = 42;
-            const foodX = startX + (detailCardW + gap) * 2;
-            // Jain card — warm yellow
-            drawCard(foodX, yPos, foodCardW, detailCardH,
+            // Jain — warm yellow
+            drawCard(startX + row2CardW + gap, yPos, row2CardW, cardH,
                 [255, 248, 230], [230, 200, 140],
                 "JAIN", String(s.foodPreference.jain),
                 [160, 120, 30], [180, 100, 0]
             );
-            // Regular card — light teal
-            drawCard(foodX + foodCardW + gap, yPos, foodCardW, detailCardH,
+            // Regular — light teal
+            drawCard(startX + (row2CardW + gap) * 2, yPos, row2CardW, cardH,
                 [230, 248, 245], [160, 210, 200],
                 "REGULAR (VEG)", String(s.foodPreference.regular),
                 [40, 120, 110], [20, 100, 90]
             );
 
-            // Save as blob with explicit PDF MIME type and force .pdf download
+            // Force .pdf download using File API for maximum browser compatibility
             const fileName = `Galaxia_Daily_Report_${reportDate}_${propLabel.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
             const pdfArrayBuffer = doc.output("arraybuffer");
-            const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
-            const blobUrl = URL.createObjectURL(pdfBlob);
+            const pdfFile = new File([pdfArrayBuffer], fileName, { type: "application/pdf" });
+            const fileUrl = URL.createObjectURL(pdfFile);
             const link = document.createElement("a");
-            link.href = blobUrl;
+            link.href = fileUrl;
             link.download = fileName;
+            link.type = "application/pdf";
+            link.style.display = "none";
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(blobUrl);
+            setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(fileUrl); }, 200);
         } catch (err) {
             console.error("Failed to generate report:", err);
             alert("Failed to generate report. Please try again.");
