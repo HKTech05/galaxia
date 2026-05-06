@@ -396,8 +396,8 @@ export default function StayBookingsPage() {
             doc.text("Summary", 14, yPos);
             yPos += 8;
 
-            // Helper: draw a rounded card
-            const drawCard = (x: number, y: number, w: number, h: number, bgColor: number[], borderColor: number[], label: string, value: string, labelColor: number[], valueColor: number[]) => {
+            // Helper: draw a rounded card (valueFontSize defaults to 16)
+            const drawCard = (x: number, y: number, w: number, h: number, bgColor: number[], borderColor: number[], label: string, value: string, labelColor: number[], valueColor: number[], valueFontSize = 16) => {
                 // Background fill
                 doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
                 doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
@@ -408,11 +408,11 @@ export default function StayBookingsPage() {
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
                 doc.text(label, x + w / 2, y + 7, { align: "center" });
-                // Value (bottom, large)
-                doc.setFontSize(16);
+                // Value (bottom)
+                doc.setFontSize(valueFontSize);
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
-                doc.text(value, x + w / 2, y + 17, { align: "center" });
+                doc.text(value, x + w / 2, y + (valueFontSize >= 14 ? 17 : 16), { align: "center" });
             };
 
             // --- Row 1: Check-ins, Ambrose Guests, Amstel Guests, Total Guests ---
@@ -449,20 +449,20 @@ export default function StayBookingsPage() {
             yPos += cardH + 8;
 
             // --- Row 2: detailed breakdown + food preference ---
-            const detailCardW = 70;
+            const detailCardW = 80;
             const detailCardH = 22;
 
-            // Ambrose detail card
+            // Ambrose detail card — use smaller font (9) for the value text
             drawCard(startX, yPos, detailCardW, detailCardH,
                 [245, 250, 245], [200, 220, 200],
                 "AMBROSE DETAIL", `${s.ambrose.bookings} bookings · ${s.ambrose.adults} adults · ${s.ambrose.children} kids`,
-                [80, 100, 80], [30, 70, 30]
+                [80, 100, 80], [30, 70, 30], 9
             );
-            // Amstel detail card
+            // Amstel detail card — use smaller font (9)
             drawCard(startX + detailCardW + gap, yPos, detailCardW, detailCardH,
                 [240, 245, 255], [190, 200, 230],
                 "AMSTEL NEST DETAIL", `${s.amstelNest.bookings} bookings · ${s.amstelNest.adults} adults · ${s.amstelNest.children} kids`,
-                [60, 80, 140], [30, 50, 120]
+                [60, 80, 140], [30, 50, 120], 9
             );
 
             // Food pref cards
@@ -481,9 +481,10 @@ export default function StayBookingsPage() {
                 [40, 120, 110], [20, 100, 90]
             );
 
-            // Save as blob and force .pdf download
+            // Save as blob with explicit PDF MIME type and force .pdf download
             const fileName = `Galaxia_Daily_Report_${reportDate}_${propLabel.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-            const pdfBlob = doc.output("blob");
+            const pdfArrayBuffer = doc.output("arraybuffer");
+            const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
             const blobUrl = URL.createObjectURL(pdfBlob);
             const link = document.createElement("a");
             link.href = blobUrl;
