@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil, Download, FileText } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -89,6 +89,12 @@ export default function StayBookingsPage() {
     const [viewTab, setViewTab] = useState<"staycation" | "dd" | "all">("staycation");
     const [ddBookings, setDdBookings] = useState<StayBooking[]>([]);
     const [ddLoading, setDdLoading] = useState(false);
+
+    // Daily Report Modal state
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportDate, setReportDate] = useState("");
+    const [reportProperty, setReportProperty] = useState<"ambrose" | "amstel-nest" | "both">("both");
+    const [reportLoading, setReportLoading] = useState(false);
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -273,11 +279,172 @@ export default function StayBookingsPage() {
 
     const properties = [...new Set(sourceBookings.map(b => b.propertyName))];
 
+    // Generate PDF from daily report data
+    const generateDailyReportPDF = async () => {
+        if (!reportDate) { alert("Please select a date"); return; }
+        setReportLoading(true);
+        try {
+            const data = await api.get(`/bookings/staycation/daily-report?date=${reportDate}&property=${reportProperty}`);
+            if (!data || !data.bookings) { alert("No data returned"); setReportLoading(false); return; }
+
+            const { default: jsPDF } = await import("jspdf");
+            const autoTable = (await import("jspdf-autotable")).default;
+
+            const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Title
+            const propLabel = reportProperty === "ambrose" ? "Ambrose" : reportProperty === "amstel-nest" ? "Amstel Nest" : "Ambrose + Amstel Nest";
+            const dateFormatted = new Date(reportDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text("Galaxia Resorts — Daily Guest Report", pageWidth / 2, 15, { align: "center" });
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Date: ${dateFormatted}  |  Property: ${propLabel}`, pageWidth / 2, 23, { align: "center" });
+
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`, pageWidth / 2, 28, { align: "center" });
+            doc.setTextColor(0);
+
+            // Guest table
+            const tableRows = data.bookings.map((b: any, idx: number) => [
+                idx + 1,
+                b.customerName,
+                b.propertyName + (b.subPropertyName ? ` (${b.subPropertyName})` : ""),
+                b.numCottages,
+                new Date(b.checkInDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                new Date(b.checkOutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                b.numNights,
+                b.numAdults,
+                b.numChildren,
+                b.foodPreference,
+            ]);
+
+            autoTable(doc, {
+                startY: 33,
+                head: [[
+                    "#", "Guest Name", "Property", "Villas", "Check-in", "Check-out", "Nights", "Adults", "Children", "Food Pref"
+                ]],
+                body: tableRows,
+                theme: "grid",
+                headStyles: { fillColor: [55, 48, 107], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold", halign: "center" },
+                bodyStyles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: {
+                    0: { halign: "center", cellWidth: 8 },
+                    1: { cellWidth: 45 },
+                    2: { cellWidth: 45 },
+                    3: { halign: "center", cellWidth: 15 },
+                    4: { halign: "center", cellWidth: 28 },
+                    5: { halign: "center", cellWidth: 28 },
+                    6: { halign: "center", cellWidth: 15 },
+                    7: { halign: "center", cellWidth: 15 },
+                    8: { halign: "center", cellWidth: 18 },
+                    9: { halign: "center", cellWidth: 22 },
+                },
+                alternateRowStyles: { fillColor: [245, 245, 250] },
+                didParseCell: function(hookData: any) {
+                    // Highlight check-ins for today
+                    if (hookData.section === "body" && hookData.column.index === 4) {
+                        const booking = data.bookings[hookData.row.index];
+                        if (booking && booking.isCheckInToday) {
+                            hookData.cell.styles.fillColor = [220, 252, 231];
+                            hookData.cell.styles.fontStyle = "bold";
+                        }
+                    }
+                }
+            });
+
+            // Summary section below the table
+            const finalY = (doc as any).lastAutoTable?.finalY || 180;
+            let yPos = finalY + 10;
+
+            // Check if we need a new page for summary
+            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+                doc.addPage();
+                yPos = 15;
+            }
+
+            const s = data.summary;
+
+            doc.setDrawColor(55, 48, 107);
+            doc.setLineWidth(0.5);
+            doc.line(14, yPos - 3, pageWidth - 14, yPos - 3);
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("Summary", 14, yPos + 3);
+            yPos += 10;
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Total Check-ins on ${dateFormatted}: ${s.totalCheckIns}`, 14, yPos);
+            yPos += 6;
+
+            // Per-property guest count breakdown
+            doc.setFont("helvetica", "bold");
+            doc.text("Guest Count Breakdown:", 14, yPos);
+            yPos += 6;
+
+            // Create summary table
+            autoTable(doc, {
+                startY: yPos,
+                head: [["Property", "Adults", "Children", "Total Guests", "Bookings"]],
+                body: [
+                    ["Ambrose", s.ambrose.adults, s.ambrose.children, s.ambrose.total, s.ambrose.bookings],
+                    ["Amstel Nest", s.amstelNest.adults, s.amstelNest.children, s.amstelNest.total, s.amstelNest.bookings],
+                    [
+                        { content: "Grand Total", styles: { fontStyle: "bold" as const } },
+                        { content: s.grandTotal.adults, styles: { fontStyle: "bold" as const } },
+                        { content: s.grandTotal.children, styles: { fontStyle: "bold" as const } },
+                        { content: s.grandTotal.total, styles: { fontStyle: "bold" as const } },
+                        { content: s.ambrose.bookings + s.amstelNest.bookings, styles: { fontStyle: "bold" as const } },
+                    ],
+                ],
+                theme: "grid",
+                headStyles: { fillColor: [55, 48, 107], textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold", halign: "center" },
+                bodyStyles: { fontSize: 9, halign: "center" },
+                columnStyles: { 0: { halign: "left", fontStyle: "bold" } },
+                tableWidth: 160,
+                margin: { left: 14 },
+            });
+
+            const summaryFinalY = (doc as any).lastAutoTable?.finalY || yPos + 30;
+            yPos = summaryFinalY + 8;
+
+            // Food preference count
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text(`Food Preference:   Jain: ${s.foodPreference.jain}   |   Regular (Veg): ${s.foodPreference.regular}`, 14, yPos);
+
+            // Save
+            const fileName = `Galaxia_Daily_Report_${reportDate}_${propLabel.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+            doc.save(fileName);
+        } catch (err) {
+            console.error("Failed to generate report:", err);
+            alert("Failed to generate report. Please try again.");
+        } finally {
+            setReportLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Bookings</h1>
-                <p className="text-sm font-medium text-slate-500 mt-1">All bookings across all properties</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Bookings</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-1">All bookings across all properties</p>
+                </div>
+                <button
+                    onClick={() => setShowReportModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                    <FileText size={16} />
+                    Daily Report
+                </button>
             </div>
 
             {/* Tab Switcher */}
@@ -1198,6 +1365,83 @@ export default function StayBookingsPage() {
                                 className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50"
                             >
                                 {editSaving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Daily Report Modal */}
+            {showReportModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !reportLoading && setShowReportModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Daily Guest Report</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Download a PDF of all guests staying on a specific date</p>
+                            </div>
+                            <button onClick={() => setShowReportModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors" disabled={reportLoading}>
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-5">
+                            {/* Instructions */}
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                                <p className="text-xs text-indigo-700 font-medium leading-relaxed">
+                                    Select a date and property to generate a PDF report of all guests <strong>staying</strong> on that date.
+                                    Check-outs on the selected date are <strong>not included</strong> — only guests currently checked in or checking in.
+                                </p>
+                            </div>
+
+                            {/* Date Picker */}
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Report Date</label>
+                                <CustomDatePicker
+                                    date={reportDate ? new Date(reportDate + 'T00:00:00') : new Date()}
+                                    onDateChange={(d) => {
+                                        const y = d.getFullYear();
+                                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                                        const day = String(d.getDate()).padStart(2, '0');
+                                        setReportDate(`${y}-${m}-${day}`);
+                                    }}
+                                    className="w-full"
+                                />
+                            </div>
+
+                            {/* Property Dropdown */}
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Property</label>
+                                <div className="relative">
+                                    <select
+                                        value={reportProperty}
+                                        onChange={(e) => setReportProperty(e.target.value as any)}
+                                        className="w-full py-2.5 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="both">Ambrose + Amstel Nest</option>
+                                        <option value="ambrose">Ambrose</option>
+                                        <option value="amstel-nest">Amstel Nest</option>
+                                    </select>
+                                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
+                                </div>
+                            </div>
+
+                            {/* Download Button */}
+                            <button
+                                onClick={generateDailyReportPDF}
+                                disabled={reportLoading || !reportDate}
+                                className="w-full py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {reportLoading ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                                        Generating PDF...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={16} />
+                                        Download PDF Report
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

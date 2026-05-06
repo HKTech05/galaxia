@@ -764,6 +764,140 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
     }
 });
 
+// GET /api/bookings/staycation/daily-report — Admin: get all guests staying on a specific date for PDF report
+router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const { date, property } = req.query;
+        if (!date) return res.status(400).json({ error: "date query parameter is required (YYYY-MM-DD)" });
+
+        // Parse the target date
+        const targetDateStr = date as string;
+        const targetDate = new Date(targetDateStr + "T00:00:00");
+        const nextDay = new Date(targetDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        // Determine which property slugs to filter
+        let propertySlugs: string[] = [];
+        if (property === "ambrose") {
+            propertySlugs = ["ambrose"];
+        } else if (property === "amstel-nest") {
+            propertySlugs = ["amstel-nest"];
+        } else {
+            // "both" or default — Ambrose + Amstel Nest
+            propertySlugs = ["ambrose", "amstel-nest"];
+        }
+
+        // Find property IDs for the slugs
+        const properties = await prisma.property.findMany({
+            where: { slug: { in: propertySlugs } },
+            select: { id: true, name: true, slug: true },
+        });
+        const propertyIds = properties.map(p => p.id);
+        const propIdToName: Record<number, string> = {};
+        for (const p of properties) {
+            propIdToName[p.id] = p.name;
+        }
+
+        if (propertyIds.length === 0) {
+            return res.json({ bookings: [], summary: {} });
+        }
+
+        // Fetch bookings where: checkInDate <= targetDate AND checkOutDate > targetDate
+        // This means: the guest has checked in on or before this date, and hasn't checked out yet
+        // Exclude cancelled and no_show
+        const bookings = await prisma.staycationBooking.findMany({
+            where: {
+                propertyId: { in: propertyIds },
+                status: { notIn: ["cancelled", "no_show"] },
+                checkInDate: { lte: targetDate },   // checked in on or before this date
+                checkOutDate: { gt: targetDate },    // hasn't checked out yet (checkout is after this date)
+            },
+            include: {
+                property: { select: { id: true, name: true, slug: true } },
+                subProperty: { select: { id: true, name: true } },
+            },
+            orderBy: [{ propertyId: "asc" }, { checkInDate: "asc" }],
+        });
+
+        // Decrypt and map response
+        const mapped = bookings.map(b => {
+            // Extract food preference from addons JSON
+            let foodPreference = "Regular";
+            if (b.addons && Array.isArray(b.addons)) {
+                const foodAddon = (b.addons as any[]).find((a: any) => a.name === "Food Preference");
+                if (foodAddon && foodAddon.foodType) {
+                    foodPreference = foodAddon.foodType;
+                }
+            }
+
+            const numNights = b.numNights || Math.max(1, Math.ceil(
+                (new Date(b.checkOutDate).getTime() - new Date(b.checkInDate).getTime()) / (1000 * 3600 * 24)
+            ));
+
+            // Determine if this booking is a check-in on this specific date
+            const checkInDateStr = b.checkInDate.toISOString().split("T")[0];
+            const isCheckInToday = checkInDateStr === targetDateStr;
+
+            return {
+                id: b.id,
+                bookingRef: b.bookingRef,
+                customerName: decrypt(b.customerPhone) ? b.customerName : b.customerName,
+                propertyName: b.property?.name || "Unknown",
+                subPropertyName: b.subProperty?.name || null,
+                numCottages: b.numCottages || 1,
+                checkInDate: b.checkInDate.toISOString().split("T")[0],
+                checkOutDate: b.checkOutDate.toISOString().split("T")[0],
+                numNights,
+                numAdults: b.numGuests || 0,
+                numChildren: b.numKids || 0,
+                foodPreference,
+                isCheckInToday,
+            };
+        });
+
+        // Calculate summary statistics
+        const checkInsToday = mapped.filter(b => b.isCheckInToday).length;
+        const totalBookings = mapped.length;
+
+        // Per-property breakdown
+        const ambroseBookings = mapped.filter(b => b.propertyName === "Ambrose");
+        const amstelBookings = mapped.filter(b => b.propertyName === "Amstel Nest");
+
+        const ambroseAdults = ambroseBookings.reduce((s, b) => s + b.numAdults, 0);
+        const ambroseChildren = ambroseBookings.reduce((s, b) => s + b.numChildren, 0);
+        const ambroseTotal = ambroseAdults + ambroseChildren;
+
+        const amstelAdults = amstelBookings.reduce((s, b) => s + b.numAdults, 0);
+        const amstelChildren = amstelBookings.reduce((s, b) => s + b.numChildren, 0);
+        const amstelTotal = amstelAdults + amstelChildren;
+
+        const grandTotalAdults = ambroseAdults + amstelAdults;
+        const grandTotalChildren = ambroseChildren + amstelChildren;
+        const grandTotal = grandTotalAdults + grandTotalChildren;
+
+        // Food preference counts
+        const jainCount = mapped.filter(b => b.foodPreference.toLowerCase() === "jain").length;
+        const regularCount = mapped.filter(b => b.foodPreference.toLowerCase() !== "jain").length;
+
+        return res.json({
+            date: targetDateStr,
+            property: property || "both",
+            bookings: mapped,
+            summary: {
+                totalCheckIns: checkInsToday,
+                totalStaying: totalBookings,
+                ambrose: { adults: ambroseAdults, children: ambroseChildren, total: ambroseTotal, bookings: ambroseBookings.length },
+                amstelNest: { adults: amstelAdults, children: amstelChildren, total: amstelTotal, bookings: amstelBookings.length },
+                grandTotal: { adults: grandTotalAdults, children: grandTotalChildren, total: grandTotal },
+                foodPreference: { jain: jainCount, regular: regularCount },
+            },
+        });
+    } catch (error) {
+        console.error("Daily report error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // GET /api/bookings/staycation/booked-dates — Public: get booked/fully-booked dates for a property
 router.get("/booked-dates", async (req, res) => {
     try {
