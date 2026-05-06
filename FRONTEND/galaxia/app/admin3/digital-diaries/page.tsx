@@ -785,7 +785,10 @@ export default function Admin1Dashboard() {
                                                                             <div key={addon.id} className={`flex justify-between items-center p-2.5 rounded-lg border ${addon.isPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                                                                                 <div className="flex items-center gap-2">
                                                                                     <span className="text-sm font-medium">{addonLabel(addon.addonType)}</span>
-                                                                                    {addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>}
+                                                                                    {(addon.addonType === 'ledBanner' || addon.addonType === 'led_banner')
+                                                                                        ? <span className="text-[10px] text-slate-500">— {addon.addonValue || activeEvent.addOns?.ledBannerType || 'Happy Birthday'}</span>
+                                                                                        : (addon.addonValue && <span className="text-[10px] text-slate-500">— {addon.addonValue}</span>)
+                                                                                    }
                                                                                 </div>
                                                                                 <div className="flex items-center gap-2">
                                                                                     <span className="text-sm font-bold">₹{addon.price.toLocaleString()}</span>
