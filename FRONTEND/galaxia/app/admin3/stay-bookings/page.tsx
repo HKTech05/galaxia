@@ -310,10 +310,10 @@ export default function StayBookingsPage() {
             doc.text(`Generated on: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`, pageWidth / 2, 28, { align: "center" });
             doc.setTextColor(0);
 
-            // Guest table
+            // Guest table — show "Continue" in red for guests who checked in on a prior date
             const tableRows = data.bookings.map((b: any, idx: number) => [
                 idx + 1,
-                b.customerName,
+                b.isCheckInToday ? b.customerName : b.customerName,
                 b.propertyName + (b.subPropertyName ? ` (${b.subPropertyName})` : ""),
                 b.numCottages,
                 new Date(b.checkInDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
@@ -335,19 +335,19 @@ export default function StayBookingsPage() {
                 bodyStyles: { fontSize: 8, cellPadding: 2 },
                 columnStyles: {
                     0: { halign: "center", cellWidth: 8 },
-                    1: { cellWidth: 45 },
+                    1: { cellWidth: 55 },
                     2: { cellWidth: 45 },
-                    3: { halign: "center", cellWidth: 15 },
-                    4: { halign: "center", cellWidth: 28 },
-                    5: { halign: "center", cellWidth: 28 },
-                    6: { halign: "center", cellWidth: 15 },
-                    7: { halign: "center", cellWidth: 15 },
-                    8: { halign: "center", cellWidth: 18 },
+                    3: { halign: "center", cellWidth: 12 },
+                    4: { halign: "center", cellWidth: 26 },
+                    5: { halign: "center", cellWidth: 26 },
+                    6: { halign: "center", cellWidth: 14 },
+                    7: { halign: "center", cellWidth: 14 },
+                    8: { halign: "center", cellWidth: 16 },
                     9: { halign: "center", cellWidth: 22 },
                 },
                 alternateRowStyles: { fillColor: [245, 245, 250] },
                 didParseCell: function(hookData: any) {
-                    // Highlight check-ins for today
+                    // Highlight check-in date cells for today's check-ins
                     if (hookData.section === "body" && hookData.column.index === 4) {
                         const booking = data.bookings[hookData.row.index];
                         if (booking && booking.isCheckInToday) {
@@ -355,74 +355,143 @@ export default function StayBookingsPage() {
                             hookData.cell.styles.fontStyle = "bold";
                         }
                     }
+                },
+                didDrawCell: function(hookData: any) {
+                    // Draw "Continue" in red next to guest name for non-check-in-today guests
+                    if (hookData.section === "body" && hookData.column.index === 1) {
+                        const booking = data.bookings[hookData.row.index];
+                        if (booking && !booking.isCheckInToday) {
+                            const cellX = hookData.cell.x;
+                            const cellY = hookData.cell.y;
+                            const cellH = hookData.cell.height;
+                            const nameText = hookData.cell.text?.join(" ") || "";
+                            const nameWidth = doc.getTextWidth(nameText);
+                            doc.setFont("helvetica", "bold");
+                            doc.setFontSize(7);
+                            doc.setTextColor(200, 30, 30);
+                            doc.text("  Continue", cellX + 2 + nameWidth, cellY + cellH / 2 + 0.5);
+                            doc.setTextColor(0);
+                            doc.setFont("helvetica", "normal");
+                            doc.setFontSize(8);
+                        }
+                    }
                 }
             });
 
-            // Summary section below the table
+            // ─── Summary section — rounded colored cards ───
             const finalY = (doc as any).lastAutoTable?.finalY || 180;
-            let yPos = finalY + 10;
+            let yPos = finalY + 12;
 
             // Check if we need a new page for summary
-            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+            if (yPos > doc.internal.pageSize.getHeight() - 65) {
                 doc.addPage();
                 yPos = 15;
             }
 
             const s = data.summary;
 
-            doc.setDrawColor(55, 48, 107);
-            doc.setLineWidth(0.5);
-            doc.line(14, yPos - 3, pageWidth - 14, yPos - 3);
-
-            doc.setFontSize(12);
+            doc.setFontSize(13);
             doc.setFont("helvetica", "bold");
-            doc.text("Summary", 14, yPos + 3);
-            yPos += 10;
+            doc.setTextColor(30, 30, 60);
+            doc.text("Summary", 14, yPos);
+            yPos += 8;
 
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "bold");
-            doc.text(`Total Check-ins on ${dateFormatted}: ${s.totalCheckIns}`, 14, yPos);
-            yPos += 6;
+            // Helper: draw a rounded card
+            const drawCard = (x: number, y: number, w: number, h: number, bgColor: number[], borderColor: number[], label: string, value: string, labelColor: number[], valueColor: number[]) => {
+                // Background fill
+                doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+                doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+                doc.setLineWidth(0.4);
+                doc.roundedRect(x, y, w, h, 3, 3, "FD");
+                // Label (top)
+                doc.setFontSize(7);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
+                doc.text(label, x + w / 2, y + 7, { align: "center" });
+                // Value (bottom, large)
+                doc.setFontSize(16);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
+                doc.text(value, x + w / 2, y + 17, { align: "center" });
+            };
 
-            // Per-property guest count breakdown
-            doc.setFont("helvetica", "bold");
-            doc.text("Guest Count Breakdown:", 14, yPos);
-            yPos += 6;
+            // --- Row 1: Check-ins, Ambrose Guests, Amstel Guests, Total Guests ---
+            const cardW = 52;
+            const cardH = 24;
+            const gap = 6;
+            const startX = 14;
 
-            // Create summary table
-            autoTable(doc, {
-                startY: yPos,
-                head: [["Property", "Adults", "Children", "Total Guests", "Bookings"]],
-                body: [
-                    ["Ambrose", s.ambrose.adults, s.ambrose.children, s.ambrose.total, s.ambrose.bookings],
-                    ["Amstel Nest", s.amstelNest.adults, s.amstelNest.children, s.amstelNest.total, s.amstelNest.bookings],
-                    [
-                        { content: "Grand Total", styles: { fontStyle: "bold" as const } },
-                        { content: s.grandTotal.adults, styles: { fontStyle: "bold" as const } },
-                        { content: s.grandTotal.children, styles: { fontStyle: "bold" as const } },
-                        { content: s.grandTotal.total, styles: { fontStyle: "bold" as const } },
-                        { content: s.ambrose.bookings + s.amstelNest.bookings, styles: { fontStyle: "bold" as const } },
-                    ],
-                ],
-                theme: "grid",
-                headStyles: { fillColor: [55, 48, 107], textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold", halign: "center" },
-                bodyStyles: { fontSize: 9, halign: "center" },
-                columnStyles: { 0: { halign: "left", fontStyle: "bold" } },
-                tableWidth: 160,
-                margin: { left: 14 },
-            });
+            // Check-ins today — orange tint
+            drawCard(startX, yPos, cardW, cardH,
+                [255, 243, 230], [245, 200, 150],
+                "CHECK-INS TODAY", String(s.totalCheckIns),
+                [180, 100, 20], [200, 80, 0]
+            );
+            // Ambrose guests — green tint
+            drawCard(startX + cardW + gap, yPos, cardW, cardH,
+                [230, 250, 235], [160, 210, 170],
+                "AMBROSE", `${s.ambrose.adults}A + ${s.ambrose.children}C = ${s.ambrose.total}`,
+                [40, 120, 60], [20, 100, 40]
+            );
+            // Amstel Nest guests — blue tint
+            drawCard(startX + (cardW + gap) * 2, yPos, cardW, cardH,
+                [230, 240, 255], [150, 180, 230],
+                "AMSTEL NEST", `${s.amstelNest.adults}A + ${s.amstelNest.children}C = ${s.amstelNest.total}`,
+                [40, 70, 150], [20, 50, 140]
+            );
+            // Grand Total — dark card
+            drawCard(startX + (cardW + gap) * 3, yPos, cardW, cardH,
+                [35, 40, 65], [35, 40, 65],
+                "TOTAL GUESTS", String(s.grandTotal.total),
+                [180, 190, 220], [255, 255, 255]
+            );
 
-            const summaryFinalY = (doc as any).lastAutoTable?.finalY || yPos + 30;
-            yPos = summaryFinalY + 8;
+            yPos += cardH + 8;
 
-            // Food preference count
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(9);
-            doc.text(`Food Preference:   Jain: ${s.foodPreference.jain}   |   Regular (Veg): ${s.foodPreference.regular}`, 14, yPos);
+            // --- Row 2: detailed breakdown + food preference ---
+            const detailCardW = 70;
+            const detailCardH = 22;
 
-            // Save
+            // Ambrose detail card
+            drawCard(startX, yPos, detailCardW, detailCardH,
+                [245, 250, 245], [200, 220, 200],
+                "AMBROSE DETAIL", `${s.ambrose.bookings} bookings · ${s.ambrose.adults} adults · ${s.ambrose.children} kids`,
+                [80, 100, 80], [30, 70, 30]
+            );
+            // Amstel detail card
+            drawCard(startX + detailCardW + gap, yPos, detailCardW, detailCardH,
+                [240, 245, 255], [190, 200, 230],
+                "AMSTEL NEST DETAIL", `${s.amstelNest.bookings} bookings · ${s.amstelNest.adults} adults · ${s.amstelNest.children} kids`,
+                [60, 80, 140], [30, 50, 120]
+            );
+
+            // Food pref cards
+            const foodCardW = 42;
+            const foodX = startX + (detailCardW + gap) * 2;
+            // Jain card — warm yellow
+            drawCard(foodX, yPos, foodCardW, detailCardH,
+                [255, 248, 230], [230, 200, 140],
+                "JAIN", String(s.foodPreference.jain),
+                [160, 120, 30], [180, 100, 0]
+            );
+            // Regular card — light teal
+            drawCard(foodX + foodCardW + gap, yPos, foodCardW, detailCardH,
+                [230, 248, 245], [160, 210, 200],
+                "REGULAR (VEG)", String(s.foodPreference.regular),
+                [40, 120, 110], [20, 100, 90]
+            );
+
+            // Save as blob and force .pdf download
             const fileName = `Galaxia_Daily_Report_${reportDate}_${propLabel.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-            doc.save(fileName);
+            const pdfBlob = doc.output("blob");
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
         } catch (err) {
             console.error("Failed to generate report:", err);
             alert("Failed to generate report. Please try again.");
