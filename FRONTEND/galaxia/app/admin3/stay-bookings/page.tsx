@@ -324,8 +324,10 @@ export default function StayBookingsPage() {
                 b.foodPreference,
             ]);
 
+            const margin = 14;
             autoTable(doc, {
                 startY: 33,
+                margin: { left: margin, right: margin },
                 head: [[
                     "#", "Guest Name", "Property", "Villas", "Check-in", "Check-out", "Nights", "Adults", "Children", "Food Pref"
                 ]],
@@ -334,16 +336,16 @@ export default function StayBookingsPage() {
                 headStyles: { fillColor: [55, 48, 107], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold", halign: "center" },
                 bodyStyles: { fontSize: 8, cellPadding: 2 },
                 columnStyles: {
-                    0: { halign: "center", cellWidth: 8 },
-                    1: { cellWidth: 55 },
-                    2: { cellWidth: 45 },
-                    3: { halign: "center", cellWidth: 12 },
-                    4: { halign: "center", cellWidth: 26 },
-                    5: { halign: "center", cellWidth: 26 },
-                    6: { halign: "center", cellWidth: 14 },
-                    7: { halign: "center", cellWidth: 14 },
-                    8: { halign: "center", cellWidth: 16 },
-                    9: { halign: "center", cellWidth: 22 },
+                    0: { halign: "center", cellWidth: 10 },
+                    1: { cellWidth: 62 },
+                    2: { cellWidth: 55 },
+                    3: { halign: "center", cellWidth: 14 },
+                    4: { halign: "center", cellWidth: 30 },
+                    5: { halign: "center", cellWidth: 30 },
+                    6: { halign: "center", cellWidth: 16 },
+                    7: { halign: "center", cellWidth: 16 },
+                    8: { halign: "center", cellWidth: 18 },
+                    9: { halign: "center", cellWidth: 18 },
                 },
                 alternateRowStyles: { fillColor: [245, 245, 250] },
                 didParseCell: function(hookData: any) {
@@ -414,37 +416,39 @@ export default function StayBookingsPage() {
 
             const cardH = 24;
             const gap = 5;
-            const startX = 14;
+            const usableWidth = pageWidth - 2 * margin;
 
             // --- Row 1: Ambrose Adults, Ambrose Kids, Amstel Adults, Amstel Kids, Total Guests ---
             const row1CardW = 48;
+            const row1TotalW = row1CardW * 5 + gap * 4;
+            const row1StartX = margin + (usableWidth - row1TotalW) / 2;
 
             // Ambrose Adults — green tint
-            drawCard(startX, yPos, row1CardW, cardH,
+            drawCard(row1StartX, yPos, row1CardW, cardH,
                 [230, 250, 235], [160, 210, 170],
                 "AMBROSE ADULTS", String(s.ambrose.adults),
                 [40, 120, 60], [20, 100, 40]
             );
             // Ambrose Kids — lighter green
-            drawCard(startX + (row1CardW + gap), yPos, row1CardW, cardH,
+            drawCard(row1StartX + (row1CardW + gap), yPos, row1CardW, cardH,
                 [240, 255, 240], [180, 220, 180],
                 "AMBROSE KIDS", String(s.ambrose.children),
                 [60, 130, 70], [30, 110, 40]
             );
             // Amstel Adults — blue tint
-            drawCard(startX + (row1CardW + gap) * 2, yPos, row1CardW, cardH,
+            drawCard(row1StartX + (row1CardW + gap) * 2, yPos, row1CardW, cardH,
                 [230, 240, 255], [150, 180, 230],
                 "AMSTEL ADULTS", String(s.amstelNest.adults),
                 [40, 70, 150], [20, 50, 140]
             );
             // Amstel Kids — lighter blue
-            drawCard(startX + (row1CardW + gap) * 3, yPos, row1CardW, cardH,
+            drawCard(row1StartX + (row1CardW + gap) * 3, yPos, row1CardW, cardH,
                 [238, 245, 255], [170, 195, 240],
                 "AMSTEL KIDS", String(s.amstelNest.children),
                 [60, 90, 160], [30, 60, 150]
             );
             // Total Guests — dark card
-            drawCard(startX + (row1CardW + gap) * 4, yPos, row1CardW, cardH,
+            drawCard(row1StartX + (row1CardW + gap) * 4, yPos, row1CardW, cardH,
                 [35, 40, 65], [35, 40, 65],
                 "TOTAL GUESTS", String(s.grandTotal.total),
                 [180, 190, 220], [255, 255, 255]
@@ -454,21 +458,23 @@ export default function StayBookingsPage() {
 
             // --- Row 2: Check-ins Today, Jain, Regular ---
             const row2CardW = 60;
+            const row2TotalW = row2CardW * 3 + gap * 2;
+            const row2StartX = margin + (usableWidth - row2TotalW) / 2;
 
             // Check-ins today — orange tint
-            drawCard(startX, yPos, row2CardW, cardH,
+            drawCard(row2StartX, yPos, row2CardW, cardH,
                 [255, 243, 230], [245, 200, 150],
                 "CHECK-INS TODAY", String(s.totalCheckIns),
                 [180, 100, 20], [200, 80, 0]
             );
             // Jain — warm yellow
-            drawCard(startX + row2CardW + gap, yPos, row2CardW, cardH,
+            drawCard(row2StartX + row2CardW + gap, yPos, row2CardW, cardH,
                 [255, 248, 230], [230, 200, 140],
                 "JAIN", String(s.foodPreference.jain),
                 [160, 120, 30], [180, 100, 0]
             );
             // Regular — light teal
-            drawCard(startX + (row2CardW + gap) * 2, yPos, row2CardW, cardH,
+            drawCard(row2StartX + (row2CardW + gap) * 2, yPos, row2CardW, cardH,
                 [230, 248, 245], [160, 210, 200],
                 "REGULAR (VEG)", String(s.foodPreference.regular),
                 [40, 120, 110], [20, 100, 90]
