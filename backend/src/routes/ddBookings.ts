@@ -314,9 +314,13 @@ router.post("/", async (req, res) => {
 // GET /api/bookings/dd — List DD bookings (admin)
 router.get("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { status, screenId, date, startDate, endDate, filterBy } = req.query;
+        const { status, screenId, date, startDate, endDate, filterBy, includeMaintenance } = req.query;
 
         const where: any = {};
+        // Hide maintenance blocks from booking list pages unless explicitly requested
+        if (includeMaintenance !== 'true') {
+            where.isMaintenance = false;
+        }
         if (status) where.status = status;
         if (screenId) where.screenId = parseInt(screenId as string);
 

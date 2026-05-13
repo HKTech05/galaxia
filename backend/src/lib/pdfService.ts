@@ -423,20 +423,27 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         if (prop.googleMapUrl) {
             doc.fontSize(10).fill(GOLD).font("Helvetica-Bold")
                 .text("LOCATION: ", 50, y, { continued: true });
-            doc.fontSize(10).fill(TEXT_MED).font("Helvetica")
-                .text(location, { link: prop.googleMapUrl });
+            doc.fontSize(10).fill("#2563eb").font("Helvetica")
+                .text(location, { link: prop.googleMapUrl, underline: true });
             y += 24;
         }
 
-        // Important Information
-        const infoItems = [
+        // Important Information — property-aware text
+        const propSlug = (prop.slug || "").toLowerCase();
+        const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
+        const infoItems: string[] = [
             "Please carry a valid government-issued photo ID for all guests at check-in.",
+        ];
+        if (!isAmbroseOrAmstel) {
+            infoItems.push("Free parking is available at the property.");
+        }
+        infoItems.push(
             "Early check-in and late check-out are subject to availability.",
             "The balance amount and security deposit must be paid at the venue during check-in.",
             "This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.",
-        ];
+        );
         if (securityDeposit) {
-            infoItems.push(`Security deposit of ${securityDeposit} is applicable and will be refunded per the property's refund timeline.`);
+            infoItems.push(`Security deposit of ${securityDeposit} is applicable (additional to the total booking amount) and will be refunded per the property's refund timeline.`);
         }
         y = drawInfoBlock(doc, "Important Information", infoItems, y);
 

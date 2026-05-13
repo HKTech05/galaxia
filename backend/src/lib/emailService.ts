@@ -167,7 +167,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${divider()}
                 ${sectionTitle("Property")}
                 ${row("Venue", propertyName, { bold: true })}
-                ${row("Location", location)}
+                ${row("Location", mapsLink ? `<a href="${mapsLink}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: 600;">${location}</a>` : location)}
                 ${divider()}
                 ${sectionTitle("Stay Details")}
                 ${row("Check-in", `${checkInDate}  ·  ${checkInTime}`)}
@@ -249,26 +249,28 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         <div style="margin-top: 28px; padding: 22px; background: white; border-radius: 10px; border: 1px solid ${BORDER};">
             <p style="margin: 0 0 12px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Important Information</p>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
-                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">1.</span>
-                    Please carry a valid government-issued photo ID for all guests at check-in.
-                </td></tr>
-                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
-                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">2.</span>
-                    Early check-in and late check-out are subject to availability. Please contact us in advance.
-                </td></tr>
-                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
-                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">3.</span>
-                    The balance amount and security deposit must be paid at the venue during check-in.
-                </td></tr>
-                <tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
-                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">4.</span>
-                    This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.
-                </td></tr>
-                ${securityDeposit ? `<tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
-                    <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">5.</span>
-                    Security deposit of ${securityDeposit} is applicable and will be refunded per the property's refund timeline.
-                </td></tr>` : ""}
+                ${(() => {
+                    const propSlug = (prop.slug || "").toLowerCase();
+                    const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
+                    const items: string[] = [
+                        "Please carry a valid government-issued photo ID for all guests at check-in.",
+                    ];
+                    if (!isAmbroseOrAmstel) {
+                        items.push("Free parking is available at the property.");
+                    }
+                    items.push(
+                        "Early check-in and late check-out are subject to availability.",
+                        "The balance amount and security deposit must be paid at the venue during check-in.",
+                        "This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.",
+                    );
+                    if (securityDeposit) {
+                        items.push(`Security deposit of ${securityDeposit} is applicable (additional to the total booking amount) and will be refunded per the property's refund timeline.`);
+                    }
+                    return items.map((item, i) => `<tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
+                        <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">${i + 1}.</span>
+                        ${item}
+                    </td></tr>`).join('');
+                })()}
             </table>
         </div>
 
