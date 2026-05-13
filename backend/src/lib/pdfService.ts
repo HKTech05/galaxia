@@ -428,24 +428,92 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             y += 24;
         }
 
-        // Important Information — property-aware text
+        // Resort Booking Terms & Conditions — property-aware text
         const propSlug = (prop.slug || "").toLowerCase();
         const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
-        const infoItems: string[] = [
-            "Please carry a valid government-issued photo ID for all guests at check-in.",
+
+        // Build structured T&C sections
+        const tcSections: { title: string; items: string[] }[] = [
+            {
+                title: "Booking Policy",
+                items: [
+                    "All bookings are strictly non-transferable and non-refundable.",
+                    "Date change requests are subject to availability and management approval only.",
+                ],
+            },
+            {
+                title: "Check-in / Check-out Policy",
+                items: [
+                    "Standard check-in and check-out timings must be followed.",
+                    "Early check-in and late check-out are subject to availability and will be chargeable extra.",
+                ],
+            },
+            {
+                title: "Property Rules",
+                items: [
+                    "Free parking is available for in-house guests.",
+                    ...(isAmbroseOrAmstel ? [] : ["Food and restaurant bills must be paid directly to the respective restaurant/vendor."]),
+                    "Shifting or moving any furniture, appliances, or property items is strictly prohibited.",
+                    "Guests are requested to maintain cleanliness and proper decorum within the premises.",
+                    "Any damage caused to the property, furniture, appliances, or amenities will be chargeable to the guest.",
+                ],
+            },
+            {
+                title: "Electricity & Utilities",
+                items: [
+                    "Due to local area conditions, unpredictable power cuts may occur occasionally.",
+                ],
+            },
+            {
+                title: "Swimming Pool Rules",
+                items: [
+                    "Guests using the swimming pool must strictly follow all safety rules and instructions.",
+                    "Children using the swimming pool must be accompanied by adults.",
+                    "Management will not be responsible for any accident, injury, or loss caused due to negligence or violation of safety rules.",
+                ],
+            },
+            {
+                title: "Management Rights",
+                items: [
+                    "The management reserves the right to refuse admission or cancel bookings in case of misconduct, nuisance, illegal activities, or violation of property rules.",
+                ],
+            },
         ];
-        if (!isAmbroseOrAmstel) {
-            infoItems.push("Free parking is available at the property.");
+
+        // Render T&C block
+        const pageBottom = doc.page.height - 100;
+        // Estimate total height
+        const totalTcItems = tcSections.reduce((sum, s) => sum + s.items.length + 1, 0);
+        const estimatedHeight = 20 + totalTcItems * 14 + tcSections.length * 8;
+        if (y + estimatedHeight > pageBottom) {
+            doc.addPage();
+            y = 50;
         }
-        infoItems.push(
-            "Early check-in and late check-out are subject to availability.",
-            "The balance amount and security deposit must be paid at the venue during check-in.",
-            "This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.",
-        );
-        if (securityDeposit) {
-            infoItems.push(`Security deposit of ${securityDeposit} is applicable (additional to the total booking amount) and will be refunded per the property's refund timeline.`);
+
+        // Main title
+        doc.fontSize(8).fill(GOLD).font("Helvetica-Bold")
+            .text("RESORT BOOKING TERMS & CONDITIONS", 60, y, { characterSpacing: 2 });
+        y += 18;
+
+        for (const section of tcSections) {
+            // Check page break
+            if (y + 14 + section.items.length * 13 > pageBottom) {
+                doc.addPage();
+                y = 50;
+            }
+            // Section header
+            doc.fontSize(9).fill(GOLD).font("Helvetica-Bold")
+                .text(section.title, 60, y);
+            y += 14;
+            // Section items
+            for (const item of section.items) {
+                if (y + 14 > pageBottom) { doc.addPage(); y = 50; }
+                doc.fontSize(8.5).fill(TEXT_MED).font("Helvetica")
+                    .text(`•  ${item}`, 68, y, { width: doc.page.width - 136 });
+                y += doc.heightOfString(`•  ${item}`, { width: doc.page.width - 136 }) + 3;
+            }
+            y += 4;
         }
-        y = drawInfoBlock(doc, "Important Information", infoItems, y);
 
         // Footer
         drawFooter(doc, y, location);

@@ -245,33 +245,63 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
 
         ${mapsButton}
 
-        <!-- Important Information -->
+        <!-- Resort Booking Terms & Conditions -->
         <div style="margin-top: 28px; padding: 22px; background: white; border-radius: 10px; border: 1px solid ${BORDER};">
-            <p style="margin: 0 0 12px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Important Information</p>
-            <table style="width: 100%; border-collapse: collapse;">
-                ${(() => {
-                    const propSlug = (prop.slug || "").toLowerCase();
-                    const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
-                    const items: string[] = [
-                        "Please carry a valid government-issued photo ID for all guests at check-in.",
-                    ];
-                    if (!isAmbroseOrAmstel) {
-                        items.push("Free parking is available at the property.");
-                    }
-                    items.push(
-                        "Early check-in and late check-out are subject to availability.",
-                        "The balance amount and security deposit must be paid at the venue during check-in.",
-                        "This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.",
-                    );
-                    if (securityDeposit) {
-                        items.push(`Security deposit of ${securityDeposit} is applicable (additional to the total booking amount) and will be refunded per the property's refund timeline.`);
-                    }
-                    return items.map((item, i) => `<tr><td style="padding: 6px 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.5; vertical-align: top;">
-                        <span style="color: ${GOLD}; font-weight: 700; margin-right: 8px;">${i + 1}.</span>
-                        ${item}
-                    </td></tr>`).join('');
-                })()}
-            </table>
+            <p style="margin: 0 0 16px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Resort Booking Terms & Conditions</p>
+            ${(() => {
+                const propSlug = (prop.slug || "").toLowerCase();
+                const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
+                const sections = [
+                    {
+                        title: "Booking Policy",
+                        items: [
+                            "All bookings are strictly non-transferable and non-refundable.",
+                            "Date change requests are subject to availability and management approval only.",
+                        ],
+                    },
+                    {
+                        title: "Check-in / Check-out Policy",
+                        items: [
+                            "Standard check-in and check-out timings must be followed.",
+                            "Early check-in and late check-out are subject to availability and will be chargeable extra.",
+                        ],
+                    },
+                    {
+                        title: "Property Rules",
+                        items: [
+                            "Free parking is available for in-house guests.",
+                            ...(isAmbroseOrAmstel ? [] : ["Food and restaurant bills must be paid directly to the respective restaurant/vendor."]),
+                            "Shifting or moving any furniture, appliances, or property items is strictly prohibited.",
+                            "Guests are requested to maintain cleanliness and proper decorum within the premises.",
+                            "Any damage caused to the property, furniture, appliances, or amenities will be chargeable to the guest.",
+                        ],
+                    },
+                    {
+                        title: "Electricity & Utilities",
+                        items: [
+                            "Due to local area conditions, unpredictable power cuts may occur occasionally.",
+                        ],
+                    },
+                    {
+                        title: "Swimming Pool Rules",
+                        items: [
+                            "Guests using the swimming pool must strictly follow all safety rules and instructions.",
+                            "Children using the swimming pool must be accompanied by adults.",
+                            "Management will not be responsible for any accident, injury, or loss caused due to negligence or violation of safety rules.",
+                        ],
+                    },
+                    {
+                        title: "Management Rights",
+                        items: [
+                            "The management reserves the right to refuse admission or cancel bookings in case of misconduct, nuisance, illegal activities, or violation of property rules.",
+                        ],
+                    },
+                ];
+                return sections.map(s => `
+                    <p style="margin: 12px 0 6px; font-size: 12px; font-weight: 700; color: ${GOLD};">${s.title}</p>
+                    ${s.items.map(item => `<p style="margin: 0 0 4px; padding-left: 12px; font-size: 12px; color: ${TEXT_MED}; line-height: 1.5;">•&nbsp; ${item}</p>`).join('')}
+                `).join('');
+            })()}
         </div>
 
         <!-- Contact -->

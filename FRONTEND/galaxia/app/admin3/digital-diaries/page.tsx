@@ -228,23 +228,34 @@ export default function Admin1Dashboard() {
 
     const handleCloseOffice = async () => {
         const todayStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-        const isToday = todayStr === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
 
-        if (!confirm(`Are you sure you want to close the office for ${isToday ? 'today' : todayStr}? This will block all remaining empty slots with maintenance blocks.`)) return;
+        if (!confirm(`Are you sure you want to close the office? This will block all remaining empty slots after the last booking across all screens.`)) return;
 
         setCloseOfficeLoading(true);
         const screenMap: Record<string, number> = { "Cine Love": 2, "Sandy Screen": 1, "Park N Watch": 3, "Baywatch": 4 };
         const allScreens = ["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"] as const;
-        const FIRST_HOUR = 10;
         const LAST_HOUR = 22; // 10 PM
 
         try {
-            // For each screen, find occupied hours and block the rest
+            // Find the GLOBAL last booked (non-maintenance) slot end time across ALL screens
+            let globalLastEnd = 0;
             for (const screenName of allScreens) {
-                // Find all bookings for this screen today
-                const screenEvents = eventsList.filter(ev => ev.screen === screenName);
+                const screenEvents = eventsList.filter(ev => ev.screen === screenName && !ev.isMaintenance);
+                for (const ev of screenEvents) {
+                    const evEnd = ev.startHour + ev.duration;
+                    if (evEnd > globalLastEnd) globalLastEnd = evEnd;
+                }
+            }
 
-                // Build a set of occupied hours
+            // If no bookings at all, use current hour
+            if (globalLastEnd === 0) {
+                globalLastEnd = Math.max(10, new Date().getHours());
+            }
+
+            // Block from globalLastEnd onwards on ALL screens
+            for (const screenName of allScreens) {
+                // Build occupied hours for this screen (both bookings and existing maintenance)
+                const screenEvents = eventsList.filter(ev => ev.screen === screenName);
                 const occupiedHours = new Set<number>();
                 for (const ev of screenEvents) {
                     for (let h = ev.startHour; h < ev.startHour + ev.duration; h++) {
@@ -252,27 +263,8 @@ export default function Admin1Dashboard() {
                     }
                 }
 
-                // Determine the start hour for blocking:
-                // If today, start from current hour (don't block past hours)
-                // If future date, start from FIRST_HOUR
-                let blockStartHour = FIRST_HOUR;
-                if (isToday) {
-                    const now = new Date();
-                    blockStartHour = Math.max(FIRST_HOUR, now.getHours());
-                }
-
-                // Find the last booked slot end time for this screen
-                let lastBookedEnd = blockStartHour;
-                for (const ev of screenEvents) {
-                    const evEnd = ev.startHour + ev.duration;
-                    if (evEnd > lastBookedEnd) lastBookedEnd = evEnd;
-                }
-
-                // Block from lastBookedEnd (or current hour if no bookings) to LAST_HOUR
-                const startFrom = Math.max(blockStartHour, lastBookedEnd);
-
-                for (let hour = startFrom; hour < LAST_HOUR; hour++) {
-                    if (occupiedHours.has(hour)) continue; // Skip occupied slots
+                for (let hour = globalLastEnd; hour < LAST_HOUR; hour++) {
+                    if (occupiedHours.has(hour)) continue; // Skip already occupied slots
 
                     try {
                         await api.post("/bookings/dd", {
@@ -302,6 +294,29 @@ export default function Admin1Dashboard() {
         } catch (err: any) {
             console.error("Close office error:", err);
             alert(err.message || "Failed to close office");
+        } finally {
+            setCloseOfficeLoading(false);
+        }
+    };
+
+    const handleOpenOffice = async () => {
+        if (!confirm("Are you sure you want to open the office? This will remove ALL maintenance blocks for this day.")) return;
+
+        setCloseOfficeLoading(true);
+        try {
+            // Find all maintenance block events for this day and cancel them
+            const maintEvents = eventsList.filter(ev => ev.isMaintenance);
+            for (const ev of maintEvents) {
+                try {
+                    await api.patch(`/bookings/dd/${ev.id}/status`, { status: "cancelled" });
+                } catch (err: any) {
+                    console.error(`Failed to unblock event ${ev.id}:`, err);
+                }
+            }
+            fetchEvents(startDate);
+        } catch (err: any) {
+            console.error("Open office error:", err);
+            alert(err.message || "Failed to open office");
         } finally {
             setCloseOfficeLoading(false);
         }
@@ -1759,7 +1774,15 @@ export default function Admin1Dashboard() {
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white shadow-lg shadow-red-600/25 hover:bg-red-700 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                         <Ban size={16} />
-                        {closeOfficeLoading ? "Closing..." : "Close Office"}
+                        {closeOfficeLoading ? "Processing..." : "Close Office"}
+                    </button>
+                    <button
+                        onClick={handleOpenOffice}
+                        disabled={closeOfficeLoading}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                        <CheckCircle2 size={16} />
+                        {closeOfficeLoading ? "Processing..." : "Open Office"}
                     </button>
                     <CustomDatePicker
                         date={startDate}
