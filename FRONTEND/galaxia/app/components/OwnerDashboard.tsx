@@ -1441,7 +1441,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                             <h3 className="text-lg font-bold text-slate-800 tracking-tight mb-1">Block / Unblock Dates</h3>
                             <p className="text-sm text-slate-500 font-medium mb-5">Click dates on the calendar above to select them, then choose a reason and block.</p>
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Left: Reason + Units + Selected + Button */}
                                 <div className="space-y-4">
                                     <div className="space-y-1">
@@ -1498,14 +1498,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     </button>
                                 </div>
 
-                                {/* Middle: Active Blocks for selected property */}
-                                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
+                                {/* Right: Active Blocks for selected property */}
+                                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4 flex flex-col">
                                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Active Blocks — {calendarProperty || 'Select Property'}</h4>
                                     <div className="flex gap-1 mb-3">
                                         <button onClick={() => setBlockDateFilter('current')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'current' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Current</button>
                                         <button onClick={() => setBlockDateFilter('past')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'past' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Past</button>
                                     </div>
-                                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                    <div className="space-y-2 flex-1 overflow-y-auto max-h-64 pr-1">
                                         {filteredBlocks.length === 0 ? (
                                             <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
                                         ) : (
