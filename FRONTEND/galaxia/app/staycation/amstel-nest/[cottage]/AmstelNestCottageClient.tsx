@@ -297,6 +297,8 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                         setCalCheckIn(new Date(ci + 'T12:00:00'));
                                         setCalCheckOut(new Date(co + 'T12:00:00'));
                                         setDateWarning('');
+                                        localStorage.setItem('galaxia_search_checkin', ci);
+                                        localStorage.setItem('galaxia_search_checkout', co);
                                     }}
                                 />
                             </div>
@@ -308,11 +310,6 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 dateOverrides={dateOverrides}
                                 initialCheckIn={calCheckIn}
                                 initialCheckOut={calCheckOut}
-                                onDatesChange={(ci, co) => {
-                                    setCalCheckIn(ci); setCalCheckOut(co);
-                                    if (ci) localStorage.setItem('galaxia_search_checkin', fmtDate(ci));
-                                    if (co) localStorage.setItem('galaxia_search_checkout', fmtDate(co));
-                                }}
                                 isDisabled={isCottageDisabled}
                                 totalUnits={cottage.id === 'standard-cottage' ? 14 : undefined}
                             />

@@ -300,6 +300,8 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                         setCalCheckIn(new Date(ci + 'T12:00:00'));
                                         setCalCheckOut(new Date(co + 'T12:00:00'));
                                         setDateWarning('');
+                                        localStorage.setItem('galaxia_search_checkin', ci);
+                                        localStorage.setItem('galaxia_search_checkout', co);
                                     }}
                                 />
                             </div>
@@ -312,11 +314,6 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                 dateOverrides={dateOverrides}
                                 initialCheckIn={calCheckIn}
                                 initialCheckOut={calCheckOut}
-                                onDatesChange={(ci, co) => {
-                                    setCalCheckIn(ci); setCalCheckOut(co);
-                                    if (ci) localStorage.setItem('galaxia_search_checkin', fmtDate(ci));
-                                    if (co) localStorage.setItem('galaxia_search_checkout', fmtDate(co));
-                                }}
                                 isDisabled={isVillaDisabled}
                             />
                             <div className="mt-5 flex flex-col sm:flex-row gap-3">

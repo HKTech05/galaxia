@@ -896,7 +896,6 @@ export default function BookMultiPage() {
                                 weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "6,950") : (ambroseItems[0]?.weekendPrice || ambrose.pricing.weekend.price)}
                                 saturdayPrice={hasAmstelOnly ? undefined : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
                                 dateOverrides={{}}
-                                onDatesChange={handleDatesChange}
                                 hidePrice={hasMixedPrices}
                                 totalUnits={hasAmstelOnly ? 15 : undefined}
                                 initialCheckIn={checkInDate}

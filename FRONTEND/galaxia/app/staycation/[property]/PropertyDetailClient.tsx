@@ -477,6 +477,8 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                             setCalCheckIn(new Date(ci + 'T12:00:00'));
                                             setCalCheckOut(new Date(co + 'T12:00:00'));
                                             setDateWarning('');
+                                            localStorage.setItem('galaxia_search_checkin', ci);
+                                            localStorage.setItem('galaxia_search_checkout', co);
                                         }}
                                     />
                                 </div>
@@ -489,11 +491,6 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     dateOverrides={dateOverrides}
                                     initialCheckIn={calCheckIn}
                                     initialCheckOut={calCheckOut}
-                                    onDatesChange={(ci, co) => {
-                                        setCalCheckIn(ci); setCalCheckOut(co);
-                                        if (ci) localStorage.setItem('galaxia_search_checkin', fmtDate(ci));
-                                        if (co) localStorage.setItem('galaxia_search_checkout', fmtDate(co));
-                                    }}
                                     isDisabled={isPropertyDisabled}
                                 />
                                 {isPropertyDisabled ? (

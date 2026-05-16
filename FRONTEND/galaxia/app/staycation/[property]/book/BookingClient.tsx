@@ -1229,7 +1229,6 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     weekendPrice={selectedRoom?.weekendPrice || roomOptions[0]?.weekendPrice || property.pricing.weekend.price}
                                     saturdayPrice={selectedRoom?.saturdayPrice || roomOptions[0]?.saturdayPrice}
                                     primeDatePrice={selectedRoom?.primeDatePrice || roomOptions[0]?.primeDatePrice || property.pricing.primeDates || ""}
-                                    onDatesChange={handleDatesChange}
                                     initialCheckIn={checkInDate}
                                     initialCheckOut={checkOutDate}
                                     isDisabled={isMaintenance}

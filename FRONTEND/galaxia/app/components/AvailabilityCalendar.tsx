@@ -188,6 +188,8 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
     };
 
     const handleDayClick = (day: { date: Date; type: string; numPrice: number } | null) => {
+        // Calendar is view-only when no onDatesChange callback is provided
+        if (!onDatesChange) return;
         if (!day || isPast(day.date)) return;
         // Block clicking booked dates only for check-in selection; checkout on a booked date is allowed
         if (day.type === "booked" && (!selectingCheckOut || !checkIn)) return;
