@@ -1527,36 +1527,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Right: All Properties Active Blocks */}
-                                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">All Active Blocks (All Properties)</h4>
-                                    <div className="flex gap-1 mb-3">
-                                        <button onClick={() => setBlockDateFilter('current')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'current' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Current</button>
-                                        <button onClick={() => setBlockDateFilter('past')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'past' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Past</button>
-                                    </div>
-                                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                                        {filteredBlocks.length === 0 ? (
-                                            <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
-                                        ) : (
-                                            filteredBlocks.map(block => (
-                                                <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>
-                                                        <p className="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-1">
-                                                            {(() => { const p = parseDateDay(block.blockedDate); return new Date(p.year, p.month, p.day).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
-                                                            {block.reason && <span className="text-[10px] text-red-500 font-bold uppercase bg-red-50 px-1.5 py-0.5 rounded border border-red-100">{block.reason}</span>}
-                                                            {(block.numUnits || 1) > 1 && <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">×{block.numUnits} cottages</span>}
-                                                        </p>
-                                                    </div>
-                                                    <button onClick={() => handleUnblockDate(block.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0">
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
