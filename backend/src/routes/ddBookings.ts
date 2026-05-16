@@ -274,7 +274,12 @@ router.post("/", async (req, res) => {
 
         // Send confirmation email (fire-and-forget) — skip for maintenance blocks
         if (!isMaintenance) {
-            sendDDBookingEmail({ ...booking, customerPhone, customerEmail }).catch(() => { });
+            // Re-fetch booking with addons (addons are created after initial booking in the transaction)
+            const bookingWithAddons = await prisma.ddBooking.findUnique({
+                where: { id: booking.id },
+                include: { screen: true, package: true, addons: true },
+            });
+            sendDDBookingEmail({ ...(bookingWithAddons || booking), customerPhone, customerEmail }).catch(() => { });
 
             // Send WhatsApp confirmation with voucher link (fire-and-forget)
             if (customerPhone) {
@@ -285,7 +290,7 @@ router.post("/", async (req, res) => {
 
             // Send owner notification with PDF attachment (fire-and-forget)
             const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
-            generateDDBookingPDF({ ...booking, customerPhone, customerEmail })
+            generateDDBookingPDF({ ...(bookingWithAddons || booking), customerPhone, customerEmail })
                 .then((pdfBuffer) =>
                     sendOwnerBookingNotification({
                         bookingRef: booking.bookingRef,
@@ -1040,7 +1045,7 @@ router.get("/voucher/:ref", async (req, res) => {
         const { ref } = req.params;
         const booking = await prisma.ddBooking.findFirst({
             where: { bookingRef: ref },
-            include: { screen: true, package: true },
+            include: { screen: true, package: true, addons: true },
         });
 
         if (!booking) {
