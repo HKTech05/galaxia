@@ -17,22 +17,25 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         else if (period === "year") startDate = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1);
 
         // ── KPI aggregations ──
+        const activeStayFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } };
+        const activeDdFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } };
+
         const stayRevenue = await prisma.staycationBooking.aggregate({
             _sum: { totalAmount: true },
-            where: { bookedAt: { gte: startDate }, status: { in: ["confirmed", "checked_in", "checked_out"] } },
+            where: activeStayFilter,
         });
         const ddRevenue = await prisma.ddBooking.aggregate({
             _sum: { totalAmount: true },
-            where: { bookedAt: { gte: startDate }, status: { in: ["confirmed", "checked_in", "paid"] } },
+            where: activeDdFilter,
         });
         const totalStayBookings = await prisma.staycationBooking.count({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: activeStayFilter,
         });
         const totalDdBookings = await prisma.ddBooking.count({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: activeDdFilter,
         });
         const stayBookingsForNights = await prisma.staycationBooking.findMany({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: activeStayFilter,
             select: { numNights: true },
         });
         const totalNightsBooked = stayBookingsForNights.reduce((sum: number, b) => sum + b.numNights, 0);

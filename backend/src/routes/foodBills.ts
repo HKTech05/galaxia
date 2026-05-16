@@ -63,21 +63,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                     data: { cashCollected: { decrement: satkarAmt } },
                 });
             }
-            // UPI paid to Satkar → log to UPI management with proof
-            if (satkarMethod === "upi") {
-                await prisma.upiPayment.create({
-                    data: {
-                        employeeId: ddEmployee.id,
-                        bookingRef: `FB-${foodBill.id}-SAT`,
-                        guestName: `Satkar (${guestName})`,
-                        amount: satkarAmt,
-                        paymentType: "food_expense",
-                        proofImageUrl: satkarUpiProofUrl || null,
-                        proofImageKey: satkarUpiProofKey || null,
-                        note: `Satkar UPI payment for ${guestName} (${screenName})`,
-                    },
-                });
-            }
+            // UPI paid to Satkar → proof stored in FoodBill record only, not in UPI management
 
             // ── Guest side (collection IN) ──
             if (paymentMethod === "cash") {
@@ -209,12 +195,7 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
                 });
             }
 
-            // Reverse Satkar UPI
-            if (bill.satkarPaymentMethod === "upi") {
-                await prisma.upiPayment.deleteMany({
-                    where: { bookingRef: `FB-${id}-SAT` },
-                });
-            }
+            // Satkar UPI — proof stored in food_bills only, nothing to reverse
 
             // Reverse Guest cash collection
             if (bill.paymentMethod === "cash") {

@@ -1305,15 +1305,11 @@ export default function BookMultiPage() {
                                     {celebrationAddon && (
                                         <div className="mt-4 space-y-3 pl-7 animate-in fade-in">
                                             <div>
-                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Banner / Occasion</label>
+                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Occasion</label>
                                                 <select value={celebrationOccasion} onChange={(e) => setCelebrationOccasion(e.target.value)} className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none">
                                                     <option>Birthday</option>
                                                     <option>Anniversary</option>
                                                 </select>
-                                            </div>
-                                            <div>
-                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Cake Message (optional)</label>
-                                                <input type="text" value={celebrationCakeMsg} onChange={(e) => setCelebrationCakeMsg(e.target.value)} placeholder="e.g. Happy Birthday Priya!" className="w-full bg-white border border-border-medium rounded-lg px-3 py-2.5 text-sm font-inter text-text-primary focus:border-antique-gold focus:outline-none placeholder:text-text-muted" />
                                             </div>
                                         </div>
                                     )}
@@ -1322,15 +1318,11 @@ export default function BookMultiPage() {
                                 {/* Food Preference (compulsory for Ambrose & Amstel Nest) */}
                                 <div className="mb-6 p-4 border border-emerald-200 rounded-lg bg-emerald-50/50">
                                     <h4 className="font-inter text-sm font-semibold text-text-primary mb-1">Food Preference <span className="text-red-500">*</span></h4>
-                                    <p className="font-inter text-[10px] text-text-muted mb-3 uppercase tracking-wider">Meals Included — Lunch, Dinner & Breakfast. Only Veg.</p>
+                                    <p className="font-inter text-[10px] text-text-muted mb-3 uppercase tracking-wider">Both options are vegetarian only</p>
                                     <div className="flex gap-3">
                                         <button type="button" onClick={() => setFoodType('Regular')} className={`flex-1 py-2.5 rounded-lg text-sm font-inter font-semibold transition-all border ${foodType === 'Regular' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-text-secondary border-border-medium hover:border-emerald-300'}`}>Regular (Veg)</button>
                                         <button type="button" onClick={() => setFoodType('Jain')} className={`flex-1 py-2.5 rounded-lg text-sm font-inter font-semibold transition-all border ${foodType === 'Jain' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-text-secondary border-border-medium hover:border-emerald-300'}`}>Jain (Veg)</button>
                                     </div>
-                                    <a href="/Amstel-Nest-Menu.jpg.jpeg" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-sm font-inter font-semibold text-emerald-700 hover:text-emerald-800 transition-colors">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                        Download Menu
-                                    </a>
                                 </div>
 
                                 <label className="flex items-start gap-3 mt-6 cursor-pointer">
