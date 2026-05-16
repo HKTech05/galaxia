@@ -14,7 +14,7 @@ async function getDdEmployee() {
 // POST /api/food-bills — Create a new food bill
 router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { date, ddBookingId, guestName, screenName, satkarAmount, satkarPaymentMethod, paymentMethod, upiProofUrl, upiProofKey } = req.body;
+        const { date, ddBookingId, guestName, screenName, satkarAmount, satkarPaymentMethod, paymentMethod, upiProofUrl, upiProofKey, satkarUpiProofUrl, satkarUpiProofKey } = req.body;
 
         if (!date || !guestName || !screenName || !satkarAmount || !paymentMethod) {
             return res.status(400).json({ error: "date, guestName, screenName, satkarAmount, paymentMethod required" });
@@ -36,6 +36,8 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                 paymentMethod,
                 upiProofUrl: upiProofUrl || null,
                 upiProofKey: upiProofKey || null,
+                satkarUpiProofUrl: satkarUpiProofUrl || null,
+                satkarUpiProofKey: satkarUpiProofKey || null,
                 createdBy: req.admin!.id,
             },
         });
@@ -61,7 +63,21 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                     data: { cashCollected: { decrement: satkarAmt } },
                 });
             }
-            // UPI paid to Satkar → stored in DB only, NOT in UPI management
+            // UPI paid to Satkar → log to UPI management with proof
+            if (satkarMethod === "upi") {
+                await prisma.upiPayment.create({
+                    data: {
+                        employeeId: ddEmployee.id,
+                        bookingRef: `FB-${foodBill.id}-SAT`,
+                        guestName: `Satkar (${guestName})`,
+                        amount: satkarAmt,
+                        paymentType: "food_expense",
+                        proofImageUrl: satkarUpiProofUrl || null,
+                        proofImageKey: satkarUpiProofKey || null,
+                        note: `Satkar UPI payment for ${guestName} (${screenName})`,
+                    },
+                });
+            }
 
             // ── Guest side (collection IN) ──
             if (paymentMethod === "cash") {
@@ -190,6 +206,13 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
                 await prisma.employee.update({
                     where: { id: ddEmployee.id },
                     data: { cashCollected: { increment: bill.satkarAmount } },
+                });
+            }
+
+            // Reverse Satkar UPI
+            if (bill.satkarPaymentMethod === "upi") {
+                await prisma.upiPayment.deleteMany({
+                    where: { bookingRef: `FB-${id}-SAT` },
                 });
             }
 

@@ -320,29 +320,29 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                 isDisabled={isVillaDisabled}
                             />
                             <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                                <Link href={bookNowUrl} className="block w-full sm:w-auto bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
+                                <Link href={bookNowUrl} className="block w-full sm:flex-1 bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">
                                     BOOK NOW
                                 </Link>
                                 {isInCart ? (
-                                    <button onClick={removeFromCart} className="block w-full sm:w-auto border-2 border-red-400 text-red-600 font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-red-50 transition-all duration-300 flex items-center justify-center gap-2">
+                                    <button onClick={removeFromCart} className="block w-full sm:flex-1 border-2 border-red-400 text-red-600 font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-red-50 transition-all duration-300 flex items-center justify-center gap-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         Remove from Cart
                                     </button>
                                 ) : (
-                                    <button onClick={addToCart} className="block w-full sm:w-auto border-2 border-antique-gold/50 text-antique-gold font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-antique-gold/5 transition-all duration-300 flex items-center justify-center gap-2">
+                                    <button onClick={addToCart} className="block w-full sm:flex-1 border-2 border-antique-gold/50 text-antique-gold font-inter font-semibold text-sm px-6 py-3 rounded-lg text-center hover:bg-antique-gold/5 transition-all duration-300 flex items-center justify-center gap-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
                                         Add to Cart
                                     </button>
                                 )}
+                                {cartCount > 0 && (
+                                    <Link href="/staycation/ambrose/book-multi" className="flex items-center justify-center gap-2 w-full sm:flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-inter font-bold text-sm px-6 py-3 rounded-lg hover:shadow-lg hover:shadow-emerald-500/20 transition-all duration-300">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                                        View Cart ({cartCount})
+                                    </Link>
+                                )}
                             </div>
                             {cartMessage && (
                                 <div className="mt-2 text-sm font-inter font-medium text-antique-gold animate-fade-in">{cartMessage}</div>
-                            )}
-                            {cartCount > 0 && (
-                                <Link href="/staycation/ambrose/book-multi" className="mt-3 flex items-center justify-center gap-2 w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-inter font-bold text-sm px-6 py-3 rounded-lg hover:shadow-lg hover:shadow-emerald-500/20 transition-all duration-300">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                                    View Cart ({cartCount} villa{cartCount > 1 ? 's' : ''})
-                                </Link>
                             )}
                         </div>
                         <div className="space-y-5">

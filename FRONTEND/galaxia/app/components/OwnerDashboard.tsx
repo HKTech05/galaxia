@@ -823,9 +823,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
         // KPI cards data
         const totalRevenue = dashboardKPIs?.kpis?.totalRevenue || 0;
+        const staycationRevenue = dashboardKPIs?.kpis?.staycationRevenue || 0;
         const totalNights = dashboardKPIs?.kpis?.totalNightsBooked || 0;
         const occupancyRate = totalUnits > 0 ? Math.round((totalOccupied / totalUnits) * 100) : 0;
-        const avgNightlyRate = totalNights > 0 ? Math.round(totalRevenue / totalNights) : 0;
+        const avgNightlyRate = totalNights > 0 ? Math.round(staycationRevenue / totalNights) : 0;
 
         // Live calendar helpers
         const calendarYear = calendarViewMonth.getFullYear();
@@ -906,7 +907,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
-                                    <p className="text-xl font-bold text-emerald-700 mt-1">₹{totalRevenue.toLocaleString('en-IN')}</p>
+                                    <p className="text-xl font-bold text-emerald-700 mt-1">₹{staycationRevenue.toLocaleString('en-IN')}</p>
                                     <p className="text-[10px] text-emerald-500 font-medium mt-1">this period</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">

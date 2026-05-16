@@ -656,6 +656,8 @@ model FoodBill {
   paymentMethod   String    @map("payment_method") @db.VarChar(30) // guest payment: cash or upi
   upiProofUrl     String?   @map("upi_proof_url")
   upiProofKey     String?   @map("upi_proof_key") @db.VarChar(500)
+  satkarUpiProofUrl String? @map("satkar_upi_proof_url")
+  satkarUpiProofKey String? @map("satkar_upi_proof_key") @db.VarChar(500)
   createdBy       Int?      @map("created_by")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
