@@ -52,6 +52,7 @@ export default function Admin3DDBookingsPage() {
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [transferDate, setTransferDate] = useState("");
     const [transferHour, setTransferHour] = useState("10");
+    const [transferScreen, setTransferScreen] = useState<string | null>(null);
     const [transferLoading, setTransferLoading] = useState(false);
 
     useEffect(() => { fetchBookings(); }, []);
@@ -90,11 +91,13 @@ export default function Admin3DDBookingsPage() {
             const result = await api.post(`/bookings/dd/${detailBooking.id}/transfer`, {
                 newDate: transferDate,
                 newStartHour: parseInt(transferHour),
+                ...(transferScreen ? { newScreenName: transferScreen } : {}),
             });
             alert(`Booking transferred to ${new Date(transferDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${parseInt(transferHour) > 12 ? parseInt(transferHour) - 12 : parseInt(transferHour)}:00 ${parseInt(transferHour) >= 12 ? "PM" : "AM"}.\n\nNew Ref: ${result.newBooking.bookingRef}\n₹400 transfer fee added.`);
             setShowTransferModal(false);
             setTransferDate("");
             setTransferHour("10");
+            setTransferScreen(null);
             setDetailBooking(null);
             fetchBookings();
         } catch (err: any) {
@@ -465,9 +468,21 @@ export default function Admin3DDBookingsPage() {
                             </div>
 
                             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
-                                <p><strong>Screen:</strong> {detailBooking.screen?.name || '—'}</p>
+                                <p><strong>Current Screen:</strong> {detailBooking.screen?.name || '—'}</p>
                                 <p><strong>Duration:</strong> {detailBooking.durationHours} hours</p>
                                 <p><strong>Package:</strong> {detailBooking.package?.name || '—'}</p>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Screen (optional)</label>
+                                <select
+                                    value={transferScreen || detailBooking.screen?.name || ''}
+                                    onChange={(e) => setTransferScreen(e.target.value)}
+                                    className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
+                                >
+                                    {["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"].map(s => (
+                                        <option key={s} value={s}>{s}{s === detailBooking.screen?.name ? ' (current)' : ''}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
