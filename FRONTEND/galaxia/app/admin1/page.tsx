@@ -40,6 +40,7 @@ type Event = {
     amountToCollect: string;
     paymentDetails: string;
     isMaintenance?: boolean;
+    numGuests?: number;
     addOns?: {
         balloons?: boolean;
         ledBanner?: boolean;
@@ -105,6 +106,7 @@ export default function Admin1Dashboard() {
                         amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString('en-IN')}`,
                         paymentDetails: b.paymentDetails || `Paid via ${b.paymentMethod || 'Online'}`,
                         isMaintenance: b.isMaintenance || false,
+                        numGuests: b.numGuests || 2,
                         addOns: b.addons ? {
                             balloons: b.addons.some((a: any) => a.addonType === 'balloons'),
                             ledBanner: b.addons.some((a: any) => a.addonType === 'led_banner'),
@@ -453,6 +455,10 @@ export default function Admin1Dashboard() {
                                     <div className="flex justify-between">
                                         <span className="text-sm text-slate-500 font-medium">Package Type</span>
                                         <span className="text-sm font-bold text-slate-800">{activeEvent.packageType}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-sm text-slate-500 font-medium">Number of People</span>
+                                        <span className="text-sm font-bold text-slate-800">{activeEvent.numGuests || 2} Guest{(activeEvent.numGuests || 2) !== 1 ? 's' : ''}</span>
                                     </div>
                                     {activeEvent.packageType === "Celebration" && (
                                         <>

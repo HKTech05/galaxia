@@ -767,6 +767,42 @@ export default function Admin1Dashboard() {
         }
     };
 
+    // Auto-calculate DD pricing when guests, package, duration, or date change
+    useEffect(() => {
+        if (!showEditModal) return;
+        const durNum = editForm.durationHours || 3;
+        const pkgId = editForm.packageId || 1;
+        const guests = editForm.numGuests || 2;
+        const bookingDateStr = editForm.bookingDate || '';
+        let calcBase = 0;
+        if (pkgId === 1) { // Movie Time
+            if (durNum === 1) calcBase = 999;
+            else if (durNum === 2) calcBase = 1500;
+            else if (durNum === 3) calcBase = 2500;
+            else calcBase = 2500 + ((durNum - 3) * 1000);
+        } else { // Celebration
+            let isWeekend = false;
+            if (bookingDateStr) {
+                const d = new Date(bookingDateStr + 'T12:00:00');
+                isWeekend = d.getDay() === 0 || d.getDay() === 6;
+            }
+            if (durNum <= 2) calcBase = 2950;
+            else if (durNum === 3) calcBase = isWeekend ? 3950 : 3450;
+            else calcBase = (isWeekend ? 3950 : 3450) + ((durNum - 3) * 1000);
+        }
+        const extraFee = guests > 2 ? (guests - 2) * 300 : 0;
+        const newTotal = calcBase + extraFee;
+        const paid = editForm.amountPaid || 0;
+        setEditForm((prev: any) => ({
+            ...prev,
+            basePrice: calcBase,
+            extraPersonCharge: extraFee,
+            totalAmount: newTotal,
+            amountToCollect: Math.max(0, newTotal - paid),
+        }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showEditModal, editForm.numGuests, editForm.packageId, editForm.durationHours, editForm.bookingDate]);
+
     // 1. EVENT DETAIL VIEW
     if (activeEvent) {
         return (

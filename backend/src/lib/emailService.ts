@@ -178,39 +178,12 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${(() => {
-                    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                    const pricingSubArr = (sub?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null }>;
-                    const pricingParentArr = ((prop?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null; overrideDate?: Date | null }>).filter(p => !p.subPropertyId && !p.overrideDate);
-                    const pricingRecords = pricingSubArr.length > 0 ? pricingSubArr : pricingParentArr;
-                    const priceByDayType: Record<string, number> = {};
-                    for (const pr of pricingRecords) {
-                        priceByDayType[pr.dayType] = pr.basePrice;
-                    }
-                    const hasDbPricing = Object.keys(priceByDayType).length > 0;
-
-                    // Compute per-night room-only rate (excluding extra guest charges)
+                    // Compute room-only total (all per-day rates combined)
                     const storedExtraAdult = (booking as any).extraAdultCharge || 0;
                     const storedExtraKids = (booking as any).extraKidsCharge || 0;
                     const roomOnlyTotal = (booking.basePrice || 0) - storedExtraAdult - storedExtraKids;
-                    const avgRoomPerNight = booking.numNights > 0 ? Math.round(Math.max(0, roomOnlyTotal) / booking.numNights) : (booking.nightlyRate || 0);
-
-                    if (booking.numNights > 0 && booking.checkInDate) {
-                        let rows = '';
-                        for (let i = 0; i < booking.numNights; i++) {
-                            const d = new Date(booking.checkInDate);
-                            d.setDate(d.getDate() + i);
-                            const day = d.getDay();
-                            let nightPrice = avgRoomPerNight;
-                            if (hasDbPricing) {
-                                nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgRoomPerNight)
-                                    : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgRoomPerNight)
-                                    : (priceByDayType['weekday'] || avgRoomPerNight);
-                            }
-                            rows += row(DAY_NAMES[day], fmtCurrency(nightPrice));
-                        }
-                        return rows;
-                    }
-                    return row("Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`);
+                    const totalRoomPrice = Math.max(0, roomOnlyTotal) + (booking.gstAmount || 0);
+                    return row("Total Room Price", fmtCurrency(totalRoomPrice), { bold: true });
                 })()}
                 ${(() => {
                     const storedExtraAdult = (booking as any).extraAdultCharge || 0;
@@ -224,7 +197,6 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                     return extraRows;
                 })()}
                 ${addonRows}
-                ${row("GST", fmtCurrency(booking.gstAmount))}
                 ${discountRow}
                 ${row("Total Amount", fmtCurrency(booking.totalAmount), { bold: true, color: GOLD, borderTop: true })}
                 ${divider()}
@@ -443,6 +415,17 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
                 ${ddRow("Guests", `${booking.numGuests} Guest${booking.numGuests > 1 ? "s" : ""}`)}
                 ${occasionRow}
                 ${cakeRow}
+                ${(() => {
+                    if (!booking.addons || !Array.isArray(booking.addons) || booking.addons.length === 0) return '';
+                    const addonNames: string[] = [];
+                    for (const a of booking.addons) {
+                        if (a.addonType === 'balloons') addonNames.push('Balloons');
+                        else if (a.addonType === 'led_banner' || a.addonType === 'ledBanner') addonNames.push(`LED Banner (${a.addonValue || 'Happy Birthday'})`);
+                        else if (a.addonType === 'cake') addonNames.push('Cake');
+                    }
+                    if (addonNames.length === 0) return '';
+                    return ddRow("Add-ons", addonNames.join(", "));
+                })()}
                 ${ddDivider()}
                 ${ddSectionTitle("Payment Summary")}
                 ${ddRow("Base Price", fmtCurrency(booking.basePrice))}

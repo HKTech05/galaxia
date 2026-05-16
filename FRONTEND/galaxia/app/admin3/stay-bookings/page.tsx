@@ -47,6 +47,12 @@ interface StayBooking {
     isDd?: boolean;
     startHour?: number;
     durationHours?: number;
+    screenId?: number;
+    packageId?: number;
+    occasion?: string;
+    cakeMessage?: string;
+    specialRequests?: string;
+    bookingDate?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -194,9 +200,9 @@ export default function StayBookingsPage() {
                 bookedAt: b.bookedAt || b.createdAt,
                 nightlyRate: 0,
                 basePrice: b.basePrice || 0,
-                extraPersonCharge: 0,
-            extraAdultCharge: 0,
-            extraKidsCharge: 0,
+                extraPersonCharge: b.extraPersonCharge || 0,
+                extraAdultCharge: 0,
+                extraKidsCharge: 0,
                 gstAmount: b.gstAmount || 0,
                 discountAmount: b.discountAmount || 0,
                 advancePaid: (b.amountPaid || 0) > 0,
@@ -212,6 +218,12 @@ export default function StayBookingsPage() {
                 isDd: true,
                 startHour: b.startHour,
                 durationHours: b.durationHours,
+                screenId: b.screenId,
+                packageId: b.packageId,
+                occasion: b.occasion || '',
+                cakeMessage: b.cakeMessage || '',
+                specialRequests: b.specialRequests || '',
+                bookingDate: b.bookingDate?.split('T')[0] || '',
             }));
             setDdBookings(mapped);
         } catch (err) {
@@ -1096,6 +1108,15 @@ export default function StayBookingsPage() {
                                                 status: b.status,
                                                 source: b.source,
                                                 addons: b.addons || [],
+                                                // DD-specific fields
+                                                screenId: b.screenId || 1,
+                                                packageId: b.packageId || 1,
+                                                bookingDate: b.bookingDate || (b.checkIn ? b.checkIn.split('T')[0] : ''),
+                                                startHour: b.startHour || 10,
+                                                durationHours: b.durationHours || 3,
+                                                occasion: b.occasion || '',
+                                                cakeMessage: b.cakeMessage || '',
+                                                specialRequests: b.specialRequests || '',
                                             });
                                             setEditBooking(b);
                                         }}
@@ -1207,6 +1228,80 @@ export default function StayBookingsPage() {
                                 </div>
                             </div>
 
+                            {/* DD Screening Info */}
+                            {editBooking.isDd && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Screening Details</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Screen</label>
+                                            <select value={editForm.screenId || 1} onChange={e => setEditForm({...editForm, screenId: parseInt(e.target.value)})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                                <option value={1}>Sandy Screen</option>
+                                                <option value={2}>Cine Love</option>
+                                                <option value={3}>Park N Watch</option>
+                                                <option value={4}>Baywatch</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Package</label>
+                                            <select value={editForm.packageId || 1} onChange={e => setEditForm({...editForm, packageId: parseInt(e.target.value)})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                                <option value={1}>Movie Time</option>
+                                                <option value={2}>Celebration</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Booking Date</label>
+                                            <input type="date" value={editForm.bookingDate || ''} onChange={e => setEditForm({...editForm, bookingDate: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Start Time</label>
+                                            <select value={editForm.startHour || 10} onChange={e => setEditForm({...editForm, startHour: parseInt(e.target.value)})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                                {Array.from({ length: 13 }, (_, i) => i + 10).map(h => (
+                                                    <option key={h} value={h}>{h > 12 ? h - 12 : h}:00 {h >= 12 ? 'PM' : 'AM'}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Duration</label>
+                                            <select value={editForm.durationHours || 3} onChange={e => setEditForm({...editForm, durationHours: parseInt(e.target.value)})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                                {[1, 2, 3, 4, 5, 6].map(h => (<option key={h} value={h}>{h} hr{h > 1 ? 's' : ''}</option>))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Guests</label>
+                                            <input type="number" min={1} max={50} value={editForm.numGuests || 1} onChange={e => setEditForm({...editForm, numGuests: parseInt(e.target.value) || 1})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Occasion</label>
+                                            <select value={editForm.occasion || ''} onChange={e => setEditForm({...editForm, occasion: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
+                                                <option value="">None</option>
+                                                <option value="Happy Birthday">Happy Birthday</option>
+                                                <option value="Proposal">Proposal</option>
+                                                <option value="Anniversary">Anniversary</option>
+                                                <option value="Better Together">Better Together</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Cake Message</label>
+                                            <input type="text" value={editForm.cakeMessage || ''} onChange={e => setEditForm({...editForm, cakeMessage: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                        <div className="sm:col-span-3">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Special Requests</label>
+                                            <textarea value={editForm.specialRequests || ''} onChange={e => setEditForm({...editForm, specialRequests: e.target.value})} rows={2}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Stay Info */}
                             {!editBooking.isDd && (
                                 <div>
@@ -1253,24 +1348,22 @@ export default function StayBookingsPage() {
                                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Financial Details</h4>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     {!editBooking.isDd && (
-                                        <>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Nightly Rate</label>
-                                                <input type="number" value={editForm.nightlyRate ?? ''} onChange={e => setEditForm({...editForm, nightlyRate: parseFloat(e.target.value) || 0})}
-                                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Base Price</label>
-                                                <input type="number" value={editForm.basePrice ?? ''} onChange={e => setEditForm({...editForm, basePrice: parseFloat(e.target.value) || 0})}
-                                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Extra Person</label>
-                                                <input type="number" value={editForm.extraPersonCharge ?? ''} onChange={e => setEditForm({...editForm, extraPersonCharge: parseFloat(e.target.value) || 0})}
-                                                    className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
-                                            </div>
-                                        </>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Nightly Rate</label>
+                                            <input type="number" value={editForm.nightlyRate ?? ''} onChange={e => setEditForm({...editForm, nightlyRate: parseFloat(e.target.value) || 0})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
                                     )}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Base Price</label>
+                                        <input type="number" value={editForm.basePrice ?? ''} onChange={e => setEditForm({...editForm, basePrice: parseFloat(e.target.value) || 0})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Extra Person</label>
+                                        <input type="number" value={editForm.extraPersonCharge ?? ''} onChange={e => setEditForm({...editForm, extraPersonCharge: parseFloat(e.target.value) || 0})}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                    </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">GST Amount</label>
                                         <input type="number" value={editForm.gstAmount ?? ''} onChange={e => setEditForm({...editForm, gstAmount: parseFloat(e.target.value) || 0})}
@@ -1388,6 +1481,16 @@ export default function StayBookingsPage() {
                                                 customerPhone: editForm.customerPhone,
                                                 customerEmail: editForm.customerEmail || null,
                                                 numGuests: editForm.numGuests,
+                                                screenId: editForm.screenId,
+                                                packageId: editForm.packageId,
+                                                bookingDate: editForm.bookingDate,
+                                                startHour: editForm.startHour,
+                                                durationHours: editForm.durationHours,
+                                                occasion: editForm.occasion || null,
+                                                cakeMessage: editForm.cakeMessage || null,
+                                                specialRequests: editForm.specialRequests || null,
+                                                basePrice: editForm.basePrice,
+                                                extraPersonCharge: editForm.extraPersonCharge,
                                                 totalAmount: editForm.totalAmount,
                                                 amountPaid: editForm.advanceAmount,
                                                 amountToCollect: editForm.balanceAmount,

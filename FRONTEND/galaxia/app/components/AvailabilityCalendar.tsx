@@ -297,12 +297,15 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                             {day && (
                                 <div className={`text-center ${past ? "opacity-40" : ""}`}>
                                     <p className={`font-inter font-medium mb-0.5 ${compact ? "text-[10px]" : "text-xs sm:text-sm"} ${selected ? "text-antique-gold font-bold" :
-                                        booked ? "text-text-muted line-through" :
+                                        booked && !past ? "text-text-muted line-through" :
                                             day.type === "prime" ? "text-warning font-semibold" :
                                                 "text-text-primary"
                                         }`}>
                                         {day.date.getDate()}
                                     </p>
+                                    {/* Hide booked/count/price info for past dates */}
+                                    {!past && (
+                                        <>
                                     {booked ? (
                                         <span className={`font-inter ${day.price === 'Maintenance' ? 'text-amber-500' : 'text-red-400'} ${compact ? "text-[7px]" : "text-[8px] sm:text-[9px]"}`}>
                                             {day.price}
@@ -336,6 +339,8 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                                                     </span>
                                                 )
                                             )}
+                                        </>
+                                    )}
                                         </>
                                     )}
                                 </div>

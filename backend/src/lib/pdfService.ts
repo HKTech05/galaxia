@@ -206,6 +206,18 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         if (booking.cakeMessage) {
             y = drawRow(doc, "Cake Message", `"${booking.cakeMessage}"`, y);
         }
+        // Add-ons display (names only, no prices)
+        if (booking.addons && Array.isArray(booking.addons) && booking.addons.length > 0) {
+            const addonNames: string[] = [];
+            for (const a of booking.addons) {
+                if (a.addonType === 'balloons') addonNames.push('Balloons');
+                else if (a.addonType === 'led_banner' || a.addonType === 'ledBanner') addonNames.push(`LED Banner (${a.addonValue || 'Happy Birthday'})`);
+                else if (a.addonType === 'cake') addonNames.push('Cake');
+            }
+            if (addonNames.length > 0) {
+                y = drawRow(doc, "Add-ons", addonNames.join(", "), y);
+            }
+        }
         y = drawDivider(doc, y);
 
         // Payment Summary
@@ -334,44 +346,13 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         }
         y = drawDivider(doc, y);
 
-        // Payment Summary
+        // Payment Summary — simplified: Total Room Price = room rates + GST combined
         y = drawSectionTitle(doc, "Payment Summary", y);
-        // Per-night breakdown — use actual DB pricing (base room rate only, no extra guest charges)
-        const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        // Use sub-property pricing if it has records; otherwise fall back to parent-level pricing
-        // Filter parent pricing to exclude records tied to OTHER sub-properties
-        const subPricing = (sub?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null }>;
-        const parentPricing = ((prop?.pricing || []) as Array<{ dayType: string; basePrice: number; subPropertyId?: number | null; overrideDate?: Date | null }>).filter(p => !p.subPropertyId && !p.overrideDate);
-        const pricingRecords = subPricing.length > 0 ? subPricing : parentPricing;
-        const priceByDayType: Record<string, number> = {};
-        for (const pr of pricingRecords) {
-            priceByDayType[pr.dayType] = pr.basePrice;
-        }
-        const hasDbPricing = Object.keys(priceByDayType).length > 0;
-
-        // Compute per-night room-only rate (excluding extra guest charges)
         const storedExtraAdult = (booking as any).extraAdultCharge || 0;
         const storedExtraKids = (booking as any).extraKidsCharge || 0;
         const roomOnlyTotal = (booking.basePrice || 0) - storedExtraAdult - storedExtraKids;
-        const avgRoomPerNight = booking.numNights > 0 ? Math.round(Math.max(0, roomOnlyTotal) / booking.numNights) : (booking.nightlyRate || 0);
-
-        if (booking.numNights > 0 && booking.checkInDate) {
-            for (let i = 0; i < booking.numNights; i++) {
-                const d = new Date(booking.checkInDate);
-                d.setDate(d.getDate() + i);
-                const dayName = DAY_NAMES[d.getDay()];
-                const day = d.getDay();
-                let nightPrice = avgRoomPerNight;
-                if (hasDbPricing) {
-                    nightPrice = day === 6 ? (priceByDayType['saturday'] || priceByDayType['weekend'] || avgRoomPerNight)
-                        : (day === 0 || day === 5) ? (priceByDayType['weekend'] || avgRoomPerNight)
-                        : (priceByDayType['weekday'] || avgRoomPerNight);
-                }
-                y = drawRow(doc, dayName, fmtCurrency(nightPrice), y);
-            }
-        } else {
-            y = drawRow(doc, "Nightly Rate", `${fmtCurrency(booking.nightlyRate)} x ${booking.numNights} night${booking.numNights > 1 ? "s" : ""}`, y);
-        }
+        const totalRoomPrice = Math.max(0, roomOnlyTotal) + (booking.gstAmount || 0);
+        y = drawRow(doc, "Total Room Price", fmtCurrency(totalRoomPrice), y, { bold: true });
         if (storedExtraAdult > 0) {
             y = drawRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
         }
@@ -391,7 +372,6 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
                 }
             }
         }
-        y = drawRow(doc, "GST", fmtCurrency(booking.gstAmount), y);
         if (booking.discountAmount > 0) {
             y = drawRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
         }
