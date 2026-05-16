@@ -200,7 +200,12 @@ export default function GoldDatePicker({ value, onChange, min, placeholder, disa
                     const disabled = isDisabled(day);
                     const sel = isSelected(day);
                     const today = isToday(day);
-                    const booked = isBookedDate(day);
+                    const rawBooked = isBookedDate(day);
+                    // Hide "Booked" indicator on past dates
+                    const nowDate = new Date(); nowDate.setHours(0,0,0,0);
+                    const cellDate = new Date(viewYear, viewMonth, day); cellDate.setHours(0,0,0,0);
+                    const isPast = cellDate < nowDate;
+                    const booked = rawBooked && !isPast;
                     return (
                         <button
                             key={day}

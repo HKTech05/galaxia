@@ -47,11 +47,19 @@ export default function ContactPage() {
     const contactInfo = [
         {
             icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
             ),
-            label: "Luxury Awaits",
-            value: "Curated Experiences Just for You",
-            href: null,
+            label: "All Properties",
+            value: "+91 81695 19564",
+            href: "tel:+918169519564",
+        },
+        {
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+            ),
+            label: "Amstel Nest",
+            value: "+91 99877 34458",
+            href: "tel:+919987734458",
         },
         {
             icon: (
@@ -105,7 +113,7 @@ export default function ContactPage() {
 
             {/* Contact Cards */}
             <section className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-                <div id="cards" data-animate className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-all duration-1000 delay-200 ${visible["cards"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+                <div id="cards" data-animate className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 transition-all duration-1000 delay-200 ${visible["cards"] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
                     {contactInfo.map((info, i) => (
                         <div key={i} className="group relative">
                             <div className="absolute inset-0 bg-antique-gold/5 rounded-2xl transform translate-x-1 translate-y-1 group-hover:translate-x-1.5 group-hover:translate-y-1.5 transition-transform duration-300" />

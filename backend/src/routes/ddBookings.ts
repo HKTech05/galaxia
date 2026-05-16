@@ -203,7 +203,7 @@ router.post("/", async (req, res) => {
                     couponId,
                     discountAmount,
                 },
-                include: { screen: true, package: true },
+                include: { screen: true, package: true, addons: true },
             });
 
             // Create add-ons
@@ -504,7 +504,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (!existing.isMaintenance) {
             const updatedWithIncludes = await prisma.ddBooking.findUnique({
                 where: { id: bookingId },
-                include: { screen: true, package: true },
+                include: { screen: true, package: true, addons: true },
             });
             if (updatedWithIncludes) {
                 const plainPhone = decrypt(updatedWithIncludes.customerPhone);
