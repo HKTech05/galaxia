@@ -30,7 +30,6 @@ export default function FoodBillingPage() {
     const [satkarPaymentMethod, setSatkarPaymentMethod] = useState("cash");
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [upiProofFile, setUpiProofFile] = useState<File | null>(null);
-    const [satkarUpiProofFile, setSatkarUpiProofFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
@@ -63,15 +62,13 @@ export default function FoodBillingPage() {
         try {
             let upiProofUrl = null;
             let upiProofKey = null;
-            let satkarUpiProofUrl = null;
-            let satkarUpiProofKey = null;
-            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
 
-            // Upload guest UPI proof if present
+            // Upload UPI proof if present
             if (paymentMethod === "upi" && upiProofFile) {
                 const formData = new FormData();
                 formData.append("file", upiProofFile);
                 formData.append("category", "food-bill-upi");
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
                 const uploadRes = await fetch("/api/uploads/upi-proof", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
@@ -81,23 +78,6 @@ export default function FoodBillingPage() {
                     const uploadData = await uploadRes.json();
                     upiProofUrl = uploadData.url;
                     upiProofKey = uploadData.key;
-                }
-            }
-
-            // Upload Satkar UPI proof if present
-            if (satkarPaymentMethod === "upi" && satkarUpiProofFile) {
-                const fd2 = new FormData();
-                fd2.append("file", satkarUpiProofFile);
-                fd2.append("category", "food-bill-satkar-upi");
-                const uploadRes2 = await fetch("/api/uploads/upi-proof", {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: fd2,
-                });
-                if (uploadRes2.ok) {
-                    const uploadData2 = await uploadRes2.json();
-                    satkarUpiProofUrl = uploadData2.url;
-                    satkarUpiProofKey = uploadData2.key;
                 }
             }
 
@@ -117,8 +97,6 @@ export default function FoodBillingPage() {
                 paymentMethod,
                 upiProofUrl,
                 upiProofKey,
-                satkarUpiProofUrl,
-                satkarUpiProofKey,
             });
 
             setSuccess(true);
@@ -129,7 +107,6 @@ export default function FoodBillingPage() {
             setPaymentMethod("cash");
             setSatkarPaymentMethod("cash");
             setUpiProofFile(null);
-            setSatkarUpiProofFile(null);
 
             setTimeout(() => setSuccess(false), 3000);
         } catch (err: any) {
@@ -352,32 +329,6 @@ export default function FoodBillingPage() {
                         <p className="text-[10px] text-slate-400 mt-1 font-medium">{satkarPaymentMethod === "cash" ? "Cash payment will be logged in Cash Management" : "UPI payment will be stored in records only"}</p>
                     </div>
 
-                    {/* Satkar UPI Proof Upload */}
-                    {satkarPaymentMethod === "upi" && (
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Satkar UPI Payment Proof</label>
-                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={e => setSatkarUpiProofFile(e.target.files?.[0] || null)}
-                                    className="hidden"
-                                    id="satkar-upi-proof-input"
-                                />
-                                <label htmlFor="satkar-upi-proof-input" className="cursor-pointer">
-                                    {satkarUpiProofFile ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <span className="text-sm font-bold text-emerald-700 truncate max-w-[200px]">{satkarUpiProofFile.name}</span>
-                                            <button type="button" onClick={(e) => { e.preventDefault(); setSatkarUpiProofFile(null); }} className="text-xs text-red-500 font-bold ml-2 hover:text-red-700">Remove</button>
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-slate-400 font-medium">Click to upload screenshot</p>
-                                    )}
-                                </label>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Payment Method */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Guest Payment Method</label>
@@ -413,10 +364,7 @@ export default function FoodBillingPage() {
                                 />
                                 <label htmlFor="upi-proof-input" className="cursor-pointer">
                                     {upiProofFile ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <span className="text-sm font-bold text-emerald-700 truncate max-w-[200px]">{upiProofFile.name}</span>
-                                            <button type="button" onClick={(e) => { e.preventDefault(); setUpiProofFile(null); }} className="text-xs text-red-500 font-bold ml-2 hover:text-red-700">Remove</button>
-                                        </div>
+                                        <p className="text-sm font-bold text-indigo-600">{upiProofFile.name}</p>
                                     ) : (
                                         <p className="text-sm text-slate-400 font-medium">Click to upload screenshot</p>
                                     )}

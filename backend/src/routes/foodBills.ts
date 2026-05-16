@@ -14,7 +14,7 @@ async function getDdEmployee() {
 // POST /api/food-bills — Create a new food bill
 router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { date, ddBookingId, guestName, screenName, satkarAmount, satkarPaymentMethod, paymentMethod, upiProofUrl, upiProofKey, satkarUpiProofUrl, satkarUpiProofKey } = req.body;
+        const { date, ddBookingId, guestName, screenName, satkarAmount, satkarPaymentMethod, paymentMethod, upiProofUrl, upiProofKey } = req.body;
 
         if (!date || !guestName || !screenName || !satkarAmount || !paymentMethod) {
             return res.status(400).json({ error: "date, guestName, screenName, satkarAmount, paymentMethod required" });
@@ -36,8 +36,6 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                 paymentMethod,
                 upiProofUrl: upiProofUrl || null,
                 upiProofKey: upiProofKey || null,
-                satkarUpiProofUrl: satkarUpiProofUrl || null,
-                satkarUpiProofKey: satkarUpiProofKey || null,
                 createdBy: req.admin!.id,
             },
         });
@@ -63,7 +61,7 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                     data: { cashCollected: { decrement: satkarAmt } },
                 });
             }
-            // UPI paid to Satkar → proof stored in FoodBill record only, not in UPI management
+            // UPI paid to Satkar → stored in DB only, NOT in UPI management
 
             // ── Guest side (collection IN) ──
             if (paymentMethod === "cash") {
@@ -194,8 +192,6 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
                     data: { cashCollected: { increment: bill.satkarAmount } },
                 });
             }
-
-            // Satkar UPI — proof stored in food_bills only, nothing to reverse
 
             // Reverse Guest cash collection
             if (bill.paymentMethod === "cash") {

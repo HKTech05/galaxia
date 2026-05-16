@@ -18,7 +18,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
 
         // ── KPI aggregations ──
         const activeStayFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } };
-        const activeDdFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } };
+        const activeDdFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] }, isMaintenance: false };
 
         const stayRevenue = await prisma.staycationBooking.aggregate({
             _sum: { totalAmount: true },
