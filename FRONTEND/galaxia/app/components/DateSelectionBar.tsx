@@ -95,6 +95,7 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
                         min={minCO}
                         placeholder="Select check-out"
                         disabledDates={disabledDates}
+                        isCheckoutPicker
                     />
                 </div>
             </div>

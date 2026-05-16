@@ -13,6 +13,7 @@ interface GoldDatePickerProps {
     label?: string;
     placeholder?: string;
     disabledDates?: Set<string>; // Set of YYYY-MM-DD strings that should be greyed out
+    isCheckoutPicker?: boolean; // When true, disabledDates are NOT enforced (checkout on a booked date is allowed)
 }
 
 const toLocalDate = (d: Date) =>
@@ -27,7 +28,7 @@ const formatDisplay = (s: string) => {
     return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 };
 
-export default function GoldDatePicker({ value, onChange, min, placeholder, disabledDates }: GoldDatePickerProps) {
+export default function GoldDatePicker({ value, onChange, min, placeholder, disabledDates, isCheckoutPicker }: GoldDatePickerProps) {
     const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
@@ -107,8 +108,8 @@ export default function GoldDatePicker({ value, onChange, min, placeholder, disa
             m.setHours(0, 0, 0, 0);
             if (d < m) return true;
         }
-        // Check booked/blocked dates
-        if (disabledDates) {
+        // Check booked/blocked dates — skip for checkout picker (checkout on a booked date is allowed)
+        if (disabledDates && !isCheckoutPicker) {
             const ds = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             if (disabledDates.has(ds)) return true;
         }
@@ -116,7 +117,7 @@ export default function GoldDatePicker({ value, onChange, min, placeholder, disa
     };
 
     const isBookedDate = (day: number) => {
-        if (!disabledDates) return false;
+        if (!disabledDates || isCheckoutPicker) return false;
         const ds = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         return disabledDates.has(ds);
     };
