@@ -859,9 +859,20 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                         <span className="font-cinzel text-lg font-semibold text-text-primary">{formatPrice(room.price)}</span>
                                                         <span className="text-[10px] font-inter text-text-muted mb-1">/ Night{isAmstelNest && unitCount > 1 ? ` × ${unitCount}` : ''}</span>
                                                     </div>
-                                                    <button onClick={() => handleRoomSelect(room)} className="px-8 py-2 border border-antique-gold text-antique-gold font-inter text-xs tracking-wider uppercase hover:bg-antique-gold hover:text-white transition-all w-32">
+                                                    <button
+                                                        onClick={() => handleRoomSelect(room)}
+                                                        disabled={!checkInDate || !checkOutDate || nights <= 0}
+                                                        className={`px-8 py-2 border font-inter text-xs tracking-wider uppercase transition-all w-32 ${
+                                                            checkInDate && checkOutDate && nights > 0
+                                                                ? 'border-antique-gold text-antique-gold hover:bg-antique-gold hover:text-white'
+                                                                : 'border-slate-200 text-slate-300 cursor-not-allowed'
+                                                        }`}
+                                                    >
                                                         SELECT
                                                     </button>
+                                                    {(!checkInDate || !checkOutDate) && (
+                                                        <p className="text-[9px] font-inter text-red-400 mt-1.5 text-right">Select dates first</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
