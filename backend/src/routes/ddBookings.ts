@@ -439,6 +439,8 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             customerName, customerPhone, customerEmail,
             numGuests, totalAmount, amountPaid, amountToCollect,
             gstAmount, status, source,
+            screenId, packageId, bookingDate, startHour, durationHours,
+            occasion, cakeMessage, specialRequests, basePrice, extraPersonCharge,
         } = req.body;
 
         const updateData: any = {};
@@ -452,6 +454,16 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (gstAmount !== undefined) updateData.gstAmount = parseFloat(gstAmount) || 0;
         if (status !== undefined) updateData.status = status;
         if (source !== undefined) updateData.source = source;
+        if (screenId !== undefined) updateData.screenId = parseInt(screenId);
+        if (packageId !== undefined) updateData.packageId = parseInt(packageId);
+        if (bookingDate !== undefined) updateData.bookingDate = new Date(bookingDate + "T00:00:00");
+        if (startHour !== undefined) updateData.startHour = parseInt(startHour);
+        if (durationHours !== undefined) updateData.durationHours = parseInt(durationHours);
+        if (occasion !== undefined) updateData.occasion = occasion || null;
+        if (cakeMessage !== undefined) updateData.cakeMessage = cakeMessage || null;
+        if (specialRequests !== undefined) updateData.specialRequests = specialRequests || null;
+        if (basePrice !== undefined) updateData.basePrice = parseFloat(basePrice) || 0;
+        if (extraPersonCharge !== undefined) updateData.extraPersonCharge = parseFloat(extraPersonCharge) || 0;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: "No fields to update" });
@@ -561,7 +573,7 @@ router.patch("/:id/no-show", authMiddleware, async (req: AuthRequest, res) => {
 router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
     try {
         const bookingId = parseInt(req.params.id as string);
-        const { newDate, newStartHour } = req.body;
+        const { newDate, newStartHour, newScreenId } = req.body;
         const TRANSFER_FEE = 400;
 
         if (!newDate || newStartHour === undefined) {
@@ -588,12 +600,15 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
         const fmtHr = (h: number) => `${h > 12 ? h - 12 : h}:00 ${h >= 12 ? 'PM' : 'AM'}`;
         const transferMeta = `[TRANSFER:${original.bookingRef}|${origDate}|${fmtHr(origSlotStart)}-${fmtHr(origSlotEnd)}|${TRANSFER_FEE}]`;
 
+        // Use newScreenId if provided, otherwise keep original screen
+        const targetScreenId = newScreenId ? parseInt(newScreenId) : original.screenId;
+
         // Create new booking with same details + ₹400 transfer fee added to amountToCollect
         // Use transaction to ensure both create + original update succeed atomically
         const { newBooking } = await prisma.$transaction(async (tx) => {
             const created = await tx.ddBooking.create({
                 data: {
-                    screenId: original.screenId,
+                    screenId: targetScreenId,
                     packageId: original.packageId,
                     bookingDate: new Date(newDate + "T00:00:00"),
                     startHour: parseInt(newStartHour),

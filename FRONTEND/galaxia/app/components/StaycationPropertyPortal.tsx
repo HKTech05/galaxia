@@ -1180,7 +1180,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             <div className="bg-purple-50 rounded-xl p-5 border border-purple-100">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                     <div>
-                                        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Additional Cost (Inc. 5% GST)</p>
+                                        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Additional Cost (Inc. Taxes)</p>
                                         <h2 className="text-3xl font-black text-purple-900 flex items-center">
                                             <IndianRupee size={24} className="mr-1" /> {calculateExtraGuestPrice().toLocaleString('en-IN')}
                                         </h2>
@@ -1203,7 +1203,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 <div className="mt-2 space-y-0.5 text-[11px] font-medium text-purple-700">
                                                     {extraGuestForm.guests > 0 && <p>Extra guests: {extraGuestForm.guests} × ₹{extraAdultPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.guests * extraAdultPrice * nights).toLocaleString('en-IN')}</p>}
                                                     {extraGuestForm.pets > 0 && <p>Pets: {extraGuestForm.pets} × ₹600/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.pets * 600 * nights).toLocaleString('en-IN')}</p>}
-                                                    <p className="text-purple-500">+ 5% GST</p>
+                                                    <p className="text-purple-500">+ Taxes</p>
                                                 </div>
                                             );
                                         })()}
@@ -1397,7 +1397,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             <div className="bg-purple-50 rounded-xl p-4 sm:p-5 border border-purple-100 mt-2">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                     <div>
-                                        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Calculated Total (Inc. 5% GST)</p>
+                                        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Calculated Total (Inc. Taxes)</p>
                                         <h2 className="text-3xl font-black text-purple-900 flex items-center">
                                             <IndianRupee size={24} className="mr-1" /> {calculatePrice().totalAmount.toLocaleString('en-IN')}
                                         </h2>

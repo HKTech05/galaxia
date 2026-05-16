@@ -72,6 +72,17 @@ type Event = {
         fileType: string | null;
         uploadedAt: string;
     }>;
+    // Raw DB fields for editing
+    rawScreenId?: number;
+    rawPackageId?: number;
+    rawNumGuests?: number;
+    rawTotalAmount?: number;
+    rawAmountPaid?: number;
+    rawAmountToCollect?: number;
+    rawGstAmount?: number;
+    rawBasePrice?: number;
+    rawExtraPersonCharge?: number;
+    rawBookingDate?: string;
 };
 
 const events: Event[] = [
@@ -147,6 +158,16 @@ export default function Admin1Dashboard() {
                         cake: b.addons?.some((a: any) => a.addonType === "cake") || (b.package?.slug === "celebration" || b.package?.name?.toLowerCase().includes("celebration")),
                         cakeMessage: b.addons?.find((a: any) => a.addonType === "cake")?.addonValue || b.cakeMessage || ""
                     },
+                    rawScreenId: b.screenId,
+                    rawPackageId: b.packageId,
+                    rawNumGuests: b.numGuests,
+                    rawTotalAmount: b.totalAmount,
+                    rawAmountPaid: b.amountPaid,
+                    rawAmountToCollect: b.amountToCollect,
+                    rawGstAmount: b.gstAmount,
+                    rawBasePrice: b.basePrice,
+                    rawExtraPersonCharge: b.extraPersonCharge,
+                    rawBookingDate: b.bookingDate?.split('T')[0] || '',
                 }));
                 setEventsList(mapped.filter(ev => (ev as any).status !== 'cancelled' && (ev as any).status !== 'no_show' && (ev as any).status !== 'transferred'));
             }
@@ -247,9 +268,9 @@ export default function Admin1Dashboard() {
                 }
             }
 
-            // If no bookings at all, use current hour
+            // If no bookings at all, block from opening time (10 AM) onwards
             if (globalLastEnd === 0) {
-                globalLastEnd = Math.max(10, new Date().getHours());
+                globalLastEnd = 10;
             }
 
             // Block from globalLastEnd onwards on ALL screens
@@ -373,7 +394,13 @@ export default function Admin1Dashboard() {
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [transferDate, setTransferDate] = useState("");
     const [transferHour, setTransferHour] = useState("10");
+    const [transferScreen, setTransferScreen] = useState("");
     const [transferLoading, setTransferLoading] = useState(false);
+
+    // Edit Modal states
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState<Record<string, any>>({});
+    const [editLoading, setEditLoading] = useState(false);
 
     // Calculate pricing based on selection
     let basePrice = 0;
@@ -673,21 +700,70 @@ export default function Admin1Dashboard() {
         if (!activeEvent || !transferDate || !transferHour) return;
         setTransferLoading(true);
         try {
-            const result = await api.post(`/bookings/dd/${activeEvent.id}/transfer`, {
+            const screenMap: Record<string, number> = { "Cine Love": 2, "Sandy Screen": 1, "Park N Watch": 3, "Baywatch": 4 };
+            const payload: any = {
                 newDate: transferDate,
                 newStartHour: parseInt(transferHour),
-            });
-            alert(`Booking transferred to ${new Date(transferDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${parseInt(transferHour) > 12 ? parseInt(transferHour) - 12 : parseInt(transferHour)}:00 ${parseInt(transferHour) >= 12 ? "PM" : "AM"}.\n\nNew Ref: ${result.newBooking.bookingRef}\n₹400 transfer fee added to pending.`);
+            };
+            if (transferScreen && transferScreen !== activeEvent.screen) {
+                payload.newScreenId = screenMap[transferScreen];
+            }
+            const result = await api.post(`/bookings/dd/${activeEvent.id}/transfer`, payload);
+            alert(`Booking transferred to ${new Date(transferDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${parseInt(transferHour) > 12 ? parseInt(transferHour) - 12 : parseInt(transferHour)}:00 ${parseInt(transferHour) >= 12 ? "PM" : "AM"}${transferScreen && transferScreen !== activeEvent.screen ? ` on ${transferScreen}` : ''}.\n\nNew Ref: ${result.newBooking.bookingRef}\n₹400 transfer fee added to pending.`);
             setShowTransferModal(false);
             setShowNoShowModal(false);
             setSelectedEventId(null);
             setTransferDate("");
             setTransferHour("10");
+            setTransferScreen("");
             fetchEvents(startDate);
         } catch (err: any) {
             alert(err.message || "Failed to transfer booking");
         } finally {
             setTransferLoading(false);
+        }
+    };
+
+    // Open edit modal with current values
+    const openEditModal = () => {
+        if (!activeEvent) return;
+        const screenMap: Record<string, number> = { "Cine Love": 2, "Sandy Screen": 1, "Park N Watch": 3, "Baywatch": 4 };
+        const packageMap: Record<string, number> = { "Movie Time": 1, "Celebration": 2 };
+        setEditForm({
+            customerName: activeEvent.customerName,
+            customerPhone: activeEvent.phone,
+            customerEmail: activeEvent.email === '—' ? '' : activeEvent.email,
+            screenId: activeEvent.rawScreenId || screenMap[activeEvent.screen] || 1,
+            packageId: activeEvent.rawPackageId || packageMap[activeEvent.packageType] || 1,
+            bookingDate: activeEvent.rawBookingDate || '',
+            startHour: activeEvent.startHour,
+            durationHours: activeEvent.duration,
+            numGuests: activeEvent.rawNumGuests || 2,
+            occasion: activeEvent.occasion || '',
+            cakeMessage: activeEvent.cakeMessage || '',
+            specialRequests: activeEvent.specialRequests?.replace(/\[TRANSFER:.*?\]/g, '').replace(/\[Transferred[^\]]*\]/g, '').trim() || '',
+            totalAmount: activeEvent.rawTotalAmount || 0,
+            amountPaid: activeEvent.rawAmountPaid || 0,
+            amountToCollect: activeEvent.rawAmountToCollect || 0,
+            gstAmount: activeEvent.rawGstAmount || 0,
+            basePrice: activeEvent.rawBasePrice || 0,
+            extraPersonCharge: activeEvent.rawExtraPersonCharge || 0,
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditSave = async () => {
+        if (!activeEvent) return;
+        setEditLoading(true);
+        try {
+            await api.patch(`/bookings/dd/${activeEvent.id}`, editForm);
+            alert('Booking updated successfully. Confirmation email resent.');
+            setShowEditModal(false);
+            fetchEvents(startDate);
+        } catch (err: any) {
+            alert(err.message || 'Failed to update booking');
+        } finally {
+            setEditLoading(false);
         }
     };
 
@@ -1135,9 +1211,16 @@ export default function Admin1Dashboard() {
                         </div>
                     </div>
 
-                    {/* No Show & Delete — at the bottom */}
+                    {/* Actions — at the bottom */}
                     {!activeEvent.isMaintenance && (
                         <div className="px-8 py-5 bg-slate-50 border-t border-slate-200 space-y-3">
+                            {/* Edit Booking Button */}
+                            <button
+                                onClick={openEditModal}
+                                className="w-full py-3 bg-indigo-50 border-2 border-indigo-200 text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all flex items-center justify-center gap-2"
+                            >
+                                <FileText size={16} /> Edit Booking
+                            </button>
                             {/* No Show Button */}
                             <button
                                 onClick={() => setShowNoShowModal(true)}
@@ -1236,9 +1319,21 @@ export default function Admin1Dashboard() {
                                 </div>
 
                                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
-                                    <p><strong>Screen:</strong> {activeEvent.screen}</p>
+                                    <p><strong>Current Screen:</strong> {activeEvent.screen}</p>
                                     <p><strong>Duration:</strong> {activeEvent.duration} hours</p>
                                     <p><strong>Package:</strong> {activeEvent.packageType}</p>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Screen (optional)</label>
+                                    <select
+                                        value={transferScreen || activeEvent.screen}
+                                        onChange={(e) => setTransferScreen(e.target.value)}
+                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
+                                    >
+                                        {["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"].map(s => (
+                                            <option key={s} value={s}>{s}{s === activeEvent.screen ? ' (current)' : ''}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -1260,6 +1355,152 @@ export default function Admin1Dashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* Edit Booking Modal */}
+                {showEditModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                            <div className="flex items-center justify-between mb-5">
+                                <h3 className="text-xl font-black text-slate-800">Edit Booking</h3>
+                                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Screen */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Screen</label>
+                                    <select value={editForm.screenId} onChange={e => setEditForm({...editForm, screenId: parseInt(e.target.value)})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none">
+                                        <option value={1}>Sandy Screen</option>
+                                        <option value={2}>Cine Love</option>
+                                        <option value={3}>Park N Watch</option>
+                                        <option value={4}>Baywatch</option>
+                                    </select>
+                                </div>
+                                {/* Package */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Package</label>
+                                    <select value={editForm.packageId} onChange={e => setEditForm({...editForm, packageId: parseInt(e.target.value)})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none">
+                                        <option value={1}>Movie Time</option>
+                                        <option value={2}>Celebration</option>
+                                    </select>
+                                </div>
+                                {/* Date */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Booking Date</label>
+                                    <input type="date" value={editForm.bookingDate} onChange={e => setEditForm({...editForm, bookingDate: e.target.value})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Start Hour */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Start Time</label>
+                                    <select value={editForm.startHour} onChange={e => setEditForm({...editForm, startHour: parseInt(e.target.value)})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none">
+                                        {Array.from({ length: 13 }, (_, i) => i + 10).map(h => (
+                                            <option key={h} value={h}>{h > 12 ? h - 12 : h}:00 {h >= 12 ? 'PM' : 'AM'}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* Duration */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Duration (hours)</label>
+                                    <select value={editForm.durationHours} onChange={e => setEditForm({...editForm, durationHours: parseInt(e.target.value)})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none">
+                                        {[1, 2, 3, 4, 5, 6].map(h => (<option key={h} value={h}>{h} hr{h > 1 ? 's' : ''}</option>))}
+                                    </select>
+                                </div>
+                                {/* Guests */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Guests</label>
+                                    <input type="number" min={1} max={50} value={editForm.numGuests} onChange={e => setEditForm({...editForm, numGuests: parseInt(e.target.value) || 1})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+
+                                {/* Divider */}
+                                <div className="col-span-full border-t border-slate-200 my-1" />
+
+                                {/* Customer Name */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Customer Name</label>
+                                    <input type="text" value={editForm.customerName} onChange={e => setEditForm({...editForm, customerName: e.target.value})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Phone */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Phone</label>
+                                    <input type="text" value={editForm.customerPhone} onChange={e => setEditForm({...editForm, customerPhone: e.target.value})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Email */}
+                                <div className="col-span-full">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                                    <input type="email" value={editForm.customerEmail} onChange={e => setEditForm({...editForm, customerEmail: e.target.value})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+
+                                {/* Divider */}
+                                <div className="col-span-full border-t border-slate-200 my-1" />
+
+                                {/* Occasion */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Occasion</label>
+                                    <select value={editForm.occasion} onChange={e => setEditForm({...editForm, occasion: e.target.value})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none">
+                                        <option value="">None</option>
+                                        <option value="Happy Birthday">Happy Birthday</option>
+                                        <option value="Proposal">Proposal</option>
+                                        <option value="Anniversary">Anniversary</option>
+                                        <option value="Better Together">Better Together</option>
+                                    </select>
+                                </div>
+                                {/* Cake Message */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cake Message</label>
+                                    <input type="text" value={editForm.cakeMessage} onChange={e => setEditForm({...editForm, cakeMessage: e.target.value})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Special Requests */}
+                                <div className="col-span-full">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Special Requests</label>
+                                    <textarea value={editForm.specialRequests} onChange={e => setEditForm({...editForm, specialRequests: e.target.value})} rows={2} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none resize-none" />
+                                </div>
+
+                                {/* Divider */}
+                                <div className="col-span-full border-t border-slate-200 my-1" />
+                                <div className="col-span-full"><p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Financials</p></div>
+
+                                {/* Total Amount */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Amount (₹)</label>
+                                    <input type="number" value={editForm.totalAmount} onChange={e => setEditForm({...editForm, totalAmount: parseFloat(e.target.value) || 0})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Amount Paid */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amount Paid (₹)</label>
+                                    <input type="number" value={editForm.amountPaid} onChange={e => setEditForm({...editForm, amountPaid: parseFloat(e.target.value) || 0})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Amount to Collect */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amount to Collect (₹)</label>
+                                    <input type="number" value={editForm.amountToCollect} onChange={e => setEditForm({...editForm, amountToCollect: parseFloat(e.target.value) || 0})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* GST */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">GST Amount (₹)</label>
+                                    <input type="number" value={editForm.gstAmount} onChange={e => setEditForm({...editForm, gstAmount: parseFloat(e.target.value) || 0})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Base Price */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Base Price (₹)</label>
+                                    <input type="number" value={editForm.basePrice} onChange={e => setEditForm({...editForm, basePrice: parseFloat(e.target.value) || 0})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                                {/* Extra Person Charge */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Extra Person Charge (₹)</label>
+                                    <input type="number" value={editForm.extraPersonCharge} onChange={e => setEditForm({...editForm, extraPersonCharge: parseFloat(e.target.value) || 0})} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-indigo-400 focus:outline-none" />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-6">
+                                <button onClick={() => setShowEditModal(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
+                                <button onClick={handleEditSave} disabled={editLoading} className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                                    {editLoading ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {previewGuestId && (
                     <IdProofModal
                         guestId={previewGuestId}

@@ -174,7 +174,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${row("Check-out", `${checkOutDate}  ·  ${checkOutTime}`)}
                 ${row("Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`)}
                 ${row("Guests", `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`)}
-                ${(booking as any).numCottages > 1 ? row("Cottages", `${(booking as any).numCottages}`) : ""}
+                ${((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') ? row("Cottages", `${(booking as any).numCottages || 1}`) : ""}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${(() => {
@@ -230,7 +230,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${divider()}
                 ${row("Advance Paid", advancePaid, { color: booking.advancePaid ? "#16a34a" : TEXT_MED })}
                 ${row("Balance Due at Venue", balanceDue, { bold: true })}
-                ${securityDeposit ? row("Security Deposit", securityDeposit) : ""}
+                ${securityDeposit ? row("Security Deposit - Pay at Venue", securityDeposit) : ""}
             </table>
         </div>
 
@@ -239,7 +239,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         <!-- Security Deposit Note -->
         ${securityDeposit ? `
         <div style="margin-top: 20px; padding: 18px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
-            <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Security Deposit</p>
+            <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Security Deposit - Pay at Venue</p>
             <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">A security deposit of ${securityDeposit} is applicable and will be collected at the venue. ${securityRefund}</p>
         </div>` : ""}
 

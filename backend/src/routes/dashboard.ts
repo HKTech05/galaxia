@@ -19,27 +19,27 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         // ── KPI aggregations ──
         const stayRevenue = await prisma.staycationBooking.aggregate({
             _sum: { totalAmount: true },
-            where: { checkInDate: { gte: startDate }, status: { in: ["confirmed", "checked_in", "checked_out"] } },
+            where: { bookedAt: { gte: startDate }, status: { in: ["confirmed", "checked_in", "checked_out"] } },
         });
         const ddRevenue = await prisma.ddBooking.aggregate({
             _sum: { totalAmount: true },
-            where: { bookingDate: { gte: startDate }, status: { in: ["confirmed", "checked_in", "paid"] } },
+            where: { bookedAt: { gte: startDate }, status: { in: ["confirmed", "checked_in", "paid"] } },
         });
         const totalStayBookings = await prisma.staycationBooking.count({
-            where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
         });
         const totalDdBookings = await prisma.ddBooking.count({
-            where: { bookingDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
         });
         const stayBookingsForNights = await prisma.staycationBooking.findMany({
-            where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
             select: { numNights: true },
         });
         const totalNightsBooked = stayBookingsForNights.reduce((sum: number, b) => sum + b.numNights, 0);
 
         // ── Villa-wise chart data ──
         const allStayBookings = await prisma.staycationBooking.findMany({
-            where: { checkInDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
             include: { property: true, subProperty: true },
         });
 
@@ -156,7 +156,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
 
         // ── DD screen & package chart data ──
         const allDdBookings = await prisma.ddBooking.findMany({
-            where: { bookingDate: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
             include: { screen: true, package: true },
         });
         const ddScreenMap: Record<string, number> = {};

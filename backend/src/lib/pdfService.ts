@@ -329,8 +329,8 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawRow(doc, "Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`, y);
         const stayGuestsLabel = `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`;
         y = drawRow(doc, "Guests", stayGuestsLabel, y);
-        if ((booking as any).numCottages > 1) {
-            y = drawRow(doc, "Cottages", `${(booking as any).numCottages}`, y);
+        if ((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') {
+            y = drawRow(doc, "Cottages", `${(booking as any).numCottages || 1}`, y);
         }
         y = drawDivider(doc, y);
 
@@ -405,7 +405,7 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             { color: booking.advancePaid ? "#16a34a" : TEXT_MED });
         y = drawRow(doc, "Balance Due at Venue", fmtCurrency(booking.balanceAmount || 0), y, { bold: true });
         if (securityDeposit) {
-            y = drawRow(doc, "Security Deposit", securityDeposit, y);
+            y = drawRow(doc, "Security Deposit - Pay at Venue", securityDeposit, y);
         }
         y += 10;
 

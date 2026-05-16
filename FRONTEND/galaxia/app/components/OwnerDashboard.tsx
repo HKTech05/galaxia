@@ -312,6 +312,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [propertyList, setPropertyList] = useState<any[]>([]);
     const [blackoutLoading, setBlackoutLoading] = useState(false);
     const [blockNumUnits, setBlockNumUnits] = useState(1);
+    const [blockDateFilter, setBlockDateFilter] = useState<'current' | 'past'>('current');
 
     // Fetch list of properties for dropdown
     useEffect(() => {
@@ -420,15 +421,24 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         }
     };
 
-    // Filter active blocks for the currently selected property
     const filteredBlocks = (() => {
-        if (!blackoutPropertyKey) return activeBlocks;
-        const { propertyId, subPropertyId } = resolvePropertyIds(blackoutPropertyKey);
-        return activeBlocks.filter(b => {
-            if (subPropertyId) return b.subPropertyId === subPropertyId;
-            if (propertyId) return b.propertyId === propertyId;
-            return true;
-        });
+        let blocks = activeBlocks;
+        if (blackoutPropertyKey) {
+            const { propertyId, subPropertyId } = resolvePropertyIds(blackoutPropertyKey);
+            blocks = blocks.filter(b => {
+                if (subPropertyId) return b.subPropertyId === subPropertyId;
+                if (propertyId) return b.propertyId === propertyId;
+                return true;
+            });
+        }
+        // Apply date filter
+        const todayStr = formatLocalDate(new Date());
+        if (blockDateFilter === 'current') {
+            blocks = blocks.filter(b => b.blockedDate.split('T')[0] >= todayStr);
+        } else {
+            blocks = blocks.filter(b => b.blockedDate.split('T')[0] < todayStr);
+        }
+        return blocks;
     })();
 
     // Get blocked day numbers for the calendar for the current month + selected property
@@ -1488,7 +1498,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                 {/* Middle: Active Blocks for selected property */}
                                 <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Active Blocks — {calendarProperty || 'Select Property'}</h4>
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Active Blocks — {calendarProperty || 'Select Property'}</h4>
+                                    <div className="flex gap-1 mb-3">
+                                        <button onClick={() => setBlockDateFilter('current')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'current' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Current</button>
+                                        <button onClick={() => setBlockDateFilter('past')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'past' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Past</button>
+                                    </div>
                                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                                         {filteredBlocks.length === 0 ? (
                                             <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
@@ -1514,12 +1528,16 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                 {/* Right: All Properties Active Blocks */}
                                 <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">All Active Blocks (All Properties)</h4>
+                                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">All Active Blocks (All Properties)</h4>
+                                    <div className="flex gap-1 mb-3">
+                                        <button onClick={() => setBlockDateFilter('current')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'current' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Current</button>
+                                        <button onClick={() => setBlockDateFilter('past')} className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${blockDateFilter === 'past' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Past</button>
+                                    </div>
                                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                                        {activeBlocks.length === 0 ? (
+                                        {filteredBlocks.length === 0 ? (
                                             <p className="text-sm font-medium text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl">No active blocks.</p>
                                         ) : (
-                                            activeBlocks.map(block => (
+                                            filteredBlocks.map(block => (
                                                 <div key={block.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-start justify-between">
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-800">{block.subProperty ? `${block.property?.name} — ${block.subProperty.name}` : block.property?.name || 'Unknown'}</p>

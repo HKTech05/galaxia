@@ -364,7 +364,10 @@ export default function FoodBillingPage() {
                                 />
                                 <label htmlFor="upi-proof-input" className="cursor-pointer">
                                     {upiProofFile ? (
-                                        <p className="text-sm font-bold text-indigo-600">{upiProofFile.name}</p>
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span className="text-sm font-bold text-emerald-700 truncate max-w-[200px]">{upiProofFile.name}</span>
+                                            <button type="button" onClick={(e) => { e.preventDefault(); setUpiProofFile(null); }} className="text-xs text-red-500 font-bold ml-2 hover:text-red-700">Remove</button>
+                                        </div>
                                     ) : (
                                         <p className="text-sm text-slate-400 font-medium">Click to upload screenshot</p>
                                     )}

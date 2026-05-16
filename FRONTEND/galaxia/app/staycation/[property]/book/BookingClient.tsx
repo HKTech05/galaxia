@@ -1291,7 +1291,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     {petCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Pets ({pets} × ₹{PET_CHARGE})</span><span>{formatPrice(petCharges)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     {celebrationAddon && <div className="flex justify-between items-center text-xs text-amber-700"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
-                                    <div className="flex justify-between items-center"><span>Taxes ({property.gstPercent}% GST)</span><span>{formatPrice(taxesAndFees)}</span></div>
+                                    <div className="flex justify-between items-center"><span>Taxes</span><span>{formatPrice(taxesAndFees)}</span></div>
                                 </div>
 
                                 <div className="p-5 bg-soft-gray/30">

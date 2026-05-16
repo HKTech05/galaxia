@@ -54,6 +54,8 @@ export default function BookMultiPage() {
 
     // Guest state per villa
     const [guestsPerVilla, setGuestsPerVilla] = useState<Record<string, { adults: number; kids: number }>>({});
+    const [petsPerVilla, setPetsPerVilla] = useState<Record<string, number>>({});
+    const PET_CHARGE = 600;
 
     // Form state
     const [formData, setFormData] = useState({
@@ -138,8 +140,10 @@ export default function BookMultiPage() {
             const stored = JSON.parse(localStorage.getItem("ambrose_cart") || "[]");
             setCart(stored);
             const guests: Record<string, { adults: number; kids: number }> = {};
-            stored.forEach((item: CartItem) => { guests[item.villaId] = { adults: 2, kids: 0 }; });
+            const pets: Record<string, number> = {};
+            stored.forEach((item: CartItem) => { guests[item.villaId] = { adults: 2, kids: 0 }; pets[item.villaId] = 0; });
             setGuestsPerVilla(guests);
+            setPetsPerVilla(pets);
         } catch { setCart([]); }
 
         // Read dates from URL params or localStorage
@@ -453,7 +457,7 @@ export default function BookMultiPage() {
         const freeKidsSlots = Math.max(0, baseIncluded - guests.adults);
         const extraKids = Math.max(0, guests.kids - freeKidsSlots);
         const multiplier = isAmstel ? 1 : units;
-        return (extraAdults * extraAdultCharge + extraKids * kidsCharge) * Math.max(nights, 1) * multiplier;
+        return (extraAdults * extraAdultCharge + extraKids * kidsCharge) * Math.max(nights, 1) * multiplier + (item.property !== 'amstel-nest' ? (petsPerVilla[item.villaId] || 0) * PET_CHARGE : 0);
     };
 
     const getExtraChargeBreakdown = (item: CartItem) => {
@@ -471,6 +475,7 @@ export default function BookMultiPage() {
         return {
             adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1) * multiplier,
             kidsCharge: extraKids * kidsRate * Math.max(nights, 1) * multiplier,
+            petCharge: item.property !== 'amstel-nest' ? (petsPerVilla[item.villaId] || 0) * PET_CHARGE : 0,
         };
     };
 
@@ -701,6 +706,7 @@ export default function BookMultiPage() {
                         subPropertyId,
                         numGuests: guests.adults,
                         numKids: guests.kids,
+                        numPets: petsPerVilla[item.villaId] || 0,
                         numCottages: units,
                         checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
                         checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
@@ -761,6 +767,7 @@ export default function BookMultiPage() {
                             subPropertyId,
                             numGuests: guests.adults,
                             numKids: guests.kids,
+                            numPets: petsPerVilla[item.villaId] || 0,
                             checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,"0")}-${String(checkInDate.getDate()).padStart(2,"0")}` : undefined,
                             checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,"0")}-${String(checkOutDate.getDate()).padStart(2,"0")}` : undefined,
                             nightlyRate: perUnitPrice / Math.max(nights, 1),
@@ -982,6 +989,28 @@ export default function BookMultiPage() {
                                                         );
                                                     })()}
 
+                                                    {/* Pet selector — Ambrose only */}
+                                                    {item.property !== 'amstel-nest' && (
+                                                        <div className="mb-4">
+                                                            <div className="bg-soft-gray/40 rounded-lg border border-border-light p-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block">Bringing Pets?</label>
+                                                                        <p className="text-[10px] font-inter text-text-muted mt-0.5">₹{PET_CHARGE}/pet · Max 2 pets</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button onClick={() => setPetsPerVilla(prev => ({ ...prev, [item.villaId]: Math.max(0, (prev[item.villaId] || 0) - 1) }))} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
+                                                                        <span className="font-inter text-lg font-bold text-text-primary w-6 text-center">{petsPerVilla[item.villaId] || 0}</span>
+                                                                        <button onClick={() => setPetsPerVilla(prev => ({ ...prev, [item.villaId]: Math.min(2, (prev[item.villaId] || 0) + 1) }))} disabled={(petsPerVilla[item.villaId] || 0) >= 2} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                                                                    </div>
+                                                                </div>
+                                                                {(petsPerVilla[item.villaId] || 0) > 0 && (
+                                                                    <p className="mt-2 text-[10px] font-inter text-text-muted">Pet charges: {petsPerVilla[item.villaId]} × ₹{PET_CHARGE} = ₹{((petsPerVilla[item.villaId] || 0) * PET_CHARGE).toLocaleString('en-IN')}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {villaPrice > 0 && (
                                                         <div className="border-t border-border-light pt-4 space-y-1.5 font-inter text-sm">
                                                             {(() => {
@@ -1141,7 +1170,7 @@ export default function BookMultiPage() {
                                     <div className="flex justify-between"><span className="text-text-secondary">Dates</span><span className="text-text-primary">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)}</span></div>
                                     <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} item{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
-                                    <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
+                                    <div className="flex justify-between"><span className="text-text-secondary">Taxes</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
                                     <div className="border-t border-border-light my-2" />
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                     <div className="flex justify-between text-xs text-text-muted"><span>Pay Now (80%)</span><span>{formatPrice(payNow)}</span></div>

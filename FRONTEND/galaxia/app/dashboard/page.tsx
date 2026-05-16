@@ -379,7 +379,7 @@ function DashboardContent() {
                     <div className="space-y-2">
                         <DetailRow label="Total Amount" value={booking.amount} bold />
                         {isStaycation && booking.taxes && (
-                            <DetailRow label="Taxes (5% GST)" value={booking.taxes} />
+                            <DetailRow label="Taxes" value={booking.taxes} />
                         )}
                     </div>
                 </div>
