@@ -825,6 +825,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const totalRevenue = dashboardKPIs?.kpis?.totalRevenue || 0;
         const staycationRevenue = dashboardKPIs?.kpis?.staycationRevenue || 0;
         const totalNights = dashboardKPIs?.kpis?.totalNightsBooked || 0;
+        const totalStayBookings = dashboardKPIs?.kpis?.totalStayBookings || 0;
         const occupancyRate = totalUnits > 0 ? Math.round((totalOccupied / totalUnits) * 100) : 0;
         const avgNightlyRate = totalNights > 0 ? Math.round(staycationRevenue / totalNights) : 0;
 
@@ -921,8 +922,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <p className="text-[10px] text-indigo-500 font-medium mt-1">Across all properties</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Nights Booked</p>
-                                    <p className="text-xl font-bold text-amber-700 mt-1">{totalNights}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>
+                                    <p className="text-xl font-bold text-amber-700 mt-1">{totalStayBookings}</p>
                                     <p className="text-[10px] text-amber-500 font-medium mt-1">this period</p>
                                 </div>
                             </div>
