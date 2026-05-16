@@ -17,8 +17,8 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         else if (period === "year") startDate = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1);
 
         // ── KPI aggregations ──
-        const activeStayFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } };
-        const activeDdFilter = { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] }, isMaintenance: false };
+        const activeStayFilter = { bookedAt: { gte: startDate } };
+        const activeDdFilter: any = { bookedAt: { gte: startDate }, isMaintenance: false };
 
         const stayRevenue = await prisma.staycationBooking.aggregate({
             _sum: { totalAmount: true },
@@ -42,7 +42,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
 
         // ── Villa-wise chart data ──
         const allStayBookings = await prisma.staycationBooking.findMany({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate } },
             include: { property: true, subProperty: true },
         });
 

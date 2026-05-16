@@ -69,7 +69,7 @@ export default function FoodBillingPage() {
                 formData.append("file", upiProofFile);
                 formData.append("category", "food-bill-upi");
                 const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
-                const uploadRes = await fetch("/api/uploads/upi-proof", {
+                const uploadRes = await fetch("/api/uploads/general", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
@@ -77,7 +77,11 @@ export default function FoodBillingPage() {
                 if (uploadRes.ok) {
                     const uploadData = await uploadRes.json();
                     upiProofUrl = uploadData.url;
-                    upiProofKey = uploadData.key;
+                    // Extract S3 key from URL (everything after the bucket domain)
+                    try {
+                        const urlObj = new URL(uploadData.url);
+                        upiProofKey = urlObj.pathname.slice(1); // remove leading /
+                    } catch { upiProofKey = null; }
                 }
             }
 
