@@ -882,6 +882,10 @@ export default function Admin1Dashboard() {
                                             <span className="text-sm text-slate-500 font-medium">Package Type</span>
                                             <span className="text-sm font-bold text-slate-800">{activeEvent.packageType}</span>
                                         </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-slate-500 font-medium">Number of People</span>
+                                            <span className="text-sm font-bold text-slate-800">{activeEvent.rawNumGuests || 2} Guest{(activeEvent.rawNumGuests || 2) !== 1 ? 's' : ''}</span>
+                                        </div>
                                         {(activeEvent.packageType !== "Movie Time") && (
                                             <>
                                                 <div className="flex justify-between">
