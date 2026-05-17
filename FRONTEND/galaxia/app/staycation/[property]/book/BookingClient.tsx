@@ -840,7 +840,7 @@ export default function BookingClient({ property }: BookingClientProps) {
 
                 <div className={`flex flex-col lg:flex-row gap-8 lg:gap-12 items-start relative ${currentStep === 3 ? 'hidden' : ''}`}>
                     {/* Left Column */}
-                    <div className="flex-1 w-full lg:max-w-[700px]">
+                    <div className={`flex-1 w-full ${isSingleRoom && currentStep === 1 ? 'lg:max-w-full' : 'lg:max-w-[700px]'}`}>
 
                         {/* STEP 1: SELECT ROOM */}
                         {currentStep === 1 && (
@@ -869,13 +869,11 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                         <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {room.persons}</div>
                                                         <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> {room.details[0]}</div>
                                                     </div>
-                                                    <div className="flex items-center justify-between pt-4">
-                                                        <div>
-                                                            <p className="text-[10px] font-inter text-text-muted uppercase tracking-wider mb-0.5">Starting from</p>
-                                                            <div className="flex items-end gap-1">
-                                                                <span className="font-cinzel text-xl font-semibold text-text-primary">{formatPrice(room.price)}</span>
-                                                                <span className="text-[10px] font-inter text-text-muted mb-1">/ Night</span>
-                                                            </div>
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4">
+                                                        <div className="flex items-end gap-1.5">
+                                                            <p className="text-[10px] font-inter text-text-muted uppercase tracking-wider">Starting from</p>
+                                                            <span className="font-cinzel text-xl font-semibold text-text-primary">{formatPrice(room.price)}</span>
+                                                            <span className="text-[10px] font-inter text-text-muted mb-0.5">/ Night</span>
                                                         </div>
                                                         <ul className="flex flex-wrap gap-2">
                                                             {room.details.slice(0, 3).map((d: string, i: number) => (
@@ -888,17 +886,91 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                 </div>
                                             </div>
 
+                                            {/* Inline Date Selection + Calendar + Your Stay for single-room */}
+                                            <DateSelectionBar
+                                                checkIn={checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined}
+                                                checkOut={checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined}
+                                                disabledDates={bookedDatesForPicker.size > 0 ? bookedDatesForPicker : undefined}
+                                                onDatesChange={(ci, co) => {
+                                                    const ciDate = new Date(ci + 'T12:00:00');
+                                                    const coDate = new Date(co + 'T12:00:00');
+                                                    handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
+                                                }}
+                                            />
+                                            <AvailabilityCalendar
+                                                propertyId={dbPropertyId}
+                                                subPropertyId={property.id.includes('/') ? (dbSubPropertyMap[property.id.split('/').pop() || ''] || null) : null}
+                                                weekdayPrice={room.weekdayPrice || property.pricing.weekday.price}
+                                                weekendPrice={room.weekendPrice || property.pricing.weekend.price}
+                                                saturdayPrice={room.saturdayPrice}
+                                                primeDatePrice={room.primeDatePrice || property.pricing.primeDates || ""}
+                                                initialCheckIn={checkInDate}
+                                                initialCheckOut={checkOutDate}
+                                                isDisabled={isMaintenance}
+                                                compact
+                                            />
+
+                                            {/* Your Stay — inline */}
+                                            <div className="bg-white border border-border-light shadow-sm">
+                                                <div className="p-5 border-b border-border-light">
+                                                    <h2 className="font-cinzel text-base tracking-widest text-text-primary uppercase">Your Stay</h2>
+                                                </div>
+                                                <div className="p-5 border-b border-border-light">
+                                                    <p className="font-inter text-xs uppercase tracking-widest text-text-muted mb-2">{room.theme}</p>
+                                                    <p className="font-inter text-xs text-text-primary leading-relaxed pb-3 border-b border-border-light mb-3 italic">{room.name}</p>
+                                                    {(() => {
+                                                        if (!checkInDate || nights <= 0) return (
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-inter text-xl text-text-primary">{formatPrice(room.price)}</span>
+                                                                <span className="font-inter text-[10px] text-text-muted">/ Night</span>
+                                                            </div>
+                                                        );
+                                                        const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                                        const wdP = parseInt((room.weekdayPrice || '0').toString().replace(/,/g, ''));
+                                                        const weP = parseInt((room.weekendPrice || '0').toString().replace(/,/g, ''));
+                                                        const saP = parseInt((room.saturdayPrice || room.weekendPrice || '0').toString().replace(/,/g, ''));
+                                                        const perNight: {day: string; price: number}[] = [];
+                                                        for (let i = 0; i < nights; i++) {
+                                                            const d = new Date(checkInDate); d.setDate(d.getDate() + i);
+                                                            const dw = d.getDay();
+                                                            const p = dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP;
+                                                            perNight.push({ day: DAY_NAMES[dw], price: p });
+                                                        }
+                                                        return (
+                                                            <div className="space-y-1.5">
+                                                                {perNight.map((n, i) => (
+                                                                    <div key={i} className="flex justify-between items-center">
+                                                                        <span className="font-inter text-xs text-text-muted">{n.day}</span>
+                                                                        <span className="font-inter text-sm text-text-primary">{formatPrice(n.price)}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                                <div className="p-5 border-b border-border-light space-y-3 font-inter text-sm text-text-primary">
+                                                    <div className="flex justify-between items-center"><span>Room Price</span><span>{formatPrice(roomPrice)}</span></div>
+                                                    <div className="flex justify-between items-center"><span>Taxes</span><span>{formatPrice(taxesAndFees)}</span></div>
+                                                </div>
+                                                <div className="p-5 bg-soft-gray/30">
+                                                    <div className="flex justify-between items-center font-inter">
+                                                        <span className="text-sm font-semibold text-text-primary">Total Amount</span>
+                                                        <span className="text-xl font-medium text-text-primary">{formatPrice(totalAmount)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             {/* Book Now Button */}
                                             <button
                                                 onClick={() => handleRoomSelect(room)}
-                                                disabled={!checkInDate || !checkOutDate || nights <= 0}
+                                                disabled={!checkInDate || !checkOutDate || nights <= 0 || !!bookingError}
                                                 className={`w-full py-3.5 rounded-lg font-cinzel text-sm tracking-widest uppercase transition-all ${
-                                                    checkInDate && checkOutDate && nights > 0
+                                                    checkInDate && checkOutDate && nights > 0 && !bookingError
                                                         ? 'bg-gradient-to-r from-antique-gold to-dark-gold text-white hover:shadow-lg hover:shadow-antique-gold/20'
                                                         : 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200'
                                                 }`}
                                             >
-                                                {checkInDate && checkOutDate && nights > 0 ? 'Book Now' : 'Select dates to continue'}
+                                                {checkInDate && checkOutDate && nights > 0 && !bookingError ? 'Book Now' : 'Select dates to continue'}
                                             </button>
                                         </>
                                     );
@@ -1186,7 +1258,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner for a warm ambiance</p>
                                                 </label>
                                                 {celebrationImageUrl && (
-                                                    <button type="button" onClick={(e) => { e.preventDefault(); setCelebrationPreviewOpen(true); }} className="shrink-0 w-[60px] h-[60px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
+                                                    <button type="button" onClick={(e) => { e.preventDefault(); setCelebrationPreviewOpen(true); }} className="shrink-0 w-[80px] h-[80px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
                                                         <Image src={celebrationImageUrl} alt="Celebration preview" fill className="object-cover" />
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                                                             <svg className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
@@ -1315,10 +1387,10 @@ export default function BookingClient({ property }: BookingClientProps) {
                         )}
                     </div>
 
-                    {/* Right Sidebar — shown on steps 1 & 2 only */}
-                    {currentStep <= 2 && (
+                    {/* Right Sidebar — shown on steps 1 & 2 only; hidden for single-room step 1 (inlined above) */}
+                    {currentStep <= 2 && !(isSingleRoom && currentStep === 1) && (
                         <div className="flex-1 w-full lg:max-w-[360px] sticky top-24 space-y-4 lg:ml-auto">
-                            {/* Date Selection Bar — Step 1 only */}
+                            {/* Date Selection Bar — Step 1 only (multi-room properties) */}
                             {currentStep === 1 && (
                             <>
                             <DateSelectionBar
