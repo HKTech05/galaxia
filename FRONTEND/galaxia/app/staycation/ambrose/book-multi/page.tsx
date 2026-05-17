@@ -103,6 +103,16 @@ export default function BookMultiPage() {
     const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
     const CELEBRATION_ADDON_PRICE = 1200;
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
+    const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
+
+    // Site images from admin panel (for celebration thumbnails)
+    const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    useEffect(() => {
+        fetch("/api/site-images").then(r => r.json()).then(data => {
+            if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+    }, []);
+    const celebrationImageUrl = (siteImages['ambrose/celebration'] || [])[0]?.url || (siteImages['amstel-nest/celebration'] || [])[0]?.url || '';
 
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
@@ -1300,6 +1310,14 @@ export default function BookMultiPage() {
                                             </div>
                                             <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner</p>
                                         </label>
+                                        {celebrationImageUrl && (
+                                            <button type="button" onClick={(e) => { e.preventDefault(); setCelebrationPreviewOpen(true); }} className="shrink-0 w-[60px] h-[60px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
+                                                <img src={celebrationImageUrl} alt="Celebration preview" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                    <svg className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                                                </div>
+                                            </button>
+                                        )}
                                     </div>
                                     {celebrationAddon && (
                                         <div className="mt-4 space-y-3 pl-7 animate-in fade-in">
@@ -1313,6 +1331,18 @@ export default function BookMultiPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Celebration Image Preview Modal */}
+                                {celebrationPreviewOpen && celebrationImageUrl && (
+                                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setCelebrationPreviewOpen(false)}>
+                                        <div className="relative max-w-lg w-full max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                                            <img src={celebrationImageUrl} alt="Celebration decoration" className="w-full h-auto max-h-[80vh] object-contain bg-white" />
+                                            <button onClick={() => setCelebrationPreviewOpen(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Food Preference (compulsory for Ambrose & Amstel Nest) */}
                                 <div className="mb-6 p-4 border border-emerald-200 rounded-lg bg-emerald-50/50">

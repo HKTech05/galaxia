@@ -205,6 +205,7 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
     const CELEBRATION_ADDON_PRICE = 1200;
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
+    const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
 
     // Amstel Nest multi-unit cart state
     const [unitCount, setUnitCount] = useState(1);
@@ -356,6 +357,21 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     // Main thumbnail for this property (used on booking card + summary)
     const mainThumb = (siteImages[`${property.id}/thumbnail`] || [])[0]?.url;
+
+    // Celebration add-on image for this property (uploaded via Photo Manager)
+    const celebrationImageUrl = (() => {
+        // Try property-level celebration image first (e.g. "la-paraiso/celebration")
+        const direct = (siteImages[`${property.id}/celebration`] || [])[0]?.url;
+        if (direct) return direct;
+        // For sub-property bookings (e.g. "ambrose/bamboosa"), try parent slug
+        if (property.id.includes('/')) {
+            const parentSlug = property.id.split('/')[0];
+            return (siteImages[`${parentSlug}/celebration`] || [])[0]?.url || '';
+        }
+        return '';
+    })();
+
+    const isSingleRoom = !property.subProperties || property.subProperties.length === 0 || property.id.includes('/');
 
     const roomOptions = (property.subProperties && property.subProperties.length > 0
         ? property.subProperties.map((sub: any) => {
@@ -830,54 +846,117 @@ export default function BookingClient({ property }: BookingClientProps) {
                         {currentStep === 1 && (
                             <div className="space-y-6">
 
-                                <h2 className="font-inter text-sm font-semibold text-text-primary mb-4">{isAmstelNest ? 'Select your cottage type' : 'Rooms for your search'}</h2>
-                                {roomOptions.map((room: any) => (
-                                    <div key={room.id} className="mb-6">
-                                        <div className="inline-block px-4 py-1.5 mb-3 border border-antique-gold/30 rounded-full bg-antique-gold/5 text-[10px] font-inter uppercase tracking-widest text-dark-gold">
-                                            {room.theme}
-                                        </div>
-                                        <div className="bg-white border border-border-light flex flex-col sm:flex-row shadow-sm hover:shadow-md transition-shadow">
-                                            <div className="relative w-full sm:w-[280px] h-[200px] sm:h-auto shrink-0 bg-soft-gray border-b sm:border-b-0 sm:border-r border-border-light">
-                                                <Image src={room.image} alt={room.name} fill className="object-cover" />
-                                                <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-3 py-2 border-t border-border-light/50 flex flex-wrap gap-x-4 gap-y-1 text-xs font-inter text-text-secondary">
-                                                    <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {room.persons}</div>
-                                                    <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> {room.details[0]}</div>
-                                                </div>
-                                            </div>
-                                            <div className="p-5 flex-1 flex flex-col justify-between min-h-[220px]">
-                                                <div>
-                                                    <h3 className="font-cinzel text-base tracking-wide text-text-primary uppercase mb-3">{room.name}</h3>
-                                                    <p className="font-inter text-sm text-text-secondary mb-3 pr-2 leading-relaxed">{room.description}</p>
-                                                    <ul className="space-y-1.5 mb-4">
-                                                        <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" />Inclusive of standard Wi-Fi</li>
-                                                        <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" /><span className="text-blue-600">Max 6 guests</span></li>
-                                                    </ul>
-                                                </div>
-                                                <div className="mt-6 flex flex-col items-end border-t border-border-light pt-4 border-dashed">
-                                                    <p className="text-[10px] font-inter text-text-muted uppercase tracking-wider mb-1">Exclusive Rate</p>
-                                                    <div className="flex items-end gap-1 mb-3">
-                                                        <span className="font-cinzel text-lg font-semibold text-text-primary">{formatPrice(room.price)}</span>
-                                                        <span className="text-[10px] font-inter text-text-muted mb-1">/ Night{isAmstelNest && unitCount > 1 ? ` × ${unitCount}` : ''}</span>
+                                {/* ─── SINGLE-ROOM PROPERTY: Wider redesigned layout ─── */}
+                                {isSingleRoom && roomOptions.length > 0 && (() => {
+                                    const room = roomOptions[0];
+                                    return (
+                                        <>
+                                            {/* Property Card — Full Width */}
+                                            <div className="bg-white border border-border-light shadow-sm rounded-lg overflow-hidden">
+                                                <div className="relative w-full h-[220px] sm:h-[260px] bg-soft-gray">
+                                                    <Image src={room.image} alt={room.name} fill className="object-cover" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                                                        <div className="inline-block px-3 py-1 mb-2 border border-white/30 rounded-full bg-white/10 backdrop-blur-sm text-[10px] font-inter uppercase tracking-widest text-white">
+                                                            {room.theme}
+                                                        </div>
+                                                        <h3 className="font-cinzel text-xl tracking-wide text-white uppercase">{room.name}</h3>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleRoomSelect(room)}
-                                                        disabled={!checkInDate || !checkOutDate || nights <= 0}
-                                                        className={`px-8 py-2 border font-inter text-xs tracking-wider uppercase transition-all w-32 ${
-                                                            checkInDate && checkOutDate && nights > 0
-                                                                ? 'border-antique-gold text-antique-gold hover:bg-antique-gold hover:text-white'
-                                                                : 'border-slate-200 text-slate-300 cursor-not-allowed'
-                                                        }`}
-                                                    >
-                                                        SELECT
-                                                    </button>
-                                                    {(!checkInDate || !checkOutDate) && (
-                                                        <p className="text-[9px] font-inter text-red-400 mt-1.5 text-right">Select dates first</p>
-                                                    )}
+                                                </div>
+                                                <div className="p-5 sm:p-6">
+                                                    <p className="font-inter text-sm text-text-secondary leading-relaxed mb-4">{room.description}</p>
+                                                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-inter text-text-secondary pb-4 border-b border-border-light">
+                                                        <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {room.persons}</div>
+                                                        <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> {room.details[0]}</div>
+                                                    </div>
+                                                    <div className="flex items-center justify-between pt-4">
+                                                        <div>
+                                                            <p className="text-[10px] font-inter text-text-muted uppercase tracking-wider mb-0.5">Starting from</p>
+                                                            <div className="flex items-end gap-1">
+                                                                <span className="font-cinzel text-xl font-semibold text-text-primary">{formatPrice(room.price)}</span>
+                                                                <span className="text-[10px] font-inter text-text-muted mb-1">/ Night</span>
+                                                            </div>
+                                                        </div>
+                                                        <ul className="flex flex-wrap gap-2">
+                                                            {room.details.slice(0, 3).map((d: string, i: number) => (
+                                                                <li key={i} className="flex items-center gap-1 text-[10px] font-inter text-text-muted bg-soft-gray/50 px-2 py-1 rounded-full">
+                                                                    <div className="w-1 h-1 rounded-full bg-antique-gold shrink-0" />{d}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
+
+                                            {/* Book Now Button */}
+                                            <button
+                                                onClick={() => handleRoomSelect(room)}
+                                                disabled={!checkInDate || !checkOutDate || nights <= 0}
+                                                className={`w-full py-3.5 rounded-lg font-cinzel text-sm tracking-widest uppercase transition-all ${
+                                                    checkInDate && checkOutDate && nights > 0
+                                                        ? 'bg-gradient-to-r from-antique-gold to-dark-gold text-white hover:shadow-lg hover:shadow-antique-gold/20'
+                                                        : 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200'
+                                                }`}
+                                            >
+                                                {checkInDate && checkOutDate && nights > 0 ? 'Book Now' : 'Select dates to continue'}
+                                            </button>
+                                        </>
+                                    );
+                                })()}
+
+                                {/* ─── MULTI-ROOM PROPERTY: Existing card layout ─── */}
+                                {!isSingleRoom && (
+                                    <>
+                                        <h2 className="font-inter text-sm font-semibold text-text-primary mb-4">{isAmstelNest ? 'Select your cottage type' : 'Rooms for your search'}</h2>
+                                        {roomOptions.map((room: any) => (
+                                            <div key={room.id} className="mb-6">
+                                                <div className="inline-block px-4 py-1.5 mb-3 border border-antique-gold/30 rounded-full bg-antique-gold/5 text-[10px] font-inter uppercase tracking-widest text-dark-gold">
+                                                    {room.theme}
+                                                </div>
+                                                <div className="bg-white border border-border-light flex flex-col sm:flex-row shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="relative w-full sm:w-[280px] h-[200px] sm:h-auto shrink-0 bg-soft-gray border-b sm:border-b-0 sm:border-r border-border-light">
+                                                        <Image src={room.image} alt={room.name} fill className="object-cover" />
+                                                        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-3 py-2 border-t border-border-light/50 flex flex-wrap gap-x-4 gap-y-1 text-xs font-inter text-text-secondary">
+                                                            <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {room.persons}</div>
+                                                            <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> {room.details[0]}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-5 flex-1 flex flex-col justify-between min-h-[220px]">
+                                                        <div>
+                                                            <h3 className="font-cinzel text-base tracking-wide text-text-primary uppercase mb-3">{room.name}</h3>
+                                                            <p className="font-inter text-sm text-text-secondary mb-3 pr-2 leading-relaxed">{room.description}</p>
+                                                            <ul className="space-y-1.5 mb-4">
+                                                                <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" />Inclusive of standard Wi-Fi</li>
+                                                                <li className="flex items-start gap-2 text-xs font-inter text-text-secondary"><div className="w-1 h-1 rounded-full bg-antique-gold mt-1.5 shrink-0" /><span className="text-blue-600">Max 6 guests</span></li>
+                                                            </ul>
+                                                        </div>
+                                                        <div className="mt-6 flex flex-col items-end border-t border-border-light pt-4 border-dashed">
+                                                            <p className="text-[10px] font-inter text-text-muted uppercase tracking-wider mb-1">Exclusive Rate</p>
+                                                            <div className="flex items-end gap-1 mb-3">
+                                                                <span className="font-cinzel text-lg font-semibold text-text-primary">{formatPrice(room.price)}</span>
+                                                                <span className="text-[10px] font-inter text-text-muted mb-1">/ Night{isAmstelNest && unitCount > 1 ? ` × ${unitCount}` : ''}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleRoomSelect(room)}
+                                                                disabled={!checkInDate || !checkOutDate || nights <= 0}
+                                                                className={`px-8 py-2 border font-inter text-xs tracking-wider uppercase transition-all w-32 ${
+                                                                    checkInDate && checkOutDate && nights > 0
+                                                                        ? 'border-antique-gold text-antique-gold hover:bg-antique-gold hover:text-white'
+                                                                        : 'border-slate-200 text-slate-300 cursor-not-allowed'
+                                                                }`}
+                                                            >
+                                                                SELECT
+                                                            </button>
+                                                            {(!checkInDate || !checkOutDate) && (
+                                                                <p className="text-[9px] font-inter text-red-400 mt-1.5 text-right">Select dates first</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -1106,6 +1185,14 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     </div>
                                                     <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner for a warm ambiance</p>
                                                 </label>
+                                                {celebrationImageUrl && (
+                                                    <button type="button" onClick={(e) => { e.preventDefault(); setCelebrationPreviewOpen(true); }} className="shrink-0 w-[60px] h-[60px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
+                                                        <Image src={celebrationImageUrl} alt="Celebration preview" fill className="object-cover" />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                            <svg className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                                                        </div>
+                                                    </button>
+                                                )}
                                             </div>
                                             {celebrationAddon && (
                                                 <div className="mt-4 space-y-3 pl-7 animate-in fade-in slide-in-from-top-2">
@@ -1118,6 +1205,18 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* Celebration Image Preview Modal */}
+                                    {celebrationPreviewOpen && celebrationImageUrl && (
+                                        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setCelebrationPreviewOpen(false)}>
+                                            <div className="relative max-w-lg w-full max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                                                <img src={celebrationImageUrl} alt="Celebration decoration" className="w-full h-auto max-h-[80vh] object-contain bg-white" />
+                                                <button onClick={() => setCelebrationPreviewOpen(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
