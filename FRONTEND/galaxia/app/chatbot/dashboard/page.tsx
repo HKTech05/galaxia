@@ -227,6 +227,7 @@ export default function ChatbotDashboard() {
     const [messages, setMessages] = useState<Record<string, Message[]>>({});
     const [tab, setTab] = useState("all");
     const [search, setSearch] = useState("");
+    const [msgFilter, setMsgFilter] = useState<"all" | "human" | "collab">("all");
     const [activeChat, setActiveChat] = useState<string | null>(null);
     const [msgInput, setMsgInput] = useState("");
     const [mobileShowChat, setMobileShowChat] = useState(false);
@@ -357,6 +358,9 @@ export default function ChatbotDashboard() {
             // Hide Instagram sessions from the "All" tab — they have their own tab
             if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_"))) return false;
             if (t !== "all" && s.phoneNumberKey !== t) return false;
+            // Message type filter
+            if (msgFilter === "human" && s.mode !== "human") return false;
+            if (msgFilter === "collab" && !s.tags.includes("collab")) return false;
             if (search) {
                 const q = search.toLowerCase();
                 return s.displayName.toLowerCase().includes(q) || s.sessionId.includes(q) || s.lastMessage.toLowerCase().includes(q);
@@ -368,7 +372,7 @@ export default function ChatbotDashboard() {
             if (a.mode !== "human" && b.mode === "human") return 1;
             return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
         });
-    }, [sessions, allowed, search]);
+    }, [sessions, allowed, search, msgFilter]);
 
     // ─── Open chat — load messages from API ───
     const openChat = async (id: string) => {
@@ -537,6 +541,27 @@ export default function ChatbotDashboard() {
                     </div>
                     <div className="cb-search">
                         <input placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)} />
+                    </div>
+                    <div style={{ display: "flex", gap: 4, padding: "6px 12px", borderBottom: "1px solid var(--cb-border)" }}>
+                        {(["all", "human", "collab"] as const).map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setMsgFilter(f)}
+                                style={{
+                                    flex: 1, padding: "5px 0", borderRadius: 6, border: "none", cursor: "pointer",
+                                    fontSize: 11, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase",
+                                    transition: "all 0.15s",
+                                    background: msgFilter === f
+                                        ? f === "human" ? "rgba(220,38,38,0.12)" : f === "collab" ? "rgba(139,92,246,0.12)" : "rgba(0,168,132,0.12)"
+                                        : "transparent",
+                                    color: msgFilter === f
+                                        ? f === "human" ? "#dc2626" : f === "collab" ? "#8b5cf6" : "#00a884"
+                                        : "var(--cb-text-dim)",
+                                }}
+                            >
+                                {f === "all" ? "All" : f === "human" ? "👤 Human" : "🤝 Collab"}
+                            </button>
+                        ))}
                     </div>
                     <div className="cb-chatlist">
                         {getFiltered(tab).length === 0 ? (

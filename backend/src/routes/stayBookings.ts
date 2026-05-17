@@ -369,18 +369,18 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 where.checkInDate.lte = e;
             }
         }
-        // Filter by booked-on (createdAt) dates
+        // Filter by booked-on (bookedAt) dates
         if (bookedOnFrom || bookedOnTo) {
-            where.createdAt = {};
+            where.bookedAt = {};
             if (bookedOnFrom) {
-                const s = new Date(bookedOnFrom as string);
+                const s = new Date((bookedOnFrom as string) + 'T00:00:00');
                 s.setHours(0, 0, 0, 0);
-                where.createdAt.gte = s;
+                where.bookedAt.gte = s;
             }
             if (bookedOnTo) {
-                const e = new Date(bookedOnTo as string);
+                const e = new Date((bookedOnTo as string) + 'T00:00:00');
                 e.setHours(23, 59, 59, 999);
-                where.createdAt.lte = e;
+                where.bookedAt.lte = e;
             }
         }
 

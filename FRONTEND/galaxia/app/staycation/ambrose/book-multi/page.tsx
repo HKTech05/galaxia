@@ -1306,14 +1306,14 @@ export default function BookMultiPage() {
 
                                 {/* Celebration Add-on */}
                                 <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
-                                    <div className="flex items-start gap-3">
-                                        <input type="checkbox" id="multi-celebration" checked={celebrationAddon} onChange={(e) => setCelebrationAddon(e.target.checked)} className="mt-1 w-4 h-4 accent-[#B8860B] cursor-pointer" />
+                                    <div className="flex items-start sm:items-center gap-3">
+                                        <input type="checkbox" id="multi-celebration" checked={celebrationAddon} onChange={(e) => setCelebrationAddon(e.target.checked)} className="mt-1 sm:mt-0 w-4 h-4 accent-[#B8860B] cursor-pointer shrink-0" />
                                         <label htmlFor="multi-celebration" className="cursor-pointer flex-1 min-w-0">
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
                                                 <h4 className="font-inter text-sm font-semibold text-text-primary">Celebration Add-on</h4>
                                                 <span className="font-cinzel text-sm font-semibold text-dark-gold whitespace-nowrap">+ ₹{CELEBRATION_ADDON_PRICE.toLocaleString('en-IN')}</span>
                                             </div>
-                                            <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner</p>
+                                            <p className="font-inter text-xs text-text-secondary mt-0.5">Includes: Cake, balloons, and a banner</p>
                                         </label>
                                         {celebrationImageUrl && (
                                             <div className="shrink-0 flex flex-col items-center gap-1">
