@@ -373,6 +373,16 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     const isSingleRoom = !property.subProperties || property.subProperties.length === 0 || property.id.includes('/');
 
+    // Check if selected date range overlaps with any booked dates (mirrors DateSelectionBar logic)
+    const hasBookedDateConflict = (() => {
+        if (!checkInDate || !checkOutDate || bookedDatesForPicker.size === 0) return false;
+        for (let d = new Date(checkInDate); d < checkOutDate; d.setDate(d.getDate() + 1)) {
+            const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (bookedDatesForPicker.has(ds)) return true;
+        }
+        return false;
+    })();
+
     const roomOptions = (property.subProperties && property.subProperties.length > 0
         ? property.subProperties.map((sub: any) => {
             const subThumb = (siteImages[`${property.id}/${sub.id}/thumbnail`] || [])[0]?.url;
@@ -896,6 +906,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     const coDate = new Date(co + 'T12:00:00');
                                                     handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
                                                 }}
+                                                onCheckoutCleared={() => { setCheckOutDate(null); setNights(0); }}
                                             />
                                             <AvailabilityCalendar
                                                 propertyId={dbPropertyId}
@@ -963,14 +974,14 @@ export default function BookingClient({ property }: BookingClientProps) {
                                             {/* Book Now Button */}
                                             <button
                                                 onClick={() => handleRoomSelect(room)}
-                                                disabled={!checkInDate || !checkOutDate || nights <= 0 || !!bookingError}
+                                                disabled={!checkInDate || !checkOutDate || nights <= 0 || hasBookedDateConflict}
                                                 className={`w-full py-3.5 rounded-lg font-cinzel text-sm tracking-widest uppercase transition-all ${
-                                                    checkInDate && checkOutDate && nights > 0 && !bookingError
+                                                    checkInDate && checkOutDate && nights > 0 && !hasBookedDateConflict
                                                         ? 'bg-gradient-to-r from-antique-gold to-dark-gold text-white hover:shadow-lg hover:shadow-antique-gold/20'
                                                         : 'bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200'
                                                 }`}
                                             >
-                                                {checkInDate && checkOutDate && nights > 0 && !bookingError ? 'Book Now' : 'Select dates to continue'}
+                                                {checkInDate && checkOutDate && nights > 0 && !hasBookedDateConflict ? 'Book Now' : 'Select dates to continue'}
                                             </button>
                                         </>
                                     );
@@ -1402,6 +1413,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     const coDate = new Date(co + 'T12:00:00');
                                     handleDatesChange(ciDate, coDate, 0, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000*60*60*24)));
                                 }}
+                                onCheckoutCleared={() => { setCheckOutDate(null); setNights(0); }}
                             />
                             {/* Calendar in sidebar — always show in Step 1 */}
                             <AvailabilityCalendar

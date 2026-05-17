@@ -5,6 +5,7 @@ import GoldDatePicker from "./GoldDatePicker";
 
 interface DateSelectionBarProps {
     onDatesChange?: (checkIn: string, checkOut: string) => void;
+    onCheckoutCleared?: () => void;
     checkIn?: string;
     checkOut?: string;
     /** Pass booked/fully-booked dates directly so the GoldDatePicker greys them out.
@@ -17,7 +18,7 @@ interface DateSelectionBarProps {
  * Uses the custom GoldDatePicker instead of native <input type="date">.
  * Accepts `disabledDates` prop from parent — does NOT fetch its own booked dates.
  */
-export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, checkOut: externalCO, disabledDates }: DateSelectionBarProps) {
+export default function DateSelectionBar({ onDatesChange, onCheckoutCleared, checkIn: externalCI, checkOut: externalCO, disabledDates }: DateSelectionBarProps) {
     const [ci, setCi] = useState(externalCI || '');
     const [co, setCo] = useState(externalCO || '');
     const [rangeWarning, setRangeWarning] = useState('');
@@ -67,6 +68,7 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
         if (val) localStorage.setItem('galaxia_search_checkin', val);
         else localStorage.removeItem('galaxia_search_checkin');
         localStorage.removeItem('galaxia_search_checkout');
+        onCheckoutCleared?.();
     };
 
     const handleCheckOut = (val: string) => {
@@ -76,6 +78,7 @@ export default function DateSelectionBar({ onDatesChange, checkIn: externalCI, c
             setCo('');
             localStorage.removeItem('galaxia_search_checkout');
             setRangeWarning('Some dates in this range are already booked. Please choose different dates.');
+            onCheckoutCleared?.();
             return;
         }
         setCo(val);
