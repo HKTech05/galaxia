@@ -360,10 +360,17 @@ export default function BookingClient({ property }: BookingClientProps) {
 
     // Celebration add-on image for this property (uploaded via Photo Manager)
     const celebrationImageUrl = (() => {
-        // Try property-level celebration image first (e.g. "la-paraiso/celebration")
+        // Try the selected sub-property first (e.g. "ambrose/take-1/celebration")
+        if (selectedRoom?.id) {
+            const specific = (siteImages[`${selectedRoom.id}/celebration`] || [])[0]?.url;
+            if (specific) return specific;
+        }
+        
+        // Try property-level celebration image next (e.g. "la-paraiso/celebration")
         const direct = (siteImages[`${property.id}/celebration`] || [])[0]?.url;
         if (direct) return direct;
-        // For sub-property bookings (e.g. "ambrose/bamboosa"), try parent slug
+        
+        // For direct sub-property bookings (e.g. "ambrose/bamboosa")
         if (property.id.includes('/')) {
             const parentSlug = property.id.split('/')[0];
             return (siteImages[`${parentSlug}/celebration`] || [])[0]?.url || '';

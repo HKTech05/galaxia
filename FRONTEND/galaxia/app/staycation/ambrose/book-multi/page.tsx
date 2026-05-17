@@ -112,7 +112,12 @@ export default function BookMultiPage() {
             if (data && typeof data === 'object') setSiteImages(data);
         }).catch(() => {});
     }, []);
-    const celebrationImageUrl = (siteImages['ambrose/celebration'] || [])[0]?.url || (siteImages['amstel-nest/celebration'] || [])[0]?.url || '';
+    const celebrationImageUrl = (siteImages['ambrose/celebration'] || [])[0]?.url || 
+        (siteImages['ambrose/take-1/celebration'] || [])[0]?.url || 
+        (siteImages['ambrose/alta/celebration'] || [])[0]?.url || 
+        (siteImages['ambrose/santorini/celebration'] || [])[0]?.url || 
+        (siteImages['ambrose/bamboosa/celebration'] || [])[0]?.url || 
+        (siteImages['ambrose/cypress/celebration'] || [])[0]?.url || '';
 
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
