@@ -1303,15 +1303,15 @@ export default function BookMultiPage() {
                                 <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
                                     <div className="flex items-start gap-3">
                                         <input type="checkbox" id="multi-celebration" checked={celebrationAddon} onChange={(e) => setCelebrationAddon(e.target.checked)} className="mt-1 w-4 h-4 accent-[#B8860B] cursor-pointer" />
-                                        <label htmlFor="multi-celebration" className="cursor-pointer flex-1">
-                                            <div className="flex items-center justify-between">
+                                        <label htmlFor="multi-celebration" className="cursor-pointer flex-1 min-w-0">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
                                                 <h4 className="font-inter text-sm font-semibold text-text-primary">Celebration Add-on</h4>
-                                                <span className="font-cinzel text-sm font-semibold text-dark-gold">+ ₹{CELEBRATION_ADDON_PRICE.toLocaleString('en-IN')}</span>
+                                                <span className="font-cinzel text-sm font-semibold text-dark-gold whitespace-nowrap">+ ₹{CELEBRATION_ADDON_PRICE.toLocaleString('en-IN')}</span>
                                             </div>
                                             <p className="font-inter text-xs text-text-secondary mt-1">Includes: Cake, balloons, and a banner</p>
                                         </label>
                                         {celebrationImageUrl && (
-                                            <button type="button" onClick={(e) => { e.preventDefault(); setCelebrationPreviewOpen(true); }} className="shrink-0 w-[80px] h-[80px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
+                                            <button type="button" onClick={(e) => { e.preventDefault(); setCelebrationPreviewOpen(true); }} className="shrink-0 w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
                                                 <img src={celebrationImageUrl} alt="Celebration preview" className="w-full h-full object-cover" />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                                                     <svg className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
