@@ -130,6 +130,9 @@ export default function BookMultiPage() {
           (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
           (siteImages['amstel-nest/standard-cottage/celebration'] || [])[0]?.url || 
           (siteImages['amstel-nest/family-cottage/celebration'] || [])[0]?.url || '';
+
+    // Per-villa booked dates for conflict detection
+    const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
     const [villaConflicts, setVillaConflicts] = useState<Record<string, string[]>>({});
     const [expandedConflict, setExpandedConflict] = useState<string | null>(null);
 
