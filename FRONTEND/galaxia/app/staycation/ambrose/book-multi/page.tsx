@@ -112,30 +112,27 @@ export default function BookMultiPage() {
             if (data && typeof data === 'object') setSiteImages(data);
         }).catch(() => {});
     }, []);
-    // Derived: separate by property
-    const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
-    const amstelItems = cart.filter(c => c.property === "amstel-nest");
-    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
 
-    const firstAmstelItem = amstelItems[0];
-    const amstelPrimaryUrl = firstAmstelItem 
-        ? (siteImages[`amstel-nest/${firstAmstelItem.villaId}/celebration`] || [])[0]?.url 
-        : null;
-
-    const celebrationImageUrl = hasAmstelOnly 
-        ? amstelPrimaryUrl ||
-          (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
-          (siteImages['amstel-nest/standard-cottage/celebration'] || [])[0]?.url || 
-          (siteImages['amstel-nest/family-cottage/celebration'] || [])[0]?.url || ''
-        : (siteImages['ambrose/celebration'] || [])[0]?.url || 
-          (siteImages['ambrose/take-1/celebration'] || [])[0]?.url || 
-          (siteImages['ambrose/alta/celebration'] || [])[0]?.url || 
-          (siteImages['ambrose/santorini/celebration'] || [])[0]?.url || 
-          (siteImages['ambrose/bamboosa/celebration'] || [])[0]?.url || 
-          (siteImages['ambrose/cypress/celebration'] || [])[0]?.url || 
-          (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
-          (siteImages['amstel-nest/standard-cottage/celebration'] || [])[0]?.url || 
-          (siteImages['amstel-nest/family-cottage/celebration'] || [])[0]?.url || '';
+    // Celebration add-on image: resolve from the first cart item's property/villa
+    const celebrationImageUrl = (() => {
+        // Try each cart item's specific celebration image first
+        for (const item of cart) {
+            const prefix = item.property === "amstel-nest" ? "amstel-nest" : "ambrose";
+            const specific = (siteImages[`${prefix}/${item.villaId}/celebration`] || [])[0]?.url;
+            if (specific) return specific;
+        }
+        // Fallback: try any property-level or villa-level celebration image
+        const ambroseLevel = (siteImages['ambrose/celebration'] || [])[0]?.url;
+        if (ambroseLevel) return ambroseLevel;
+        const amstelLevel = (siteImages['amstel-nest/celebration'] || [])[0]?.url;
+        if (amstelLevel) return amstelLevel;
+        // Last resort: try each Ambrose villa then Amstel cottage
+        for (const key of ['ambrose/take-1', 'ambrose/alta', 'ambrose/santorini', 'ambrose/bamboosa', 'ambrose/cypress', 'amstel-nest/standard-cottage', 'amstel-nest/family-cottage']) {
+            const url = (siteImages[`${key}/celebration`] || [])[0]?.url;
+            if (url) return url;
+        }
+        return '';
+    })();
 
     // Per-villa booked dates for conflict detection
     const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
@@ -146,7 +143,12 @@ export default function BookMultiPage() {
     const [amstelBookingCounts, setAmstelBookingCounts] = useState<Record<string, number>>({});
     const [amstelConflicts, setAmstelConflicts] = useState<Record<string, { date: string; available: number }[]>>({});
 
+    // Derived: separate by property
+    const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
+    const amstelItems = cart.filter(c => c.property === "amstel-nest");
+
     // Fetch booked dates for the date picker (must be before any early returns)
+    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
     const bookedDatesForPicker = useBookedDates(
         hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null)
     );
