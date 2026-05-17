@@ -112,15 +112,24 @@ export default function BookMultiPage() {
             if (data && typeof data === 'object') setSiteImages(data);
         }).catch(() => {});
     }, []);
-    const celebrationImageUrl = (siteImages['ambrose/celebration'] || [])[0]?.url || 
-        (siteImages['ambrose/take-1/celebration'] || [])[0]?.url || 
-        (siteImages['ambrose/alta/celebration'] || [])[0]?.url || 
-        (siteImages['ambrose/santorini/celebration'] || [])[0]?.url || 
-        (siteImages['ambrose/bamboosa/celebration'] || [])[0]?.url || 
-        (siteImages['ambrose/cypress/celebration'] || [])[0]?.url || '';
+    // Derived: separate by property
+    const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
+    const amstelItems = cart.filter(c => c.property === "amstel-nest");
+    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
 
-    // Per-villa booked dates for conflict detection
-    const [villaBookedDates, setVillaBookedDates] = useState<Record<string, string[]>>({});
+    const celebrationImageUrl = hasAmstelOnly 
+        ? (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
+          (siteImages['amstel-nest/standard-cottage/celebration'] || [])[0]?.url || 
+          (siteImages['amstel-nest/family-cottage/celebration'] || [])[0]?.url || ''
+        : (siteImages['ambrose/celebration'] || [])[0]?.url || 
+          (siteImages['ambrose/take-1/celebration'] || [])[0]?.url || 
+          (siteImages['ambrose/alta/celebration'] || [])[0]?.url || 
+          (siteImages['ambrose/santorini/celebration'] || [])[0]?.url || 
+          (siteImages['ambrose/bamboosa/celebration'] || [])[0]?.url || 
+          (siteImages['ambrose/cypress/celebration'] || [])[0]?.url || 
+          (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
+          (siteImages['amstel-nest/standard-cottage/celebration'] || [])[0]?.url || 
+          (siteImages['amstel-nest/family-cottage/celebration'] || [])[0]?.url || '';
     const [villaConflicts, setVillaConflicts] = useState<Record<string, string[]>>({});
     const [expandedConflict, setExpandedConflict] = useState<string | null>(null);
 
@@ -128,12 +137,7 @@ export default function BookMultiPage() {
     const [amstelBookingCounts, setAmstelBookingCounts] = useState<Record<string, number>>({});
     const [amstelConflicts, setAmstelConflicts] = useState<Record<string, { date: string; available: number }[]>>({});
 
-    // Derived: separate by property
-    const ambroseItems = cart.filter(c => !c.property || c.property === "ambrose");
-    const amstelItems = cart.filter(c => c.property === "amstel-nest");
-
     // Fetch booked dates for the date picker (must be before any early returns)
-    const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
     const bookedDatesForPicker = useBookedDates(
         hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null)
     );
