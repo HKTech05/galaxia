@@ -407,6 +407,32 @@ export default function ChatbotDashboard() {
         }
     };
 
+    // ─── Mark all visible bot chats as read ───
+    const handleMarkAllAsRead = async () => {
+        const visibleSessions = getFiltered(tab);
+        const toMark = visibleSessions.filter(s => s.mode === "bot" && s.unread > 0);
+        if (toMark.length === 0) return;
+
+        // Optimistic UI update
+        const idsToMark = new Set(toMark.map(s => s.id));
+        setSessions(prev => prev.map(s => idsToMark.has(s.id) ? { ...s, unread: 0 } : s));
+
+        // Background API calls
+        await Promise.all(toMark.map(async (chat) => {
+            if (chat.dbSessionId) {
+                try {
+                    await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/read`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: "{}",
+                    });
+                } catch (e) {
+                    console.error("Failed to mark read:", e);
+                }
+            }
+        }));
+    };
+
     // ─── Toggle mode — call bot server API ───
     const toggleMode = async () => {
         if (!activeChat) return;
@@ -563,6 +589,27 @@ export default function ChatbotDashboard() {
                             </button>
                         ))}
                     </div>
+                    {(() => {
+                        const unreadBotCount = getFiltered(tab).filter(s => s.mode === "bot" && s.unread > 0).length;
+                        if (unreadBotCount > 0) {
+                            return (
+                                <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--cb-border)", display: "flex", justifyContent: "flex-end" }}>
+                                    <button
+                                        onClick={handleMarkAllAsRead}
+                                        style={{
+                                            background: "none", border: "none", color: "#00a884", fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, transition: "background 0.2s"
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = "rgba(0,168,132,0.1)"}
+                                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                    >
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 18l4 4L19 12" style={{opacity: 0.5}} /></svg>
+                                        Mark {unreadBotCount} Bot {unreadBotCount === 1 ? "Chat" : "Chats"} as Read
+                                    </button>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
                     <div className="cb-chatlist">
                         {getFiltered(tab).length === 0 ? (
                             <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--cb-text-dim)" }}>

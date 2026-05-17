@@ -117,8 +117,14 @@ export default function BookMultiPage() {
     const amstelItems = cart.filter(c => c.property === "amstel-nest");
     const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
 
+    const firstAmstelItem = amstelItems[0];
+    const amstelPrimaryUrl = firstAmstelItem 
+        ? (siteImages[`amstel-nest/${firstAmstelItem.villaId}/celebration`] || [])[0]?.url 
+        : null;
+
     const celebrationImageUrl = hasAmstelOnly 
-        ? (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
+        ? amstelPrimaryUrl ||
+          (siteImages['amstel-nest/celebration'] || [])[0]?.url || 
           (siteImages['amstel-nest/standard-cottage/celebration'] || [])[0]?.url || 
           (siteImages['amstel-nest/family-cottage/celebration'] || [])[0]?.url || ''
         : (siteImages['ambrose/celebration'] || [])[0]?.url || 
