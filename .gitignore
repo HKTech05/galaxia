@@ -22,4 +22,4 @@ dist/
 /FRONTEND/galaxia/node_modules
 /FRONTEND/galaxia/.next
 
-*.mp4
+/Comp 1.mp4
