@@ -136,11 +136,16 @@ export default function StaycationPage() {
         <div>
             {/* Hero */}
             <section className="relative h-[55vh] sm:h-[60vh] md:h-[70vh] overflow-hidden">
-                <video className="absolute inset-0 w-full h-full object-cover" src="/videos/hero.mp4" autoPlay muted loop playsInline />
-                {!heroUrl && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-600" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-cream-white" />
+                <video
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src="/videos/hero.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    style={{ zIndex: 0 }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" style={{ zIndex: 1 }} />
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-4 sm:px-6">
                     <p className="text-amber-300 font-inter text-xs tracking-[0.3em] uppercase mb-4 animate-fade-in-up">Galaxia Staycation</p>
                     <h1 className="font-cinzel text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>Luxury Escapes</h1>
