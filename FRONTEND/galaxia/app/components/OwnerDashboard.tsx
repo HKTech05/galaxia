@@ -2024,7 +2024,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
                             {images.map(img => (
                                 <div key={img.id} className="relative group border border-slate-200 rounded-lg aspect-square bg-white overflow-hidden hover:border-purple-300 hover:shadow-sm transition-all">
-                                    <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                    {/\.(mp4|webm|mov)$/i.test(img.url) ? (
+                                        <video src={img.url} className="w-full h-full object-cover" muted autoPlay loop playsInline />
+                                    ) : (
+                                        <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                    )}
                                     <button
                                         onClick={() => handleImageDelete(img.id)}
                                         className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-md opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow"
@@ -2050,7 +2054,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     )}
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept={sub.id.includes('hero') || sub.id.includes('banner') ? 'image/*,video/mp4,video/webm,video/quicktime' : 'image/*'}
                                         multiple={!sub.maxImages || sub.maxImages > 1}
                                         className="hidden"
                                         onChange={e => handleImageUpload(sub.id, e.target.files)}

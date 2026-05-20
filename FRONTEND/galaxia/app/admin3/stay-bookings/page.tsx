@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil, Download, FileText } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil, Download, FileText, ArrowRightLeft } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -62,6 +62,7 @@ const statusColors: Record<string, string> = {
     completed: "bg-slate-100 border-slate-300 text-slate-600",
     cancelled: "bg-red-50 border-red-200 text-red-700",
     no_show: "bg-amber-50 border-amber-200 text-amber-700",
+    transferred: "bg-indigo-50 border-indigo-200 text-indigo-700",
 };
 
 const statusIcons: Record<string, any> = {
@@ -71,6 +72,7 @@ const statusIcons: Record<string, any> = {
     completed: CheckCircle,
     cancelled: XCircle,
     no_show: AlertCircle,
+    transferred: ArrowRightLeft,
 };
 
 export default function StayBookingsPage() {
@@ -94,6 +96,13 @@ export default function StayBookingsPage() {
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [viewTab, setViewTab] = useState<"staycation" | "dd" | "all">("staycation");
     const [ddBookings, setDdBookings] = useState<StayBooking[]>([]);
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [transferCheckIn, setTransferCheckIn] = useState('');
+    const [transferCheckOut, setTransferCheckOut] = useState('');
+    const [transferPropertyId, setTransferPropertyId] = useState('');
+    const [transferSubPropertyId, setTransferSubPropertyId] = useState('');
+    const [transferLoading, setTransferLoading] = useState(false);
+    const [transferProperties, setTransferProperties] = useState<any[]>([]);
     const [ddLoading, setDdLoading] = useState(false);
 
     // Daily Report Modal state
@@ -236,6 +245,10 @@ export default function StayBookingsPage() {
     useEffect(() => {
         if (viewTab === 'dd' || viewTab === 'all') fetchDdBookings();
     }, [viewTab, fetchDdBookings]);
+
+    useEffect(() => {
+        api.get('/properties').then((data: any) => setTransferProperties(data || [])).catch(() => {});
+    }, []);
 
     // Combine based on active tab
     const sourceBookings = viewTab === 'staycation' ? bookings : viewTab === 'dd' ? ddBookings : [...bookings, ...ddBookings];
@@ -513,6 +526,24 @@ export default function StayBookingsPage() {
         }
     };
 
+    const handleTransfer = async () => {
+        if (!selectedBooking || !transferCheckIn || !transferCheckOut) return;
+        setTransferLoading(true);
+        try {
+            const body: any = { newCheckIn: transferCheckIn, newCheckOut: transferCheckOut };
+            if (transferPropertyId) body.newPropertyId = transferPropertyId;
+            if (transferSubPropertyId) body.newSubPropertyId = transferSubPropertyId;
+            await api.post(`/bookings/staycation/${selectedBooking.id}/transfer`, body);
+            setShowTransferModal(false);
+            setSelectedBooking(null);
+            fetchBookings();
+        } catch (err: any) {
+            alert(err?.message || 'Transfer failed');
+        } finally {
+            setTransferLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
@@ -663,7 +694,7 @@ export default function StayBookingsPage() {
                     {(() => {
                         const filterOptions = viewTab === 'dd'
                             ? ["All", "Confirmed", "No Show", "Transferred", "Cancelled"]
-                            : ["All", "Confirmed", "Checked In", "Checked Out", "Cancelled"];
+                            : ["All", "Confirmed", "Checked In", "Checked Out", "Transferred", "Cancelled"];
                         return (
                             <>
                                 <div className="relative flex-1 lg:hidden">
@@ -970,6 +1001,21 @@ export default function StayBookingsPage() {
                                             <span className="font-bold text-emerald-600">-{formatPrice(selectedBooking.discountAmount)}</span>
                                         </div>
                                     )}
+                                    {/* Transfer info warning */}
+                                    {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.some((a: any) => a?.transferInfo) && (
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 space-y-1">
+                                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">🔄 Transferred Booking</p>
+                                            {selectedBooking.addons.filter((a: any) => a?.transferInfo).map((a: any, i: number) => (
+                                                <div key={i} className="text-xs text-indigo-700 font-medium space-y-0.5">
+                                                    <p>From <strong>{a.transferInfo.fromRef}</strong></p>
+                                                    <p>Original dates: <strong>{new Date(a.transferInfo.fromCheckIn).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(a.transferInfo.fromCheckOut).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></p>
+                                                    {a.transferInfo.fromProperty && <p>Original property: <strong>{a.transferInfo.fromProperty}</strong></p>}
+                                                    <p className="text-amber-600 font-bold">₹{a.transferInfo.fee} transfer fee included</p>
+                                                    <p className="text-slate-400">Transferred on {new Date(a.transferInfo.transferDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                     {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.length > 0 && selectedBooking.addons.map((addon: any, i: number) => (
                                         <div key={i}>
                                             {addon.name === 'Celebration Add-on' && (
@@ -1124,6 +1170,20 @@ export default function StayBookingsPage() {
                                     >
                                         <Pencil size={13} /> Edit
                                     </button>
+                                    {selectedBooking.status !== 'transferred' && selectedBooking.status !== 'cancelled' && (
+                                        <button
+                                            onClick={() => {
+                                                setTransferCheckIn('');
+                                                setTransferCheckOut('');
+                                                setTransferPropertyId('');
+                                                setTransferSubPropertyId('');
+                                                setShowTransferModal(true);
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 transition-colors"
+                                        >
+                                            <ArrowRightLeft size={13} /> Transfer
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => setDeleteConfirmBooking(selectedBooking)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
@@ -1616,6 +1676,98 @@ export default function StayBookingsPage() {
                                     </>
                                 )}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Transfer Booking Modal */}
+            {showTransferModal && selectedBooking && (
+                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => !transferLoading && setShowTransferModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                        <div className="p-6">
+                            <h3 className="text-lg font-black text-slate-800 mb-1">Transfer Booking</h3>
+                            <p className="text-sm text-slate-500 mb-1">Reschedule <strong>{selectedBooking.customerName}</strong>&apos;s booking to new dates.</p>
+                            <p className="text-xs text-amber-600 font-bold mb-5 flex items-center gap-1.5 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                                <IndianRupee size={13} /> ₹1,000 transfer fee will be added to balance due
+                            </p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Check-in Date</label>
+                                    <input
+                                        type="date"
+                                        value={transferCheckIn}
+                                        onChange={(e) => setTransferCheckIn(e.target.value)}
+                                        min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })()}
+                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-purple-400 focus:outline-none transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Check-out Date</label>
+                                    <input
+                                        type="date"
+                                        value={transferCheckOut}
+                                        onChange={(e) => setTransferCheckOut(e.target.value)}
+                                        min={transferCheckIn || (() => { const n = new Date(); n.setDate(n.getDate()+1); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })()}
+                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-purple-400 focus:outline-none transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Property (optional change)</label>
+                                    <select
+                                        value={transferPropertyId}
+                                        onChange={(e) => { setTransferPropertyId(e.target.value); setTransferSubPropertyId(''); }}
+                                        className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-purple-400 focus:outline-none transition-colors"
+                                    >
+                                        <option value="">Keep current ({selectedBooking.propertyName})</option>
+                                        {transferProperties.map((p: any) => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {transferPropertyId && (() => {
+                                    const prop = transferProperties.find((p: any) => p.id === parseInt(transferPropertyId));
+                                    return prop?.subProperties?.length > 0 ? (
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Villa / Cottage</label>
+                                            <select
+                                                value={transferSubPropertyId}
+                                                onChange={(e) => setTransferSubPropertyId(e.target.value)}
+                                                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-purple-400 focus:outline-none transition-colors"
+                                            >
+                                                <option value="">Select...</option>
+                                                {prop.subProperties.map((sp: any) => (
+                                                    <option key={sp.id} value={sp.id}>{sp.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : null;
+                                })()}
+
+                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
+                                    <p><strong>Current:</strong> {selectedBooking.propertyName}{selectedBooking.subPropertyName ? ` — ${selectedBooking.subPropertyName}` : ''}</p>
+                                    <p><strong>Dates:</strong> {new Date(selectedBooking.checkIn).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(selectedBooking.checkOut).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                    <p><strong>Ref:</strong> {selectedBooking.bookingRef}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-5">
+                                <button
+                                    onClick={() => setShowTransferModal(false)}
+                                    disabled={transferLoading}
+                                    className="flex-1 py-3 text-sm font-bold text-slate-500 border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleTransfer}
+                                    disabled={!transferCheckIn || !transferCheckOut || transferLoading}
+                                    className="flex-1 py-3 text-sm font-bold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {transferLoading ? 'Transferring...' : 'Confirm Transfer'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -21,11 +21,11 @@ const BUCKET = process.env.AWS_S3_BUCKET || "galaxia-uploads";
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 15 * 1024 * 1024 },
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+        const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "video/mp4", "video/webm", "video/quicktime"];
         if (allowed.includes(file.mimetype)) cb(null, true);
-        else cb(new Error("Only image files (JPG, PNG, WebP, GIF, AVIF) are allowed."));
+        else cb(new Error("Only image files (JPG, PNG, WebP, GIF, AVIF) or video files (MP4, WebM, MOV) are allowed."));
     },
 });
 
@@ -64,8 +64,19 @@ router.post("/", authMiddleware, upload.single("file"), async (req: AuthRequest,
         const { section } = req.body;
         if (!section) return res.status(400).json({ error: "Section is required" });
 
-        // Compress to WebP
-        const { buffer, mimetype, fileName } = await compressFile(req.file.buffer, req.file.mimetype, req.file.originalname);
+        // Skip compression for video files; compress images to WebP
+        const isVideo = req.file.mimetype.startsWith('video/');
+        let buffer: Buffer, mimetype: string, fileName: string;
+        if (isVideo) {
+            buffer = req.file.buffer;
+            mimetype = req.file.mimetype;
+            fileName = req.file.originalname;
+        } else {
+            const compressed = await compressFile(req.file.buffer, req.file.mimetype, req.file.originalname);
+            buffer = compressed.buffer;
+            mimetype = compressed.mimetype;
+            fileName = compressed.fileName;
+        }
         const folder = `website-images/${section}`;
         const fileUrl = await uploadToS3(buffer, fileName, mimetype, folder);
 

@@ -137,7 +137,11 @@ export default function StaycationPage() {
             {/* Hero */}
             <section className="relative h-[55vh] sm:h-[60vh] md:h-[70vh] overflow-hidden">
                 {heroUrl ? (
-                    <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${heroUrl}')` }} />
+                    /\.(mp4|webm|mov)$/i.test(heroUrl) ? (
+                        <video className="absolute inset-0 w-full h-full object-cover" src={heroUrl} autoPlay muted loop playsInline />
+                    ) : (
+                        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${heroUrl}')` }} />
+                    )
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-600" />
                 )}

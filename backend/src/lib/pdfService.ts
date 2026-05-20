@@ -91,6 +91,20 @@ function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
     return y + 18;
 }
 
+function drawPaymentRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
+    const leftX = 50;
+    const rightX = doc.page.width - 50;
+    const valColor = opts?.color || TEXT_DARK;
+
+    // Right-align both label and value for payment summary
+    doc.fontSize(10).fill(TEXT_MED).font("Helvetica")
+        .text(label, leftX, y, { width: (rightX - leftX) / 2 - 6, align: "right" });
+    doc.fontSize(10).fill(valColor).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
+        .text(value, leftX + (rightX - leftX) / 2 + 6, y, { width: (rightX - leftX) / 2 - 6, align: "right" });
+
+    return y + 18;
+}
+
 function drawSectionTitle(doc: PDFKit.PDFDocument, title: string, y: number, color: string = GOLD) {
     doc.fontSize(8).fill(color).font("Helvetica-Bold")
         .text(title.toUpperCase(), 50, y, { characterSpacing: 2 });
@@ -222,32 +236,32 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
 
         // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
-        y = drawRow(doc, "Base Price", fmtCurrency(booking.basePrice), y);
+        y = drawPaymentRow(doc, "Base Price", fmtCurrency(booking.basePrice), y);
         if ((booking as any).extraAdultCharge > 0) {
-            y = drawRow(doc, "Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge), y);
+            y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency((booking as any).extraAdultCharge), y);
         }
         if ((booking as any).extraKidsCharge > 0) {
-            y = drawRow(doc, "Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge), y);
+            y = drawPaymentRow(doc, "Extra Child Charge", fmtCurrency((booking as any).extraKidsCharge), y);
         }
         if (!(booking as any).extraAdultCharge && !(booking as any).extraKidsCharge && booking.extraPersonCharge > 0) {
-            y = drawRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
+            y = drawPaymentRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
         }
         if (booking.gstAmount > 0) {
-            y = drawRow(doc, "GST", fmtCurrency(booking.gstAmount), y);
+            y = drawPaymentRow(doc, "GST", fmtCurrency(booking.gstAmount), y);
         }
         if (booking.discountAmount > 0) {
-            y = drawRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
+            y = drawPaymentRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
         }
 
         // Gold line before total
         doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
-        y = drawRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
+        y = drawPaymentRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
         y = drawDivider(doc, y);
 
-        y = drawRow(doc, "Advance Paid", booking.amountPaid > 0 ? fmtCurrency(booking.amountPaid) : "Not yet paid", y,
+        y = drawPaymentRow(doc, "Advance Paid", booking.amountPaid > 0 ? fmtCurrency(booking.amountPaid) : "Not yet paid", y,
             { color: booking.amountPaid > 0 ? "#16a34a" : TEXT_MED });
-        y = drawRow(doc, "Balance Due at Venue", fmtCurrency(booking.amountToCollect || 0), y, { bold: true });
+        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(booking.amountToCollect || 0), y, { bold: true });
         y += 10;
 
         // Google Maps link
@@ -346,21 +360,23 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         }
         y = drawDivider(doc, y);
 
-        // Payment Summary — simplified: Total Room Price = room rates + GST combined
+        // Payment Summary — Total Room Price excludes GST and extra charges
         y = drawSectionTitle(doc, "Payment Summary", y);
         const storedExtraAdult = (booking as any).extraAdultCharge || 0;
         const storedExtraKids = (booking as any).extraKidsCharge || 0;
-        const roomOnlyTotal = (booking.basePrice || 0) - storedExtraAdult - storedExtraKids;
-        const totalRoomPrice = Math.max(0, roomOnlyTotal) + (booking.gstAmount || 0);
-        y = drawRow(doc, "Total Room Price", fmtCurrency(totalRoomPrice), y, { bold: true });
+        const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
+        y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(totalRoomPrice), y, { bold: true });
+        if ((booking.gstAmount || 0) > 0) {
+            y = drawPaymentRow(doc, "GST", fmtCurrency(booking.gstAmount), y);
+        }
         if (storedExtraAdult > 0) {
-            y = drawRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
+            y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
         }
         if (storedExtraKids > 0) {
-            y = drawRow(doc, "Extra Child Charge", fmtCurrency(storedExtraKids), y);
+            y = drawPaymentRow(doc, "Extra Child Charge", fmtCurrency(storedExtraKids), y);
         }
         if (!storedExtraAdult && !storedExtraKids && booking.extraPersonCharge > 0) {
-            y = drawRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
+            y = drawPaymentRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
         }
         // Add-on line items (e.g. Celebration Package)
         if (booking.addons && typeof booking.addons === "object") {
@@ -368,24 +384,24 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             for (const a of addonsData) {
                 if (a && a.name && a.price) {
                     const label = a.occasion ? `${a.name} (${a.occasion})` : a.name;
-                    y = drawRow(doc, label, fmtCurrency(a.price), y);
+                    y = drawPaymentRow(doc, label, fmtCurrency(a.price), y);
                 }
             }
         }
         if (booking.discountAmount > 0) {
-            y = drawRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
+            y = drawPaymentRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
         }
 
         doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
-        y = drawRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
+        y = drawPaymentRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
         y = drawDivider(doc, y);
 
-        y = drawRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(booking.advanceAmount) : "Not yet paid", y,
+        y = drawPaymentRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(booking.advanceAmount) : "Not yet paid", y,
             { color: booking.advancePaid ? "#16a34a" : TEXT_MED });
-        y = drawRow(doc, "Balance Due at Venue", fmtCurrency(booking.balanceAmount || 0), y, { bold: true });
+        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(booking.balanceAmount || 0), y, { bold: true });
         if (securityDeposit) {
-            y = drawRow(doc, "Security Deposit - Pay at Venue", securityDeposit, y);
+            y = drawPaymentRow(doc, "Security Deposit - Pay at Venue", securityDeposit, y);
         }
         y += 10;
 

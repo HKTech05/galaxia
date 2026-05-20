@@ -205,7 +205,19 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
     const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const bookNowUrl = `/staycation/${property.id}/book${calCheckIn ? `?checkIn=${fmtDate(calCheckIn)}` : ''}${calCheckOut ? `&checkOut=${fmtDate(calCheckOut)}` : ''}`;
 
+    const isAmbroseOrAmstel = property.id === 'ambrose' || property.id === 'amstel-nest';
+
     return (
+        <>
+        {/* Scrolling Announcement Bar — Ambrose & Amstel Nest only */}
+        {isAmbroseOrAmstel && (
+            <div style={{ background: '#dc2626', color: '#fff', overflow: 'hidden', whiteSpace: 'nowrap' as const, padding: '8px 0', fontSize: '13px', fontWeight: 600, letterSpacing: '0.3px', position: 'relative' as const, zIndex: 10 }}>
+                <div style={{ display: 'inline-block', animation: 'marquee 20s linear infinite' }}>
+                    ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                </div>
+                <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-33.33%); } }`}</style>
+            </div>
+        )}
         <div>
             <ImageSlideshow images={displayImages} alt={property.name} />
 
@@ -620,5 +632,6 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                 </section>
             )}
         </div>
+        </>
     );
 }

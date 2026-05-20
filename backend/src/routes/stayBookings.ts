@@ -930,7 +930,7 @@ router.get("/booked-dates", async (req, res) => {
             where: {
                 propertyId: parsedPropertyId,
                 ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
                 checkInDate: { lte: end },
                 checkOutDate: { gte: start },
             },
@@ -1240,6 +1240,138 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
         return res.json({ success: true, deletedRef: bookingRef });
     } catch (error) {
         console.error("Delete staycation booking error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── POST /api/bookings/staycation/:id/transfer ─── Transfer booking to new dates with ₹1000 fee
+router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        const { newCheckIn, newCheckOut, newPropertyId, newSubPropertyId } = req.body;
+        const TRANSFER_FEE = 1000;
+
+        if (!newCheckIn || !newCheckOut) {
+            return res.status(400).json({ error: "newCheckIn and newCheckOut are required" });
+        }
+
+        const original = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId },
+            include: { property: true, subProperty: true },
+        });
+        if (!original) return res.status(404).json({ error: "Booking not found" });
+        if (original.status === "transferred") return res.status(400).json({ error: "Booking already transferred" });
+
+        // Generate unique transfer booking ref
+        const crypto = require("crypto");
+        const today = new Date();
+        const datePrefix = `ST-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+        const randomSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
+        const newRef = `${datePrefix}-T${randomSuffix}`;
+
+        // Calculate nights for new dates
+        const ciDate = new Date(newCheckIn + "T00:00:00");
+        const coDate = new Date(newCheckOut + "T00:00:00");
+        const newNights = Math.max(1, Math.round((coDate.getTime() - ciDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+        // Build transfer metadata in addons JSON
+        const origCheckIn = original.checkInDate.toISOString().slice(0, 10);
+        const origCheckOut = original.checkOutDate.toISOString().slice(0, 10);
+        const origAddons = (original.addons && typeof original.addons === 'object') ? original.addons : [];
+        const transferInfo = {
+            fromRef: original.bookingRef,
+            fromCheckIn: origCheckIn,
+            fromCheckOut: origCheckOut,
+            fromProperty: original.property?.name || '',
+            fee: TRANSFER_FEE,
+            transferDate: new Date().toISOString(),
+        };
+
+        // Determine target property/sub-property
+        const targetPropertyId = newPropertyId ? parseInt(newPropertyId) : original.propertyId;
+        const targetSubPropertyId = newSubPropertyId !== undefined
+            ? (newSubPropertyId ? parseInt(newSubPropertyId) : null)
+            : original.subPropertyId;
+
+        const { newBooking } = await prisma.$transaction(async (tx) => {
+            // Create new booking with same details + ₹1000 transfer fee
+            const created = await tx.staycationBooking.create({
+                data: {
+                    bookingRef: newRef,
+                    propertyId: targetPropertyId,
+                    subPropertyId: targetSubPropertyId,
+                    customerName: original.customerName,
+                    customerPhone: original.customerPhone,
+                    customerEmail: original.customerEmail,
+                    userId: original.userId,
+                    numGuests: original.numGuests,
+                    numKids: original.numKids,
+                    numPets: original.numPets,
+                    numCottages: original.numCottages,
+                    checkInDate: ciDate,
+                    checkOutDate: coDate,
+                    numNights: newNights,
+                    nightlyRate: original.nightlyRate,
+                    basePrice: original.basePrice,
+                    extraPersonCharge: original.extraPersonCharge,
+                    extraAdultCharge: original.extraAdultCharge,
+                    extraKidsCharge: original.extraKidsCharge,
+                    gstAmount: original.gstAmount,
+                    totalAmount: original.totalAmount + TRANSFER_FEE,
+                    advanceAmount: original.advanceAmount,
+                    balanceAmount: original.balanceAmount + TRANSFER_FEE,
+                    securityDeposit: original.securityDeposit,
+                    advancePaid: original.advancePaid,
+                    advanceMethod: original.advanceMethod,
+                    advancePaidAt: original.advancePaidAt,
+                    status: "confirmed",
+                    source: original.source || "website",
+                    isAdminBooking: true,
+                    couponId: original.couponId,
+                    discountAmount: original.discountAmount,
+                    createdBy: req.admin!.id,
+                    addons: Array.isArray(origAddons)
+                        ? [...(origAddons as any[]), { transferInfo }]
+                        : [origAddons, { transferInfo }],
+                },
+            });
+
+            // Mark original as transferred
+            await tx.staycationBooking.update({
+                where: { id: bookingId },
+                data: {
+                    status: "transferred",
+                    addons: Array.isArray(origAddons)
+                        ? [...(origAddons as any[]), { transferredTo: newRef }]
+                        : [origAddons, { transferredTo: newRef }],
+                },
+            });
+
+            return { newBooking: created };
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                adminId: req.admin!.id,
+                action: "transfer_booking",
+                entityType: "staycation_booking",
+                entityId: bookingId,
+                details: {
+                    originalRef: original.bookingRef,
+                    newRef,
+                    newCheckIn,
+                    newCheckOut,
+                    transferFee: TRANSFER_FEE,
+                    newPropertyId: targetPropertyId,
+                    newSubPropertyId: targetSubPropertyId,
+                },
+                isDeveloper: req.admin!.role === "developer",
+            },
+        });
+
+        return res.json({ original: { id: bookingId, status: "transferred" }, newBooking });
+    } catch (error) {
+        console.error("Transfer staycation booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

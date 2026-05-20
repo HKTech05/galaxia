@@ -64,6 +64,7 @@ export default function BookMultiPage() {
         email: "",
         phone: "",
         agreedToTerms: false,
+        agreedToMenu: false,
     });
 
     // ID upload
@@ -195,6 +196,29 @@ export default function BookMultiPage() {
                 setNights(Math.ceil((co.getTime() - ci.getTime()) / (1000 * 60 * 60 * 24)));
             }
         }
+    }, []);
+
+    // Listen for Cognito popup success (auto-refresh after Google sign-in)
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data === "COGNITO_LOGIN_SUCCESS") {
+                setShowLoginPrompt(false);
+                const userStr = localStorage.getItem("galaxia_user");
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        setFormData(prev => ({
+                            ...prev,
+                            email: user.email || "",
+                            phone: user.phone || ""
+                        }));
+                        setCurrentStep(2);
+                    } catch (e) {}
+                }
+            }
+        };
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
     }, []);
 
     // Fetch DB IDs for all properties in cart
@@ -638,7 +662,7 @@ export default function BookMultiPage() {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.firstName || !formData.phone || !formData.agreedToTerms) return;
+        if (!formData.firstName || !formData.phone || !formData.agreedToTerms || !formData.agreedToMenu) return;
         if (!idFile) { setIdError("Government ID is required"); return; }
         setCurrentStep(3);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -869,6 +893,13 @@ export default function BookMultiPage() {
 
     return (
         <>
+        {/* Scrolling Announcement Bar */}
+        <div style={{ background: '#dc2626', color: '#fff', overflow: 'hidden', whiteSpace: 'nowrap', padding: '8px 0', fontSize: '13px', fontWeight: 600, letterSpacing: '0.3px', position: 'relative', zIndex: 10 }}>
+            <div style={{ display: 'inline-block', animation: 'marquee 20s linear infinite' }}>
+                ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+            </div>
+            <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-33.33%); } }`}</style>
+        </div>
         <div className="min-h-screen bg-[#FDFCF9] pb-24 relative z-0">
             <main className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-14">
                 {/* Steps */}
@@ -927,7 +958,7 @@ export default function BookMultiPage() {
                                 saturdayPrice={hasAmstelOnly ? undefined : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
                                 dateOverrides={{}}
                                 hidePrice={hasMixedPrices}
-                                totalUnits={hasAmstelOnly ? 15 : undefined}
+                                totalUnits={hasAmstelOnly ? 14 : undefined}
                                 initialCheckIn={checkInDate}
                                 initialCheckOut={checkOutDate}
                             />
@@ -1380,6 +1411,10 @@ export default function BookMultiPage() {
                                 <label className="flex items-start gap-3 mt-6 cursor-pointer">
                                     <input type="checkbox" required checked={formData.agreedToTerms} onChange={(e) => setFormData({ ...formData, agreedToTerms: e.target.checked })} className="mt-1 accent-[#C4A265] w-4 h-4" />
                                     <span className="text-text-secondary font-inter text-xs leading-relaxed">I agree to the booking terms, cancellation policy, and property rules for all selected villas.</span>
+                                </label>
+                                <label className="flex items-start gap-3 mt-3 cursor-pointer">
+                                    <input type="checkbox" required checked={formData.agreedToMenu} onChange={(e) => setFormData({ ...formData, agreedToMenu: e.target.checked })} className="mt-1 accent-[#C4A265] w-4 h-4" />
+                                    <span className="text-text-secondary font-inter text-xs leading-relaxed">I understand that no changes or customizations <strong>can be made</strong> to the menu; only the listed food items will be served.</span>
                                 </label>
                                 <div className="flex gap-3 mt-8">
                                     <button type="button" onClick={() => { setCurrentStep(1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="px-6 py-3 border border-border-medium text-text-primary font-inter text-sm rounded-lg hover:bg-soft-gray transition-colors">Back</button>

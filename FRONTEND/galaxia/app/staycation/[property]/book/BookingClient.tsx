@@ -193,7 +193,8 @@ export default function BookingClient({ property }: BookingClientProps) {
         phone: "",
         gst: "",
         aadhaarFile: null as File | null,
-        agreedToTerms: false
+        agreedToTerms: false,
+        agreedToMenu: false
     });
     const [idProofError, setIdProofError] = useState("");
 
@@ -671,6 +672,10 @@ export default function BookingClient({ property }: BookingClientProps) {
             alert("Please agree to the Privacy Policy and Terms & Conditions");
             return;
         }
+        if ((isAmbrose || isAmstelNest) && !formData.agreedToMenu) {
+            alert("Please agree to the menu policy");
+            return;
+        }
         if (!formData.aadhaarFile) {
             alert("Please upload a Valid ID Proof");
             return;
@@ -832,6 +837,16 @@ export default function BookingClient({ property }: BookingClientProps) {
     };
 
     return (
+        <>
+        {/* Scrolling Announcement Bar — Ambrose & Amstel Nest only */}
+        {(isAmbrose || isAmstelNest) && (
+            <div style={{ background: '#dc2626', color: '#fff', overflow: 'hidden', whiteSpace: 'nowrap', padding: '8px 0', fontSize: '13px', fontWeight: 600, letterSpacing: '0.3px', position: 'relative', zIndex: 10 }}>
+                <div style={{ display: 'inline-block', animation: 'marquee 20s linear infinite' }}>
+                    ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No changes or customizations will be made to the menu; only the listed food items will be served. &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                </div>
+                <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-33.33%); } }`}</style>
+            </div>
+        )}
         <div className="min-h-screen bg-[#FDFCF9] pb-24">
 
             <main className={`mx-auto px-4 sm:px-6 pt-10 sm:pt-14 ${currentStep === 3 ? 'max-w-7xl' : 'max-w-[1100px]'}`}>
@@ -1399,6 +1414,16 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         </label>
                                     </div>
 
+                                    {/* Menu Policy Checkbox — Ambrose & Amstel Nest */}
+                                    {(isAmbrose || isAmstelNest) && (
+                                        <div className="flex items-start gap-3 mb-8">
+                                            <input type="checkbox" id="menu-policy" className="mt-0.5 border-border-medium rounded-sm text-antique-gold focus:ring-antique-gold focus:ring-offset-0 bg-transparent w-4 h-4 cursor-pointer" checked={formData.agreedToMenu} onChange={(e) => setFormData({ ...formData, agreedToMenu: e.target.checked })} />
+                                            <label htmlFor="menu-policy" className="font-inter text-xs text-text-secondary cursor-pointer leading-relaxed">
+                                                I understand that no changes or customizations <strong>can be made</strong> to the menu; only the listed food items will be served.
+                                            </label>
+                                        </div>
+                                    )}
+
                                     <div className="hidden sm:flex justify-between items-center border-t border-border-light pt-6 mt-6">
                                         <button type="button" onClick={() => setCurrentStep(1)} className="font-inter text-xs tracking-wider uppercase text-text-secondary hover:text-text-primary px-4 py-2">Back</button>
                                         <button type="submit" className="bg-[#2A2A2A] text-white px-8 py-3 text-xs font-inter uppercase tracking-widest hover:bg-black transition-colors">Proceed to Payment</button>
@@ -1661,5 +1686,6 @@ export default function BookingClient({ property }: BookingClientProps) {
                 />
             )}
         </div>
+        </>
     );
 }
