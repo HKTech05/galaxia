@@ -93,12 +93,12 @@ function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
 
 function drawPaymentRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
     const leftX = 50;
-    const rightX = doc.page.width - 50;
     const valColor = opts?.color || TEXT_DARK;
+    const valueColumnWidth = 330; // narrower so prices sit closer to labels
 
     doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
     doc.fontSize(10).fill(valColor).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
-        .text(value, leftX, y, { width: rightX - leftX, align: "right" });
+        .text(value, leftX, y, { width: valueColumnWidth, align: "right" });
 
     return y + 18;
 }
