@@ -22,7 +22,8 @@ import {
     Star,
     ClipboardList,
     Smartphone,
-    FileText
+    FileText,
+    ScrollText
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -40,6 +41,7 @@ const navigationParams = [
 const admin3TopItems = [
     { name: "Dashboard", href: "/admin3", icon: LayoutDashboard },
     { name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList },
+    { name: "Quotation", href: "/admin3/quotation", icon: ScrollText },
     { name: "Photo Manager", href: "/admin3/website-view", icon: Globe },
 ];
 
@@ -188,6 +190,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                 <>
                                     {renderNavItem(admin3TopItems[0])}
                                     {renderNavItem(admin3TopItems[1])}
+                                    {renderNavItem(admin3TopItems[2])}
                                 </>
                             )}
 
@@ -219,7 +222,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             )}
 
                             {/* Owner/Dev only: Website */}
-                            {hasFullAccess && renderNavItem(admin3TopItems[2])}
+                            {hasFullAccess && renderNavItem(admin3TopItems[3])}
 
                             {/* Receptionist Section */}
                             {hasFullAccess ? (

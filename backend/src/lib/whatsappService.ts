@@ -103,6 +103,66 @@ export async function sendWhatsAppMessage(chatbot: ChatbotId, phone: string, mes
 }
 
 /**
+ * Send a document (e.g. PDF) via a specific chatbot's WhatsApp number.
+ * The document must be publicly accessible via URL.
+ */
+export async function sendWhatsAppDocument(
+    chatbot: ChatbotId,
+    phone: string,
+    documentUrl: string,
+    filename: string,
+    caption?: string
+): Promise<boolean> {
+    const config = getChatbotConfig(chatbot);
+    if (!config) return false;
+
+    const waPhone = normalizePhone(phone);
+    const bare = waPhone.startsWith("+") ? waPhone.substring(1) : waPhone;
+
+    try {
+        const body: any = {
+            messaging_product: "whatsapp",
+            to: bare,
+            type: "document",
+            document: {
+                link: documentUrl,
+                filename,
+            },
+        };
+        if (caption) body.document.caption = caption;
+
+        const res = await fetch(`https://graph.facebook.com/v21.0/${config.phoneNumberId}/messages`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${config.token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+            const errBody = await res.text();
+            console.error(`[WhatsApp:${chatbot}] Document send failed:`, res.status, errBody);
+            return false;
+        }
+
+        const data: any = await res.json();
+        console.log(`[WhatsApp:${chatbot}] Document sent to ${bare}:`, data.messages?.[0]?.id);
+
+        try {
+            await logConfirmationToChat(config.phoneNumberId, bare, `[PDF] ${filename}${caption ? ': ' + caption : ''}`, false);
+        } catch (dbErr: any) {
+            console.warn(`[WhatsApp:${chatbot}] Failed to log doc to chat DB:`, dbErr.message);
+        }
+
+        return true;
+    } catch (err: any) {
+        console.error(`[WhatsApp:${chatbot}] Document error:`, err.message);
+        return false;
+    }
+}
+
+/**
  * Log a sent confirmation message to the chatbot's chat_sessions/chat_messages tables.
  * This ensures the confirmation shows up in the chatbot dashboard.
  */

@@ -185,6 +185,9 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [pets, setPets] = useState(0);
     const PET_CHARGE = 600; // ₹600 per pet per stay
 
+    // Quotation ref badge
+    const [quoteRef, setQuoteRef] = useState("");
+
     // Form state
     const [formData, setFormData] = useState({
         firstName: "",
@@ -207,6 +210,18 @@ export default function BookingClient({ property }: BookingClientProps) {
     const CELEBRATION_ADDON_PRICE = 1200;
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
     const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
+
+    // Pre-fill from quotation URL params (adults, kids, foodType, ref)
+    useEffect(() => {
+        const a = searchParams.get("adults");
+        if (a) { const n = parseInt(a); if (!isNaN(n) && n >= 1) setAdults(n); }
+        const k = searchParams.get("kids");
+        if (k) { const n = parseInt(k); if (!isNaN(n) && n >= 0) setKids(n); }
+        const ft = searchParams.get("foodType");
+        if (ft === "Jain") setFoodType("Jain");
+        const ref = searchParams.get("ref");
+        if (ref) setQuoteRef(ref);
+    }, [searchParams]);
 
     // Amstel Nest multi-unit cart state
     const [unitCount, setUnitCount] = useState(1);
