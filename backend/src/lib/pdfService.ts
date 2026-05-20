@@ -92,17 +92,13 @@ function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
 }
 
 function drawPaymentRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
+    const leftX = 50;
     const rightX = doc.page.width - 50;
     const valColor = opts?.color || TEXT_DARK;
-    const valWidth = 90; // fixed width for amount column
-    const labelRight = rightX - valWidth - 8; // label ends here, 8px gap before value
 
-    // Label right-aligned, ending just before the value
-    doc.fontSize(10).fill(TEXT_MED).font("Helvetica")
-        .text(label, 50, y, { width: labelRight - 50, align: "right" });
-    // Value right-aligned in a fixed-width column at the far right
+    doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
     doc.fontSize(10).fill(valColor).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
-        .text(value, rightX - valWidth, y, { width: valWidth, align: "right" });
+        .text(value, leftX, y, { width: rightX - leftX, align: "right" });
 
     return y + 18;
 }
@@ -362,15 +358,12 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         }
         y = drawDivider(doc, y);
 
-        // Payment Summary — Total Room Price excludes GST and extra charges
+        // Payment Summary — Total Room Price includes GST (basePrice - extra charges)
         y = drawSectionTitle(doc, "Payment Summary", y);
         const storedExtraAdult = (booking as any).extraAdultCharge || 0;
         const storedExtraKids = (booking as any).extraKidsCharge || 0;
         const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
         y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(totalRoomPrice), y, { bold: true });
-        if ((booking.gstAmount || 0) > 0) {
-            y = drawPaymentRow(doc, "GST", fmtCurrency(booking.gstAmount), y);
-        }
         if (storedExtraAdult > 0) {
             y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
         }

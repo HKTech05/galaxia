@@ -86,11 +86,14 @@ export default function BulkBookingsTab() {
                             if (spP) {
                                 const spWd = spP.weekday; const spWe = spP.weekend; const spSa = spP.saturday;
                                 const key = sp.name.toLowerCase().includes("family") ? "family" : "standard";
+                                const fallbackWd = key === "family" ? 9000 : 4950;
+                                const fallbackWe = key === "family" ? 9000 : 6950;
+                                const fallbackGuests = key === "family" ? 4 : 2;
                                 pm[key] = {
-                                    weekday: spWd ? parseInt(spWd.price) : 4950, weekend: spWe ? parseInt(spWe.price) : 6950,
-                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : 6950),
-                                    extraAdult: spWd?.extraAdult || 1000, kidsCharge: 1000,
-                                    baseGuests: spWd?.personsLabel ? parseInt(spWd.personsLabel) || 2 : 2,
+                                    weekday: spWd ? parseInt(spWd.price) : fallbackWd, weekend: spWe ? parseInt(spWe.price) : fallbackWe,
+                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : fallbackWe),
+                                    extraAdult: spWd?.extraAdult || (key === "family" ? 2000 : 1000), kidsCharge: 1000,
+                                    baseGuests: spWd?.personsLabel ? parseInt(spWd.personsLabel) || fallbackGuests : fallbackGuests,
                                 };
                             }
                         }
@@ -219,7 +222,7 @@ export default function BulkBookingsTab() {
             if (lp) {
                 basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             } else {
-                basePrice = isWeekend ? 6950 : 4950;
+                basePrice = cottageType === "family" ? 9000 : (isWeekend ? 6950 : 4950);
             }
             const baseGuestsPerUnit = lp?.baseGuests || 2;
             const extraAdults = Math.max(0, adults - baseGuestsPerUnit * (bulkForm.numCottages || 1));

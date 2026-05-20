@@ -61,10 +61,8 @@ function paymentRow(label: string, value: string, opts?: { bold?: boolean; color
     const valWeight = opts?.bold ? "700" : "500";
     const valColor = opts?.color || TEXT_DARK;
     return `<tr>
-        <td colspan="2" style="${tdStyle} text-align: right;">
-            <span style="color: ${TEXT_MED}; font-size: 13px; letter-spacing: 0.3px; margin-right: 10px;">${label}</span>
-            <span style="font-weight: ${valWeight}; color: ${valColor}; font-size: 14px; font-family: 'Times New Roman', Times, serif; display: inline-block; min-width: 80px; text-align: right;">${value}</span>
-        </td>
+        <td style="${tdStyle} color: ${TEXT_MED}; font-size: 13px; letter-spacing: 0.3px;">${label}</td>
+        <td style="${tdStyle} text-align: right; font-weight: ${valWeight}; color: ${valColor}; font-size: 14px; font-family: 'Times New Roman', Times, serif;">${value}</td>
     </tr>`;
 }
 
@@ -190,13 +188,12 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${(() => {
-                    // Compute room-only total (exclude extra charges and GST)
+                    // Total Room Price = basePrice - extra charges (basePrice already includes GST)
                     const storedExtraAdult = (booking as any).extraAdultCharge || 0;
                     const storedExtraKids = (booking as any).extraKidsCharge || 0;
                     const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
                     return paymentRow("Total Room Price", fmtCurrency(totalRoomPrice), { bold: true });
                 })()}
-                ${(booking.gstAmount || 0) > 0 ? paymentRow("GST", fmtCurrency(booking.gstAmount)) : ""}
                 ${(() => {
                     const storedExtraAdult = (booking as any).extraAdultCharge || 0;
                     const storedExtraKids = (booking as any).extraKidsCharge || 0;

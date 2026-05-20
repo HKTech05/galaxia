@@ -297,6 +297,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [manualAppliedCoupon, setManualAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
     const [manualCouponError, setManualCouponError] = useState("");
     const [manualCouponLoading, setManualCouponLoading] = useState(false);
+    const [manualDiscountAmount, setManualDiscountAmount] = useState(0);
 
     const isAmbroseOrAmstel = manualForm.property.includes("Ambrose") || manualForm.property.includes("Amstel");
 
@@ -394,6 +395,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         let finalTotal = baseAmount + gstAmount;
         // Add pet charges (₹600/pet flat — no GST)
         finalTotal += manualForm.pets * 600;
+        // Subtract admin discount (from total including taxes)
+        finalTotal = Math.max(0, finalTotal - manualDiscountAmount);
         // Round to nearest 10
         finalTotal = Math.round(finalTotal / 10) * 10;
         return {
@@ -498,6 +501,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             setManualCouponCode("");
             setManualAppliedCoupon(null);
             setManualCouponError("");
+            setManualDiscountAmount(0);
         } catch (err: any) {
             alert(err?.message || err?.error || "Failed to create manual booking");
         }
@@ -1471,6 +1475,32 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     )}
                                     {manualCouponError && <p className="text-xs text-red-500 font-bold mt-1">{manualCouponError}</p>}
+                                </div>
+
+                                {/* Admin Discount */}
+                                <div className="border border-dashed border-purple-200 rounded-xl p-3 bg-purple-50/50">
+                                    <label className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-1.5 block">Admin Discount (₹)</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={manualDiscountAmount || ""}
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                                                    setManualDiscountAmount(val);
+                                                }}
+                                                placeholder="0"
+                                                className="w-full pl-8 pr-3 py-2 border border-purple-200 rounded-lg text-sm font-bold text-purple-800 focus:ring-2 focus:ring-purple-500/20 outline-none bg-white"
+                                            />
+                                        </div>
+                                        {manualDiscountAmount > 0 && (
+                                            <button onClick={() => setManualDiscountAmount(0)} className="p-2 text-purple-400 hover:text-purple-600 hover:bg-purple-100 rounded-lg transition-colors">
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Payment Split Mode */}
