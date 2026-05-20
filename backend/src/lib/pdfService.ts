@@ -92,15 +92,17 @@ function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
 }
 
 function drawPaymentRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
-    const leftX = 50;
     const rightX = doc.page.width - 50;
     const valColor = opts?.color || TEXT_DARK;
+    const valWidth = 90; // fixed width for amount column
+    const labelRight = rightX - valWidth - 8; // label ends here, 8px gap before value
 
-    // Right-align both label and value for payment summary
+    // Label right-aligned, ending just before the value
     doc.fontSize(10).fill(TEXT_MED).font("Helvetica")
-        .text(label, leftX, y, { width: (rightX - leftX) / 2 - 6, align: "right" });
+        .text(label, 50, y, { width: labelRight - 50, align: "right" });
+    // Value right-aligned in a fixed-width column at the far right
     doc.fontSize(10).fill(valColor).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
-        .text(value, leftX + (rightX - leftX) / 2 + 6, y, { width: (rightX - leftX) / 2 - 6, align: "right" });
+        .text(value, rightX - valWidth, y, { width: valWidth, align: "right" });
 
     return y + 18;
 }

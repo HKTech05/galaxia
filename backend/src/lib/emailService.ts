@@ -61,8 +61,10 @@ function paymentRow(label: string, value: string, opts?: { bold?: boolean; color
     const valWeight = opts?.bold ? "700" : "500";
     const valColor = opts?.color || TEXT_DARK;
     return `<tr>
-        <td style="${tdStyle} text-align: right; color: ${TEXT_MED}; font-size: 13px; letter-spacing: 0.3px; padding-right: 12px;">${label}</td>
-        <td style="${tdStyle} text-align: right; font-weight: ${valWeight}; color: ${valColor}; font-size: 14px; font-family: 'Times New Roman', Times, serif;">${value}</td>
+        <td colspan="2" style="${tdStyle} text-align: right;">
+            <span style="color: ${TEXT_MED}; font-size: 13px; letter-spacing: 0.3px; margin-right: 10px;">${label}</span>
+            <span style="font-weight: ${valWeight}; color: ${valColor}; font-size: 14px; font-family: 'Times New Roman', Times, serif; display: inline-block; min-width: 80px; text-align: right;">${value}</span>
+        </td>
     </tr>`;
 }
 
