@@ -147,18 +147,20 @@ export default function StaycationPage() {
                 />
                 {/* Bluish tint overlay */}
                 <div className="absolute inset-0" style={{ zIndex: 1, background: 'linear-gradient(to bottom, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0.15) 40%, rgba(15,23,42,0.45) 100%)' }} />
-                {/* Soft blurred bottom edge for diffused transition */}
-                <div className="absolute bottom-0 left-0 right-0 h-24" style={{ zIndex: 2, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', maskImage: 'linear-gradient(to bottom, transparent, black)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black)' }} />
+                {/* Soft blurred bottom edge — reduced 50% */}
+                <div className="absolute bottom-0 left-0 right-0 h-12" style={{ zIndex: 2, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', maskImage: 'linear-gradient(to bottom, transparent, black)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black)' }} />
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-4 sm:px-6">
                     <p className="text-amber-300 font-inter text-xs tracking-[0.3em] uppercase mb-4 animate-fade-in-up">Galaxia Staycation</p>
                     <h1 className="font-cinzel text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>Luxury Escapes</h1>
-                    <p className="font-cinzel text-base sm:text-lg md:text-xl text-amber-200 mb-2 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>Handpicked Villas & Resorts</p>
+                    <p className="font-cinzel text-base sm:text-lg md:text-xl text-amber-200 mb-2 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>Handpicked Villas &amp; Resorts</p>
                     <div className="w-20 h-[1px] bg-gradient-to-r from-transparent via-amber-300 to-transparent my-4 animate-fade-in-up" style={{ animationDelay: "0.4s" }} />
                     <p className="text-white/80 font-inter text-xs sm:text-sm md:text-base max-w-2xl leading-relaxed animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
                         Discover our collection of exclusive properties nestled in the serene landscapes of Karjat.
                     </p>
                 </div>
             </section>
+            {/* External diffused blender — soft fade from video edge into page */}
+            <div className="relative -mt-1" style={{ height: '48px', background: 'linear-gradient(to bottom, rgba(15,23,42,0.5) 0%, rgba(15,23,42,0.2) 40%, transparent 100%)', filter: 'blur(4px)' }} />
 
             {/* Properties */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
