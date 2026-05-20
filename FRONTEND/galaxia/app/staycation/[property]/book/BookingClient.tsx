@@ -597,8 +597,11 @@ export default function BookingClient({ property }: BookingClientProps) {
         });
         setNightlyRate(initialPrice);
         if (!nights) setNights(1);
-        setAdults(1);
-        setKids(0);
+        // Preserve URL param values for adults/kids (from quotation pre-fill links)
+        const urlAdults = searchParams.get("adults");
+        const urlKids = searchParams.get("kids");
+        setAdults(urlAdults ? Math.max(1, parseInt(urlAdults) || 1) : 1);
+        setKids(urlKids ? Math.max(0, parseInt(urlKids) || 0) : 0);
         
         const token = localStorage.getItem("galaxia_token");
         if (!token) {

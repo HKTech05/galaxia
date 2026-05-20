@@ -3,14 +3,14 @@
 // ───────────────────────────────────────────────────────────────
 
 import { Router, Request, Response } from "express";
-import PDFDocument from "pdfkit";
 import prisma from "../lib/prisma";
 import { sendWhatsAppMessage, sendWhatsAppDocument } from "../lib/whatsappService";
+import { generateQuotationPDF } from "../lib/pdfService";
 
 const router = Router();
 
 // In-memory store for generated PDFs (cleared after 7 days)
-const pdfStore = new Map<string, { buffer: Buffer; createdAt: number; data: any }>();
+const pdfStore = new Map<string, { buffer: Buffer; createdAt: number; data: any; pricing: any; bookingUrl: string }>();
 
 // Clean up old PDFs every hour
 setInterval(() => {
@@ -111,7 +111,7 @@ function calculateQuotePrice(data: {
         let kidsPrice = 0;
         let baseGuests = 2;
 
-        // Look up live pricing (same key logic as frontend)
+        // Key lookup (same as frontend)
         let liveKey = "";
         const prop = data.propertyName;
         if (prop.includes("Ambrose") && data.villaName) {
@@ -184,130 +184,43 @@ function calculateQuotePrice(data: {
     };
 }
 
-// ── PDF Generation ──
+// ── Build booking URL ──
+function buildBookingUrl(data: {
+    propertyName: string; villaName?: string;
+    checkIn: string; checkOut: string;
+    adults: number; kids: number; jainCount: number;
+    quoteId: string;
+}): string {
+    const propertySlugMap: Record<string, string> = {
+        "Hill View": "hill-view",
+        "Mount View": "mount-view",
+        "Heavenly Villa": "heavenly-villa",
+        "La Paraiso": "la-paraiso",
+        "Amstel Nest": "amstel-nest",
+        "Ambrose": "ambrose",
+    };
 
-function generateQuotationPDF(data: any, pricing: any): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        const doc = new PDFDocument({ size: "A4", margin: 50 });
-        const chunks: Buffer[] = [];
-        doc.on("data", (c: Buffer) => chunks.push(c));
-        doc.on("end", () => resolve(Buffer.concat(chunks)));
-        doc.on("error", reject);
+    const slug = propertySlugMap[data.propertyName] || data.propertyName.toLowerCase().replace(/\s+/g, "-");
+    const isMultiCart = data.propertyName.includes("Amstel") || data.propertyName.includes("Ambrose");
 
-        const GOLD = "#C5A55A";
-        const TEXT_DARK = "#1e293b";
-        const TEXT_MED = "#64748b";
-        const pageW = doc.page.width;
-        const leftX = 50;
-        const rightX = pageW - 50;
+    // For Amstel/Ambrose: link to property page (multi-cart flow), not /book
+    // For other properties: link to /book page directly
+    let bookingPath: string;
+    if (isMultiCart) {
+        bookingPath = `/staycation/${slug}`;
+    } else {
+        bookingPath = `/staycation/${slug}/book`;
+    }
 
-        // ── Header
-        doc.rect(0, 0, pageW, 100).fill("#0f172a");
-        doc.fontSize(26).fill("#ffffff").font("Helvetica-Bold")
-            .text("GALAXIA", leftX, 30, { width: rightX - leftX });
-        doc.fontSize(10).fill(GOLD).font("Helvetica")
-            .text("STAYCATION QUOTATION", leftX, 62, { width: rightX - leftX });
+    const params = new URLSearchParams();
+    params.set("checkIn", data.checkIn);
+    params.set("checkOut", data.checkOut);
+    if (data.adults > 2) params.set("adults", String(data.adults));
+    if (data.kids > 0) params.set("kids", String(data.kids));
+    if (data.jainCount > 0) params.set("foodType", "Jain");
+    params.set("ref", data.quoteId);
 
-        let y = 120;
-
-        // ── Quote info bar
-        doc.rect(leftX, y, rightX - leftX, 30).fill("#f8fafc").stroke("#e2e8f0");
-        doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
-        doc.text(`Quote ID: ${data.quoteId}`, leftX + 10, y + 10);
-        doc.text(`Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, rightX - 150, y + 10);
-        y += 45;
-
-        // ── Customer Details
-        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("GUEST DETAILS", leftX, y);
-        y += 18;
-        doc.moveTo(leftX, y - 3).lineTo(rightX, y - 3).strokeColor(GOLD).lineWidth(1.5).stroke();
-
-        const detailRow = (label: string, value: string) => {
-            doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
-            doc.fontSize(10).fill(TEXT_DARK).font("Helvetica-Bold").text(value, leftX + 150, y);
-            y += 18;
-        };
-
-        detailRow("Name", data.customerName);
-        if (data.customerPhone) detailRow("Phone", data.customerPhone);
-        if (data.customerEmail) detailRow("Email", data.customerEmail);
-        y += 8;
-
-        // ── Stay Details
-        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("STAY DETAILS", leftX, y);
-        y += 18;
-        doc.moveTo(leftX, y - 3).lineTo(rightX, y - 3).strokeColor(GOLD).lineWidth(1.5).stroke();
-
-        detailRow("Property", data.propertyName);
-        if (data.villaName) detailRow("Villa / Cottage", data.villaName);
-
-        const fmtDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-        detailRow("Check-in", fmtDate(data.checkIn));
-        detailRow("Check-out", fmtDate(data.checkOut));
-        detailRow("Nights", `${pricing.nights}`);
-        detailRow("Adults", `${data.adults}`);
-        if (data.kids > 0) detailRow("Kids", `${data.kids}`);
-        if (data.pets > 0) detailRow("Pets", `${data.pets}`);
-        if (data.foodType) detailRow("Food Preference", data.foodType);
-        if (data.jainCount > 0) detailRow("Jain Meals", `${data.jainCount}`);
-        if (data.regularCount > 0) detailRow("Regular Meals", `${data.regularCount}`);
-        y += 8;
-
-        // ── Payment Summary
-        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("PAYMENT SUMMARY", leftX, y);
-        y += 18;
-        doc.moveTo(leftX, y - 3).lineTo(rightX, y - 3).strokeColor(GOLD).lineWidth(1.5).stroke();
-
-        const fmtCurrency = (n: number) => `Rs.${n.toLocaleString("en-IN")}`;
-        const payRow = (label: string, value: string, opts?: { bold?: boolean; color?: string }) => {
-            doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
-            doc.fontSize(10).fill(opts?.color || TEXT_DARK).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
-                .text(value, leftX, y, { width: 220, align: "right" });
-            y += 18;
-        };
-
-        payRow("Room Total", fmtCurrency(pricing.roomTotal));
-        if (pricing.extraAdultCharge > 0) payRow("Extra Adult Charges", fmtCurrency(pricing.extraAdultCharge));
-        if (pricing.extraKidsCharge > 0) payRow("Extra Kids Charges", fmtCurrency(pricing.extraKidsCharge));
-        if (pricing.decorationCharge > 0) payRow("Celebration Add-on", fmtCurrency(pricing.decorationCharge));
-        payRow("Subtotal", fmtCurrency(pricing.subtotal), { bold: true });
-        payRow("GST (5%)", fmtCurrency(pricing.gstAmount));
-        if (pricing.petCharge > 0) payRow("Pet Charges", fmtCurrency(pricing.petCharge));
-
-        doc.moveTo(leftX, y).lineTo(leftX + 220, y).strokeColor(GOLD).lineWidth(1).stroke();
-        y += 8;
-        payRow("Grand Total", fmtCurrency(pricing.totalAmount), { bold: true, color: "#059669" });
-
-        y += 15;
-
-        // ── Nightly rate info
-        doc.rect(leftX, y, rightX - leftX, 28).fill("#f0fdf4").stroke("#bbf7d0");
-        doc.fontSize(9).fill("#166534").font("Helvetica-Bold")
-            .text(`Average Nightly Rate: ${fmtCurrency(pricing.nightlyRoomRate)} per night`, leftX + 12, y + 8);
-        y += 45;
-
-        // ── Terms
-        doc.fontSize(8).fill(TEXT_MED).font("Helvetica")
-            .text("• This quotation is valid for 7 days from the date of issue.", leftX, y);
-        y += 14;
-        doc.text("• Prices are subject to change based on availability.", leftX, y);
-        y += 14;
-        doc.text("• Check-in: 1:00 PM | Check-out: 10:00 AM", leftX, y);
-        y += 14;
-        doc.text("• Security deposit is collected at venue and refunded at checkout.", leftX, y);
-
-        // ── Footer
-        const footerY = doc.page.height - 60;
-        doc.rect(0, footerY, pageW, 60).fill("#0f172a");
-        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold")
-            .text("Galaxia Resorts", leftX, footerY + 15);
-        doc.fontSize(8).fill("#94a3b8").font("Helvetica")
-            .text("www.galaxiaresorts.com", leftX, footerY + 30);
-        doc.fontSize(8).fill("#94a3b8")
-            .text("Karjat, Maharashtra, India", rightX - 150, footerY + 15);
-
-        doc.end();
-    });
+    return `https://www.galaxiaresorts.com${bookingPath}?${params.toString()}`;
 }
 
 // ── Routes ──
@@ -343,38 +256,16 @@ router.post("/generate", async (req: Request, res: Response) => {
             foodType: jainCount > 0 ? "Jain" : "Regular",
         };
 
+        // Use the shared pdfService template
         const pdfBuffer = await generateQuotationPDF(quoteData, pricing);
-        pdfStore.set(quoteId, { buffer: pdfBuffer, createdAt: Date.now(), data: quoteData });
 
-        // Build booking URL
-        const propertySlugMap: Record<string, string> = {
-            "Hill View": "hill-view",
-            "Mount View": "mount-view",
-            "Heavenly Villa": "heavenly-villa",
-            "La Paraiso": "la-paraiso",
-            "Amstel Nest": "amstel-nest",
-            "Ambrose": "ambrose",
-        };
+        const bookingUrl = buildBookingUrl({
+            propertyName, villaName, checkIn, checkOut,
+            adults, kids, jainCount, quoteId,
+        });
 
-        let bookingPath = "/staycation";
-        const slug = propertySlugMap[propertyName] || propertyName.toLowerCase().replace(/\s+/g, "-");
+        pdfStore.set(quoteId, { buffer: pdfBuffer, createdAt: Date.now(), data: quoteData, pricing, bookingUrl });
 
-        if (villaName && (propertyName.includes("Ambrose") || propertyName.includes("Amstel"))) {
-            const villaSlug = villaName.toLowerCase().replace(/\s+/g, "-");
-            bookingPath = `/staycation/${slug}/${villaSlug}/book`;
-        } else {
-            bookingPath = `/staycation/${slug}/book`;
-        }
-
-        const params = new URLSearchParams();
-        params.set("checkIn", checkIn);
-        params.set("checkOut", checkOut);
-        if (adults > 2) params.set("adults", String(adults));
-        if (kids > 0) params.set("kids", String(kids));
-        if (jainCount > 0) params.set("foodType", "Jain");
-        params.set("ref", quoteId);
-
-        const bookingUrl = `https://www.galaxiaresorts.com${bookingPath}?${params.toString()}`;
         const pdfUrl = `https://galaxiaresorts.com/api/quotations/${quoteId}/pdf`;
 
         res.json({
@@ -422,42 +313,44 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
             return res.status(404).json({ error: "Quotation not found or expired" });
         }
 
-        // Use customer phone if provided, otherwise fallback to the test number
-        const targetPhone = entry.data.customerPhone || "9653176436";
-
-        const { bookingUrl } = req.body;
+        // Always send to test number for now
+        const targetPhone = "9653176436";
 
         const pdfUrl = `https://galaxiaresorts.com/api/quotations/${id}/pdf`;
         const quoteData = entry.data;
+        const bookingUrl = entry.bookingUrl;
 
+        // Use "stay1" chatbot — falls back to default OTP WhatsApp credentials
         const pdfSent = await sendWhatsAppDocument(
-            "dd",
+            "stay1",
             targetPhone,
             pdfUrl,
             `Galaxia-Quote-${id}.pdf`,
             `📋 Quotation for ${quoteData.customerName}\n${quoteData.propertyName}${quoteData.villaName ? ' — ' + quoteData.villaName : ''}\n${quoteData.checkIn} → ${quoteData.checkOut}`
         );
 
+        const fmtCurrency = (n: number) => `Rs.${(n || 0).toLocaleString("en-IN")}`;
+
         const linkMessage = `🏡 *Galaxia Staycation Quote*
 
-Hi ${quoteData.customerName}! Here's your personalized booking link:
+Hi ${quoteData.customerName}! Here's your personalised booking link:
 
 📋 *Quote:* ${id}
 🏠 *Property:* ${quoteData.propertyName}${quoteData.villaName ? ' — ' + quoteData.villaName : ''}
 📅 *Dates:* ${quoteData.checkIn} → ${quoteData.checkOut}
 👥 *Guests:* ${quoteData.adults} adults${quoteData.kids > 0 ? ', ' + quoteData.kids + ' kids' : ''}
 
-💰 *Total:* Rs.${entry.data.totalAmount || 'See PDF'}
+💰 *Total:* ${fmtCurrency(entry.pricing.totalAmount)}
 
 👉 *Book Now (pre-filled):*
-${bookingUrl || 'N/A'}
+${bookingUrl}
 
 All details are pre-filled — just sign in and pay! 🎉
 
 — _Galaxia Resorts_
 www.galaxiaresorts.com`;
 
-        const linkSent = await sendWhatsAppMessage("dd", targetPhone, linkMessage, false);
+        const linkSent = await sendWhatsAppMessage("stay1", targetPhone, linkMessage, false);
 
         res.json({
             success: true,

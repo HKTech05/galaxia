@@ -512,3 +512,142 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         doc.end();
     });
 }
+
+// ───────────────────────────────────────────────────────────────
+//  Staycation Quotation PDF
+// ───────────────────────────────────────────────────────────────
+export function generateQuotationPDF(data: {
+    quoteId: string;
+    customerName: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    propertyName: string;
+    villaName?: string;
+    checkIn: string;
+    checkOut: string;
+    adults: number;
+    kids: number;
+    pets: number;
+    regularCount?: number;
+    jainCount?: number;
+    decoration?: boolean;
+    foodType?: string;
+}, pricing: {
+    nights: number;
+    roomTotal: number;
+    extraAdultCharge: number;
+    extraKidsCharge: number;
+    decorationCharge: number;
+    subtotal: number;
+    gstAmount: number;
+    petCharge: number;
+    totalAmount: number;
+    nightlyRoomRate: number;
+}): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: "A4", margin: 0 });
+        const chunks: Buffer[] = [];
+        doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+        doc.on("end", () => resolve(Buffer.concat(chunks)));
+        doc.on("error", reject);
+
+        const propertyName = data.villaName
+            ? `${data.villaName} — ${data.propertyName}`
+            : data.propertyName;
+
+        const checkInDate = fmtDate(data.checkIn + "T00:00:00");
+        const checkOutDate = fmtDate(data.checkOut + "T00:00:00");
+        const quoteDate = fmtShortDate(new Date());
+
+        // Header
+        drawHeader(doc, "Staycation Quotation");
+
+        let y = 120;
+        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("QUOTATION", 50, y, { characterSpacing: 2 });
+        y += 18;
+        doc.fontSize(16).fill(TEXT_DARK).font("Helvetica").text(`Dear ${data.customerName},`, 50, y);
+        y += 22;
+        doc.fontSize(10).fill(TEXT_MED).font("Helvetica")
+            .text("Thank you for your interest in Galaxia. Please find your personalised quotation below.", 50, y, { width: doc.page.width - 100 });
+        y += 36;
+
+        // Quotation Details
+        y = drawSectionTitle(doc, "Quotation Details", y);
+        y = drawRow(doc, "Quote Reference", data.quoteId, y, { bold: true, color: GOLD });
+        y = drawRow(doc, "Quote Date", quoteDate, y);
+        y = drawDivider(doc, y);
+
+        // Customer Details
+        y = drawSectionTitle(doc, "Customer Details", y);
+        y = drawRow(doc, "Name", data.customerName, y, { bold: true });
+        if (data.customerPhone) y = drawRow(doc, "Phone", data.customerPhone, y);
+        if (data.customerEmail) y = drawRow(doc, "Email", data.customerEmail, y);
+        if (data.foodType) y = drawRow(doc, "Food Preference", data.foodType, y);
+        y = drawDivider(doc, y);
+
+        // Property
+        y = drawSectionTitle(doc, "Property", y);
+        y = drawRow(doc, "Venue", propertyName, y, { bold: true });
+        y = drawRow(doc, "Location", "Karjat, Maharashtra, India", y);
+        y = drawDivider(doc, y);
+
+        // Stay Details
+        y = drawSectionTitle(doc, "Stay Details", y);
+        y = drawRow(doc, "Check-in", `${checkInDate}  |  1:00 PM`, y);
+        y = drawRow(doc, "Check-out", `${checkOutDate}  |  11:00 AM`, y);
+        y = drawRow(doc, "Duration", `${pricing.nights} Night${pricing.nights > 1 ? "s" : ""}`, y);
+        const guestsLabel = `${data.adults} adult${data.adults > 1 ? "s" : ""}${data.kids > 0 ? `, ${data.kids} child${data.kids > 1 ? "ren" : ""}` : ""}`;
+        y = drawRow(doc, "Guests", guestsLabel, y);
+        if (data.pets > 0) y = drawRow(doc, "Pets", `${data.pets}`, y);
+        if (data.jainCount && data.jainCount > 0) y = drawRow(doc, "Jain Meals", `${data.jainCount}`, y);
+        if (data.regularCount && data.regularCount > 0) y = drawRow(doc, "Regular Meals", `${data.regularCount}`, y);
+        y = drawDivider(doc, y);
+
+        // Payment Summary
+        y = drawSectionTitle(doc, "Payment Summary", y);
+        y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(pricing.roomTotal), y, { bold: true });
+        if (pricing.extraAdultCharge > 0) {
+            y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(pricing.extraAdultCharge), y);
+        }
+        if (pricing.extraKidsCharge > 0) {
+            y = drawPaymentRow(doc, "Extra Child Charge", fmtCurrency(pricing.extraKidsCharge), y);
+        }
+        if (pricing.decorationCharge > 0) {
+            y = drawPaymentRow(doc, "Celebration Add-on", fmtCurrency(pricing.decorationCharge), y);
+        }
+
+        // Gold line before total
+        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
+        y += 6;
+        y = drawPaymentRow(doc, "Subtotal", fmtCurrency(pricing.subtotal), y, { bold: true });
+        y = drawPaymentRow(doc, "GST (5%)", fmtCurrency(pricing.gstAmount), y);
+        if (pricing.petCharge > 0) {
+            y = drawPaymentRow(doc, "Pet Charges", fmtCurrency(pricing.petCharge), y);
+        }
+
+        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
+        y += 6;
+        y = drawPaymentRow(doc, "Total Amount", fmtCurrency(pricing.totalAmount), y, { bold: true, color: GOLD });
+        y += 10;
+
+        // Average rate info
+        doc.fontSize(9).fill(TEXT_MED).font("Helvetica")
+            .text(`Average nightly rate: ${fmtCurrency(pricing.nightlyRoomRate)} per night`, 50, y);
+        y += 24;
+
+        // Important Information
+        y = drawInfoBlock(doc, "Terms & Conditions", [
+            "This quotation is valid for 7 days from the date of issue.",
+            "Prices are subject to change based on availability.",
+            "This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.",
+            "80% payable online at booking. 20% payable at the venue.",
+            "Check-in: 1:00 PM | Check-out: 11:00 AM",
+            "Security deposit is collected at venue and refunded at checkout.",
+        ], y);
+
+        // Footer
+        drawFooter(doc, y, "Karjat, Maharashtra, India");
+
+        doc.end();
+    });
+}
