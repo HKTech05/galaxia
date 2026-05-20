@@ -68,7 +68,9 @@ app.use("/bot", (req: express.Request, res: express.Response) => {
 app.use(cors({
     origin: [
         process.env.FRONTEND_URL || "http://localhost:3000",
-        "https://galaxia-dusky.vercel.app"
+        "https://galaxia-dusky.vercel.app",
+        "https://www.galaxiaresorts.com",
+        "https://galaxiaresorts.com",
     ],
     credentials: true,
 }));

@@ -523,7 +523,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 const formData = new FormData();
                 formData.append("file", file);
                 formData.append("section", section);
-                await api.upload("/site-images", formData);
+                // Videos are too large for Vercel's rewrite proxy (4.5MB limit)
+                // Upload directly to EC2 backend for video files
+                const isVideo = file.type.startsWith('video/');
+                if (isVideo) {
+                    const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token");
+                    const headers: Record<string, string> = {};
+                    if (token) headers["Authorization"] = `Bearer ${token}`;
+                    const res = await fetch("http://65.1.183.241:4000/api/site-images", {
+                        method: "POST", headers, body: formData,
+                    });
+                    if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Upload failed"); }
+                } else {
+                    await api.upload("/site-images", formData);
+                }
             }
             fetchSiteImages();
         } catch (err) {
