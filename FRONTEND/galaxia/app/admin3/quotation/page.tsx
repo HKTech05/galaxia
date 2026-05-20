@@ -222,9 +222,13 @@ export default function QuotationPage() {
             if (!res) { setPdfLoading(false); return; }
             // Trigger download
             const link = document.createElement("a");
-            link.href = `${(api as any).baseURL || ""}/quotations/${res.quoteId}/download`.replace("//quotations", "/quotations");
-            // Use fetch to get the PDF with auth
-            const pdfRes = await fetch(`https://galaxiaresorts.com/api/quotations/${res.quoteId}/download`);
+            
+            // Use relative path to avoid CORS issues
+            const pdfUrl = `/api/quotations/${res.quoteId}/download`;
+            const pdfRes = await fetch(pdfUrl);
+            
+            if (!pdfRes.ok) throw new Error("Failed to download PDF");
+            
             const blob = await pdfRes.blob();
             link.href = URL.createObjectURL(blob);
             link.download = `Galaxia-Quote-${res.quoteId}.pdf`;

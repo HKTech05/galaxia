@@ -94,7 +94,7 @@ function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
 function drawPaymentRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
     const leftX = 50;
     const valColor = opts?.color || TEXT_DARK;
-    const valueColumnWidth = 330; // narrower so prices sit closer to labels
+    const valueColumnWidth = 220; // narrower so prices sit closer to labels
 
     doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
     doc.fontSize(10).fill(valColor).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")

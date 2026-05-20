@@ -262,7 +262,7 @@ function generateQuotationPDF(data: any, pricing: any): Promise<Buffer> {
         const payRow = (label: string, value: string, opts?: { bold?: boolean; color?: string }) => {
             doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
             doc.fontSize(10).fill(opts?.color || TEXT_DARK).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
-                .text(value, leftX, y, { width: 330, align: "right" });
+                .text(value, leftX, y, { width: 220, align: "right" });
             y += 18;
         };
 
@@ -274,7 +274,7 @@ function generateQuotationPDF(data: any, pricing: any): Promise<Buffer> {
         payRow("GST (5%)", fmtCurrency(pricing.gstAmount));
         if (pricing.petCharge > 0) payRow("Pet Charges", fmtCurrency(pricing.petCharge));
 
-        doc.moveTo(leftX, y).lineTo(leftX + 330, y).strokeColor(GOLD).lineWidth(1).stroke();
+        doc.moveTo(leftX, y).lineTo(leftX + 220, y).strokeColor(GOLD).lineWidth(1).stroke();
         y += 8;
         payRow("Grand Total", fmtCurrency(pricing.totalAmount), { bold: true, color: "#059669" });
 
@@ -422,8 +422,10 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
             return res.status(404).json({ error: "Quotation not found or expired" });
         }
 
+        // Use customer phone if provided, otherwise fallback to the test number
+        const targetPhone = entry.data.customerPhone || "9653176436";
+
         const { bookingUrl } = req.body;
-        const targetPhone = "9653176436";
 
         const pdfUrl = `https://galaxiaresorts.com/api/quotations/${id}/pdf`;
         const quoteData = entry.data;
