@@ -621,8 +621,7 @@ function CustomerQuoteInner() {
                             {pricing ? (
                                 <>
                                     <div className="space-y-2.5 text-sm">
-                                        <div className="flex justify-between"><span className="text-[#555]">Room Price</span><span className="font-bold text-[#1a1a2e]">{fmtCurrency(pricing.roomTotal + pricing.gst)}</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-[#888]">GST</span><span className="text-[#888]">{fmtCurrency(pricing.gst)}</span></div>
+                                        <div className="flex justify-between"><span className="text-[#555]">Base Price</span><span className="font-bold text-[#1a1a2e]">{fmtCurrency(pricing.roomTotal + pricing.gst)}</span></div>
                                         {pricing.extraAdultCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Extra Adults</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.extraAdultCharge)}</span></div>}
                                         {pricing.extraKidsCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Extra Kids</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.extraKidsCharge)}</span></div>}
                                         {pricing.decorationCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Celebration</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.decorationCharge)}</span></div>}

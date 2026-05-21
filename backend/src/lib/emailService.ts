@@ -183,16 +183,15 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${row("Check-in", `${checkInDate}  ·  ${checkInTime}`)}
                 ${row("Check-out", `${checkOutDate}  ·  ${checkOutTime}`)}
                 ${row("Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`)}
-                ${row("Guests", `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`)}
+                ${(() => { const c = (booking as any).numCottages || 1; const tA = booking.numGuests * c; const tK = ((booking as any).numKids || 0) * c; return row("Guests", `${tA} adult${tA > 1 ? "s" : ""}${tK > 0 ? `, ${tK} child${tK > 1 ? "ren" : ""}` : ""}`); })()}
                 ${((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') ? row("Cottages", `${(booking as any).numCottages || 1}`) : ""}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
                 ${(() => {
-                    // Total Room Price = basePrice - extra charges (basePrice already includes GST)
                     const storedExtraAdult = (booking as any).extraAdultCharge || 0;
                     const storedExtraKids = (booking as any).extraKidsCharge || 0;
                     const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
-                    return paymentRow("Total Room Price", fmtCurrency(totalRoomPrice), { bold: true });
+                    return paymentRow("Base Price", fmtCurrency(totalRoomPrice), { bold: true });
                 })()}
                 ${(() => {
                     const storedExtraAdult = (booking as any).extraAdultCharge || 0;

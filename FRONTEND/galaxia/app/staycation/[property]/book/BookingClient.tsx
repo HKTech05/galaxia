@@ -982,7 +982,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     })()}
                                                 </div>
                                                 <div className="p-5 border-b border-border-light space-y-3 font-inter text-sm text-text-primary">
-                                                    <div className="flex justify-between items-center"><span>Room Price</span><span>{formatPrice(roomPrice)}</span></div>
+                                                    <div className="flex justify-between items-center"><span>Base Price</span><span>{formatPrice(roomPrice)}</span></div>
                                                     <div className="flex justify-between items-center"><span>Taxes</span><span>{formatPrice(taxesAndFees)}</span></div>
                                                 </div>
                                                 <div className="p-5 bg-soft-gray/30">
@@ -1514,7 +1514,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                 )}
 
                                 <div className="p-5 border-b border-border-light space-y-3 font-inter text-sm text-text-primary">
-                                    <div className="flex justify-between items-center"><span>Room Price</span><span>{formatPrice(roomPrice)}</span></div>
+                                    <div className="flex justify-between items-center"><span>Base Price</span><span>{formatPrice(roomPrice)}</span></div>
                                     {extraCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Extra Guests</span><span>{formatPrice(extraCharges)}</span></div>}
                                     {petCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Pets ({pets} × ₹{PET_CHARGE})</span><span>{formatPrice(petCharges)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
@@ -1604,7 +1604,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         <div className="flex-1 min-w-0">
                                             <span className="text-[10px] text-dark-gold font-inter uppercase tracking-wider">{selectedRoom.type}</span>
                                             <h4 className="font-cinzel font-semibold text-text-primary">{selectedRoom.name}{unitCount > 1 ? ` × ${unitCount}` : ""}</h4>
-                                            <p className="text-xs text-text-muted font-inter">{adults} adult{adults > 1 ? "s" : ""}{kids > 0 ? `, ${kids} kid${kids > 1 ? "s" : ""}` : ""}{unitCount > 1 ? " per unit" : ""}</p>
+                                            <p className="text-xs text-text-muted font-inter">{adults * (isAmstelNest ? unitCount : 1)} adult{(adults * (isAmstelNest ? unitCount : 1)) > 1 ? "s" : ""}{kids > 0 ? `, ${kids * (isAmstelNest ? unitCount : 1)} kid${(kids * (isAmstelNest ? unitCount : 1)) > 1 ? "s" : ""}` : ""}</p>
                                         </div>
                                         <span className="font-inter font-semibold text-text-primary">{formatPrice(roomPrice + extraCharges)}</span>
                                     </div>

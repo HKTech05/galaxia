@@ -425,7 +425,7 @@ export default function QuotationPage() {
 
                         {pricing ? (
                             <div className="space-y-2.5">
-                                <PriceRow label="Room Total" value={fmtCurrency(pricing.roomTotal + pricing.gstAmount)} sub={`${pricing.nights} night${pricing.nights > 1 ? 's' : ''}${pricing.totalUnits > 1 ? ` × ${pricing.totalUnits} units` : ''}`} bold />
+                                <PriceRow label="Room Total" value={fmtCurrency(pricing.roomTotal)} sub={`${pricing.nights} night${pricing.nights > 1 ? 's' : ''}${pricing.totalUnits > 1 ? ` × ${pricing.totalUnits} units` : ''}`} bold />
                                 <PriceRow label="GST" value={fmtCurrency(pricing.gstAmount)} />
                                 {pricing.extraAdultCharge > 0 && <PriceRow label="Extra Adults" value={fmtCurrency(pricing.extraAdultCharge)} />}
                                 {pricing.extraKidsCharge > 0 && <PriceRow label="Extra Kids" value={fmtCurrency(pricing.extraKidsCharge)} />}

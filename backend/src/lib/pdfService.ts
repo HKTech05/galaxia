@@ -355,7 +355,10 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawRow(doc, "Check-in", `${checkInDate}  |  ${checkInTime}`, y);
         y = drawRow(doc, "Check-out", `${checkOutDate}  |  ${checkOutTime}`, y);
         y = drawRow(doc, "Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`, y);
-        const stayGuestsLabel = `${booking.numGuests} adult${booking.numGuests > 1 ? "s" : ""}${(booking as any).numKids > 0 ? `, ${(booking as any).numKids} child${(booking as any).numKids > 1 ? "ren" : ""}` : ""}`;
+        const cottages = (booking as any).numCottages || 1;
+        const totalAdults = booking.numGuests * cottages;
+        const totalKids = ((booking as any).numKids || 0) * cottages;
+        const stayGuestsLabel = `${totalAdults} adult${totalAdults > 1 ? "s" : ""}${totalKids > 0 ? `, ${totalKids} child${totalKids > 1 ? "ren" : ""}` : ""}`;
         y = drawRow(doc, "Guests", stayGuestsLabel, y);
         if ((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') {
             y = drawRow(doc, "Cottages", `${(booking as any).numCottages || 1}`, y);
@@ -367,7 +370,7 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         const storedExtraAdult = (booking as any).extraAdultCharge || 0;
         const storedExtraKids = (booking as any).extraKidsCharge || 0;
         const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
-        y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(totalRoomPrice), y, { bold: true });
+        y = drawPaymentRow(doc, "Base Price", fmtCurrency(totalRoomPrice), y, { bold: true });
         if (storedExtraAdult > 0) {
             y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
         }
@@ -536,6 +539,7 @@ export function generateQuotationPDF(data: {
     jainCount?: number;
     decoration?: boolean;
     foodType?: string;
+    villaQuantities?: any;
 }, pricing: {
     nights: number;
     roomTotal: number;
@@ -600,7 +604,12 @@ export function generateQuotationPDF(data: {
         y = drawRow(doc, "Check-in", `${checkInDate}  |  1:00 PM`, y);
         y = drawRow(doc, "Check-out", `${checkOutDate}  |  11:00 AM`, y);
         y = drawRow(doc, "Duration", `${pricing.nights} Night${pricing.nights > 1 ? "s" : ""}`, y);
-        const guestsLabel = `${data.adults} adult${data.adults > 1 ? "s" : ""}${data.kids > 0 ? `, ${data.kids} child${data.kids > 1 ? "ren" : ""}` : ""}`;
+        const totalCottages = data.villaQuantities && typeof data.villaQuantities === "object"
+            ? Object.values(data.villaQuantities).reduce((s: number, q: any) => s + (q || 0), 0) || 1
+            : 1;
+        const totalAdults = data.adults * totalCottages;
+        const totalKids = (data.kids || 0) * totalCottages;
+        const guestsLabel = `${totalAdults} adult${totalAdults > 1 ? "s" : ""}${totalKids > 0 ? `, ${totalKids} child${totalKids > 1 ? "ren" : ""}` : ""}`;
         y = drawRow(doc, "Guests", guestsLabel, y);
         if (data.pets > 0) y = drawRow(doc, "Pets", `${data.pets}`, y);
         // Multi-villa display
@@ -618,11 +627,9 @@ export function generateQuotationPDF(data: {
         if (data.regularCount && data.regularCount > 0) y = drawRow(doc, "Regular Meals", `${data.regularCount}`, y);
         y = drawDivider(doc, y);
 
-        // Payment Summary — GST merged into Total Room Price
+        // Payment Summary
         y = drawSectionTitle(doc, "Payment Summary", y);
-        const roomPlusGst = pricing.roomTotal + pricing.gstAmount;
-        y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(roomPlusGst), y, { bold: true });
-        y = drawPaymentRow(doc, "GST", fmtCurrency(pricing.gstAmount), y);
+        y = drawPaymentRow(doc, "Base Price", fmtCurrency(pricing.roomTotal + pricing.gstAmount), y, { bold: true });
         if (pricing.extraAdultCharge > 0) {
             y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(pricing.extraAdultCharge), y);
         }

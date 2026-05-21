@@ -307,27 +307,30 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
             villaDesc += ` — ${q.villaName}`;
         }
 
-        const pdfSent = await sendWhatsAppDocument(
-            "stay1", targetPhone, pdfUrl,
-            `Galaxia-Quote-${id}.pdf`,
-            `📋 Quotation for ${q.customerName}\n${villaDesc}\n${q.checkIn} → ${q.checkOut}`
-        );
+        const pdfMessage = `Quotation for ${q.customerName}\n${villaDesc}\n${q.checkIn} to ${q.checkOut}\n\nView/Download PDF:\n${pdfUrl}`;
+        const pdfSent = await sendWhatsAppMessage("stay1", targetPhone, pdfMessage, false);
 
-        const linkMessage = `🏡 *Galaxia Staycation Quote*
+        const totalCottages = q.villaQuantities && typeof q.villaQuantities === "object"
+            ? Object.values(q.villaQuantities).reduce((s: number, q: any) => s + (q || 0), 0) || 1
+            : 1;
+        const totalAdults = q.adults * totalCottages;
+        const totalKids = (q.kids || 0) * totalCottages;
 
-Hi ${q.customerName}! Here's your personalised booking link:
+        const linkMessage = `*Galaxia Staycation Quote*
 
-📋 *Quote:* ${id}
-🏠 *Property:* ${villaDesc}
-📅 *Dates:* ${q.checkIn} → ${q.checkOut}
-👥 *Guests:* ${q.adults} adults${q.kids > 0 ? ', ' + q.kids + ' kids' : ''}
+Hi ${q.customerName}, here is your personalised booking link:
 
-💰 *Total:* ${fmtCurrency(entry.pricing.totalAmount)}
+*Quote:* ${id}
+*Property:* ${villaDesc}
+*Dates:* ${q.checkIn} to ${q.checkOut}
+*Guests:* ${totalAdults} adults${totalKids > 0 ? ', ' + totalKids + ' kids' : ''}
 
-👉 *Book Now:*
+*Total:* ${fmtCurrency(entry.pricing.totalAmount)}
+
+*Book Now:*
 ${entry.bookingUrl}
 
-— _Galaxia Resorts_
+-- Galaxia Resorts
 www.galaxiaresorts.com`;
 
         const linkSent = await sendWhatsAppMessage("stay1", targetPhone, linkMessage, false);
