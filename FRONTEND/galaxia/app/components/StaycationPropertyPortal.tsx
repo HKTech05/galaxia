@@ -389,14 +389,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             }
             subtotal -= manualCouponDiscount;
         }
+        // Apply admin discount before GST
+        subtotal = Math.max(0, subtotal - manualDiscountAmount);
+        
         // Add 5% GST
         const baseAmount = Math.round(subtotal);
         const gstAmount = Math.round(baseAmount * 0.05);
         let finalTotal = baseAmount + gstAmount;
         // Add pet charges (₹600/pet flat — no GST)
         finalTotal += manualForm.pets * 600;
-        // Subtract admin discount (from total including taxes)
-        finalTotal = Math.max(0, finalTotal - manualDiscountAmount);
         // Round to nearest 10
         finalTotal = Math.round(finalTotal / 10) * 10;
         return {

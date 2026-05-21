@@ -246,6 +246,10 @@ export default function BulkBookingsTab() {
         }
     }
 
+    const discountedSubtotal = Math.max(0, pricing.subtotal - couponDiscount - discountAmount);
+    const calculatedGst = Math.round(discountedSubtotal * 0.05);
+    const finalTotal = discountedSubtotal + calculatedGst;
+
     const handleBulkSubmit = async () => {
         if (!bulkForm.customerName || !bulkForm.phone || !bulkForm.checkIn || !bulkForm.checkOut) {
             setBulkError("Please fill all required fields.");
@@ -266,10 +270,6 @@ export default function BulkBookingsTab() {
             // The backend handles capacity checks, so we just need to pass the correct sub-property ID.
             const targetSubPropertyId = eligibleIds[0]; // Use the first matching sub-property record
 
-            const totalDiscount = discountAmount + couponDiscount;
-            const discountedTotal = pricing.total - totalDiscount;
-            const finalTotal = Math.max(0, discountedTotal);
-
             await api.post("/bookings/staycation", {
                 customerName: bulkForm.customerName,
                 customerPhone: bulkForm.phone,
@@ -287,7 +287,7 @@ export default function BulkBookingsTab() {
                 securityDeposit: 3000 * (bulkForm.numCottages || 1),
                 nightlyRate: Math.round(pricing.subtotal / Math.max(1, pricing.nights)),
                 basePrice: pricing.subtotal,
-                gstAmount: pricing.gst,
+                gstAmount: calculatedGst,
                 advancePaid: true,
                 advanceMethod: bulkForm.paymentMethod,
                 source: "admin-bulk",
@@ -571,8 +571,14 @@ export default function BulkBookingsTab() {
                         {pricing.subtotal > 0 && (
                             <div className="space-y-2.5 text-sm font-medium">
                                 <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="text-slate-800">₹{pricing.subtotal.toLocaleString("en-IN")}</span></div>
-                                <div className="flex justify-between"><span className="text-slate-500">GST (5%)</span><span className="text-slate-800">₹{pricing.gst.toLocaleString("en-IN")}</span></div>
-                                <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-black"><span className="text-slate-800">Grand Total</span><span className="text-emerald-600">₹{pricing.total.toLocaleString("en-IN")}</span></div>
+                                {couponDiscount > 0 && (
+                                    <div className="flex justify-between text-emerald-600"><span className="text-emerald-500">Coupon Discount</span><span>-₹{couponDiscount.toLocaleString("en-IN")}</span></div>
+                                )}
+                                {discountAmount > 0 && (
+                                    <div className="flex justify-between text-purple-600"><span className="text-purple-500">Admin Discount</span><span>-₹{discountAmount.toLocaleString("en-IN")}</span></div>
+                                )}
+                                <div className="flex justify-between"><span className="text-slate-500">GST (5%)</span><span className="text-slate-800">₹{calculatedGst.toLocaleString("en-IN")}</span></div>
+                                <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-black"><span className="text-slate-800">Grand Total</span><span className="text-emerald-600">₹{finalTotal.toLocaleString("en-IN")}</span></div>
 
                                 {/* Coupon Code */}
                                 <div className="border border-dashed border-emerald-200 rounded-xl p-3 bg-emerald-50/50 mt-3">
@@ -628,7 +634,7 @@ export default function BulkBookingsTab() {
                                                 value={discountAmount || ""}
                                                 onChange={e => {
                                                     const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
-                                                    setDiscountAmount(Math.min(val, pricing.total));
+                                                    setDiscountAmount(Math.min(val, pricing.subtotal - couponDiscount));
                                                 }}
                                                 placeholder="0"
                                                 className="w-full pl-8 pr-3 py-2 border border-purple-200 rounded-lg text-sm font-bold text-purple-800 focus:ring-2 focus:ring-purple-500/20 outline-none bg-white"
@@ -642,16 +648,8 @@ export default function BulkBookingsTab() {
                                     </div>
                                 </div>
 
-                                {/* Discounted Total */}
-                                {(discountAmount > 0 || couponDiscount > 0) && (
-                                    <div className="flex justify-between text-base font-black pt-1">
-                                        <span className="text-purple-700">After Discount</span>
-                                        <span className="text-purple-600">₹{Math.max(0, pricing.total - discountAmount - couponDiscount).toLocaleString("en-IN")}</span>
-                                    </div>
-                                )}
-
                                 <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mt-2">
-                                    <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(Math.max(0, pricing.total - discountAmount - couponDiscount) / bulkForm.numCottages).toLocaleString("en-IN")}</p>
+                                    <p className="text-xs text-amber-700 font-bold">Per Cottage: ₹{Math.round(finalTotal / (bulkForm.numCottages || 1)).toLocaleString("en-IN")}</p>
                                     <p className="text-[10px] text-amber-600 mt-0.5">Security deposit: ₹3,000 per cottage (separate)</p>
                                 </div>
 
@@ -660,7 +658,7 @@ export default function BulkBookingsTab() {
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Payment Split</label>
                                     <div className="bg-slate-50 rounded-lg p-1 flex">
                                         <button type="button" onClick={() => { setCustomSplitMode(false); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${!customSplitMode ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}>Full Payment</button>
-                                        <button type="button" onClick={() => { setCustomSplitMode(true); const finalTotal = Math.max(0, pricing.total - discountAmount - couponDiscount); setCustomPrepaid(String(finalTotal)); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}>Custom Split</button>
+                                        <button type="button" onClick={() => { setCustomSplitMode(true); setCustomPrepaid(String(finalTotal)); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}>Custom Split</button>
                                     </div>
                                 </div>
                                 {customSplitMode && (
@@ -675,7 +673,6 @@ export default function BulkBookingsTab() {
                                                     const val = e.target.value;
                                                     setCustomPrepaid(val);
                                                     const prepaidNum = parseInt(val || '0');
-                                                    const finalTotal = Math.max(0, pricing.total - discountAmount - couponDiscount);
                                                     setCustomBalance(String(Math.max(0, finalTotal - prepaidNum)));
                                                 }}
                                             />
