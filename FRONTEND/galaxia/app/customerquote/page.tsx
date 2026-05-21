@@ -9,12 +9,23 @@ import {
     PartyPopper, PawPrint, IndianRupee, Loader2, Check, AlertTriangle,
     ChevronLeft, ChevronRight, Lock, LogIn, Building2, X, Tag
 } from "lucide-react";
+import DateSelectionBar from "../components/DateSelectionBar";
+import AvailabilityCalendar from "../components/AvailabilityCalendar";
+import { useBookedDates } from "../hooks/useBookedDates";
 
 // ── Property slug map ──
 const SLUG_MAP: Record<string, string> = {
     "Hill View": "hill-view", "Mount View": "mount-view",
     "Heavenly Villa": "heavenly-villa", "La Paraiso": "la-paraiso",
     "Amstel Nest": "amstel-nest", "Ambrose": "ambrose",
+};
+
+const toLocalDateStr = (d: Date | null) => {
+    if (!d) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
 };
 
 function CustomerQuoteInner() {
@@ -43,10 +54,19 @@ function CustomerQuoteInner() {
     const [propertyName, setPropertyName] = useState("");
     const [villaQuantities, setVillaQuantities] = useState<Record<string, number>>({});
 
-    // Availability
+    // Availability & Property ID
     const [availData, setAvailData] = useState<any>(null);
-    const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
-    const [calendarMonth, setCalendarMonth] = useState(new Date());
+    const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
+    const [dbSubPropertyMap, setDbSubPropertyMap] = useState<Record<string, number>>({});
+
+    const subPropertyId = (() => {
+        const activeVillas = Object.entries(villaQuantities).filter(([, q]) => q > 0);
+        if (activeVillas.length === 1) {
+            const villaName = activeVillas[0][0];
+            return dbSubPropertyMap[villaName.toUpperCase()] || null;
+        }
+        return null;
+    })();
 
     // Auth
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -91,7 +111,6 @@ function CustomerQuoteInner() {
                 setDecoration(d.decoration || false);
                 setFoodType(d.foodType || "Regular");
                 if (d.villaQuantities) setVillaQuantities(d.villaQuantities);
-                if (d.checkIn) setCalendarMonth(new Date(d.checkIn + "T00:00:00"));
             } catch (err: any) {
                 setError(err?.message || "Failed to load quotation. It may have expired.");
             } finally { setLoading(false); }
@@ -118,7 +137,7 @@ function CustomerQuoteInner() {
         }
     }, []);
 
-    // ── Fetch availability ──
+    // ── Fetch availability (used for metadata/pricing) ──
     useEffect(() => {
         if (!propertyName) return;
         const slug = SLUG_MAP[propertyName];
@@ -127,52 +146,50 @@ function CustomerQuoteInner() {
             try {
                 const data = await api.get(`/properties/${slug}/availability`);
                 setAvailData(data);
-                // Build booked dates set
-                const booked = new Set<string>();
-                if (data.bookings) {
-                    // Calculate total capacity
-                    let totalCapacity = 1;
-                    if (data.subProperties?.length > 0) {
-                        // Fetch unit counts from our known data
-                        if (slug === "amstel-nest") totalCapacity = 15; // 14 standard + 1 family
-                        else if (slug === "ambrose") totalCapacity = 5;
-                    }
-                    // Count bookings per date
-                    const dateCounts: Record<string, number> = {};
-                    for (const b of data.bookings) {
-                        const ci = new Date(b.checkInDate);
-                        const co = new Date(b.checkOutDate);
-                        for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
-                            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                            dateCounts[key] = (dateCounts[key] || 0) + 1;
-                        }
-                    }
-                    for (const [date, count] of Object.entries(dateCounts)) {
-                        if (count >= totalCapacity) booked.add(date);
-                    }
-                }
-                if (data.blocked) {
-                    for (const b of data.blocked) {
-                        const d = new Date(b.blockedDate);
-                        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        booked.add(key);
-                    }
-                }
-                setBookedDates(booked);
             } catch { }
         })();
     }, [propertyName]);
+
+    // Fetch DB property ID on propertyName load
+    useEffect(() => {
+        if (!propertyName) return;
+        (async () => {
+            try {
+                const props = await api.get("/properties");
+                const slug = SLUG_MAP[propertyName];
+                const dbProp = props.find((p: any) => p.slug === slug);
+                if (dbProp) {
+                    setDbPropertyId(dbProp.id);
+                    if (dbProp.subProperties) {
+                        const map: Record<string, number> = {};
+                        for (const sp of dbProp.subProperties) {
+                            map[sp.name.toUpperCase()] = sp.id;
+                            map[sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-")] = sp.id;
+                        }
+                        setDbSubPropertyMap(map);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch property data:", err);
+            }
+        })();
+    }, [propertyName]);
+
+    // Fetch booked dates for the current property/sub-property (shared with DateSelectionBar)
+    const bookedDatesForPicker = useBookedDates(dbPropertyId, subPropertyId);
 
     // ── Check date conflict when dates change ──
     useEffect(() => {
         if (!checkIn || !checkOut) { setDateConflict(false); return; }
         let conflict = false;
-        for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
+        for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            if (bookedDates.has(key)) { conflict = true; break; }
+            if (bookedDatesForPicker.has(key)) { conflict = true; break; }
         }
         setDateConflict(conflict);
-    }, [checkIn, checkOut, bookedDates]);
+    }, [checkIn, checkOut, bookedDatesForPicker]);
 
     // ── Price calculation ──
     const livePrice = useCallback(() => {
@@ -428,73 +445,6 @@ function CustomerQuoteInner() {
     // ── Helpers ──
     const fmtCurrency = (n: number) => `₹${n.toLocaleString("en-IN")}`;
     const fmtDateStr = (d: Date | null) => d ? d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "—";
-    const dateToKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-
-    // ── Calendar renderer ──
-    const renderCalendar = () => {
-        const year = calendarMonth.getFullYear();
-        const month = calendarMonth.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const monthLabel = new Date(year, month).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-
-        const cells = [];
-        for (let i = 0; i < firstDay; i++) cells.push(<div key={`empty-${i}`} />);
-        for (let d = 1; d <= daysInMonth; d++) {
-            const date = new Date(year, month, d);
-            const key = dateToKey(date);
-            const isPast = date < today;
-            const isBooked = bookedDates.has(key);
-            const isDisabled = isPast || isBooked;
-            const isCheckIn = checkIn && dateToKey(checkIn) === key;
-            const isCheckOut = checkOut && dateToKey(checkOut) === key;
-            const isInRange = checkIn && checkOut && date > checkIn && date < checkOut;
-
-            cells.push(
-                <button key={d} disabled={isDisabled}
-                    onClick={() => {
-                        if (!checkIn || (checkIn && checkOut) || date <= checkIn) {
-                            setCheckIn(date); setCheckOut(null);
-                        } else {
-                            setCheckOut(date);
-                        }
-                    }}
-                    className={`aspect-square rounded-lg text-xs font-semibold transition-all
-                        ${isCheckIn ? "bg-[#1a1a2e] text-[#C4A265] ring-2 ring-[#C4A265]" : ""}
-                        ${isCheckOut ? "bg-[#1a1a2e] text-[#C4A265] ring-2 ring-[#C4A265]" : ""}
-                        ${isInRange ? "bg-[#C4A265]/15 text-[#1a1a2e]" : ""}
-                        ${isBooked ? "bg-red-100 text-red-400 line-through cursor-not-allowed" : ""}
-                        ${isPast && !isBooked ? "text-gray-300 cursor-not-allowed" : ""}
-                        ${!isDisabled && !isCheckIn && !isCheckOut && !isInRange ? "hover:bg-[#C4A265]/10 text-[#1a1a2e]" : ""}
-                    `}
-                >{d}</button>
-            );
-        }
-
-        return (
-            <div className="bg-white rounded-2xl border border-[#e8e5dd] p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <button onClick={() => setCalendarMonth(new Date(year, month - 1))}
-                        className="p-1.5 rounded-full hover:bg-[#f5f3ef] transition-colors"><ChevronLeft size={16} className="text-[#1a1a2e]" /></button>
-                    <span className="text-sm font-bold text-[#1a1a2e] tracking-wide uppercase" style={{ fontFamily: "'Playfair Display', serif" }}>{monthLabel}</span>
-                    <button onClick={() => setCalendarMonth(new Date(year, month + 1))}
-                        className="p-1.5 rounded-full hover:bg-[#f5f3ef] transition-colors"><ChevronRight size={16} className="text-[#1a1a2e]" /></button>
-                </div>
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
-                        <div key={d} className="text-center text-[10px] font-bold text-[#C4A265] uppercase">{d}</div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-7 gap-1">{cells}</div>
-                <div className="mt-3 flex items-center gap-4 text-[10px] text-slate-500">
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 border border-red-200" /> Unavailable</span>
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#1a1a2e]" /> Selected</span>
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#C4A265]/15" /> Range</span>
-                </div>
-            </div>
-        );
-    };
 
     // ── Loading / Error ──
     if (loading) return (
@@ -567,21 +517,44 @@ function CustomerQuoteInner() {
                             <p className="mt-1 text-xs text-[#555]">Karjat, Maharashtra, India</p>
                         </div>
 
-                        {/* Calendar */}
-                        <div>
-                            <h2 className="text-xs font-bold text-[#C4A265] uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                        {/* Date Picker Bar & Calendar */}
+                        <div className="space-y-4">
+                            <h2 className="text-xs font-bold text-[#C4A265] uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
                                 <CalendarDays size={14} /> Select Dates
                             </h2>
-                            {renderCalendar()}
+                            <DateSelectionBar
+                                checkIn={checkIn ? toLocalDateStr(checkIn) : undefined}
+                                checkOut={checkOut ? toLocalDateStr(checkOut) : undefined}
+                                disabledDates={bookedDatesForPicker.size > 0 ? bookedDatesForPicker : undefined}
+                                onDatesChange={(ci, co) => {
+                                    setCheckIn(new Date(ci + "T00:00:00"));
+                                    setCheckOut(new Date(co + "T00:00:00"));
+                                }}
+                                onCheckoutCleared={() => {
+                                    setCheckOut(null);
+                                }}
+                            />
+                            <AvailabilityCalendar
+                                propertyId={dbPropertyId}
+                                propertySlug={SLUG_MAP[propertyName]}
+                                subPropertyId={subPropertyId}
+                                weekdayPrice={availData?.pricing?.weekday?.price || "0"}
+                                weekendPrice={availData?.pricing?.weekend?.price || "0"}
+                                saturdayPrice={availData?.pricing?.saturday?.price}
+                                primeDatePrice={availData?.pricing?.primeDates || ""}
+                                initialCheckIn={checkIn}
+                                initialCheckOut={checkOut}
+                                compact
+                            />
                             {checkIn && checkOut && (
-                                <div className="mt-3 flex items-center justify-between bg-white border border-[#e8e5dd] rounded-xl px-4 py-3">
+                                <div className="flex items-center justify-between bg-white border border-[#e8e5dd] rounded-xl px-4 py-3 shadow-sm">
                                     <div className="text-xs"><span className="text-[#555]">Check-in:</span> <strong className="text-[#1a1a2e]">{fmtDateStr(checkIn)}</strong></div>
                                     <div className="text-xs text-[#C4A265] font-bold">{nights} night{nights > 1 ? 's' : ''}</div>
                                     <div className="text-xs"><span className="text-[#555]">Check-out:</span> <strong className="text-[#1a1a2e]">{fmtDateStr(checkOut)}</strong></div>
                                 </div>
                             )}
                             {dateConflict && (
-                                <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 shadow-sm">
                                     <AlertTriangle size={18} className="text-red-500 mt-0.5 shrink-0" />
                                     <div>
                                         <p className="text-sm font-bold text-red-700">Dates no longer available</p>
