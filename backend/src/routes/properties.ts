@@ -471,7 +471,7 @@ router.get("/:slug/availability", async (req, res) => {
         const bookings = await prisma.staycationBooking.findMany({
             where: {
                 propertyId: property.id,
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
                 checkInDate: { lte: endDate },
                 checkOutDate: { gte: startDate },
             },

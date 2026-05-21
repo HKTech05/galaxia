@@ -91,11 +91,11 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         // Daily earnings for the last 30 days (1-month view)
         const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
         const stayDaily = await prisma.staycationBooking.findMany({
-            where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             select: { totalAmount: true, bookedAt: true },
         });
         const ddDaily = await prisma.ddBooking.findMany({
-            where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: thirtyDaysAgo }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             select: { totalAmount: true, bookedAt: true },
         });
         const dailyMap: Record<string, { staycation: number; dd: number }> = {};
@@ -121,11 +121,11 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
         // Monthly earnings for the last 12 months
         const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
         const stayMonthly = await prisma.staycationBooking.findMany({
-            where: { bookedAt: { gte: yearAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: yearAgo }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             select: { totalAmount: true, bookedAt: true },
         });
         const ddMonthly = await prisma.ddBooking.findMany({
-            where: { bookedAt: { gte: yearAgo }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: yearAgo }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             select: { totalAmount: true, bookedAt: true },
         });
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -151,15 +151,15 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
 
         // ── DD booking sources ──
         const ddWebsiteCount = await prisma.ddBooking.count({
-            where: { bookedAt: { gte: startDate }, source: "website", status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, source: "website", status: { notIn: ["cancelled", "no_show", "transferred"] } },
         });
         const ddWalkInCount = await prisma.ddBooking.count({
-            where: { bookedAt: { gte: startDate }, source: "reception", status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, source: "reception", status: { notIn: ["cancelled", "no_show", "transferred"] } },
         });
 
         // ── DD screen & package chart data ──
         const allDdBookings = await prisma.ddBooking.findMany({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             include: { screen: true, package: true },
         });
         const ddScreenMap: Record<string, number> = {};
@@ -234,11 +234,11 @@ router.get("/earnings", authMiddleware, requireRole("owner", "developer"), async
         const startDate = new Date(now.getFullYear(), now.getMonth() - months, 1);
 
         const stayBookings = await prisma.staycationBooking.findMany({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             select: { totalAmount: true, bookedAt: true },
         });
         const ddBookings = await prisma.ddBooking.findMany({
-            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show"] } },
+            where: { bookedAt: { gte: startDate }, status: { notIn: ["cancelled", "no_show", "transferred"] } },
             select: { totalAmount: true, bookedAt: true },
         });
 

@@ -103,7 +103,7 @@ router.get("/bookings", authMiddleware, async (req: AuthRequest, res) => {
 
         const where: any = {
             propertyId: parseInt(propertyId as string),
-            status: { notIn: ["cancelled", "no_show"] },
+            status: { notIn: ["cancelled", "no_show", "transferred"] },
             checkInDate: { lte: endDate },
             checkOutDate: { gte: startDate },
         };

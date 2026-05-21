@@ -93,7 +93,7 @@ router.post("/", async (req, res) => {
             const overlappingBookings = await tx.staycationBooking.findMany({
                 where: {
                     propertyId: parsedPropertyId,
-                    status: { notIn: ["cancelled", "no_show"] },
+                    status: { notIn: ["cancelled", "no_show", "transferred"] },
                     checkInDate: { lt: checkOut },
                     checkOutDate: { gt: checkIn },
                 },
@@ -808,7 +808,7 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
         const bookings = await prisma.staycationBooking.findMany({
             where: {
                 propertyId: { in: propertyIds },
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
                 checkInDate: { lte: targetDate },   // checked in on or before this date
                 checkOutDate: { gt: targetDate },    // hasn't checked out yet (checkout is after this date)
             },
@@ -1037,7 +1037,7 @@ router.post("/hold", async (req, res) => {
                 where: {
                     propertyId: parsedPropertyId,
                     ...(parsedSubPropertyId ? { subPropertyId: parsedSubPropertyId } : {}),
-                    status: { notIn: ["cancelled", "no_show"] },
+                    status: { notIn: ["cancelled", "no_show", "transferred"] },
                     checkInDate: { lt: dayEnd },
                     checkOutDate: { gt: dayStart },
                 },

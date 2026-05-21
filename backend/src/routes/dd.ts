@@ -43,7 +43,7 @@ router.get("/availability/:date", async (req, res) => {
         const bookings = await prisma.ddBooking.findMany({
             where: {
                 bookingDate: date,
-                status: { notIn: ["cancelled", "no_show"] },
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
             },
             select: {
                 screenId: true,
