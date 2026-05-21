@@ -1496,7 +1496,7 @@ export default function BookMultiPage() {
                             <div className="border-t border-border-light mt-4 pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(grandSubtotal)}</span></div>
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
-                                <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span>{formatPrice(gst)}</span></div>
+                                <div className="flex justify-between"><span className="text-text-secondary">Taxes (5%)</span><span>{formatPrice(gst)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                 {totalSecurityDeposit > 0 && <div className="flex justify-between text-xs text-sky-600 mt-1"><span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span><span>{formatPrice(totalSecurityDeposit)}</span></div>}
                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">

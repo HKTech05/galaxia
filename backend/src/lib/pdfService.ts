@@ -364,43 +364,74 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         }
         y = drawDivider(doc, y);
 
-        // Payment Summary — Total Room Price includes GST (basePrice - extra charges)
-        y = drawSectionTitle(doc, "Payment Summary", y);
-        const storedExtraAdult = (booking as any).extraAdultCharge || 0;
-        const storedExtraKids = (booking as any).extraKidsCharge || 0;
-        const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
-        y = drawPaymentRow(doc, "Base Price", fmtCurrency(totalRoomPrice), y, { bold: true });
-        if (storedExtraAdult > 0) {
-            y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(storedExtraAdult), y);
-        }
-        if (storedExtraKids > 0) {
-            y = drawPaymentRow(doc, "Extra Child Charge", fmtCurrency(storedExtraKids), y);
-        }
-        if (!storedExtraAdult && !storedExtraKids && booking.extraPersonCharge > 0) {
-            y = drawPaymentRow(doc, "Extra Person Charges", fmtCurrency(booking.extraPersonCharge), y);
-        }
-        // Add-on line items (e.g. Celebration Package)
+        // Pricing Reconstruction Logic
+        const calculatedRoomTotal = (booking.nightlyRate || 0) * (booking.numNights || 1) * (booking.numCottages || 1);
+        const isHistoricalReceptionDiscounted = booking.source === "reception" && 
+            booking.discountAmount > 0 && 
+            booking.basePrice < calculatedRoomTotal;
+        const displayBasePrice = isHistoricalReceptionDiscounted ? calculatedRoomTotal : (booking.basePrice || 0);
+
+        const extraAdult = booking.extraAdultCharge || 0;
+        const extraKids = booking.extraKidsCharge || 0;
+        const extraPerson = booking.extraPersonCharge || 0;
+        const petCharges = (booking.numPets || 0) * 600;
+
+        let addonsTotal = 0;
+        const displayAddons: { label: string; price: number }[] = [];
         if (booking.addons && typeof booking.addons === "object") {
             const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
             for (const a of addonsData) {
-                if (a && a.name && a.price) {
-                    const label = a.occasion ? `${a.name} (${a.occasion})` : a.name;
-                    y = drawPaymentRow(doc, label, fmtCurrency(a.price), y);
+                if (a && a.name !== 'Food Preference' && a.price) {
+                    const price = Number(a.price) || 0;
+                    addonsTotal += price;
+                    displayAddons.push({
+                        label: a.occasion ? `${a.name} (${a.occasion})` : a.name,
+                        price
+                    });
                 }
             }
         }
-        if (booking.discountAmount > 0) {
-            y = drawPaymentRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
+
+        const discountAmount = booking.discountAmount || 0;
+        const taxes = booking.gstAmount || 0;
+        const advanceAmount = booking.advanceAmount || 0;
+        const balanceAmount = booking.balanceAmount || 0;
+
+        // Reconstruct the correct Total Amount (pre-tax subtotal)
+        // Mathematically guarantees Total + Taxes = Advance + Balance
+        const displayTotalAmount = (advanceAmount + balanceAmount) - taxes;
+
+        y = drawSectionTitle(doc, "Payment Summary", y);
+        y = drawPaymentRow(doc, "Base Price", fmtCurrency(displayBasePrice), y, { bold: true });
+
+        if (extraAdult > 0) {
+            y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(extraAdult), y);
+        }
+        if (extraKids > 0) {
+            y = drawPaymentRow(doc, "Extra Child Charge", fmtCurrency(extraKids), y);
+        }
+        if (!extraAdult && !extraKids && extraPerson > 0) {
+            y = drawPaymentRow(doc, "Extra Person Charges", fmtCurrency(extraPerson), y);
+        }
+        if (petCharges > 0) {
+            y = drawPaymentRow(doc, "Pet Charges", fmtCurrency(petCharges), y);
+        }
+        for (const addon of displayAddons) {
+            y = drawPaymentRow(doc, addon.label, fmtCurrency(addon.price), y);
+        }
+        if (discountAmount > 0) {
+            y = drawPaymentRow(doc, "Coupon Applied", `- ${fmtCurrency(discountAmount)}`, y, { color: "#16a34a" });
         }
 
         doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
-        y = drawPaymentRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
+        y = drawPaymentRow(doc, "Total Amount", fmtCurrency(displayTotalAmount), y, { bold: true, color: GOLD });
+        y = drawPaymentRow(doc, "Taxes", fmtCurrency(taxes), y);
         y = drawDivider(doc, y);
 
-        y = drawPaymentRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(booking.advanceAmount) : "Not yet paid", y,
+        y = drawPaymentRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(advanceAmount) : "Not yet paid", y,
             { color: booking.advancePaid ? "#16a34a" : TEXT_MED });
-        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(booking.balanceAmount || 0), y, { bold: true });
+        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(balanceAmount), y, { bold: true });
         if (securityDeposit) {
             y = drawPaymentRow(doc, "Security Deposit - Pay at Venue", securityDeposit, y);
         }

@@ -93,17 +93,19 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     const checkOutDate = fmtDate(booking.checkOutDate);
     const bookedOn = fmtShortDate(booking.bookedAt || new Date());
 
-    const advancePaid = booking.advancePaid ? fmtCurrency(booking.advanceAmount) : "Not yet paid";
-    const balanceDue = fmtCurrency(booking.balanceAmount || 0);
-    const securityDeposit = booking.securityDeposit ? fmtCurrency(booking.securityDeposit) : null;
-    const securityRefund = prop.securityRefund || "Refundable at checkout (subject to property condition)";
+    // Pricing Reconstruction Logic
+    const calculatedRoomTotal = (booking.nightlyRate || 0) * (booking.numNights || 1) * (booking.numCottages || 1);
+    const isHistoricalReceptionDiscounted = booking.source === "reception" && 
+        booking.discountAmount > 0 && 
+        booking.basePrice < calculatedRoomTotal;
+    const displayBasePrice = isHistoricalReceptionDiscounted ? calculatedRoomTotal : (booking.basePrice || 0);
 
-    const discountRow = booking.discountAmount > 0
-        ? paymentRow("Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, { color: "#16a34a" })
-        : "";
+    const extraAdult = booking.extraAdultCharge || 0;
+    const extraKids = booking.extraKidsCharge || 0;
+    const extraPerson = booking.extraPersonCharge || 0;
+    const petCharges = (booking.numPets || 0) * 600;
 
-    // Build add-on rows (e.g. Celebration Package ₹1,200)
-    let addonRows = "";
+    let displayAddons: { label: string; price: number }[] = [];
     let foodPreference = "";
     if (booking.addons && typeof booking.addons === "object") {
         const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
@@ -111,11 +113,55 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
             if (a && a.name === 'Food Preference' && a.foodType) {
                 foodPreference = a.foodType;
             } else if (a && a.name && a.price) {
-                const label = a.occasion ? `${a.name} (${a.occasion})` : a.name;
-                addonRows += paymentRow(label, fmtCurrency(a.price));
+                displayAddons.push({
+                    label: a.occasion ? `${a.name} (${a.occasion})` : a.name,
+                    price: Number(a.price) || 0
+                });
             }
         }
     }
+
+    const discountAmount = booking.discountAmount || 0;
+    const taxes = booking.gstAmount || 0;
+    const advanceAmount = booking.advanceAmount || 0;
+    const balanceAmount = booking.balanceAmount || 0;
+
+    // Reconstruct the correct Total Amount (pre-tax subtotal)
+    // Mathematically guarantees Total + Taxes = Advance + Balance
+    const displayTotalAmount = (advanceAmount + balanceAmount) - taxes;
+
+    // Generate pricing rows dynamically in the exact requested sequence
+    let pricingRowsHtml = "";
+    pricingRowsHtml += paymentRow("Base Price", fmtCurrency(displayBasePrice), { bold: true });
+
+    if (extraAdult > 0) {
+        pricingRowsHtml += paymentRow("Extra Adult Charge", fmtCurrency(extraAdult));
+    }
+    if (extraKids > 0) {
+        pricingRowsHtml += paymentRow("Extra Child Charge", fmtCurrency(extraKids));
+    }
+    if (!extraAdult && !extraKids && extraPerson > 0) {
+        pricingRowsHtml += paymentRow("Extra Person Charges", fmtCurrency(extraPerson));
+    }
+    if (petCharges > 0) {
+        pricingRowsHtml += paymentRow("Pet Charges", fmtCurrency(petCharges));
+    }
+    for (const addon of displayAddons) {
+        pricingRowsHtml += paymentRow(addon.label, fmtCurrency(addon.price));
+    }
+    if (discountAmount > 0) {
+        pricingRowsHtml += paymentRow("Coupon Applied", `- ${fmtCurrency(discountAmount)}`, { color: "#16a34a" });
+    }
+
+    pricingRowsHtml += paymentRow("Total Amount", fmtCurrency(displayTotalAmount), { bold: true, color: GOLD, borderTop: true });
+    pricingRowsHtml += divider();
+    pricingRowsHtml += paymentRow("Taxes", fmtCurrency(taxes));
+    pricingRowsHtml += divider();
+
+    const advancePaid = booking.advancePaid ? fmtCurrency(advanceAmount) : "Not yet paid";
+    const balanceDue = fmtCurrency(balanceAmount);
+    const securityDeposit = booking.securityDeposit ? fmtCurrency(booking.securityDeposit) : null;
+    const securityRefund = prop.securityRefund || "Refundable at checkout (subject to property condition)";
 
     const foodSection = prop.foodIncluded
         ? `<div style="margin-top: 20px; padding: 18px 22px; background: #f5f0e6; border-radius: 8px; border-left: 3px solid ${GOLD};">
@@ -187,27 +233,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') ? row("Cottages", `${(booking as any).numCottages || 1}`) : ""}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}
-                ${(() => {
-                    const storedExtraAdult = (booking as any).extraAdultCharge || 0;
-                    const storedExtraKids = (booking as any).extraKidsCharge || 0;
-                    const totalRoomPrice = Math.max(0, (booking.basePrice || 0) - storedExtraAdult - storedExtraKids);
-                    return paymentRow("Base Price", fmtCurrency(totalRoomPrice), { bold: true });
-                })()}
-                ${(() => {
-                    const storedExtraAdult = (booking as any).extraAdultCharge || 0;
-                    const storedExtraKids = (booking as any).extraKidsCharge || 0;
-                    let extraRows = '';
-                    if (storedExtraAdult > 0) extraRows += paymentRow("Extra Adult Charge", fmtCurrency(storedExtraAdult));
-                    if (storedExtraKids > 0) extraRows += paymentRow("Extra Child Charge", fmtCurrency(storedExtraKids));
-                    if (!storedExtraAdult && !storedExtraKids && booking.extraPersonCharge > 0) {
-                        extraRows += paymentRow("Extra Person Charges", fmtCurrency(booking.extraPersonCharge));
-                    }
-                    return extraRows;
-                })()}
-                ${addonRows}
-                ${discountRow}
-                ${paymentRow("Total Amount", fmtCurrency(booking.totalAmount), { bold: true, color: GOLD, borderTop: true })}
-                ${divider()}
+                ${pricingRowsHtml}
                 ${paymentRow("Advance Paid", advancePaid, { color: booking.advancePaid ? "#16a34a" : TEXT_MED })}
                 ${paymentRow("Balance Due at Venue", balanceDue, { bold: true })}
                 ${securityDeposit ? paymentRow("Security Deposit - Pay at Venue", securityDeposit) : ""}

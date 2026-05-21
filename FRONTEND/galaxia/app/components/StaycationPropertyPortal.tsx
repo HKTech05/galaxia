@@ -465,7 +465,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
                 securityDeposit: 3000,
-                basePrice: calculated.basePrice,
+                basePrice: calculated.roomTotal,
                 extraAdultCharge: calculated.extraAdultCharge,
                 extraKidsCharge: calculated.extraKidsCharge,
                 gstAmount: calculated.gstAmount,
@@ -1407,7 +1407,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </h2>
                                         {(() => {
                                             const p = calculatePrice();
-                                            return <p className="text-xs text-slate-500 mt-1">Base ₹{p.basePrice.toLocaleString('en-IN')} + GST ₹{p.gstAmount.toLocaleString('en-IN')}</p>;
+                                            return <p className="text-xs text-slate-500 mt-1">Base ₹{p.basePrice.toLocaleString('en-IN')} + Taxes ₹{p.gstAmount.toLocaleString('en-IN')}</p>;
                                         })()}
                                     </div>
 

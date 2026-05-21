@@ -1616,7 +1616,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(roomPrice + extraCharges)}</span></div>
                                 {celebrationAddon && <div className="flex justify-between text-amber-700 text-xs"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
-                                <div className="flex justify-between"><span className="text-text-secondary">GST ({property.gstPercent}%)</span><span>{formatPrice(taxesAndFees)}</span></div>
+                                <div className="flex justify-between"><span className="text-text-secondary">Taxes ({property.gstPercent}%)</span><span>{formatPrice(taxesAndFees)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(totalAmount)}</span></div>
                                 <div className="flex justify-between text-xs text-sky-600 mt-1">
                                     <span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span>

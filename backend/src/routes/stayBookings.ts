@@ -206,7 +206,18 @@ router.post("/", async (req, res) => {
                 if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
                     couponId = coupon.id;
                     if (coupon.discountType === "percentage") {
-                        discountAmount = Math.round((totalAmount * Number(coupon.discountValue)) / 100);
+                        const petCharges = (numPets || 0) * 600;
+                        let addonsTotal = 0;
+                        if (addons) {
+                            const addonsArr = Array.isArray(addons) ? addons : [addons];
+                            for (const addon of addonsArr) {
+                                if (addon && addon.price) {
+                                    addonsTotal += Number(addon.price) || 0;
+                                }
+                            }
+                        }
+                        const subtotal = (basePrice || 0) + (extraPersonCharge || 0) + (extraAdultCharge || 0) + (extraKidsCharge || 0) + petCharges + addonsTotal;
+                        discountAmount = Math.round((subtotal * Number(coupon.discountValue)) / 100);
                     } else {
                         discountAmount = Number(coupon.discountValue);
                     }
@@ -270,7 +281,7 @@ router.post("/", async (req, res) => {
                     extraAdultCharge: extraAdultCharge || 0,
                     extraKidsCharge: extraKidsCharge || 0,
                     gstAmount: gstAmount || 0,
-                    totalAmount: (totalAmount || 0) - discountAmount,
+                    totalAmount: totalAmount || 0,
                     advanceAmount: advanceAmount || 0,
                     balanceAmount: balanceAmount || 0,
                     securityDeposit: securityDeposit || 0,

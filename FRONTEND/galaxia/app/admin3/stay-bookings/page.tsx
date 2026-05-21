@@ -971,81 +971,101 @@ export default function StayBookingsPage() {
                             <div>
                                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Pricing Breakdown</h4>
                                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-2">
-                                    {selectedBooking.basePrice > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Base Price</span>
-                                        <span className="font-bold text-slate-800">{formatPrice(selectedBooking.basePrice)}</span>
-                                    </div>
-                                    )}
-                                    {selectedBooking.extraAdultCharge > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-600">Extra Adult Charge</span>
-                                            <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraAdultCharge)}</span>
-                                        </div>
-                                    )}
-                                    {selectedBooking.extraKidsCharge > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-600">Extra Child Charge</span>
-                                            <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraKidsCharge)}</span>
-                                        </div>
-                                    )}
-                                    {!selectedBooking.extraAdultCharge && !selectedBooking.extraKidsCharge && selectedBooking.extraPersonCharge > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-600">Extra Person Charge</span>
-                                            <span className="font-bold text-slate-800">{formatPrice(selectedBooking.extraPersonCharge)}</span>
-                                        </div>
-                                    )}
-                                    {selectedBooking.discountAmount > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-emerald-600">Discount {selectedBooking.couponCode ? `(${selectedBooking.couponCode})` : ""}</span>
-                                            <span className="font-bold text-emerald-600">-{formatPrice(selectedBooking.discountAmount)}</span>
-                                        </div>
-                                    )}
-                                    {/* Transfer info warning */}
-                                    {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.some((a: any) => a?.transferInfo) && (
-                                        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 space-y-1">
-                                            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">🔄 Transferred Booking</p>
-                                            {selectedBooking.addons.filter((a: any) => a?.transferInfo).map((a: any, i: number) => (
-                                                <div key={i} className="text-xs text-indigo-700 font-medium space-y-0.5">
-                                                    <p>From <strong>{a.transferInfo.fromRef}</strong></p>
-                                                    <p>Original dates: <strong>{new Date(a.transferInfo.fromCheckIn).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} → {new Date(a.transferInfo.fromCheckOut).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></p>
-                                                    {a.transferInfo.fromProperty && <p>Original property: <strong>{a.transferInfo.fromProperty}</strong></p>}
-                                                    <p className="text-amber-600 font-bold">₹{a.transferInfo.fee} transfer fee included</p>
-                                                    <p className="text-slate-400">Transferred on {new Date(a.transferInfo.transferDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {selectedBooking.addons && Array.isArray(selectedBooking.addons) && selectedBooking.addons.length > 0 && selectedBooking.addons.map((addon: any, i: number) => (
-                                        <div key={i}>
-                                            {addon.name === 'Celebration Add-on' && (
-                                                <>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-amber-700">{addon.name}</span>
-                                                        <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
-                                                    </div>
-                                                    {addon.cakeMessage && <p className="text-xs text-slate-500 mt-0.5 ml-1">Cake: {addon.cakeMessage}</p>}
-                                                    {addon.occasion && <p className="text-xs text-slate-500 ml-1">Occasion: {addon.occasion}</p>}
-                                                </>
-                                            )}
-                                            {addon.name === 'Food Preference' && (
-                                                <div className="flex justify-between text-sm items-center">
-                                                    <span className="text-emerald-700">Food Preference</span>
-                                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg)</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    {selectedBooking.gstAmount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">GST (5%)</span>
-                                        <span className="font-bold text-slate-800">{formatPrice(selectedBooking.gstAmount)}</span>
-                                    </div>
-                                    )}
-                                    <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
-                                        <span className="font-bold text-slate-800">Total Amount</span>
-                                        <span className="font-black text-lg text-slate-900">{formatPrice(selectedBooking.totalAmount)}</span>
-                                    </div>
+                                     {(() => {
+                                         const calculatedRoomTotal = (selectedBooking.nightlyRate || 0) * (selectedBooking.nights || 1) * (selectedBooking.numCottages || 1);
+                                         const isHistoricalReceptionDiscounted = selectedBooking.source === "reception" && 
+                                             selectedBooking.discountAmount > 0 && 
+                                             selectedBooking.basePrice < calculatedRoomTotal;
+
+                                         const extraAdult = selectedBooking.extraAdultCharge || 0;
+                                         const extraKids = selectedBooking.extraKidsCharge || 0;
+                                         const extraPerson = selectedBooking.extraPersonCharge || 0;
+                                         const petCharges = (selectedBooking.pets || 0) * 600;
+
+                                         const displayBasePrice = isHistoricalReceptionDiscounted ? calculatedRoomTotal : (selectedBooking.basePrice || 0);
+
+                                         let addonsTotal = 0;
+                                         const addonRows: React.ReactNode[] = [];
+                                         if (selectedBooking.addons && Array.isArray(selectedBooking.addons)) {
+                                             selectedBooking.addons.forEach((addon: any, i: number) => {
+                                                 if (addon.name === 'Celebration Add-on') {
+                                                     addonsTotal += Number(addon.price || 0);
+                                                     addonRows.push(
+                                                         <div key={`addon-${i}`} className="space-y-1">
+                                                             <div className="flex justify-between text-sm">
+                                                                 <span className="text-amber-700">{addon.name}</span>
+                                                                 <span className="font-bold text-amber-700">{formatPrice(addon.price || 0)}</span>
+                                                             </div>
+                                                             {addon.cakeMessage && <p className="text-xs text-slate-500 mt-0.5 ml-1">Cake: {addon.cakeMessage}</p>}
+                                                             {addon.occasion && <p className="text-xs text-slate-500 ml-1">Occasion: {addon.occasion}</p>}
+                                                         </div>
+                                                     );
+                                                 } else if (addon.name === 'Food Preference') {
+                                                     addonRows.push(
+                                                         <div key={`addon-${i}`} className="flex justify-between text-sm items-center">
+                                                             <span className="text-emerald-700">Food Preference</span>
+                                                             <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg)</span>
+                                                         </div>
+                                                     );
+                                                 }
+                                             });
+                                         }
+
+                                         const computedTotalAmount = (displayBasePrice + extraAdult + extraKids + extraPerson + petCharges + addonsTotal) - (selectedBooking.discountAmount || 0);
+                                         const taxes = selectedBooking.gstAmount || 0;
+
+                                         return (
+                                             <>
+                                                 {displayBasePrice > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-slate-600">Base Price</span>
+                                                         <span className="font-bold text-slate-800">{formatPrice(displayBasePrice)}</span>
+                                                     </div>
+                                                 )}
+                                                 {extraAdult > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-slate-600">Extra Adult Charge</span>
+                                                         <span className="font-bold text-slate-800">{formatPrice(extraAdult)}</span>
+                                                     </div>
+                                                 )}
+                                                 {extraKids > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-slate-600">Extra Child Charge</span>
+                                                         <span className="font-bold text-slate-800">{formatPrice(extraKids)}</span>
+                                                     </div>
+                                                 )}
+                                                 {!extraAdult && !extraKids && extraPerson > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-slate-600">Extra Person Charge</span>
+                                                         <span className="font-bold text-slate-800">{formatPrice(extraPerson)}</span>
+                                                     </div>
+                                                 )}
+                                                 {petCharges > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-slate-600">Pet Charges</span>
+                                                         <span className="font-bold text-slate-800">{formatPrice(petCharges)}</span>
+                                                     </div>
+                                                 )}
+                                                 {selectedBooking.discountAmount > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-emerald-600">Discount {selectedBooking.couponCode ? `(${selectedBooking.couponCode})` : ""}</span>
+                                                         <span className="font-bold text-emerald-600">-{formatPrice(selectedBooking.discountAmount)}</span>
+                                                     </div>
+                                                 )}
+                                                 {addonRows}
+                                                 <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
+                                                     <span className="font-bold text-slate-800">Total Amount</span>
+                                                     <span className="font-black text-lg text-slate-900">{formatPrice(computedTotalAmount)}</span>
+                                                 </div>
+                                                 {taxes > 0 && (
+                                                     <div className="flex justify-between text-sm">
+                                                         <span className="text-slate-600">Taxes</span>
+                                                         <span className="font-bold text-slate-800">{formatPrice(taxes)}</span>
+                                                     </div>
+                                                 )}
+                                             </>
+                                         );
+                                     })()}
                                 </div>
                             </div>
 
@@ -1425,7 +1445,7 @@ export default function StayBookingsPage() {
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">GST Amount</label>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{editBooking.isDd ? "GST Amount" : "Taxes"}</label>
                                         <input type="number" value={editForm.gstAmount ?? ''} onChange={e => setEditForm({...editForm, gstAmount: parseFloat(e.target.value) || 0})}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
