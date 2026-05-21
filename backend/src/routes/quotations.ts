@@ -1,5 +1,6 @@
 // ───────────────────────────────────────────────────────────────
 //  Quotation API — Generate quotes, PDFs, and send via WhatsApp
+//  Supports multi-villa quotations (Amstel Nest units, Ambrose villas)
 // ───────────────────────────────────────────────────────────────
 
 import { Router, Request, Response } from "express";
@@ -21,15 +22,11 @@ setInterval(() => {
     }
 }, 60 * 60 * 1000);
 
-// ── Pricing helpers (mirrors frontend StaycationPropertyPortal logic) ──
+// ── Pricing helpers ──
 
 interface PricingEntry {
-    weekday: number;
-    weekend: number;
-    saturday: number;
-    extraAdult: number;
-    kidsCharge: number;
-    baseGuests: number;
+    weekday: number; weekend: number; saturday: number;
+    extraAdult: number; kidsCharge: number; baseGuests: number;
 }
 
 async function fetchLivePricing(): Promise<Record<string, PricingEntry>> {
@@ -63,301 +60,279 @@ async function fetchLivePricing(): Promise<Record<string, PricingEntry>> {
             };
 
             const parentEntry = buildEntry(property.pricing);
-            if (parentEntry) {
-                result[property.name] = parentEntry;
-            }
+            if (parentEntry) result[property.name] = parentEntry;
 
             for (const sp of property.subProperties) {
                 const spEntry = buildEntry(sp.pricing);
-                if (spEntry) {
-                    result[`${property.name}/${sp.name.toUpperCase()}`] = spEntry;
-                }
+                if (spEntry) result[`${property.name}/${sp.name.toUpperCase()}`] = spEntry;
             }
         } catch (err) {
             console.warn(`[Quotation] Failed to fetch pricing for ${slug}:`, err);
         }
     }
-
     return result;
 }
 
-function calculateQuotePrice(data: {
-    propertyName: string;
-    villaName?: string;
-    checkIn: string;
-    checkOut: string;
-    adults: number;
-    kids: number;
-    pets: number;
-    decoration: boolean;
-}, livePricing: Record<string, PricingEntry>) {
-    const start = new Date(data.checkIn + "T00:00:00");
-    const end = new Date(data.checkOut + "T00:00:00");
+// Calculate price for a single unit for the given dates
+function calculateUnitPrice(
+    propertyName: string, villaName: string | undefined,
+    checkIn: string, checkOut: string,
+    adults: number, kids: number, pets: number, decoration: boolean,
+    livePricing: Record<string, PricingEntry>
+) {
+    const start = new Date(checkIn + "T00:00:00");
+    const end = new Date(checkOut + "T00:00:00");
     const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
-    let roomTotal = 0;
-    let extraAdultTotal = 0;
-    let extraKidsTotal = 0;
+    let roomTotal = 0, extraAdultTotal = 0, extraKidsTotal = 0;
 
     for (let i = 0; i < nights; i++) {
-        const currentDate = new Date(start);
-        currentDate.setDate(start.getDate() + i);
-        const day = currentDate.getDay();
-        const isSaturday = day === 6;
-        const isWeekend = day === 0 || day === 5 || day === 6;
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        const day = d.getDay();
+        const isSat = day === 6;
+        const isWe = day === 0 || day === 5 || day === 6;
 
-        let basePrice = 0;
-        let extraAdultPrice = 0;
-        let kidsPrice = 0;
-        let baseGuests = 2;
+        let basePrice = 0, extraAdultPrice = 0, kidsPrice = 0, baseGuests = 2;
 
-        // Key lookup (same as frontend)
+        // Key lookup
         let liveKey = "";
-        const prop = data.propertyName;
-        if (prop.includes("Ambrose") && data.villaName) {
-            liveKey = `Ambrose/${data.villaName.toUpperCase()}`;
-        } else if (prop.includes("Amstel") && data.villaName) {
-            liveKey = data.villaName.toLowerCase().includes("family")
+        if (propertyName.includes("Ambrose") && villaName) {
+            liveKey = `Ambrose/${villaName.toUpperCase()}`;
+        } else if (propertyName.includes("Amstel") && villaName) {
+            liveKey = villaName.toLowerCase().includes("family")
                 ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
         } else {
             for (const k of Object.keys(livePricing)) {
-                if (prop.includes(k)) { liveKey = k; break; }
+                if (propertyName.includes(k)) { liveKey = k; break; }
             }
         }
 
         let lp = livePricing[liveKey];
         if (!lp) {
-            const upperKey = liveKey.toUpperCase();
+            const upper = liveKey.toUpperCase();
             for (const [k, v] of Object.entries(livePricing)) {
-                if (k.toUpperCase() === upperKey) { lp = v; break; }
+                if (k.toUpperCase() === upper) { lp = v; break; }
             }
         }
-        if (!lp && (prop.includes("Amstel") || prop.includes("Ambrose"))) {
-            const parentKey = prop.includes("Amstel") ? "Amstel Nest" : "Ambrose";
-            lp = livePricing[parentKey];
+        if (!lp && (propertyName.includes("Amstel") || propertyName.includes("Ambrose"))) {
+            lp = livePricing[propertyName.includes("Amstel") ? "Amstel Nest" : "Ambrose"];
         }
 
         if (lp) {
-            basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
-            extraAdultPrice = lp.extraAdult;
-            kidsPrice = lp.kidsCharge;
-            baseGuests = lp.baseGuests;
+            basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
+            extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;
         } else {
             // Hardcoded fallback
-            if (prop.includes("Hill View")) { basePrice = isWeekend ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
-            else if (prop.includes("Mount View")) { basePrice = isWeekend ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
-            else if (prop.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-            else if (prop.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
-            else if (prop.includes("Amstel")) { basePrice = isWeekend ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
-            else if (prop.includes("Ambrose")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
+            if (propertyName.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
+            else if (propertyName.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+            else if (propertyName.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
+            else if (propertyName.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+            else if (propertyName.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
+            else if (propertyName.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
         }
 
         roomTotal += basePrice;
-        const extraAdults = Math.max(0, data.adults - baseGuests);
-        const freeKidsSlots = Math.max(0, baseGuests - data.adults);
-        const extraKids = Math.max(0, data.kids - freeKidsSlots);
-        extraAdultTotal += extraAdults * extraAdultPrice;
-        extraKidsTotal += extraKids * kidsPrice;
+        const exA = Math.max(0, adults - baseGuests);
+        const freeKids = Math.max(0, baseGuests - adults);
+        const exK = Math.max(0, kids - freeKids);
+        extraAdultTotal += exA * extraAdultPrice;
+        extraKidsTotal += exK * kidsPrice;
     }
 
-    let subtotal = roomTotal + extraAdultTotal + extraKidsTotal;
+    return { nights, roomTotal, extraAdultTotal, extraKidsTotal };
+}
+
+// Full pricing calc — supports multi-villa via villaQuantities
+function calculateQuotePrice(data: {
+    propertyName: string;
+    villaName?: string;
+    villaQuantities?: Record<string, number>; // e.g. { "Standard Cottage": 3 } or { "TAKE-1": 1, "ALTA": 1 }
+    checkIn: string; checkOut: string;
+    adults: number; kids: number; pets: number; decoration: boolean;
+}, livePricing: Record<string, PricingEntry>) {
+
+    let totalRoomTotal = 0;
+    let totalExtraAdult = 0;
+    let totalExtraKids = 0;
+    let nights = 0;
+    let totalUnits = 0;
+
+    if (data.villaQuantities && Object.keys(data.villaQuantities).length > 0) {
+        // Multi-villa: calculate per villa type × quantity
+        for (const [villaName, qty] of Object.entries(data.villaQuantities)) {
+            if (qty <= 0) continue;
+            const unit = calculateUnitPrice(
+                data.propertyName, villaName,
+                data.checkIn, data.checkOut,
+                data.adults, data.kids, 0, false,
+                livePricing
+            );
+            totalRoomTotal += unit.roomTotal * qty;
+            totalExtraAdult += unit.extraAdultTotal * qty;
+            totalExtraKids += unit.extraKidsTotal * qty;
+            nights = unit.nights;
+            totalUnits += qty;
+        }
+    } else {
+        // Single villa/property
+        const unit = calculateUnitPrice(
+            data.propertyName, data.villaName,
+            data.checkIn, data.checkOut,
+            data.adults, data.kids, 0, false,
+            livePricing
+        );
+        totalRoomTotal = unit.roomTotal;
+        totalExtraAdult = unit.extraAdultTotal;
+        totalExtraKids = unit.extraKidsTotal;
+        nights = unit.nights;
+        totalUnits = 1;
+    }
+
     const DECORATION_PRICE = 1200;
+    let subtotal = totalRoomTotal + totalExtraAdult + totalExtraKids;
     if (data.decoration) subtotal += DECORATION_PRICE;
 
     const baseAmount = Math.round(subtotal);
     const gstAmount = Math.round(baseAmount * 0.05);
-    let finalTotal = baseAmount + gstAmount;
-    finalTotal += data.pets * 600;
+    let finalTotal = baseAmount + gstAmount + data.pets * 600;
     finalTotal = Math.round(finalTotal / 10) * 10;
 
     return {
         nights,
-        roomTotal: Math.round(roomTotal),
-        extraAdultCharge: Math.round(extraAdultTotal),
-        extraKidsCharge: Math.round(extraKidsTotal),
+        totalUnits,
+        roomTotal: Math.round(totalRoomTotal),
+        extraAdultCharge: Math.round(totalExtraAdult),
+        extraKidsCharge: Math.round(totalExtraKids),
         decorationCharge: data.decoration ? DECORATION_PRICE : 0,
         subtotal: baseAmount,
         gstAmount,
         petCharge: data.pets * 600,
         totalAmount: finalTotal,
-        nightlyRoomRate: Math.round(roomTotal / nights),
+        nightlyRoomRate: nights > 0 ? Math.round(totalRoomTotal / nights) : 0,
     };
-}
-
-// ── Build booking URL ──
-function buildBookingUrl(data: {
-    propertyName: string; villaName?: string;
-    checkIn: string; checkOut: string;
-    adults: number; kids: number; jainCount: number;
-    quoteId: string;
-}): string {
-    const propertySlugMap: Record<string, string> = {
-        "Hill View": "hill-view",
-        "Mount View": "mount-view",
-        "Heavenly Villa": "heavenly-villa",
-        "La Paraiso": "la-paraiso",
-        "Amstel Nest": "amstel-nest",
-        "Ambrose": "ambrose",
-    };
-
-    const slug = propertySlugMap[data.propertyName] || data.propertyName.toLowerCase().replace(/\s+/g, "-");
-    const isMultiCart = data.propertyName.includes("Amstel") || data.propertyName.includes("Ambrose");
-
-    // For Amstel/Ambrose: link to property page (multi-cart flow), not /book
-    // For other properties: link to /book page directly
-    let bookingPath: string;
-    if (isMultiCart) {
-        bookingPath = `/staycation/${slug}`;
-    } else {
-        bookingPath = `/staycation/${slug}/book`;
-    }
-
-    const params = new URLSearchParams();
-    params.set("checkIn", data.checkIn);
-    params.set("checkOut", data.checkOut);
-    if (data.adults > 2) params.set("adults", String(data.adults));
-    if (data.kids > 0) params.set("kids", String(data.kids));
-    if (data.jainCount > 0) params.set("foodType", "Jain");
-    params.set("ref", data.quoteId);
-
-    return `https://www.galaxiaresorts.com${bookingPath}?${params.toString()}`;
 }
 
 // ── Routes ──
 
-// POST /api/quotations/generate — Generate quotation + PDF
+// POST /api/quotations/generate
 router.post("/generate", async (req: Request, res: Response) => {
     try {
         const {
             customerName, customerPhone, customerEmail,
-            propertyName, villaName,
+            propertyName, villaName, villaQuantities,
             checkIn, checkOut,
             adults = 2, kids = 0, pets = 0,
             regularCount = 0, jainCount = 0,
             decoration = false,
         } = req.body;
 
-        if (!customerName || !propertyName || !checkIn || !checkOut) {
-            return res.status(400).json({ error: "Missing required fields: customerName, propertyName, checkIn, checkOut" });
+        if (!customerName || !customerPhone || !propertyName || !checkIn || !checkOut) {
+            return res.status(400).json({ error: "Missing required fields: customerName, customerPhone, propertyName, checkIn, checkOut" });
         }
 
         const livePricing = await fetchLivePricing();
         const pricing = calculateQuotePrice({
-            propertyName, villaName, checkIn, checkOut,
-            adults, kids, pets, decoration,
+            propertyName, villaName, villaQuantities,
+            checkIn, checkOut, adults, kids, pets, decoration,
         }, livePricing);
 
         const quoteId = `GQ-${Date.now().toString(36).toUpperCase()}`;
 
         const quoteData = {
             quoteId, customerName, customerPhone, customerEmail,
-            propertyName, villaName, checkIn, checkOut,
+            propertyName, villaName, villaQuantities,
+            checkIn, checkOut,
             adults, kids, pets, regularCount, jainCount, decoration,
             foodType: jainCount > 0 ? "Jain" : "Regular",
         };
 
-        // Use the shared pdfService template
         const pdfBuffer = await generateQuotationPDF(quoteData, pricing);
 
-        const bookingUrl = buildBookingUrl({
-            propertyName, villaName, checkIn, checkOut,
-            adults, kids, jainCount, quoteId,
-        });
+        const bookingUrl = `https://www.galaxiaresorts.com/customerquote?quoteId=${quoteId}`;
 
         pdfStore.set(quoteId, { buffer: pdfBuffer, createdAt: Date.now(), data: quoteData, pricing, bookingUrl });
 
-        const pdfUrl = `https://galaxiaresorts.com/api/quotations/${quoteId}/pdf`;
-
-        res.json({
-            quoteId,
-            pricing,
-            pdfUrl,
-            bookingUrl,
-        });
+        res.json({ quoteId, pricing, pdfUrl: `https://galaxiaresorts.com/api/quotations/${quoteId}/pdf`, bookingUrl });
     } catch (err: any) {
         console.error("[Quotation] Generate error:", err);
         res.status(500).json({ error: err.message || "Failed to generate quotation" });
     }
 });
 
-// GET /api/quotations/:id/pdf — Serve generated PDF
+// GET /api/quotations/:id/data — Return quote data for customer page (no auth needed)
+router.get("/:id/data", (req: Request, res: Response) => {
+    const entry = pdfStore.get(req.params.id as string);
+    if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
+    res.json({ data: entry.data, pricing: entry.pricing, bookingUrl: entry.bookingUrl });
+});
+
+// GET /api/quotations/:id/pdf
 router.get("/:id/pdf", (req: Request, res: Response) => {
-    const id = req.params.id as string;
-    const entry = pdfStore.get(id);
-    if (!entry) {
-        return res.status(404).json({ error: "Quotation not found or expired" });
-    }
+    const entry = pdfStore.get(req.params.id as string);
+    if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="Galaxia-Quotation-${id}.pdf"`);
+    res.setHeader("Content-Disposition", `inline; filename="Galaxia-Quotation-${req.params.id}.pdf"`);
     res.send(entry.buffer);
 });
 
-// GET /api/quotations/:id/download — Download PDF
+// GET /api/quotations/:id/download
 router.get("/:id/download", (req: Request, res: Response) => {
-    const id = req.params.id as string;
-    const entry = pdfStore.get(id);
-    if (!entry) {
-        return res.status(404).json({ error: "Quotation not found or expired" });
-    }
+    const entry = pdfStore.get(req.params.id as string);
+    if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="Galaxia-Quotation-${id}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="Galaxia-Quotation-${req.params.id}.pdf"`);
     res.send(entry.buffer);
 });
 
-// POST /api/quotations/:id/send-whatsapp — Send PDF + booking link via WhatsApp
+// POST /api/quotations/:id/send-whatsapp
 router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const entry = pdfStore.get(id);
-        if (!entry) {
-            return res.status(404).json({ error: "Quotation not found or expired" });
+        if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
+
+        const targetPhone = "9653176436";
+        const pdfUrl = `https://galaxiaresorts.com/api/quotations/${id}/pdf`;
+        const q = entry.data;
+        const fmtCurrency = (n: number) => `Rs.${(n || 0).toLocaleString("en-IN")}`;
+
+        // Build villa summary for message
+        let villaDesc = q.propertyName;
+        if (q.villaQuantities && Object.keys(q.villaQuantities).length > 0) {
+            const parts = Object.entries(q.villaQuantities)
+                .filter(([, qty]) => (qty as number) > 0)
+                .map(([name, qty]) => `${name} × ${qty}`);
+            villaDesc += ` (${parts.join(", ")})`;
+        } else if (q.villaName) {
+            villaDesc += ` — ${q.villaName}`;
         }
 
-        // Always send to test number for now
-        const targetPhone = "9653176436";
-
-        const pdfUrl = `https://galaxiaresorts.com/api/quotations/${id}/pdf`;
-        const quoteData = entry.data;
-        const bookingUrl = entry.bookingUrl;
-
-        // Use "stay1" chatbot — falls back to default OTP WhatsApp credentials
         const pdfSent = await sendWhatsAppDocument(
-            "stay1",
-            targetPhone,
-            pdfUrl,
+            "stay1", targetPhone, pdfUrl,
             `Galaxia-Quote-${id}.pdf`,
-            `📋 Quotation for ${quoteData.customerName}\n${quoteData.propertyName}${quoteData.villaName ? ' — ' + quoteData.villaName : ''}\n${quoteData.checkIn} → ${quoteData.checkOut}`
+            `📋 Quotation for ${q.customerName}\n${villaDesc}\n${q.checkIn} → ${q.checkOut}`
         );
-
-        const fmtCurrency = (n: number) => `Rs.${(n || 0).toLocaleString("en-IN")}`;
 
         const linkMessage = `🏡 *Galaxia Staycation Quote*
 
-Hi ${quoteData.customerName}! Here's your personalised booking link:
+Hi ${q.customerName}! Here's your personalised booking link:
 
 📋 *Quote:* ${id}
-🏠 *Property:* ${quoteData.propertyName}${quoteData.villaName ? ' — ' + quoteData.villaName : ''}
-📅 *Dates:* ${quoteData.checkIn} → ${quoteData.checkOut}
-👥 *Guests:* ${quoteData.adults} adults${quoteData.kids > 0 ? ', ' + quoteData.kids + ' kids' : ''}
+🏠 *Property:* ${villaDesc}
+📅 *Dates:* ${q.checkIn} → ${q.checkOut}
+👥 *Guests:* ${q.adults} adults${q.kids > 0 ? ', ' + q.kids + ' kids' : ''}
 
 💰 *Total:* ${fmtCurrency(entry.pricing.totalAmount)}
 
-👉 *Book Now (pre-filled):*
-${bookingUrl}
-
-All details are pre-filled — just sign in and pay! 🎉
+👉 *Book Now:*
+${entry.bookingUrl}
 
 — _Galaxia Resorts_
 www.galaxiaresorts.com`;
 
         const linkSent = await sendWhatsAppMessage("stay1", targetPhone, linkMessage, false);
 
-        res.json({
-            success: true,
-            pdfSent,
-            linkSent,
-            sentTo: targetPhone,
-        });
+        res.json({ success: true, pdfSent, linkSent, sentTo: targetPhone });
     } catch (err: any) {
         console.error("[Quotation] WhatsApp send error:", err);
         res.status(500).json({ error: err.message || "Failed to send WhatsApp" });

@@ -92,13 +92,17 @@ function drawRow(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
 }
 
 function drawPaymentRow(doc: PDFKit.PDFDocument, label: string, value: string, y: number, opts?: { bold?: boolean; color?: string }) {
-    const leftX = 50;
+    const pageRight = doc.page.width - 50;
+    const labelAreaRight = 420;
+    const valueAreaLeft = 425;
     const valColor = opts?.color || TEXT_DARK;
-    const valueColumnWidth = 220; // narrower so prices sit closer to labels
 
-    doc.fontSize(10).fill(TEXT_MED).font("Helvetica").text(label, leftX, y);
+    // Label — right-aligned in left portion
+    doc.fontSize(10).fill(TEXT_MED).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
+        .text(label, 50, y, { width: labelAreaRight - 50, align: "right" });
+    // Value — right-aligned at far right
     doc.fontSize(10).fill(valColor).font(opts?.bold ? "Helvetica-Bold" : "Helvetica")
-        .text(value, leftX, y, { width: valueColumnWidth, align: "right" });
+        .text(value, valueAreaLeft, y, { width: pageRight - valueAreaLeft, align: "right" });
 
     return y + 18;
 }
@@ -252,7 +256,7 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         }
 
         // Gold line before total
-        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
+        doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
         y = drawPaymentRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
         y = drawDivider(doc, y);
@@ -387,7 +391,7 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             y = drawPaymentRow(doc, "Coupon Discount", `- ${fmtCurrency(booking.discountAmount)}`, y, { color: "#16a34a" });
         }
 
-        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
+        doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
         y = drawPaymentRow(doc, "Total Amount", fmtCurrency(booking.totalAmount), y, { bold: true, color: GOLD });
         y = drawDivider(doc, y);
@@ -599,13 +603,26 @@ export function generateQuotationPDF(data: {
         const guestsLabel = `${data.adults} adult${data.adults > 1 ? "s" : ""}${data.kids > 0 ? `, ${data.kids} child${data.kids > 1 ? "ren" : ""}` : ""}`;
         y = drawRow(doc, "Guests", guestsLabel, y);
         if (data.pets > 0) y = drawRow(doc, "Pets", `${data.pets}`, y);
+        // Multi-villa display
+        if ((data as any).villaQuantities) {
+            const vq = (data as any).villaQuantities;
+            if (typeof vq === "object") {
+                for (const [name, qty] of Object.entries(vq)) {
+                    if ((qty as number) > 0) {
+                        y = drawRow(doc, name, `× ${qty}`, y);
+                    }
+                }
+            }
+        }
         if (data.jainCount && data.jainCount > 0) y = drawRow(doc, "Jain Meals", `${data.jainCount}`, y);
         if (data.regularCount && data.regularCount > 0) y = drawRow(doc, "Regular Meals", `${data.regularCount}`, y);
         y = drawDivider(doc, y);
 
-        // Payment Summary
+        // Payment Summary — GST merged into Total Room Price
         y = drawSectionTitle(doc, "Payment Summary", y);
-        y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(pricing.roomTotal), y, { bold: true });
+        const roomPlusGst = pricing.roomTotal + pricing.gstAmount;
+        y = drawPaymentRow(doc, "Total Room Price", fmtCurrency(roomPlusGst), y, { bold: true });
+        y = drawPaymentRow(doc, "GST", fmtCurrency(pricing.gstAmount), y);
         if (pricing.extraAdultCharge > 0) {
             y = drawPaymentRow(doc, "Extra Adult Charge", fmtCurrency(pricing.extraAdultCharge), y);
         }
@@ -615,25 +632,15 @@ export function generateQuotationPDF(data: {
         if (pricing.decorationCharge > 0) {
             y = drawPaymentRow(doc, "Celebration Add-on", fmtCurrency(pricing.decorationCharge), y);
         }
-
-        // Gold line before total
-        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
-        y += 6;
-        y = drawPaymentRow(doc, "Subtotal", fmtCurrency(pricing.subtotal), y, { bold: true });
-        y = drawPaymentRow(doc, "GST (5%)", fmtCurrency(pricing.gstAmount), y);
         if (pricing.petCharge > 0) {
             y = drawPaymentRow(doc, "Pet Charges", fmtCurrency(pricing.petCharge), y);
         }
 
-        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
+        // Gold line before total
+        doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
         y = drawPaymentRow(doc, "Total Amount", fmtCurrency(pricing.totalAmount), y, { bold: true, color: GOLD });
         y += 10;
-
-        // Average rate info
-        doc.fontSize(9).fill(TEXT_MED).font("Helvetica")
-            .text(`Average nightly rate: ${fmtCurrency(pricing.nightlyRoomRate)} per night`, 50, y);
-        y += 24;
 
         // Important Information
         y = drawInfoBlock(doc, "Terms & Conditions", [
@@ -651,3 +658,4 @@ export function generateQuotationPDF(data: {
         doc.end();
     });
 }
+
