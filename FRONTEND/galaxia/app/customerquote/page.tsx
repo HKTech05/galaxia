@@ -58,6 +58,7 @@ function CustomerQuoteInner() {
     const [availData, setAvailData] = useState<any>(null);
     const [dbPropertyId, setDbPropertyId] = useState<number | null>(null);
     const [dbSubPropertyMap, setDbSubPropertyMap] = useState<Record<string, number>>({});
+    const [dbSubPropertyUnitsMap, setDbSubPropertyUnitsMap] = useState<Record<number, number>>({});
 
     const subPropertyId = (() => {
         const activeVillas = Object.entries(villaQuantities).filter(([, q]) => q > 0);
@@ -67,6 +68,8 @@ function CustomerQuoteInner() {
         }
         return null;
     })();
+
+    const activeSubPropertyUnits = subPropertyId ? dbSubPropertyUnitsMap[subPropertyId] : undefined;
 
     // Auth
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -162,11 +165,14 @@ function CustomerQuoteInner() {
                     setDbPropertyId(dbProp.id);
                     if (dbProp.subProperties) {
                         const map: Record<string, number> = {};
+                        const unitsMap: Record<number, number> = {};
                         for (const sp of dbProp.subProperties) {
                             map[sp.name.toUpperCase()] = sp.id;
                             map[sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-")] = sp.id;
+                            unitsMap[sp.id] = sp.unitCount || 1;
                         }
                         setDbSubPropertyMap(map);
+                        setDbSubPropertyUnitsMap(unitsMap);
                     }
                 }
             } catch (err) {
@@ -545,6 +551,7 @@ function CustomerQuoteInner() {
                                 initialCheckIn={checkIn}
                                 initialCheckOut={checkOut}
                                 compact
+                                totalUnits={activeSubPropertyUnits}
                             />
                             {checkIn && checkOut && (
                                 <div className="flex items-center justify-between bg-white border border-[#e8e5dd] rounded-xl px-4 py-3 shadow-sm">
