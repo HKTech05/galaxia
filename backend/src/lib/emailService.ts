@@ -183,7 +183,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 ${row("Check-in", `${checkInDate}  ·  ${checkInTime}`)}
                 ${row("Check-out", `${checkOutDate}  ·  ${checkOutTime}`)}
                 ${row("Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`)}
-                ${(() => { const c = (booking as any).numCottages || 1; const tA = booking.numGuests * c; const tK = ((booking as any).numKids || 0) * c; return row("Guests", `${tA} adult${tA > 1 ? "s" : ""}${tK > 0 ? `, ${tK} child${tK > 1 ? "ren" : ""}` : ""}`); })()}
+                ${(() => { const tA = booking.numGuests; const tK = (booking as any).numKids || 0; return row("Guests", `${tA} adult${tA > 1 ? "s" : ""}${tK > 0 ? `, ${tK} child${tK > 1 ? "ren" : ""}` : ""}`); })()}
                 ${((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') ? row("Cottages", `${(booking as any).numCottages || 1}`) : ""}
                 ${divider()}
                 ${sectionTitle("Payment Summary")}

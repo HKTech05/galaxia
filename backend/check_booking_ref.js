@@ -3,14 +3,15 @@ const p = new PrismaClient();
 
 (async () => {
     try {
-        const b = await p.staycationBooking.findFirst({
-            where: { bookingRef: 'ST-20260521-003og' },
-            include: {
-                property: true,
-                subProperty: true
-            }
+        const bookings = await p.staycationBooking.findMany({
+            take: 15,
+            orderBy: { id: 'desc' },
+            include: { property: true }
         });
-        console.log('BOOKING DETAILS:', JSON.stringify(b, null, 2));
+        console.log('RECENT BOOKINGS:');
+        bookings.forEach(b => {
+            console.log(`Ref: ${b.bookingRef} | Source: ${b.source} | Property: ${b.property?.slug} | Guests: ${b.numGuests} | Kids: ${b.numKids} | Cottages: ${b.numCottages} | Total Amount: ${b.totalAmount}`);
+        });
     } catch (err) {
         console.error(err);
     } finally {

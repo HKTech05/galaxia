@@ -834,7 +834,7 @@ export default function StayBookingsPage() {
                                                 )}
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className="text-sm font-bold text-slate-800">{b.guests * (b.numCottages || 1)} adult{(b.guests * (b.numCottages || 1)) !== 1 ? 's' : ''}{b.kids > 0 && <span className="text-xs font-medium text-blue-600 ml-1">{b.kids * (b.numCottages || 1)} child{(b.kids * (b.numCottages || 1)) !== 1 ? 'ren' : ''}</span>}</span>
+                                                <span className="text-sm font-bold text-slate-800">{b.guests} adult{b.guests !== 1 ? 's' : ''}{b.kids > 0 && <span className="text-xs font-medium text-blue-600 ml-1">{b.kids} child{b.kids !== 1 ? 'ren' : ''}</span>}</span>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <span className="text-sm font-bold text-slate-800">{formatPrice(b.totalAmount)}</span>
@@ -952,7 +952,7 @@ export default function StayBookingsPage() {
                                     )}
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Guests</p>
-                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.guests * (selectedBooking.numCottages || 1)} adult{(selectedBooking.guests * (selectedBooking.numCottages || 1)) !== 1 ? 's' : ''}{selectedBooking.kids > 0 && <span className="text-blue-600 ml-1">{selectedBooking.kids * (selectedBooking.numCottages || 1)} child{(selectedBooking.kids * (selectedBooking.numCottages || 1)) !== 1 ? 'ren' : ''}</span>}</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.guests} adult{selectedBooking.guests !== 1 ? 's' : ''}{selectedBooking.kids > 0 && <span className="text-blue-600 ml-1">{selectedBooking.kids} child{selectedBooking.kids !== 1 ? 'ren' : ''}</span>}</p>
                                     </div>
                                     {selectedBooking.numCottages > 1 && (
                                         <div>

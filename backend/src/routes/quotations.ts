@@ -310,11 +310,8 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
         const pdfMessage = `Quotation for ${q.customerName}\n${villaDesc}\n${q.checkIn} to ${q.checkOut}\n\nView/Download PDF:\n${pdfUrl}`;
         const pdfSent = await sendWhatsAppMessage("stay1", targetPhone, pdfMessage, false);
 
-        const totalCottages = q.villaQuantities && typeof q.villaQuantities === "object"
-            ? Object.values(q.villaQuantities).reduce((s: number, q: any) => s + (q || 0), 0) || 1
-            : 1;
-        const totalAdults = q.adults * totalCottages;
-        const totalKids = (q.kids || 0) * totalCottages;
+        const totalAdults = q.adults;
+        const totalKids = q.kids || 0;
 
         const linkMessage = `*Galaxia Staycation Quote*
 

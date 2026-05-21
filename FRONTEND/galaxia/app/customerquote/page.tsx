@@ -97,12 +97,11 @@ function CustomerQuoteInner() {
         const token = localStorage.getItem("galaxia_token");
         if (token) {
             setIsLoggedIn(true);
-            // Pre-fill from user profile
+            // Pre-fill from user profile (but not email — only fill if admin provided one)
             (async () => {
                 try {
                     const user = await api.get("/auth/me");
                     if (user?.phone && !phone) setPhone(user.phone);
-                    if (user?.email && !email) setEmail(user.email);
                     if (user?.fullName) {
                         const parts = user.fullName.split(" ");
                         if (!firstName) setFirstName(parts[0] || "");

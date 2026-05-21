@@ -26,7 +26,7 @@ export default function FloatingCart() {
     useEffect(() => { const id = setInterval(refresh, 2000); return () => clearInterval(id); }, [refresh]);
 
     // Hide on admin, chatbot, login, and booking pages (cart is already shown inline there)
-    if (pathname && (pathname.startsWith("/admin") || pathname.startsWith("/chatbot") || pathname.startsWith("/login") || pathname.includes("/book"))) return null;
+    if (pathname && (pathname.startsWith("/admin") || pathname.startsWith("/chatbot") || pathname.startsWith("/login") || pathname.includes("/book") || pathname.startsWith("/customerquote"))) return null;
     if (!mounted || totalCount === 0) return null;
 
     const handleClick = () => {

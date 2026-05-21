@@ -355,9 +355,8 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawRow(doc, "Check-in", `${checkInDate}  |  ${checkInTime}`, y);
         y = drawRow(doc, "Check-out", `${checkOutDate}  |  ${checkOutTime}`, y);
         y = drawRow(doc, "Duration", `${booking.numNights} Night${booking.numNights > 1 ? "s" : ""}`, y);
-        const cottages = (booking as any).numCottages || 1;
-        const totalAdults = booking.numGuests * cottages;
-        const totalKids = ((booking as any).numKids || 0) * cottages;
+        const totalAdults = booking.numGuests;
+        const totalKids = (booking as any).numKids || 0;
         const stayGuestsLabel = `${totalAdults} adult${totalAdults > 1 ? "s" : ""}${totalKids > 0 ? `, ${totalKids} child${totalKids > 1 ? "ren" : ""}` : ""}`;
         y = drawRow(doc, "Guests", stayGuestsLabel, y);
         if ((booking as any).numCottages > 1 || (booking as any).property?.slug === 'amstel-nest') {
@@ -604,11 +603,8 @@ export function generateQuotationPDF(data: {
         y = drawRow(doc, "Check-in", `${checkInDate}  |  1:00 PM`, y);
         y = drawRow(doc, "Check-out", `${checkOutDate}  |  11:00 AM`, y);
         y = drawRow(doc, "Duration", `${pricing.nights} Night${pricing.nights > 1 ? "s" : ""}`, y);
-        const totalCottages = data.villaQuantities && typeof data.villaQuantities === "object"
-            ? Object.values(data.villaQuantities).reduce((s: number, q: any) => s + (q || 0), 0) || 1
-            : 1;
-        const totalAdults = data.adults * totalCottages;
-        const totalKids = (data.kids || 0) * totalCottages;
+        const totalAdults = data.adults;
+        const totalKids = data.kids || 0;
         const guestsLabel = `${totalAdults} adult${totalAdults > 1 ? "s" : ""}${totalKids > 0 ? `, ${totalKids} child${totalKids > 1 ? "ren" : ""}` : ""}`;
         y = drawRow(doc, "Guests", guestsLabel, y);
         if (data.pets > 0) y = drawRow(doc, "Pets", `${data.pets}`, y);
