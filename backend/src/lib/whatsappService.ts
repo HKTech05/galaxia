@@ -215,18 +215,18 @@ async function logConfirmationToChat(phoneNumberId: string, customerPhone: strin
 // ─── Convenience helpers (ready for template integration later) ───
 
 export async function sendDDBookingConfirmation(phone: string, bookingRef: string, voucherUrl: string): Promise<boolean> {
-    const message = `✅ *Booking Confirmed!*
+    const message = `*Booking Confirmed*
 
 Thank you for booking with Galaxia Digital Diaries.
 
-📋 *Booking Ref:* ${bookingRef}
+*Booking Ref:* ${bookingRef}
 
 You can view or download your booking voucher here:
 ${voucherUrl}
 
-We look forward to hosting you! 🎬
+We look forward to hosting you!
 
-— _Galaxia Resorts_
+-- Galaxia Resorts
 www.galaxiaresorts.com`;
 
     return sendWhatsAppMessage("dd", phone, message, true);
@@ -238,18 +238,18 @@ export async function sendStaycationBookingConfirmation(
     bookingRef: string,
     voucherUrl: string
 ): Promise<boolean> {
-    const message = `✅ *Booking Confirmed!*
+    const message = `*Booking Confirmed*
 
 Thank you for booking with Galaxia.
 
-📋 *Booking Ref:* ${bookingRef}
+*Booking Ref:* ${bookingRef}
 
 You can view or download your booking voucher here:
 ${voucherUrl}
 
-We look forward to welcoming you! 🏡
+We look forward to welcoming you!
 
-— _Galaxia Resorts_
+-- Galaxia Resorts
 www.galaxiaresorts.com`;
 
     return sendWhatsAppMessage(chatbot, phone, message, true);
