@@ -150,7 +150,8 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         pricingRowsHtml += paymentRow(addon.label, fmtCurrency(addon.price));
     }
     if (discountAmount > 0) {
-        pricingRowsHtml += paymentRow("Coupon Applied", `- ${fmtCurrency(discountAmount)}`, { color: "#16a34a" });
+        const discountLabel = (booking.couponId || booking.couponCode || booking.coupon) ? "Coupon Applied" : "Discount";
+        pricingRowsHtml += paymentRow(discountLabel, `- ${fmtCurrency(discountAmount)}`, { color: "#16a34a" });
     }
 
     pricingRowsHtml += paymentRow("Total Amount", fmtCurrency(displayTotalAmount), { bold: true, color: GOLD, borderTop: true });

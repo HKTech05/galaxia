@@ -420,7 +420,8 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             y = drawPaymentRow(doc, addon.label, fmtCurrency(addon.price), y);
         }
         if (discountAmount > 0) {
-            y = drawPaymentRow(doc, "Coupon Applied", `- ${fmtCurrency(discountAmount)}`, y, { color: "#16a34a" });
+            const discountLabel = (booking.couponId || booking.couponCode || booking.coupon) ? "Coupon Applied" : "Discount";
+            y = drawPaymentRow(doc, discountLabel, `- ${fmtCurrency(discountAmount)}`, y, { color: "#16a34a" });
         }
 
         doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();

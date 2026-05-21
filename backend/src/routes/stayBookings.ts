@@ -37,7 +37,7 @@ router.post("/", async (req, res) => {
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             advancePaid, advanceMethod,
-            source, couponCode, addons,
+            source, couponCode, addons, discountAmount: reqDiscountAmount,
         } = req.body;
 
         if (!customerName || !customerPhone || !propertyId || !checkInDate || !checkOutDate) {
@@ -200,7 +200,7 @@ router.post("/", async (req, res) => {
 
             // Handle coupon
             let couponId = null;
-            let discountAmount = 0;
+            let discountAmount = parseInt(reqDiscountAmount) || 0;
             if (couponCode) {
                 const coupon = await tx.coupon.findFirst({ where: { code: couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
                 if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
@@ -293,7 +293,7 @@ router.post("/", async (req, res) => {
                     discountAmount,
                     addons: addons || null,
                 },
-                include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
+                include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
             });
 
             // Record coupon usage
@@ -408,6 +408,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 extraGuests: true,
                 guestIds: true,
                 foodBills: true,
+                coupon: true,
             },
             orderBy: { checkInDate: "desc" },
         });
@@ -470,7 +471,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
 
         const existing = await prisma.staycationBooking.findUnique({
             where: { id: bookingId },
-            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
         });
         if (!existing) return res.status(404).json({ error: "Booking not found" });
 
@@ -481,7 +482,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             nightlyRate, basePrice, extraPersonCharge, extraAdultCharge, extraKidsCharge,
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
-            status, source, addons,
+            status, source, addons, discountAmount,
         } = req.body;
 
         // Build update data — only include fields that were actually sent
@@ -500,6 +501,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (extraAdultCharge !== undefined) updateData.extraAdultCharge = parseFloat(extraAdultCharge) || 0;
         if (extraKidsCharge !== undefined) updateData.extraKidsCharge = parseFloat(extraKidsCharge) || 0;
         if (gstAmount !== undefined) updateData.gstAmount = parseFloat(gstAmount) || 0;
+        if (discountAmount !== undefined) updateData.discountAmount = parseInt(discountAmount) || 0;
         if (totalAmount !== undefined) updateData.totalAmount = parseFloat(totalAmount) || 0;
         if (advanceAmount !== undefined) updateData.advanceAmount = parseFloat(advanceAmount) || 0;
         if (balanceAmount !== undefined) updateData.balanceAmount = parseFloat(balanceAmount) || 0;
@@ -526,7 +528,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         const updated = await prisma.staycationBooking.update({
             where: { id: bookingId },
             data: updateData,
-            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
         });
 
         // Comprehensive audit log with before/after snapshot
@@ -1112,7 +1114,7 @@ router.get("/voucher/:ref", async (req, res) => {
         const { ref } = req.params;
         const booking = await prisma.staycationBooking.findFirst({
             where: { bookingRef: ref },
-            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } } },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
         });
 
         if (!booking) {

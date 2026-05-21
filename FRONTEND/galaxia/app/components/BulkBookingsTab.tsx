@@ -292,6 +292,7 @@ export default function BulkBookingsTab() {
                 advanceMethod: bulkForm.paymentMethod,
                 source: "admin-bulk",
                 couponCode: appliedCoupon?.code || null,
+                discountAmount: discountAmount,
                 notes: `Admin Bulk. ${bulkForm.numCottages} ${bulkForm.cottageType} cottage(s).`.trim(),
                 addons: [
                     ...(parseInt(bulkForm.numRegularVeg) > 0 ? [{ name: 'Food Preference', foodType: 'Regular', count: parseInt(bulkForm.numRegularVeg) }] : []),

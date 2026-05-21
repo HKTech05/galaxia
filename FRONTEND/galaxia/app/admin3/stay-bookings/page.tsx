@@ -1048,7 +1048,7 @@ export default function StayBookingsPage() {
                                                  )}
                                                  {selectedBooking.discountAmount > 0 && (
                                                      <div className="flex justify-between text-sm">
-                                                         <span className="text-emerald-600">Discount {selectedBooking.couponCode ? `(${selectedBooking.couponCode})` : ""}</span>
+                                                         <span className="text-emerald-600">{selectedBooking.couponCode ? `Coupon Applied (${selectedBooking.couponCode})` : "Discount"}</span>
                                                          <span className="font-bold text-emerald-600">-{formatPrice(selectedBooking.discountAmount)}</span>
                                                      </div>
                                                  )}
@@ -1167,6 +1167,7 @@ export default function StayBookingsPage() {
                                                 basePrice: b.basePrice,
                                                 extraPersonCharge: b.extraPersonCharge,
                                                 gstAmount: b.gstAmount,
+                                                discountAmount: b.discountAmount || 0,
                                                 totalAmount: b.totalAmount,
                                                 advanceAmount: b.advanceAmount,
                                                 balanceAmount: b.balanceAmount,
@@ -1449,6 +1450,13 @@ export default function StayBookingsPage() {
                                         <input type="number" value={editForm.gstAmount ?? ''} onChange={e => setEditForm({...editForm, gstAmount: parseFloat(e.target.value) || 0})}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
+                                    {!editBooking.isDd && (
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Discount</label>
+                                            <input type="number" value={editForm.discountAmount ?? ''} onChange={e => setEditForm({...editForm, discountAmount: parseFloat(e.target.value) || 0})}
+                                                className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                                        </div>
+                                    )}
                                     <div>
                                         <label className="text-[10px] font-bold text-emerald-600 uppercase">Total Amount</label>
                                         <input type="number" value={editForm.totalAmount ?? ''} onChange={e => setEditForm({...editForm, totalAmount: parseFloat(e.target.value) || 0})}
@@ -1594,6 +1602,7 @@ export default function StayBookingsPage() {
                                                 basePrice: editForm.basePrice,
                                                 extraPersonCharge: editForm.extraPersonCharge,
                                                 gstAmount: editForm.gstAmount,
+                                                discountAmount: editForm.discountAmount,
                                                 totalAmount: editForm.totalAmount,
                                                 advanceAmount: editForm.advanceAmount,
                                                 balanceAmount: editForm.balanceAmount,

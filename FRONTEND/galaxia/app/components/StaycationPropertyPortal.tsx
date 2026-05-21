@@ -473,6 +473,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 advanceMethod: manualForm.paymentMethod,
                 source: "reception",
                 couponCode: manualAppliedCoupon?.code || null,
+                discountAmount: manualDiscountAmount,
                 addons: bookingAddons.length > 0 ? bookingAddons : null,
             });
             fetchBookings();
