@@ -7,7 +7,7 @@ import { initiateRazorpayPayment } from "../../lib/razorpay";
 import {
     CalendarDays, Users, User, Phone, Mail, Home, UtensilsCrossed,
     PartyPopper, PawPrint, IndianRupee, Loader2, Check, AlertTriangle,
-    ChevronLeft, ChevronRight, Lock, LogIn, Building2
+    ChevronLeft, ChevronRight, Lock, LogIn, Building2, X, Tag
 } from "lucide-react";
 
 // ── Property slug map ──
@@ -61,6 +61,12 @@ function CustomerQuoteInner() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState("");
     const [dateConflict, setDateConflict] = useState(false);
+
+    // Coupon
+    const [couponCode, setCouponCode] = useState("");
+    const [couponData, setCouponData] = useState<any>(null);
+    const [couponError, setCouponError] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
 
     // ── Fetch quote data ──
     useEffect(() => {
@@ -251,7 +257,33 @@ function CustomerQuoteInner() {
         };
     }, [checkIn, checkOut, propertyName, adults, kids, pets, decoration, villaQuantities, availData]);
 
-    const pricing = livePrice();
+    const pricing = (() => {
+        const base = livePrice();
+        if (!base) return null;
+        if (couponData) {
+            let discount = 0;
+            if (couponData.discountType === 'percentage') discount = Math.round(base.totalAmount * couponData.discountValue / 100);
+            else discount = Math.round(couponData.discountValue);
+            discount = Math.min(discount, base.totalAmount);
+            const newTotal = base.totalAmount - discount;
+            const advance = Math.round(newTotal * 0.8);
+            return { ...base, couponDiscount: discount, totalAmount: newTotal, advanceAmount: advance, balanceAmount: newTotal - advance };
+        }
+        return { ...base, couponDiscount: 0 };
+    })();
+
+    // ── Coupon handler ──
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true); setCouponError("");
+        try {
+            const res = await api.post("/coupons/validate", { code: couponCode.trim() });
+            setCouponData(res);
+        } catch (err: any) {
+            setCouponError(err?.message || "Invalid coupon");
+            setCouponData(null);
+        } finally { setCouponLoading(false); }
+    };
 
     // ── Login handlers ──
     const handleSendOtp = async () => {
@@ -279,7 +311,7 @@ function CustomerQuoteInner() {
                     if (!firstName) setFirstName(parts[0] || "");
                     if (!lastName) setLastName(parts.slice(1).join(" ") || "");
                 }
-                if (res.user?.email && !email) setEmail(res.user.email);
+                if (res.user?.email && !email && quoteData?.customerEmail) setEmail(res.user.email);
                 if (!phone) setPhone(cleanPhone);
                 setIsLoggedIn(true);
                 setShowLogin(false);
@@ -362,7 +394,7 @@ function CustomerQuoteInner() {
                 advancePaid: true,
                 advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 source: "quotation",
-                couponCode: null,
+                couponCode: couponData?.code || null,
                 addons: addons.length > 0 ? addons : null,
             };
 
@@ -513,11 +545,22 @@ function CustomerQuoteInner() {
                             </h2>
                             <p className="text-xl font-bold text-[#1a1a2e]" style={{ fontFamily: "'Playfair Display', serif" }}>{propertyName}</p>
                             {Object.entries(villaQuantities).filter(([, q]) => q > 0).length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-2">
+                                <div className="mt-3 space-y-2">
                                     {Object.entries(villaQuantities).filter(([, q]) => q > 0).map(([name, qty]) => (
-                                        <span key={name} className="px-3 py-1 bg-[#C4A265]/10 text-[#1a1a2e] rounded-full text-xs font-bold">
-                                            {name} × {qty}
-                                        </span>
+                                        <div key={name} className="flex items-center justify-between bg-[#C4A265]/10 rounded-xl px-4 py-3 border border-[#C4A265]/20">
+                                            <div>
+                                                <p className="text-sm font-bold text-[#1a1a2e]">{name}</p>
+                                                <p className="text-xs text-[#555]">{qty} unit{qty > 1 ? 's' : ''}</p>
+                                            </div>
+                                            <button onClick={() => setVillaQuantities(prev => {
+                                                const next = { ...prev };
+                                                delete next[name];
+                                                return next;
+                                            })}
+                                                className="p-1.5 rounded-lg hover:bg-red-100 text-[#555] hover:text-red-500 transition-colors">
+                                                <X size={14} />
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             )}
@@ -628,6 +671,12 @@ function CustomerQuoteInner() {
                                     </div>
 
                                     <div className="border-t border-[#C4A265]/30 mt-4 pt-4">
+                                        {pricing.couponDiscount > 0 && (
+                                            <div className="flex justify-between mb-2">
+                                                <span className="text-[#16a34a] text-sm font-bold">Coupon Discount</span>
+                                                <span className="font-bold text-[#16a34a]">-{fmtCurrency(pricing.couponDiscount)}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between items-center">
                                             <span className="text-base font-bold text-[#1a1a2e]" style={{ fontFamily: "'Playfair Display', serif" }}>Total Amount</span>
                                             <span className="text-xl font-bold text-[#C4A265]">{fmtCurrency(pricing.totalAmount)}</span>
@@ -642,6 +691,34 @@ function CustomerQuoteInner() {
                             ) : (
                                 <div className="text-center py-6 text-[#555]"><CalendarDays size={28} className="mx-auto mb-2 opacity-40" /><p className="text-xs">Select dates to see pricing</p></div>
                             )}
+
+                            {/* Coupon Code */}
+                            <div className="mt-4">
+                                <label className="block text-xs font-semibold text-[#555] mb-1.5 flex items-center gap-1"><Tag size={12} /> Coupon Code</label>
+                                {couponData ? (
+                                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                                        <div>
+                                            <p className="text-xs font-bold text-green-700">{couponData.code} applied</p>
+                                            <p className="text-[10px] text-green-600">
+                                                {couponData.discountType === 'percentage' ? `${couponData.discountValue}% off` : `₹${couponData.discountValue} off`}
+                                            </p>
+                                        </div>
+                                        <button onClick={() => { setCouponData(null); setCouponCode(""); setCouponError(""); }}
+                                            className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                                            placeholder="Enter code"
+                                            className="flex-1 border border-[#e8e5dd] rounded-xl px-3 py-2 text-xs text-[#1a1a2e] focus:border-[#C4A265] focus:outline-none bg-[#faf9f6] uppercase tracking-wider" />
+                                        <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}
+                                            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1a1a2e] text-[#C4A265] hover:bg-[#2a2a4e] disabled:opacity-40 transition-colors">
+                                            {couponLoading ? "..." : "Apply"}
+                                        </button>
+                                    </div>
+                                )}
+                                {couponError && <p className="mt-1 text-[10px] text-red-500 font-medium">{couponError}</p>}
+                            </div>
 
                             {bookingError && (
                                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">{bookingError}</div>
