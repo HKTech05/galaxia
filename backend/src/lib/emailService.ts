@@ -126,9 +126,8 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     const advanceAmount = booking.advanceAmount || 0;
     const balanceAmount = booking.balanceAmount || 0;
 
-    // Reconstruct the correct Total Amount (pre-tax subtotal)
-    // Mathematically guarantees Total + Taxes = Advance + Balance
-    const displayTotalAmount = (advanceAmount + balanceAmount) - taxes;
+    // Reconstruct the correct Total Amount (post-tax actual total booking amount)
+    const displayTotalAmount = advanceAmount + balanceAmount;
 
     // Generate pricing rows dynamically in the exact requested sequence
     let pricingRowsHtml = "";
@@ -154,9 +153,8 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         pricingRowsHtml += paymentRow(discountLabel, `- ${fmtCurrency(discountAmount)}`, { color: "#16a34a" });
     }
 
-    pricingRowsHtml += paymentRow("Total Amount", fmtCurrency(displayTotalAmount), { bold: true, color: GOLD, borderTop: true });
-    pricingRowsHtml += divider();
     pricingRowsHtml += paymentRow("Taxes", fmtCurrency(taxes));
+    pricingRowsHtml += paymentRow("Total Amount", fmtCurrency(displayTotalAmount), { bold: true, color: GOLD, borderTop: true });
     pricingRowsHtml += divider();
 
     const advancePaid = booking.advancePaid ? fmtCurrency(advanceAmount) : "Not yet paid";

@@ -397,9 +397,8 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         const advanceAmount = booking.advanceAmount || 0;
         const balanceAmount = booking.balanceAmount || 0;
 
-        // Reconstruct the correct Total Amount (pre-tax subtotal)
-        // Mathematically guarantees Total + Taxes = Advance + Balance
-        const displayTotalAmount = (advanceAmount + balanceAmount) - taxes;
+        // Reconstruct the correct Total Amount (post-tax actual total booking amount)
+        const displayTotalAmount = advanceAmount + balanceAmount;
 
         y = drawSectionTitle(doc, "Payment Summary", y);
         y = drawPaymentRow(doc, "Base Price", fmtCurrency(displayBasePrice), y, { bold: true });
@@ -424,10 +423,11 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             y = drawPaymentRow(doc, discountLabel, `- ${fmtCurrency(discountAmount)}`, y, { color: "#16a34a" });
         }
 
+        y = drawPaymentRow(doc, "Taxes", fmtCurrency(taxes), y);
+
         doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;
         y = drawPaymentRow(doc, "Total Amount", fmtCurrency(displayTotalAmount), y, { bold: true, color: GOLD });
-        y = drawPaymentRow(doc, "Taxes", fmtCurrency(taxes), y);
         y = drawDivider(doc, y);
 
         y = drawPaymentRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(advanceAmount) : "Not yet paid", y,
