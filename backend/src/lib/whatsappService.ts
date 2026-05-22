@@ -9,7 +9,7 @@
 //  Template will be provided later. For now, uses text messages.
 // ───────────────────────────────────────────────────────────────
 
-export type ChatbotId = "dd" | "stay1" | "stay2";
+export type ChatbotId = "dd" | "stay1" | "stay2" | "otp";
 
 interface ChatbotConfig {
     token: string;
@@ -25,6 +25,7 @@ function getChatbotConfig(chatbot: ChatbotId): ChatbotConfig | null {
         dd:    { tokenKey: "DD_WHATSAPP_TOKEN",    phoneKey: "DD_WHATSAPP_PHONE_NUMBER_ID" },
         stay1: { tokenKey: "STAY1_WHATSAPP_TOKEN", phoneKey: "STAY1_WHATSAPP_PHONE_NUMBER_ID" },
         stay2: { tokenKey: "STAY2_WHATSAPP_TOKEN", phoneKey: "STAY2_WHATSAPP_PHONE_NUMBER_ID" },
+        otp:   { tokenKey: "WHATSAPP_TOKEN",       phoneKey: "WHATSAPP_PHONE_NUMBER_ID" },
     };
 
     const keys = envMap[chatbot];
