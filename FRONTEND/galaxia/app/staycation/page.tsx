@@ -13,6 +13,12 @@ const propertiesData = [
     { id: "heavenly-villa", name: "Heavenly Villa", subtitle: "Heavenly Villa — Private Indoor Pool", startPrice: "3,950", description: "A heavenly studio villa with a private indoor swimming pool and swing. An intimate tropical paradise.", highlights: ["Indoor Pool", "Pool Swing", "Studio Room", "Free WiFi"] },
     { id: "mount-view", name: "Mount View", subtitle: "Bathtub Mountain Apartment", startPrice: "3,500", description: "Premium apartment featuring a private bathtub and enormous mountain-facing balcony. Luxury meets nature.", highlights: ["Private Bathtub", "Mountain Balcony", "Music Player", "2 AC"] },
     { id: "hill-view", name: "Hill View", subtitle: "Budget Mountain View Apartment", startPrice: "2,500", description: "A cozy apartment with a huge open balcony offering breathtaking mountain views. Perfect for couples seeking a tranquil escape.", highlights: ["Mountain View", "Queen Bed", "Smart TV", "Free WiFi"] },
+    // Ambrose Sub-villas (hidden by default, shown when Ambrose is available for the selected dates)
+    { id: "take-1", parentId: "ambrose", name: "TAKE-1", subtitle: "Bollywood Theme", startPrice: "5,500", priceNote: "2 with meals", description: "Film-inspired interiors with vibrant dramatic decor that celebrates Indian cinema.", highlights: ["1 King Bedroom", "1 Sofa Cum Bed Room", "2 Washrooms", "Private Pool"] },
+    { id: "alta", parentId: "ambrose", name: "ALTA", subtitle: "Rustic Theme", startPrice: "5,500", priceNote: "2 with meals", description: "Earthy wooden textures with countryside aesthetics for a grounded, cozy escape.", highlights: ["2 King Size Beds", "2 Washrooms", "Private Pool", "Garden Seating"] },
+    { id: "santorini", parentId: "ambrose", name: "SANTORINI", subtitle: "Greek Inspired Theme", startPrice: "5,500", priceNote: "2 with meals", description: "White & blue Mediterranean-style interiors that bring Santorini to Karjat.", highlights: ["1 King Size Bed", "1 Queen Size Bed", "2 Washrooms", "Private Pool"] },
+    { id: "bamboosa", parentId: "ambrose", name: "BAMBOOSA", subtitle: "Bali Theme (Premium)", startPrice: "10,500", priceNote: "4 with meals", description: "Premium villa with 2 king bedrooms, spacious living room, and tropical Bali-inspired interiors.", highlights: ["2 King Bedrooms", "Spacious Living Room", "4 Bathrooms", "4 AC"] },
+    { id: "cypress", parentId: "ambrose", name: "CYPRESS", subtitle: "Machan Theme", startPrice: "5,500", priceNote: "2 with meals", description: "Elevated treehouse-style villa with a glass-bottom pool view and mountain deck.", highlights: ["1 Queen Bedroom", "Glass Bottom Pool View", "Private Pool", "Kids Sleeping Area"] },
 ];
 
 const fmtDateDisplay = (dateStr: string) => {
@@ -60,62 +66,81 @@ export default function StaycationPage() {
         }).catch(() => {});
     }, []);
 
-    const heroUrl = siteImages["staycation-hero/banner"]?.[0]?.url || "";
-
     const checkAvailability = async () => {
         if (!filterCheckIn || !filterCheckOut) return;
         setFilterLoading(true);
         try {
             // Fetch all property IDs first
             const propsRes = await fetch('/api/properties');
-            const allProps = propsRes.ok ? await propsRes.json() : [];
+            interface DbSubProp { id: number; slug: string; isActive: boolean; }
+            interface DbProp { id: number; slug: string; isActive: boolean; subProperties?: DbSubProp[]; }
+            const allProps: DbProp[] = propsRes.ok ? await propsRes.json() : [];
             const results: Record<string, boolean> = {};
             const todayLocal = new Date();
-            const minDateStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth()+1).padStart(2,'0')}-${String(todayLocal.getDate()).padStart(2,'0')}`;
             await Promise.all(propertiesData.map(async (prop) => {
                 try {
-                    const dbProp = allProps.find((p: any) => p.slug === prop.id);
+                    const dbProp = allProps.find((p: DbProp) => p.slug === (prop.parentId || prop.id));
                     if (!dbProp) { results[prop.id] = true; return; }
                     if (!dbProp.isActive) { results[prop.id] = false; return; }
 
-                    // For multi-unit properties (ambrose, amstel-nest), check if at least 1 sub is available
-                    const hasSubs = dbProp.subProperties && dbProp.subProperties.length > 0;
-                    if (hasSubs) {
-                        let anySubAvailable = false;
-                        for (const sub of dbProp.subProperties) {
-                            if (!sub.isActive) continue;
-                            const subUrl = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&subPropertyId=${sub.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
-                            try {
-                                const subRes = await fetch(subUrl);
-                                if (!subRes.ok) { anySubAvailable = true; continue; }
-                                const subData = await subRes.json();
-                                const subBooked: string[] = subData.dates || [];
-                                let subAvail = true;
-                                const ci = new Date(filterCheckIn + 'T12:00:00');
-                                const co = new Date(filterCheckOut + 'T12:00:00');
-                                for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
-                                    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                                    if (subBooked.includes(ds)) { subAvail = false; break; }
-                                }
-                                if (subAvail) { anySubAvailable = true; break; }
-                            } catch { anySubAvailable = true; }
-                        }
-                        results[prop.id] = anySubAvailable;
+                    if (prop.parentId) {
+                        // Check availability for specific subproperty of Ambrose
+                        const sub = dbProp.subProperties?.find((s: DbSubProp) => s.slug === prop.id);
+                        if (!sub || !sub.isActive) { results[prop.id] = false; return; }
+                        const subUrl = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&subPropertyId=${sub.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
+                        try {
+                            const subRes = await fetch(subUrl);
+                            if (!subRes.ok) { results[prop.id] = true; return; }
+                            const subData = await subRes.json();
+                            const subBooked: string[] = subData.dates || [];
+                            let subAvail = true;
+                            const ci = new Date(filterCheckIn + 'T12:00:00');
+                            const co = new Date(filterCheckOut + 'T12:00:00');
+                            for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                                const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                if (subBooked.includes(ds)) { subAvail = false; break; }
+                            }
+                            results[prop.id] = subAvail;
+                        } catch { results[prop.id] = true; }
                     } else {
-                        // Single-unit property
-                        const url = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
-                        const res = await fetch(url);
-                        if (!res.ok) { results[prop.id] = true; return; }
-                        const data = await res.json();
-                        const bookedDates: string[] = data.dates || [];
-                        const ci = new Date(filterCheckIn + 'T12:00:00');
-                        const co = new Date(filterCheckOut + 'T12:00:00');
-                        let available = true;
-                        for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
-                            const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                            if (bookedDates.includes(ds)) { available = false; break; }
+                        // For multi-unit properties (ambrose, amstel-nest), check if at least 1 sub is available
+                        if (dbProp.subProperties && dbProp.subProperties.length > 0) {
+                            let anySubAvailable = false;
+                            for (const sub of dbProp.subProperties) {
+                                if (!sub.isActive) continue;
+                                const subUrl = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&subPropertyId=${sub.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
+                                try {
+                                    const subRes = await fetch(subUrl);
+                                    if (!subRes.ok) { anySubAvailable = true; continue; }
+                                    const subData = await subRes.json();
+                                    const subBooked: string[] = subData.dates || [];
+                                    let subAvail = true;
+                                    const ci = new Date(filterCheckIn + 'T12:00:00');
+                                    const co = new Date(filterCheckOut + 'T12:00:00');
+                                    for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                                        const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                        if (subBooked.includes(ds)) { subAvail = false; break; }
+                                    }
+                                    if (subAvail) { anySubAvailable = true; break; }
+                                } catch { anySubAvailable = true; }
+                            }
+                            results[prop.id] = anySubAvailable;
+                        } else {
+                            // Single-unit property
+                            const url = `/api/bookings/staycation/booked-dates?propertyId=${dbProp.id}&startDate=${filterCheckIn}&endDate=${filterCheckOut}`;
+                            const res = await fetch(url);
+                            if (!res.ok) { results[prop.id] = true; return; }
+                            const data = await res.json();
+                            const bookedDates: string[] = data.dates || [];
+                            const ci = new Date(filterCheckIn + 'T12:00:00');
+                            const co = new Date(filterCheckOut + 'T12:00:00');
+                            let available = true;
+                            for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+                                const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                if (bookedDates.includes(ds)) { available = false; break; }
+                            }
+                            results[prop.id] = available;
                         }
-                        results[prop.id] = available;
                     }
                 } catch { results[prop.id] = true; }
             }));
@@ -232,14 +257,16 @@ export default function StaycationPage() {
                             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-antique-gold/5 border border-antique-gold/15">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                 <span className="text-sm font-inter font-medium text-text-primary">
-                                    {Object.values(filterResults).filter(v => v).length} of {propertiesData.length} properties available
+                                    {propertiesData.filter(p => !p.parentId && filterResults[p.id] === true).length} of {propertiesData.filter(p => !p.parentId).length} properties available
                                 </span>
                                 <span className="text-xs font-inter text-text-muted">
                                     · {fmtDateDisplay(filterCheckIn)} — {fmtDateDisplay(filterCheckOut)}
                                 </span>
                             </div>
                             {(() => {
-                                const unavailable = propertiesData.filter(p => filterResults[p.id] === false);
+                                const unavailable = propertiesData
+                                    .filter(p => !p.parentId)
+                                    .filter(p => filterResults[p.id] === false);
                                 if (unavailable.length === 0) return null;
                                 return (
                                     <p className="mt-2 text-xs font-inter text-text-muted">
@@ -252,52 +279,86 @@ export default function StaycationPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 stagger-children">
-                    {propertiesData
-                        .filter(p => !filterResults || filterResults[p.id] !== false)
-                        .map((property) => {
-                        const thumbUrl = siteImages[`${property.id}/thumbnail`]?.[0]?.url || "";
-                        const isUnavailable = filterResults && filterResults[property.id] === false;
-                        return (
-                            <Link key={property.id} href={`/staycation/${property.id}${filterCheckIn ? `?checkIn=${filterCheckIn}` : ''}${filterCheckOut ? `&checkOut=${filterCheckOut}` : ''}`} className="group block">
-                                <div className={`relative overflow-hidden rounded-xl border border-border-light bg-white transition-all duration-500 hover:border-antique-gold/30 hover:shadow-[0_8px_30px_rgba(186,151,49,0.10)] ${isUnavailable ? 'opacity-40' : ''}`}>
-                                    <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden">
-                                        {thumbUrl ? (
-                                            <Image src={thumbUrl} alt={property.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 50vw" />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-100 flex items-center justify-center">
-                                                <span className="text-slate-400 font-inter text-sm">Image coming soon</span>
+                    {(() => {
+                        const visibleProperties = propertiesData.filter(property => {
+                            if (!filterResults) {
+                                // No date chosen: hide subproperties, show main properties
+                                return !property.parentId;
+                            }
+                            // Date is chosen:
+                            // 1. If it's a subproperty of Ambrose, show it ONLY if it is available (filterResults[property.id] === true)
+                            if (property.parentId === "ambrose") {
+                                return filterResults[property.id] === true;
+                            }
+                            // 2. If it's the main Ambrose property, hide it
+                            if (property.id === "ambrose") {
+                                return false;
+                            }
+                            // 3. For all other properties, show them if they are available (filterResults[property.id] !== false)
+                            return filterResults[property.id] !== false;
+                        });
+
+                        return visibleProperties.map((property) => {
+                            const thumbUrl = property.parentId
+                                ? siteImages[`${property.parentId}/${property.id}/thumbnail`]?.[0]?.url || ""
+                                : siteImages[`${property.id}/thumbnail`]?.[0]?.url || "";
+                            const isUnavailable = filterResults && filterResults[property.id] === false;
+                            const href = property.parentId
+                                ? `/staycation/${property.parentId}/${property.id}`
+                                : `/staycation/${property.id}`;
+
+                            return (
+                                <Link key={property.id} href={`${href}${filterCheckIn ? `?checkIn=${filterCheckIn}` : ''}${filterCheckOut ? `&checkOut=${filterCheckOut}` : ''}`} className="group block">
+                                    <div className={`relative overflow-hidden rounded-xl border border-border-light bg-white transition-all duration-500 hover:border-antique-gold/30 hover:shadow-[0_8px_30px_rgba(186,151,49,0.10)] ${isUnavailable ? 'opacity-40' : ''}`}>
+                                        <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden">
+                                            {thumbUrl ? (
+                                                <Image src={thumbUrl} alt={property.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 50vw" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-100 flex items-center justify-center">
+                                                    <span className="text-slate-400 font-inter text-sm">Image coming soon</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+                                            
+                                            {/* Sub-property theme/type badge overlay on top-left of image, matching ss3 layout */}
+                                            {property.parentId && (
+                                                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-border-light z-10">
+                                                    <span className="text-dark-gold font-inter font-semibold text-[10px] tracking-wider uppercase">{property.subtitle}</span>
+                                                </div>
+                                            )}
+
+                                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-border-light z-10">
+                                                <div className="flex items-baseline gap-0.5">
+                                                    <span className="text-antique-gold font-cinzel font-semibold text-sm">{"\u20B9"}{property.startPrice}</span>
+                                                    <span className="text-text-muted text-[10px] font-inter">/night</span>
+                                                </div>
+                                                {property.priceNote && <p className="text-dark-gold text-[9px] font-inter text-center">{property.priceNote}</p>}
                                             </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-border-light">
-                                            <div className="flex items-baseline gap-0.5">
-                                                <span className="text-antique-gold font-cinzel font-semibold text-sm">{"\u20B9"}{property.startPrice}</span>
-                                                <span className="text-text-muted text-[10px] font-inter">/night</span>
+                                        </div>
+                                        <div className="p-5 sm:p-6">
+                                            <h3 className="font-cinzel text-lg sm:text-xl font-semibold text-text-primary mb-1 group-hover:text-antique-gold transition-colors">{property.name}</h3>
+                                            <p className="text-dark-gold font-inter text-xs tracking-wide mb-2">
+                                                {property.subtitle}
+                                            </p>
+                                            <p className="text-text-secondary font-inter text-sm leading-relaxed mb-4 line-clamp-2">{property.description}</p>
+                                            <div className="flex flex-wrap gap-1.5 mb-5">
+                                                {property.highlights.map((h) => (
+                                                    <span key={h} className="text-[10px] font-inter text-text-secondary bg-soft-gray border border-border-light rounded-full px-2.5 py-1">{h}</span>
+                                                ))}
                                             </div>
-                                            {property.priceNote && <p className="text-dark-gold text-[9px] font-inter text-center">{property.priceNote}</p>}
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-antique-gold font-inter text-xs font-medium flex items-center gap-1.5 group-hover:gap-3 transition-all">
+                                                    View Details
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                                                </span>
+                                                <span className="bg-gradient-to-r from-antique-gold to-dark-gold text-white text-xs font-inter font-semibold px-5 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300">Book Now</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="p-5 sm:p-6">
-                                        <h3 className="font-cinzel text-lg sm:text-xl font-semibold text-text-primary mb-1 group-hover:text-antique-gold transition-colors">{property.name}</h3>
-                                        <p className="text-dark-gold font-inter text-xs tracking-wide mb-2">{property.subtitle}</p>
-                                        <p className="text-text-secondary font-inter text-sm leading-relaxed mb-4 line-clamp-2">{property.description}</p>
-                                        <div className="flex flex-wrap gap-1.5 mb-5">
-                                            {property.highlights.map((h) => (
-                                                <span key={h} className="text-[10px] font-inter text-text-secondary bg-soft-gray border border-border-light rounded-full px-2.5 py-1">{h}</span>
-                                            ))}
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-antique-gold font-inter text-xs font-medium flex items-center gap-1.5 group-hover:gap-3 transition-all">
-                                                View Details
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                            </span>
-                                            <span className="bg-gradient-to-r from-antique-gold to-dark-gold text-white text-xs font-inter font-semibold px-5 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:shadow-antique-gold/30 transition-all duration-300">Book Now</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                                </Link>
+                            );
+                        });
+                    })()}
                 </div>
             </section>
             {/* Guest Reviews */}

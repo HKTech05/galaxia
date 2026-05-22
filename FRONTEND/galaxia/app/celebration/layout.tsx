@@ -20,7 +20,15 @@ export default function CelebrationLayout({ children }: { children: React.ReactN
             `}</style>
             <div className="min-h-screen text-cel-text" style={{ background: "#0D0D0D" }}>
                 <CelebrationNavbar />
-                <main className="pt-[56px]">{children}</main>
+                <main className="pt-[56px]">
+                    <div style={{ background: '#dc2626', color: '#fff', overflow: 'hidden', whiteSpace: 'nowrap' as const, padding: '8px 0', fontSize: '13px', fontWeight: 600, letterSpacing: '0.3px', position: 'relative' as const, zIndex: 10 }}>
+                        <div style={{ display: 'inline-block', animation: 'marquee 20s linear infinite' }}>
+                            ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; ⚠️ No party poppers &amp; outside food is allowed &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                        </div>
+                        <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-10%); } }`}</style>
+                    </div>
+                    {children}
+                </main>
                 <CelebrationFooter />
             </div>
         </>
