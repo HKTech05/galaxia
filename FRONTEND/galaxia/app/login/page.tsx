@@ -34,7 +34,9 @@ export default function AdminLoginPage() {
                 const role = res.admin?.role;
                 const hasFullAccess = !ap || role === "owner" || role === "developer";
                 
-                if (hasFullAccess) {
+                if (role === "chef") {
+                    router.push("/admin3/chef");
+                } else if (hasFullAccess) {
                     router.push("/admin3");
                 } else {
                     // Map assigned property slugs to their first receptionist page

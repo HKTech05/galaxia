@@ -23,7 +23,8 @@ import {
     ClipboardList,
     Smartphone,
     FileText,
-    ScrollText
+    ScrollText,
+    ChefHat
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -185,78 +186,89 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1">
                     {isAdmin3 ? (
                         <>
-                            {/* Owner/Dev only: Dashboard, Bookings */}
-                            {hasFullAccess && (
+                            {adminRole === "chef" ? (
                                 <>
-                                    {renderNavItem(admin3TopItems[0])}
-                                    {renderNavItem(admin3TopItems[1])}
-                                    {renderNavItem(admin3TopItems[2])}
-                                </>
-                            )}
-
-                            {/* Owner/Dev only: Daily Checkins */}
-                            {hasFullAccess && (
-                                <>
-                                    <button
-                                        onClick={() => setDailyCheckinsOpen(!dailyCheckinsOpen)}
-                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isDailyCheckinsActive && !dailyCheckinsOpen
-                                            ? "bg-purple-50 text-purple-700"
-                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                                            }`}
-                                    >
-                                        <CalendarDays size={20} className={isDailyCheckinsActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
-                                        <span className={`font-medium text-[15px] flex-1 ${isDailyCheckinsActive ? "font-semibold" : ""}`}>
-                                            Daily Checkins
-                                        </span>
-                                        <ChevronDown
-                                            size={16}
-                                            className={`transition-transform duration-200 ${dailyCheckinsOpen ? "rotate-180" : ""} ${isDailyCheckinsActive ? "text-purple-500" : "text-slate-400"}`}
-                                        />
-                                    </button>
-                                    {dailyCheckinsOpen && (
-                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            {admin3DailyCheckinItems.map(item => renderNavItem(item, true))}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {/* Owner/Dev only: Website */}
-                            {hasFullAccess && renderNavItem(admin3TopItems[3])}
-
-                            {/* Receptionist Section */}
-                            {hasFullAccess ? (
-                                <>
-                                    {/* Owner/Dev: collapsible dropdown */}
-                                    <button
-                                        onClick={() => setReceptionistOpen(!receptionistOpen)}
-                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isReceptionistActive && !receptionistOpen
-                                            ? "bg-purple-50 text-purple-700"
-                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                                            }`}
-                                    >
-                                        <Eye size={20} className={isReceptionistActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
-                                        <span className={`font-medium text-[15px] flex-1 ${isReceptionistActive ? "font-semibold" : ""}`}>
-                                            Receptionist View
-                                        </span>
-                                        <ChevronDown
-                                            size={16}
-                                            className={`transition-transform duration-200 ${receptionistOpen ? "rotate-180" : ""} ${isReceptionistActive ? "text-purple-500" : "text-slate-400"}`}
-                                        />
-                                    </button>
-                                    {receptionistOpen && (
-                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            {visibleReceptionistItems.map(item => renderNavItem(item, true))}
-                                        </div>
-                                    )}
+                                    {renderNavItem({ name: "Chef (रसोइया)", href: "/admin3/chef", icon: ChefHat })}
                                 </>
                             ) : (
-                                /* Sub-admins: show items directly, no dropdown */
-                                visibleReceptionistItems.map(item => renderNavItem(item))
-                            )}
+                                <>
+                                    {/* Owner/Dev only: Dashboard, Bookings */}
+                                    {hasFullAccess && (
+                                        <>
+                                            {renderNavItem(admin3TopItems[0])}
+                                            {renderNavItem(admin3TopItems[1])}
+                                            {renderNavItem(admin3TopItems[2])}
+                                        </>
+                                    )}
 
-                            {/* Owner/Dev only: Bottom items */}
-                            {hasFullAccess && admin3BottomItems.map(item => renderNavItem(item))}
+                                    {/* Owner/Dev only: Daily Checkins */}
+                                    {hasFullAccess && (
+                                        <>
+                                            <button
+                                                onClick={() => setDailyCheckinsOpen(!dailyCheckinsOpen)}
+                                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isDailyCheckinsActive && !dailyCheckinsOpen
+                                                    ? "bg-purple-50 text-purple-700"
+                                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                                    }`}
+                                            >
+                                                <CalendarDays size={20} className={isDailyCheckinsActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
+                                                <span className={`font-medium text-[15px] flex-1 ${isDailyCheckinsActive ? "font-semibold" : ""}`}>
+                                                    Daily Checkins
+                                                </span>
+                                                <ChevronDown
+                                                    size={16}
+                                                    className={`transition-transform duration-200 ${dailyCheckinsOpen ? "rotate-180" : ""} ${isDailyCheckinsActive ? "text-purple-500" : "text-slate-400"}`}
+                                                />
+                                            </button>
+                                            {dailyCheckinsOpen && (
+                                                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    {admin3DailyCheckinItems.map(item => renderNavItem(item, true))}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Owner/Dev only: Website */}
+                                    {hasFullAccess && renderNavItem(admin3TopItems[3])}
+
+                                    {/* Owner/Dev only: Chef Portal Link */}
+                                    {hasFullAccess && renderNavItem({ name: "Chef (रसोइया)", href: "/admin3/chef", icon: ChefHat })}
+
+                                    {/* Receptionist Section */}
+                                    {hasFullAccess ? (
+                                        <>
+                                            {/* Owner/Dev: collapsible dropdown */}
+                                            <button
+                                                onClick={() => setReceptionistOpen(!receptionistOpen)}
+                                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isReceptionistActive && !receptionistOpen
+                                                    ? "bg-purple-50 text-purple-700"
+                                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                                    }`}
+                                            >
+                                                <Eye size={20} className={isReceptionistActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
+                                                <span className={`font-medium text-[15px] flex-1 ${isReceptionistActive ? "font-semibold" : ""}`}>
+                                                    Receptionist View
+                                                </span>
+                                                <ChevronDown
+                                                    size={16}
+                                                    className={`transition-transform duration-200 ${receptionistOpen ? "rotate-180" : ""} ${isReceptionistActive ? "text-purple-500" : "text-slate-400"}`}
+                                                />
+                                            </button>
+                                            {receptionistOpen && (
+                                                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    {visibleReceptionistItems.map(item => renderNavItem(item, true))}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        /* Sub-admins: show items directly, no dropdown */
+                                        visibleReceptionistItems.map(item => renderNavItem(item))
+                                    )}
+
+                                    {/* Owner/Dev only: Bottom items */}
+                                    {hasFullAccess && admin3BottomItems.map(item => renderNavItem(item))}
+                                </>
+                            )}
                         </>
                     ) : (
                         navItems.map((item) => {

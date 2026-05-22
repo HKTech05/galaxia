@@ -694,3 +694,71 @@ export function generateQuotationPDF(data: {
     });
 }
 
+export function generateChefIngredientsPDF(
+    ingredients: { nameEn: string; nameHi: string; quantity: string }[],
+    date: Date
+): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: "A4", margin: 0 });
+        const chunks: Buffer[] = [];
+        doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+        doc.on("end", () => resolve(Buffer.concat(chunks)));
+        doc.on("error", reject);
+
+        const dateStr = fmtDate(date);
+        const generatedOn = fmtShortDate(new Date());
+
+        // Header
+        drawHeader(doc, "Chef Portal", false);
+
+        let y = 130;
+        doc.fontSize(10).fill(GOLD).font("Helvetica-Bold").text("DAILY INGREDIENTS REQUIREMENTS", 50, y, { characterSpacing: 1.5 });
+        y += 20;
+
+        doc.fontSize(14).fill(TEXT_DARK).font("Helvetica-Bold").text(`Date: ${dateStr}`, 50, y);
+        y += 10;
+        doc.fontSize(8).fill(TEXT_MED).font("Helvetica").text(`Generated on: ${generatedOn}`, 50, y);
+        y += 25;
+
+        // Table Header
+        doc.rect(50, y, doc.page.width - 100, 22).fill(NAVY);
+        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("SR.", 60, y + 6);
+        doc.text("INGREDIENT NAME", 100, y + 6);
+        doc.text("QUANTITY", doc.page.width - 120, y + 6, { align: "right" });
+        y += 28;
+
+        // Table Rows
+        let index = 1;
+        for (const ing of ingredients) {
+            // Check page height limit
+            if (y > 700) {
+                drawFooter(doc, y, "Galaxia Resorts Chef Portal", false);
+                doc.addPage();
+                y = 50;
+                // Draw Table Header on new page
+                doc.rect(50, y, doc.page.width - 100, 22).fill(NAVY);
+                doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("SR.", 60, y + 6);
+                doc.text("INGREDIENT NAME", 100, y + 6);
+                doc.text("QUANTITY", doc.page.width - 120, y + 6, { align: "right" });
+                y += 28;
+            }
+
+            doc.fontSize(10).fill(TEXT_DARK).font("Helvetica").text(`${index}.`, 60, y);
+            
+            // Render English name in PDF
+            doc.text(ing.nameEn, 100, y);
+            
+            doc.font("Helvetica-Bold").text(ing.quantity, doc.page.width - 120, y, { align: "right" });
+            
+            y = drawDivider(doc, y + 14);
+            index++;
+        }
+
+        y += 10;
+        drawFooter(doc, y, "Galaxia Resorts Chef Portal", false);
+
+        doc.end();
+    });
+}
+
+

@@ -96,6 +96,7 @@ export default function SettingsPage() {
                 case "la-paraiso": return "La Paraiso";
                 case "ambrose": return "Ambrose";
                 case "amstel-nest": return "Amstel Nest";
+                case "chef": return "Kitchen / Chef";
                 default: return s;
             }
         }).join(", ");

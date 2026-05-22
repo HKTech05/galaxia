@@ -32,6 +32,7 @@ model AdminAccount {
   foodBillsCreated    FoodBill[]          @relation("FoodBillCreator")
   ddExpensesCreated   DdExpense[]         @relation("DdExpenseCreator")
   stayFoodBillsCreated StaycationFoodBill[] @relation("StayFoodBillCreator")
+  chefLogs            ChefLog[]
 
   @@map("admin_accounts")
 }
@@ -695,3 +696,25 @@ model StaycationFoodBill {
   @@index([bookingId])
   @@map("staycation_food_bills")
 }
+
+model Ingredient {
+  id        Int      @id @default(autoincrement())
+  nameEn    String   @map("name_en") @db.VarChar(200)
+  nameHi    String   @map("name_hi") @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("ingredients")
+}
+
+model ChefLog {
+  id          Int           @id @default(autoincrement())
+  adminId     Int?          @map("admin_id")
+  actionType  String        @map("action_type") @db.VarChar(50) // "add_ingredient", "delete_ingredient", "submit_order"
+  details     String        @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+  admin       AdminAccount? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@map("chef_logs")
+}
+

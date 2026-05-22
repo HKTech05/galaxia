@@ -9,6 +9,8 @@ async function main() {
     // ─── 1. ADMIN ACCOUNTS ───────────────────────────────────────
     const passwordHash = await bcrypt.hash("galaxia2026", 10);
 
+    const chefPasswordHash = await bcrypt.hash("chef123", 10);
+
     const admins = await Promise.all([
         prisma.adminAccount.upsert({
             where: { username: "dd_admin" },
@@ -52,6 +54,19 @@ async function main() {
                 passwordHash,
                 displayName: "Developer",
                 role: "developer",
+            },
+        }),
+        prisma.adminAccount.upsert({
+            where: { username: "chef" },
+            update: {},
+            create: {
+                username: "chef",
+                email: "chef@galaxiaresorts.com",
+                passwordHash: chefPasswordHash,
+                displayName: "Chef",
+                role: "chef",
+                assignedProperties: ["chef"],
+                plainPassword: "chef123",
             },
         }),
     ]);
@@ -327,6 +342,39 @@ async function main() {
         });
     }
     console.log("  ✅ 6 employees");
+
+    // Seed default ingredients
+    const defaultIngredients = [
+        { nameEn: "Potato", nameHi: "आलू" },
+        { nameEn: "Tomato", nameHi: "टमाटर" },
+        { nameEn: "Onion", nameHi: "प्याज" },
+        { nameEn: "Garlic", nameHi: "लहसुन" },
+        { nameEn: "Ginger", nameHi: "अदरक" },
+        { nameEn: "Rice", nameHi: "चावल" },
+        { nameEn: "Wheat Flour", nameHi: "गेहूं का आटा" },
+        { nameEn: "Sugar", nameHi: "चीनी" },
+        { nameEn: "Salt", nameHi: "नमक" },
+        { nameEn: "Milk", nameHi: "दूध" },
+        { nameEn: "Butter", nameHi: "मक्खन" },
+        { nameEn: "Coriander", nameHi: "धनिया" },
+        { nameEn: "Cooking Oil", nameHi: "तेल" },
+        { nameEn: "Green Chillies", nameHi: "हरी मिर्च" },
+        { nameEn: "Paneer", nameHi: "पनीर" },
+    ];
+    for (const ing of defaultIngredients) {
+        const existing = await prisma.ingredient.findFirst({
+            where: { nameEn: ing.nameEn },
+        });
+        if (!existing) {
+            await prisma.ingredient.create({
+                data: {
+                    nameEn: ing.nameEn,
+                    nameHi: ing.nameHi,
+                },
+            });
+        }
+    }
+    console.log("  ✅ Default ingredients seeded");
 
     console.log("\n🎉 Seed complete!");
 }

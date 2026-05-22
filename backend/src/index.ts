@@ -27,6 +27,7 @@ import foodBillRoutes from "./routes/foodBills";
 import ddExpenseRoutes from "./routes/ddExpenses";
 import stayFoodBillRoutes from "./routes/stayFoodBills";
 import quotationRoutes from "./routes/quotations";
+import chefRoutes from "./routes/chef";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { sendTestEmail, sendContactFormEmail } from "./lib/emailService";
 import { authMiddleware, requireRole, AuthRequest } from "./middleware/auth";
@@ -110,6 +111,7 @@ app.use("/api/food-bills", foodBillRoutes);
 app.use("/api/dd-expenses", ddExpenseRoutes);
 app.use("/api/stay-food-bills", stayFoodBillRoutes);
 app.use("/api/quotations", quotationRoutes);
+app.use("/api/chef", chefRoutes);
 
 // Test email route (owner/dev only)
 app.post("/api/test-email", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
