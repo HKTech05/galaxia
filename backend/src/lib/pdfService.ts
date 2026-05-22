@@ -716,7 +716,7 @@ export function generateChefIngredientsPDF(
         y += 20;
 
         doc.fontSize(14).fill(TEXT_DARK).font("Helvetica-Bold").text(`Date: ${dateStr}`, 50, y);
-        y += 10;
+        y += 22; // Prevent overlapping Date and Generated on
         doc.fontSize(8).fill(TEXT_MED).font("Helvetica").text(`Generated on: ${generatedOn}`, 50, y);
         y += 25;
 
@@ -724,7 +724,7 @@ export function generateChefIngredientsPDF(
         doc.rect(50, y, doc.page.width - 100, 22).fill(NAVY);
         doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("SR.", 60, y + 6);
         doc.text("INGREDIENT NAME", 100, y + 6);
-        doc.text("QUANTITY", doc.page.width - 120, y + 6, { align: "right" });
+        doc.text("QUANTITY", doc.page.width - 200, y + 6, { width: 140, align: "right" });
         y += 28;
 
         // Table Rows
@@ -739,7 +739,7 @@ export function generateChefIngredientsPDF(
                 doc.rect(50, y, doc.page.width - 100, 22).fill(NAVY);
                 doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("SR.", 60, y + 6);
                 doc.text("INGREDIENT NAME", 100, y + 6);
-                doc.text("QUANTITY", doc.page.width - 120, y + 6, { align: "right" });
+                doc.text("QUANTITY", doc.page.width - 200, y + 6, { width: 140, align: "right" });
                 y += 28;
             }
 
@@ -748,7 +748,7 @@ export function generateChefIngredientsPDF(
             // Render English name in PDF
             doc.text(ing.nameEn, 100, y);
             
-            doc.font("Helvetica-Bold").text(ing.quantity, doc.page.width - 120, y, { align: "right" });
+            doc.font("Helvetica-Bold").text(ing.quantity, doc.page.width - 200, y, { width: 140, align: "right" });
             
             y = drawDivider(doc, y + 14);
             index++;

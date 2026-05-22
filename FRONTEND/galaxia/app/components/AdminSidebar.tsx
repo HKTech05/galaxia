@@ -188,7 +188,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                         <>
                             {adminRole === "chef" ? (
                                 <>
-                                    {renderNavItem({ name: "Chef (रसोइया)", href: "/admin3/chef", icon: ChefHat })}
+                                    {renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
                                 </>
                             ) : (
                                 <>
@@ -232,7 +232,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                     {hasFullAccess && renderNavItem(admin3TopItems[3])}
 
                                     {/* Owner/Dev only: Chef Portal Link */}
-                                    {hasFullAccess && renderNavItem({ name: "Chef (रसोइया)", href: "/admin3/chef", icon: ChefHat })}
+                                    {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
 
                                     {/* Receptionist Section */}
                                     {hasFullAccess ? (

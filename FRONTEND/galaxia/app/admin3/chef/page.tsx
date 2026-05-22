@@ -309,7 +309,7 @@ export default function ChefPortalPage() {
                             <ChefHat size={36} className="text-purple-300" />
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Chef Portal | रसोईघर पोर्टल</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Chef Portal</h1>
                             <p className="text-purple-200 text-xs sm:text-sm font-medium mt-1">
                                 Manage daily ingredients requirements and submit supply checklists.
                             </p>
@@ -336,7 +336,7 @@ export default function ChefPortalPage() {
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <ClipboardCheck size={20} className="text-purple-600" />
-                                Ingredient Checklist | सामग्री सूची
+                                Ingredient Checklist
                             </h2>
                             
                             {/* Search bar */}
@@ -344,7 +344,7 @@ export default function ChefPortalPage() {
                                 <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search / खोजें..."
+                                    placeholder="Search..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-purple-500 focus:bg-white transition-colors"
@@ -374,7 +374,7 @@ export default function ChefPortalPage() {
                                 ) : (
                                     <Plus size={16} />
                                 )}
-                                Add | जोड़ें
+                                Add
                             </button>
                         </form>
                         {addError && (
@@ -508,7 +508,7 @@ export default function ChefPortalPage() {
                                 ) : (
                                     <>
                                         <Check size={16} />
-                                        Done | हो गया
+                                        Done
                                     </>
                                 )}
                             </button>
@@ -578,7 +578,7 @@ export default function ChefPortalPage() {
                         </div>
                         
                         <h3 className="text-base font-bold text-slate-800 mb-1">
-                            Select Quantity | मात्रा चुनें
+                            Select Quantity
                         </h3>
                         <p className="text-sm font-semibold text-purple-700 bg-purple-50 px-3 py-1.5 rounded-lg inline-block mx-auto mb-5 border border-purple-100">
                             {activeIngredient.nameEn} <span className="font-medium text-slate-400">({activeIngredient.nameHi})</span>
@@ -605,13 +605,13 @@ export default function ChefPortalPage() {
                                     onClick={handleCancelModal}
                                     className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors border border-slate-200/50"
                                 >
-                                    Cancel | रद्द करें
+                                    Cancel
                                 </button>
                                 <button
                                     onClick={handleConfirmQuantity}
                                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm py-2.5 rounded-xl transition-colors shadow-sm shadow-purple-100"
                                 >
-                                    Confirm | पुष्टि करें
+                                    Confirm
                                 </button>
                             </div>
                         </div>
@@ -631,7 +631,7 @@ export default function ChefPortalPage() {
                             Checklist Submitted!
                         </h3>
                         <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg inline-block mx-auto mb-4 border border-emerald-100">
-                            सूची सफलतापूर्वक भेज दी गई है
+                            Submitted Successfully
                         </p>
                         
                         <p className="text-xs text-slate-500 leading-relaxed mb-6">
@@ -639,7 +639,7 @@ export default function ChefPortalPage() {
                         </p>
 
                         <div className="space-y-2.5">
-                            {pdfDownloadUrl && (
+                            {pdfDownloadUrl && isOwnerOrDev && (
                                 <a
                                     href={pdfDownloadUrl}
                                     target="_blank"
@@ -654,7 +654,7 @@ export default function ChefPortalPage() {
                                 onClick={() => setSubmitSuccess(false)}
                                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors border border-slate-200/50"
                             >
-                                Close | बंद करें
+                                Close
                             </button>
                         </div>
                     </div>
@@ -680,7 +680,7 @@ export default function ChefPortalPage() {
                             onClick={() => setSubmitError("")}
                             className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors border border-slate-200/50"
                         >
-                            Close | बंद करें
+                            Close
                         </button>
                     </div>
                 </div>
