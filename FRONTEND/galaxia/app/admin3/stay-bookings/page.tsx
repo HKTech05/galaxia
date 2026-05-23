@@ -92,6 +92,136 @@ export default function StayBookingsPage() {
     const [editBooking, setEditBooking] = useState<StayBooking | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [editSaving, setEditSaving] = useState(false);
+
+    const updateStayFormAndRecalculate = (newPartialFields: any) => {
+        const merged = { ...editForm, ...newPartialFields };
+        if (editBooking?.isDd) {
+            setEditForm(merged);
+            return;
+        }
+
+        // Calculate nights
+        const checkIn = new Date(merged.checkInDate + 'T00:00:00');
+        const checkOut = new Date(merged.checkOutDate + 'T00:00:00');
+        const nights = isNaN(checkIn.getTime()) || isNaN(checkOut.getTime()) 
+            ? 1 
+            : Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
+
+        // Recalculate nightlyRate or basePrice?
+        // If the change includes nightlyRate, checkInDate, checkOutDate, or numCottages,
+        // we should auto-derive the basePrice.
+        // Otherwise, we preserve whatever basePrice is currently in the form.
+        let basePrice = Number(merged.basePrice) || 0;
+        if (newPartialFields.nightlyRate !== undefined || 
+            newPartialFields.checkInDate !== undefined || 
+            newPartialFields.checkOutDate !== undefined || 
+            newPartialFields.numCottages !== undefined) {
+            const nightlyRate = Number(merged.nightlyRate) || 0;
+            const numCottages = Number(merged.numCottages) || 1;
+            basePrice = nightlyRate * nights * numCottages;
+        }
+
+        // Recalculate extra guest charges
+        // If the change includes numGuests, numKids, checkInDate, or checkOutDate,
+        // we should auto-derive extraPersonCharge.
+        // Otherwise, we preserve whatever extraPersonCharge is currently in the form.
+        let extraPersonCharge = Number(merged.extraPersonCharge) || 0;
+        let extraAdultCharge = Number(merged.extraAdultCharge) || 0;
+        let extraKidsCharge = Number(merged.extraKidsCharge) || 0;
+
+        if (newPartialFields.numGuests !== undefined || 
+            newPartialFields.numKids !== undefined ||
+            newPartialFields.checkInDate !== undefined || 
+            newPartialFields.checkOutDate !== undefined) {
+            
+            const propertyName = editBooking?.propertyName || "";
+            let baseGuests = 2;
+            let extraAdultPrice = 0;
+            let kidsPrice = 0;
+
+            if (propertyName.includes("Hill View")) {
+                extraAdultPrice = 600;
+                kidsPrice = 400;
+                baseGuests = 2;
+            } else if (propertyName.includes("Mount View")) {
+                extraAdultPrice = 800;
+                kidsPrice = 500;
+                baseGuests = 2;
+            } else if (propertyName.includes("Heavenly")) {
+                extraAdultPrice = 800;
+                kidsPrice = 500;
+                baseGuests = 2;
+            } else if (propertyName.includes("La Paraiso")) {
+                extraAdultPrice = 1200;
+                kidsPrice = 800;
+                const startDay = checkIn.getDay();
+                const isWeekend = startDay === 0 || startDay === 5 || startDay === 6;
+                baseGuests = isWeekend ? 4 : 2;
+            } else if (propertyName.includes("Amstel")) {
+                extraAdultPrice = 2000;
+                kidsPrice = 1000;
+                baseGuests = 2;
+            } else if (propertyName.includes("Ambrose")) {
+                extraAdultPrice = 2000;
+                kidsPrice = 1000;
+                baseGuests = 4;
+            }
+
+            const numGuests = Number(merged.numGuests) || 0;
+            const numKids = Number(merged.numKids) || 0;
+            
+            const extraAdults = Math.max(0, numGuests - baseGuests);
+            const freeKidsSlots = Math.max(0, baseGuests - numGuests);
+            const extraKids = Math.max(0, numKids - freeKidsSlots);
+
+            extraAdultCharge = extraAdults * extraAdultPrice * nights;
+            extraKidsCharge = extraKids * kidsPrice * nights;
+            extraPersonCharge = extraAdultCharge + extraKidsCharge;
+        }
+
+        // Addons Total
+        let addonsTotal = 0;
+        if (merged.addons && Array.isArray(merged.addons)) {
+            merged.addons.forEach((addon: any) => {
+                if (addon.name === 'Celebration Add-on') {
+                    addonsTotal += Number(addon.price) || 0;
+                }
+            });
+        }
+
+        const discountAmount = Number(merged.discountAmount) || 0;
+        const petCharge = (Number(merged.numPets) || 0) * 600;
+
+        const subtotal = Math.max(0, basePrice + extraPersonCharge + addonsTotal - discountAmount);
+
+        // GST Amount (Taxes)
+        let gstAmount = Number(merged.gstAmount) || 0;
+        if (newPartialFields.gstAmount === undefined) {
+            gstAmount = Math.round(subtotal * 0.05);
+        }
+
+        // Total Amount
+        let totalAmount = Number(merged.totalAmount) || 0;
+        if (newPartialFields.totalAmount === undefined) {
+            totalAmount = subtotal + gstAmount + petCharge;
+            totalAmount = Math.round(totalAmount / 10) * 10;
+        }
+
+        // Balance Amount (totalAmount - advanceAmount)
+        const advanceAmount = Number(merged.advanceAmount) || 0;
+        const balanceAmount = Math.max(0, totalAmount - advanceAmount);
+
+        setEditForm({
+            ...merged,
+            basePrice,
+            extraPersonCharge,
+            extraAdultCharge,
+            extraKidsCharge,
+            gstAmount,
+            totalAmount,
+            balanceAmount,
+        });
+    };
     const [sortField, setSortField] = useState<"bookedAt" | "checkIn">("bookedAt");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
     const [viewTab, setViewTab] = useState<"staycation" | "dd" | "all">("staycation");
@@ -1389,22 +1519,22 @@ export default function StayBookingsPage() {
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Check-in</label>
-                                            <input type="date" value={editForm.checkInDate || ''} onChange={e => setEditForm({...editForm, checkInDate: e.target.value})}
+                                            <input type="date" value={editForm.checkInDate || ''} onChange={e => updateStayFormAndRecalculate({ checkInDate: e.target.value })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Check-out</label>
-                                            <input type="date" value={editForm.checkOutDate || ''} onChange={e => setEditForm({...editForm, checkOutDate: e.target.value})}
+                                            <input type="date" value={editForm.checkOutDate || ''} onChange={e => updateStayFormAndRecalculate({ checkOutDate: e.target.value })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Guests</label>
-                                            <input type="number" min={1} value={editForm.numGuests || ''} onChange={e => setEditForm({...editForm, numGuests: parseInt(e.target.value) || 0})}
+                                            <input type="number" min={1} value={editForm.numGuests || ''} onChange={e => updateStayFormAndRecalculate({ numGuests: parseInt(e.target.value) || 0 })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Kids</label>
-                                            <input type="number" min={0} value={editForm.numKids || ''} onChange={e => setEditForm({...editForm, numKids: parseInt(e.target.value) || 0})}
+                                            <input type="number" min={0} value={editForm.numKids || ''} onChange={e => updateStayFormAndRecalculate({ numKids: parseInt(e.target.value) || 0 })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                     </div>
@@ -1417,7 +1547,7 @@ export default function StayBookingsPage() {
                                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cottages</h4>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Number of Cottages</label>
-                                        <input type="number" min={1} max={10} value={editForm.numCottages || 1} onChange={e => setEditForm({...editForm, numCottages: parseInt(e.target.value) || 1})}
+                                        <input type="number" min={1} max={10} value={editForm.numCottages || 1} onChange={e => updateStayFormAndRecalculate({ numCottages: parseInt(e.target.value) || 1 })}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
                                 </div>
@@ -1430,51 +1560,51 @@ export default function StayBookingsPage() {
                                     {!editBooking.isDd && (
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Nightly Rate</label>
-                                            <input type="number" value={editForm.nightlyRate ?? ''} onChange={e => setEditForm({...editForm, nightlyRate: parseFloat(e.target.value) || 0})}
+                                            <input type="number" value={editForm.nightlyRate ?? ''} onChange={e => updateStayFormAndRecalculate({ nightlyRate: parseFloat(e.target.value) || 0 })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                     )}
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Base Price</label>
-                                        <input type="number" value={editForm.basePrice ?? ''} onChange={e => setEditForm({...editForm, basePrice: parseFloat(e.target.value) || 0})}
+                                        <input type="number" value={editForm.basePrice ?? ''} onChange={e => updateStayFormAndRecalculate({ basePrice: parseFloat(e.target.value) || 0 })}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Extra Person</label>
-                                        <input type="number" value={editForm.extraPersonCharge ?? ''} onChange={e => setEditForm({...editForm, extraPersonCharge: parseFloat(e.target.value) || 0})}
+                                        <input type="number" value={editForm.extraPersonCharge ?? ''} onChange={e => updateStayFormAndRecalculate({ extraPersonCharge: parseFloat(e.target.value) || 0 })}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">{editBooking.isDd ? "GST Amount" : "Taxes"}</label>
-                                        <input type="number" value={editForm.gstAmount ?? ''} onChange={e => setEditForm({...editForm, gstAmount: parseFloat(e.target.value) || 0})}
+                                        <input type="number" value={editForm.gstAmount ?? ''} onChange={e => updateStayFormAndRecalculate({ gstAmount: parseFloat(e.target.value) || 0 })}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                     </div>
                                     {!editBooking.isDd && (
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Discount</label>
-                                            <input type="number" value={editForm.discountAmount ?? ''} onChange={e => setEditForm({...editForm, discountAmount: parseFloat(e.target.value) || 0})}
+                                            <input type="number" value={editForm.discountAmount ?? ''} onChange={e => updateStayFormAndRecalculate({ discountAmount: parseFloat(e.target.value) || 0 })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                     )}
                                     <div>
                                         <label className="text-[10px] font-bold text-emerald-600 uppercase">Total Amount</label>
-                                        <input type="number" value={editForm.totalAmount ?? ''} onChange={e => setEditForm({...editForm, totalAmount: parseFloat(e.target.value) || 0})}
+                                        <input type="number" value={editForm.totalAmount ?? ''} onChange={e => updateStayFormAndRecalculate({ totalAmount: parseFloat(e.target.value) || 0 })}
                                             className="w-full mt-1 px-3 py-2 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-700 bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-blue-600 uppercase">Advance Paid</label>
-                                        <input type="number" value={editForm.advanceAmount ?? ''} onChange={e => setEditForm({...editForm, advanceAmount: parseFloat(e.target.value) || 0})}
+                                        <input type="number" value={editForm.advanceAmount ?? ''} onChange={e => updateStayFormAndRecalculate({ advanceAmount: parseFloat(e.target.value) || 0 })}
                                             className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg text-sm font-bold text-blue-700 bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-amber-600 uppercase">Balance</label>
-                                        <input type="number" value={editForm.balanceAmount ?? ''} onChange={e => setEditForm({...editForm, balanceAmount: parseFloat(e.target.value) || 0})}
+                                        <input type="number" value={editForm.balanceAmount ?? ''} onChange={e => updateStayFormAndRecalculate({ balanceAmount: parseFloat(e.target.value) || 0 })}
                                             className="w-full mt-1 px-3 py-2 border border-amber-200 rounded-lg text-sm font-bold text-amber-700 bg-amber-50/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500" />
                                     </div>
                                     {!editBooking.isDd && (
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Security Deposit</label>
-                                            <input type="number" value={editForm.securityDeposit ?? ''} onChange={e => setEditForm({...editForm, securityDeposit: parseFloat(e.target.value) || 0})}
+                                            <input type="number" value={editForm.securityDeposit ?? ''} onChange={e => updateStayFormAndRecalculate({ securityDeposit: parseFloat(e.target.value) || 0 })}
                                                 className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                                         </div>
                                     )}
@@ -1518,14 +1648,14 @@ export default function StayBookingsPage() {
                                                 <div key={idx} className="p-3 bg-purple-50 border border-purple-100 rounded-lg">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <span className="text-xs font-bold text-purple-700">{addon.name || 'Add-on'}</span>
-                                                        <button onClick={() => { const a = [...editForm.addons]; a.splice(idx, 1); setEditForm({...editForm, addons: a}); }}
+                                                        <button onClick={() => { const a = [...editForm.addons]; a.splice(idx, 1); updateStayFormAndRecalculate({ addons: a }); }}
                                                             className="text-red-400 hover:text-red-600 transition-colors"><X size={14} /></button>
                                                     </div>
                                                     {addon.name === 'Celebration Add-on' && (
                                                         <div className="grid grid-cols-3 gap-2">
                                                             <div>
                                                                 <label className="text-[9px] font-bold text-purple-500 uppercase">Price</label>
-                                                                <input type="number" value={addon.price || ''} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], price: parseInt(e.target.value) || 0}; setEditForm({...editForm, addons: a}); }}
+                                                                <input type="number" value={addon.price || ''} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], price: parseInt(e.target.value) || 0}; updateStayFormAndRecalculate({ addons: a }); }}
                                                                     className="w-full mt-0.5 px-2 py-1.5 border border-purple-200 rounded text-xs font-medium" />
                                                             </div>
                                                             <div>
@@ -1546,7 +1676,7 @@ export default function StayBookingsPage() {
                                     ) : (
                                         <p className="text-xs text-slate-400 italic">No add-ons</p>
                                     )}
-                                    <button onClick={() => setEditForm({...editForm, addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 1200, occasion: '', cakeMessage: '' }]})}
+                                    <button onClick={() => updateStayFormAndRecalculate({ addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 1200, occasion: '', cakeMessage: '' }] })}
                                         className="mt-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">+ Add Celebration Add-on</button>
                                 </div>
                             )}
