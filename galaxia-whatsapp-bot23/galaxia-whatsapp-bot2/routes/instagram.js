@@ -241,6 +241,7 @@ router.post("/webhook", async (req, res) => {
         response.options
           .map((opt, i) => `${i + 1}. ${opt.label}`)
           .join("\n");
+      replyText += "\n\n👇 Please select one of the options below to proceed:";
     }
 
     // 6. Save bot reply to DB
