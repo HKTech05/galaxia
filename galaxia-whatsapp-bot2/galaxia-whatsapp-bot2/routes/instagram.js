@@ -71,6 +71,10 @@ router.post("/webhook", async (req, res) => {
       payload: opt.value
     }));
 
+    if (quickReplies.length > 0) {
+      msgText += "\n\n👇 Please select one of the options below to proceed:";
+    }
+
     // Send reply via Instagram Graph API
     await axios.post(
       `https://graph.facebook.com/v18.0/me/messages`,

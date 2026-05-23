@@ -38,6 +38,10 @@ async function sendInstagramReply(recipientId, response, botType = "celebration"
     payload: opt.value
   }));
 
+  if (quickReplies.length > 0) {
+    msgText += "\n\n👇 Please select one of the options below to proceed:";
+  }
+
   const messagePayload = {
     text: msgText,
     ...(quickReplies.length > 0 && { quick_replies: quickReplies })
