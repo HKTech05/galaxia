@@ -718,3 +718,22 @@ model ChefLog {
   @@map("chef_logs")
 }
 
+model Quotation {
+  id            Int      @id @default(autoincrement())
+  quoteId       String   @unique @map("quote_id") @db.VarChar(50)
+  customerName  String   @map("customer_name") @db.VarChar(200)
+  customerPhone String   @map("customer_phone") @db.VarChar(255)
+  customerEmail String?  @map("customer_email") @db.VarChar(255)
+  propertyName  String   @map("property_name") @db.VarChar(200)
+  checkIn       String   @map("check_in") @db.VarChar(50)
+  checkOut      String   @map("check_out") @db.VarChar(50)
+  data          Json     @map("data")
+  pricing       Json     @map("pricing")
+  pdfBuffer     Bytes    @map("pdf_buffer")
+  bookingUrl    String   @map("booking_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("quotations")
+}
+
+

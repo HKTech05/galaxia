@@ -10,15 +10,19 @@ import { generateQuotationPDF } from "../lib/pdfService";
 
 const router = Router();
 
-// In-memory store for generated PDFs (cleared after 7 days)
-const pdfStore = new Map<string, { buffer: Buffer; createdAt: number; data: any; pricing: any; bookingUrl: string }>();
-
-// Clean up old PDFs every hour
-setInterval(() => {
-    const now = Date.now();
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    for (const [id, entry] of pdfStore) {
-        if (now - entry.createdAt > SEVEN_DAYS) pdfStore.delete(id);
+// Clean up old PDFs older than 7 days every hour
+setInterval(async () => {
+    try {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        await prisma.quotation.deleteMany({
+            where: {
+                createdAt: {
+                    lt: sevenDaysAgo
+                }
+            }
+        });
+    } catch (err) {
+        console.error("[Quotation] Cleanup error:", err);
     }
 }, 60 * 60 * 1000);
 
@@ -250,7 +254,21 @@ router.post("/generate", async (req: Request, res: Response) => {
 
         const bookingUrl = `https://www.galaxiaresorts.com/customerquote?quoteId=${quoteId}`;
 
-        pdfStore.set(quoteId, { buffer: pdfBuffer, createdAt: Date.now(), data: quoteData, pricing, bookingUrl });
+        await prisma.quotation.create({
+            data: {
+                quoteId,
+                customerName,
+                customerPhone,
+                customerEmail: customerEmail || null,
+                propertyName,
+                checkIn,
+                checkOut,
+                data: quoteData as any,
+                pricing: pricing as any,
+                pdfBuffer,
+                bookingUrl,
+            }
+        });
 
         res.json({ quoteId, pricing, pdfUrl: `https://galaxiaresorts.com/api/quotations/${quoteId}/pdf`, bookingUrl });
     } catch (err: any) {
@@ -260,40 +278,64 @@ router.post("/generate", async (req: Request, res: Response) => {
 });
 
 // GET /api/quotations/:id/data — Return quote data for customer page (no auth needed)
-router.get("/:id/data", (req: Request, res: Response) => {
-    const entry = pdfStore.get(req.params.id as string);
-    if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
-    res.json({ data: entry.data, pricing: entry.pricing, bookingUrl: entry.bookingUrl });
+router.get("/:id/data", async (req: Request, res: Response) => {
+    try {
+        const entry = await prisma.quotation.findUnique({
+            where: { quoteId: req.params.id as string }
+        });
+        if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
+        res.json({ data: entry.data, pricing: entry.pricing, bookingUrl: entry.bookingUrl });
+    } catch (err: any) {
+        console.error("[Quotation] Fetch data error:", err);
+        res.status(500).json({ error: "Failed to fetch quotation" });
+    }
 });
 
 // GET /api/quotations/:id/pdf
-router.get("/:id/pdf", (req: Request, res: Response) => {
-    const entry = pdfStore.get(req.params.id as string);
-    if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="Galaxia-Quotation-${req.params.id}.pdf"`);
-    res.send(entry.buffer);
+router.get("/:id/pdf", async (req: Request, res: Response) => {
+    try {
+        const entry = await prisma.quotation.findUnique({
+            where: { quoteId: req.params.id as string }
+        });
+        if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="Galaxia-Quotation-${req.params.id}.pdf"`);
+        res.send(entry.pdfBuffer);
+    } catch (err: any) {
+        console.error("[Quotation] Fetch PDF error:", err);
+        res.status(500).json({ error: "Failed to fetch quotation PDF" });
+    }
 });
 
 // GET /api/quotations/:id/download
-router.get("/:id/download", (req: Request, res: Response) => {
-    const entry = pdfStore.get(req.params.id as string);
-    if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="Galaxia-Quotation-${req.params.id}.pdf"`);
-    res.send(entry.buffer);
+router.get("/:id/download", async (req: Request, res: Response) => {
+    try {
+        const entry = await prisma.quotation.findUnique({
+            where: { quoteId: req.params.id as string }
+        });
+        if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="Galaxia-Quotation-${req.params.id}.pdf"`);
+        res.send(entry.pdfBuffer);
+    } catch (err: any) {
+        console.error("[Quotation] Download PDF error:", err);
+        res.status(500).json({ error: "Failed to download quotation PDF" });
+    }
 });
 
 // POST /api/quotations/:id/send-whatsapp
 router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const entry = pdfStore.get(id);
+        const entry = await prisma.quotation.findUnique({
+            where: { quoteId: id }
+        });
         if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
 
         const targetPhone = "9653176436";
         const pdfUrl = `https://galaxiaresorts.com/api/quotations/${id}/pdf`;
-        const q = entry.data;
+        const q = entry.data as any;
+        const pricing = entry.pricing as any;
         const fmtCurrency = (n: number) => `Rs.${(n || 0).toLocaleString("en-IN")}`;
 
         // Build villa summary for message
@@ -322,7 +364,7 @@ Hi ${q.customerName}, here is your personalised booking link:
 *Dates:* ${q.checkIn} to ${q.checkOut}
 *Guests:* ${totalAdults} adults${totalKids > 0 ? ', ' + totalKids + ' kids' : ''}
 
-*Total:* ${fmtCurrency(entry.pricing.totalAmount)}
+*Total:* ${fmtCurrency(pricing.totalAmount)}
 
 *Book Now:*
 ${entry.bookingUrl}
