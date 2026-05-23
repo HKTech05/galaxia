@@ -1011,7 +1011,6 @@ export default function StayBookingsPage() {
                                              });
                                          }
 
-                                         const computedTotalAmount = (displayBasePrice + extraAdult + extraKids + extraPerson + petCharges + addonsTotal) - (selectedBooking.discountAmount || 0);
                                          const taxes = selectedBooking.gstAmount || 0;
 
                                          return (
@@ -1053,16 +1052,16 @@ export default function StayBookingsPage() {
                                                      </div>
                                                  )}
                                                  {addonRows}
-                                                 <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
-                                                     <span className="font-bold text-slate-800">Total Amount</span>
-                                                     <span className="font-black text-lg text-slate-900">{formatPrice(computedTotalAmount)}</span>
-                                                 </div>
                                                  {taxes > 0 && (
                                                      <div className="flex justify-between text-sm">
                                                          <span className="text-slate-600">Taxes</span>
                                                          <span className="font-bold text-slate-800">{formatPrice(taxes)}</span>
                                                      </div>
                                                  )}
+                                                 <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
+                                                     <span className="font-bold text-slate-800">Total Amount</span>
+                                                     <span className="font-black text-lg text-slate-900">{formatPrice(selectedBooking.totalAmount)}</span>
+                                                 </div>
                                              </>
                                          );
                                      })()}
