@@ -1870,15 +1870,15 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <span>Loading calendar data...</span>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto max-w-full">
+                                <div className="overflow-auto max-h-[70vh] lg:max-h-none lg:overflow-x-auto max-w-full">
                                     {calendar2View === "all" ? (
                                         <table className="w-full border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 max-lg:sticky max-lg:top-[80px] max-lg:left-0 max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[96px] max-lg:max-w-[96px]">Date</th>
-                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 max-lg:sticky max-lg:top-[80px] max-lg:left-[96px] max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[64px] max-lg:max-w-[64px]">Day</th>
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 max-lg:sticky max-lg:top-0 max-lg:left-0 max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[96px] max-lg:max-w-[96px]">Date</th>
+                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 max-lg:sticky max-lg:top-0 max-lg:left-[96px] max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[64px] max-lg:max-w-[64px]">Day</th>
                                                     {["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS", "LA PARAISO", "MOUNT VIEW", "HEAVENLY VILLA", "HILL VIEW"].map(col => (
-                                                        <th key={col} className="px-2 py-3 text-center text-[10px] font-black text-slate-700 border-r border-slate-200 uppercase tracking-tight min-w-[72px] max-lg:sticky max-lg:top-[80px] max-lg:z-30 max-lg:bg-slate-50 max-lg:min-w-[120px]">
+                                                        <th key={col} className="px-2 py-3 text-center text-[10px] font-black text-slate-700 border-r border-slate-200 uppercase tracking-tight min-w-[72px] max-lg:sticky max-lg:top-0 max-lg:z-30 max-lg:bg-slate-50 max-lg:min-w-[120px]">
                                                             {col}
                                                         </th>
                                                     ))}
@@ -1936,14 +1936,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <table className="w-full border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 max-lg:sticky max-lg:top-[80px] max-lg:left-0 max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[96px] max-lg:max-w-[96px]">Date</th>
-                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 max-lg:sticky max-lg:top-[80px] max-lg:left-[96px] max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[64px] max-lg:max-w-[64px]">Day</th>
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 max-lg:sticky max-lg:top-0 max-lg:left-0 max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[96px] max-lg:max-w-[96px]">Date</th>
+                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 max-lg:sticky max-lg:top-0 max-lg:left-[96px] max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[64px] max-lg:max-w-[64px]">Day</th>
                                                     {Array.from({ length: 14 }, (_, idx) => (
-                                                        <th key={idx + 1} className="px-1 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[36px] max-lg:sticky max-lg:top-[80px] max-lg:z-30 max-lg:bg-slate-50">
+                                                        <th key={idx + 1} className="px-1 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[36px] max-lg:sticky max-lg:top-0 max-lg:z-30 max-lg:bg-slate-50">
                                                             {idx + 1}
                                                         </th>
                                                     ))}
-                                                    <th className="px-2 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[50px] uppercase max-lg:sticky max-lg:top-[80px] max-lg:z-30 max-lg:bg-slate-50 max-lg:min-w-[100px]">FAMILY UNIT</th>
+                                                    <th className="px-2 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[50px] uppercase max-lg:sticky max-lg:top-0 max-lg:z-30 max-lg:bg-slate-50 max-lg:min-w-[100px]">FAMILY UNIT</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
