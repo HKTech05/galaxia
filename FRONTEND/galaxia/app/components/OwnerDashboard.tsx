@@ -1642,6 +1642,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
                         <div className="p-6 space-y-3 overflow-y-auto max-h-[70vh]">
                             {(() => {
+                                const selectedDateStr = `${propertyDate.getFullYear()}-${String(propertyDate.getMonth() + 1).padStart(2, '0')}-${String(propertyDate.getDate()).padStart(2, '0')}`;
                                 const rawVillas = villaModal.type === "ambrose" ? liveAmbrose : liveAmstel;
                                 // For Amstel Nest: expand Standard Cottage into 14 individual units
                                 let displayVillas = rawVillas;
