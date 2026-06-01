@@ -300,13 +300,23 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         }
     };
 
+    const getLocalDateString = (d: Date) => {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const parseLocalDateStr = (dateInput: any) => {
+        if (!dateInput) return "";
+        const str = typeof dateInput === "string" ? dateInput : new Date(dateInput).toISOString();
+        return str.slice(0, 10);
+    };
+
     const getCellStatus = (date: Date, colType: "all" | "amstelnest", colName: string, unitIndex?: number) => {
-        const dateStr = date.toISOString().split("T")[0];
+        const dateStr = getLocalDateString(date);
         const info = getColumnInfo(colType, colName);
         if (!info.propertyId) return { status: "vacant" };
 
         const blocks = calendar2Blocks.filter(b => {
-            const bDateStr = new Date(b.blockedDate).toISOString().split("T")[0];
+            const bDateStr = parseLocalDateStr(b.blockedDate);
             if (bDateStr !== dateStr) return false;
             if (b.propertyId !== info.propertyId) return false;
             if (info.subPropertyId) {
@@ -323,8 +333,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             } else {
                 if (b.subPropertyId !== null) return false;
             }
-            const bStartStr = new Date(b.checkInDate).toISOString().split("T")[0];
-            const bEndStr = new Date(b.checkOutDate).toISOString().split("T")[0];
+            const bStartStr = parseLocalDateStr(b.checkInDate);
+            const bEndStr = parseLocalDateStr(b.checkOutDate);
             return dateStr >= bStartStr && dateStr < bEndStr;
         });
 
@@ -382,7 +392,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         if (!info.propertyId) return;
 
         setBlockActionLoading(true);
-        const dateStr = selectedCell.date.toISOString().split("T")[0];
+        const dateStr = getLocalDateString(selectedCell.date);
         const reasonText = blockReasonType === "owner" 
             ? `Owner Reservation: ${blockCustomNote}` 
             : `Maintenance: ${blockCustomNote}`;
