@@ -15,6 +15,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     // Date Range Filters
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
+    const [receptionistMode, setReceptionistMode] = useState<"checkin" | "checkout">("checkin");
 
     // Fetch bookings from API
     const fetchBookings = useCallback(async () => {
@@ -35,6 +36,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     pets: b.numPets || 0,
                     checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
                     checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "",
+                    rawCheckInDate: b.checkInDate,
+                    rawCheckOutDate: b.checkOutDate,
                     checkInTime: "1:00 PM",
                     checkOutTime: "10:00 AM",
                     depositAmt: `₹${(b.securityDeposit || 3000).toLocaleString('en-IN')}`,
@@ -46,9 +49,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         fileType: g.fileType,
                     })),
                     status: b.status === "checked_out" ? "Completed" : 
-                            b.status === "confirmed" ? "Pending Arrival" : 
+                            b.status === "confirmed" ? "Confirmed" : 
                             b.status === "checked_in" ? "Checked In" : 
-                            b.status || "Pending Arrival",
+                            b.status || "Pending",
                     addons: b.addons || null,
                     totalAmount: b.totalAmount || 0,
                     numCottages: b.numCottages || 1,
@@ -211,28 +214,33 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
 
     // Filter to logically evaluate if a booking intersects the query date range.
-    const todaysBookings = bookings.filter(b => {
+    const todaysBookings = bookings.map(b => {
         const matchesProperty = properties.some(p => b.property.includes(p) || (b.parentProperty && b.parentProperty === p));
-        if (!matchesProperty) return false;
-        if (b.status === "Cancelled") return false;
+        if (!matchesProperty) return null;
+        if (b.status === "Cancelled") return null;
 
-        const rangeStart = new Date(startDate);
-        rangeStart.setHours(0, 0, 0, 0);
+        const fmtLocalDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const selectedDateStr = fmtLocalDateStr(startDate);
 
-        const rangeEnd = new Date(endDate);
-        rangeEnd.setHours(23, 59, 59, 999);
+        const rawCID = b.rawCheckInDate ? b.rawCheckInDate.slice(0, 10) : "";
+        const rawCOD = b.rawCheckOutDate ? b.rawCheckOutDate.slice(0, 10) : "";
 
-        const bStart = new Date(b.checkInDate);
-        bStart.setHours(0, 0, 0, 0);
-
-        const bEnd = new Date(b.checkOutDate);
-        bEnd.setHours(0, 0, 0, 0);
-
-        // Overlap logic: A booking intersects the range if it starts before the range ends AND ends after the range starts.
-        const overlaps = (bStart <= rangeEnd) && (bEnd >= rangeStart);
-
-        return overlaps || b.status === "Checked In";
-    });
+        if (receptionistMode === "checkin") {
+            // Active check-ins today: check-in <= selected day AND checkout > selected day
+            const isActiveToday = rawCID <= selectedDateStr && rawCOD > selectedDateStr;
+            if (isActiveToday) {
+                const isContinue = rawCID < selectedDateStr;
+                return { ...b, isContinue };
+            }
+        } else {
+            // Checkout today: check-out === selected day
+            const isCheckoutToday = rawCOD === selectedDateStr;
+            if (isCheckoutToday) {
+                return b;
+            }
+        }
+        return null;
+    }).filter(Boolean) as any[];
 
     const handleAction = async (booking: any, newStatus: string) => {
         try {
@@ -314,25 +322,41 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
                         {portalName.replace(" | Owner View", "")}
                     </h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Bookings dashboard filtered by date range.</p>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Bookings dashboard filtered by checkin/checkout mode.</p>
                 </div>
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
                     <button
                         onClick={() => setIsManualBookingOpen(true)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors mr-2"
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors mr-2 border border-purple-700"
                     >
                         <Plus size={16} /> <span className="hidden sm:inline">Manual Booking</span><span className="sm:hidden">New Booking</span>
                     </button>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest hidden xl:inline">From:</span>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shadow-sm border border-slate-200">
+                            <button
+                                onClick={() => setReceptionistMode("checkin")}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
+                                    receptionistMode === "checkin"
+                                        ? "bg-white text-indigo-600 shadow-sm border border-slate-200/50"
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Checkins
+                            </button>
+                            <button
+                                onClick={() => setReceptionistMode("checkout")}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
+                                    receptionistMode === "checkout"
+                                        ? "bg-white text-indigo-600 shadow-sm border border-slate-200/50"
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Checkouts
+                            </button>
+                        </div>
                         <CustomDatePicker date={startDate} onDateChange={(d) => {
                             setStartDate(d);
-                            if (d > endDate) setEndDate(d);
-                        }} />
-                        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest px-1">To:</span>
-                        <CustomDatePicker date={endDate} onDateChange={(d) => {
                             setEndDate(d);
-                            if (d < startDate) setStartDate(d);
                         }} />
                     </div>
                 </div>
@@ -344,7 +368,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         <BedDouble size={32} />
                     </div>
                     <h2 className="text-xl font-bold text-slate-800 tracking-tight mb-2">No Bookings Found</h2>
-                    <p className="text-sm font-medium text-slate-500">There are no bookings intersecting this date range.</p>
+                    <p className="text-sm font-medium text-slate-500">There are no {receptionistMode === "checkin" ? "checkins" : "checkouts"} today.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6">
@@ -363,6 +387,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'Checked In' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
                                         booking.status === 'Pending Checkout' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                                             booking.status === 'Completed' ? 'bg-slate-100 text-slate-600 border-slate-300' :
+                                            booking.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                                 'bg-slate-50 text-slate-700 border-slate-200'
                                         }`}>
                                         {booking.status}
@@ -372,7 +397,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 mt-6">
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Guest</p>
-                                        <p className="text-sm font-bold text-slate-800 flex items-center gap-2">{booking.customer}</p>
+                                        <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                            {booking.customer}
+                                            {booking.isContinue && (
+                                                <span className="text-red-600 font-extrabold text-sm ml-1.5 animate-pulse">(Continue)</span>
+                                            )}
+                                        </p>
                                         {booking.phone && (
                                             <p className="text-xs font-medium text-slate-500 mt-0.5 flex items-center gap-1">
                                                 <Phone size={11} className="text-slate-400" />
@@ -511,80 +541,78 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                             {/* Right Col: Actions */}
                             <div className="p-6 md:w-1/3 bg-slate-50/50 flex flex-col justify-center space-y-3">
-                                {booking.status === "Pending Arrival" && (
-                                    <>
-                                        <button
-                                            onClick={() => { setSelectedBooking(booking); setModalType('checkin'); setIsActionModalOpen(true); }}
-                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-emerald-700">
-                                            <CheckCircle size={18} /> Confirm Check-in
-                                        </button>
-                                        <button
-                                            onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
-                                            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
-                                            <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
-                                        </button>
-                                        <button
-                                            onClick={() => setCancelModalBooking(booking)}
-                                            className="w-full bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-red-200">
-                                            <Ban size={18} /> Cancel Booking
-                                        </button>
-                                        {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
-                                        <button
-                                            onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
-                                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
-                                            <Plus size={18} /> Add Food Bill
-                                        </button>
-                                        )}
-                                    </>
-                                )}
-
-                                {booking.status === "Checked In" && (
-                                    <>
-                                        <button
-                                            onClick={() => { setSelectedBooking(booking); setModalType('checkout'); setIsActionModalOpen(true); }}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
-                                            <RotateCcw size={18} /> Initiate Checkout
-                                        </button>
-                                        <button
-                                            onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
-                                            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 mt-2">
-                                            <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
-                                        </button>
-                                        {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
-                                        <button
-                                            onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
-                                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
-                                            <Plus size={18} /> Add Food Bill
-                                        </button>
-                                        )}
-                                    </>
-                                )}
-
-                                {booking.status === "Pending Checkout" && (
-                                    <>
-                                        <button
-                                            onClick={() => { setSelectedBooking(booking); setModalType('checkout'); setIsActionModalOpen(true); }}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
-                                            <RotateCcw size={18} /> Initiate Checkout
-                                        </button>
-                                        {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
-                                        <button
-                                            onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
-                                            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
-                                            <Plus size={18} /> Add Food Bill
-                                        </button>
-                                        )}
-                                    </>
-                                )}
-
-                                {booking.status === "Completed" && (
-                                    <div className="text-center p-4">
-                                        <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-200">
-                                            <CheckCircle size={20} />
+                                {receptionistMode === "checkin" ? (
+                                    booking.status !== "Checked In" ? (
+                                        <>
+                                            <button
+                                                onClick={() => { setSelectedBooking(booking); setModalType('checkin'); setIsActionModalOpen(true); }}
+                                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-emerald-700">
+                                                <CheckCircle size={18} /> Confirm Check-in
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
+                                            </button>
+                                            <button
+                                                onClick={() => setCancelModalBooking(booking)}
+                                                className="w-full bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-red-200">
+                                                <Ban size={18} /> Cancel Booking
+                                            </button>
+                                            {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
+                                            <button
+                                                onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                                <Plus size={18} /> Add Food Bill
+                                            </button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
+                                            </button>
+                                            {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
+                                            <button
+                                                onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                                <Plus size={18} /> Add Food Bill
+                                            </button>
+                                            )}
+                                        </>
+                                    )
+                                ) : (
+                                    booking.status === "Completed" ? (
+                                        <div className="text-center p-4">
+                                            <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-200">
+                                                <CheckCircle size={20} />
+                                            </div>
+                                            <h4 className="font-bold text-slate-800">Checkout Completed</h4>
+                                            <p className="text-xs font-medium text-slate-500 mt-1">Guest has departed</p>
                                         </div>
-                                        <h4 className="font-bold text-slate-800">Checkout Completed</h4>
-                                        <p className="text-xs font-medium text-slate-500 mt-1">Guest has departed</p>
-                                    </div>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => { setSelectedBooking(booking); setModalType('checkout'); setIsActionModalOpen(true); }}
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
+                                                <RotateCcw size={18} /> Initiate Checkout
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
+                                            </button>
+                                            {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
+                                            <button
+                                                onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                                <Plus size={18} /> Add Food Bill
+                                            </button>
+                                            )}
+                                        </>
+                                    )
                                 )}
                             </div>
                         </div>
