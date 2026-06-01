@@ -309,14 +309,22 @@ router.get("/property-status", authMiddleware, async (req, res) => {
         // Decorate properties with check-in info for frontend
         const decoratedProperties = properties.map(p => {
             const propBookings = activeBookings.filter(b => b.propertyId === p.id && !b.subPropertyId);
-            const isBooked = propBookings.length > 0;
+            const isBooked = propBookings.some(b => {
+                const checkInStr = new Date(b.checkInDate).toISOString().split('T')[0];
+                const checkOutStr = new Date(b.checkOutDate).toISOString().split('T')[0];
+                return checkOutStr !== todayStr || checkInStr === todayStr;
+            });
             const booking = propBookings[0];
 
             return {
                 ...p,
                 villas: (p.subProperties || []).map(sp => {
                     const spBookings = activeBookings.filter(b => b.subPropertyId === sp.id);
-                    const isSpBooked = spBookings.length > 0;
+                    const isSpBooked = spBookings.some(b => {
+                        const checkInStr = new Date(b.checkInDate).toISOString().split('T')[0];
+                        const checkOutStr = new Date(b.checkOutDate).toISOString().split('T')[0];
+                        return checkOutStr !== todayStr || checkInStr === todayStr;
+                    });
                     const spBooking = spBookings[0];
 
                     return {

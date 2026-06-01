@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil, Download, FileText, ArrowRightLeft } from "lucide-react";
+import { Search, Filter, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, IndianRupee, CalendarDays, Users, Phone, Mail, Film, Trash2, Pencil, Download, FileText, ArrowRightLeft, Plus } from "lucide-react";
+
+
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import ManualBookingModal from "../../components/ManualBookingModal";
+
 
 interface StayBooking {
     id: number;
@@ -78,6 +82,8 @@ const statusIcons: Record<string, any> = {
 export default function StayBookingsPage() {
     const [bookings, setBookings] = useState<StayBooking[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isManualBookingOpen, setIsManualBookingOpen] = useState(false);
+
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [ddSourceFilter, setDdSourceFilter] = useState("All");
@@ -685,13 +691,22 @@ export default function StayBookingsPage() {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Bookings</h1>
                     <p className="text-sm font-medium text-slate-500 mt-1">All bookings across all properties</p>
                 </div>
-                <button
-                    onClick={() => setShowReportModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                    <FileText size={16} />
-                    Daily Report
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsManualBookingOpen(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <Plus size={16} />
+                        + Manual Booking
+                    </button>
+                    <button
+                        onClick={() => setShowReportModal(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <FileText size={16} />
+                        Daily Report
+                    </button>
+                </div>
             </div>
 
             {/* Tab Switcher */}
@@ -1936,6 +1951,14 @@ export default function StayBookingsPage() {
                     </div>
                 </div>
             )}
+
+            <ManualBookingModal
+                isOpen={isManualBookingOpen}
+                onClose={() => setIsManualBookingOpen(false)}
+                onSuccess={fetchBookings}
+                properties={["Hill View", "Mount View", "Heavenly Villa", "La Paraiso", "Amstel Nest", "Ambrose"]}
+            />
         </div>
+
     );
 }

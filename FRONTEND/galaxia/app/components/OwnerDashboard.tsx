@@ -263,7 +263,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         const primaryBooking = villaBooking || checkinBooking;
                         return {
                             ...v,
-                            booked: v.booked ?? isBooked,
+                            booked: isBooked,
                             bookingStatus: v.bookingStatus ?? (primaryBooking?.status || null),
                             isCheckinDay: v.isCheckinDay ?? (checkinBooking ? true : false),
                             isCheckoutDay: v.isCheckoutDay ?? (checkoutBooking ? true : false),
@@ -287,7 +287,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     const primaryPropBooking = propBooking || propCheckinBooking;
                     return {
                         ...p,
-                        booked: p.booked ?? isPropBooked,
+                        booked: isPropBooked,
                         bookingStatus: p.bookingStatus ?? (primaryPropBooking?.status || null),
                         isCheckinDay: p.isCheckinDay ?? (propCheckinBooking ? true : false),
                         isCheckoutDay: p.isCheckoutDay ?? (propCheckoutBooking ? true : false),

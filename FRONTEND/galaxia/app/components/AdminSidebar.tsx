@@ -65,10 +65,10 @@ const admin3BottomItems = [
     { name: "Cash Management", href: "/admin3/employees", icon: BadgeDollarSign },
     { name: "UPI Management", href: "/admin3/upi-management", icon: Smartphone },
     { name: "Coupons", href: "/admin3/coupons", icon: Ticket },
-    { name: "Users", href: "/admin3/users", icon: Users },
     { name: "Properties", href: "/admin3/properties-mgmt", icon: Building },
-    { name: "Reports", href: "/admin3/reports", icon: FileText },
+    { name: "Users", href: "/admin3/users", icon: Users },
     { name: "Reviews", href: "/admin3/reviews", icon: Star },
+    { name: "Reports", href: "/admin3/reports", icon: FileText },
     { name: "Photo Manager", href: "/admin3/website-view", icon: Globe },
     { name: "Settings", href: "/admin3/settings", icon: Settings },
 ];
