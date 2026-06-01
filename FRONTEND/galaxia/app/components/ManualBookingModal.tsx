@@ -30,6 +30,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         paymentMethod: "Cash"
     });
 
+    // Ambrose specific selection state
+    const [selectedAmbroseVillas, setSelectedAmbroseVillas] = useState<string[]>(["TAKE-1"]);
+
     // Amstel Nest specific selection quantities
     const [amstelStandardCount, setAmstelStandardCount] = useState<number>(1);
     const [amstelFamilySelected, setAmstelFamilySelected] = useState<boolean>(false);
@@ -129,6 +132,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             setAmstelStandardCount(1);
             setAmstelFamilySelected(false);
         }
+        if (newProp.includes("Ambrose")) {
+            setSelectedAmbroseVillas(["TAKE-1"]);
+        }
     };
 
     const resolveSubPropertyId = (propertyName: string, villaName: string): number | null => {
@@ -146,6 +152,55 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         return null;
     };
 
+    const getUnitRates = (propName: string, villaName: string, day: number, isWeekend: boolean, isSaturday: boolean) => {
+        let basePrice = 0;
+        let extraAdultPrice = 0;
+        let kidsPrice = 0;
+        let baseGuests = 2;
+
+        let liveKey = "";
+        if (propName.includes("Ambrose")) {
+            liveKey = `Ambrose/${villaName.toUpperCase()}`;
+        } else if (propName.includes("Amstel")) {
+            liveKey = villaName === "Family Cottage" ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
+        } else {
+            for (const k of Object.keys(livePricing)) {
+                if (propName.includes(k)) { liveKey = k; break; }
+            }
+        }
+
+        let lp = livePricing[liveKey];
+        if (!lp) {
+            const upperKey = liveKey.toUpperCase();
+            for (const [k, v] of Object.entries(livePricing)) {
+                if (k.toUpperCase() === upperKey) { lp = v; break; }
+            }
+        }
+        if (!lp && (propName.includes("Amstel") || propName.includes("Ambrose"))) {
+            const parentKey = propName.includes("Amstel") ? "Amstel Nest" : "Ambrose";
+            lp = livePricing[parentKey];
+        }
+
+        if (lp) {
+            basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
+            extraAdultPrice = lp.extraAdult;
+            kidsPrice = lp.kidsCharge;
+            baseGuests = lp.baseGuests;
+        } else {
+            if (propName.includes("Hill View")) { basePrice = isWeekend ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
+            else if (propName.includes("Mount View")) { basePrice = isWeekend ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+            else if (propName.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
+            else if (propName.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
+            else if (propName.includes("Amstel")) {
+                if (villaName === "Family Cottage") { basePrice = 9000; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
+                else { basePrice = isWeekend ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
+            }
+            else if (propName.includes("Ambrose")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
+        }
+
+        return { basePrice, extraAdultPrice, kidsPrice, baseGuests };
+    };
+
     const calculatePrice = () => {
         let roomTotal = 0;
         let extraAdultTotal = 0;
@@ -155,55 +210,6 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
         const isAmstel = manualForm.property.includes("Amstel");
-
-        const getUnitRates = (propName: string, villaName: string, day: number, isWeekend: boolean, isSaturday: boolean) => {
-            let basePrice = 0;
-            let extraAdultPrice = 0;
-            let kidsPrice = 0;
-            let baseGuests = 2;
-
-            let liveKey = "";
-            if (propName.includes("Ambrose")) {
-                liveKey = `Ambrose/${villaName.toUpperCase()}`;
-            } else if (propName.includes("Amstel")) {
-                liveKey = villaName === "Family Cottage" ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
-            } else {
-                for (const k of Object.keys(livePricing)) {
-                    if (propName.includes(k)) { liveKey = k; break; }
-                }
-            }
-
-            let lp = livePricing[liveKey];
-            if (!lp) {
-                const upperKey = liveKey.toUpperCase();
-                for (const [k, v] of Object.entries(livePricing)) {
-                    if (k.toUpperCase() === upperKey) { lp = v; break; }
-                }
-            }
-            if (!lp && (propName.includes("Amstel") || propName.includes("Ambrose"))) {
-                const parentKey = propName.includes("Amstel") ? "Amstel Nest" : "Ambrose";
-                lp = livePricing[parentKey];
-            }
-
-            if (lp) {
-                basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
-                extraAdultPrice = lp.extraAdult;
-                kidsPrice = lp.kidsCharge;
-                baseGuests = lp.baseGuests;
-            } else {
-                if (propName.includes("Hill View")) { basePrice = isWeekend ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
-                else if (propName.includes("Mount View")) { basePrice = isWeekend ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
-                else if (propName.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-                else if (propName.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
-                else if (propName.includes("Amstel")) {
-                    if (villaName === "Family Cottage") { basePrice = 9000; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
-                    else { basePrice = isWeekend ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
-                }
-                else if (propName.includes("Ambrose")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
-            }
-
-            return { basePrice, extraAdultPrice, kidsPrice, baseGuests };
-        };
 
         let totalBaseGuests = 0;
         let sampleExtraAdultPrice = 2000;
@@ -233,6 +239,16 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         totalBaseGuests += famRates.baseGuests;
                         sampleExtraAdultPrice = famRates.extraAdultPrice;
                         sampleKidsPrice = famRates.kidsPrice;
+                    }
+                }
+            } else if (manualForm.property.includes("Ambrose")) {
+                for (const villa of selectedAmbroseVillas) {
+                    const rates = getUnitRates(manualForm.property, villa, day, isWeekend, isSaturday);
+                    roomTotal += rates.basePrice;
+                    if (i === 0) {
+                        totalBaseGuests += rates.baseGuests;
+                        sampleExtraAdultPrice = rates.extraAdultPrice;
+                        sampleKidsPrice = rates.kidsPrice;
                     }
                 }
             } else {
@@ -303,23 +319,107 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             return;
         }
 
-        const calculated = calculatePrice();
-        const shouldSplit = isAmstel && amstelStandardCount > 0 && amstelFamilySelected;
+        const start = new Date(manualForm.checkInDate);
+        const end = new Date(manualForm.checkOutDate);
+        const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
+        const checkInDateStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+        const checkOutDateStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+
+        // Get Property ID
+        let propId: number | null = null;
+        for (const p of dbPropertyList) {
+            if (manualForm.property.includes(p.name)) { propId = p.id; break; }
+        }
+        if (!propId) {
+            const fallbackMap: Record<string, number> = {
+                "Hill View": 1, "Mount View": 2, "Heavenly Villa": 3,
+                "La Paraiso": 4, "Amstel Nest": 5, "Ambrose": 6
+            };
+            propId = Object.entries(fallbackMap).find(([name]) => manualForm.property.includes(name))?.[1] || 1;
+        }
+
+        const isAmbrose = manualForm.property.includes("Ambrose");
+
+        // Helper to check range overlap
+        const getDatesInRange = (startDate: Date, endDate: Date): string[] => {
+            const list: string[] = [];
+            const temp = new Date(startDate);
+            while (temp < endDate) {
+                list.push(`${temp.getFullYear()}-${String(temp.getMonth() + 1).padStart(2, '0')}-${String(temp.getDate()).padStart(2, '0')}`);
+                temp.setDate(temp.getDate() + 1);
+            }
+            return list;
+        };
+        const stayDates = getDatesInRange(start, end);
+
+        // 1. Conflict Validation
         try {
-            if (shouldSplit) {
-                let propId: number | null = null;
-                for (const p of dbPropertyList) {
-                    if (manualForm.property.includes(p.name)) { propId = p.id; break; }
+            if (isAmbrose) {
+                if (selectedAmbroseVillas.length === 0) {
+                    alert("Please select at least one Ambrose Villa.");
+                    return;
                 }
-                if (!propId) propId = 5;
-
+                for (const villa of selectedAmbroseVillas) {
+                    const subPropId = resolveSubPropertyId(manualForm.property, villa);
+                    if (subPropId) {
+                        const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${propId}&subPropertyId=${subPropId}&startDate=${checkInDateStr}&endDate=${checkOutDateStr}`);
+                        const bookedDates = data.dates || [];
+                        const conflicts = stayDates.filter(d => bookedDates.includes(d));
+                        if (conflicts.length > 0) {
+                            alert(`Ambrose Villa "${villa}" is booked/unavailable on: ${conflicts.join(", ")}`);
+                            return;
+                        }
+                    }
+                }
+            } else if (isAmstel) {
                 const stdSubPropId = resolveSubPropertyId(manualForm.property, "Standard Cottage");
                 const famSubPropId = resolveSubPropertyId(manualForm.property, "Family Cottage");
 
-                const start = new Date(manualForm.checkInDate);
-                const end = new Date(manualForm.checkOutDate);
-                const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
+                if (amstelStandardCount > 0 && stdSubPropId) {
+                    const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${propId}&subPropertyId=${stdSubPropId}&startDate=${checkInDateStr}&endDate=${checkOutDateStr}`);
+                    const dateCounts = data.dateCounts || {};
+                    const conflicts: string[] = [];
+                    for (const d of stayDates) {
+                        const bookedCount = dateCounts[d] || 0;
+                        if (14 - bookedCount < amstelStandardCount) {
+                            conflicts.push(d);
+                        }
+                    }
+                    if (conflicts.length > 0) {
+                        alert(`Standard Cottage does not have ${amstelStandardCount} units available on: ${conflicts.join(", ")}`);
+                        return;
+                    }
+                }
+
+                if (amstelFamilySelected && famSubPropId) {
+                    const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${propId}&subPropertyId=${famSubPropId}&startDate=${checkInDateStr}&endDate=${checkOutDateStr}`);
+                    const bookedDates = data.dates || [];
+                    const conflicts = stayDates.filter(d => bookedDates.includes(d));
+                    if (conflicts.length > 0) {
+                        alert(`Family Cottage is booked/unavailable on: ${conflicts.join(", ")}`);
+                        return;
+                    }
+                }
+            } else {
+                const data = await api.get(`/bookings/staycation/booked-dates?propertyId=${propId}&startDate=${checkInDateStr}&endDate=${checkOutDateStr}`);
+                const bookedDates = data.dates || [];
+                const conflicts = stayDates.filter(d => bookedDates.includes(d));
+                if (conflicts.length > 0) {
+                    alert(`This property is booked/unavailable on: ${conflicts.join(", ")}`);
+                    return;
+                }
+            }
+        } catch (err: any) {
+            console.error("Conflict check error:", err);
+        }
+
+        const calculated = calculatePrice();
+
+        try {
+            if (isAmstel && amstelStandardCount > 0 && amstelFamilySelected) {
+                const stdSubPropId = resolveSubPropertyId(manualForm.property, "Standard Cottage");
+                const famSubPropId = resolveSubPropertyId(manualForm.property, "Family Cottage");
 
                 let stdRoomTotal = 0;
                 let famRoomTotal = 0;
@@ -337,48 +437,74 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     famRoomTotal += famBase;
                 }
 
-                const totalWeight = stdRoomTotal + famRoomTotal;
-                const stdRatio = stdRoomTotal / totalWeight;
+                // Split guests
+                const stdCap = 2 * amstelStandardCount;
+                const famCap = 4;
 
-                const stdBasePrice = Math.round(calculated.basePrice * stdRatio);
-                const stdGst = Math.round(calculated.gstAmount * stdRatio);
-                const stdTotal = Math.round(calculated.totalAmount * stdRatio);
-                const stdExtraAdult = Math.round(calculated.extraAdultCharge * stdRatio);
-                const stdExtraKids = Math.round(calculated.extraKidsCharge * stdRatio);
-                const stdDiscount = Math.round(manualDiscountAmount * stdRatio);
-                const stdAdvance = customSplitMode ? Math.round(parseInt(customPrepaid || '0') * stdRatio) : stdTotal;
-                const stdBalance = stdTotal - stdAdvance;
+                const stdGuests = Math.min(stdCap, Math.max(1, manualForm.guests - 1));
+                const famGuests = Math.max(1, manualForm.guests - stdGuests);
 
-                const famBasePrice = calculated.basePrice - stdBasePrice;
-                const famGst = calculated.gstAmount - stdGst;
-                const famTotal = calculated.totalAmount - stdTotal;
-                const famExtraAdult = calculated.extraAdultCharge - stdExtraAdult;
-                const famExtraKids = calculated.extraKidsCharge - stdExtraKids;
-                const famDiscount = manualDiscountAmount - stdDiscount;
-                const famAdvance = customSplitMode ? parseInt(customPrepaid || '0') - stdAdvance : famTotal;
-                const famBalance = famTotal - famAdvance;
-
-                let stdGuests = Math.round(manualForm.guests * stdRatio);
-                let famGuests = manualForm.guests - stdGuests;
-                if (stdGuests < 1) {
-                    stdGuests = 1;
-                    famGuests = Math.max(1, manualForm.guests - 1);
-                } else if (famGuests < 1) {
-                    famGuests = 1;
-                    stdGuests = Math.max(1, manualForm.guests - 1);
-                }
-
-                const stdKids = Math.round(manualForm.kids * stdRatio);
+                const stdKids = Math.round(manualForm.kids / 2);
                 const famKids = manualForm.kids - stdKids;
 
-                const stdPets = Math.round(manualForm.pets * stdRatio);
+                const stdPets = Math.round(manualForm.pets / 2);
                 const famPets = manualForm.pets - stdPets;
+
+                const stdExtraAdults = Math.max(0, stdGuests - stdCap);
+                const famExtraAdults = Math.max(0, famGuests - famCap);
+
+                const stdFreeKidsSlots = Math.max(0, stdCap - stdGuests);
+                const stdExtraKids = Math.max(0, stdKids - stdFreeKidsSlots);
+
+                const famFreeKidsSlots = Math.max(0, famCap - famGuests);
+                const famExtraKids = Math.max(0, famKids - famFreeKidsSlots);
+
+                const stdExtraAdultCharge = stdExtraAdults * 2000 * nights;
+                const stdExtraKidsCharge = stdExtraKids * 1000 * nights;
+                const famExtraAdultCharge = famExtraAdults * 2000 * nights;
+                const famExtraKidsCharge = famExtraKids * 1000 * nights;
+
+                const stdDecorCharge = manualDecoration ? DECORATION_PRICE : 0;
+                const famDecorCharge = 0;
+
+                const stdRawBase = stdRoomTotal + stdExtraAdultCharge + stdExtraKidsCharge + stdDecorCharge;
+                const famRawBase = famRoomTotal + famExtraAdultCharge + famExtraKidsCharge + famDecorCharge;
+
+                // Split discounts equally
+                const couponAmt = manualAppliedCoupon ? (manualAppliedCoupon.discountType === "percentage" ? Math.round((stdRawBase + famRawBase) * manualAppliedCoupon.discountValue / 100) : manualAppliedCoupon.discountValue) : 0;
+                const totalDiscount = couponAmt + Math.round(manualDiscountAmount / 1.05);
+
+                const stdDiscount = Math.round(totalDiscount / 2);
+                const famDiscount = totalDiscount - stdDiscount;
+
+                // Direct base prices
+                const stdBasePrice = Math.max(0, stdRawBase - stdDiscount);
+                const famBasePrice = Math.max(0, famRawBase - famDiscount);
+
+                // Apply 5% GST directly
+                const stdGst = Math.round(stdBasePrice * 0.05);
+                const famGst = Math.round(famBasePrice * 0.05);
+
+                const stdTotal = stdBasePrice + stdGst + stdPets * 600;
+                const famTotal = famBasePrice + famGst + famPets * 600;
+
+                // Split advance equally
+                let stdAdvance = stdTotal;
+                let famAdvance = famTotal;
+                if (customSplitMode) {
+                    const prepaidNum = parseInt(customPrepaid || '0');
+                    stdAdvance = Math.round(prepaidNum / 2);
+                    famAdvance = prepaidNum - stdAdvance;
+                }
+
+                const stdBalance = stdTotal - stdAdvance;
+                const famBalance = famTotal - famAdvance;
 
                 const regCount = parseInt(manualRegularCount) || 0;
                 const jCount = parseInt(manualJainCount) || 0;
-                const stdRegCount = Math.round(regCount * stdRatio);
+                const stdRegCount = Math.round(regCount / 2);
                 const famRegCount = regCount - stdRegCount;
-                const stdJCount = Math.round(jCount * stdRatio);
+                const stdJCount = Math.round(jCount / 2);
                 const famJCount = jCount - stdJCount;
 
                 const stdAddons: any[] = [];
@@ -392,9 +518,6 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
 
                 if (famRegCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Regular', count: famRegCount });
                 if (famJCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Jain', count: famJCount });
-
-                const checkInDateStr = `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`;
-                const checkOutDateStr = `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkOutDate.getDate()).padStart(2, '0')}`;
 
                 const commonPayload = {
                     customerName: manualForm.name,
@@ -422,8 +545,8 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     advanceAmount: stdAdvance,
                     balanceAmount: stdBalance,
                     basePrice: stdBasePrice,
-                    extraAdultCharge: stdExtraAdult,
-                    extraKidsCharge: stdExtraKids,
+                    extraAdultCharge: stdExtraAdultCharge,
+                    extraKidsCharge: stdExtraKidsCharge,
                     gstAmount: stdGst,
                     discountAmount: stdDiscount,
                     addons: stdAddons.length > 0 ? stdAddons : null,
@@ -441,60 +564,198 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     advanceAmount: famAdvance,
                     balanceAmount: famBalance,
                     basePrice: famBasePrice,
-                    extraAdultCharge: famExtraAdult,
-                    extraKidsCharge: famExtraKids,
+                    extraAdultCharge: famExtraAdultCharge,
+                    extraKidsCharge: famExtraKidsCharge,
                     gstAmount: famGst,
                     discountAmount: famDiscount,
                     addons: famAddons.length > 0 ? famAddons : null,
                 });
 
+            } else if (isAmbrose) {
+                // Ambrose (handles 1 or more villas)
+                const numVillas = selectedAmbroseVillas.length;
+                const roomTotals: Record<string, number> = {};
+
+                let sumRoomTotals = 0;
+                for (const v of selectedAmbroseVillas) {
+                    let roomTotalV = 0;
+                    for (let i = 0; i < nights; i++) {
+                        const currentDate = new Date(start);
+                        currentDate.setDate(start.getDate() + i);
+                        const day = currentDate.getDay();
+                        const isWeekend = day === 0 || day === 5 || day === 6;
+                        const isSaturday = day === 6;
+                        const rates = getUnitRates(manualForm.property, v, day, isWeekend, isSaturday);
+                        roomTotalV += rates.basePrice;
+                    }
+                    roomTotals[v] = roomTotalV;
+                    sumRoomTotals += roomTotalV;
+                }
+
+                // Distribute guests, kids, pets, food counts
+                let guestsLeft = manualForm.guests;
+                let kidsLeft = manualForm.kids;
+                let petsLeft = manualForm.pets;
+                let regLeft = parseInt(manualRegularCount) || 0;
+                let jainLeft = parseInt(manualJainCount) || 0;
+
+                const villaGuests: Record<string, number> = {};
+                const villaKids: Record<string, number> = {};
+                const villaPets: Record<string, number> = {};
+                const villaReg: Record<string, number> = {};
+                const villaJain: Record<string, number> = {};
+
+                selectedAmbroseVillas.forEach((v, idx) => {
+                    if (idx === numVillas - 1) {
+                        villaGuests[v] = Math.max(1, guestsLeft);
+                        villaKids[v] = Math.max(0, kidsLeft);
+                        villaPets[v] = Math.max(0, petsLeft);
+                        villaReg[v] = Math.max(0, regLeft);
+                        villaJain[v] = Math.max(0, jainLeft);
+                    } else {
+                        const g = Math.max(1, Math.round(manualForm.guests / numVillas));
+                        const k = Math.round(manualForm.kids / numVillas);
+                        const p = Math.round(manualForm.pets / numVillas);
+                        const r = Math.round((parseInt(manualRegularCount) || 0) / numVillas);
+                        const j = Math.round((parseInt(manualJainCount) || 0) / numVillas);
+
+                        villaGuests[v] = g;
+                        villaKids[v] = k;
+                        villaPets[v] = p;
+                        villaReg[v] = r;
+                        villaJain[v] = j;
+
+                        guestsLeft -= g;
+                        kidsLeft -= k;
+                        petsLeft -= p;
+                        regLeft -= r;
+                        jainLeft -= j;
+                    }
+                });
+
+                // Calculate base raw prices for each villa
+                const villaRawBases: Record<string, number> = {};
+                selectedAmbroseVillas.forEach((v, idx) => {
+                    const guestsV = villaGuests[v];
+                    const extraAdultsV = Math.max(0, guestsV - 4);
+                    const freeKidsSlotsV = Math.max(0, 4 - guestsV);
+                    const extraKidsV = Math.max(0, villaKids[v] - freeKidsSlotsV);
+
+                    const extraAdultChargeV = extraAdultsV * 2000 * nights;
+                    const extraKidsChargeV = extraKidsV * 1000 * nights;
+                    const decorChargeV = (idx === 0 && manualDecoration) ? DECORATION_PRICE : 0;
+
+                    villaRawBases[v] = roomTotals[v] + extraAdultChargeV + extraKidsChargeV + decorChargeV;
+                });
+
+                const totalRawBase = Object.values(villaRawBases).reduce((s, val) => s + val, 0);
+
+                const couponAmt = manualAppliedCoupon ? (manualAppliedCoupon.discountType === "percentage" ? Math.round(totalRawBase * manualAppliedCoupon.discountValue / 100) : manualAppliedCoupon.discountValue) : 0;
+                const totalDiscount = couponAmt + Math.round(manualDiscountAmount / 1.05);
+
+                let discountLeft = totalDiscount;
+                const villaDiscounts: Record<string, number> = {};
+                selectedAmbroseVillas.forEach((v, idx) => {
+                    if (idx === numVillas - 1) {
+                        villaDiscounts[v] = Math.max(0, discountLeft);
+                    } else {
+                        const d = Math.round(totalDiscount / numVillas);
+                        villaDiscounts[v] = d;
+                        discountLeft -= d;
+                    }
+                });
+
+                // Base, GST, and totals for each villa
+                const villaBasePrices: Record<string, number> = {};
+                const villaGsts: Record<string, number> = {};
+                const villaTotals: Record<string, number> = {};
+
+                selectedAmbroseVillas.forEach(v => {
+                    villaBasePrices[v] = Math.max(0, villaRawBases[v] - villaDiscounts[v]);
+                    villaGsts[v] = Math.round(villaBasePrices[v] * 0.05);
+                    villaTotals[v] = villaBasePrices[v] + villaGsts[v] + villaPets[v] * 600;
+                });
+
+                const grandCombinedTotal = Object.values(villaTotals).reduce((s, val) => s + val, 0);
+
+                let advanceLeft = customSplitMode ? parseInt(customPrepaid || '0') : grandCombinedTotal;
+                const villaAdvances: Record<string, number> = {};
+                selectedAmbroseVillas.forEach((v, idx) => {
+                    if (idx === numVillas - 1) {
+                        villaAdvances[v] = Math.max(0, advanceLeft);
+                    } else {
+                        const adv = customSplitMode ? Math.round(parseInt(customPrepaid || '0') / numVillas) : villaTotals[v];
+                        villaAdvances[v] = adv;
+                        advanceLeft -= adv;
+                    }
+                });
+
+                const commonPayload = {
+                    customerName: manualForm.name,
+                    customerPhone: manualForm.phone || "0000000000",
+                    customerEmail: manualForm.email || null,
+                    propertyId: propId,
+                    checkInDate: checkInDateStr,
+                    checkOutDate: checkOutDateStr,
+                    securityDeposit: 3000,
+                    advancePaid: true,
+                    advanceMethod: manualForm.paymentMethod,
+                    source: "reception",
+                    couponCode: manualAppliedCoupon?.code || null,
+                };
+
+                for (const v of selectedAmbroseVillas) {
+                    const subPropId = resolveSubPropertyId(manualForm.property, v);
+                    const villaAddons: any[] = [];
+                    if (selectedAmbroseVillas.indexOf(v) === 0 && manualDecoration) {
+                        villaAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+                    }
+                    if (villaReg[v] > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Regular', count: villaReg[v] });
+                    if (villaJain[v] > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Jain', count: villaJain[v] });
+
+                    const basePrice = villaBasePrices[v];
+                    const extraAdultsV = Math.max(0, villaGuests[v] - 4);
+                    const freeKidsSlotsV = Math.max(0, 4 - villaGuests[v]);
+                    const extraKidsV = Math.max(0, villaKids[v] - freeKidsSlotsV);
+                    const extraAdultCharge = extraAdultsV * 2000 * nights;
+                    const extraKidsCharge = extraKidsV * 1000 * nights;
+
+                    await api.post("/bookings/staycation", {
+                        ...commonPayload,
+                        subPropertyId: subPropId,
+                        numGuests: villaGuests[v],
+                        numKids: villaKids[v],
+                        numPets: villaPets[v],
+                        numCottages: 1,
+                        nightlyRate: Math.round(roomTotals[v] / nights),
+                        totalAmount: villaTotals[v],
+                        advanceAmount: villaAdvances[v],
+                        balanceAmount: villaTotals[v] - villaAdvances[v],
+                        basePrice: basePrice,
+                        extraAdultCharge: extraAdultCharge,
+                        extraKidsCharge: extraKidsCharge,
+                        gstAmount: villaGsts[v],
+                        discountAmount: villaDiscounts[v],
+                        addons: villaAddons.length > 0 ? villaAddons : null,
+                    });
+                }
             } else {
-                let propId: number | null = null;
-                for (const p of dbPropertyList) {
-                    if (manualForm.property.includes(p.name)) { propId = p.id; break; }
-                }
-                if (!propId) {
-                    const fallbackMap: Record<string, number> = {
-                        "Hill View": 1, "Mount View": 2, "Heavenly Villa": 3,
-                        "La Paraiso": 4, "Amstel Nest": 5, "Ambrose": 6
-                    };
-                    propId = Object.entries(fallbackMap).find(([name]) => manualForm.property.includes(name))?.[1] || 1;
-                }
-
-                const subPropId = (manualForm.property.includes("Ambrose") || manualForm.property.includes("Amstel"))
-                    ? resolveSubPropertyId(manualForm.property, manualForm.property.includes("Amstel") ? (amstelFamilySelected ? "Family Cottage" : "Standard Cottage") : manualForm.villa)
-                    : null;
-
+                // Standalone villas (Hill View, Mount View, La Paraiso, Heavenly Villa)
                 const bookingAddons: any[] = [];
                 if (manualDecoration) {
                     bookingAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
                 }
-                if (isAmbroseOrAmstel) {
-                    const regCount = parseInt(manualRegularCount) || 0;
-                    const jCount = parseInt(manualJainCount) || 0;
-                    if (regCount > 0) {
-                        bookingAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
-                    }
-                    if (jCount > 0) {
-                        bookingAddons.push({ name: 'Food Preference', foodType: 'Jain', count: jCount });
-                    }
-                }
-
-                const numCottages = isAmstel ? (amstelStandardCount > 0 ? amstelStandardCount : 1) : 1;
-
-                const checkInDateStr = `${manualForm.checkInDate.getFullYear()}-${String(manualForm.checkInDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkInDate.getDate()).padStart(2, '0')}`;
-                const checkOutDateStr = `${manualForm.checkOutDate.getFullYear()}-${String(manualForm.checkOutDate.getMonth() + 1).padStart(2, '0')}-${String(manualForm.checkOutDate.getDate()).padStart(2, '0')}`;
 
                 await api.post("/bookings/staycation", {
                     customerName: manualForm.name,
                     customerPhone: manualForm.phone || "0000000000",
                     customerEmail: manualForm.email || null,
                     propertyId: propId,
-                    subPropertyId: subPropId,
+                    subPropertyId: null,
                     numGuests: manualForm.guests,
                     numKids: manualForm.kids || 0,
                     numPets: manualForm.pets || 0,
-                    numCottages: numCottages,
+                    numCottages: 1,
                     checkInDate: checkInDateStr,
                     checkOutDate: checkOutDateStr,
                     nightlyRate: calculated.nightlyRoomRate,
@@ -532,6 +793,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 villa: (properties[0] || "").includes("Amstel") ? "Standard Cottage" : "TAKE-1",
                 paymentMethod: "Cash"
             });
+            setSelectedAmbroseVillas(["TAKE-1"]);
             setAmstelStandardCount(1);
             setAmstelFamilySelected(false);
             setCustomSplitMode(false);
@@ -647,11 +909,41 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                             </div>
 
                             {manualForm.property.includes("Ambrose") && (
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Ambrose Villa Theme</label>
-                                    <select value={manualForm.villa} onChange={e => setManualForm({ ...manualForm, villa: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none font-medium text-slate-800">
-                                        {AMBROSE_VILLAS.map(v => <option key={v} value={v}>{v}</option>)}
-                                    </select>
+                                <div className="space-y-2 col-span-1 sm:col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 mb-2">Select Ambrose Villas *</label>
+                                    <div className="space-y-2">
+                                        {AMBROSE_VILLAS.map(v => {
+                                            const isSelected = selectedAmbroseVillas.includes(v);
+                                            return (
+                                                <div key={v} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-200">
+                                                    <span className="text-sm font-bold text-slate-700">{v}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedAmbroseVillas(prev => {
+                                                                if (prev.includes(v)) {
+                                                                    if (prev.length === 1) {
+                                                                        alert("Please select at least one Ambrose Villa.");
+                                                                        return prev;
+                                                                    }
+                                                                    return prev.filter(x => x !== v);
+                                                                } else {
+                                                                    return [...prev, v];
+                                                                }
+                                                            });
+                                                        }}
+                                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold border-2 transition-all flex items-center justify-center min-w-[80px] ${
+                                                            isSelected
+                                                                ? "bg-purple-50 border-purple-300 text-purple-700 font-extrabold"
+                                                                : "bg-white border-slate-200 text-slate-400 hover:border-slate-300"
+                                                        }`}
+                                                    >
+                                                        {isSelected ? "✓" : "Select"}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
 
