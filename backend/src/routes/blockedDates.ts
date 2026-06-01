@@ -111,7 +111,18 @@ router.get("/bookings", authMiddleware, async (req: AuthRequest, res) => {
 
         const bookings = await prisma.staycationBooking.findMany({
             where,
-            select: { checkInDate: true, checkOutDate: true, subPropertyId: true, numCottages: true },
+            select: { 
+                id: true,
+                propertyId: true,
+                subPropertyId: true, 
+                customerName: true, 
+                customerPhone: true,
+                checkInDate: true, 
+                checkOutDate: true, 
+                numGuests: true,
+                numKids: true,
+                numCottages: true 
+            },
         });
 
         return res.json(bookings);
