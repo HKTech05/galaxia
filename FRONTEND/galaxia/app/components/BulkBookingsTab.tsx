@@ -246,9 +246,17 @@ export default function BulkBookingsTab() {
         }
     }
 
-    const discountedSubtotal = Math.max(0, pricing.subtotal - couponDiscount - discountAmount);
-    const calculatedGst = Math.round(discountedSubtotal * 0.05);
-    const finalTotal = discountedSubtotal + calculatedGst;
+    const subtotalAfterCoupon = Math.max(0, pricing.subtotal - couponDiscount);
+    const gstAfterCoupon = Math.round(subtotalAfterCoupon * 0.05);
+    const totalAfterCoupon = subtotalAfterCoupon + gstAfterCoupon;
+
+    // Apply admin discount directly to the total
+    const totalAfterAdmin = Math.max(0, totalAfterCoupon - discountAmount);
+
+    // Back-calculate base price and GST
+    const baseAmount = Math.round(totalAfterAdmin / 1.05);
+    const calculatedGst = totalAfterAdmin - baseAmount;
+    const finalTotal = totalAfterAdmin;
 
     const handleBulkSubmit = async () => {
         if (!bulkForm.customerName || !bulkForm.phone || !bulkForm.checkIn || !bulkForm.checkOut) {
@@ -286,7 +294,7 @@ export default function BulkBookingsTab() {
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
                 securityDeposit: 3000 * (bulkForm.numCottages || 1),
                 nightlyRate: Math.round(pricing.subtotal / Math.max(1, pricing.nights)),
-                basePrice: pricing.subtotal,
+                basePrice: baseAmount,
                 gstAmount: calculatedGst,
                 advancePaid: true,
                 advanceMethod: bulkForm.paymentMethod,

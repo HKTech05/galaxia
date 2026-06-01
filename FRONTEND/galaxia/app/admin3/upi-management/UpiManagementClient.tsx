@@ -539,8 +539,7 @@ export default function UpiManagementClient() {
                                     <tbody className="divide-y divide-slate-100">
                                         {activeEmployeeLogs.length > 0 ? (
                                             activeEmployeeLogs.map(log => {
-                                                // Red styling for food_collection (Satkar payments) and expense logs
-                                                const isRedLog = log.paymentType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.paymentType === 'expense' || log.note?.toLowerCase().includes('expense');
+                                                const isRedLog = log.note?.toLowerCase().includes('satkar') || log.paymentType === 'expense' || log.note?.toLowerCase().includes('expense');
                                                 return (
                                                 <tr key={log.id} className={`transition-colors ${log.paymentType === 'deposit_refund' ? 'bg-red-50/60 hover:bg-red-50' : isRedLog ? 'bg-red-50/40 hover:bg-red-50' : 'hover:bg-slate-50/50'}`}>
                                                     <td className="px-4 py-3.5 font-medium text-slate-600">
@@ -603,7 +602,7 @@ export default function UpiManagementClient() {
                             <div className="sm:hidden space-y-3">
                                 {activeEmployeeLogs.length > 0 ? (
                                     activeEmployeeLogs.map(log => {
-                                        const isRedLog = log.paymentType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.paymentType === 'expense' || log.note?.toLowerCase().includes('expense');
+                                        const isRedLog = log.note?.toLowerCase().includes('satkar') || log.paymentType === 'expense' || log.note?.toLowerCase().includes('expense');
                                         return (
                                         <div key={log.id} className={`p-4 rounded-xl border ${isRedLog ? 'bg-red-50/40 border-red-200' : 'bg-white border-slate-200'}`}>
                                             <div className="flex items-center justify-between mb-2">

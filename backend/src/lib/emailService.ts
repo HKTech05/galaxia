@@ -109,15 +109,23 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     let foodPreference = "";
     if (booking.addons && typeof booking.addons === "object") {
         const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
+        const foodPrefs: string[] = [];
         for (const a of addonsData) {
             if (a && a.name === 'Food Preference' && a.foodType) {
-                foodPreference = a.foodType;
+                if (a.count !== undefined && a.count !== null && a.count > 0) {
+                    foodPrefs.push(`${a.foodType} Veg: ${a.count}`);
+                } else {
+                    foodPrefs.push(a.foodType);
+                }
             } else if (a && a.name && a.price) {
                 displayAddons.push({
                     label: a.occasion ? `${a.name} (${a.occasion})` : a.name,
                     price: Number(a.price) || 0
                 });
             }
+        }
+        if (foodPrefs.length > 0) {
+            foodPreference = foodPrefs.join(", ");
         }
     }
 

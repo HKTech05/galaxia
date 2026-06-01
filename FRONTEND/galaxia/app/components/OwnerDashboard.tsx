@@ -674,7 +674,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             }
             if (item.bookingStatus === 'confirmed' && !item.checkedIn) {
                 badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
-                badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                if (item.isCheckinDay) {
+                    badges.push(<span key="ci-pending" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                }
             } else if (item.checkedIn) {
                 badges.push(<span key="booked" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                 badges.push(<span key="checked-in" className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200 uppercase">Checked In</span>);
@@ -1671,6 +1673,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     phone: booking.customerPhone || stdCottage.phone,
                                                     checkInDate: booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : null,
                                                     checkOutDate: booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString('en-IN') : null,
+                                                    isCheckinDay: booking.checkInDate ? booking.checkInDate.slice(0, 10) === selectedDateStr : false,
+                                                    isCheckoutDay: booking.checkOutDate ? booking.checkOutDate.slice(0, 10) === selectedDateStr : false,
                                                     balanceAmount: booking.balanceAmount ?? stdCottage.balanceAmount,
                                                     depositAmount: booking.securityDeposit ?? stdCottage.depositAmount,
                                                     totalAmount: booking.totalAmount ?? stdCottage.totalAmount,
@@ -1709,7 +1713,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     const b = [];
                                     if (villa.bookingStatus === 'confirmed' && !villa.checkedIn) {
                                         b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
-                                        b.push(<span key="ci" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                                        if (villa.isCheckinDay) {
+                                            b.push(<span key="ci" className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md border border-amber-200 uppercase">Check-in Pending</span>);
+                                        }
                                     } else if (villa.checkedIn) {
                                         b.push(<span key="bk" className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md border border-blue-200 uppercase">Booked</span>);
                                         b.push(<span key="ci" className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200 uppercase">Checked In</span>);

@@ -289,8 +289,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [manualOccasion, setManualOccasion] = useState("Birthday");
     const DECORATION_PRICE = 1200;
 
-    // Food Preference state (Ambrose & Amstel Nest only)
-    const [manualFoodType, setManualFoodType] = useState<"Regular" | "Jain">("Regular");
+    const [manualRegularCount, setManualRegularCount] = useState<string>("0");
+    const [manualJainCount, setManualJainCount] = useState<string>("0");
 
     // Coupon states
     const [manualCouponCode, setManualCouponCode] = useState("");
@@ -389,17 +389,25 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             }
             subtotal -= manualCouponDiscount;
         }
-        // Apply admin discount before GST
-        subtotal = Math.max(0, subtotal - manualDiscountAmount);
         
-        // Add 5% GST
-        const baseAmount = Math.round(subtotal);
-        const gstAmount = Math.round(baseAmount * 0.05);
+        // Calculate total including GST (before admin discount)
+        const baseAfterCoupon = Math.round(subtotal);
+        const gstAfterCoupon = Math.round(baseAfterCoupon * 0.05);
+        const totalAfterCoupon = baseAfterCoupon + gstAfterCoupon;
+
+        // Apply admin discount directly to the total
+        const totalAfterAdmin = Math.max(0, totalAfterCoupon - manualDiscountAmount);
+
+        // Back-calculate base and GST from totalAfterAdmin
+        const baseAmount = Math.round(totalAfterAdmin / 1.05);
+        const gstAmount = totalAfterAdmin - baseAmount;
+
         let finalTotal = baseAmount + gstAmount;
         // Add pet charges (₹600/pet flat — no GST)
         finalTotal += manualForm.pets * 600;
         // Round to nearest 10
         finalTotal = Math.round(finalTotal / 10) * 10;
+
         return {
             basePrice: baseAmount,
             gstAmount,
@@ -445,7 +453,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 bookingAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
             }
             if (isAmbroseOrAmstel) {
-                bookingAddons.push({ name: 'Food Preference', foodType: manualFoodType });
+                const regCount = parseInt(manualRegularCount) || 0;
+                const jCount = parseInt(manualJainCount) || 0;
+                if (regCount > 0) {
+                    bookingAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
+                }
+                if (jCount > 0) {
+                    bookingAddons.push({ name: 'Food Preference', foodType: 'Jain', count: jCount });
+                }
             }
 
             const nights = Math.max(1, Math.ceil((new Date(manualForm.checkOutDate).getTime() - new Date(manualForm.checkInDate).getTime()) / (1000 * 3600 * 24)));
@@ -466,7 +481,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
                 securityDeposit: 3000,
-                basePrice: calculated.roomTotal,
+                basePrice: calculated.basePrice,
                 extraAdultCharge: calculated.extraAdultCharge,
                 extraKidsCharge: calculated.extraKidsCharge,
                 gstAmount: calculated.gstAmount,
@@ -499,7 +514,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             setManualDecoration(false);
             setManualCakeMsg("");
             setManualOccasion("Birthday");
-            setManualFoodType("Regular");
+            setManualRegularCount("0");
+            setManualJainCount("0");
             setManualCouponCode("");
             setManualAppliedCoupon(null);
             setManualCouponError("");
@@ -1389,12 +1405,32 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                             {/* Food Preference — Ambrose & Amstel Nest only */}
                             {isAmbroseOrAmstel && (
-                                <div className="p-4 border border-emerald-200 rounded-xl bg-emerald-50 space-y-2">
+                                <div className="p-4 border border-emerald-200 rounded-xl bg-emerald-50 space-y-3">
                                     <h4 className="text-sm font-bold text-slate-800">Food Preference</h4>
                                     <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Both options are vegetarian only</p>
-                                    <div className="flex gap-3">
-                                        <button type="button" onClick={() => setManualFoodType("Regular")} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border ${manualFoodType === "Regular" ? "bg-emerald-600 text-white border-emerald-700 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}>Regular (Veg)</button>
-                                        <button type="button" onClick={() => setManualFoodType("Jain")} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border ${manualFoodType === "Jain" ? "bg-emerald-600 text-white border-emerald-700 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}>Jain (Veg)</button>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Regular Veg Count</label>
+                                            <input 
+                                                type="number" 
+                                                min="0"
+                                                value={manualRegularCount} 
+                                                onChange={(e) => setManualRegularCount(e.target.value)} 
+                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-800"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Jain Veg Count</label>
+                                            <input 
+                                                type="number" 
+                                                min="0"
+                                                value={manualJainCount} 
+                                                onChange={(e) => setManualJainCount(e.target.value)} 
+                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-800"
+                                                placeholder="0"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}

@@ -388,7 +388,7 @@ export default function StayBookingsPage() {
             || b.bookingRef.toLowerCase().includes(searchTerm.toLowerCase())
             || b.customerPhone.includes(searchTerm);
         const matchesProperty = propertyFilter === "All" || b.propertyName === propertyFilter;
-        // DD tab uses both status filter AND source filter
+        // DD & Staycation tabs use both status filter AND source filter
         let matchesFilter = true;
         if (viewTab === 'dd') {
             // Status filter
@@ -400,6 +400,10 @@ export default function StayBookingsPage() {
             }
         } else if (viewTab === 'staycation') {
             matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
+            if (matchesFilter && ddSourceFilter !== 'All') {
+                if (ddSourceFilter === 'Website') matchesFilter = b.source === 'website';
+                else if (ddSourceFilter === 'Walk-in') matchesFilter = b.source !== 'website';
+            }
         } else {
             // 'all' tab
             matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
@@ -857,8 +861,8 @@ export default function StayBookingsPage() {
                         );
                     })()}
 
-                    {/* DD Source dropdown — only shows for DD tab */}
-                    {viewTab === 'dd' && (
+                    {/* DD & Staycation Source dropdown — shows for both tabs */}
+                    {(viewTab === 'dd' || viewTab === 'staycation') && (
                         <div className="relative flex-shrink-0 ml-3">
                             <select
                                 value={ddSourceFilter}
@@ -1134,7 +1138,9 @@ export default function StayBookingsPage() {
                                                      addonRows.push(
                                                          <div key={`addon-${i}`} className="flex justify-between text-sm items-center">
                                                              <span className="text-emerald-700">Food Preference</span>
-                                                             <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{addon.foodType} (Veg)</span>
+                                                             <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${addon.foodType === 'Jain' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                                 {addon.foodType} (Veg){addon.count !== undefined && addon.count !== null && addon.count > 0 ? ` x ${addon.count}` : ''}
+                                                             </span>
                                                          </div>
                                                      );
                                                  }

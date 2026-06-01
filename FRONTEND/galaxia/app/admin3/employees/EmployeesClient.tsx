@@ -459,7 +459,7 @@ export default function EmployeesClient() {
                                             activeEmployeeLogs.map(log => {
                                                 const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
                                                 const isRefund = log.transactionType === 'refund' || log.amount < 0;
-                                                const isRedLog = log.transactionType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.note?.toLowerCase().includes('food bill') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
+                                                const isRedLog = log.note?.toLowerCase().includes('satkar') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
                                                 return (
                                                     <tr key={log.id} className={`transition-colors ${
                                                         isOwnerPickup ? 'bg-blue-50 hover:bg-blue-100/70 border-l-4 border-l-blue-500' :
@@ -474,15 +474,15 @@ export default function EmployeesClient() {
                                                         <td className={`px-5 py-3.5 font-black ${log.amount < 0 ? 'text-red-600' : isRedLog ? 'text-red-600' : 'text-emerald-700'}`}>
                                                             {log.amount < 0 ? '-' : ''}₹{Math.abs(log.amount).toLocaleString('en-IN')}
                                                         </td>
-                                                        <td className="px-5 py-3.5 text-xs font-medium text-slate-500">
+                                                        <td className="px-5 py-3.5 text-xs font-medium text-slate-500 max-w-[320px] whitespace-normal">
                                                             {isOwnerPickup ? (
-                                                                <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded border border-blue-300 font-bold">{log.note}</span>
+                                                                <span className="inline-block max-w-full break-words whitespace-normal bg-blue-100 text-blue-800 px-2.5 py-1 rounded border border-blue-300 font-bold">{log.note}</span>
                                                             ) : isRefund ? (
-                                                                <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">↩ {log.note}</span>
+                                                                <span className="inline-block max-w-full break-words whitespace-normal bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">↩ {log.note}</span>
                                                             ) : isRedLog ? (
-                                                                <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">{log.note}</span>
+                                                                <span className="inline-block max-w-full break-words whitespace-normal bg-red-100 text-red-700 px-2.5 py-1 rounded border border-red-200 font-bold">{log.note}</span>
                                                             ) : (
-                                                                <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
+                                                                <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
                                                             )}
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center">
@@ -506,7 +506,7 @@ export default function EmployeesClient() {
                                     activeEmployeeLogs.map(log => {
                                         const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
                                         const isRefund = log.transactionType === 'refund' || log.amount < 0;
-                                        const isRedLog = log.transactionType === 'food_collection' || log.note?.toLowerCase().includes('satkar') || log.note?.toLowerCase().includes('food bill') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
+                                        const isRedLog = log.note?.toLowerCase().includes('satkar') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
                                         return (
                                             <div key={log.id} className={`p-4 rounded-xl border ${
                                                 isOwnerPickup ? 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-500' :
@@ -525,13 +525,13 @@ export default function EmployeesClient() {
                                                 <p className="text-sm font-bold text-slate-800">{log.guestName || '—'}</p>
                                                 <div className="mt-2">
                                                     {isOwnerPickup ? (
-                                                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-300">{log.note}</span>
+                                                        <span className="inline-block max-w-full break-words whitespace-normal bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-300">{log.note}</span>
                                                     ) : isRefund ? (
-                                                        <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">↩ {log.note}</span>
+                                                        <span className="inline-block max-w-full break-words whitespace-normal bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">↩ {log.note}</span>
                                                     ) : isRedLog ? (
-                                                        <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">{log.note}</span>
+                                                        <span className="inline-block max-w-full break-words whitespace-normal bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold border border-red-200">{log.note}</span>
                                                     ) : (
-                                                        <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
+                                                        <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
                                                     )}
                                                 </div>
                                                 <button onClick={() => handleDeleteCashTx(viewEmployeeId!, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>

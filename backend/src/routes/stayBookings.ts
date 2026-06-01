@@ -837,9 +837,18 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
             // Extract food preference from addons JSON
             let foodPreference = "Regular";
             if (b.addons && Array.isArray(b.addons)) {
-                const foodAddon = (b.addons as any[]).find((a: any) => a.name === "Food Preference");
-                if (foodAddon && foodAddon.foodType) {
-                    foodPreference = foodAddon.foodType;
+                const foodPrefs: string[] = [];
+                for (const a of b.addons as any[]) {
+                    if (a && a.name === "Food Preference" && a.foodType) {
+                        if (a.count !== undefined && a.count !== null && a.count > 0) {
+                            foodPrefs.push(`${a.foodType} Veg: ${a.count}`);
+                        } else {
+                            foodPrefs.push(a.foodType);
+                        }
+                    }
+                }
+                if (foodPrefs.length > 0) {
+                    foodPreference = foodPrefs.join(", ");
                 }
             }
 
@@ -889,8 +898,46 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
         const grandTotal = grandTotalAdults + grandTotalChildren;
 
         // Food preference counts — count actual people, not bookings
-        const jainCount = mapped.filter(b => b.foodPreference.toLowerCase() === "jain").reduce((s, b) => s + b.numAdults + b.numChildren, 0);
-        const regularCount = mapped.filter(b => b.foodPreference.toLowerCase() !== "jain").reduce((s, b) => s + b.numAdults + b.numChildren, 0);
+        let jainCount = 0;
+        let regularCount = 0;
+        for (const b of bookings) {
+            let hasExplicitCount = false;
+            let bJain = 0;
+            let bRegular = 0;
+            if (b.addons && Array.isArray(b.addons)) {
+                for (const a of b.addons as any[]) {
+                    if (a && a.name === "Food Preference" && a.foodType) {
+                        if (a.count !== undefined && a.count !== null && a.count > 0) {
+                            hasExplicitCount = true;
+                            if (a.foodType.toLowerCase() === "jain") {
+                                bJain += a.count;
+                            } else {
+                                bRegular += a.count;
+                            }
+                        }
+                    }
+                }
+            }
+            if (hasExplicitCount) {
+                jainCount += bJain;
+                regularCount += bRegular;
+            } else {
+                // Fallback: count total guests (adults + children) as either Jain or Regular depending on foodPreference
+                let foodPref = "Regular";
+                if (b.addons && Array.isArray(b.addons)) {
+                    const foodAddon = (b.addons as any[]).find((a: any) => a.name === "Food Preference");
+                    if (foodAddon && foodAddon.foodType) {
+                        foodPref = foodAddon.foodType;
+                    }
+                }
+                const totalGuests = (b.numGuests || 0) + (b.numKids || 0);
+                if (foodPref.toLowerCase() === "jain") {
+                    jainCount += totalGuests;
+                } else {
+                    regularCount += totalGuests;
+                }
+            }
+        }
 
         return res.json({
             date: targetDateStr,

@@ -98,16 +98,32 @@ function calculateUnitPrice(
 
         let basePrice = 0, extraAdultPrice = 0, kidsPrice = 0, baseGuests = 2;
 
+        let resolvedProperty = propertyName;
+        let resolvedVilla = villaName;
+        if (propertyName.includes(" + ")) {
+            const nameToResolve = villaName || propertyName;
+            if (nameToResolve === "Standard Cottage" || nameToResolve === "Family Cottage") {
+                resolvedProperty = "Amstel Nest";
+                resolvedVilla = nameToResolve;
+            } else if (["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"].includes(nameToResolve.toUpperCase())) {
+                resolvedProperty = "Ambrose";
+                resolvedVilla = nameToResolve;
+            } else {
+                resolvedProperty = nameToResolve;
+                resolvedVilla = undefined;
+            }
+        }
+
         // Key lookup
         let liveKey = "";
-        if (propertyName.includes("Ambrose") && villaName) {
-            liveKey = `Ambrose/${villaName.toUpperCase()}`;
-        } else if (propertyName.includes("Amstel") && villaName) {
-            liveKey = villaName.toLowerCase().includes("family")
+        if (resolvedProperty.includes("Ambrose") && resolvedVilla) {
+            liveKey = `Ambrose/${resolvedVilla.toUpperCase()}`;
+        } else if (resolvedProperty.includes("Amstel") && resolvedVilla) {
+            liveKey = resolvedVilla.toLowerCase().includes("family")
                 ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
         } else {
             for (const k of Object.keys(livePricing)) {
-                if (propertyName.includes(k)) { liveKey = k; break; }
+                if (resolvedProperty.includes(k)) { liveKey = k; break; }
             }
         }
 
@@ -118,8 +134,8 @@ function calculateUnitPrice(
                 if (k.toUpperCase() === upper) { lp = v; break; }
             }
         }
-        if (!lp && (propertyName.includes("Amstel") || propertyName.includes("Ambrose"))) {
-            lp = livePricing[propertyName.includes("Amstel") ? "Amstel Nest" : "Ambrose"];
+        if (!lp && (resolvedProperty.includes("Amstel") || resolvedProperty.includes("Ambrose"))) {
+            lp = livePricing[resolvedProperty.includes("Amstel") ? "Amstel Nest" : "Ambrose"];
         }
 
         if (lp) {
@@ -127,12 +143,12 @@ function calculateUnitPrice(
             extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;
         } else {
             // Hardcoded fallback
-            if (propertyName.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
-            else if (propertyName.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
-            else if (propertyName.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-            else if (propertyName.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
-            else if (propertyName.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
-            else if (propertyName.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
+            if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
+            else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+            else if (resolvedProperty.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
+            else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+            else if (resolvedProperty.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
+            else if (resolvedProperty.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
         }
 
         roomTotal += basePrice;

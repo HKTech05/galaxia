@@ -43,7 +43,6 @@ const admin3TopItems = [
     { name: "Dashboard", href: "/admin3", icon: LayoutDashboard },
     { name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList },
     { name: "Quotation", href: "/admin3/quotation", icon: ScrollText },
-    { name: "Photo Manager", href: "/admin3/website-view", icon: Globe },
 ];
 
 // Admin3 Daily Checkins dropdown items
@@ -70,6 +69,7 @@ const admin3BottomItems = [
     { name: "Properties", href: "/admin3/properties-mgmt", icon: Building },
     { name: "Reports", href: "/admin3/reports", icon: FileText },
     { name: "Reviews", href: "/admin3/reviews", icon: Star },
+    { name: "Photo Manager", href: "/admin3/website-view", icon: Globe },
     { name: "Settings", href: "/admin3/settings", icon: Settings },
 ];
 
@@ -192,7 +192,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                 </>
                             ) : (
                                 <>
-                                    {/* Owner/Dev only: Dashboard, Bookings */}
+                                    {/* Owner/Dev only: Dashboard, Bookings, Quotation */}
                                     {hasFullAccess && (
                                         <>
                                             {renderNavItem(admin3TopItems[0])}
@@ -228,12 +228,6 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                         </>
                                     )}
 
-                                    {/* Owner/Dev only: Website */}
-                                    {hasFullAccess && renderNavItem(admin3TopItems[3])}
-
-                                    {/* Owner/Dev only: Chef Portal Link */}
-                                    {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
-
                                     {/* Receptionist Section */}
                                     {hasFullAccess ? (
                                         <>
@@ -264,6 +258,9 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                         /* Sub-admins: show items directly, no dropdown */
                                         visibleReceptionistItems.map(item => renderNavItem(item))
                                     )}
+
+                                    {/* Owner/Dev only: Chef Portal Link */}
+                                    {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
 
                                     {/* Owner/Dev only: Bottom items */}
                                     {hasFullAccess && admin3BottomItems.map(item => renderNavItem(item))}

@@ -38,6 +38,7 @@ function CustomerQuoteInner() {
     const [error, setError] = useState("");
     const [quoteData, setQuoteData] = useState<any>(null);
     const [quotePricing, setQuotePricing] = useState<any>(null);
+    const [livePricing, setLivePricing] = useState<Record<string, any>>({});
 
     // Editable form state
     const [firstName, setFirstName] = useState("");
@@ -144,14 +145,55 @@ function CustomerQuoteInner() {
     useEffect(() => {
         if (!propertyName) return;
         const slug = SLUG_MAP[propertyName];
-        if (!slug) return;
-        (async () => {
+        if (slug) {
+            (async () => {
+                try {
+                    const data = await api.get(`/properties/${slug}/availability`);
+                    setAvailData(data);
+                } catch { }
+            })();
+        }
+    }, [propertyName]);
+
+    // ── Fetch live pricing ──
+    useEffect(() => {
+        const slugs = ["hill-view", "mount-view", "heavenly-villa", "la-paraiso", "amstel-nest", "ambrose"];
+        const result: Record<string, any> = {};
+        Promise.all(slugs.map(async (slug) => {
             try {
                 const data = await api.get(`/properties/${slug}/availability`);
-                setAvailData(data);
+                if (!data?.pricing) return;
+                const mapName: Record<string, string> = {
+                    "hill-view": "Hill View", "mount-view": "Mount View",
+                    "heavenly-villa": "Heavenly Villa", "la-paraiso": "La Paraiso",
+                    "amstel-nest": "Amstel Nest", "ambrose": "Ambrose",
+                };
+                const propName = mapName[slug] || slug;
+                const buildEntry = (p: any) => {
+                    if (!p?.weekday && !p?.weekend) return null;
+                    const wd = p.weekday; const we = p.weekend; const sa = p.saturday;
+                    return {
+                        weekday: wd ? parseInt(wd.price) : (we ? parseInt(we.price) : 0),
+                        weekend: we ? parseInt(we.price) : (wd ? parseInt(wd.price) : 0),
+                        saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : (wd ? parseInt(wd.price) : 0)),
+                        extraAdult: wd?.extraAdult || 1000, kidsCharge: wd?.kidsCharge || 500,
+                        baseGuests: wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2,
+                    };
+                };
+                const parentEntry = buildEntry(data.pricing);
+                if (parentEntry) result[propName] = parentEntry;
+                if (data.subProperties && data.subPropertyPricing) {
+                    for (const sp of data.subProperties) {
+                        const spP = data.subPropertyPricing[sp.id];
+                        if (spP) {
+                            const spEntry = buildEntry(spP);
+                            if (spEntry) result[`${propName}/${sp.name.toUpperCase()}`] = spEntry;
+                        }
+                    }
+                }
             } catch { }
-        })();
-    }, [propertyName]);
+        })).then(() => setLivePricing(result));
+    }, []);
 
     // Fetch DB property ID on propertyName load
     useEffect(() => {
@@ -214,34 +256,59 @@ function CustomerQuoteInner() {
 
                 let basePrice = 0, extraAdultPrice = 0, kidsPrice = 0, baseGuests = 2;
 
-                // Use availData pricing if available
-                let pricing: any = null;
-                if (villaName && availData?.subProperties && availData?.subPropertyPricing) {
-                    const sp = availData.subProperties.find((s: any) =>
-                        s.name.toUpperCase() === villaName.toUpperCase() || s.slug === villaName.toLowerCase()
-                    );
-                    if (sp) pricing = availData.subPropertyPricing[sp.id];
-                }
-                if (!pricing && availData?.pricing) pricing = availData.pricing;
-
-                if (pricing) {
-                    const p = isSat ? (pricing.saturday || pricing.weekend) : (day === 0 || day === 5) ? pricing.weekend : pricing.weekday;
-                    if (p) {
-                        basePrice = parseInt(p.price) || 0;
-                        extraAdultPrice = p.extraAdult || 1000;
-                        baseGuests = p.personsLabel ? parseInt(p.personsLabel) || 2 : 2;
-                        kidsPrice = 1000;
+                let resolvedProperty = propertyName;
+                let resolvedVilla = villaName;
+                if (propertyName.includes(" + ")) {
+                    const nameToResolve = villaName || propertyName;
+                    if (nameToResolve === "Standard Cottage" || nameToResolve === "Family Cottage") {
+                        resolvedProperty = "Amstel Nest";
+                        resolvedVilla = nameToResolve;
+                    } else if (["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"].includes(nameToResolve.toUpperCase())) {
+                        resolvedProperty = "Ambrose";
+                        resolvedVilla = nameToResolve;
+                    } else {
+                        resolvedProperty = nameToResolve;
+                        resolvedVilla = undefined;
                     }
                 }
-                if (!basePrice) {
-                    // Fallback
-                    if (propertyName.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
-                    else if (propertyName.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
-                    else if (propertyName.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-                    else if (propertyName.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
-                    else if (propertyName.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
-                    else if (propertyName.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
+
+                // Look up in livePricing first
+                let liveKey = "";
+                if (resolvedProperty.includes("Ambrose") && resolvedVilla) {
+                    liveKey = `Ambrose/${resolvedVilla.toUpperCase()}`;
+                } else if (resolvedProperty.includes("Amstel") && resolvedVilla) {
+                    liveKey = resolvedVilla.toLowerCase().includes("family")
+                        ? "Amstel Nest/FAMILY COTTAGE" : "Amstel Nest/STANDARD COTTAGE";
+                } else {
+                    for (const k of Object.keys(livePricing)) {
+                        if (resolvedProperty.includes(k)) { liveKey = k; break; }
+                    }
                 }
+
+                let lp = livePricing[liveKey];
+                if (!lp) {
+                    const upper = liveKey.toUpperCase();
+                    for (const [k, v] of Object.entries(livePricing)) {
+                        if (k.toUpperCase() === upper) { lp = v; break; }
+                    }
+                }
+                if (!lp && (resolvedProperty.includes("Amstel") || resolvedProperty.includes("Ambrose"))) {
+                    lp = livePricing[resolvedProperty.includes("Amstel") ? "Amstel Nest" : "Ambrose"];
+                }
+
+                if (lp) {
+                    basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
+                    extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;
+                } else {
+                    // Fallback
+                    if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
+                    else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+                    else if (resolvedProperty.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
+                    else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+                    else if (resolvedProperty.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
+                    else if (resolvedProperty.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
+                }
+
                 uRoom += basePrice;
                 const exA = Math.max(0, adults - baseGuests);
                 const freeKids = Math.max(0, baseGuests - adults);
@@ -278,7 +345,7 @@ function CustomerQuoteInner() {
             decorationCharge: decoration ? 1200 : 0, petCharge: pets * 600,
             totalAmount: total, advanceAmount: advance, balanceAmount: total - advance,
         };
-    }, [checkIn, checkOut, propertyName, adults, kids, pets, decoration, villaQuantities, availData]);
+    }, [checkIn, checkOut, propertyName, adults, kids, pets, decoration, villaQuantities, availData, livePricing]);
 
     const pricing = (() => {
         const base = livePrice();

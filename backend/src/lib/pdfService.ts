@@ -331,8 +331,18 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         let foodPreference = "";
         if (booking.addons && typeof booking.addons === "object") {
             const addonsArr = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
+            const foodPrefs: string[] = [];
             for (const a of addonsArr) {
-                if (a && a.name === 'Food Preference' && a.foodType) foodPreference = a.foodType;
+                if (a && a.name === 'Food Preference' && a.foodType) {
+                    if (a.count !== undefined && a.count !== null && a.count > 0) {
+                        foodPrefs.push(`${a.foodType} Veg: ${a.count}`);
+                    } else {
+                        foodPrefs.push(a.foodType);
+                    }
+                }
+            }
+            if (foodPrefs.length > 0) {
+                foodPreference = foodPrefs.join(", ");
             }
         }
         if (foodPreference) y = drawRow(doc, "Food Preference", foodPreference, y);
