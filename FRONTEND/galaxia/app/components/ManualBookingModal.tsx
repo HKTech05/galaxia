@@ -31,7 +31,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
     });
 
     // Ambrose specific selection state
-    const [selectedAmbroseVillas, setSelectedAmbroseVillas] = useState<string[]>(["TAKE-1"]);
+    const [selectedAmbroseVillas, setSelectedAmbroseVillas] = useState<string[]>([]);
 
     // Amstel Nest specific selection quantities
     const [amstelStandardCount, setAmstelStandardCount] = useState<number>(1);
@@ -133,7 +133,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             setAmstelFamilySelected(false);
         }
         if (newProp.includes("Ambrose")) {
-            setSelectedAmbroseVillas(["TAKE-1"]);
+            setSelectedAmbroseVillas([]);
         }
     };
 
@@ -202,14 +202,37 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
     };
 
     const calculatePrice = () => {
+        const isAmstel = manualForm.property.includes("Amstel");
+        const isAmbrose = manualForm.property.includes("Ambrose");
+        if (isAmbrose && selectedAmbroseVillas.length === 0) {
+            return {
+                basePrice: 0,
+                gstAmount: 0,
+                totalAmount: 0,
+                roomTotal: 0,
+                extraAdultCharge: 0,
+                extraKidsCharge: 0,
+                nightlyRoomRate: 0,
+            };
+        }
+        if (isAmstel && amstelStandardCount === 0 && !amstelFamilySelected) {
+            return {
+                basePrice: 0,
+                gstAmount: 0,
+                totalAmount: 0,
+                roomTotal: 0,
+                extraAdultCharge: 0,
+                extraKidsCharge: 0,
+                nightlyRoomRate: 0,
+            };
+        }
+
         let roomTotal = 0;
         let extraAdultTotal = 0;
         let extraKidsTotal = 0;
         const start = new Date(manualForm.checkInDate);
         const end = new Date(manualForm.checkOutDate);
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
-
-        const isAmstel = manualForm.property.includes("Amstel");
 
         let totalBaseGuests = 0;
         let sampleExtraAdultPrice = 2000;
@@ -793,7 +816,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 villa: (properties[0] || "").includes("Amstel") ? "Standard Cottage" : "TAKE-1",
                 paymentMethod: "Cash"
             });
-            setSelectedAmbroseVillas(["TAKE-1"]);
+            setSelectedAmbroseVillas([]);
             setAmstelStandardCount(1);
             setAmstelFamilySelected(false);
             setCustomSplitMode(false);
@@ -922,10 +945,6 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                                         onClick={() => {
                                                             setSelectedAmbroseVillas(prev => {
                                                                 if (prev.includes(v)) {
-                                                                    if (prev.length === 1) {
-                                                                        alert("Please select at least one Ambrose Villa.");
-                                                                        return prev;
-                                                                    }
                                                                     return prev.filter(x => x !== v);
                                                                 } else {
                                                                     return [...prev, v];

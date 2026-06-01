@@ -203,7 +203,221 @@ const AmbroseTooltip = ({ active, payload }: any) => {
 export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTab?: string }) {
     const [activeTab, setActiveTab] = useState(initialTab);
     const [timeRange, setTimeRange] = useState("1m");
-    const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar" | "bulk">("insights");
+    const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar" | "bulk" | "calendar2">("insights");
+
+    // Live Calendar 2 states
+    const [calendar2Month, setCalendar2Month] = useState<Date>(() => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+    });
+    const [calendar2View, setCalendar2View] = useState<"all" | "amstelnest">("all");
+    const [calendar2Bookings, setCalendar2Bookings] = useState<any[]>([]);
+    const [calendar2Blocks, setCalendar2Blocks] = useState<any[]>([]);
+    const [calendar2Loading, setCalendar2Loading] = useState(false);
+    const [selectedCell, setSelectedCell] = useState<{
+        date: Date;
+        colType: "all" | "amstelnest";
+        colName: string;
+        unitIndex?: number;
+        status: string;
+        block?: any;
+        bookings?: any[];
+    } | null>(null);
+
+    const [blockReasonType, setBlockReasonType] = useState<"owner" | "maintenance">("maintenance");
+    const [blockCustomNote, setBlockCustomNote] = useState("");
+    const [blockActionLoading, setBlockActionLoading] = useState(false);
+
+    // Fetch Calendar 2 Bookings & Blocks
+    const fetchCalendar2Data = useCallback(() => {
+        if (dashboardSubTab !== "calendar2") return;
+        setCalendar2Loading(true);
+
+        const year = calendar2Month.getFullYear();
+        const month = calendar2Month.getMonth() + 1;
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+
+        const propIds = [1, 2, 3, 4, 5, 6];
+        Promise.all([
+            ...propIds.map(id => api.get(`/blocked-dates/bookings?propertyId=${id}&month=${monthStr}`).catch(() => [])),
+            api.get(`/blocked-dates`).catch(() => [])
+        ]).then((results) => {
+            const bookingsList = results.slice(0, 6).flat();
+            const blocksList = results[6] as any[];
+
+            setCalendar2Bookings(bookingsList);
+            const filteredBlocks = blocksList.filter(b => {
+                const bDate = new Date(b.blockedDate);
+                return bDate.getFullYear() === year && (bDate.getMonth() + 1) === month;
+            });
+            setCalendar2Blocks(filteredBlocks);
+        }).finally(() => {
+            setCalendar2Loading(false);
+        });
+    }, [calendar2Month, dashboardSubTab]);
+
+    useEffect(() => {
+        fetchCalendar2Data();
+    }, [fetchCalendar2Data]);
+
+    const getColumnInfo = (colType: "all" | "amstelnest", colName: string) => {
+        if (colType === "amstelnest") {
+            const amstel = propertyList.find(p => p.slug === "amstel-nest" || p.name === "Amstel Nest");
+            const amstelId = amstel?.id || 5;
+            if (colName === "BIG") {
+                const sp = amstel?.subProperties?.find((s: any) => s.slug === "family-cottage" || s.name.toUpperCase() === "FAMILY COTTAGE");
+                return { propertyId: amstelId, subPropertyId: sp?.id || null, isMultiUnit: false, capacity: 1 };
+            } else {
+                const sp = amstel?.subProperties?.find((s: any) => s.slug === "standard-cottage" || s.name.toUpperCase() === "STANDARD COTTAGE");
+                return { propertyId: amstelId, subPropertyId: sp?.id || null, isMultiUnit: true, capacity: 14 };
+            }
+        } else {
+            const nameUpper = colName.toUpperCase();
+            if (["TAKE 1", "ALTA", "SANTO", "BAMB", "CYPRESS"].includes(nameUpper)) {
+                const ambrose = propertyList.find(p => p.slug === "ambrose" || p.name === "Ambrose");
+                const ambroseId = ambrose?.id || 6;
+                const mapSlug: Record<string, string> = {
+                    "TAKE 1": "take-1",
+                    "ALTA": "alta",
+                    "SANTO": "santorini",
+                    "BAMB": "bamboosa",
+                    "CYPRESS": "cypress"
+                };
+                const targetSlug = mapSlug[nameUpper];
+                const sp = ambrose?.subProperties?.find((s: any) => s.slug === targetSlug || s.name.toUpperCase().includes(nameUpper));
+                return { propertyId: ambroseId, subPropertyId: sp?.id || null, isMultiUnit: false, capacity: 1 };
+            } else {
+                const mapProperty: Record<string, string> = {
+                    "LA PARA": "la-paraiso",
+                    "MOUNT": "mount-view",
+                    "EUPHORIA": "heavenly-villa",
+                    "HILL VIEW": "hill-view"
+                };
+                const targetSlug = mapProperty[nameUpper];
+                const prop = propertyList.find(p => p.slug === targetSlug);
+                return { propertyId: prop?.id || null, subPropertyId: null, isMultiUnit: false, capacity: 1 };
+            }
+        }
+    };
+
+    const getCellStatus = (date: Date, colType: "all" | "amstelnest", colName: string, unitIndex?: number) => {
+        const dateStr = date.toISOString().split("T")[0];
+        const info = getColumnInfo(colType, colName);
+        if (!info.propertyId) return { status: "vacant" };
+
+        const blocks = calendar2Blocks.filter(b => {
+            const bDateStr = new Date(b.blockedDate).toISOString().split("T")[0];
+            if (bDateStr !== dateStr) return false;
+            if (b.propertyId !== info.propertyId) return false;
+            if (info.subPropertyId) {
+                return b.subPropertyId === info.subPropertyId;
+            } else {
+                return b.subPropertyId === null;
+            }
+        });
+
+        const bookings = calendar2Bookings.filter(b => {
+            if (b.propertyId !== info.propertyId) return false;
+            if (info.subPropertyId) {
+                if (b.subPropertyId !== info.subPropertyId) return false;
+            } else {
+                if (b.subPropertyId !== null) return false;
+            }
+            const bStartStr = new Date(b.checkInDate).toISOString().split("T")[0];
+            const bEndStr = new Date(b.checkOutDate).toISOString().split("T")[0];
+            return dateStr >= bStartStr && dateStr < bEndStr;
+        });
+
+        if (colType === "amstelnest" && colName !== "BIG") {
+            const totalBookedCottages = bookings.reduce((sum, b) => sum + (b.numCottages || 1), 0);
+            const totalBlockedCottages = blocks.reduce((sum, b) => sum + (b.numUnits || 1), 0);
+
+            if (unitIndex !== undefined) {
+                if (unitIndex <= totalBookedCottages) {
+                    let count = 0;
+                    let matchedBooking = bookings[0];
+                    for (const b of bookings) {
+                        count += (b.numCottages || 1);
+                        if (unitIndex <= count) {
+                            matchedBooking = b;
+                            break;
+                        }
+                    }
+                    return { status: "booked", bookings: [matchedBooking] };
+                } else if (unitIndex <= totalBookedCottages + totalBlockedCottages) {
+                    let blockIdx = unitIndex - totalBookedCottages - 1;
+                    const matchedBlock = blocks[blockIdx] || blocks[0];
+                    const isOR = matchedBlock?.reason?.toLowerCase().startsWith("owner") || matchedBlock?.reason?.toLowerCase().startsWith("or");
+                    return { 
+                        status: isOR ? "owner_reserved" : "maintenance", 
+                        block: matchedBlock,
+                        reason: matchedBlock?.reason || "Blocked"
+                    };
+                } else {
+                    return { status: "vacant" };
+                }
+            }
+        }
+
+        if (bookings.length > 0) {
+            return { status: "booked", bookings };
+        }
+
+        if (blocks.length > 0) {
+            const bl = blocks[0];
+            const isOR = bl.reason?.toLowerCase().startsWith("owner") || bl.reason?.toLowerCase().startsWith("or");
+            return { 
+                status: isOR ? "owner_reserved" : "maintenance", 
+                block: bl,
+                reason: bl.reason || "Blocked"
+            };
+        }
+
+        return { status: "vacant" };
+    };
+
+    const handleBlockCellSubmit = async () => {
+        if (!selectedCell) return;
+        const info = getColumnInfo(selectedCell.colType, selectedCell.colName);
+        if (!info.propertyId) return;
+
+        setBlockActionLoading(true);
+        const dateStr = selectedCell.date.toISOString().split("T")[0];
+        const reasonText = blockReasonType === "owner" 
+            ? `Owner Reservation: ${blockCustomNote}` 
+            : `Maintenance: ${blockCustomNote}`;
+
+        try {
+            await api.post("/blocked-dates", {
+                propertyId: info.propertyId,
+                subPropertyId: info.subPropertyId,
+                dates: [dateStr],
+                reason: reasonText,
+                numUnits: 1
+            });
+            fetchCalendar2Data();
+            setSelectedCell(null);
+            setBlockCustomNote("");
+        } catch (err: any) {
+            alert(err?.message || "Failed to block cell");
+        } finally {
+            setBlockActionLoading(false);
+        }
+    };
+
+    const handleUnblockCellSubmit = async (blockId: number) => {
+        if (!confirm("Are you sure you want to remove this block?")) return;
+        setBlockActionLoading(true);
+        try {
+            await api.delete(`/blocked-dates/${blockId}`);
+            fetchCalendar2Data();
+            setSelectedCell(null);
+        } catch (err: any) {
+            alert(err?.message || "Failed to remove block");
+        } finally {
+            setBlockActionLoading(false);
+        }
+    };
 
     // Properties tab
     const [propertyDate, setPropertyDate] = useState(new Date());
@@ -869,7 +1083,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {([["insights", "Insights"], ["calendar", "Live Calendar"], ["bulk", "Bulk Bookings"]] as const).map(([key, label]) => (
+                        {([["insights", "Insights"], ["calendar", "Live Calendar"], ["bulk", "Bulk Bookings"], ["calendar2", "Live Calendar 2"]] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setDashboardSubTab(key)}
@@ -1562,6 +1776,249 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {dashboardSubTab === "bulk" && (
                     <BulkBookingsTab />
                 )}
+
+                {/* LIVE CALENDAR 2 TAB */}
+                {dashboardSubTab === "calendar2" && (
+                    <div className="space-y-6">
+                        {/* Header + Month Picker */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-800 tracking-tight">Live Calendar 2</h2>
+                                <p className="text-sm text-slate-500 font-medium mt-1">Recreated matrix view showing occupancy, maintenance, and owner reservations.</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
+                                <button
+                                    onClick={() => {
+                                        setCalendar2Month(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                                    }}
+                                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+                                >
+                                    <ChevronRight size={18} className="rotate-180" />
+                                </button>
+                                <span className="text-sm font-bold text-slate-700 uppercase tracking-wider min-w-[140px] text-center select-none">
+                                    {calendar2Month.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        setCalendar2Month(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+                                    }}
+                                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+                                >
+                                    <ChevronRight size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Format Switcher Selector & Color Code Legend */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200/60 rounded-xl p-1 w-fit">
+                                <button
+                                    onClick={() => setCalendar2View("all")}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        calendar2View === "all" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                                >
+                                    All Properties
+                                </button>
+                                <button
+                                    onClick={() => setCalendar2View("amstelnest")}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        calendar2View === "amstelnest" ? "bg-white shadow text-indigo-700" : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                                >
+                                    Amstelnest
+                                </button>
+                            </div>
+
+                            {/* Color Legend Key */}
+                            <div className="flex items-center gap-4 flex-wrap text-xs font-bold text-slate-500 select-none">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded border border-slate-300 bg-white" />
+                                    <span>Vacant</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded border border-red-200 bg-red-50 text-red-600 font-black flex items-center justify-center text-[10px]">M</div>
+                                    <span>Maintenance</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded border border-blue-200 bg-blue-50 text-blue-600 font-black flex items-center justify-center text-[10px]">OR</div>
+                                    <span>Owner Reserved</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded border border-slate-200 bg-slate-100 text-slate-400 font-black flex items-center justify-center text-[10px]">B</div>
+                                    <span>Booked</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Calendar Grid Table */}
+                        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                            {calendar2Loading ? (
+                                <div className="p-16 flex items-center justify-center text-slate-500 font-bold gap-3">
+                                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                    <span>Loading calendar data...</span>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    {calendar2View === "all" ? (
+                                        <table className="w-full border-collapse">
+                                            <thead>
+                                                <tr className="bg-slate-50 border-b border-slate-200">
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24">Date</th>
+                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16">Day</th>
+                                                    {["TAKE 1", "ALTA", "SANTO", "BAMB", "CYPRESS", "LA PARA", "MOUNT", "EUPHORIA", "HILL VIEW"].map(col => (
+                                                        <th key={col} className="px-2 py-3 text-center text-[10px] font-black text-slate-700 border-r border-slate-200 uppercase tracking-tight min-w-[72px]">
+                                                            {col}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(() => {
+                                                    const year = calendar2Month.getFullYear();
+                                                    const mIdx = calendar2Month.getMonth();
+                                                    const daysInMonth = new Date(year, mIdx + 1, 0).getDate();
+                                                    const columns = ["TAKE 1", "ALTA", "SANTO", "BAMB", "CYPRESS", "LA PARA", "MOUNT", "EUPHORIA", "HILL VIEW"];
+
+                                                    return Array.from({ length: daysInMonth }, (_, i) => {
+                                                        const date = new Date(year, mIdx, i + 1);
+                                                        const dateLabel = `${i + 1}-${calendar2Month.toLocaleString('default', { month: 'short' }).replace(' ', '-')}`;
+                                                        const dayLabel = date.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase();
+                                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+                                                        return (
+                                                            <tr key={i} className={`border-b border-slate-200 hover:bg-slate-50/40 transition-colors ${isWeekend ? 'bg-slate-50/20' : ''}`}>
+                                                                <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-800 border-r border-slate-200 bg-slate-50/50">{dateLabel}</td>
+                                                                <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50/30 ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
+                                                                {columns.map(col => {
+                                                                    const res = getCellStatus(date, "all", col);
+                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
+                                                                    let content = "";
+                                                                    if (res.status === "maintenance") {
+                                                                        cellClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100/50 font-black";
+                                                                        content = "M";
+                                                                    } else if (res.status === "owner_reserved") {
+                                                                        cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
+                                                                        content = "OR";
+                                                                    } else if (res.status === "booked") {
+                                                                        cellClass = "bg-slate-100 text-slate-400 border-slate-200/80 hover:bg-slate-200/50 font-bold";
+                                                                        content = "B";
+                                                                    }
+
+                                                                    return (
+                                                                        <td
+                                                                            key={col}
+                                                                            onClick={() => setSelectedCell({ date, colType: "all", colName: col, ...res })}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                        >
+                                                                            {content}
+                                                                        </td>
+                                                                    );
+                                                                })}
+                                                            </tr>
+                                                        );
+                                                    });
+                                                })()}
+                                            </tbody>
+                                        </table>
+                                    ) : (
+                                        <table className="w-full border-collapse">
+                                            <thead>
+                                                <tr className="bg-slate-50 border-b border-slate-200">
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24">Date</th>
+                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16">Day</th>
+                                                    {Array.from({ length: 14 }, (_, idx) => (
+                                                        <th key={idx + 1} className="px-1 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[36px]">
+                                                            {idx + 1}
+                                                        </th>
+                                                    ))}
+                                                    <th className="px-2 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[50px] uppercase">BIG</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(() => {
+                                                    const year = calendar2Month.getFullYear();
+                                                    const mIdx = calendar2Month.getMonth();
+                                                    const daysInMonth = new Date(year, mIdx + 1, 0).getDate();
+
+                                                    return Array.from({ length: daysInMonth }, (_, i) => {
+                                                        const date = new Date(year, mIdx, i + 1);
+                                                        const dateLabel = `${i + 1}-${calendar2Month.toLocaleString('default', { month: 'short' }).replace(' ', '-')}`;
+                                                        const dayLabel = date.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase();
+                                                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+                                                        return (
+                                                            <tr key={i} className={`border-b border-slate-200 hover:bg-slate-50/40 transition-colors ${isWeekend ? 'bg-slate-50/20' : ''}`}>
+                                                                <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-800 border-r border-slate-200 bg-slate-50/50">{dateLabel}</td>
+                                                                <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50/30 ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
+                                                                {Array.from({ length: 14 }, (_, idx) => {
+                                                                    const unitIndex = idx + 1;
+                                                                    const res = getCellStatus(date, "amstelnest", "Standard", unitIndex);
+                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
+                                                                    let content = "";
+                                                                    if (res.status === "maintenance") {
+                                                                        cellClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100/50 font-black";
+                                                                        content = "M";
+                                                                    } else if (res.status === "owner_reserved") {
+                                                                        cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
+                                                                        content = "OR";
+                                                                    } else if (res.status === "booked") {
+                                                                        cellClass = "bg-slate-100 text-slate-400 border-slate-200/80 hover:bg-slate-200/50 font-bold";
+                                                                        content = "B";
+                                                                    }
+
+                                                                    return (
+                                                                        <td
+                                                                            key={unitIndex}
+                                                                            onClick={() => setSelectedCell({ date, colType: "amstelnest", colName: "Standard", unitIndex, ...res })}
+                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                        >
+                                                                            {content}
+                                                                        </td>
+                                                                    );
+                                                                })}
+                                                                {(() => {
+                                                                    const res = getCellStatus(date, "amstelnest", "BIG");
+                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
+                                                                    let content = "";
+                                                                    if (res.status === "maintenance") {
+                                                                        cellClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100/50 font-black";
+                                                                        content = "M";
+                                                                    } else if (res.status === "owner_reserved") {
+                                                                        cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
+                                                                        content = "OR";
+                                                                    } else if (res.status === "booked") {
+                                                                        cellClass = "bg-slate-100 text-slate-400 border-slate-200/80 hover:bg-slate-200/50 font-bold";
+                                                                        content = "B";
+                                                                    }
+
+                                                                    return (
+                                                                        <td
+                                                                            onClick={() => setSelectedCell({ date, colType: "amstelnest", colName: "BIG", ...res })}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                        >
+                                                                            {content}
+                                                                        </td>
+                                                                    );
+                                                                })()}
+                                                            </tr>
+                                                        );
+                                                    });
+                                                })()}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* BULK BOOKINGS TAB */}
+                {dashboardSubTab === "bulk" && (
+                    <BulkBookingsTab />
+                )}
             </div>
         );
     };
@@ -2163,6 +2620,162 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             {activeTab === "properties" && renderProperties()}
             {activeTab === "dd" && renderDD()}
             {activeTab === "website" && renderWebsite()}
+
+            {/* Live Calendar 2 Cell Interactive Dialog Modal */}
+            {selectedCell && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-base">
+                                    {selectedCell.status === "booked" ? "Booking Details" : selectedCell.status !== "vacant" ? "Block Details" : "Block Unit"}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    {selectedCell.colName} {selectedCell.unitIndex ? `— Cottage ${selectedCell.unitIndex}` : ''} on {selectedCell.date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { setSelectedCell(null); setBlockCustomNote(""); }}
+                                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors bg-white shadow-sm border border-slate-200/60"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-4">
+                            {selectedCell.status === "booked" ? (
+                                <div className="space-y-3">
+                                    {selectedCell.bookings && selectedCell.bookings.map((b: any, idx: number) => (
+                                        <div key={idx} className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-sm space-y-2">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-bold text-indigo-900">{b.customerName || "Guest"}</p>
+                                                    <p className="text-xs text-indigo-700 mt-0.5">{b.customerPhone || "No Phone"}</p>
+                                                </div>
+                                                <span className="bg-indigo-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Booked</span>
+                                            </div>
+                                            <div className="pt-2 border-t border-indigo-200/40 text-xs text-indigo-800 space-y-1">
+                                                <p><span className="font-bold">Check-in:</span> {new Date(b.checkInDate).toLocaleDateString('en-IN')}</p>
+                                                <p><span className="font-bold">Check-out:</span> {new Date(b.checkOutDate).toLocaleDateString('en-IN')}</p>
+                                                {b.numGuests && <p><span className="font-bold">Guests:</span> {b.numGuests} Adults {b.numKids ? `, ${b.numKids} Kids` : ''}</p>}
+                                                {b.numCottages && b.numCottages > 1 && <p><span className="font-bold">Units Booked:</span> {b.numCottages} Cottages</p>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button
+                                        onClick={() => setSelectedCell(null)}
+                                        className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            ) : selectedCell.status !== "vacant" ? (
+                                <div className="space-y-4">
+                                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</span>
+                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase ${
+                                                selectedCell.status === "owner_reserved" 
+                                                    ? "bg-blue-50 border-blue-200 text-blue-700" 
+                                                    : "bg-red-50 border-red-200 text-red-700"
+                                            }`}>
+                                                {selectedCell.status === "owner_reserved" ? "Owner Reservation" : "Maintenance"}
+                                            </span>
+                                        </div>
+                                        {selectedCell.block?.reason && (
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Reason / Note</p>
+                                                <p className="font-semibold text-slate-800 mt-1 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
+                                                    {selectedCell.block.reason}
+                                                </p>
+                                            </div>
+                                        )}
+                                        <div className="text-[10px] text-slate-400 font-medium pt-1">
+                                            Blocked on: {new Date(selectedCell.block?.createdAt).toLocaleDateString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setSelectedCell(null)}
+                                            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all"
+                                        >
+                                            Close
+                                        </button>
+                                        <button
+                                            onClick={() => handleUnblockCellSubmit(selectedCell.block.id)}
+                                            disabled={blockActionLoading}
+                                            className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            {blockActionLoading ? "..." : "Remove Block"}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {/* Selection Toggle */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Block Type</label>
+                                        <div className="bg-slate-50 rounded-xl p-1 flex border border-slate-200/60">
+                                            <button
+                                                type="button"
+                                                onClick={() => setBlockReasonType("maintenance")}
+                                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                                                    blockReasonType === 'maintenance' ? 'bg-red-600 text-white shadow-sm font-black' : 'text-slate-500 font-bold'
+                                                }`}
+                                            >
+                                                Maintenance
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBlockReasonType("owner")}
+                                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                                                    blockReasonType === 'owner' ? 'bg-blue-600 text-white shadow-sm font-black' : 'text-slate-500 font-bold'
+                                                }`}
+                                            >
+                                                Owner Reservation
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Custom note */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Reason / Custom Note</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. AC Repair, Owner family visit"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                            value={blockCustomNote}
+                                            onChange={e => setBlockCustomNote(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setSelectedCell(null); setBlockCustomNote(""); }}
+                                            className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleBlockCellSubmit}
+                                            disabled={blockActionLoading}
+                                            className={`flex-1 py-2.5 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all ${
+                                                blockReasonType === "owner" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"
+                                            }`}
+                                        >
+                                            {blockActionLoading ? "..." : "Confirm Block"}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
