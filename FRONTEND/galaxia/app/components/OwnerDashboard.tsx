@@ -1863,22 +1863,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
 
                         {/* Calendar Grid Table */}
-                        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible">
+                        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm lg:overflow-hidden overflow-visible">
                             {calendar2Loading ? (
                                 <div className="p-16 flex items-center justify-center text-slate-500 font-bold gap-3">
                                     <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                                     <span>Loading calendar data...</span>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto overflow-y-visible max-w-full">
+                                <div className="overflow-x-auto max-w-full">
                                     {calendar2View === "all" ? (
                                         <table className="w-full border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 sticky top-[80px] left-0 z-40 bg-slate-50 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] min-w-[96px] max-w-[96px]">Date</th>
-                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 sticky top-[80px] left-[96px] z-40 bg-slate-50 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] min-w-[64px] max-w-[64px]">Day</th>
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 max-lg:sticky max-lg:top-[80px] max-lg:left-0 max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[96px] max-lg:max-w-[96px]">Date</th>
+                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 max-lg:sticky max-lg:top-[80px] max-lg:left-[96px] max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[64px] max-lg:max-w-[64px]">Day</th>
                                                     {["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS", "LA PARAISO", "MOUNT VIEW", "HEAVENLY VILLA", "HILL VIEW"].map(col => (
-                                                        <th key={col} className="px-2 py-3 text-center text-[10px] font-black text-slate-700 border-r border-slate-200 uppercase tracking-tight min-w-[120px] sticky top-[80px] z-30 bg-slate-50">
+                                                        <th key={col} className="px-2 py-3 text-center text-[10px] font-black text-slate-700 border-r border-slate-200 uppercase tracking-tight min-w-[72px] max-lg:sticky max-lg:top-[80px] max-lg:z-30 max-lg:bg-slate-50 max-lg:min-w-[120px]">
                                                             {col}
                                                         </th>
                                                     ))}
@@ -1899,8 +1899,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                                         return (
                                                             <tr key={i} className={`border-b border-slate-200 hover:bg-slate-50/40 transition-colors ${isWeekend ? 'bg-slate-50/20' : ''}`}>
-                                                                <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-800 border-r border-slate-200 bg-slate-50 sticky left-0 z-20 min-w-[96px] max-w-[96px] w-24 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">{dateLabel}</td>
-                                                                <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50 sticky left-[96px] z-20 min-w-[64px] max-w-[64px] w-16 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
+                                                                <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-800 border-r border-slate-200 bg-slate-50/50 max-lg:sticky max-lg:left-0 max-lg:z-20 max-lg:bg-slate-50 max-lg:min-w-[96px] max-lg:max-w-[96px] max-lg:w-24 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">{dateLabel}</td>
+                                                                <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50/30 max-lg:sticky max-lg:left-[96px] max-lg:z-20 max-lg:bg-slate-50 max-lg:min-w-[64px] max-lg:max-w-[64px] max-lg:w-16 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
                                                                 {columns.map(col => {
                                                                     const res = getCellStatus(date, "all", col);
                                                                     let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
@@ -1936,14 +1936,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <table className="w-full border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 sticky top-[80px] left-0 z-40 bg-slate-50 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] min-w-[96px] max-w-[96px]">Date</th>
-                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 sticky top-[80px] left-[96px] z-40 bg-slate-50 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] min-w-[64px] max-w-[64px]">Day</th>
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-24 max-lg:sticky max-lg:top-[80px] max-lg:left-0 max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[96px] max-lg:max-w-[96px]">Date</th>
+                                                    <th className="px-3 py-3 text-center text-xs font-bold text-slate-600 border-r border-slate-200 w-16 max-lg:sticky max-lg:top-[80px] max-lg:left-[96px] max-lg:z-40 max-lg:bg-slate-50 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] max-lg:min-w-[64px] max-lg:max-w-[64px]">Day</th>
                                                     {Array.from({ length: 14 }, (_, idx) => (
-                                                        <th key={idx + 1} className="px-1 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[36px] sticky top-[80px] z-30 bg-slate-50">
+                                                        <th key={idx + 1} className="px-1 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[36px] max-lg:sticky max-lg:top-[80px] max-lg:z-30 max-lg:bg-slate-50">
                                                             {idx + 1}
                                                         </th>
                                                     ))}
-                                                    <th className="px-2 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[100px] uppercase sticky top-[80px] z-30 bg-slate-50">FAMILY UNIT</th>
+                                                    <th className="px-2 py-3 text-center text-xs font-black text-slate-700 border-r border-slate-200 min-w-[50px] uppercase max-lg:sticky max-lg:top-[80px] max-lg:z-30 max-lg:bg-slate-50 max-lg:min-w-[100px]">FAMILY UNIT</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1960,8 +1960,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                                         return (
                                                             <tr key={i} className={`border-b border-slate-200 hover:bg-slate-50/40 transition-colors ${isWeekend ? 'bg-slate-50/20' : ''}`}>
-                                                                <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-800 border-r border-slate-200 bg-slate-50 sticky left-0 z-20 min-w-[96px] max-w-[96px] w-24 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">{dateLabel}</td>
-                                                                <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50 sticky left-[96px] z-20 min-w-[64px] max-w-[64px] w-16 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
+                                                                <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-800 border-r border-slate-200 bg-slate-50/50 max-lg:sticky max-lg:left-0 max-lg:z-20 max-lg:bg-slate-50 max-lg:min-w-[96px] max-lg:max-w-[96px] max-lg:w-24 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">{dateLabel}</td>
+                                                                <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50/30 max-lg:sticky max-lg:left-[96px] max-lg:z-20 max-lg:bg-slate-50 max-lg:min-w-[64px] max-lg:max-w-[64px] max-lg:w-16 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
                                                                 {Array.from({ length: 14 }, (_, idx) => {
                                                                     const unitIndex = idx + 1;
                                                                     const res = getCellStatus(date, "amstelnest", "Standard", unitIndex);
