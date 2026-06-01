@@ -489,20 +489,30 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         return {
                             ...v,
                             booked: isBooked,
-                            bookingStatus: v.bookingStatus ?? (primaryBooking?.status || null),
-                            isCheckinDay: v.isCheckinDay ?? (checkinBooking ? true : false),
-                            isCheckoutDay: v.isCheckoutDay ?? (checkoutBooking ? true : false),
-                            guest: v.guest ?? (primaryBooking?.customerName || null),
-                            guests: v.guests || (primaryBooking?.numGuests || 0),
-                            kids: v.kids ?? (primaryBooking?.numKids || 0),
-                            balanceAmount: v.balanceAmount ?? (primaryBooking?.balanceAmount || null),
-                            depositAmount: v.depositAmount ?? (primaryBooking?.securityDeposit || null),
-                            totalAmount: v.totalAmount ?? (primaryBooking?.totalAmount || null),
-                            addons: v.addons ?? (primaryBooking?.addons || null),
-                            phone: v.phone ?? (primaryBooking?.customerPhone || null),
-                            depositRefunded: v.depositRefunded ?? (primaryBooking?.depositRefunded || false),
-                            depositRefundMethod: v.depositRefundMethod ?? (primaryBooking?.depositRefundMethod || null),
-                            depositRefundedAt: v.depositRefundedAt ?? (primaryBooking?.depositRefundedAt || null),
+                            bookingStatus: primaryBooking?.status || null,
+                            checkedIn: primaryBooking?.status === 'checked_in',
+                            isCheckinDay: checkinBooking ? true : false,
+                            isCheckoutDay: checkoutBooking ? true : false,
+                            guest: primaryBooking?.customerName || null,
+                            guests: primaryBooking?.numGuests || 0,
+                            kids: primaryBooking?.numKids || 0,
+                            balanceAmount: primaryBooking?.balanceAmount || null,
+                            depositAmount: primaryBooking?.securityDeposit || null,
+                            totalAmount: primaryBooking?.totalAmount || null,
+                            addons: primaryBooking?.addons || null,
+                            phone: primaryBooking?.customerPhone || null,
+                            checkInDate: primaryBooking?.checkInDate ? new Date(primaryBooking.checkInDate).toLocaleDateString('en-IN') : null,
+                            checkOutDate: primaryBooking?.checkOutDate ? new Date(primaryBooking.checkOutDate).toLocaleDateString('en-IN') : null,
+                            depositRefunded: primaryBooking?.depositRefunded || false,
+                            depositRefundMethod: primaryBooking?.depositRefundMethod || null,
+                            depositRefundedAt: primaryBooking?.depositRefundedAt || null,
+                            balanceCollected: primaryBooking?.balanceCollected || false,
+                            balanceMode: primaryBooking?.balanceMethod || "Online",
+                            balanceTime: primaryBooking?.balanceCollectedAt ? new Date(primaryBooking.balanceCollectedAt).toLocaleString('en-IN') : null,
+                            depositCollected: primaryBooking?.depositCollected || false,
+                            depositMode: primaryBooking?.depositMethod || "UPI",
+                            depositTime: primaryBooking?.depositCollectedAt ? new Date(primaryBooking.depositCollectedAt).toLocaleString('en-IN') : null,
+                            extraGuests: primaryBooking?.extraGuests || [],
                             _allBookings: villaBookings, // Store all bookings for this sub-property
                             _checkoutBooking: checkoutBooking, // Separate checkout booking for badge
                         };
@@ -513,13 +523,27 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     return {
                         ...p,
                         booked: isPropBooked,
-                        bookingStatus: p.bookingStatus ?? (primaryPropBooking?.status || null),
-                        isCheckinDay: p.isCheckinDay ?? (propCheckinBooking ? true : false),
-                        isCheckoutDay: p.isCheckoutDay ?? (propCheckoutBooking ? true : false),
-                        balanceAmount: p.balanceAmount ?? (primaryPropBooking?.balanceAmount || null),
-                        depositAmount: p.depositAmount ?? (primaryPropBooking?.securityDeposit || null),
-                        totalAmount: p.totalAmount ?? (primaryPropBooking?.totalAmount || null),
-                        addons: p.addons ?? (primaryPropBooking?.addons || null),
+                        bookingStatus: primaryPropBooking?.status || null,
+                        checkedIn: primaryPropBooking?.status === 'checked_in',
+                        isCheckinDay: propCheckinBooking ? true : false,
+                        isCheckoutDay: propCheckoutBooking ? true : false,
+                        guest: primaryPropBooking?.customerName || null,
+                        guests: primaryPropBooking?.numGuests || 0,
+                        kids: primaryPropBooking?.numKids || 0,
+                        phone: primaryPropBooking?.customerPhone || null,
+                        checkInDate: primaryPropBooking?.checkInDate ? new Date(primaryPropBooking.checkInDate).toLocaleDateString('en-IN') : null,
+                        checkOutDate: primaryPropBooking?.checkOutDate ? new Date(primaryPropBooking.checkOutDate).toLocaleDateString('en-IN') : null,
+                        balanceAmount: primaryPropBooking?.balanceAmount || null,
+                        depositAmount: primaryPropBooking?.securityDeposit || null,
+                        totalAmount: primaryPropBooking?.totalAmount || null,
+                        addons: primaryPropBooking?.addons || null,
+                        balanceCollected: primaryPropBooking?.balanceCollected || false,
+                        balanceMode: primaryPropBooking?.balanceMethod || "Online",
+                        balanceTime: primaryPropBooking?.balanceCollectedAt ? new Date(primaryPropBooking.balanceCollectedAt).toLocaleString('en-IN') : null,
+                        depositCollected: primaryPropBooking?.depositCollected || false,
+                        depositMode: primaryPropBooking?.depositMethod || "UPI",
+                        depositTime: primaryPropBooking?.depositCollectedAt ? new Date(primaryPropBooking.depositCollectedAt).toLocaleString('en-IN') : null,
+                        extraGuests: primaryPropBooking?.extraGuests || [],
                         _checkoutBooking: propCheckoutBooking,
                         villas: enrichedVillas,
                     };
@@ -1944,7 +1968,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                 <td className={`px-3 py-2.5 text-center text-xs font-black border-r border-slate-200 bg-slate-50/30 max-lg:sticky max-lg:left-[96px] max-lg:z-20 max-lg:bg-slate-50 max-lg:min-w-[64px] max-lg:max-w-[64px] max-lg:w-16 max-lg:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] ${isWeekend ? 'text-orange-500' : 'text-slate-500'}`}>{dayLabel}</td>
                                                                 {columns.map(col => {
                                                                     const res = getCellStatus(date, "all", col);
-                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
+                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50 border-slate-200";
                                                                     let content = "";
                                                                     if (res.status === "maintenance") {
                                                                         cellClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100/50 font-black";
@@ -1961,7 +1985,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             key={col}
                                                                             onClick={() => setSelectedCell({ date, colType: "all", colName: col, ...res })}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
                                                                         >
                                                                             {content}
                                                                         </td>
@@ -2006,7 +2030,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                 {Array.from({ length: 14 }, (_, idx) => {
                                                                     const unitIndex = idx + 1;
                                                                     const res = getCellStatus(date, "amstelnest", "Standard", unitIndex);
-                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
+                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50 border-slate-200";
                                                                     let content = "";
                                                                     if (res.status === "maintenance") {
                                                                         cellClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100/50 font-black";
@@ -2023,7 +2047,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             key={unitIndex}
                                                                             onClick={() => setSelectedCell({ date, colType: "amstelnest", colName: "Standard", unitIndex, ...res })}
-                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
                                                                         >
                                                                             {content}
                                                                         </td>
@@ -2031,7 +2055,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                 })}
                                                                 {(() => {
                                                                     const res = getCellStatus(date, "amstelnest", "FAMILY UNIT");
-                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50";
+                                                                    let cellClass = "bg-white text-slate-700 hover:bg-slate-100/50 border-slate-200";
                                                                     let content = "";
                                                                     if (res.status === "maintenance") {
                                                                         cellClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100/50 font-black";
@@ -2047,7 +2071,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                     return (
                                                                         <td
                                                                             onClick={() => setSelectedCell({ date, colType: "amstelnest", colName: "FAMILY UNIT", ...res })}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
                                                                         >
                                                                             {content}
                                                                         </td>
