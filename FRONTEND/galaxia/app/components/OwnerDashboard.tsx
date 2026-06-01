@@ -995,12 +995,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guest</p>
                                 <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1">
-                                    <UserIcon size={12} />
-                                    {guestName}
-                                    {showContinueRed && (
-                                        <span className="text-red-600 font-extrabold ml-1 animate-pulse">(Continue)</span>
-                                    )}
+                                    <UserIcon size={12} className="shrink-0" />
+                                    <span className="truncate">{guestName}</span>
                                 </p>
+                                {showContinueRed && (
+                                    <p className="text-[10px] text-red-600 font-extrabold animate-pulse mt-0.5">(Continue)</p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guests</p>
@@ -2367,12 +2367,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guest</p>
                                                     <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1">
-                                                        <UserIcon size={12} />
-                                                        {guestName}
-                                                        {showContinueRed && (
-                                                            <span className="text-red-600 font-extrabold ml-1 animate-pulse">(Continue)</span>
-                                                        )}
+                                                        <UserIcon size={12} className="shrink-0" />
+                                                        <span className="truncate">{guestName}</span>
                                                     </p>
+                                                    {showContinueRed && (
+                                                        <p className="text-[10px] text-red-600 font-extrabold animate-pulse mt-0.5">(Continue)</p>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guests</p>
