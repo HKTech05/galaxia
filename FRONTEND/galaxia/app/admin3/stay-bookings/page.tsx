@@ -697,7 +697,7 @@ export default function StayBookingsPage() {
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus size={16} />
-                        + Manual Booking
+                        Manual Booking
                     </button>
                     <button
                         onClick={() => setShowReportModal(true)}

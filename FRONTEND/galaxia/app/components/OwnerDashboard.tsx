@@ -1856,7 +1856,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <span>Owner Reserved</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <div className="w-5 h-5 rounded border border-slate-200 bg-slate-100 text-slate-400 font-black flex items-center justify-center text-[10px]">B</div>
+                                    <div className="w-5 h-5 rounded border border-slate-300 bg-slate-200 text-slate-700 font-black flex items-center justify-center text-[10px]">B</div>
                                     <span>Booked</span>
                                 </div>
                             </div>
@@ -1912,7 +1912,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
                                                                         content = "OR";
                                                                     } else if (res.status === "booked") {
-                                                                        cellClass = "bg-slate-100 text-slate-400 border-slate-200/80 hover:bg-slate-200/50 font-bold";
+                                                                        cellClass = "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300/50 font-bold";
                                                                         content = "B";
                                                                     }
 
@@ -1920,7 +1920,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             key={col}
                                                                             onClick={() => setSelectedCell({ date, colType: "all", colName: col, ...res })}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
                                                                         >
                                                                             {content}
                                                                         </td>
@@ -1974,7 +1974,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
                                                                         content = "OR";
                                                                     } else if (res.status === "booked") {
-                                                                        cellClass = "bg-slate-100 text-slate-400 border-slate-200/80 hover:bg-slate-200/50 font-bold";
+                                                                        cellClass = "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300/50 font-bold";
                                                                         content = "B";
                                                                     }
 
@@ -1982,7 +1982,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             key={unitIndex}
                                                                             onClick={() => setSelectedCell({ date, colType: "amstelnest", colName: "Standard", unitIndex, ...res })}
-                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
                                                                         >
                                                                             {content}
                                                                         </td>
@@ -1999,14 +1999,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
                                                                         content = "OR";
                                                                     } else if (res.status === "booked") {
-                                                                        cellClass = "bg-slate-100 text-slate-400 border-slate-200/80 hover:bg-slate-200/50 font-bold";
+                                                                        cellClass = "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300/50 font-bold";
                                                                         content = "B";
                                                                     }
 
                                                                     return (
                                                                         <td
                                                                             onClick={() => setSelectedCell({ date, colType: "amstelnest", colName: "FAMILY UNIT", ...res })}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b border-slate-200 cursor-pointer select-none transition-colors border-dashed ${cellClass}`}
                                                                         >
                                                                             {content}
                                                                         </td>
