@@ -230,13 +230,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             const isActiveToday = rawCID <= selectedDateStr && rawCOD > selectedDateStr;
             if (isActiveToday) {
                 const isContinue = rawCID < selectedDateStr;
-                return { ...b, isContinue };
+                const resolvedStatus = (b.status === "Checked In" || b.status === "checked_in") ? "Checked In" : "Pending";
+                return { ...b, isContinue, status: resolvedStatus };
             }
         } else {
             // Checkout today: check-out === selected day
             const isCheckoutToday = rawCOD === selectedDateStr;
             if (isCheckoutToday) {
-                return b;
+                const isCheckedOut = b.status === "Completed" || b.status === "checked_out" || b.status === "checked-out";
+                const resolvedStatus = isCheckedOut ? "Checked Out" : "Pending";
+                return { ...b, status: resolvedStatus };
             }
         }
         return null;
@@ -384,12 +387,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             {booking.property}
                                         </span>
                                     </div>
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${booking.status === 'Checked In' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                                        booking.status === 'Pending Checkout' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                            booking.status === 'Completed' ? 'bg-slate-100 text-slate-600 border-slate-300' :
-                                            booking.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                'bg-slate-50 text-slate-700 border-slate-200'
-                                        }`}>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
+                                        booking.status === 'Checked In' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                        booking.status === 'Checked Out' ? 'bg-slate-100 text-slate-600 border-slate-300' :
+                                        booking.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        'bg-slate-50 text-slate-700 border-slate-200'
+                                    }`}>
                                         {booking.status}
                                     </span>
                                 </div>
@@ -584,7 +587,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </>
                                     )
                                 ) : (
-                                    booking.status === "Completed" ? (
+                                    booking.status === "Checked Out" ? (
                                         <div className="text-center p-4">
                                             <div className="w-12 h-12 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-200">
                                                 <CheckCircle size={20} />

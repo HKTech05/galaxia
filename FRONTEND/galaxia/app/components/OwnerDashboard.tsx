@@ -951,7 +951,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             : (item._checkoutBooking?.extraGuests ?? item.extraGuests);
 
         const resolvedStatus = propertyStatusMode === "checkin"
-            ? (item.checkedIn ? "Checked In" : (item.bookingStatus === "confirmed" ? "Confirmed" : "Pending"))
+            ? (item.checkedIn ? "Checked In" : "Pending")
             : ((displayBooking?.bookingStatus === "checked_out" || displayBooking?.status === "checked_out" || item.bookingStatus === "checked_out") ? "Checked Out" : "Pending");
 
         const showContinueRed = propertyStatusMode === "checkin" && item.booked && !item.isCheckinDay;
@@ -1006,7 +1006,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold uppercase border ${
                                         resolvedStatus === 'Checked In' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
                                         resolvedStatus === 'Checked Out' ? 'bg-slate-100 border-slate-300 text-slate-600' :
-                                        resolvedStatus === 'Confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
                                         'bg-amber-50 border-amber-200 text-amber-700'
                                     }`}>
                                         {resolvedStatus}
@@ -2131,14 +2130,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <div className="flex items-center gap-3">
                                 <span className="font-bold text-slate-800 text-sm">Ambrose</span>
                                 <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase font-extrabold tracking-wider">
-                                    {(() => {
-                                        if (propertyStatusMode === "checkin") {
-                                            return `${liveAmbrose.filter((v: any) => v.booked).length}/${liveAmbrose.length} Check-ins`;
-                                        } else {
-                                            const count = liveAmbrose.filter((v: any) => v._checkoutBooking || (v.booked && v.isCheckoutDay)).length;
-                                            return `${count}/${liveAmbrose.length} Checkouts`;
-                                        }
-                                    })()}
+                                    {liveAmbrose.filter((v: any) => v.booked).length}/{liveAmbrose.length} Occupied
                                 </span>
                             </div>
                             <ChevronRight size={16} className="text-slate-400" />
@@ -2155,21 +2147,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <span className="font-bold text-slate-800 text-sm">Amstel Nest</span>
                                 <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase font-extrabold tracking-wider">
                                     {(() => {
-                                        if (propertyStatusMode === "checkin") {
-                                            const stdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
-                                            const stdBooked = stdCottage?._allBookings?.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (stdCottage?.booked ? 1 : 0);
-                                            const othersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
-                                            const othersTotal = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
-                                            return `${stdBooked + othersBooked}/${14 + othersTotal} Check-ins`;
-                                        } else {
-                                            const stdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
-                                            const selectedDateStr = `${propertyDate.getFullYear()}-${String(propertyDate.getMonth() + 1).padStart(2, '0')}-${String(propertyDate.getDate()).padStart(2, '0')}`;
-                                            const stdCheckoutBookings = stdCottage?._allBookings?.filter((b: any) => b.checkOutDate?.slice(0, 10) === selectedDateStr) || [];
-                                            const stdBooked = stdCheckoutBookings.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0);
-                                            const othersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && (v._checkoutBooking || (v.booked && v.isCheckoutDay))).length;
-                                            const othersTotal = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
-                                            return `${stdBooked + othersBooked}/${14 + othersTotal} Checkouts`;
-                                        }
+                                        const stdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
+                                        const stdBooked = stdCottage?._allBookings?.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (stdCottage?.booked ? 1 : 0);
+                                        const othersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
+                                        const othersTotal = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
+                                        return `${stdBooked + othersBooked}/${14 + othersTotal} Occupied`;
                                     })()}
                                 </span>
                             </div>
@@ -2338,7 +2320,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     : (villa._checkoutBooking?.extraGuests ?? villa.extraGuests);
 
                                 const resolvedStatus = propertyStatusMode === "checkin"
-                                    ? (villa.checkedIn ? "Checked In" : (villa.bookingStatus === "confirmed" ? "Confirmed" : "Pending"))
+                                    ? (villa.checkedIn ? "Checked In" : "Pending")
                                     : ((displayBooking?.bookingStatus === "checked_out" || displayBooking?.status === "checked_out" || villa.bookingStatus === "checked_out") ? "Checked Out" : "Pending");
 
                                 const showContinueRed = propertyStatusMode === "checkin" && villa.booked && !villa.isCheckinDay;
@@ -2396,7 +2378,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold uppercase border ${
                                                             resolvedStatus === 'Checked In' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' :
                                                             resolvedStatus === 'Checked Out' ? 'bg-slate-100 border-slate-300 text-slate-600' :
-                                                            resolvedStatus === 'Confirmed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
                                                             'bg-amber-50 border-amber-200 text-amber-700'
                                                         }`}>
                                                             {resolvedStatus}
