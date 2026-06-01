@@ -113,6 +113,7 @@ router.get("/bookings", authMiddleware, async (req: AuthRequest, res) => {
             where,
             select: { 
                 id: true,
+                bookingRef: true,
                 propertyId: true,
                 subPropertyId: true, 
                 customerName: true, 
