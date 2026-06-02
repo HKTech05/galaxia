@@ -1158,7 +1158,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {([["insights", "Insights"], ["calendar2", "Live Calendar 2"]] as const).map(([key, label]) => (
+                        {([["insights", "Insights"], ["calendar2", "Live Calendar"]] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setDashboardSubTab(key)}
@@ -1858,7 +1858,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         {/* Header + Month Picker */}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-800 tracking-tight">Live Calendar 2</h2>
+                                <h2 className="text-lg font-bold text-slate-800 tracking-tight">Live Calendar</h2>
                                 <p className="text-sm text-slate-500 font-medium mt-1">Recreated matrix view showing occupancy, maintenance, and owner reservations.</p>
                             </div>
                             
