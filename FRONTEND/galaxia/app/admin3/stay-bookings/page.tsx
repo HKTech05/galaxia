@@ -49,6 +49,7 @@ interface StayBooking {
     addons: any[] | null;
     foodBills: any[] | null;
     isDd?: boolean;
+    subPropertyId?: number | null;
     startHour?: number;
     durationHours?: number;
     screenId?: number;
@@ -268,6 +269,7 @@ export default function StayBookingsPage() {
                 customerEmail: b.customerEmail || null,
                 propertyName: b.property?.name || "Unknown",
                 subPropertyName: b.subProperty?.name || null,
+                subPropertyId: b.subPropertyId || null,
                 checkIn: b.checkInDate,
                 checkOut: b.checkOutDate,
                 nights: b.numNights || 1,
@@ -1304,6 +1306,10 @@ export default function StayBookingsPage() {
                                     <button
                                         onClick={() => {
                                             const b = selectedBooking;
+                                            const addonsArr = b.addons || [];
+                                            const regAddon = addonsArr.find((a: any) => a.name === 'Food Preference' && a.foodType === 'Regular');
+                                            const jainAddon = addonsArr.find((a: any) => a.name === 'Food Preference' && a.foodType === 'Jain');
+
                                             setEditForm({
                                                 customerName: b.customerName,
                                                 customerPhone: b.customerPhone,
@@ -1325,7 +1331,7 @@ export default function StayBookingsPage() {
                                                 securityDeposit: b.securityDeposit,
                                                 status: b.status,
                                                 source: b.source,
-                                                addons: b.addons || [],
+                                                addons: addonsArr,
                                                 // DD-specific fields
                                                 screenId: b.screenId || 1,
                                                 packageId: b.packageId || 1,
@@ -1335,6 +1341,9 @@ export default function StayBookingsPage() {
                                                 occasion: b.occasion || '',
                                                 cakeMessage: b.cakeMessage || '',
                                                 specialRequests: b.specialRequests || '',
+                                                foodRegular: regAddon ? regAddon.count : 0,
+                                                foodJain: jainAddon ? jainAddon.count : 0,
+                                                subPropertyId: b.subPropertyId || '',
                                             });
                                             setEditBooking(b);
                                         }}
@@ -1660,6 +1669,60 @@ export default function StayBookingsPage() {
                                 </div>
                             </div>
 
+                            {/* Ambrose Villa Selector (Staycation ONLY) */}
+                            {editBooking && !editBooking.isDd && editBooking.propertyName?.includes('Ambrose') && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ambrose Villa Theme</h4>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Villa Theme</label>
+                                        <select
+                                            value={editForm.subPropertyId || ''}
+                                            onChange={e => {
+                                                const val = e.target.value ? parseInt(e.target.value) : '';
+                                                setEditForm({ ...editForm, subPropertyId: val });
+                                            }}
+                                            className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                                        >
+                                            <option value="">Select Villa Theme</option>
+                                            {(() => {
+                                                const ambroseProp = transferProperties.find((p: any) => p.name.includes("Ambrose") || p.slug === "ambrose");
+                                                const ambroseVillas = ambroseProp ? ambroseProp.subProperties || [] : [];
+                                                return ambroseVillas.map((v: any) => (
+                                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                                ));
+                                            })()}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Food Preference Add-ons (Staycation ONLY) */}
+                            {editBooking && !editBooking.isDd && (
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Food Preferences</h4>
+                                    <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Regular Count</label>
+                                            <input type="number" min={0} value={editForm.foodRegular ?? 0}
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    setEditForm({ ...editForm, foodRegular: val });
+                                                }}
+                                                className="w-full mt-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-slate-800" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Jain Count</label>
+                                            <input type="number" min={0} value={editForm.foodJain ?? 0}
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    setEditForm({ ...editForm, foodJain: val });
+                                                }}
+                                                className="w-full mt-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white text-slate-800" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Addons — Staycation only, NOT DD */}
                             {!editBooking.isDd && (
                                 <div>
@@ -1737,8 +1800,17 @@ export default function StayBookingsPage() {
                                                 status: editForm.status,
                                                 source: editForm.source,
                                             });
-                                        } else {
                                             // Staycation booking edit
+                                            const finalAddons = [
+                                                ...(editForm.addons || []).filter((a: any) => a.name !== 'Food Preference'),
+                                            ];
+                                            if (editForm.foodRegular > 0) {
+                                                finalAddons.push({ name: 'Food Preference', foodType: 'Regular', count: editForm.foodRegular });
+                                            }
+                                            if (editForm.foodJain > 0) {
+                                                finalAddons.push({ name: 'Food Preference', foodType: 'Jain', count: editForm.foodJain });
+                                            }
+
                                             await api.patch(`/bookings/staycation/${editBooking.id}`, {
                                                 customerName: editForm.customerName,
                                                 customerPhone: editForm.customerPhone,
@@ -1760,7 +1832,8 @@ export default function StayBookingsPage() {
                                                 securityDeposit: editForm.securityDeposit,
                                                 status: editForm.status,
                                                 source: editForm.source,
-                                                addons: editForm.addons && editForm.addons.length > 0 ? editForm.addons : null,
+                                                addons: finalAddons.length > 0 ? finalAddons : null,
+                                                subPropertyId: editForm.subPropertyId || null,
                                             });
                                         }
                                         setEditBooking(null);

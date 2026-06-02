@@ -1158,7 +1158,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {([["insights", "Insights"], ["calendar", "Live Calendar"], ["bulk", "Bulk Bookings"], ["calendar2", "Live Calendar 2"]] as const).map(([key, label]) => (
+                        {([["insights", "Insights"], ["calendar2", "Live Calendar 2"]] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setDashboardSubTab(key)}
@@ -1921,7 +1921,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <span>Owner Reserved</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <div className="w-5 h-5 rounded border border-slate-300 bg-slate-200 text-slate-700 font-black flex items-center justify-center text-[10px]">B</div>
+                                    <div className="w-5 h-5 rounded border border-slate-200 bg-slate-100 text-slate-800 font-black flex items-center justify-center text-[10px]">B</div>
                                     <span>Booked</span>
                                 </div>
                             </div>
@@ -1977,7 +1977,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
                                                                         content = "OR";
                                                                     } else if (res.status === "booked") {
-                                                                        cellClass = "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300/50 font-bold";
+                                                                        cellClass = "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200/50 font-black";
                                                                         content = "B";
                                                                     }
 
@@ -2039,7 +2039,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
                                                                         content = "OR";
                                                                     } else if (res.status === "booked") {
-                                                                        cellClass = "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300/50 font-bold";
+                                                                        cellClass = "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200/50 font-black";
                                                                         content = "B";
                                                                     }
 
@@ -2064,7 +2064,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         cellClass = "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100/50 font-black";
                                                                         content = "OR";
                                                                     } else if (res.status === "booked") {
-                                                                        cellClass = "bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300/50 font-bold";
+                                                                        cellClass = "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200/50 font-black";
                                                                         content = "B";
                                                                     }
 
