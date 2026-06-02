@@ -440,159 +440,248 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         const calculated = calculatePrice();
 
         try {
-            if (isAmstel && amstelStandardCount > 0 && amstelFamilySelected) {
+            if (isAmstel) {
                 const stdSubPropId = resolveSubPropertyId(manualForm.property, "Standard Cottage");
                 const famSubPropId = resolveSubPropertyId(manualForm.property, "Family Cottage");
 
-                let stdRoomTotal = 0;
-                let famRoomTotal = 0;
-                for (let i = 0; i < nights; i++) {
-                    const currentDate = new Date(start);
-                    currentDate.setDate(start.getDate() + i);
-                    const day = currentDate.getDay();
-                    const isWeekend = day === 0 || day === 5 || day === 6;
-                    const isSaturday = day === 6;
+                if (amstelStandardCount > 0 && amstelFamilySelected) {
+                    // BOTH Standard and Family Selected (split booking)
+                    let stdRoomTotal = 0;
+                    let famRoomTotal = 0;
+                    for (let i = 0; i < nights; i++) {
+                        const currentDate = new Date(start);
+                        currentDate.setDate(start.getDate() + i);
+                        const day = currentDate.getDay();
+                        const isWeekend = day === 0 || day === 5 || day === 6;
+                        const isSaturday = day === 6;
 
-                    let stdBase = isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 6950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950);
-                    stdRoomTotal += stdBase * amstelStandardCount;
+                        let stdBase = isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 6950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950);
+                        stdRoomTotal += stdBase * amstelStandardCount;
 
-                    let famBase = livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000;
-                    famRoomTotal += famBase;
+                        let famBase = livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000;
+                        famRoomTotal += famBase;
+                    }
+
+                    // Split guests
+                    const stdCap = 2 * amstelStandardCount;
+                    const famCap = 4;
+
+                    const stdGuests = Math.min(stdCap, Math.max(1, manualForm.guests - 1));
+                    const famGuests = Math.max(1, manualForm.guests - stdGuests);
+
+                    const stdKids = Math.round(manualForm.kids / 2);
+                    const famKids = manualForm.kids - stdKids;
+
+                    const stdPets = Math.round(manualForm.pets / 2);
+                    const famPets = manualForm.pets - stdPets;
+
+                    const stdExtraAdults = Math.max(0, stdGuests - stdCap);
+                    const famExtraAdults = Math.max(0, famGuests - famCap);
+
+                    const stdFreeKidsSlots = Math.max(0, stdCap - stdGuests);
+                    const stdExtraKids = Math.max(0, stdKids - stdFreeKidsSlots);
+
+                    const famFreeKidsSlots = Math.max(0, famCap - famGuests);
+                    const famExtraKids = Math.max(0, famKids - famFreeKidsSlots);
+
+                    const stdExtraAdultCharge = stdExtraAdults * 2000 * nights;
+                    const stdExtraKidsCharge = stdExtraKids * 1000 * nights;
+                    const famExtraAdultCharge = famExtraAdults * 2000 * nights;
+                    const famExtraKidsCharge = famExtraKids * 1000 * nights;
+
+                    const stdDecorCharge = manualDecoration ? DECORATION_PRICE : 0;
+                    const famDecorCharge = 0;
+
+                    const stdRawBase = stdRoomTotal + stdExtraAdultCharge + stdExtraKidsCharge + stdDecorCharge;
+                    const famRawBase = famRoomTotal + famExtraAdultCharge + famExtraKidsCharge + famDecorCharge;
+
+                    // Split discounts equally
+                    const couponAmt = manualAppliedCoupon ? (manualAppliedCoupon.discountType === "percentage" ? Math.round((stdRawBase + famRawBase) * manualAppliedCoupon.discountValue / 100) : manualAppliedCoupon.discountValue) : 0;
+                    const totalDiscount = couponAmt + Math.round(manualDiscountAmount / 1.05);
+
+                    const stdDiscount = Math.round(totalDiscount / 2);
+                    const famDiscount = totalDiscount - stdDiscount;
+
+                    // Direct base prices
+                    const stdBasePrice = Math.max(0, stdRawBase - stdDiscount);
+                    const famBasePrice = Math.max(0, famRawBase - famDiscount);
+
+                    // Apply 5% GST directly
+                    const stdGst = Math.round(stdBasePrice * 0.05);
+                    const famGst = Math.round(famBasePrice * 0.05);
+
+                    const stdTotal = stdBasePrice + stdGst + stdPets * 600;
+                    const famTotal = famBasePrice + famGst + famPets * 600;
+
+                    // Split advance equally
+                    let stdAdvance = stdTotal;
+                    let famAdvance = famTotal;
+                    if (customSplitMode) {
+                        const prepaidNum = parseInt(customPrepaid || '0');
+                        stdAdvance = Math.round(prepaidNum / 2);
+                        famAdvance = prepaidNum - stdAdvance;
+                    }
+
+                    const stdBalance = stdTotal - stdAdvance;
+                    const famBalance = famTotal - famAdvance;
+
+                    const regCount = parseInt(manualRegularCount) || 0;
+                    const jCount = parseInt(manualJainCount) || 0;
+                    const stdRegCount = Math.round(regCount / 2);
+                    const famRegCount = regCount - stdRegCount;
+                    const stdJCount = Math.round(jCount / 2);
+                    const famJCount = jCount - stdJCount;
+
+                    const stdAddons: any[] = [];
+                    const famAddons: any[] = [];
+
+                    if (manualDecoration) {
+                        stdAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+                    }
+                    if (stdRegCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Regular', count: stdRegCount });
+                    if (stdJCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Jain', count: stdJCount });
+
+                    if (famRegCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Regular', count: famRegCount });
+                    if (famJCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Jain', count: famJCount });
+
+                    const commonPayload = {
+                        customerName: manualForm.name,
+                        customerPhone: manualForm.phone || "0000000000",
+                        customerEmail: manualForm.email || null,
+                        propertyId: propId,
+                        checkInDate: checkInDateStr,
+                        checkOutDate: checkOutDateStr,
+                        securityDeposit: 3000,
+                        advancePaid: true,
+                        advanceMethod: manualForm.paymentMethod,
+                        source: "reception",
+                        couponCode: manualAppliedCoupon?.code || null,
+                    };
+
+                    await api.post("/bookings/staycation", {
+                        ...commonPayload,
+                        subPropertyId: stdSubPropId,
+                        numGuests: stdGuests,
+                        numKids: stdKids,
+                        numPets: stdPets,
+                        numCottages: amstelStandardCount,
+                        nightlyRate: Math.round(stdRoomTotal / nights / amstelStandardCount),
+                        totalAmount: stdTotal,
+                        advanceAmount: stdAdvance,
+                        balanceAmount: stdBalance,
+                        basePrice: stdBasePrice,
+                        extraAdultCharge: stdExtraAdultCharge,
+                        extraKidsCharge: stdExtraKidsCharge,
+                        gstAmount: stdGst,
+                        discountAmount: stdDiscount,
+                        addons: stdAddons.length > 0 ? stdAddons : null,
+                    });
+
+                    await api.post("/bookings/staycation", {
+                        ...commonPayload,
+                        subPropertyId: famSubPropId,
+                        numGuests: famGuests,
+                        numKids: famKids,
+                        numPets: famPets,
+                        numCottages: 1,
+                        nightlyRate: Math.round(famRoomTotal / nights),
+                        totalAmount: famTotal,
+                        advanceAmount: famAdvance,
+                        balanceAmount: famBalance,
+                        basePrice: famBasePrice,
+                        extraAdultCharge: famExtraAdultCharge,
+                        extraKidsCharge: famExtraKidsCharge,
+                        gstAmount: famGst,
+                        discountAmount: famDiscount,
+                        addons: famAddons.length > 0 ? famAddons : null,
+                    });
+                } else if (amstelStandardCount > 0) {
+                    // Standard Cottage ONLY
+                    const stdAddons: any[] = [];
+                    const regCount = parseInt(manualRegularCount) || 0;
+                    const jCount = parseInt(manualJainCount) || 0;
+                    if (manualDecoration) {
+                        stdAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+                    }
+                    if (regCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
+                    if (jCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Jain', count: jCount });
+
+                    const commonPayload = {
+                        customerName: manualForm.name,
+                        customerPhone: manualForm.phone || "0000000000",
+                        customerEmail: manualForm.email || null,
+                        propertyId: propId,
+                        checkInDate: checkInDateStr,
+                        checkOutDate: checkOutDateStr,
+                        securityDeposit: 3000,
+                        advancePaid: true,
+                        advanceMethod: manualForm.paymentMethod,
+                        source: "reception",
+                        couponCode: manualAppliedCoupon?.code || null,
+                    };
+
+                    await api.post("/bookings/staycation", {
+                        ...commonPayload,
+                        subPropertyId: stdSubPropId,
+                        numGuests: manualForm.guests,
+                        numKids: manualForm.kids || 0,
+                        numPets: manualForm.pets || 0,
+                        numCottages: amstelStandardCount,
+                        nightlyRate: calculated.nightlyRoomRate,
+                        totalAmount: calculated.totalAmount,
+                        advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
+                        balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
+                        basePrice: calculated.basePrice,
+                        extraAdultCharge: calculated.extraAdultCharge,
+                        extraKidsCharge: calculated.extraKidsCharge,
+                        gstAmount: calculated.gstAmount,
+                        discountAmount: manualDiscountAmount,
+                        addons: stdAddons.length > 0 ? stdAddons : null,
+                    });
+                } else if (amstelFamilySelected) {
+                    // Family Cottage ONLY
+                    const famAddons: any[] = [];
+                    const regCount = parseInt(manualRegularCount) || 0;
+                    const jCount = parseInt(manualJainCount) || 0;
+                    if (manualDecoration) {
+                        famAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+                    }
+                    if (regCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
+                    if (jCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Jain', count: jCount });
+
+                    const commonPayload = {
+                        customerName: manualForm.name,
+                        customerPhone: manualForm.phone || "0000000000",
+                        customerEmail: manualForm.email || null,
+                        propertyId: propId,
+                        checkInDate: checkInDateStr,
+                        checkOutDate: checkOutDateStr,
+                        securityDeposit: 3000,
+                        advancePaid: true,
+                        advanceMethod: manualForm.paymentMethod,
+                        source: "reception",
+                        couponCode: manualAppliedCoupon?.code || null,
+                    };
+
+                    await api.post("/bookings/staycation", {
+                        ...commonPayload,
+                        subPropertyId: famSubPropId,
+                        numGuests: manualForm.guests,
+                        numKids: manualForm.kids || 0,
+                        numPets: manualForm.pets || 0,
+                        numCottages: 1,
+                        nightlyRate: calculated.nightlyRoomRate,
+                        totalAmount: calculated.totalAmount,
+                        advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
+                        balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
+                        basePrice: calculated.basePrice,
+                        extraAdultCharge: calculated.extraAdultCharge,
+                        extraKidsCharge: calculated.extraKidsCharge,
+                        gstAmount: calculated.gstAmount,
+                        discountAmount: manualDiscountAmount,
+                        addons: famAddons.length > 0 ? famAddons : null,
+                    });
                 }
-
-                // Split guests
-                const stdCap = 2 * amstelStandardCount;
-                const famCap = 4;
-
-                const stdGuests = Math.min(stdCap, Math.max(1, manualForm.guests - 1));
-                const famGuests = Math.max(1, manualForm.guests - stdGuests);
-
-                const stdKids = Math.round(manualForm.kids / 2);
-                const famKids = manualForm.kids - stdKids;
-
-                const stdPets = Math.round(manualForm.pets / 2);
-                const famPets = manualForm.pets - stdPets;
-
-                const stdExtraAdults = Math.max(0, stdGuests - stdCap);
-                const famExtraAdults = Math.max(0, famGuests - famCap);
-
-                const stdFreeKidsSlots = Math.max(0, stdCap - stdGuests);
-                const stdExtraKids = Math.max(0, stdKids - stdFreeKidsSlots);
-
-                const famFreeKidsSlots = Math.max(0, famCap - famGuests);
-                const famExtraKids = Math.max(0, famKids - famFreeKidsSlots);
-
-                const stdExtraAdultCharge = stdExtraAdults * 2000 * nights;
-                const stdExtraKidsCharge = stdExtraKids * 1000 * nights;
-                const famExtraAdultCharge = famExtraAdults * 2000 * nights;
-                const famExtraKidsCharge = famExtraKids * 1000 * nights;
-
-                const stdDecorCharge = manualDecoration ? DECORATION_PRICE : 0;
-                const famDecorCharge = 0;
-
-                const stdRawBase = stdRoomTotal + stdExtraAdultCharge + stdExtraKidsCharge + stdDecorCharge;
-                const famRawBase = famRoomTotal + famExtraAdultCharge + famExtraKidsCharge + famDecorCharge;
-
-                // Split discounts equally
-                const couponAmt = manualAppliedCoupon ? (manualAppliedCoupon.discountType === "percentage" ? Math.round((stdRawBase + famRawBase) * manualAppliedCoupon.discountValue / 100) : manualAppliedCoupon.discountValue) : 0;
-                const totalDiscount = couponAmt + Math.round(manualDiscountAmount / 1.05);
-
-                const stdDiscount = Math.round(totalDiscount / 2);
-                const famDiscount = totalDiscount - stdDiscount;
-
-                // Direct base prices
-                const stdBasePrice = Math.max(0, stdRawBase - stdDiscount);
-                const famBasePrice = Math.max(0, famRawBase - famDiscount);
-
-                // Apply 5% GST directly
-                const stdGst = Math.round(stdBasePrice * 0.05);
-                const famGst = Math.round(famBasePrice * 0.05);
-
-                const stdTotal = stdBasePrice + stdGst + stdPets * 600;
-                const famTotal = famBasePrice + famGst + famPets * 600;
-
-                // Split advance equally
-                let stdAdvance = stdTotal;
-                let famAdvance = famTotal;
-                if (customSplitMode) {
-                    const prepaidNum = parseInt(customPrepaid || '0');
-                    stdAdvance = Math.round(prepaidNum / 2);
-                    famAdvance = prepaidNum - stdAdvance;
-                }
-
-                const stdBalance = stdTotal - stdAdvance;
-                const famBalance = famTotal - famAdvance;
-
-                const regCount = parseInt(manualRegularCount) || 0;
-                const jCount = parseInt(manualJainCount) || 0;
-                const stdRegCount = Math.round(regCount / 2);
-                const famRegCount = regCount - stdRegCount;
-                const stdJCount = Math.round(jCount / 2);
-                const famJCount = jCount - stdJCount;
-
-                const stdAddons: any[] = [];
-                const famAddons: any[] = [];
-
-                if (manualDecoration) {
-                    stdAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
-                }
-                if (stdRegCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Regular', count: stdRegCount });
-                if (stdJCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Jain', count: stdJCount });
-
-                if (famRegCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Regular', count: famRegCount });
-                if (famJCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Jain', count: famJCount });
-
-                const commonPayload = {
-                    customerName: manualForm.name,
-                    customerPhone: manualForm.phone || "0000000000",
-                    customerEmail: manualForm.email || null,
-                    propertyId: propId,
-                    checkInDate: checkInDateStr,
-                    checkOutDate: checkOutDateStr,
-                    securityDeposit: 3000,
-                    advancePaid: true,
-                    advanceMethod: manualForm.paymentMethod,
-                    source: "reception",
-                    couponCode: manualAppliedCoupon?.code || null,
-                };
-
-                await api.post("/bookings/staycation", {
-                    ...commonPayload,
-                    subPropertyId: stdSubPropId,
-                    numGuests: stdGuests,
-                    numKids: stdKids,
-                    numPets: stdPets,
-                    numCottages: amstelStandardCount,
-                    nightlyRate: Math.round(stdRoomTotal / nights / amstelStandardCount),
-                    totalAmount: stdTotal,
-                    advanceAmount: stdAdvance,
-                    balanceAmount: stdBalance,
-                    basePrice: stdBasePrice,
-                    extraAdultCharge: stdExtraAdultCharge,
-                    extraKidsCharge: stdExtraKidsCharge,
-                    gstAmount: stdGst,
-                    discountAmount: stdDiscount,
-                    addons: stdAddons.length > 0 ? stdAddons : null,
-                });
-
-                await api.post("/bookings/staycation", {
-                    ...commonPayload,
-                    subPropertyId: famSubPropId,
-                    numGuests: famGuests,
-                    numKids: famKids,
-                    numPets: famPets,
-                    numCottages: 1,
-                    nightlyRate: Math.round(famRoomTotal / nights),
-                    totalAmount: famTotal,
-                    advanceAmount: famAdvance,
-                    balanceAmount: famBalance,
-                    basePrice: famBasePrice,
-                    extraAdultCharge: famExtraAdultCharge,
-                    extraKidsCharge: famExtraKidsCharge,
-                    gstAmount: famGst,
-                    discountAmount: famDiscount,
-                    addons: famAddons.length > 0 ? famAddons : null,
-                });
 
             } else if (isAmbrose) {
                 // Ambrose (handles 1 or more villas)
