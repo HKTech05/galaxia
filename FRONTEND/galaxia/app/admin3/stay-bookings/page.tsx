@@ -299,6 +299,7 @@ export default function StayBookingsPage() {
                 extraGuests: b.extraGuests || [],
                 addons: b.addons || null,
                 foodBills: b.foodBills || null,
+                isDd: false,
             }));
             setBookings(mapped);
         } catch (err) {
@@ -886,7 +887,7 @@ export default function StayBookingsPage() {
                             >
                                 <option value="All">All Sources</option>
                                 <option value="Website">Website</option>
-                                <option value="Walk-in">Walk-in</option>
+                                <option value="Walk-in">{viewTab === 'staycation' ? 'Manual' : 'Walk-in'}</option>
                             </select>
                             <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                         </div>
@@ -951,7 +952,7 @@ export default function StayBookingsPage() {
                                                     <div className="flex items-center gap-2 mb-0.5">
                                                         <span className="text-sm font-bold text-slate-800">{b.customerName}</span>
                                                         <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${b.source === "website" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : b.source === "admin-bulk" || b.source === "bulk" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
-                                                            {b.source === "website" ? "Online" : b.source === "admin-bulk" || b.source === "bulk" ? "Admin Bulk" : "Walk-in"}
+                                                            {b.source === "website" ? "Online" : b.source === "admin-bulk" || b.source === "bulk" ? "Admin Bulk" : (b.isDd ? "Walk-in" : "Manual")}
                                                         </span>
                                                     </div>
                                                     <span className="text-[11px] font-bold text-slate-400">{b.bookingRef}</span>
@@ -1111,7 +1112,7 @@ export default function StayBookingsPage() {
                                     )}
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Source</p>
-                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.source === "website" ? "Online Booking" : "Walk-in / Reception"}</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.source === "website" ? "Online Booking" : selectedBooking.source === "admin-bulk" || selectedBooking.source === "bulk" ? "Admin Bulk" : (selectedBooking.isDd ? "Walk-in / Reception" : "Manual Booking")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -1652,7 +1653,7 @@ export default function StayBookingsPage() {
                                         <select value={editForm.source || ''} onChange={e => setEditForm({...editForm, source: e.target.value})}
                                             className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white">
                                             <option value="website">Website</option>
-                                            <option value="reception">Reception</option>
+                                            <option value="reception">{editBooking.isDd ? "Reception" : "Manual"}</option>
                                             <option value="admin-bulk">Admin Bulk</option>
                                         </select>
                                     </div>

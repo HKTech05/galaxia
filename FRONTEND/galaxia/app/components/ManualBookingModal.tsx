@@ -848,7 +848,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex flex-shrink-0 items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
                     <div>
-                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Plus className="text-purple-600" size={20} /> Add Walk-in Booking</h3>
+                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Plus className="text-purple-600" size={20} /> Add Manual Booking</h3>
                         <p className="text-xs font-medium text-slate-500 mt-0.5">Full 100% payment collection required.</p>
                     </div>
                     <button

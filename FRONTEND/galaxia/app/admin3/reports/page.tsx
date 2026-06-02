@@ -93,7 +93,10 @@ export default function ReportsPage() {
         });
         const bySource: Record<string, number> = {};
         filteredBookings.forEach(b => {
-            const src = b.source || "website";
+            let src = b.source || "website";
+            if (b._business === "staycation" && src === "walk-in") {
+                src = "manual";
+            }
             bySource[src] = (bySource[src] || 0) + 1;
         });
         return { total, collected, pending, gst, avgBooking, byProperty, bySource, count: filteredBookings.length };
@@ -315,7 +318,17 @@ export default function ReportsPage() {
                                             <td className="py-2.5 px-3 text-slate-600">{ci.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{nights}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-emerald-600">{fmt(b.totalAmount || 0)}</td>
-                                            <td className="py-2.5 px-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${b.source === "admin-bulk" ? "bg-purple-50 text-purple-700" : b.source === "walk-in" ? "bg-amber-50 text-amber-700" : "bg-indigo-50 text-indigo-700"}`}>{b.source || "website"}</span></td>
+                                            <td className="py-2.5 px-3">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                                    b.source === "admin-bulk" 
+                                                        ? "bg-purple-50 text-purple-700" 
+                                                        : (b.source === "walk-in" || (b._business === "staycation" && b.source === "manual")) 
+                                                            ? "bg-amber-50 text-amber-700" 
+                                                            : "bg-indigo-50 text-indigo-700"
+                                                }`}>
+                                                    {(b._business === "staycation" && b.source === "walk-in") ? "manual" : (b.source || "website")}
+                                                </span>
+                                            </td>
                                             <td className="py-2.5 px-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${b.status === "checked_in" ? "bg-indigo-50 text-indigo-700" : b.status === "checked_out" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{b.status}</span></td>
                                         </tr>
                                     );
