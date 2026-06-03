@@ -48,6 +48,7 @@ type Event = {
     amountPaid: string;
     amountToCollect: string;
     paymentDetails: string;
+    paymentMethod?: string;
     bookingRef?: string;
     status?: string;
     isMaintenance?: boolean;
@@ -142,6 +143,7 @@ export default function Admin1Dashboard() {
                     amountPaid: `₹${(b.amountPaid || 0).toLocaleString()}`,
                     amountToCollect: `₹${(b.amountToCollect || 0).toLocaleString()}`,
                     paymentDetails: b.paymentDetails || "N/A",
+                    paymentMethod: b.paymentMethod,
                     bookingRef: b.bookingRef || "",
                     status: b.status || "confirmed",
                     isMaintenance: b.customerName.toLowerCase().includes("maintenance") || b.status === "maintenance",
@@ -1168,7 +1170,9 @@ export default function Admin1Dashboard() {
                                                 <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-100">
                                                     <div>
                                                         <span className="text-xs text-emerald-600 font-bold block">Amount Paid</span>
-                                                        <span className="text-[10px] text-emerald-500 font-medium line-clamp-2">{activeEvent.paymentDetails}</span>
+                                                        <span className="text-[10px] text-emerald-500 font-medium line-clamp-2">
+                                                            {activeEvent.paymentMethod === "CASH & UPI" ? "Collected via CASH & UPI" : activeEvent.paymentDetails}
+                                                        </span>
                                                     </div>
                                                     <span className="text-base font-bold text-emerald-700 whitespace-nowrap ml-4">{activeEvent.amountPaid}</span>
                                                 </div>

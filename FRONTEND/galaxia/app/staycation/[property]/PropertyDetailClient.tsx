@@ -504,6 +504,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                     initialCheckIn={calCheckIn}
                                     initialCheckOut={calCheckOut}
                                     isDisabled={isPropertyDisabled}
+                                    tall={true}
                                 />
                                 {isPropertyDisabled ? (
                                     <div className="mt-5 w-full bg-red-50 border border-red-200 text-red-600 font-cinzel font-semibold text-sm px-8 py-3 rounded-lg text-center uppercase tracking-widest">Under Maintenance</div>

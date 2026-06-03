@@ -741,6 +741,7 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
                 amountToCollect: { decrement: collectAmount },
                 paymentStatus: finalStatus,
                 paymentMethod: finalMethod,
+                paymentDetails: finalMethod === "CASH & UPI" ? "Collected via CASH & UPI" : undefined,
             },
         });
 

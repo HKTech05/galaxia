@@ -18,6 +18,7 @@ interface CalendarProps {
     isDisabled?: boolean;
     totalUnits?: number;
     hidePrice?: boolean; // Hide prices (for multi-villa bookings with different prices)
+    tall?: boolean;
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -71,7 +72,7 @@ const getMaintenancePrice = (date: Date) => {
     return { price: "Maintenance", numPrice: 0, type: "booked" as const };
 };
 
-export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", saturdayPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits, hidePrice }: CalendarProps) {
+export default function AvailabilityCalendar({ propertyId: propId, propertySlug, subPropertyId, weekdayPrice = "0", weekendPrice = "0", saturdayPrice, primeDatePrice, dateOverrides, onDatesChange, compact = false, initialCheckIn, initialCheckOut, isDisabled, totalUnits, hidePrice, tall = false }: CalendarProps) {
     // Resolve slug to numeric ID if propertySlug is provided
     const [resolvedId, setResolvedId] = useState<number | null>(null);
     useEffect(() => {
@@ -295,7 +296,7 @@ export default function AvailabilityCalendar({ propertyId: propId, propertySlug,
                         <div
                             key={i}
                             onClick={() => handleDayClick(day)}
-                            className={`relative border-t border-border-light/50 ${compact ? "py-1 min-h-[40px]" : "py-1.5 sm:py-2 min-h-[52px] sm:min-h-[60px]"} ${day && !past && !booked ? "cursor-pointer hover:bg-antique-gold/5 transition-colors" : ""
+                            className={`relative border-t border-border-light/50 ${compact ? "py-1 min-h-[40px]" : tall ? "py-1.5 sm:py-2 lg:py-3.5 min-h-[52px] sm:min-h-[60px] lg:min-h-[78px]" : "py-1.5 sm:py-2 min-h-[52px] sm:min-h-[60px]"} ${day && !past && !booked ? "cursor-pointer hover:bg-antique-gold/5 transition-colors" : ""
                                 } ${selected ? "!bg-antique-gold/15" : ""} ${inRange ? "bg-antique-gold/5" : ""}`}
                         >
                             {day && (

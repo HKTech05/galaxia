@@ -1252,7 +1252,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                 <p className="text-xs text-slate-500 mt-1">Base ₹{calcResult.basePrice.toLocaleString('en-IN')} + Taxes ₹{calcResult.gstAmount.toLocaleString('en-IN')}</p>
                                 {(calcResult.specialDiscount ?? 0) > 0 && (
                                     <p className="text-xs text-emerald-600 font-bold mt-1">
-                                        Special Guest Discount: -₹{(calcResult.specialDiscount ?? 0).toLocaleString('en-IN')}
+                                        {manualForm.property?.toLowerCase().includes("la paraiso") ? "Discount" : "Special Guest Discount"}: -₹{(calcResult.specialDiscount ?? 0).toLocaleString('en-IN')}
                                     </p>
                                 )}
                             </div>

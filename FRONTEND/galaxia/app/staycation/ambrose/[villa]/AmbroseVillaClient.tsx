@@ -131,6 +131,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                 maxPersons: villa.maxPersons || 8,
                 maxAdults: (villa as any).maxAdults || parent.maxAdults || 6,
                 maxKids: (villa as any).maxKids ?? parent.maxKids ?? 2,
+                property: "ambrose",
             });
             localStorage.setItem("ambrose_cart", JSON.stringify(cart));
             if (calCheckIn && calCheckOut) {
@@ -315,6 +316,7 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                                 initialCheckIn={calCheckIn}
                                 initialCheckOut={calCheckOut}
                                 isDisabled={isVillaDisabled}
+                                tall={true}
                             />
                             <div className="mt-5 flex flex-col sm:flex-row gap-3">
                                 <Link href={bookNowUrl} className="block w-full sm:flex-1 bg-gradient-to-r from-antique-gold to-dark-gold text-white font-cinzel font-semibold text-sm px-6 py-3 rounded-lg text-center hover:shadow-lg hover:shadow-antique-gold/20 transition-all duration-300">

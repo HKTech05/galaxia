@@ -312,6 +312,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 initialCheckOut={calCheckOut}
                                 isDisabled={isCottageDisabled}
                                 totalUnits={cottage.id === 'standard-cottage' ? 14 : undefined}
+                                tall={cottage.id !== 'standard-cottage'}
                             />
                             <div className="mt-5 flex flex-col sm:flex-row gap-3">
                                 {isInCart ? (

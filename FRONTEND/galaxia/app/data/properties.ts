@@ -350,7 +350,7 @@ export const properties: Record<string, PropertyData> = {
                 configuration: ["Double Bed", "Smart TV", "Air Conditioner", "Washroom", "Indoor Private Pool", "Garden Sitting Area", "Gaming Zone", "WiFi", "Boating"],
                 maxPersons: 4,
                 maxAdults: 3,
-                maxKids: 1,
+                maxKids: 3,
                 pricing: {
                     weekday: { price: "4,950", persons: "2 persons with meals" },
                     weekend: { price: "6,950", persons: "2 persons with meals" },
