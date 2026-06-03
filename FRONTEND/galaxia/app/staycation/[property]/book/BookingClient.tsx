@@ -1574,7 +1574,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     <div className="flex justify-between items-center"><span>Base Price</span><span>{formatPrice(roomPrice)}</span></div>
                                     {extraCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Extra Guests</span><span>{formatPrice(extraCharges)}</span></div>}
                                     {petCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Pets ({pets} × ₹{PET_CHARGE})</span><span>{formatPrice(petCharges)}</span></div>}
-                                    {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>{property.id.includes("la-paraiso") ? "Discount" : "Special Guest Discount"}</span><span>-{formatPrice(specialDiscount)}</span></div>}
+                                    {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     {celebrationAddon && <div className="flex justify-between items-center text-xs text-amber-700"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
                                     <div className="flex justify-between items-center"><span>Taxes</span><span>{formatPrice(taxesAndFees)}</span></div>
@@ -1678,7 +1678,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <div className="border-t border-border-light pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(roomPrice + extraCharges)}</span></div>
                                 {celebrationAddon && <div className="flex justify-between text-amber-700 text-xs"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
-                                {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>{property.id.includes("la-paraiso") ? "Discount" : "Special Guest Discount"}</span><span>-{formatPrice(specialDiscount)}</span></div>}
+                                {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">Taxes ({property.gstPercent}%)</span><span>{formatPrice(taxesAndFees)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(totalAmount)}</span></div>

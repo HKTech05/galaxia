@@ -1297,7 +1297,7 @@ export default function BookMultiPage() {
                                     <div className="flex justify-between"><span className="text-text-secondary">Dates</span><span className="text-text-primary">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)}</span></div>
                                     <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} item{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
-                                    {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>{cart.some(item => (item.property || "").toLowerCase() === "la-paraiso") ? "Discount" : "Special Guest Discount"}</span><span>-{formatPrice(specialDiscount)}</span></div>}
+                                    {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                     <div className="flex justify-between"><span className="text-text-secondary">Taxes</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
                                     <div className="border-t border-border-light my-2" />
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
@@ -1569,7 +1569,7 @@ export default function BookMultiPage() {
                             <div className="border-t border-border-light mt-4 pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(grandSubtotal)}</span></div>
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
-                                {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>{cart.some(item => (item.property || "").toLowerCase() === "la-paraiso") ? "Discount" : "Special Guest Discount"}</span><span>-{formatPrice(specialDiscount)}</span></div>}
+                                {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">Taxes (5%)</span><span>{formatPrice(gst)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                 {totalSecurityDeposit > 0 && <div className="flex justify-between text-xs text-sky-600 mt-1"><span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span><span>{formatPrice(totalSecurityDeposit)}</span></div>}
