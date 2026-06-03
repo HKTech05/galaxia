@@ -266,9 +266,17 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
                 const sections = [
                     {
+                        title: "Cancellation Policy",
+                        items: [
+                            "21+ days before check-in: 10% deduction from the booking amount.",
+                            "11-20 days before check-in: 50% of the booking amount will be retained.",
+                            "Cancellation within 10 days of check-in: No refund applicable.",
+                            "Festival dates, long weekends, and peak season bookings are strictly non-refundable.",
+                        ],
+                    },
+                    {
                         title: "Booking Policy",
                         items: [
-                            "All bookings are strictly non-transferable and non-refundable.",
                             "Date change requests are subject to availability and management approval only.",
                         ],
                     },
@@ -476,7 +484,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
                 ${ddRow("Total Amount", fmtCurrency(booking.totalAmount), { bold: true, color: DD_ROSE, borderTop: true })}
                 ${ddDivider()}
                 ${ddRow("Advance Paid", advancePaid, { color: booking.amountPaid > 0 ? "#86efac" : DD_ROSE_DIM })}
-                ${ddRow("Balance Due at Venue", balanceDue, { bold: true })}
+                ${ddRow("Balance Due at Venue (Pay in Cash Only)", balanceDue, { bold: true })}
             </table>
         </div>
 
@@ -500,7 +508,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
                 </td></tr>
                 <tr><td style="padding: 6px 0; font-size: 13px; color: ${DD_ROSE_DIM}; line-height: 1.5;">
                     <span style="color: ${DD_ROSE}; font-weight: 700; margin-right: 8px;">4.</span>
-                    The remaining balance must be paid at the venue prior to your screening.
+                    The remaining balance must be paid in Cash Only at the venue prior to your screening.
                 </td></tr>
             </table>
         </div>

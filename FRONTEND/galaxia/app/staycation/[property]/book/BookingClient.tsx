@@ -499,6 +499,61 @@ export default function BookingClient({ property }: BookingClientProps) {
     const petCharges = pets * PET_CHARGE;
     const subtotal = roomPrice + extraCharges + petCharges;
 
+    const specialDiscount = (() => {
+        if (!checkInDate || nights <= 0) return 0;
+        const pSlug = property.id.toLowerCase();
+        const sSlug = (selectedRoom?.id || "").toLowerCase();
+        
+        const isAmbroseVilla = pSlug === "ambrose" && (sSlug === "take-1" || sSlug === "alta" || sSlug === "santorini");
+        const isLaParaiso = pSlug === "la-paraiso";
+        
+        if (!isAmbroseVilla && !isLaParaiso) return 0;
+        
+        let totalDiscount = 0;
+        const totalGuests = adults + kids;
+        
+        for (let i = 0; i < nights; i++) {
+            const d = new Date(checkInDate);
+            d.setDate(d.getDate() + i);
+            const day = d.getDay();
+            const isSaturday = day === 6;
+            const isWeekend = day === 0 || day === 5 || day === 6;
+            
+            if (isAmbroseVilla) {
+                if (isSaturday && totalGuests === 4) {
+                    totalDiscount += 500;
+                }
+            } else if (isLaParaiso) {
+                if (!isWeekend) {
+                    if (totalGuests === 4) {
+                        const exAdults = Math.max(0, adults - 2);
+                        const freeKidsSlots = Math.max(0, 2 - adults);
+                        const extraKids = Math.max(0, kids - freeKidsSlots);
+                        const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
+                        const subtotalForNight = 4950 + extraChargesForNight;
+                        if (subtotalForNight > 6500) {
+                            totalDiscount += (subtotalForNight - 6500);
+                        }
+                    }
+                } else {
+                    if (totalGuests >= 3) {
+                        let extraAdultsCount = 0;
+                        let extraKidsCount = 0;
+                        for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
+                            if (slot <= adults) {
+                                extraAdultsCount++;
+                            } else {
+                                extraKidsCount++;
+                            }
+                        }
+                        totalDiscount += (extraAdultsCount * extraAdultCharge) + (extraKidsCount * kidsChargeNum);
+                    }
+                }
+            }
+        }
+        return totalDiscount;
+    })();
+
     // Discount
     let discountAmount = 0;
     if (appliedCoupon) {
@@ -510,8 +565,8 @@ export default function BookingClient({ property }: BookingClientProps) {
     }
 
     const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
-    const taxesAndFees = Math.round((subtotal - discountAmount) * property.gstPercent / 100);
-    const totalAmount = Math.round((subtotal - discountAmount + addonTotal + taxesAndFees) / 10) * 10;
+    const taxesAndFees = Math.round((subtotal - discountAmount - specialDiscount) * property.gstPercent / 100);
+    const totalAmount = Math.round((subtotal - discountAmount - specialDiscount + addonTotal + taxesAndFees) / 10) * 10;
 
     const totalGuests = adults + kids;
     const maxGuests = selectedRoom?.maxPersons || property.maxPersons || 4;
@@ -1517,6 +1572,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     <div className="flex justify-between items-center"><span>Base Price</span><span>{formatPrice(roomPrice)}</span></div>
                                     {extraCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Extra Guests</span><span>{formatPrice(extraCharges)}</span></div>}
                                     {petCharges > 0 && <div className="flex justify-between items-center text-text-secondary text-xs"><span>Pets ({pets} × ₹{PET_CHARGE})</span><span>{formatPrice(petCharges)}</span></div>}
+                                    {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>Special Guest Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     {celebrationAddon && <div className="flex justify-between items-center text-xs text-amber-700"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
                                     <div className="flex justify-between items-center"><span>Taxes</span><span>{formatPrice(taxesAndFees)}</span></div>
@@ -1544,8 +1600,13 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         <h2 className="font-cinzel text-xs font-semibold tracking-wider text-text-primary uppercase">Terms & Conditions</h2>
                                     </div>
                                     <div className="p-5">
-                                        <p className="font-inter text-[11px] font-semibold text-text-primary mb-1">No Cancellation</p>
-                                        <p className="font-inter text-[10px] text-text-secondary leading-relaxed">This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.</p>
+                                        <p className="font-inter text-[11px] font-semibold text-text-primary mb-1">Cancellation Policy</p>
+                                        <ul className="list-disc pl-4 space-y-1 text-text-secondary text-[10px] leading-relaxed">
+                                            <li>21+ days before check-in: 10% deduction from the booking amount.</li>
+                                            <li>11–20 days before check-in: 50% of the booking amount will be retained.</li>
+                                            <li>Cancellation within 10 days of check-in: No refund applicable.</li>
+                                            <li>Festival dates, long weekends, and peak season bookings are strictly non-refundable.</li>
+                                        </ul>
                                         <div className="mt-3 pt-3 border-t border-border-light">
                                             <p className="font-inter text-[11px] font-semibold text-text-primary mb-1">Payment Policy</p>
                                             <p className="font-inter text-[10px] text-text-secondary leading-relaxed">80% payable online at booking · 20% payable at the venue</p>
@@ -1615,6 +1676,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <div className="border-t border-border-light pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(roomPrice + extraCharges)}</span></div>
                                 {celebrationAddon && <div className="flex justify-between text-amber-700 text-xs"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
+                                {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>Special Guest Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">Taxes ({property.gstPercent}%)</span><span>{formatPrice(taxesAndFees)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(totalAmount)}</span></div>
@@ -1634,8 +1696,13 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <h3 className="font-cinzel text-sm font-semibold text-text-primary mb-3 uppercase tracking-wider">Terms & Conditions</h3>
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-inter text-xs font-semibold text-red-700 mb-1">No Cancellation</h4>
-                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.</p>
+                                    <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Cancellation Policy</h4>
+                                    <ul className="list-disc pl-4 space-y-1 text-text-secondary text-[10px] leading-relaxed">
+                                        <li>21+ days before check-in: 10% deduction from the booking amount.</li>
+                                        <li>11–20 days before check-in: 50% of the booking amount will be retained.</li>
+                                        <li>Cancellation within 10 days of check-in: No refund applicable.</li>
+                                        <li>Festival dates, long weekends, and peak season bookings are strictly non-refundable.</li>
+                                    </ul>
                                 </div>
                                 <div className="border-t border-border-light pt-3">
                                     <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Payment Policy</h4>

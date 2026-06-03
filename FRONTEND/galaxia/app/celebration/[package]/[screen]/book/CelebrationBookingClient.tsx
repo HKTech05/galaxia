@@ -994,7 +994,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                         <span className="text-cel-text">{formatPrice(payNow)}</span>
                                     </div>
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-cel-text-secondary">Due at Venue (50%)</span>
+                                        <span className="text-cel-text-secondary">Due at Venue (50%) - Pay in Cash Only</span>
                                         <span className="text-cel-text">{formatPrice(payAtVenue)}</span>
                                     </div>
                                 </div>
@@ -1305,7 +1305,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <span className="text-cel-text">{formatPrice(payNow)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-cel-text-secondary">Due at Venue (50%)</span>
+                                    <span className="text-cel-text-secondary">Due at Venue (50%) - Pay in Cash Only</span>
                                     <span className="text-cel-text">{formatPrice(payAtVenue)}</span>
                                 </div>
                             </div>
@@ -1359,7 +1359,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     {cakeCharge > 0 && <div className="flex justify-between"><span className="text-cel-text-secondary">🎂 Cake{cakeMessage ? ` — "${cakeMessage}"` : ''}</span><span className="text-cel-text">{formatPrice(cakeCharge)}</span></div>}
                                     <div className="flex justify-between pt-3 border-t border-cel-border"><span className="text-cel-text font-semibold">Total</span><span className="text-rose-medium font-cinzel font-bold text-xl">{formatPrice(total)}</span></div>
                                     <div className="flex justify-between mt-2"><span className="text-cel-text-secondary">Pay Now (50%)</span><span className="text-cel-text font-semibold">{formatPrice(payNow)}</span></div>
-                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Due at Venue (50%)</span><span className="text-cel-text">{formatPrice(payAtVenue)}</span></div>
+                                    <div className="flex justify-between"><span className="text-cel-text-secondary">Due at Venue (50%) - Pay in Cash Only</span><span className="text-cel-text">{formatPrice(payAtVenue)}</span></div>
                                 </div>
                             </div>
 

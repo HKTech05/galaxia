@@ -1800,6 +1800,7 @@ export default function StayBookingsPage() {
                                                 status: editForm.status,
                                                 source: editForm.source,
                                             });
+                                        } else {
                                             // Staycation booking edit
                                             const finalAddons = [
                                                 ...(editForm.addons || []).filter((a: any) => a.name !== 'Food Preference'),

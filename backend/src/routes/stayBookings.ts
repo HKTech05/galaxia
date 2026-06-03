@@ -611,13 +611,30 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
 
         // Update booking payment status
         const updateData: any = {};
+
+        const allPayments = await prisma.bookingPayment.findMany({
+            where: {
+                staycationBookingId: bookingId,
+                paymentType: paymentType
+            }
+        });
+        const methods = Array.from(new Set(allPayments.map(p => p.method?.toUpperCase()).filter(Boolean)));
+        let finalMethod = method;
+        if (methods.includes("CASH") && methods.includes("UPI")) {
+            finalMethod = "CASH & UPI";
+        } else if (methods.includes("CASH")) {
+            finalMethod = "Cash";
+        } else if (methods.includes("UPI")) {
+            finalMethod = "UPI";
+        }
+
         if (paymentType === "balance") {
             updateData.balanceCollected = true;
-            updateData.balanceMethod = method;
+            updateData.balanceMethod = finalMethod;
             updateData.balanceCollectedAt = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
         } else if (paymentType === "deposit") {
             updateData.depositCollected = true;
-            updateData.depositMethod = method;
+            updateData.depositMethod = finalMethod;
             updateData.depositCollectedAt = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
         }
 

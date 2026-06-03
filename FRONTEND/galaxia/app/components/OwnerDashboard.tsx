@@ -1125,9 +1125,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest'].includes(p.name));
 
         const occupiedAmbroseCount = liveAmbrose.filter((v: any) => v.booked).length;
-        // Amstel Nest: Standard Cottage may have multiple bookings (14 units), count them
         const amstelStdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
-        const amstelStdBooked = amstelStdCottage?._allBookings?.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (amstelStdCottage?.booked ? 1 : 0);
+        const selectedDateStr = `${propertyDate.getFullYear()}-${String(propertyDate.getMonth() + 1).padStart(2, '0')}-${String(propertyDate.getDate()).padStart(2, '0')}`;
+        const activeStdBookings = amstelStdCottage?._allBookings?.filter((bk: any) => bk.checkOutDate?.slice(0, 10) !== selectedDateStr || bk.checkInDate?.slice(0, 10) === selectedDateStr) || [];
+        const amstelStdBooked = activeStdBookings.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (amstelStdCottage?.booked ? 1 : 0);
         const amstelOthersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
         const occupiedAmstelCount = amstelStdBooked + amstelOthersBooked;
         const totalAmstelUnits = 14 + liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
@@ -2172,7 +2173,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase font-extrabold tracking-wider">
                                     {(() => {
                                         const stdCottage = liveAmstel.find((v: any) => v.name === 'Standard Cottage');
-                                        const stdBooked = stdCottage?._allBookings?.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (stdCottage?.booked ? 1 : 0);
+                                        const selectedDateStr = `${propertyDate.getFullYear()}-${String(propertyDate.getMonth() + 1).padStart(2, '0')}-${String(propertyDate.getDate()).padStart(2, '0')}`;
+                                        const activeStdBookings = stdCottage?._allBookings?.filter((bk: any) => bk.checkOutDate?.slice(0, 10) !== selectedDateStr || bk.checkInDate?.slice(0, 10) === selectedDateStr) || [];
+                                        const stdBooked = activeStdBookings.reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0) || (stdCottage?.booked ? 1 : 0);
                                         const othersBooked = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage' && v.booked).length;
                                         const othersTotal = liveAmstel.filter((v: any) => v.name !== 'Standard Cottage').length;
                                         return `${stdBooked + othersBooked}/${14 + othersTotal} Occupied`;
@@ -2515,8 +2518,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             // Determine remaining payment method from payments array
             let remainingPayMethod = '';
             if (collected > 0 && b.payments && Array.isArray(b.payments)) {
-                const balancePayment = b.payments.find((p: any) => p.paymentType === 'balance');
-                if (balancePayment) remainingPayMethod = (balancePayment.method || '').toUpperCase();
+                const balancePayments = b.payments.filter((p: any) => p.paymentType === 'balance');
+                const uniqueMethods = Array.from(new Set(balancePayments.map((p: any) => (p.method || '').toUpperCase()).filter(Boolean)));
+                if (uniqueMethods.includes('CASH') && uniqueMethods.includes('UPI')) {
+                    remainingPayMethod = 'CASH & UPI';
+                } else if (uniqueMethods.length > 0) {
+                    remainingPayMethod = uniqueMethods.join(' & ');
+                }
             }
 
             return {

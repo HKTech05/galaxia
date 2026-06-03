@@ -213,6 +213,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 extraAdultCharge: 0,
                 extraKidsCharge: 0,
                 nightlyRoomRate: 0,
+                specialDiscount: 0,
             };
         }
         if (isAmstel && amstelStandardCount === 0 && !amstelFamilySelected) {
@@ -224,6 +225,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 extraAdultCharge: 0,
                 extraKidsCharge: 0,
                 nightlyRoomRate: 0,
+                specialDiscount: 0,
             };
         }
 
@@ -292,7 +294,84 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         extraAdultTotal = extraAdults * sampleExtraAdultPrice * nights;
         extraKidsTotal = extraKids * sampleKidsPrice * nights;
 
-        let subtotal = roomTotal + extraAdultTotal + extraKidsTotal;
+        let specialDiscount = 0;
+        if (isAmbrose) {
+            const numVillas = selectedAmbroseVillas.length;
+            if (numVillas > 0) {
+                let guestsLeft = manualForm.guests;
+                let kidsLeft = manualForm.kids;
+                const villaGuests: Record<string, number> = {};
+                const villaKids: Record<string, number> = {};
+                selectedAmbroseVillas.forEach((v, idx) => {
+                    if (idx === numVillas - 1) {
+                        villaGuests[v] = Math.max(1, guestsLeft);
+                        villaKids[v] = Math.max(0, kidsLeft);
+                    } else {
+                        const g = Math.max(1, Math.round(manualForm.guests / numVillas));
+                        const k = Math.round(manualForm.kids / numVillas);
+                        villaGuests[v] = g;
+                        villaKids[v] = k;
+                        guestsLeft -= g;
+                        kidsLeft -= k;
+                    }
+                });
+
+                for (const v of selectedAmbroseVillas) {
+                    const isAmbroseVilla = v === "TAKE-1" || v === "ALTA" || v === "SANTORINI";
+                    if (isAmbroseVilla) {
+                        const totalG = villaGuests[v] + villaKids[v];
+                        if (totalG === 4) {
+                            for (let i = 0; i < nights; i++) {
+                                const currentDate = new Date(start);
+                                currentDate.setDate(start.getDate() + i);
+                                const day = currentDate.getDay();
+                                const isSaturday = day === 6;
+                                if (isSaturday) {
+                                    specialDiscount += 500;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (manualForm.property.includes("La Paraiso")) {
+            const totalG = manualForm.guests + manualForm.kids;
+            const extraAdultCharge = 1200;
+            const kidsChargeNum = 800;
+            for (let i = 0; i < nights; i++) {
+                const currentDate = new Date(start);
+                currentDate.setDate(start.getDate() + i);
+                const day = currentDate.getDay();
+                const isWeekend = day === 0 || day === 5 || day === 6;
+                if (!isWeekend) {
+                    if (totalG === 4) {
+                        const exAdults = Math.max(0, manualForm.guests - 2);
+                        const freeKidsSlots = Math.max(0, 2 - manualForm.guests);
+                        const extraKids = Math.max(0, manualForm.kids - freeKidsSlots);
+                        const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
+                        const subtotalForNight = 4950 + extraChargesForNight;
+                        if (subtotalForNight > 6500) {
+                            specialDiscount += (subtotalForNight - 6500);
+                        }
+                    }
+                } else {
+                    if (totalG >= 3) {
+                        let extraAdultsCount = 0;
+                        let extraKidsCount = 0;
+                        for (let slot = 3; slot <= Math.min(4, totalG); slot++) {
+                            if (slot <= manualForm.guests) {
+                                extraAdultsCount++;
+                            } else {
+                                extraKidsCount++;
+                            }
+                        }
+                        specialDiscount += (extraAdultsCount * extraAdultCharge) + (extraKidsCount * kidsChargeNum);
+                    }
+                }
+            }
+        }
+
+        let subtotal = roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount;
 
         if (manualDecoration) subtotal += DECORATION_PRICE;
 
@@ -327,6 +406,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             extraAdultCharge: Math.round(extraAdultTotal),
             extraKidsCharge: Math.round(extraKidsTotal),
             nightlyRoomRate: Math.round(roomTotal / nights),
+            specialDiscount: Math.round(specialDiscount),
         };
     };
 
@@ -757,7 +837,20 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     const extraKidsChargeV = extraKidsV * 1000 * nights;
                     const decorChargeV = (idx === 0 && manualDecoration) ? DECORATION_PRICE : 0;
 
-                    villaRawBases[v] = roomTotals[v] + extraAdultChargeV + extraKidsChargeV + decorChargeV;
+                    let vSpecialDiscount = 0;
+                    const isAmbroseVilla = v === "TAKE-1" || v === "ALTA" || v === "SANTORINI";
+                    if (isAmbroseVilla && (guestsV + villaKids[v]) === 4) {
+                        for (let i = 0; i < nights; i++) {
+                            const currentDate = new Date(start);
+                            currentDate.setDate(start.getDate() + i);
+                            const day = currentDate.getDay();
+                            if (day === 6) {
+                                vSpecialDiscount += 500;
+                            }
+                        }
+                    }
+
+                    villaRawBases[v] = roomTotals[v] + extraAdultChargeV + extraKidsChargeV + decorChargeV - vSpecialDiscount;
                 });
 
                 const totalRawBase = Object.values(villaRawBases).reduce((s, val) => s + val, 0);
@@ -1157,6 +1250,11 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                     <IndianRupee size={24} className="mr-1" /> {calcResult.totalAmount.toLocaleString('en-IN')}
                                 </h2>
                                 <p className="text-xs text-slate-500 mt-1">Base ₹{calcResult.basePrice.toLocaleString('en-IN')} + Taxes ₹{calcResult.gstAmount.toLocaleString('en-IN')}</p>
+                                {(calcResult.specialDiscount ?? 0) > 0 && (
+                                    <p className="text-xs text-emerald-600 font-bold mt-1">
+                                        Special Guest Discount: -₹{(calcResult.specialDiscount ?? 0).toLocaleString('en-IN')}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="bg-white p-1 rounded-lg border border-purple-200 flex">

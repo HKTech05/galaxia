@@ -544,6 +544,15 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                         </div>
                                     </div>
                                 </div>
+                                <div className="rounded-xl border border-border-light bg-white p-5 sm:p-6 shadow-sm">
+                                    <h3 className="font-cinzel text-base sm:text-lg font-semibold text-text-primary mb-4">Cancellation Policy</h3>
+                                    <ul className="list-disc pl-4 space-y-2 text-xs text-text-secondary font-inter">
+                                        <li><strong>21+ days before check-in:</strong> 10% deduction from the booking amount.</li>
+                                        <li><strong>11–20 days before check-in:</strong> 50% of the booking amount will be retained.</li>
+                                        <li><strong>Cancellation within 10 days of check-in:</strong> No refund applicable.</li>
+                                        <li>Festival dates, long weekends, and peak season bookings are strictly non-refundable.</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>

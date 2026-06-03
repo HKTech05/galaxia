@@ -88,7 +88,7 @@ function calculateUnitPrice(
     const end = new Date(checkOut + "T00:00:00");
     const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
-    let roomTotal = 0, extraAdultTotal = 0, extraKidsTotal = 0;
+    let roomTotal = 0, extraAdultTotal = 0, extraKidsTotal = 0, specialDiscount = 0;
 
     for (let i = 0; i < nights; i++) {
         const d = new Date(start); d.setDate(start.getDate() + i);
@@ -155,11 +155,50 @@ function calculateUnitPrice(
         const exA = Math.max(0, adults - baseGuests);
         const freeKids = Math.max(0, baseGuests - adults);
         const exK = Math.max(0, kids - freeKids);
+        const nightExtraCharges = (exA * extraAdultPrice) + (exK * kidsPrice);
         extraAdultTotal += exA * extraAdultPrice;
         extraKidsTotal += exK * kidsPrice;
+
+        // Apply special discount rules per night
+        const pSlug = resolvedProperty.toLowerCase();
+        const sSlug = (resolvedVilla || "").toLowerCase();
+        const totalGuests = adults + kids;
+
+        const isAmbroseVilla = pSlug.includes("ambrose") && (sSlug.includes("take-1") || sSlug.includes("alta") || sSlug.includes("santorini") || sSlug.includes("take 1"));
+        const isLaParaiso = pSlug.includes("la paraiso") || pSlug.includes("la-paraiso");
+
+        let nightDiscount = 0;
+        if (isAmbroseVilla) {
+            if (isSat && totalGuests === 4) {
+                nightDiscount = 500;
+            }
+        } else if (isLaParaiso) {
+            if (!isWe) {
+                if (totalGuests === 4) {
+                    const subtotalForNight = basePrice + nightExtraCharges;
+                    if (subtotalForNight > 6500) {
+                        nightDiscount = subtotalForNight - 6500;
+                    }
+                }
+            } else {
+                if (totalGuests >= 3) {
+                    let extraAdultsCount = 0;
+                    let extraKidsCount = 0;
+                    for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
+                        if (slot <= adults) {
+                            extraAdultsCount++;
+                        } else {
+                            extraKidsCount++;
+                        }
+                    }
+                    nightDiscount = (extraAdultsCount * extraAdultPrice) + (extraKidsCount * kidsPrice);
+                }
+            }
+        }
+        specialDiscount += nightDiscount;
     }
 
-    return { nights, roomTotal, extraAdultTotal, extraKidsTotal };
+    return { nights, roomTotal, extraAdultTotal, extraKidsTotal, specialDiscount };
 }
 
 // Full pricing calc — supports multi-villa via villaQuantities
@@ -174,6 +213,7 @@ function calculateQuotePrice(data: {
     let totalRoomTotal = 0;
     let totalExtraAdult = 0;
     let totalExtraKids = 0;
+    let totalSpecialDiscount = 0;
     let nights = 0;
     let totalUnits = 0;
 
@@ -190,6 +230,7 @@ function calculateQuotePrice(data: {
             totalRoomTotal += unit.roomTotal * qty;
             totalExtraAdult += unit.extraAdultTotal * qty;
             totalExtraKids += unit.extraKidsTotal * qty;
+            totalSpecialDiscount += unit.specialDiscount * qty;
             nights = unit.nights;
             totalUnits += qty;
         }
@@ -204,6 +245,7 @@ function calculateQuotePrice(data: {
         totalRoomTotal = unit.roomTotal;
         totalExtraAdult = unit.extraAdultTotal;
         totalExtraKids = unit.extraKidsTotal;
+        totalSpecialDiscount = unit.specialDiscount;
         nights = unit.nights;
         totalUnits = 1;
     }
@@ -212,7 +254,7 @@ function calculateQuotePrice(data: {
     let subtotal = totalRoomTotal + totalExtraAdult + totalExtraKids;
     if (data.decoration) subtotal += DECORATION_PRICE;
 
-    const baseAmount = Math.round(subtotal);
+    const baseAmount = Math.round(subtotal - totalSpecialDiscount);
     const gstAmount = Math.round(baseAmount * 0.05);
     let finalTotal = baseAmount + gstAmount + data.pets * 600;
     finalTotal = Math.round(finalTotal / 10) * 10;
@@ -225,6 +267,7 @@ function calculateQuotePrice(data: {
         extraKidsCharge: Math.round(totalExtraKids),
         decorationCharge: data.decoration ? DECORATION_PRICE : 0,
         subtotal: baseAmount,
+        specialDiscount: totalSpecialDiscount,
         gstAmount,
         petCharge: data.pets * 600,
         totalAmount: finalTotal,

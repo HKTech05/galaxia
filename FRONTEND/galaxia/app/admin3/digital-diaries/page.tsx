@@ -389,6 +389,18 @@ export default function Admin1Dashboard() {
     const [upiProofFile, setUpiProofFile] = useState<File | null>(null);
     const [showUpiProofPicker, setShowUpiProofPicker] = useState<'balance' | 'addons' | null>(null);
 
+    const [ddCollectedMethod, setDdCollectedMethod] = useState<"Cash" | "UPI" | "Split" | null>(null);
+    const [splitCashBalance, setSplitCashBalance] = useState<number>(0);
+    const [splitUpiBalance, setSplitUpiBalance] = useState<number>(0);
+
+    useEffect(() => {
+        setDdCollectedMethod(null);
+        setSplitCashBalance(0);
+        setSplitUpiBalance(0);
+        setUpiProofFile(null);
+        setShowUpiProofPicker(null);
+    }, [selectedEventId]);
+
     // No Show / Transfer states
     const [showNoShowModal, setShowNoShowModal] = useState(false);
     const [showTransferModal, setShowTransferModal] = useState(false);
@@ -603,9 +615,9 @@ export default function Admin1Dashboard() {
         }
     };
 
-    const handleCollectAll = async (mode: "Cash" | "UPI", proofFile?: File) => {
+    const handleCollectAll = async (mode: "Cash" | "UPI" | "Split", proofFile?: File) => {
         if (!activeEvent) return;
-        if (mode === "UPI" && !proofFile) {
+        if ((mode === "UPI" || (mode === "Split" && splitUpiBalance > 0)) && !proofFile) {
             setShowUpiProofPicker('balance');
             return;
         }
@@ -616,18 +628,36 @@ export default function Admin1Dashboard() {
             const balanceStr = activeEvent.amountToCollect.replace(/[₹,]/g, '');
             const balanceInt = parseInt(balanceStr);
             if (balanceInt > 0) {
-                await api.post(`/bookings/dd/${activeEvent.id}/payment`, {
-                    amount: balanceInt,
-                    method: mode
-                });
-                totalCollected += balanceInt;
+                if (mode === "Split") {
+                    if (splitCashBalance > 0) {
+                        await api.post(`/bookings/dd/${activeEvent.id}/payment`, {
+                            amount: splitCashBalance,
+                            method: "Cash"
+                        });
+                        totalCollected += splitCashBalance;
+                    }
+                    if (splitUpiBalance > 0) {
+                        await api.post(`/bookings/dd/${activeEvent.id}/payment`, {
+                            amount: splitUpiBalance,
+                            method: "UPI"
+                        });
+                        totalCollected += splitUpiBalance;
+                    }
+                } else {
+                    await api.post(`/bookings/dd/${activeEvent.id}/payment`, {
+                        amount: balanceInt,
+                        method: mode
+                    });
+                    totalCollected += balanceInt;
+                }
             }
 
             // Step 2: Collect unpaid add-ons (sequentially, after balance)
             const allAddons = activeEvent.rawAddons || [];
             const unpaidAddons = allAddons.filter(a => !a.isPaid);
             for (const addon of unpaidAddons) {
-                await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: mode });
+                const addonMethod = mode === "Split" ? "Cash" : mode;
+                await api.patch(`/bookings/dd/addons/${addon.id}/collect`, { method: addonMethod });
                 // Only count addon price if it's genuinely extra (no paid duplicate of same type)
                 const hasPaidDuplicate = allAddons.some(a => a.id !== addon.id && a.addonType === addon.addonType && a.isPaid);
                 if (!hasPaidDuplicate) {
@@ -635,35 +665,36 @@ export default function Admin1Dashboard() {
                 }
             }
 
-            // Step 3: Create UPI payment records for tracking (only for actual UPI payments with proof)
-            if (mode === "UPI" && proofFile && totalCollected > 0) {
+            // Step 3: Create UPI payment records for tracking
+            const actualUpiBalanceAmt = mode === "UPI" ? balanceInt : splitUpiBalance;
+            if ((mode === "UPI" || (mode === "Split" && splitUpiBalance > 0)) && proofFile && actualUpiBalanceAmt > 0) {
                 try {
                     // Log booking balance as a separate UPI entry
-                    if (balanceInt > 0) {
-                        const fd = new FormData();
-                        fd.append("propertySlug", "digital-diaries");
-                        fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
-                        fd.append("guestName", activeEvent.customerName || '');
-                        fd.append("amount", String(balanceInt));
-                        fd.append("paymentType", "balance");
-                        fd.append("note", `DD Balance Collection — ${activeEvent.screen} via UPI`);
-                        fd.append("file", proofFile, proofFile.name);
-                        await api.upload("/upi-payments/upload", fd);
-                    }
+                    const fd = new FormData();
+                    fd.append("propertySlug", "digital-diaries");
+                    fd.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
+                    fd.append("guestName", activeEvent.customerName || '');
+                    fd.append("amount", String(actualUpiBalanceAmt));
+                    fd.append("paymentType", "balance");
+                    fd.append("note", `DD Balance Collection — ${activeEvent.screen} via UPI`);
+                    fd.append("file", proofFile, proofFile.name);
+                    await api.upload("/upi-payments/upload", fd);
 
-                    // Log addon payments as a separate UPI entry (only for genuinely extra addons)
-                    const extraAddons = unpaidAddons.filter(a => !allAddons.some(x => x.id !== a.id && x.addonType === a.addonType && x.isPaid));
-                    const addonTotal = extraAddons.reduce((sum, a) => sum + a.price, 0);
-                    if (addonTotal > 0) {
-                        const fd2 = new FormData();
-                        fd2.append("propertySlug", "digital-diaries");
-                        fd2.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
-                        fd2.append("guestName", activeEvent.customerName || '');
-                        fd2.append("amount", String(addonTotal));
-                        fd2.append("paymentType", "addon");
-                        fd2.append("note", `DD Addon Collection — ${extraAddons.map(a => a.addonType).join(', ')} via UPI`);
-                        fd2.append("file", proofFile, proofFile.name);
-                        await api.upload("/upi-payments/upload", fd2);
+                    // Log addon payments as a separate UPI entry if mode was fully UPI (addons collected as UPI too)
+                    if (mode === "UPI") {
+                        const extraAddons = unpaidAddons.filter(a => !allAddons.some(x => x.id !== a.id && x.addonType === a.addonType && x.isPaid));
+                        const addonTotal = extraAddons.reduce((sum, a) => sum + a.price, 0);
+                        if (addonTotal > 0) {
+                            const fd2 = new FormData();
+                            fd2.append("propertySlug", "digital-diaries");
+                            fd2.append("bookingRef", activeEvent.bookingRef || `DD-${activeEvent.id}`);
+                            fd2.append("guestName", activeEvent.customerName || '');
+                            fd2.append("amount", String(addonTotal));
+                            fd2.append("paymentType", "addon");
+                            fd2.append("note", `DD Addon Collection — ${extraAddons.map(a => a.addonType).join(', ')} via UPI`);
+                            fd2.append("file", proofFile, proofFile.name);
+                            await api.upload("/upi-payments/upload", fd2);
+                        }
                     }
                 } catch (trackErr) {
                     console.error("Failed to record UPI payment:", trackErr);
@@ -673,6 +704,7 @@ export default function Admin1Dashboard() {
             alert(`Collected ₹${totalCollected.toLocaleString()} via ${mode}`);
             setUpiProofFile(null);
             setShowUpiProofPicker(null);
+            setDdCollectedMethod(null);
             fetchEvents(startDate);
         } catch (err: any) {
             console.error("Failed to collect payment:", err);
@@ -1151,39 +1183,129 @@ export default function Admin1Dashboard() {
 
                                                 {fullTotal > 0 && (
                                                     <>
-                                                        {showUpiProofPicker === 'balance' && (
-                                                            <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
-                                                                <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
-                                                                <div className="grid grid-cols-2 gap-2">
-                                                                    <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
-                                                                        <Camera size={18} className="text-indigo-500" />
-                                                                        <span className="text-[10px] font-bold text-indigo-700">Take Photo</span>
-                                                                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleCollectAll('UPI', file); e.target.value = ''; }} />
-                                                                    </label>
-                                                                    <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
-                                                                        <Upload size={18} className="text-indigo-500" />
-                                                                        <span className="text-[10px] font-bold text-indigo-700">From Gallery</span>
-                                                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleCollectAll('UPI', file); e.target.value = ''; }} />
-                                                                    </label>
+                                                        <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setDdCollectedMethod("Cash");
+                                                                    setSplitCashBalance(balanceInt);
+                                                                    setSplitUpiBalance(0);
+                                                                }}
+                                                                className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                                                                    ddCollectedMethod === "Cash"
+                                                                        ? "bg-rose-600 border-rose-700 text-white shadow-sm hover:bg-rose-700"
+                                                                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                                                }`}
+                                                            >
+                                                                Collect Cash
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setDdCollectedMethod("UPI");
+                                                                    setSplitCashBalance(0);
+                                                                    setSplitUpiBalance(balanceInt);
+                                                                }}
+                                                                className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                                                                    ddCollectedMethod === "UPI"
+                                                                        ? "bg-indigo-700 border-indigo-800 text-white shadow-sm hover:bg-indigo-800"
+                                                                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                                                }`}
+                                                            >
+                                                                Collect UPI
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setDdCollectedMethod("Split");
+                                                                    setSplitCashBalance(balanceInt);
+                                                                    setSplitUpiBalance(0);
+                                                                }}
+                                                                className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                                                                    ddCollectedMethod === "Split"
+                                                                        ? "bg-amber-600 border-amber-700 text-white shadow-sm hover:bg-amber-700"
+                                                                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                                                }`}
+                                                            >
+                                                                Custom Split
+                                                            </button>
+                                                        </div>
+
+                                                        {ddCollectedMethod === "Split" && (
+                                                            <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 animate-in fade-in slide-in-from-top-1">
+                                                                <div className="flex gap-2">
+                                                                    <div className="flex-1">
+                                                                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Cash Amount</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            value={splitCashBalance || ''}
+                                                                            onChange={e => {
+                                                                                const val = parseInt(e.target.value) || 0;
+                                                                                setSplitCashBalance(val);
+                                                                                setSplitUpiBalance(Math.max(0, balanceInt - val));
+                                                                            }}
+                                                                            className="w-full bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-bold"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">UPI Amount</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            value={splitUpiBalance || ''}
+                                                                            onChange={e => {
+                                                                                const val = parseInt(e.target.value) || 0;
+                                                                                setSplitUpiBalance(val);
+                                                                                setSplitCashBalance(Math.max(0, balanceInt - val));
+                                                                            }}
+                                                                            className="w-full bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-bold"
+                                                                        />
+                                                                    </div>
                                                                 </div>
-                                                                <button onClick={() => { setShowUpiProofPicker(null); setUpiProofFile(null); }} className="text-[10px] text-slate-500 mt-1.5 hover:text-red-500">Cancel</button>
+                                                                <p className="text-[10px] font-bold text-slate-500">
+                                                                    Total: ₹{splitCashBalance + splitUpiBalance} (Required: ₹{balanceInt.toLocaleString()})
+                                                                </p>
                                                             </div>
                                                         )}
-                                                        {showUpiProofPicker !== 'balance' && (
-                                                            <div className="flex gap-2 mt-3 animate-in fade-in slide-in-from-top-2">
-                                                                <button
-                                                                    onClick={() => handleCollectAll('Cash')}
-                                                                    className="flex-1 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-600/20"
-                                                                >
-                                                                    Collect Cash
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleCollectAll('UPI')}
-                                                                    className="flex-1 bg-white border-2 border-rose-600 text-rose-600 py-2 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors"
-                                                                >
-                                                                    Collect UPI
-                                                                </button>
+
+                                                        {((ddCollectedMethod === "UPI") || (ddCollectedMethod === "Split" && splitUpiBalance > 0)) && (
+                                                            <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200 animate-in fade-in">
+                                                                <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-2">Upload UPI Proof</p>
+                                                                {upiProofFile ? (
+                                                                    <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                                                        <CheckCircle2 size={14} className="text-emerald-600" />
+                                                                        <span className="text-xs font-bold text-emerald-700 truncate max-w-[150px]">{upiProofFile.name}</span>
+                                                                        <button type="button" onClick={() => setUpiProofFile(null)} className="text-xs text-red-500 font-bold ml-auto">Remove</button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                        <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
+                                                                            <Camera size={18} className="text-indigo-500" />
+                                                                            <span className="text-[10px] font-bold text-indigo-700">Take Photo</span>
+                                                                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUpiProofFile(file); e.target.value = ''; }} />
+                                                                        </label>
+                                                                        <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-2 border-dashed border-indigo-300 bg-white hover:bg-indigo-50 cursor-pointer transition-colors">
+                                                                            <Upload size={18} className="text-indigo-500" />
+                                                                            <span className="text-[10px] font-bold text-indigo-700">From Gallery</span>
+                                                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUpiProofFile(file); e.target.value = ''; }} />
+                                                                        </label>
+                                                                    </div>
+                                                                )}
                                                             </div>
+                                                        )}
+
+                                                        {ddCollectedMethod && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCollectAll(ddCollectedMethod, upiProofFile || undefined)}
+                                                                disabled={(ddCollectedMethod === "Split" && (splitCashBalance + splitUpiBalance !== balanceInt)) || ((ddCollectedMethod === "UPI" || (ddCollectedMethod === "Split" && splitUpiBalance > 0)) && !upiProofFile)}
+                                                                className="w-full mt-3 bg-rose-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                {ddCollectedMethod === "Split" && (splitCashBalance + splitUpiBalance !== balanceInt)
+                                                                    ? `Total must equal ₹${balanceInt.toLocaleString()}`
+                                                                    : ((ddCollectedMethod === "UPI" || (ddCollectedMethod === "Split" && splitUpiBalance > 0)) && !upiProofFile)
+                                                                        ? "Please upload UPI Proof"
+                                                                        : `Confirm Collection (₹${balanceInt.toLocaleString()})`}
+                                                            </button>
                                                         )}
                                                     </>
                                                 )}

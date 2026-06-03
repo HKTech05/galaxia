@@ -718,12 +718,29 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
             },
         });
 
+        const remaining = booking.amountToCollect - collectAmount;
+        const finalStatus = remaining <= 0 ? "paid" : "partial";
+
+        const allPayments = await prisma.bookingPayment.findMany({
+            where: { ddBookingId: bookingId }
+        });
+        const methods = Array.from(new Set(allPayments.map(p => p.method?.toUpperCase()).filter(Boolean)));
+        let finalMethod = method;
+        if (methods.includes("CASH") && methods.includes("UPI")) {
+            finalMethod = "CASH & UPI";
+        } else if (methods.includes("CASH")) {
+            finalMethod = "Cash";
+        } else if (methods.includes("UPI")) {
+            finalMethod = "UPI";
+        }
+
         await prisma.ddBooking.update({
             where: { id: bookingId },
             data: {
                 amountPaid: { increment: collectAmount },
                 amountToCollect: { decrement: collectAmount },
-                paymentStatus: "paid",
+                paymentStatus: finalStatus,
+                paymentMethod: finalMethod,
             },
         });
 

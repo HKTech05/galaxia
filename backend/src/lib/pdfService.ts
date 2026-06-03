@@ -263,7 +263,7 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
 
         y = drawPaymentRow(doc, "Advance Paid", booking.amountPaid > 0 ? fmtCurrency(booking.amountPaid) : "Not yet paid", y,
             { color: booking.amountPaid > 0 ? "#16a34a" : TEXT_MED });
-        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(booking.amountToCollect || 0), y, { bold: true });
+        y = drawPaymentRow(doc, "Balance Due at Venue (Pay in Cash Only)", fmtCurrency(booking.amountToCollect || 0), y, { bold: true });
         y += 10;
 
         // Google Maps link
@@ -278,7 +278,7 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
             "Please carry a valid government-issued photo ID for verification at the venue.",
             "This booking is non-refundable. No cancellations, amendments, or date changes are permitted once confirmed.",
             "Please arrive 10 minutes before your scheduled time slot for a smooth check-in.",
-            "The remaining balance must be paid at the venue prior to your screening.",
+            "The remaining balance must be paid in Cash Only at the venue prior to your screening.",
         ], y);
 
         // Footer
@@ -474,9 +474,17 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         // Build structured T&C sections
         const tcSections: { title: string; items: string[] }[] = [
             {
+                title: "Cancellation Policy",
+                items: [
+                    "21+ days before check-in: 10% deduction from the booking amount.",
+                    "11-20 days before check-in: 50% of the booking amount will be retained.",
+                    "Cancellation within 10 days of check-in: No refund applicable.",
+                    "Festival dates, long weekends, and peak season bookings are strictly non-refundable.",
+                ],
+            },
+            {
                 title: "Booking Policy",
                 items: [
-                    "All bookings are strictly non-transferable and non-refundable.",
                     "Date change requests are subject to availability and management approval only.",
                 ],
             },
@@ -691,7 +699,7 @@ export function generateQuotationPDF(data: {
         y = drawInfoBlock(doc, "Terms & Conditions", [
             "This quotation is valid for 7 days from the date of issue.",
             "Prices are subject to change based on availability.",
-            "This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.",
+            "Cancellation: 21+ days before check-in: 10% deduction; 11-20 days: 50% retained; within 10 days: no refund; peak dates strictly non-refundable.",
             "80% payable online at booking. 20% payable at the venue.",
             "Check-in: 1:00 PM | Check-out: 11:00 AM",
             "Security deposit is collected at venue and refunded at checkout.",

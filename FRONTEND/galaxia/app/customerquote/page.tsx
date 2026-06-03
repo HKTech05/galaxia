@@ -332,10 +332,67 @@ function CustomerQuoteInner() {
             extraKidsTotal = u.extraKidsTotal; totalUnits = 1;
         }
 
-        let subtotal = roomTotal + extraAdultTotal + extraKidsTotal;
-        if (decoration) subtotal += 1200;
-        const gst = Math.round(Math.round(subtotal) * 0.05);
-        let total = Math.round(subtotal) + gst + pets * 600;
+        let specialDiscount = 0;
+        if (checkIn && checkOut && nights > 0) {
+            const totalGuests = adults + kids;
+            const pSlug = propertyName.toLowerCase();
+            if (pSlug.includes("la paraiso") || pSlug.includes("la-paraiso")) {
+                const extraAdultCharge = 1200;
+                const kidsChargeNum = 800;
+                for (let i = 0; i < nights; i++) {
+                    const d = new Date(checkIn);
+                    d.setDate(checkIn.getDate() + i);
+                    const day = d.getDay();
+                    const isWeekend = day === 0 || day === 5 || day === 6;
+                    if (!isWeekend) {
+                        if (totalGuests === 4) {
+                            const exAdults = Math.max(0, adults - 2);
+                            const freeKidsSlots = Math.max(0, 2 - adults);
+                            const extraKids = Math.max(0, kids - freeKidsSlots);
+                            const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
+                            const subtotalForNight = 4950 + extraChargesForNight;
+                            if (subtotalForNight > 6500) {
+                                specialDiscount += (subtotalForNight - 6500);
+                            }
+                        }
+                    } else {
+                        if (totalGuests >= 3) {
+                            let extraAdultsCount = 0;
+                            let extraKidsCount = 0;
+                            for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
+                                if (slot <= adults) {
+                                    extraAdultsCount++;
+                                } else {
+                                    extraKidsCount++;
+                                }
+                            }
+                            specialDiscount += (extraAdultsCount * extraAdultCharge) + (extraKidsCount * kidsChargeNum);
+                        }
+                    }
+                }
+            } else if (pSlug.includes("ambrose")) {
+                for (const [vName, qty] of Object.entries(villaQuantities)) {
+                    if (qty <= 0) continue;
+                    const sSlug = vName.toLowerCase();
+                    const isAmbroseVilla = sSlug === "take-1" || sSlug === "alta" || sSlug === "santorini";
+                    if (isAmbroseVilla) {
+                        for (let i = 0; i < nights; i++) {
+                            const d = new Date(checkIn);
+                            d.setDate(checkIn.getDate() + i);
+                            const day = d.getDay();
+                            const isSaturday = day === 6;
+                            if (isSaturday && totalGuests === 4) {
+                                specialDiscount += 500 * qty;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const gstBase = Math.max(0, roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount);
+        const gst = Math.round(gstBase * 0.05);
+        let total = Math.round(roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount) + gst + (decoration ? 1200 : 0) + pets * 600;
         total = Math.round(total / 10) * 10;
         const advance = Math.round(total * 0.8);
 
@@ -343,6 +400,7 @@ function CustomerQuoteInner() {
             nights, totalUnits, roomTotal: Math.round(roomTotal), gst,
             extraAdultCharge: Math.round(extraAdultTotal), extraKidsCharge: Math.round(extraKidsTotal),
             decorationCharge: decoration ? 1200 : 0, petCharge: pets * 600,
+            specialDiscount: Math.round(specialDiscount),
             totalAmount: total, advanceAmount: advance, balanceAmount: total - advance,
         };
     }, [checkIn, checkOut, propertyName, adults, kids, pets, decoration, villaQuantities, availData, livePricing]);
@@ -713,6 +771,7 @@ function CustomerQuoteInner() {
                                         <div className="flex justify-between"><span className="text-[#555]">Base Price</span><span className="font-bold text-[#1a1a2e]">{fmtCurrency(pricing.roomTotal + pricing.gst)}</span></div>
                                         {pricing.extraAdultCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Extra Adults</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.extraAdultCharge)}</span></div>}
                                         {pricing.extraKidsCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Extra Kids</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.extraKidsCharge)}</span></div>}
+                                        {pricing.specialDiscount > 0 && <div className="flex justify-between text-[#16a34a] font-semibold"><span className="text-[#16a34a]">Special Guest Discount</span><span>-{fmtCurrency(pricing.specialDiscount)}</span></div>}
                                         {pricing.decorationCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Celebration</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.decorationCharge)}</span></div>}
                                         {pricing.petCharge > 0 && <div className="flex justify-between"><span className="text-[#555]">Pets</span><span className="font-semibold text-[#1a1a2e]">{fmtCurrency(pricing.petCharge)}</span></div>}
                                     </div>

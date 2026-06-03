@@ -534,6 +534,73 @@ export default function BookMultiPage() {
     };
 
     const grandSubtotal = cart.reduce((sum, item) => sum + getItemPrice(item) + getExtraCharges(item), 0);
+
+    const specialDiscount = (() => {
+        if (!checkInDate || nights <= 0) return 0;
+        let totalDiscount = 0;
+        for (const item of cart) {
+            const pSlug = (item.property || "").toLowerCase();
+            const sSlug = (item.villaId || "").toLowerCase();
+            const isAmbroseVilla = pSlug === "ambrose" && (sSlug === "take-1" || sSlug === "alta" || sSlug === "santorini");
+            const isLaParaiso = pSlug === "la-paraiso";
+            
+            if (!isAmbroseVilla && !isLaParaiso) continue;
+            
+            const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
+            const totalGuests = guests.adults + guests.kids;
+            
+            let extraAdultRate = 0;
+            let kidsRate = 0;
+            if (pSlug === "ambrose") { extraAdultRate = 2000; kidsRate = 1000; }
+            else if (pSlug === "la-paraiso") { extraAdultRate = 1200; kidsRate = 800; }
+            
+            const units = item.unitCount || 1;
+            
+            for (let i = 0; i < nights; i++) {
+                const d = new Date(checkInDate);
+                d.setDate(d.getDate() + i);
+                const day = d.getDay();
+                const isSaturday = day === 6;
+                const isWeekend = day === 0 || day === 5 || day === 6;
+                
+                let nightDiscount = 0;
+                if (isAmbroseVilla) {
+                    if (isSaturday && totalGuests === 4) {
+                        nightDiscount = 500;
+                    }
+                } else if (isLaParaiso) {
+                    if (!isWeekend) {
+                        if (totalGuests === 4) {
+                            const exAdults = Math.max(0, guests.adults - 2);
+                            const freeKidsSlots = Math.max(0, 2 - guests.adults);
+                            const extraKids = Math.max(0, guests.kids - freeKidsSlots);
+                            const extraChargesForNight = (exAdults * extraAdultRate) + (extraKids * kidsRate);
+                            const subtotalForNight = 4950 + extraChargesForNight;
+                            if (subtotalForNight > 6500) {
+                                nightDiscount = subtotalForNight - 6500;
+                            }
+                        }
+                    } else {
+                        if (totalGuests >= 3) {
+                            let extraAdultsCount = 0;
+                            let extraKidsCount = 0;
+                            for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
+                                if (slot <= guests.adults) {
+                                    extraAdultsCount++;
+                                } else {
+                                    extraKidsCount++;
+                                }
+                            }
+                            nightDiscount = (extraAdultsCount * extraAdultRate) + (extraKidsCount * kidsRate);
+                        }
+                    }
+                }
+                totalDiscount += nightDiscount * units;
+            }
+        }
+        return totalDiscount;
+    })();
+
     let discountAmount = 0;
     if (appliedCoupon) {
         if (appliedCoupon.discountType === "percentage") {
@@ -542,7 +609,7 @@ export default function BookMultiPage() {
             discountAmount = appliedCoupon.discountValue;
         }
     }
-    const afterDiscount = grandSubtotal - discountAmount;
+    const afterDiscount = grandSubtotal - discountAmount - specialDiscount;
     const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
     const gst = Math.round((afterDiscount + addonTotal) * 0.05);
     const grandTotal = Math.round((afterDiscount + addonTotal + gst) / 10) * 10;
@@ -1230,6 +1297,7 @@ export default function BookMultiPage() {
                                     <div className="flex justify-between"><span className="text-text-secondary">Dates</span><span className="text-text-primary">{checkInDate && formatDateShort(checkInDate)} → {checkOutDate && formatDateShort(checkOutDate)}</span></div>
                                     <div className="flex justify-between"><span className="text-text-secondary">Subtotal ({cart.length} item{cart.length > 1 ? "s" : ""})</span><span className="text-text-primary">{formatPrice(grandSubtotal)}</span></div>
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
+                                    {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>Special Guest Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                     <div className="flex justify-between"><span className="text-text-secondary">Taxes</span><span className="text-text-primary">{formatPrice(gst)}</span></div>
                                     <div className="border-t border-border-light my-2" />
                                     <div className="flex justify-between text-base font-bold"><span className="text-text-primary">Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
@@ -1428,8 +1496,13 @@ export default function BookMultiPage() {
                             <h3 className="font-cinzel text-sm font-semibold text-text-primary mb-3 uppercase tracking-wider">Terms & Conditions</h3>
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-inter text-xs font-semibold text-red-700 mb-1">No Cancellation</h4>
-                                    <p className="font-inter text-[11px] text-text-secondary leading-relaxed">This booking is non-refundable — no cancellations, amendments, or date changes are permitted once confirmed.</p>
+                                    <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Cancellation Policy</h4>
+                                    <ul className="list-disc pl-4 space-y-1 text-text-secondary text-[10px] leading-relaxed">
+                                        <li>21+ days before check-in: 10% deduction from the booking amount.</li>
+                                        <li>11–20 days before check-in: 50% of the booking amount will be retained.</li>
+                                        <li>Cancellation within 10 days of check-in: No refund applicable.</li>
+                                        <li>Festival dates, long weekends, and peak season bookings are strictly non-refundable.</li>
+                                    </ul>
                                 </div>
                                 <div className="border-t border-border-light pt-3">
                                     <h4 className="font-inter text-xs font-semibold text-text-primary mb-1">Payment Policy</h4>
@@ -1496,6 +1569,7 @@ export default function BookMultiPage() {
                             <div className="border-t border-border-light mt-4 pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(grandSubtotal)}</span></div>
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
+                                {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>Special Guest Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">Taxes (5%)</span><span>{formatPrice(gst)}</span></div>
                                 <div className="flex justify-between text-base font-bold pt-2"><span>Grand Total</span><span className="text-antique-gold">{formatPrice(grandTotal)}</span></div>
                                 {totalSecurityDeposit > 0 && <div className="flex justify-between text-xs text-sky-600 mt-1"><span>Refundable Security Deposit <span className="text-[10px] text-text-muted">(at check-in)</span></span><span>{formatPrice(totalSecurityDeposit)}</span></div>}
