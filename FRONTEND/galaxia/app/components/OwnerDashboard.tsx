@@ -1223,12 +1223,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             <div className="space-y-8">
                 {/* Time Range + Sub-tab Selector */}
                 <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm w-full sm:w-fit">
                         {([["insights", "Insights"], ["calendar2", "Live Calendar"]] as const).map(([key, label]) => (
                             <button
                                 key={key}
                                 onClick={() => setDashboardSubTab(key)}
-                                className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${dashboardSubTab === key
+                                className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-bold transition-colors ${dashboardSubTab === key
                                     ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'
                                     }`}
                             >
@@ -1237,12 +1237,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         ))}
                     </div>
                     {dashboardSubTab === "insights" && (
-                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-sm">
+                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 w-full sm:w-fit shadow-sm">
                         {timeRanges.map(tr => (
                             <button
                                 key={tr.key}
                                 onClick={() => setTimeRange(tr.key)}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${timeRange === tr.key
+                                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-colors ${timeRange === tr.key
                                     ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                                     }`}
                             >
