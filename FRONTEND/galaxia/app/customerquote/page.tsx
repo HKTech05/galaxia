@@ -51,7 +51,8 @@ function CustomerQuoteInner() {
     const [kids, setKids] = useState(0);
     const [pets, setPets] = useState(0);
     const [decoration, setDecoration] = useState(false);
-    const [foodType, setFoodType] = useState("Regular");
+    const [regularCount, setRegularCount] = useState(0);
+    const [jainCount, setJainCount] = useState(0);
     const [propertyName, setPropertyName] = useState("");
     const [villaQuantities, setVillaQuantities] = useState<Record<string, number>>({});
 
@@ -113,7 +114,8 @@ function CustomerQuoteInner() {
                 setKids(d.kids || 0);
                 setPets(d.pets || 0);
                 setDecoration(d.decoration || false);
-                setFoodType(d.foodType || "Regular");
+                setRegularCount(d.regularCount !== undefined ? d.regularCount : (d.foodType === "Jain" ? 0 : ((d.adults || 2) + (d.kids || 0))));
+                setJainCount(d.jainCount !== undefined ? d.jainCount : (d.foodType === "Jain" ? ((d.adults || 2) + (d.kids || 0)) : 0));
                 if (d.villaQuantities) setVillaQuantities(d.villaQuantities);
             } catch (err: any) {
                 setError(err?.message || "Failed to load quotation. It may have expired.");
@@ -304,7 +306,7 @@ function CustomerQuoteInner() {
                     if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
                     else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
                     else if (resolvedProperty.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-                    else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+                    else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4960; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
                     else if (resolvedProperty.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
                     else if (resolvedProperty.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
                 }
@@ -344,18 +346,7 @@ function CustomerQuoteInner() {
                     d.setDate(checkIn.getDate() + i);
                     const day = d.getDay();
                     const isWeekend = day === 0 || day === 5 || day === 6;
-                    if (!isWeekend) {
-                        if (totalGuests === 4) {
-                            const exAdults = Math.max(0, adults - 2);
-                            const freeKidsSlots = Math.max(0, 2 - adults);
-                            const extraKids = Math.max(0, kids - freeKidsSlots);
-                            const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
-                            const subtotalForNight = 4950 + extraChargesForNight;
-                            if (subtotalForNight > 6500) {
-                                specialDiscount += (subtotalForNight - 6500);
-                            }
-                        }
-                    } else {
+                    if (isWeekend) {
                         if (totalGuests >= 3) {
                             let extraAdultsCount = 0;
                             let extraKidsCount = 0;
@@ -371,35 +362,51 @@ function CustomerQuoteInner() {
                     }
                 }
             } else if (pSlug.includes("ambrose")) {
-                for (const [vName, qty] of Object.entries(villaQuantities)) {
-                    if (qty <= 0) continue;
+                const checkAmbroseDiscount = (vName: string, qty: number) => {
                     const sSlug = vName.toLowerCase();
-                    const isAmbroseVilla = sSlug === "take-1" || sSlug === "alta" || sSlug === "santorini";
+                    const isAmbroseVilla = sSlug === "take-1" || sSlug === "alta" || sSlug === "santorini" || sSlug === "take 1";
                     if (isAmbroseVilla) {
+                        let villaDiscount = 0;
                         for (let i = 0; i < nights; i++) {
                             const d = new Date(checkIn);
                             d.setDate(checkIn.getDate() + i);
                             const day = d.getDay();
                             const isSaturday = day === 6;
                             if (isSaturday && totalGuests === 4) {
-                                specialDiscount += 500 * qty;
+                                villaDiscount += 500 * qty;
                             }
                         }
+                        return villaDiscount;
                     }
+                    return 0;
+                };
+
+                const hasVillas = Object.values(villaQuantities).some(q => q > 0);
+                if (hasVillas) {
+                    for (const [vName, qty] of Object.entries(villaQuantities)) {
+                        if (qty <= 0) continue;
+                        specialDiscount += checkAmbroseDiscount(vName, qty);
+                    }
+                } else if (quoteData?.villaName) {
+                    specialDiscount += checkAmbroseDiscount(quoteData.villaName, 1);
+                } else if (quoteData?.data?.villaName) {
+                    specialDiscount += checkAmbroseDiscount(quoteData.data.villaName, 1);
                 }
             }
         }
 
-        const gstBase = Math.max(0, roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount);
+        const petCharges = pets * 600;
+        const subtotal = roomTotal + extraAdultTotal + extraKidsTotal + petCharges;
+        const gstBase = Math.max(0, subtotal - specialDiscount);
         const gst = Math.round(gstBase * 0.05);
-        let total = Math.round(roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount) + gst + (decoration ? 1200 : 0) + pets * 600;
+        let total = Math.round(subtotal - specialDiscount) + gst + (decoration ? 1200 : 0);
         total = Math.round(total / 10) * 10;
         const advance = Math.round(total * 0.8);
 
         return {
             nights, totalUnits, roomTotal: Math.round(roomTotal), gst,
             extraAdultCharge: Math.round(extraAdultTotal), extraKidsCharge: Math.round(extraKidsTotal),
-            decorationCharge: decoration ? 1200 : 0, petCharge: pets * 600,
+            decorationCharge: decoration ? 1200 : 0, petCharge: petCharges,
             specialDiscount: Math.round(specialDiscount),
             totalAmount: total, advanceAmount: advance, balanceAmount: total - advance,
         };
@@ -516,8 +523,14 @@ function CustomerQuoteInner() {
             // Build addons
             const addons: any[] = [];
             if (decoration) addons.push({ name: 'Celebration Add-on', price: 1200, description: 'Cake, balloons, and a banner' });
-            if (propertyName === "Amstel Nest" || propertyName === "Ambrose") {
-                addons.push({ name: 'Food Preference', foodType });
+            const isAmstelOrAmbrose = propertyName.includes("Amstel") || propertyName.includes("Ambrose");
+            if (isAmstelOrAmbrose) {
+                if (regularCount > 0) {
+                    addons.push({ name: 'Food Preference', foodType: 'Regular', count: regularCount });
+                }
+                if (jainCount > 0) {
+                    addons.push({ name: 'Food Preference', foodType: 'Jain', count: jainCount });
+                }
             }
 
             const totalCottages = Object.values(villaQuantities).reduce((s, q) => s + q, 0) || 1;
@@ -744,17 +757,9 @@ function CustomerQuoteInner() {
                                 </div>
                             </div>
                             {isAmstelOrAmbrose && (
-                                <div className="mt-4">
-                                    <label className="block text-xs font-semibold text-[#555] mb-1.5 flex items-center gap-1"><UtensilsCrossed size={12} /> Food Preference *</label>
-                                    <div className="flex gap-3">
-                                        {["Regular", "Jain"].map(t => (
-                                            <button key={t} onClick={() => setFoodType(t)}
-                                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all
-                                                    ${foodType === t ? "bg-[#1a1a2e] text-[#C4A265] border-[#1a1a2e]" : "bg-[#faf9f6] text-[#555] border-[#e8e5dd] hover:border-[#C4A265]/50"}`}>
-                                                {t} Veg
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div className="mt-4 grid grid-cols-2 gap-4">
+                                    <GuestCounter label="Regular Veg Meals" value={regularCount} onChange={setRegularCount} min={0} max={30} />
+                                    <GuestCounter label="Jain Veg Meals" value={jainCount} onChange={setJainCount} min={0} max={30} />
                                 </div>
                             )}
                         </div>

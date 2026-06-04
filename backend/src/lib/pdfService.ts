@@ -120,8 +120,13 @@ function drawDivider(doc: PDFKit.PDFDocument, y: number) {
 
 function drawInfoBlock(doc: PDFKit.PDFDocument, title: string, items: string[], y: number, color: string = GOLD) {
     const pageBottom = doc.page.height - 100; // leave room for footer
-    // Estimate total height needed: title(16) + items(~16 each) + buffer
-    const estimatedHeight = 16 + items.length * 18 + 10;
+    
+    // Estimate total height accurately using heightOfString
+    let estimatedHeight = 16;
+    for (const item of items) {
+        estimatedHeight += doc.heightOfString(item, { width: doc.page.width - 120 }) + 6;
+    }
+
     if (y + estimatedHeight > pageBottom) {
         doc.addPage();
         y = 50;
@@ -133,14 +138,17 @@ function drawInfoBlock(doc: PDFKit.PDFDocument, title: string, items: string[], 
     y += 16;
 
     for (let i = 0; i < items.length; i++) {
-        // Check if we need a page break before this item
-        if (y + 18 > pageBottom) {
+        const itemText = `${i + 1}. ${items[i]}`;
+        const itemHeight = doc.heightOfString(itemText, { width: doc.page.width - 120 });
+        
+        if (y + itemHeight > pageBottom) {
             doc.addPage();
             y = 50;
         }
+        
         doc.fontSize(9).fill(TEXT_MED).font("Helvetica")
-            .text(`${i + 1}. ${items[i]}`, 60, y, { width: doc.page.width - 120 });
-        y += 16;
+            .text(itemText, 60, y, { width: doc.page.width - 120 });
+        y += itemHeight + 6;
     }
     return y;
 }
@@ -639,7 +647,22 @@ export function generateQuotationPDF(data: {
         y = drawRow(doc, "Name", data.customerName, y, { bold: true });
         if (data.customerPhone) y = drawRow(doc, "Phone", data.customerPhone, y);
         if (data.customerEmail) y = drawRow(doc, "Email", data.customerEmail, y);
-        if (data.foodType) y = drawRow(doc, "Food Preference", data.foodType, y);
+        const isAmstelOrAmbrose = propertyName.includes("Amstel") || propertyName.includes("Ambrose");
+        if (isAmstelOrAmbrose) {
+            const regularCount = data.regularCount !== undefined ? data.regularCount : (data.foodType === "Jain" ? 0 : ((data.adults || 2) + (data.kids || 0)));
+            const jainCount = data.jainCount !== undefined ? data.jainCount : (data.foodType === "Jain" ? ((data.adults || 2) + (data.kids || 0)) : 0);
+            let foodPreference = "";
+            if (regularCount > 0 && jainCount > 0) {
+                foodPreference = `Veg (${regularCount} Regular, ${jainCount} Jain)`;
+            } else if (jainCount > 0) {
+                foodPreference = `Veg (${jainCount} Jain)`;
+            } else if (regularCount > 0) {
+                foodPreference = `Veg (${regularCount} Regular)`;
+            }
+            if (foodPreference) {
+                y = drawRow(doc, "Food Preference", foodPreference, y);
+            }
+        }
         y = drawDivider(doc, y);
 
         // Property
@@ -699,7 +722,7 @@ export function generateQuotationPDF(data: {
         y = drawInfoBlock(doc, "Terms & Conditions", [
             "This quotation is valid for 7 days from the date of issue.",
             "Prices are subject to change based on availability.",
-            "Cancellation: 21+ days before check-in: 10% deduction; 11-20 days: 50% retained; within 10 days: no refund; peak dates strictly non-refundable.",
+            "Cancellation Policy:\n    • 21+ days before check-in: 10% deduction from the booking amount.\n    • 11–20 days before check-in: 50% of the booking amount will be retained.\n    • Cancellation within 10 days of check-in: No refund applicable.\n    • Festival dates, long weekends, and peak season bookings are strictly non-refundable.",
             "80% payable online at booking. 20% payable at the venue.",
             "Check-in: 1:00 PM | Check-out: 11:00 AM",
             "Security deposit is collected at venue and refunded at checkout.",

@@ -526,18 +526,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     totalDiscount += 500;
                 }
             } else if (isLaParaiso) {
-                if (!isWeekend) {
-                    if (totalGuests === 4) {
-                        const exAdults = Math.max(0, adults - 2);
-                        const freeKidsSlots = Math.max(0, 2 - adults);
-                        const extraKids = Math.max(0, kids - freeKidsSlots);
-                        const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
-                        const subtotalForNight = 4950 + extraChargesForNight;
-                        if (subtotalForNight > 6500) {
-                            totalDiscount += (subtotalForNight - 6500);
-                        }
-                    }
-                } else {
+                if (isWeekend) {
                     if (totalGuests >= 3) {
                         let extraAdultsCount = 0;
                         let extraKidsCount = 0;

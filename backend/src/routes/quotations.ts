@@ -146,7 +146,7 @@ function calculateUnitPrice(
             if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
             else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
             else if (resolvedProperty.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-            else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+            else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4960; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
             else if (resolvedProperty.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
             else if (resolvedProperty.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
         }
@@ -173,14 +173,7 @@ function calculateUnitPrice(
                 nightDiscount = 500;
             }
         } else if (isLaParaiso) {
-            if (!isWe) {
-                if (totalGuests === 4) {
-                    const subtotalForNight = basePrice + nightExtraCharges;
-                    if (subtotalForNight > 6500) {
-                        nightDiscount = subtotalForNight - 6500;
-                    }
-                }
-            } else {
+            if (isWe) {
                 if (totalGuests >= 3) {
                     let extraAdultsCount = 0;
                     let extraKidsCount = 0;
@@ -251,12 +244,12 @@ function calculateQuotePrice(data: {
     }
 
     const DECORATION_PRICE = 1200;
-    let subtotal = totalRoomTotal + totalExtraAdult + totalExtraKids;
-    if (data.decoration) subtotal += DECORATION_PRICE;
+    const petCharge = data.pets * 600;
+    const baseSubtotal = totalRoomTotal + totalExtraAdult + totalExtraKids + petCharge;
 
-    const baseAmount = Math.round(subtotal - totalSpecialDiscount);
+    const baseAmount = Math.round(baseSubtotal - totalSpecialDiscount);
     const gstAmount = Math.round(baseAmount * 0.05);
-    let finalTotal = baseAmount + gstAmount + data.pets * 600;
+    let finalTotal = baseAmount + gstAmount + (data.decoration ? DECORATION_PRICE : 0);
     finalTotal = Math.round(finalTotal / 10) * 10;
 
     return {
@@ -269,7 +262,9 @@ function calculateQuotePrice(data: {
         subtotal: baseAmount,
         specialDiscount: totalSpecialDiscount,
         gstAmount,
-        petCharge: data.pets * 600,
+        gst: gstAmount,
+        petCharge,
+        petCharges: petCharge,
         totalAmount: finalTotal,
         nightlyRoomRate: nights > 0 ? Math.round(totalRoomTotal / nights) : 0,
     };
@@ -417,6 +412,14 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
 
         const totalAdults = q.adults;
         const totalKids = q.kids || 0;
+        const regularCount = q.regularCount || 0;
+        const jainCount = q.jainCount || 0;
+
+        let guestDesc = `${totalAdults} adults${totalKids > 0 ? ', ' + totalKids + ' kids' : ''}`;
+        const isAmstelOrAmbrose = villaDesc.includes("Amstel") || villaDesc.includes("Ambrose");
+        if (isAmstelOrAmbrose && (regularCount > 0 || jainCount > 0)) {
+            guestDesc += ` (${regularCount} Reg, ${jainCount} Jain)`;
+        }
 
         const linkSent = await sendWhatsAppTemplateMessage(
             "stay1",
@@ -428,7 +431,7 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
                 villaDesc,
                 q.checkIn,
                 q.checkOut,
-                `${totalAdults} adults${totalKids > 0 ? ', ' + totalKids + ' kids' : ''}`,
+                guestDesc,
                 fmtCurrency(pricing.totalAmount),
                 entry.bookingUrl
             ]

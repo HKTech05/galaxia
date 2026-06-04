@@ -43,8 +43,14 @@ export default function QuotationPage() {
     const [adults, setAdults] = useState(2);
     const [kids, setKids] = useState(0);
     const [pets, setPets] = useState(0);
-    const [isJain, setIsJain] = useState(false);
+    const [regularCount, setRegularCount] = useState(2);
+    const [jainCount, setJainCount] = useState(0);
     const [decoration, setDecoration] = useState(false);
+
+    useEffect(() => {
+        setRegularCount(adults + kids);
+        setJainCount(0);
+    }, [adults, kids]);
 
     // Multi-villa state
     // For Amstel Nest: { "Standard Cottage": 0, "Family Cottage": 0 }
@@ -125,10 +131,10 @@ export default function QuotationPage() {
         if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return null;
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
-        let roomTotal = 0, extraAdultTotal = 0, extraKidsTotal = 0, totalUnits = 0;
+        let roomTotal = 0, extraAdultTotal = 0, extraKidsTotal = 0, specialDiscount = 0, totalUnits = 0;
 
         const calcUnit = (propName: string, villaName?: string) => {
-            let unitRoom = 0, unitExA = 0, unitExK = 0;
+            let unitRoom = 0, unitExA = 0, unitExK = 0, unitDiscount = 0;
             for (let i = 0; i < nights; i++) {
                 const d = new Date(start); d.setDate(start.getDate() + i);
                 const day = d.getDay();
@@ -146,7 +152,7 @@ export default function QuotationPage() {
                     if (propName.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
                     else if (propName.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
                     else if (propName.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-                    else if (propName.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+                    else if (propName.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4960; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
                     else if (propName.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
                     else if (propName.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
                 }
@@ -155,8 +161,39 @@ export default function QuotationPage() {
                 const freeKids = Math.max(0, baseGuests - adults);
                 const exK = Math.max(0, kids - freeKids);
                 unitExA += exA * extraAdultPrice; unitExK += exK * kidsPrice;
+
+                // Special Discount calculations
+                const pSlug = propName.toLowerCase();
+                const sSlug = (villaName || "").toLowerCase();
+                const totalGuests = adults + kids;
+
+                const isAmbroseVilla = pSlug.includes("ambrose") && (sSlug.includes("take-1") || sSlug.includes("alta") || sSlug.includes("santorini") || sSlug.includes("take 1"));
+                const isLaParaiso = pSlug.includes("la paraiso") || pSlug.includes("la-paraiso");
+
+                let nightDiscount = 0;
+                if (isAmbroseVilla) {
+                    if (isSat && totalGuests === 4) {
+                        nightDiscount = 500;
+                    }
+                } else if (isLaParaiso) {
+                    if (isWe) {
+                        if (totalGuests >= 3) {
+                            let extraAdultsCount = 0;
+                            let extraKidsCount = 0;
+                            for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
+                                if (slot <= adults) {
+                                    extraAdultsCount++;
+                                } else {
+                                    extraKidsCount++;
+                                }
+                            }
+                            nightDiscount = (extraAdultsCount * extraAdultPrice) + (extraKidsCount * kidsPrice);
+                        }
+                    }
+                }
+                unitDiscount += nightDiscount;
             }
-            return { roomTotal: unitRoom, extraAdultTotal: unitExA, extraKidsTotal: unitExK };
+            return { roomTotal: unitRoom, extraAdultTotal: unitExA, extraKidsTotal: unitExK, specialDiscount: unitDiscount };
         };
 
         if (quotationType === "multiple") {
@@ -167,7 +204,7 @@ export default function QuotationPage() {
                 const parts = key.split("/");
                 const u = calcUnit(parts[0], parts.length > 1 ? parts[1] : undefined);
                 roomTotal += u.roomTotal * qty; extraAdultTotal += u.extraAdultTotal * qty;
-                extraKidsTotal += u.extraKidsTotal * qty; totalUnits += qty;
+                extraKidsTotal += u.extraKidsTotal * qty; specialDiscount += u.specialDiscount * qty; totalUnits += qty;
             }
         } else {
             if (!selectedProperty) return null;
@@ -176,25 +213,25 @@ export default function QuotationPage() {
                     if (qty <= 0) continue;
                     const u = calcUnit(selectedProperty, vName);
                     roomTotal += u.roomTotal * qty; extraAdultTotal += u.extraAdultTotal * qty;
-                    extraKidsTotal += u.extraKidsTotal * qty; totalUnits += qty;
+                    extraKidsTotal += u.extraKidsTotal * qty; specialDiscount += u.specialDiscount * qty; totalUnits += qty;
                 }
             } else if (!isMultiVilla) {
                 const u = calcUnit(selectedProperty);
-                roomTotal = u.roomTotal; extraAdultTotal = u.extraAdultTotal; extraKidsTotal = u.extraKidsTotal; totalUnits = 1;
+                roomTotal = u.roomTotal; extraAdultTotal = u.extraAdultTotal; extraKidsTotal = u.extraKidsTotal; specialDiscount = u.specialDiscount; totalUnits = 1;
             } else return null;
         }
 
-        let subtotal = roomTotal + extraAdultTotal + extraKidsTotal;
-        if (decoration) subtotal += 1200;
-        const baseAmount = Math.round(subtotal);
+        const petCharge = pets * 600;
+        const subtotal = roomTotal + extraAdultTotal + extraKidsTotal + petCharge;
+        const baseAmount = Math.round(subtotal - specialDiscount);
         const gstAmount = Math.round(baseAmount * 0.05);
-        let total = baseAmount + gstAmount + pets * 600;
+        let total = baseAmount + gstAmount + (decoration ? 1200 : 0);
         total = Math.round(total / 10) * 10;
         return {
             nights, totalUnits, roomTotal: Math.round(roomTotal),
             extraAdultCharge: Math.round(extraAdultTotal), extraKidsCharge: Math.round(extraKidsTotal),
             decorationCharge: decoration ? 1200 : 0, subtotal: baseAmount, gstAmount,
-            petCharge: pets * 600, totalAmount: total,
+            petCharge, totalAmount: total, specialDiscount
         };
     }, [quotationType, selectedProperty, villaQuantities, multiSelections, checkIn, checkOut, adults, kids, pets, decoration, livePricing, isMultiVilla]);
 
@@ -216,8 +253,8 @@ export default function QuotationPage() {
         const body: any = {
             customerName, customerPhone, customerEmail: customerEmail || undefined,
             checkIn, checkOut, adults, kids, pets,
-            regularCount: isJain ? 0 : adults + kids,
-            jainCount: isJain ? adults + kids : 0,
+            regularCount,
+            jainCount,
             decoration,
         };
 
@@ -463,16 +500,12 @@ export default function QuotationPage() {
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                             <NumberInput label="Pets" value={pets} onChange={setPets} min={0} max={5} icon={<PawPrint size={14} />} />
-                            <div className="flex items-end">
-                                <button onClick={() => setIsJain(!isJain)}
-                                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${isJain
-                                        ? "bg-green-50 border-green-300 text-green-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"}`}>
-                                    <UtensilsCrossed size={14} /> {isJain ? "Jain ✓" : "Regular"}
-                                </button>
-                            </div>
-                            <div className="flex items-end">
+                            <NumberInput label="Regular Veg" value={regularCount} onChange={setRegularCount} min={0} max={30} icon={<UtensilsCrossed size={14} />} />
+                            <NumberInput label="Jain Veg" value={jainCount} onChange={setJainCount} min={0} max={30} icon={<UtensilsCrossed size={14} />} />
+                            <div className="flex flex-col justify-end">
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Decoration</label>
                                 <button onClick={() => setDecoration(!decoration)}
-                                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${decoration
+                                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all h-[42px] ${decoration
                                         ? "bg-purple-50 border-purple-300 text-purple-700" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"}`}>
                                     <PartyPopper size={14} /> {decoration ? "Decoration ✓" : "Add Decoration"}
                                 </button>
@@ -494,6 +527,7 @@ export default function QuotationPage() {
                                 <PriceRow label="GST" value={fmtCurrency(pricing.gstAmount)} />
                                 {pricing.extraAdultCharge > 0 && <PriceRow label="Extra Adults" value={fmtCurrency(pricing.extraAdultCharge)} />}
                                 {pricing.extraKidsCharge > 0 && <PriceRow label="Extra Kids" value={fmtCurrency(pricing.extraKidsCharge)} />}
+                                {pricing.specialDiscount > 0 && <PriceRow label="Discount" value={`-${fmtCurrency(pricing.specialDiscount)}`} />}
                                 {pricing.decorationCharge > 0 && <PriceRow label="Celebration Add-on" value={fmtCurrency(pricing.decorationCharge)} />}
                                 {pricing.petCharge > 0 && <PriceRow label="Pet Charges" value={fmtCurrency(pricing.petCharge)} />}
                                 <div className="border-t-2 border-emerald-200 pt-3 mt-3">
