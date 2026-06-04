@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { sendWhatsAppMessage, sendWhatsAppDocument } from "../lib/whatsappService";
+import { sendWhatsAppTemplateMessage, sendWhatsAppDocument } from "../lib/whatsappService";
 import { generateQuotationPDF } from "../lib/pdfService";
 
 const router = Router();
@@ -408,30 +408,31 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
             villaDesc += ` — ${q.villaName}`;
         }
 
-        const pdfMessage = `Quotation for ${q.customerName}\n${villaDesc}\n${q.checkIn} to ${q.checkOut}\n\nView/Download PDF:\n${pdfUrl}`;
-        const pdfSent = await sendWhatsAppMessage("stay1", targetPhone, pdfMessage, false);
+        const pdfSent = await sendWhatsAppTemplateMessage(
+            "stay1",
+            targetPhone,
+            "staycation_quote_pdf",
+            [q.customerName, villaDesc, q.checkIn, q.checkOut, pdfUrl]
+        );
 
         const totalAdults = q.adults;
         const totalKids = q.kids || 0;
 
-        const linkMessage = `*Galaxia Staycation Quote*
-
-Hi ${q.customerName}, here is your personalised booking link:
-
-*Quote:* ${id}
-*Property:* ${villaDesc}
-*Dates:* ${q.checkIn} to ${q.checkOut}
-*Guests:* ${totalAdults} adults${totalKids > 0 ? ', ' + totalKids + ' kids' : ''}
-
-*Total:* ${fmtCurrency(pricing.totalAmount)}
-
-*Book Now:*
-${entry.bookingUrl}
-
--- Galaxia Resorts
-www.galaxiaresorts.com`;
-
-        const linkSent = await sendWhatsAppMessage("stay1", targetPhone, linkMessage, false);
+        const linkSent = await sendWhatsAppTemplateMessage(
+            "stay1",
+            targetPhone,
+            "staycation_quote_link",
+            [
+                q.customerName,
+                id,
+                villaDesc,
+                q.checkIn,
+                q.checkOut,
+                `${totalAdults} adults${totalKids > 0 ? ', ' + totalKids + ' kids' : ''}`,
+                fmtCurrency(pricing.totalAmount),
+                entry.bookingUrl
+            ]
+        );
 
         res.json({ success: true, pdfSent, linkSent, sentTo: targetPhone });
     } catch (err: any) {

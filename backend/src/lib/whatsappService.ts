@@ -104,6 +104,82 @@ export async function sendWhatsAppMessage(chatbot: ChatbotId, phone: string, mes
 }
 
 /**
+ * Send a template message via a specific chatbot's WhatsApp number.
+ * After sending, logs the message to the chatbot DB (chat_sessions / chat_messages)
+ * so it appears in the chatbot dashboard.
+ */
+export async function sendWhatsAppTemplateMessage(
+    chatbot: ChatbotId,
+    phone: string,
+    templateName: string,
+    parameters: string[],
+    languageCode: string = "en",
+    addBookedTag: boolean = false
+): Promise<boolean> {
+    const config = getChatbotConfig(chatbot);
+    if (!config) return false;
+
+    const waPhone = normalizePhone(phone);
+    const bare = waPhone.startsWith("+") ? waPhone.substring(1) : waPhone;
+
+    try {
+        const bodyParameters = parameters.map(p => ({
+            type: "text",
+            text: p
+        }));
+
+        const payload = {
+            messaging_product: "whatsapp",
+            to: bare,
+            type: "template",
+            template: {
+                name: templateName,
+                language: {
+                    code: languageCode
+                },
+                components: [
+                    {
+                        type: "body",
+                        parameters: bodyParameters
+                    }
+                ]
+            }
+        };
+
+        const res = await fetch(`https://graph.facebook.com/v21.0/${config.phoneNumberId}/messages`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${config.token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const errBody = await res.text();
+            console.error(`[WhatsApp:${chatbot}] Template send failed:`, res.status, errBody);
+            return false;
+        }
+
+        const data: any = await res.json();
+        console.log(`[WhatsApp:${chatbot}] Template '${templateName}' sent to ${bare}:`, data.messages?.[0]?.id);
+
+        // Reconstruct message representation for chat logs
+        const logMessage = `[Template: ${templateName}]\n` + parameters.map((p, idx) => `{{${idx + 1}}}: ${p}`).join("\n");
+        try {
+            await logConfirmationToChat(config.phoneNumberId, bare, logMessage, addBookedTag);
+        } catch (dbErr: any) {
+            console.warn(`[WhatsApp:${chatbot}] Failed to log template to chat DB:`, dbErr.message);
+        }
+
+        return true;
+    } catch (err: any) {
+        console.error(`[WhatsApp:${chatbot}] Template error:`, err.message);
+        return false;
+    }
+}
+
+/**
  * Send a document (e.g. PDF) via a specific chatbot's WhatsApp number.
  * The document must be publicly accessible via URL.
  */
