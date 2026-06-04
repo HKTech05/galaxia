@@ -829,12 +829,17 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 const villaRawBases: Record<string, number> = {};
                 selectedAmbroseVillas.forEach((v, idx) => {
                     const guestsV = villaGuests[v];
-                    const extraAdultsV = Math.max(0, guestsV - 4);
-                    const freeKidsSlotsV = Math.max(0, 4 - guestsV);
+                    const rates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6);
+                    const baseGuestsV = rates.baseGuests;
+                    const extraAdultPriceV = rates.extraAdultPrice;
+                    const kidsPriceV = rates.kidsPrice;
+
+                    const extraAdultsV = Math.max(0, guestsV - baseGuestsV);
+                    const freeKidsSlotsV = Math.max(0, baseGuestsV - guestsV);
                     const extraKidsV = Math.max(0, villaKids[v] - freeKidsSlotsV);
 
-                    const extraAdultChargeV = extraAdultsV * 2000 * nights;
-                    const extraKidsChargeV = extraKidsV * 1000 * nights;
+                    const extraAdultChargeV = extraAdultsV * extraAdultPriceV * nights;
+                    const extraKidsChargeV = extraKidsV * kidsPriceV * nights;
                     const decorChargeV = (idx === 0 && manualDecoration) ? DECORATION_PRICE : 0;
 
                     let vSpecialDiscount = 0;
@@ -919,11 +924,12 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     if (villaJain[v] > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Jain', count: villaJain[v] });
 
                     const basePrice = villaBasePrices[v];
-                    const extraAdultsV = Math.max(0, villaGuests[v] - 4);
-                    const freeKidsSlotsV = Math.max(0, 4 - villaGuests[v]);
+                    const payloadRates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6);
+                    const extraAdultsV = Math.max(0, villaGuests[v] - payloadRates.baseGuests);
+                    const freeKidsSlotsV = Math.max(0, payloadRates.baseGuests - villaGuests[v]);
                     const extraKidsV = Math.max(0, villaKids[v] - freeKidsSlotsV);
-                    const extraAdultCharge = extraAdultsV * 2000 * nights;
-                    const extraKidsCharge = extraKidsV * 1000 * nights;
+                    const extraAdultCharge = extraAdultsV * payloadRates.extraAdultPrice * nights;
+                    const extraKidsCharge = extraKidsV * payloadRates.kidsPrice * nights;
 
                     await api.post("/bookings/staycation", {
                         ...commonPayload,
