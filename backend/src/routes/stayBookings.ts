@@ -12,12 +12,20 @@ const router = Router();
 
 // Generate booking ref: ST-YYYYMMDD-NNN (transaction-safe)
 async function generateStayRef(tx: any): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+    // Use IST date to match Indian business day (UTC+5:30)
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    const dateStr = istNow.toISOString().slice(0, 10).replace(/-/g, "");
+
+    // IST midnight for count query
+    const istDateOnly = new Date(istNow.toISOString().slice(0, 10) + "T00:00:00.000Z");
+    const istMidnight = new Date(istDateOnly.getTime() - istOffset);
+
     const count = await tx.staycationBooking.count({
         where: {
             bookedAt: {
-                gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+                gte: istMidnight,
             },
         },
     });
@@ -1189,7 +1197,13 @@ router.get("/voucher/:ref", async (req, res) => {
             return res.status(404).json({ error: "Booking not found" });
         }
 
-        const pdfBuffer = await generateStaycationBookingPDF(booking);
+        const plainPhone = decrypt(booking.customerPhone);
+        const plainEmail = booking.customerEmail ? decrypt(booking.customerEmail) : null;
+        const pdfBuffer = await generateStaycationBookingPDF({
+            ...booking,
+            customerPhone: plainPhone,
+            customerEmail: plainEmail,
+        });
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="Galaxia-${booking.bookingRef}.pdf"`);

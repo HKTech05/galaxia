@@ -778,6 +778,50 @@ export default function BookingClient({ property }: BookingClientProps) {
 
         try {
             const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+            const roomId = selectedRoom?.id || '';
+            const subPropertyId = selectedRoom
+                ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
+                : undefined;
+
+            // Pre-payment availability check to prevent orphaned payments
+            if (checkInDate && checkOutDate && dbPropertyId) {
+                try {
+                    const now = new Date();
+                    const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+                    const futureDate = new Date(now.getFullYear(), now.getMonth() + 18, 0);
+                    const endDate = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+                    
+                    let checkUrl = `/api/bookings/staycation/booked-dates?propertyId=${dbPropertyId}&startDate=${startDate}&endDate=${endDate}`;
+                    if (subPropertyId) {
+                        checkUrl += `&subPropertyId=${subPropertyId}`;
+                    }
+                    
+                    const checkRes = await fetch(checkUrl);
+                    if (checkRes.ok) {
+                        const checkData = await checkRes.json();
+                        const latestBooked = new Set<string>(checkData.dates || []);
+                        
+                        let dateConflict = false;
+                        const tempDate = new Date(checkInDate.getTime());
+                        while (tempDate < checkOutDate) {
+                            const ds = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, '0')}-${String(tempDate.getDate()).padStart(2, '0')}`;
+                            if (latestBooked.has(ds)) {
+                                dateConflict = true;
+                                break;
+                            }
+                            tempDate.setDate(tempDate.getDate() + 1);
+                        }
+                        
+                        if (dateConflict) {
+                            setBookingError("The selected dates have just been booked by another guest. Please refresh the page and select different dates.");
+                            setIsSubmitting(false);
+                            return;
+                        }
+                    }
+                } catch (checkErr) {
+                    console.error("Pre-payment availability check failed (proceeding):", checkErr);
+                }
+            }
 
             // Initiate Razorpay payment for the advance amount
             let paymentResult;
@@ -803,11 +847,6 @@ export default function BookingClient({ property }: BookingClientProps) {
                 }
                 throw payErr;
             }
-
-            const roomId = selectedRoom?.id || '';
-            const subPropertyId = selectedRoom
-                ? (dbSubPropertyMap[roomId] || dbSubPropertyMap[roomId.split('/').pop() || ''] || undefined)
-                : undefined;
 
             // Build addons
             const bookingAddons: any[] = [];
