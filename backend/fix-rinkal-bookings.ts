@@ -6,9 +6,22 @@ import { generateStaycationBookingPDF } from "./src/lib/pdfService";
 import { sendOwnerBookingNotification } from "./src/lib/emailService";
 
 async function main() {
-    console.log("Starting segregation of Rinkal Sidhiya's bookings...");
+    console.log("Starting corrected segregation of Rinkal Sidhiya's bookings...");
 
-    // 1. Fetch the existing corrupted booking (ID 771)
+    // 1. Clean up previously created Booking 2 if it exists
+    const existingBooking2 = await prisma.staycationBooking.findFirst({
+        where: { bookingRef: "ST-20260531-001rs" }
+    });
+
+    if (existingBooking2) {
+        console.log(`Found existing Booking 2 (ID: ${existingBooking2.id}), deleting first for clean run...`);
+        await prisma.staycationBooking.delete({
+            where: { id: existingBooking2.id }
+        });
+        console.log("Existing Booking 2 deleted.");
+    }
+
+    // 2. Fetch the original corrupted booking (ID 771)
     const originalBooking = await prisma.staycationBooking.findUnique({
         where: { id: 771 },
         include: {
@@ -31,7 +44,7 @@ async function main() {
         total: originalBooking.totalAmount,
     });
 
-    // 2. Booking 1 Data (June 7 to June 8, 1 night)
+    // 3. Booking 1 Data (June 7 to June 8, 1 night)
     // base: 6500, extraAdult: 4000, gst: 525, total: 11030, advance: 8820, balance: 2210
     const booking1CheckIn = new Date("2026-06-07T00:00:00.000Z");
     const booking1CheckOut = new Date("2026-06-08T00:00:00.000Z");
@@ -72,13 +85,13 @@ async function main() {
         balance: updatedBooking1.balanceAmount
     });
 
-    // 3. Booking 2 Data (June 6 to June 8, 2 nights)
-    // base: 13000, extraAdult: 4000, gst: 650, total: 17650, advance: 14120, balance: 3530
+    // 4. Booking 2 Data (June 6 to June 7, 1 night - Saturday night)
+    // base: 8500, extraAdult: 4000, gst: 625, total: 13125, advance: 10500, balance: 2625
     const booking2CheckIn = new Date("2026-06-06T00:00:00.000Z");
-    const booking2CheckOut = new Date("2026-06-08T00:00:00.000Z");
+    const booking2CheckOut = new Date("2026-06-07T00:00:00.000Z");
     const booking2Ref = "ST-20260531-001rs"; // Unique suffix for Rinkal Sidhiya Booking 2
 
-    console.log("Creating Booking 2 (June 6-8)...");
+    console.log("Creating Booking 2 (June 6-7)...");
     const createdBooking2 = await prisma.staycationBooking.create({
         data: {
             bookingRef: booking2Ref,
@@ -94,16 +107,16 @@ async function main() {
             numCottages: originalBooking.numCottages || 1,
             checkInDate: booking2CheckIn,
             checkOutDate: booking2CheckOut,
-            numNights: 2,
-            nightlyRate: 6500, // 13000 / 2 = 6500
-            basePrice: 13000,
+            numNights: 1,
+            nightlyRate: 8500,
+            basePrice: 8500,
             extraAdultCharge: 4000,
             extraKidsCharge: 0,
             extraPersonCharge: 0,
-            gstAmount: 650,
-            totalAmount: 17650,
-            advanceAmount: 14120,
-            balanceAmount: 3530,
+            gstAmount: 625,
+            totalAmount: 13125,
+            advanceAmount: 10500,
+            balanceAmount: 2625,
             advancePaid: true,
             advanceMethod: "Razorpay: manual_segregation_booking_2",
             advancePaidAt: new Date("2026-05-31T12:00:00Z"),
@@ -124,7 +137,7 @@ async function main() {
         balance: createdBooking2.balanceAmount
     });
 
-    // 4. PDF Generation & Owner Notification
+    // 5. PDF Generation & Owner Notification
     const b1Full = await prisma.staycationBooking.findUnique({
         where: { id: updatedBooking1.id },
         include: {
