@@ -10,12 +10,13 @@ interface ManualBookingModalProps {
     onClose: () => void;
     onSuccess: () => void;
     properties: string[];
+    isCollab?: boolean;
 }
 
 const DECORATION_PRICE = 1200;
 const AMBROSE_VILLAS = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
 
-export default function ManualBookingModal({ isOpen, onClose, onSuccess, properties }: ManualBookingModalProps) {
+export default function ManualBookingModal({ isOpen, onClose, onSuccess, properties, isCollab = false }: ManualBookingModalProps) {
     const [manualForm, setManualForm] = useState({
         name: "",
         guests: 2,
@@ -371,24 +372,38 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             }
         }
 
+        if (isCollab) {
+            return {
+                basePrice: 0,
+                gstAmount: 0,
+                totalAmount: 0,
+                roomTotal: 0,
+                extraAdultCharge: 0,
+                extraKidsCharge: 0,
+                nightlyRoomRate: 0,
+                specialDiscount: 0,
+            };
+        }
+
         let subtotal = roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount;
 
         if (manualDecoration) subtotal += DECORATION_PRICE;
 
+        // Taxes are calculated on the base price before coupon discount
+        const baseBeforeCoupon = Math.round(subtotal);
+        const gstBeforeCoupon = Math.round(baseBeforeCoupon * 0.05);
+        const preDiscountTotal = baseBeforeCoupon + gstBeforeCoupon;
+
         let manualCouponDiscount = 0;
         if (manualAppliedCoupon) {
             if (manualAppliedCoupon.discountType === "percentage") {
-                manualCouponDiscount = Math.round(subtotal * manualAppliedCoupon.discountValue / 100);
+                manualCouponDiscount = Math.round(preDiscountTotal * manualAppliedCoupon.discountValue / 100);
             } else {
                 manualCouponDiscount = Number(manualAppliedCoupon.discountValue);
             }
-            subtotal -= manualCouponDiscount;
         }
 
-        const baseAfterCoupon = Math.round(subtotal);
-        const gstAfterCoupon = Math.round(baseAfterCoupon * 0.05);
-        const totalAfterCoupon = baseAfterCoupon + gstAfterCoupon;
-
+        const totalAfterCoupon = preDiscountTotal - manualCouponDiscount;
         const totalAfterAdmin = Math.max(0, totalAfterCoupon - manualDiscountAmount);
 
         const baseAmount = Math.round(totalAfterAdmin / 1.05);
@@ -631,10 +646,10 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         propertyId: propId,
                         checkInDate: checkInDateStr,
                         checkOutDate: checkOutDateStr,
-                        securityDeposit: 3000,
+                        securityDeposit: isCollab ? 0 : 3000,
                         advancePaid: true,
-                        advanceMethod: manualForm.paymentMethod,
-                        source: "reception",
+                        advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
+                        source: isCollab ? "collab" : "reception",
                         couponCode: manualAppliedCoupon?.code || null,
                     };
 
@@ -645,15 +660,15 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         numKids: stdKids,
                         numPets: stdPets,
                         numCottages: amstelStandardCount,
-                        nightlyRate: Math.round(stdRoomTotal / nights / amstelStandardCount),
-                        totalAmount: stdTotal,
-                        advanceAmount: stdAdvance,
-                        balanceAmount: stdBalance,
-                        basePrice: stdBasePrice,
-                        extraAdultCharge: stdExtraAdultCharge,
-                        extraKidsCharge: stdExtraKidsCharge,
-                        gstAmount: stdGst,
-                        discountAmount: stdDiscount,
+                        nightlyRate: isCollab ? 0 : Math.round(stdRoomTotal / nights / amstelStandardCount),
+                        totalAmount: isCollab ? 0 : stdTotal,
+                        advanceAmount: isCollab ? 0 : stdAdvance,
+                        balanceAmount: isCollab ? 0 : stdBalance,
+                        basePrice: isCollab ? 0 : stdBasePrice,
+                        extraAdultCharge: isCollab ? 0 : stdExtraAdultCharge,
+                        extraKidsCharge: isCollab ? 0 : stdExtraKidsCharge,
+                        gstAmount: isCollab ? 0 : stdGst,
+                        discountAmount: isCollab ? 0 : stdDiscount,
                         addons: stdAddons.length > 0 ? stdAddons : null,
                     });
 
@@ -664,15 +679,15 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         numKids: famKids,
                         numPets: famPets,
                         numCottages: 1,
-                        nightlyRate: Math.round(famRoomTotal / nights),
-                        totalAmount: famTotal,
-                        advanceAmount: famAdvance,
-                        balanceAmount: famBalance,
-                        basePrice: famBasePrice,
-                        extraAdultCharge: famExtraAdultCharge,
-                        extraKidsCharge: famExtraKidsCharge,
-                        gstAmount: famGst,
-                        discountAmount: famDiscount,
+                        nightlyRate: isCollab ? 0 : Math.round(famRoomTotal / nights),
+                        totalAmount: isCollab ? 0 : famTotal,
+                        advanceAmount: isCollab ? 0 : famAdvance,
+                        balanceAmount: isCollab ? 0 : famBalance,
+                        basePrice: isCollab ? 0 : famBasePrice,
+                        extraAdultCharge: isCollab ? 0 : famExtraAdultCharge,
+                        extraKidsCharge: isCollab ? 0 : famExtraKidsCharge,
+                        gstAmount: isCollab ? 0 : famGst,
+                        discountAmount: isCollab ? 0 : famDiscount,
                         addons: famAddons.length > 0 ? famAddons : null,
                     });
                 } else if (amstelStandardCount > 0) {
@@ -693,10 +708,10 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         propertyId: propId,
                         checkInDate: checkInDateStr,
                         checkOutDate: checkOutDateStr,
-                        securityDeposit: 3000,
+                        securityDeposit: isCollab ? 0 : 3000,
                         advancePaid: true,
-                        advanceMethod: manualForm.paymentMethod,
-                        source: "reception",
+                        advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
+                        source: isCollab ? "collab" : "reception",
                         couponCode: manualAppliedCoupon?.code || null,
                     };
 
@@ -707,15 +722,15 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         numKids: manualForm.kids || 0,
                         numPets: manualForm.pets || 0,
                         numCottages: amstelStandardCount,
-                        nightlyRate: Math.round(calculated.nightlyRoomRate / amstelStandardCount),
-                        totalAmount: calculated.totalAmount,
-                        advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
-                        balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
-                        basePrice: calculated.basePrice,
-                        extraAdultCharge: calculated.extraAdultCharge,
-                        extraKidsCharge: calculated.extraKidsCharge,
-                        gstAmount: calculated.gstAmount,
-                        discountAmount: manualDiscountAmount,
+                        nightlyRate: isCollab ? 0 : Math.round(calculated.nightlyRoomRate / amstelStandardCount),
+                        totalAmount: isCollab ? 0 : calculated.totalAmount,
+                        advanceAmount: isCollab ? 0 : (customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount),
+                        balanceAmount: isCollab ? 0 : (customSplitMode ? parseInt(customBalance || '0') : 0),
+                        basePrice: isCollab ? 0 : calculated.basePrice,
+                        extraAdultCharge: isCollab ? 0 : calculated.extraAdultCharge,
+                        extraKidsCharge: isCollab ? 0 : calculated.extraKidsCharge,
+                        gstAmount: isCollab ? 0 : calculated.gstAmount,
+                        discountAmount: isCollab ? 0 : manualDiscountAmount,
                         addons: stdAddons.length > 0 ? stdAddons : null,
                     });
                 } else if (amstelFamilySelected) {
@@ -736,10 +751,10 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         propertyId: propId,
                         checkInDate: checkInDateStr,
                         checkOutDate: checkOutDateStr,
-                        securityDeposit: 3000,
+                        securityDeposit: isCollab ? 0 : 3000,
                         advancePaid: true,
-                        advanceMethod: manualForm.paymentMethod,
-                        source: "reception",
+                        advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
+                        source: isCollab ? "collab" : "reception",
                         couponCode: manualAppliedCoupon?.code || null,
                     };
 
@@ -750,15 +765,15 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         numKids: manualForm.kids || 0,
                         numPets: manualForm.pets || 0,
                         numCottages: 1,
-                        nightlyRate: calculated.nightlyRoomRate,
-                        totalAmount: calculated.totalAmount,
-                        advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
-                        balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
-                        basePrice: calculated.basePrice,
-                        extraAdultCharge: calculated.extraAdultCharge,
-                        extraKidsCharge: calculated.extraKidsCharge,
-                        gstAmount: calculated.gstAmount,
-                        discountAmount: manualDiscountAmount,
+                        nightlyRate: isCollab ? 0 : calculated.nightlyRoomRate,
+                        totalAmount: isCollab ? 0 : calculated.totalAmount,
+                        advanceAmount: isCollab ? 0 : (customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount),
+                        balanceAmount: isCollab ? 0 : (customSplitMode ? parseInt(customBalance || '0') : 0),
+                        basePrice: isCollab ? 0 : calculated.basePrice,
+                        extraAdultCharge: isCollab ? 0 : calculated.extraAdultCharge,
+                        extraKidsCharge: isCollab ? 0 : calculated.extraKidsCharge,
+                        gstAmount: isCollab ? 0 : calculated.gstAmount,
+                        discountAmount: isCollab ? 0 : manualDiscountAmount,
                         addons: famAddons.length > 0 ? famAddons : null,
                     });
                 }
@@ -907,10 +922,10 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     propertyId: propId,
                     checkInDate: checkInDateStr,
                     checkOutDate: checkOutDateStr,
-                    securityDeposit: 3000,
+                    securityDeposit: isCollab ? 0 : 3000,
                     advancePaid: true,
-                    advanceMethod: manualForm.paymentMethod,
-                    source: "reception",
+                    advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
+                    source: isCollab ? "collab" : "reception",
                     couponCode: manualAppliedCoupon?.code || null,
                 };
 
@@ -938,15 +953,15 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         numKids: villaKids[v],
                         numPets: villaPets[v],
                         numCottages: 1,
-                        nightlyRate: Math.round(roomTotals[v] / nights),
-                        totalAmount: villaTotals[v],
-                        advanceAmount: villaAdvances[v],
-                        balanceAmount: villaTotals[v] - villaAdvances[v],
-                        basePrice: basePrice,
-                        extraAdultCharge: extraAdultCharge,
-                        extraKidsCharge: extraKidsCharge,
-                        gstAmount: villaGsts[v],
-                        discountAmount: villaDiscounts[v],
+                        nightlyRate: isCollab ? 0 : Math.round(roomTotals[v] / nights),
+                        totalAmount: isCollab ? 0 : villaTotals[v],
+                        advanceAmount: isCollab ? 0 : villaAdvances[v],
+                        balanceAmount: isCollab ? 0 : (villaTotals[v] - villaAdvances[v]),
+                        basePrice: isCollab ? 0 : basePrice,
+                        extraAdultCharge: isCollab ? 0 : extraAdultCharge,
+                        extraKidsCharge: isCollab ? 0 : extraKidsCharge,
+                        gstAmount: isCollab ? 0 : villaGsts[v],
+                        discountAmount: isCollab ? 0 : villaDiscounts[v],
                         addons: villaAddons.length > 0 ? villaAddons : null,
                     });
                 }
@@ -969,20 +984,20 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     numCottages: 1,
                     checkInDate: checkInDateStr,
                     checkOutDate: checkOutDateStr,
-                    nightlyRate: calculated.nightlyRoomRate,
-                    totalAmount: calculated.totalAmount,
-                    advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
-                    balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
-                    securityDeposit: 3000,
-                    basePrice: calculated.basePrice,
-                    extraAdultCharge: calculated.extraAdultCharge,
-                    extraKidsCharge: calculated.extraKidsCharge,
-                    gstAmount: calculated.gstAmount,
+                    nightlyRate: isCollab ? 0 : calculated.nightlyRoomRate,
+                    totalAmount: isCollab ? 0 : calculated.totalAmount,
+                    advanceAmount: isCollab ? 0 : (customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount),
+                    balanceAmount: isCollab ? 0 : (customSplitMode ? parseInt(customBalance || '0') : 0),
+                    securityDeposit: isCollab ? 0 : 3000,
+                    basePrice: isCollab ? 0 : calculated.basePrice,
+                    extraAdultCharge: isCollab ? 0 : calculated.extraAdultCharge,
+                    extraKidsCharge: isCollab ? 0 : calculated.extraKidsCharge,
+                    gstAmount: isCollab ? 0 : calculated.gstAmount,
                     advancePaid: true,
-                    advanceMethod: manualForm.paymentMethod,
-                    source: "reception",
+                    advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
+                    source: isCollab ? "collab" : "reception",
                     couponCode: manualAppliedCoupon?.code || null,
-                    discountAmount: manualDiscountAmount,
+                    discountAmount: isCollab ? 0 : manualDiscountAmount,
                     addons: bookingAddons.length > 0 ? bookingAddons : null,
                 });
             }
@@ -1036,8 +1051,13 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
                 <div className="flex flex-shrink-0 items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
                     <div>
-                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Plus className="text-purple-600" size={20} /> Add Manual Booking</h3>
-                        <p className="text-xs font-medium text-slate-500 mt-0.5">Full 100% payment collection required.</p>
+                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <Plus className={isCollab ? "text-amber-500" : "text-purple-600"} size={20} />
+                            {isCollab ? "Add Collab Booking" : "Add Manual Booking"}
+                        </h3>
+                        <p className="text-xs font-medium text-slate-500 mt-0.5">
+                            {isCollab ? "Collaboration Booking — ₹0 pricing applied." : "Full 100% payment collection required."}
+                        </p>
                     </div>
                     <button
                         onClick={onClose}
@@ -1248,11 +1268,13 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     )}
 
                     {/* Summary & Payment */}
-                    <div className="bg-purple-50 rounded-xl p-4 sm:p-5 border border-purple-100 mt-2">
+                    <div className={`rounded-xl p-4 sm:p-5 border mt-2 ${isCollab ? 'bg-amber-50 border-amber-100' : 'bg-purple-50 border-purple-100'}`}>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                             <div>
-                                <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Calculated Total (Inc. Taxes)</p>
-                                <h2 className="text-3xl font-black text-purple-900 flex items-center">
+                                <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isCollab ? 'text-amber-600' : 'text-purple-600'}`}>
+                                    {isCollab ? 'Calculated Total (Collab)' : 'Calculated Total (Inc. Taxes)'}
+                                </p>
+                                <h2 className={`text-3xl font-black flex items-center ${isCollab ? 'text-amber-900' : 'text-purple-900'}`}>
                                     <IndianRupee size={24} className="mr-1" /> {calcResult.totalAmount.toLocaleString('en-IN')}
                                 </h2>
                                 <p className="text-xs text-slate-500 mt-1">Base ₹{calcResult.basePrice.toLocaleString('en-IN')} + Taxes ₹{calcResult.gstAmount.toLocaleString('en-IN')}</p>
@@ -1263,139 +1285,157 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                 )}
                             </div>
 
-                            <div className="bg-white p-1 rounded-lg border border-purple-200 flex">
-                                <button
-                                    onClick={() => setManualForm({ ...manualForm, paymentMethod: "Cash" })}
-                                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'Cash' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                >
-                                    Cash
-                                </button>
-                                <button
-                                    onClick={() => setManualForm({ ...manualForm, paymentMethod: "UPI" })}
-                                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'UPI' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                >
-                                    UPI
-                                </button>
-                            </div>
+                            {!isCollab ? (
+                                <div className="bg-white p-1 rounded-lg border border-purple-200 flex">
+                                    <button
+                                        onClick={() => setManualForm({ ...manualForm, paymentMethod: "Cash" })}
+                                        className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'Cash' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                    >
+                                        Cash
+                                    </button>
+                                    <button
+                                        onClick={() => setManualForm({ ...manualForm, paymentMethod: "UPI" })}
+                                        className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all ${manualForm.paymentMethod === 'UPI' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                    >
+                                        UPI
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="bg-amber-500 text-white px-4 py-2 rounded-lg font-bold text-sm select-none">
+                                    Collaboration
+                                </div>
+                            )}
                         </div>
 
                         {/* Coupon Code */}
-                        <div className="mb-4">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Coupon Code</label>
-                            {manualAppliedCoupon ? (
-                                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
-                                    <div>
-                                        <span className="text-sm font-bold text-emerald-700">✓ {manualAppliedCoupon.code}</span>
-                                        <span className="text-xs text-emerald-600 ml-2">
-                                            ({manualAppliedCoupon.discountType === 'percentage' ? `${manualAppliedCoupon.discountValue}% off` : `₹${manualAppliedCoupon.discountValue} off`})
-                                        </span>
+                        {!isCollab && (
+                            <div className="mb-4">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Coupon Code</label>
+                                {manualAppliedCoupon ? (
+                                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+                                        <div>
+                                            <span className="text-sm font-bold text-emerald-700">✓ {manualAppliedCoupon.code}</span>
+                                            <span className="text-xs text-emerald-600 ml-2">
+                                                ({manualAppliedCoupon.discountType === 'percentage' ? `${manualAppliedCoupon.discountValue}% off` : `₹${manualAppliedCoupon.discountValue} off`})
+                                            </span>
+                                        </div>
+                                        <button onClick={() => { setManualAppliedCoupon(null); setManualCouponCode(""); setManualCouponError(""); }} className="text-xs font-bold text-red-500 hover:text-red-700">Remove</button>
                                     </div>
-                                    <button onClick={() => { setManualAppliedCoupon(null); setManualCouponCode(""); setManualCouponError(""); }} className="text-xs font-bold text-red-500 hover:text-red-700">Remove</button>
-                                </div>
-                            ) : (
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={manualCouponCode}
-                                        onChange={e => { setManualCouponCode(e.target.value.toUpperCase()); setManualCouponError(""); }}
-                                        className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold uppercase focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                                        placeholder="ENTER CODE"
-                                    />
-                                    <button
-                                        onClick={async () => {
-                                            if (!manualCouponCode.trim()) return;
-                                            setManualCouponLoading(true);
-                                            setManualCouponError("");
-                                            try {
-                                                const result = await api.post("/coupons/validate", { code: manualCouponCode });
-                                                if (result?.valid) {
-                                                    setManualAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
-                                                } else {
-                                                    setManualCouponError("Invalid or expired");
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={manualCouponCode}
+                                            onChange={e => { setManualCouponCode(e.target.value.toUpperCase()); setManualCouponError(""); }}
+                                            className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold uppercase focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                                            placeholder="ENTER CODE"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                if (!manualCouponCode.trim()) return;
+                                                setManualCouponLoading(true);
+                                                setManualCouponError("");
+                                                try {
+                                                    const result = await api.post("/coupons/validate", { code: manualCouponCode });
+                                                    if (result?.valid) {
+                                                        setManualAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
+                                                    } else {
+                                                        setManualCouponError("Invalid or expired");
+                                                    }
+                                                } catch (err: any) {
+                                                    setManualCouponError(err?.message || "Invalid code");
+                                                } finally {
+                                                    setManualCouponLoading(false);
                                                 }
-                                            } catch (err: any) {
-                                                setManualCouponError(err?.message || "Invalid code");
-                                            } finally {
-                                                setManualCouponLoading(false);
-                                            }
-                                        }}
-                                        disabled={manualCouponLoading || !manualCouponCode.trim()}
-                                        className="shrink-0 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors"
-                                    >
-                                        {manualCouponLoading ? "..." : "Apply"}
-                                    </button>
-                                </div>
-                            )}
-                            {manualCouponError && <p className="text-xs text-red-500 font-bold mt-1">{manualCouponError}</p>}
-                        </div>
+                                            }}
+                                            disabled={manualCouponLoading || !manualCouponCode.trim()}
+                                            className="shrink-0 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-colors"
+                                        >
+                                            {manualCouponLoading ? "..." : "Apply"}
+                                        </button>
+                                    </div>
+                                )}
+                                {manualCouponError && <p className="text-xs text-red-500 font-bold mt-1">{manualCouponError}</p>}
+                            </div>
+                        )}
 
                         {/* Admin Discount */}
-                        <div className="border border-dashed border-purple-200 rounded-xl p-3 bg-purple-50/50 mb-4">
-                            <label className="text-[10px] font-bold text-purple-600 tracking-wider mb-1.5 block">Admin Price Reduction (₹) — applied to Total (Base+GST)</label>
-                            <div className="flex items-center gap-2">
-                                <div className="relative flex-1">
-                                    <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={manualDiscountAmount || ""}
-                                        onChange={e => {
-                                            const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
-                                            setManualDiscountAmount(val);
-                                        }}
-                                        placeholder="0"
-                                        className="w-full pl-8 pr-3 py-2 border border-purple-200 rounded-lg text-sm font-bold text-purple-800 focus:ring-2 focus:ring-purple-500/20 outline-none bg-white"
-                                    />
+                        {!isCollab && (
+                            <div className="border border-dashed border-purple-200 rounded-xl p-3 bg-purple-50/50 mb-4">
+                                <label className="text-[10px] font-bold text-purple-600 tracking-wider mb-1.5 block">Admin Price Reduction (₹) — applied to Total (Base+GST)</label>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" />
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={manualDiscountAmount || ""}
+                                            onChange={e => {
+                                                const val = parseInt(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                                                setManualDiscountAmount(val);
+                                            }}
+                                            placeholder="0"
+                                            className="w-full pl-8 pr-3 py-2 border border-purple-200 rounded-lg text-sm font-bold text-purple-800 focus:ring-2 focus:ring-purple-500/20 outline-none bg-white"
+                                        />
+                                    </div>
+                                    {manualDiscountAmount > 0 && (
+                                        <button onClick={() => setManualDiscountAmount(0)} className="p-2 text-purple-400 hover:text-purple-600 hover:bg-purple-100 rounded-lg transition-colors">
+                                            <X size={14} />
+                                        </button>
+                                    )}
                                 </div>
-                                {manualDiscountAmount > 0 && (
-                                    <button onClick={() => setManualDiscountAmount(0)} className="p-2 text-purple-400 hover:text-purple-600 hover:bg-purple-100 rounded-lg transition-colors">
-                                        <X size={14} />
-                                    </button>
-                                )}
                             </div>
-                        </div>
+                        )}
 
                         {/* Payment Split Mode */}
-                        <div className="mb-4">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Split</label>
-                            <div className="bg-slate-50 rounded-lg p-1 flex">
-                                <button type="button" onClick={() => { setCustomSplitMode(false); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${!customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Full Payment</button>
-                                <button type="button" onClick={() => { setCustomSplitMode(true); setCustomPrepaid(String(calcResult.totalAmount)); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Custom Split</button>
-                            </div>
-                        </div>
-                        {customSplitMode && (
-                            <div className="grid grid-cols-2 gap-3 mb-4 animate-in fade-in">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prepaid (₹)</label>
-                                    <input
-                                        type="number"
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                                        value={customPrepaid}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            setCustomPrepaid(val);
-                                            const prepaidNum = parseInt(val || '0');
-                                            setCustomBalance(String(Math.max(0, calcResult.totalAmount - prepaidNum)));
-                                        }}
-                                    />
+                        {!isCollab && (
+                            <>
+                                <div className="mb-4">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Split</label>
+                                    <div className="bg-slate-50 rounded-lg p-1 flex">
+                                        <button type="button" onClick={() => { setCustomSplitMode(false); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${!customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Full Payment</button>
+                                        <button type="button" onClick={() => { setCustomSplitMode(true); setCustomPrepaid(String(calcResult.totalAmount)); setCustomBalance('0'); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customSplitMode ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}>Custom Split</button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Balance (₹)</label>
-                                    <input
-                                        type="number"
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                                        value={customBalance}
-                                        readOnly
-                                    />
-                                </div>
-                            </div>
+                                {customSplitMode && (
+                                    <div className="grid grid-cols-2 gap-3 mb-4 animate-in fade-in">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Prepaid (₹)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                                                value={customPrepaid}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setCustomPrepaid(val);
+                                                    const prepaidNum = parseInt(val || '0');
+                                                    setCustomBalance(String(Math.max(0, calcResult.totalAmount - prepaidNum)));
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Balance (₹)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                                                value={customBalance}
+                                                readOnly
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                         <button
                             onClick={handleManualBookingSubmit}
                             disabled={!manualForm.name}
-                            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl shadow-md shadow-purple-600/20 transition-all flex items-center justify-center gap-2"
+                            className={`w-full font-bold py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${
+                                isCollab
+                                    ? 'bg-amber-500 hover:bg-amber-600 text-slate-900 shadow-amber-500/20'
+                                    : 'bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white shadow-purple-600/20'
+                            }`}
                         >
-                            <CheckCircle size={18} /> Confirm Payment &amp; Check-in
+                            <CheckCircle size={18} /> {isCollab ? "Confirm Collab Booking" : "Confirm Payment & Check-in"}
                         </button>
                     </div>
                 </div>

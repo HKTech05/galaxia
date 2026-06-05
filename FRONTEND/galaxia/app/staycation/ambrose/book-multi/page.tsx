@@ -601,18 +601,20 @@ export default function BookMultiPage() {
         return totalDiscount;
     })();
 
+    const afterSpecial = grandSubtotal - specialDiscount;
+    const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+    const gst = Math.round((afterSpecial + addonTotal) * 0.05);
+    const preDiscountTotal = afterSpecial + addonTotal + gst;
+
     let discountAmount = 0;
     if (appliedCoupon) {
         if (appliedCoupon.discountType === "percentage") {
-            discountAmount = Math.round(grandSubtotal * appliedCoupon.discountValue / 100);
+            discountAmount = Math.round(preDiscountTotal * appliedCoupon.discountValue / 100);
         } else {
             discountAmount = appliedCoupon.discountValue;
         }
     }
-    const afterDiscount = grandSubtotal - discountAmount - specialDiscount;
-    const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
-    const gst = Math.round((afterDiscount + addonTotal) * 0.05);
-    const grandTotal = Math.round((afterDiscount + addonTotal + gst) / 10) * 10;
+    const grandTotal = Math.round((preDiscountTotal - discountAmount) / 10) * 10;
     const payNow = Math.round(Math.round(grandTotal * 0.8) / 10) * 10;
     const payAtVenue = grandTotal - payNow;
 

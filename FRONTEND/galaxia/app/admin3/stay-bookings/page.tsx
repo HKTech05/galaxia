@@ -84,6 +84,7 @@ export default function StayBookingsPage() {
     const [bookings, setBookings] = useState<StayBooking[]>([]);
     const [loading, setLoading] = useState(true);
     const [isManualBookingOpen, setIsManualBookingOpen] = useState(false);
+    const [isCollabBookingOpen, setIsCollabBookingOpen] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
@@ -408,10 +409,14 @@ export default function StayBookingsPage() {
                 else if (ddSourceFilter === 'Walk-in') matchesFilter = b.source !== 'website';
             }
         } else if (viewTab === 'staycation') {
-            matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
-            if (matchesFilter && ddSourceFilter !== 'All') {
-                if (ddSourceFilter === 'Website') matchesFilter = b.source === 'website';
-                else if (ddSourceFilter === 'Walk-in') matchesFilter = b.source !== 'website';
+            if (statusFilter === 'Collab') {
+                matchesFilter = b.source === 'collab';
+            } else {
+                matchesFilter = statusFilter === 'All' || b.status === statusFilter.toLowerCase().replace(' ', '_');
+                if (matchesFilter && ddSourceFilter !== 'All') {
+                    if (ddSourceFilter === 'Website') matchesFilter = b.source === 'website';
+                    else if (ddSourceFilter === 'Walk-in') matchesFilter = b.source !== 'website';
+                }
             }
         } else {
             // 'all' tab
@@ -696,6 +701,13 @@ export default function StayBookingsPage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={() => setIsCollabBookingOpen(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-amber-500 hover:bg-amber-600 text-slate-900 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <Plus size={16} />
+                        Collab Booking
+                    </button>
+                    <button
                         onClick={() => setIsManualBookingOpen(true)}
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
@@ -846,7 +858,9 @@ export default function StayBookingsPage() {
                     {(() => {
                         const filterOptions = viewTab === 'dd'
                             ? ["All", "Confirmed", "No Show", "Transferred", "Cancelled"]
-                            : ["All", "Confirmed", "Checked In", "Checked Out", "Transferred", "Cancelled"];
+                            : viewTab === 'staycation'
+                                ? ["All", "Confirmed", "Checked In", "Checked Out", "Collab", "Transferred", "Cancelled"]
+                                : ["All", "Confirmed", "Checked In", "Checked Out", "Transferred", "Cancelled"];
                         return (
                             <>
                                 <div className="relative flex-1 lg:hidden">
@@ -953,8 +967,22 @@ export default function StayBookingsPage() {
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2 mb-0.5">
                                                         <span className="text-sm font-bold text-slate-800">{b.customerName}</span>
-                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${b.source === "website" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : b.source === "admin-bulk" || b.source === "bulk" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
-                                                            {b.source === "website" ? "Online" : b.source === "admin-bulk" || b.source === "bulk" ? "Admin Bulk" : (b.isDd ? "Walk-in" : "Manual")}
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                                                            b.source === "collab"
+                                                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                                                : b.source === "website"
+                                                                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                                                : b.source === "admin-bulk" || b.source === "bulk"
+                                                                ? "bg-violet-50 text-violet-700 border-violet-200"
+                                                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                        }`}>
+                                                            {b.source === "collab"
+                                                                ? "Collab"
+                                                                : b.source === "website"
+                                                                ? "Online"
+                                                                : b.source === "admin-bulk" || b.source === "bulk"
+                                                                ? "Admin Bulk"
+                                                                : (b.isDd ? "Walk-in" : "Manual")}
                                                         </span>
                                                     </div>
                                                     <span className="text-[11px] font-bold text-slate-400">{b.bookingRef}</span>
@@ -1114,7 +1142,7 @@ export default function StayBookingsPage() {
                                     )}
                                     <div>
                                         <p className="text-xs text-slate-400 font-medium">Source</p>
-                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.source === "website" ? "Online Booking" : selectedBooking.source === "admin-bulk" || selectedBooking.source === "bulk" ? "Admin Bulk" : (selectedBooking.isDd ? "Walk-in / Reception" : "Manual Booking")}</p>
+                                        <p className="text-sm font-bold text-slate-800">{selectedBooking.source === "collab" ? "Collab Booking" : selectedBooking.source === "website" ? "Online Booking" : selectedBooking.source === "admin-bulk" || selectedBooking.source === "bulk" ? "Admin Bulk" : (selectedBooking.isDd ? "Walk-in / Reception" : "Manual Booking")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -2032,6 +2060,14 @@ export default function StayBookingsPage() {
                 onClose={() => setIsManualBookingOpen(false)}
                 onSuccess={fetchBookings}
                 properties={["Hill View", "Mount View", "Heavenly Villa", "La Paraiso", "Amstel Nest", "Ambrose"]}
+            />
+
+            <ManualBookingModal
+                isOpen={isCollabBookingOpen}
+                onClose={() => setIsCollabBookingOpen(false)}
+                onSuccess={fetchBookings}
+                properties={["Hill View", "Mount View", "Heavenly Villa", "La Paraiso", "Amstel Nest", "Ambrose"]}
+                isCollab={true}
             />
         </div>
 

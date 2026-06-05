@@ -545,19 +545,23 @@ export default function BookingClient({ property }: BookingClientProps) {
         return totalDiscount;
     })();
 
+    // Taxes and Fees calculated on base price (before coupon)
+    const basePriceForTax = subtotal - specialDiscount;
+    const taxesAndFees = Math.round(basePriceForTax * property.gstPercent / 100);
+    const preDiscountTotal = basePriceForTax + taxesAndFees;
+
     // Discount
     let discountAmount = 0;
     if (appliedCoupon) {
         if (appliedCoupon.discountType === "percentage") {
-            discountAmount = Math.round(subtotal * appliedCoupon.discountValue / 100);
+            discountAmount = Math.round(preDiscountTotal * appliedCoupon.discountValue / 100);
         } else {
             discountAmount = appliedCoupon.discountValue;
         }
     }
 
     const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
-    const taxesAndFees = Math.round((subtotal - discountAmount - specialDiscount) * property.gstPercent / 100);
-    const totalAmount = Math.round((subtotal - discountAmount - specialDiscount + addonTotal + taxesAndFees) / 10) * 10;
+    const totalAmount = Math.round((preDiscountTotal - discountAmount + addonTotal) / 10) * 10;
 
     const totalGuests = adults + kids;
     const maxGuests = selectedRoom?.maxPersons || property.maxPersons || 4;

@@ -204,10 +204,15 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     <div style="background: ${WARM_BG}; padding: 40px 32px;">
 
         <!-- Greeting -->
-        <p style="margin: 0 0 6px; font-size: 13px; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">Booking Confirmed</p>
+        <p style="margin: 0 0 6px; font-size: 13px; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">
+            ${booking.source === "collab" ? "Collab Booking Confirmed" : "Booking Confirmed"}
+        </p>
         <h2 style="margin: 0 0 4px; font-size: 22px; color: ${TEXT_DARK}; font-weight: 400;">Dear ${booking.customerName},</h2>
         <p style="margin: 0 0 20px; font-size: 14px; color: ${TEXT_MED}; line-height: 1.6;">
-            Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you. Please find your complete booking details below.
+            ${booking.source === "collab"
+                ? "We are excited to host you for this collaboration. Your collaboration booking has been confirmed and we look forward to welcoming you. Please find your details below."
+                : "Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you. Please find your complete booking details below."
+            }
         </p>
 
         <!-- Customer Details -->
@@ -348,7 +353,9 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
             from: FROM_EMAIL,
             to: email,
             replyTo: REPLY_TO,
-            subject: `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`,
+            subject: booking.source === "collab"
+                ? `Collab Booking Confirmed | ${booking.bookingRef} — ${propertyName}`
+                : `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`,
             html,
         });
         console.log(`[Email] Staycation confirmation sent to ${email}`);

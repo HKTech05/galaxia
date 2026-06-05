@@ -225,7 +225,8 @@ router.post("/", async (req, res) => {
                             }
                         }
                         const subtotal = (basePrice || 0) + (extraPersonCharge || 0) + (extraAdultCharge || 0) + (extraKidsCharge || 0) + petCharges + addonsTotal;
-                        discountAmount = Math.round((subtotal * Number(coupon.discountValue)) / 100);
+                        const preDiscountTotal = subtotal + (gstAmount || 0);
+                        discountAmount = Math.round((preDiscountTotal * Number(coupon.discountValue)) / 100);
                     } else {
                         discountAmount = Number(coupon.discountValue);
                     }
@@ -367,7 +368,13 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
         const { status, propertyId, startDate, endDate, bookedOnFrom, bookedOnTo } = req.query;
 
         const where: any = {};
-        if (status) where.status = status;
+        if (status) {
+            if (status === "collab") {
+                where.source = "collab";
+            } else {
+                where.status = status;
+            }
+        }
         if (propertyId) {
             const parsed = parseInt(propertyId as string);
             if (!isNaN(parsed)) {

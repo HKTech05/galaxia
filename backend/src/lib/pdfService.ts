@@ -322,12 +322,14 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         drawHeader(doc, "Premium Staycation Experience");
 
         let y = 120;
-        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text("BOOKING CONFIRMED", 50, y, { characterSpacing: 2 });
+        doc.fontSize(9).fill(GOLD).font("Helvetica-Bold").text(booking.source === "collab" ? "COLLAB BOOKING CONFIRMED" : "BOOKING CONFIRMED", 50, y, { characterSpacing: 2 });
         y += 18;
         doc.fontSize(16).fill(TEXT_DARK).font("Helvetica").text(`Dear ${booking.customerName},`, 50, y);
         y += 22;
         doc.fontSize(10).fill(TEXT_MED).font("Helvetica")
-            .text("Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you.", 50, y, { width: doc.page.width - 100 });
+            .text(booking.source === "collab"
+                ? "We are excited to host you for this collaboration. Your collaboration booking is confirmed and we look forward to welcoming you."
+                : "Thank you for choosing Galaxia. Your reservation has been confirmed and we look forward to welcoming you.", 50, y, { width: doc.page.width - 100 });
         y += 36;
 
         // Customer Details
