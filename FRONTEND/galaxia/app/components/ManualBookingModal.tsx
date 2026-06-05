@@ -622,10 +622,6 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
 
                     const regCount = parseInt(manualRegularCount) || 0;
                     const jCount = parseInt(manualJainCount) || 0;
-                    const stdRegCount = Math.round(regCount / 2);
-                    const famRegCount = regCount - stdRegCount;
-                    const stdJCount = Math.round(jCount / 2);
-                    const famJCount = jCount - stdJCount;
 
                     const stdAddons: any[] = [];
                     const famAddons: any[] = [];
@@ -633,11 +629,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     if (manualDecoration) {
                         stdAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
                     }
-                    if (stdRegCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Regular', count: stdRegCount });
-                    if (stdJCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Jain', count: stdJCount });
-
-                    if (famRegCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Regular', count: famRegCount });
-                    if (famJCount > 0) famAddons.push({ name: 'Food Preference', foodType: 'Jain', count: famJCount });
+                    // Attach total food preference counts only to the standard cottage (first booking in split transaction)
+                    if (regCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
+                    if (jCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Jain', count: jCount });
 
                     const commonPayload = {
                         customerName: manualForm.name,
@@ -932,11 +926,17 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 for (const v of selectedAmbroseVillas) {
                     const subPropId = resolveSubPropertyId(manualForm.property, v);
                     const villaAddons: any[] = [];
-                    if (selectedAmbroseVillas.indexOf(v) === 0 && manualDecoration) {
+                    const isFirstVilla = selectedAmbroseVillas.indexOf(v) === 0;
+                    if (isFirstVilla && manualDecoration) {
                         villaAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
                     }
-                    if (villaReg[v] > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Regular', count: villaReg[v] });
-                    if (villaJain[v] > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Jain', count: villaJain[v] });
+                    // Attach total food preference counts only to the first villa booking (to avoid duplicating/inflating total counts in chef portal)
+                    if (isFirstVilla) {
+                        const regCount = parseInt(manualRegularCount) || 0;
+                        const jCount = parseInt(manualJainCount) || 0;
+                        if (regCount > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
+                        if (jCount > 0) villaAddons.push({ name: 'Food Preference', foodType: 'Jain', count: jCount });
+                    }
 
                     const basePrice = villaBasePrices[v];
                     const payloadRates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6);
