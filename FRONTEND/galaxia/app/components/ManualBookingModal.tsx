@@ -707,7 +707,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         numKids: manualForm.kids || 0,
                         numPets: manualForm.pets || 0,
                         numCottages: amstelStandardCount,
-                        nightlyRate: calculated.nightlyRoomRate,
+                        nightlyRate: Math.round(calculated.nightlyRoomRate / amstelStandardCount),
                         totalAmount: calculated.totalAmount,
                         advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : calculated.totalAmount,
                         balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
