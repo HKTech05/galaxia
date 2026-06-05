@@ -280,7 +280,7 @@ router.post("/submit", async (req: AuthRequest, res) => {
             year: "numeric"
         });
 
-        const recipientPhone = "9653176436";
+        const recipientPhone = "8237309564";
         const waSuccess = await sendWhatsAppTemplateMessage(
             "otp",
             recipientPhone,

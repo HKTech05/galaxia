@@ -386,7 +386,7 @@ router.post("/:id/send-whatsapp", async (req: Request, res: Response) => {
         });
         if (!entry) return res.status(404).json({ error: "Quotation not found or expired" });
 
-        const targetPhone = "9653176436";
+        const targetPhone = "8237309564";
         const pdfUrl = `https://galaxiaresorts.com/api/quotations/${id}/pdf`;
         const q = entry.data as any;
         const pricing = entry.pricing as any;
