@@ -491,12 +491,6 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
                 ],
             },
             {
-                title: "Booking Policy",
-                items: [
-                    "Date change requests are subject to availability and management approval only.",
-                ],
-            },
-            {
                 title: "Check-in / Check-out Policy",
                 items: [
                     "Standard check-in and check-out timings must be followed.",
