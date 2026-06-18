@@ -701,6 +701,8 @@ model Ingredient {
   id        Int      @id @default(autoincrement())
   nameEn    String   @map("name_en") @db.VarChar(200)
   nameHi    String   @map("name_hi") @db.VarChar(200)
+  category  String   @default("Dairy") @db.VarChar(100)
+  unit      String   @default("kg") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

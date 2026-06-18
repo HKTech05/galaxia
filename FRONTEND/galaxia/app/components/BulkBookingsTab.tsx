@@ -292,7 +292,7 @@ export default function BulkBookingsTab() {
                 totalAmount: finalTotal,
                 advanceAmount: customSplitMode ? parseInt(customPrepaid || '0') : finalTotal,
                 balanceAmount: customSplitMode ? parseInt(customBalance || '0') : 0,
-                securityDeposit: 3000 * (bulkForm.numCottages || 1),
+                securityDeposit: 2000 * (bulkForm.numCottages || 1),
                 nightlyRate: Math.round(pricing.subtotal / Math.max(1, pricing.nights)),
                 basePrice: baseAmount,
                 gstAmount: calculatedGst,

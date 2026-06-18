@@ -733,7 +733,8 @@ export function generateQuotationPDF(data: {
 
 export function generateChefIngredientsPDF(
     ingredients: { nameEn: string; nameHi: string; quantity: string }[],
-    date: Date
+    date: Date,
+    category?: string
 ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: "A4", margin: 0 });
@@ -746,10 +747,15 @@ export function generateChefIngredientsPDF(
         const generatedOn = fmtShortDate(new Date());
 
         // Header
-        drawHeader(doc, "Chef Portal", false);
+        drawHeader(doc, category ? `Chef Portal - ${category}` : "Chef Portal", false);
 
         let y = 130;
-        doc.fontSize(10).fill(GOLD).font("Helvetica-Bold").text("DAILY INGREDIENTS REQUIREMENTS", 50, y, { characterSpacing: 1.5 });
+        doc.fontSize(10).fill(GOLD).font("Helvetica-Bold").text(
+            category ? `DAILY INGREDIENTS REQUIREMENTS - ${category.toUpperCase()}` : "DAILY INGREDIENTS REQUIREMENTS",
+            50,
+            y,
+            { characterSpacing: 1.5 }
+        );
         y += 20;
 
         doc.fontSize(14).fill(TEXT_DARK).font("Helvetica-Bold").text(`Date: ${dateStr}`, 50, y);

@@ -40,7 +40,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     rawCheckOutDate: b.checkOutDate,
                     checkInTime: "1:00 PM",
                     checkOutTime: "10:00 AM",
-                    depositAmt: `₹${(b.securityDeposit || 3000).toLocaleString('en-IN')}`,
+                    depositAmt: `₹${(b.securityDeposit !== null && b.securityDeposit !== undefined ? b.securityDeposit : ((b.property?.name?.includes("Amstel") || b.property?.name?.includes("Hill View")) ? 2000 : 3000)).toLocaleString('en-IN')}`,
                     remainingAmt: `₹${(b.balanceAmount || 0).toLocaleString('en-IN')}`,
                     idProofUrl: b.idProofUrl || null,
                     guestIds: (b.guestIds || []).map((g: any) => ({
@@ -60,6 +60,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     depositRefundMethod: b.depositRefundMethod || null,
                     depositRefundedAt: b.depositRefundedAt || null,
                     foodBills: b.foodBills || [],
+                    extraGuestCharge: (b.extraGuests || []).reduce((sum: number, eg: any) => sum + (eg.chargeAmount || 0), 0),
+                    extraGuestPayment: (b.extraGuests || []).map((eg: any) => eg.paymentMethod).filter(Boolean).join(", ") || "UPI",
                 }));
                 setBookings(mapped);
             }
@@ -153,21 +155,19 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const calculateExtraGuestPrice = (includeGuests = true, includePets = true) => {
         if (!selectedBooking) return 0;
 
-        // standard parser for "DD Mmm, YYYY"
-        const startStr = selectedBooking.checkInDate.replace(',', '');
-        const endStr = selectedBooking.checkOutDate.replace(',', '');
-        const start = new Date(startStr);
-        const end = new Date(endStr);
+        const start = selectedBooking.rawCheckInDate ? new Date(selectedBooking.rawCheckInDate) : new Date();
+        const end = selectedBooking.rawCheckOutDate ? new Date(selectedBooking.rawCheckOutDate) : new Date();
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
         let extraAdultPrice = 0;
-        const prop = selectedBooking.property;
-        if (prop.includes("Hill View")) extraAdultPrice = 600;
-        else if (prop.includes("Mount View")) extraAdultPrice = 800;
-        else if (prop.includes("Heavenly Villa")) extraAdultPrice = 800;
-        else if (prop.includes("La Paraiso")) extraAdultPrice = 1200;
-        else if (prop.includes("Amstel")) extraAdultPrice = 1000;
-        else if (prop.includes("Ambrose")) extraAdultPrice = 2000;
+        const prop = selectedBooking.property || "";
+        const parentProp = selectedBooking.parentProperty || "";
+        if (prop.includes("Hill View") || parentProp.includes("Hill View")) extraAdultPrice = 600;
+        else if (prop.includes("Mount View") || parentProp.includes("Mount View")) extraAdultPrice = 800;
+        else if (prop.includes("Heavenly Villa") || parentProp.includes("Heavenly Villa")) extraAdultPrice = 800;
+        else if (prop.includes("La Paraiso") || parentProp.includes("La Paraiso")) extraAdultPrice = 1200;
+        else if (prop.includes("Amstel") || parentProp.includes("Amstel")) extraAdultPrice = 1000;
+        else if (prop.includes("Ambrose") || parentProp.includes("Ambrose")) extraAdultPrice = 2000;
 
         let total = 0;
         if (includeGuests) total += extraAdultPrice * extraGuestForm.guests * nights;
@@ -1086,19 +1086,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </h2>
                                         {(() => {
                                             if (!selectedBooking) return null;
-                                            const startStr = selectedBooking.checkInDate.replace(',', '');
-                                            const endStr = selectedBooking.checkOutDate.replace(',', '');
-                                            const start = new Date(startStr);
-                                            const end = new Date(endStr);
+                                            const start = selectedBooking.rawCheckInDate ? new Date(selectedBooking.rawCheckInDate) : new Date();
+                                            const end = selectedBooking.rawCheckOutDate ? new Date(selectedBooking.rawCheckOutDate) : new Date();
                                             const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
-                                            const prop = selectedBooking.property;
+                                            const prop = selectedBooking.property || "";
+                                            const parentProp = selectedBooking.parentProperty || "";
                                             let extraAdultPrice = 0;
-                                            if (prop.includes('Hill View')) extraAdultPrice = 600;
-                                            else if (prop.includes('Mount View')) extraAdultPrice = 800;
-                                            else if (prop.includes('Heavenly Villa')) extraAdultPrice = 800;
-                                            else if (prop.includes('La Paraiso')) extraAdultPrice = 1200;
-                                            else if (prop.includes('Amstel')) extraAdultPrice = 1000;
-                                            else if (prop.includes('Ambrose')) extraAdultPrice = 2000;
+                                            if (prop.includes('Hill View') || parentProp.includes('Hill View')) extraAdultPrice = 600;
+                                            else if (prop.includes('Mount View') || parentProp.includes('Mount View')) extraAdultPrice = 800;
+                                            else if (prop.includes('Heavenly Villa') || parentProp.includes('Heavenly Villa')) extraAdultPrice = 800;
+                                            else if (prop.includes('La Paraiso') || parentProp.includes('La Paraiso')) extraAdultPrice = 1200;
+                                            else if (prop.includes('Amstel') || parentProp.includes('Amstel')) extraAdultPrice = 1000;
+                                            else if (prop.includes('Ambrose') || parentProp.includes('Ambrose')) extraAdultPrice = 2000;
                                             return (
                                                 <div className="mt-2 space-y-0.5 text-[11px] font-medium text-purple-700">
                                                     {extraGuestForm.guests > 0 && <p>Extra guests: {extraGuestForm.guests} × ₹{extraAdultPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.guests * extraAdultPrice * nights).toLocaleString('en-IN')}</p>}

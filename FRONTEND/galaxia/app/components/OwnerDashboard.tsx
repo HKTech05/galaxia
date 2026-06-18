@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
     LayoutDashboard, Building, Film, Globe, CalendarDays,
     CheckCircle, XCircle, Clock, IndianRupee, Users, ChevronRight,
-    X, Upload, Trash2, Ban, User as UserIcon, Phone, Image as ImageIcon
+    X, Upload, Trash2, Ban, User as UserIcon, Phone, Image as ImageIcon, Download
 } from "lucide-react";
 import {
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -274,6 +274,147 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     useEffect(() => {
         fetchCalendar2Data();
     }, [fetchCalendar2Data]);
+
+    const downloadCalendarPDF = async () => {
+        try {
+            const { default: jsPDF } = await import("jspdf");
+            const autoTable = (await import("jspdf-autotable")).default;
+
+            const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            const monthLabel = calendar2Month.toLocaleString('default', { month: 'long', year: 'numeric' });
+            const viewLabel = calendar2View === "all" ? "All Properties" : "Amstelnest";
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Galaxia Resorts — Live Calendar (${viewLabel})`, pageWidth / 2, 15, { align: "center" });
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Month: ${monthLabel}`, pageWidth / 2, 23, { align: "center" });
+
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`, pageWidth / 2, 28, { align: "center" });
+            doc.setTextColor(0);
+
+            const year = calendar2Month.getFullYear();
+            const mIdx = calendar2Month.getMonth();
+            const daysInMonth = new Date(year, mIdx + 1, 0).getDate();
+
+            let headers: string[] = [];
+            let body: any[] = [];
+
+            if (calendar2View === "all") {
+                headers = ["Date", "Day", "TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS", "LA PARAISO", "MOUNT VIEW", "HEAVENLY VILLA", "HILL VIEW"];
+                body = Array.from({ length: daysInMonth }, (_, i) => {
+                    const date = new Date(year, mIdx, i + 1);
+                    const dateLabel = `${i + 1}-${calendar2Month.toLocaleString('default', { month: 'short' }).replace(' ', '-')}`;
+                    const dayLabel = date.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase();
+                    
+                    const row = [dateLabel, dayLabel];
+                    headers.slice(2).forEach(col => {
+                        const res = getCellStatus(date, "all", col);
+                        let val = "";
+                        if (res.status === "maintenance") {
+                            val = "M";
+                        } else if (res.status === "owner_reserved") {
+                            val = "OR";
+                        } else if (res.status === "booked") {
+                            const guestName = res.bookings?.[0]?.customerName || "";
+                            val = guestName ? `B (${guestName})` : "B";
+                        }
+                        row.push(val);
+                    });
+                    return row;
+                });
+            } else {
+                headers = ["Date", "Day", ...Array.from({ length: 14 }, (_, idx) => String(idx + 1)), "FAMILY UNIT"];
+                body = Array.from({ length: daysInMonth }, (_, i) => {
+                    const date = new Date(year, mIdx, i + 1);
+                    const dateLabel = `${i + 1}-${calendar2Month.toLocaleString('default', { month: 'short' }).replace(' ', '-')}`;
+                    const dayLabel = date.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase();
+                    
+                    const row = [dateLabel, dayLabel];
+                    // standard units
+                    for (let idx = 0; idx < 14; idx++) {
+                        const unitIndex = idx + 1;
+                        const res = getCellStatus(date, "amstelnest", "Standard", unitIndex);
+                        let val = "";
+                        if (res.status === "maintenance") {
+                            val = "M";
+                        } else if (res.status === "owner_reserved") {
+                            val = "OR";
+                        } else if (res.status === "booked") {
+                            const guestName = res.bookings?.[0]?.customerName || "";
+                            val = guestName ? `B (${guestName})` : "B";
+                        }
+                        row.push(val);
+                    }
+                    // family unit
+                    const resFamily = getCellStatus(date, "amstelnest", "FAMILY UNIT");
+                    let valFamily = "";
+                    if (resFamily.status === "maintenance") {
+                        valFamily = "M";
+                    } else if (resFamily.status === "owner_reserved") {
+                        valFamily = "OR";
+                    } else if (resFamily.status === "booked") {
+                        const guestName = resFamily.bookings?.[0]?.customerName || "";
+                        valFamily = guestName ? `B (${guestName})` : "B";
+                    }
+                    row.push(valFamily);
+                    return row;
+                });
+            }
+
+            autoTable(doc, {
+                startY: 33,
+                head: [headers],
+                body: body,
+                theme: "grid",
+                headStyles: { fillColor: [55, 48, 107], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold", halign: "center" },
+                bodyStyles: { fontSize: 7, cellPadding: 1.5, halign: "center" },
+                alternateRowStyles: { fillColor: [250, 250, 252] },
+                didParseCell: function(hookData: any) {
+                    if (hookData.section === "body" && hookData.column.index >= 2) {
+                        const val = hookData.cell.raw;
+                        if (typeof val === "string") {
+                            if (val.startsWith("M")) {
+                                hookData.cell.styles.fillColor = [254, 226, 226];
+                                hookData.cell.styles.textColor = [220, 38, 38];
+                                hookData.cell.styles.fontStyle = "bold";
+                            } else if (val.startsWith("OR")) {
+                                hookData.cell.styles.fillColor = [239, 246, 255];
+                                hookData.cell.styles.textColor = [37, 99, 235];
+                                hookData.cell.styles.fontStyle = "bold";
+                            } else if (val.startsWith("B")) {
+                                hookData.cell.styles.fillColor = [241, 245, 249];
+                                hookData.cell.styles.textColor = [30, 41, 59];
+                                hookData.cell.styles.fontStyle = "bold";
+                            }
+                        }
+                    }
+                }
+            });
+
+            const fileName = `Galaxia_Calendar_${monthLabel.replace(/\s+/g, '_')}_${viewLabel.replace(/\s+/g, '_')}.pdf`;
+            const pdfArrayBuffer = doc.output("arraybuffer");
+            const pdfFile = new File([pdfArrayBuffer], fileName, { type: "application/pdf" });
+            const fileUrl = URL.createObjectURL(pdfFile);
+            const link = document.createElement("a");
+            link.href = fileUrl;
+            link.download = fileName;
+            link.type = "application/pdf";
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(fileUrl); }, 200);
+        } catch (err) {
+            console.error("Failed to download calendar PDF:", err);
+            alert("Failed to download PDF");
+        }
+    };
 
     const getColumnInfo = (colType: "all" | "amstelnest", colName: string) => {
         if (colType === "amstelnest") {
@@ -1136,14 +1277,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     </p>
                                 </div>
                             )}
-                            {addonsList && Array.isArray(addonsList) && addonsList.length > 0 && (
-                                <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
-                                    <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(addonsList[0].price || 1200).toLocaleString('en-IN')}</p>
-                                    {addonsList[0].cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {addonsList[0].cakeMessage}</p>}
-                                    {addonsList[0].occasion && <p className="text-[10px] text-slate-600">Occasion: {addonsList[0].occasion}</p>}
-                                </div>
-                            )}
+                            {(() => {
+                                const celebrationAddon = addonsList && Array.isArray(addonsList)
+                                    ? addonsList.find((a: any) => a.name === 'Celebration Add-on')
+                                    : null;
+                                if (!celebrationAddon) return null;
+                                return (
+                                    <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
+                                        <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 1200).toLocaleString('en-IN')}</p>
+                                        {celebrationAddon.cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {celebrationAddon.cakeMessage}</p>}
+                                        {celebrationAddon.occasion && <p className="text-[10px] text-slate-600">Occasion: {celebrationAddon.occasion}</p>}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Extra Guests Display */}
@@ -1928,26 +2075,34 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 <p className="text-sm text-slate-500 font-medium mt-1">Recreated matrix view showing occupancy, maintenance, and owner reservations.</p>
                             </div>
                             
-                            <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
+                            <div className="flex items-center gap-3">
                                 <button
-                                    onClick={() => {
-                                        setCalendar2Month(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-                                    }}
-                                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+                                    onClick={downloadCalendarPDF}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    <ChevronRight size={18} className="rotate-180" />
+                                    <Download size={14} /> Download PDF
                                 </button>
-                                <span className="text-sm font-bold text-slate-700 uppercase tracking-wider min-w-[140px] text-center select-none">
-                                    {calendar2Month.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        setCalendar2Month(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-                                    }}
-                                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
-                                >
-                                    <ChevronRight size={18} />
-                                </button>
+                                <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
+                                    <button
+                                        onClick={() => {
+                                            setCalendar2Month(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                                        }}
+                                        className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+                                    >
+                                        <ChevronRight size={18} className="rotate-180" />
+                                    </button>
+                                    <span className="text-sm font-bold text-slate-700 uppercase tracking-wider min-w-[140px] text-center select-none">
+                                        {calendar2Month.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setCalendar2Month(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+                                        }}
+                                        className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+                                    >
+                                        <ChevronRight size={18} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -2628,14 +2783,20 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         </p>
                                                     </div>
                                                 )}
-                                                {addonsList && Array.isArray(addonsList) && addonsList.length > 0 && (
-                                                    <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
-                                                        <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
-                                                        <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(addonsList[0].price || 1200).toLocaleString('en-IN')}</p>
-                                                        {addonsList[0].cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {addonsList[0].cakeMessage}</p>}
-                                                        {addonsList[0].occasion && <p className="text-[10px] text-slate-600">Occasion: {addonsList[0].occasion}</p>}
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const celebrationAddon = addonsList && Array.isArray(addonsList)
+                                                        ? addonsList.find((a: any) => a.name === 'Celebration Add-on')
+                                                        : null;
+                                                    if (!celebrationAddon) return null;
+                                                    return (
+                                                        <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
+                                                            <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 1200).toLocaleString('en-IN')}</p>
+                                                            {celebrationAddon.cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {celebrationAddon.cakeMessage}</p>}
+                                                            {celebrationAddon.occasion && <p className="text-[10px] text-slate-600">Occasion: {celebrationAddon.occasion}</p>}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* Extra Guests Display */}

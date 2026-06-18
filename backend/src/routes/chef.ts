@@ -104,9 +104,10 @@ router.get("/pdf/:id", async (req, res) => {
         const details = JSON.parse(log.details);
         const pdfDate = details.date ? new Date(details.date) : log.createdAt;
         const ingredients = details.ingredients || [];
+        const category = details.category || undefined;
 
         // Generate the PDF buffer
-        const pdfBuffer = await generateChefIngredientsPDF(ingredients, pdfDate);
+        const pdfBuffer = await generateChefIngredientsPDF(ingredients, pdfDate, category);
 
         // Send PDF response
         res.setHeader("Content-Type", "application/pdf");
@@ -140,7 +141,7 @@ router.get("/ingredients", async (req: AuthRequest, res) => {
 // POST /api/chef/ingredients — Add a new ingredient (auto-translates nameEn to Hindi)
 router.post("/ingredients", async (req: AuthRequest, res) => {
     try {
-        const { nameEn } = req.body;
+        const { nameEn, category, unit } = req.body;
         if (!nameEn || typeof nameEn !== "string" || nameEn.trim() === "") {
             return res.status(400).json({ error: "Ingredient English name is required" });
         }
@@ -167,7 +168,9 @@ router.post("/ingredients", async (req: AuthRequest, res) => {
         const newIngredient = await prisma.ingredient.create({
             data: {
                 nameEn: cleanEn,
-                nameHi: nameHi
+                nameHi: nameHi,
+                category: category || "Dairy",
+                unit: unit || "kg"
             }
         });
 
@@ -176,7 +179,7 @@ router.post("/ingredients", async (req: AuthRequest, res) => {
             data: {
                 adminId: req.admin!.id,
                 actionType: "add_ingredient",
-                details: JSON.stringify({ nameEn: cleanEn, nameHi })
+                details: JSON.stringify({ nameEn: cleanEn, nameHi, category, unit })
             }
         });
 
@@ -256,43 +259,74 @@ router.post("/submit", async (req: AuthRequest, res) => {
         }
 
         const submitDate = date ? new Date(date) : new Date();
-
-        // 1. Write SUBMIT_ORDER log to database
-        const log = await prisma.chefLog.create({
-            data: {
-                adminId: req.admin!.id,
-                actionType: "submit_order",
-                details: JSON.stringify({
-                    date: submitDate.toISOString().split("T")[0],
-                    ingredients
-                })
-            }
-        });
-
-        // 2. Generate PDF download link using server configuration
         const baseUrl = process.env.FRONTEND_URL || "https://www.galaxiaresorts.com";
-        const downloadLink = `${baseUrl}/api/chef/pdf/${log.id}`;
 
-        // 3. Send WhatsApp text containing the PDF download link to the chef/owner WhatsApp
+        // Group ingredients by category
+        const groups: Record<string, typeof ingredients> = {};
+        for (const ing of ingredients) {
+            const cat = ing.category || "Dairy";
+            if (!groups[cat]) {
+                groups[cat] = [];
+            }
+            groups[cat].push(ing);
+        }
+
         const dateStr = submitDate.toLocaleDateString("en-IN", {
             day: "2-digit",
             month: "short",
             year: "numeric"
         });
 
-        const recipientPhone = "8237309564";
-        const waSuccess = await sendWhatsAppTemplateMessage(
-            "otp",
-            recipientPhone,
-            "kitchen_checklist_ready",
-            [dateStr, downloadLink, req.admin!.username]
-        );
+        // Supplier map (for testing all are set to "8237309564")
+        const CATEGORY_SUPPLIER_MAP: Record<string, string> = {
+            "Dairy": "8237309564",
+            "Kirayana": "8237309564",
+            "Shak Shabji": "8237309564"
+        };
+
+        const results = [];
+
+        // For each category, create separate logs, PDFs, and route to specific WhatsApp supplier
+        for (const [categoryName, categoryIngredients] of Object.entries(groups)) {
+            // Write SUBMIT_ORDER log to database
+            const log = await prisma.chefLog.create({
+                data: {
+                    adminId: req.admin!.id,
+                    actionType: "submit_order",
+                    details: JSON.stringify({
+                        date: submitDate.toISOString().split("T")[0],
+                        category: categoryName,
+                        ingredients: categoryIngredients
+                    })
+                }
+            });
+
+            const downloadLink = `${baseUrl}/api/chef/pdf/${log.id}`;
+            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
+            const catDateStr = `${dateStr} (${categoryName})`;
+
+            const waSuccess = await sendWhatsAppTemplateMessage(
+                "otp",
+                recipientPhone,
+                "kitchen_checklist_ready",
+                [catDateStr, downloadLink, req.admin!.username]
+            );
+
+            results.push({
+                category: categoryName,
+                logId: log.id,
+                downloadLink,
+                whatsAppSent: waSuccess
+            });
+        }
 
         return res.json({
             success: true,
-            logId: log.id,
-            downloadLink,
-            whatsAppSent: waSuccess,
+            results,
+            // Provide fallback values matching the original keys for backward compatibility
+            logId: results[0]?.logId,
+            downloadLink: results[0]?.downloadLink,
+            whatsAppSent: results[0]?.whatsAppSent,
             message: "Kitchen checklist submitted and link sent successfully."
         });
     } catch (error: any) {

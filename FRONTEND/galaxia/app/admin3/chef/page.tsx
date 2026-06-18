@@ -21,6 +21,8 @@ interface Ingredient {
     id: number;
     nameEn: string;
     nameHi: string;
+    category: string;
+    unit: string;
     createdAt: string;
 }
 
@@ -48,6 +50,8 @@ export default function ChefPortalPage() {
     // Search & Add State
     const [searchTerm, setSearchTerm] = useState("");
     const [newIngredientName, setNewIngredientName] = useState("");
+    const [newIngredientCategory, setNewIngredientCategory] = useState("Dairy");
+    const [newIngredientUnit, setNewIngredientUnit] = useState("kg");
     const [addingIngredient, setAddingIngredient] = useState(false);
     const [addError, setAddError] = useState("");
 
@@ -58,21 +62,55 @@ export default function ChefPortalPage() {
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [activeIngredient, setActiveIngredient] = useState<Ingredient | null>(null);
-    const [tempQuantity, setTempQuantity] = useState("1kg");
+    const [tempQuantity, setTempQuantity] = useState("0.5kg");
+    const [selectedBrand, setSelectedBrand] = useState("Thumps Up");
+    const [selectedVolume, setSelectedVolume] = useState("0.25L");
 
     // Submission State
     const [submitting, setSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
-    const [pdfDownloadUrl, setPdfDownloadUrl] = useState("");
+    const [pdfDownloadLinks, setPdfDownloadLinks] = useState<{ category: string; downloadLink: string }[]>([]);
     const [submitError, setSubmitError] = useState("");
 
     const isOwnerOrDev = userRole === "owner" || userRole === "developer";
 
-    // 1-20kg array
-    const quantityOptions = useMemo(() => {
+    // Generate dynamic quantity options based on unit
+    const getQuantityOptions = (unit: string) => {
         const arr = [];
-        for (let i = 1; i <= 20; i++) {
-            arr.push(`${i}kg`);
+        if (unit === "kg" || unit === "L") {
+            for (let i = 0.5; i <= 20; i += 0.5) {
+                arr.push(`${i.toFixed(1).replace(".0", "")}${unit}`);
+            }
+        } else if (unit === "packet") {
+            for (let i = 1; i <= 10; i++) {
+                arr.push(`${i} packet${i > 1 ? "s" : ""}`);
+            }
+        } else if (unit === "piece") {
+            for (let i = 1; i <= 15; i++) {
+                arr.push(`${i} piece${i > 1 ? "s" : ""}`);
+            }
+        } else if (unit === "disposable_glass") {
+            for (let i = 10; i <= 100; i += 10) {
+                arr.push(`${i} glasses`);
+            }
+        } else {
+            // Fallback
+            for (let i = 1; i <= 20; i++) {
+                arr.push(`${i}kg`);
+            }
+        }
+        return arr;
+    };
+
+    // Cold drink brand options
+    const BRANDS = ["Thumps Up", "Pepsi", "Soda", "Sprite", "Coca Cola", "Fanta", "Limca"];
+
+    // Cold drink volume options (0.25L to 10L in steps of 0.25L)
+    const volumes = useMemo(() => {
+        const arr = [];
+        for (let v = 0.25; v <= 10.0; v += 0.25) {
+            const str = Number(v.toFixed(2)).toString();
+            arr.push(`${str}L`);
         }
         return arr;
     }, []);
@@ -150,7 +188,21 @@ export default function ChefPortalPage() {
         } else {
             // Not checked: open centered modal to select quantity
             setActiveIngredient(ingredient);
-            setTempQuantity("1kg");
+            if (ingredient.unit === "cold_drink") {
+                setSelectedBrand("Thumps Up");
+                setSelectedVolume("0.25L");
+                setTempQuantity("Thumps Up (0.25L)");
+            } else if (ingredient.unit === "disposable_glass") {
+                setTempQuantity("10 glasses");
+            } else if (ingredient.unit === "piece") {
+                setTempQuantity("1 piece");
+            } else if (ingredient.unit === "packet") {
+                setTempQuantity("1 packet");
+            } else if (ingredient.unit === "L") {
+                setTempQuantity("0.5L");
+            } else {
+                setTempQuantity("0.5kg"); // kg
+            }
             setModalOpen(true);
         }
     };
@@ -159,9 +211,14 @@ export default function ChefPortalPage() {
     const handleConfirmQuantity = () => {
         if (!activeIngredient) return;
         
+        let finalQty = tempQuantity;
+        if (activeIngredient.unit === "cold_drink") {
+            finalQty = `${selectedBrand} (${selectedVolume})`;
+        }
+        
         setSelectedQuantities(prev => ({
             ...prev,
-            [activeIngredient.id]: tempQuantity
+            [activeIngredient.id]: finalQty
         }));
         
         setModalOpen(false);
@@ -183,7 +240,11 @@ export default function ChefPortalPage() {
         setAddingIngredient(true);
         setAddError("");
         try {
-            const newIng = await api.post<Ingredient>("/chef/ingredients", { nameEn: name });
+            const newIng = await api.post<Ingredient>("/chef/ingredients", { 
+                nameEn: name,
+                category: newIngredientCategory,
+                unit: newIngredientUnit
+            });
             setIngredients(prev => [newIng, ...prev].sort((a, b) => a.nameEn.localeCompare(b.nameEn)));
             setNewIngredientName("");
             
@@ -230,7 +291,7 @@ export default function ChefPortalPage() {
         setSubmitting(true);
         setSubmitError("");
         setSubmitSuccess(false);
-        setPdfDownloadUrl("");
+        setPdfDownloadLinks([]);
 
         // Map selections to structure expected by endpoint
         const submissionList = selectedIds.map(id => {
@@ -238,6 +299,8 @@ export default function ChefPortalPage() {
             return {
                 nameEn: ing?.nameEn || "",
                 nameHi: ing?.nameHi || "",
+                category: ing?.category || "Dairy",
+                unit: ing?.unit || "kg",
                 quantity: selectedQuantities[id]
             };
         });
@@ -251,7 +314,11 @@ export default function ChefPortalPage() {
 
             if (res.success) {
                 setSubmitSuccess(true);
-                setPdfDownloadUrl(res.downloadLink);
+                if (Array.isArray(res.results)) {
+                    setPdfDownloadLinks(res.results);
+                } else if (res.downloadLink) {
+                    setPdfDownloadLinks([{ category: "Checklist", downloadLink: res.downloadLink }]);
+                }
                 // Clear selections upon success
                 setSelectedQuantities({});
                 
@@ -353,29 +420,52 @@ export default function ChefPortalPage() {
                         </div>
 
                         {/* Inline Add Form */}
-                        <form onSubmit={handleAddIngredient} className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch gap-3">
-                            <div className="flex-1 relative">
+                        <form onSubmit={handleAddIngredient} className="pt-3 border-t border-slate-100 flex flex-col gap-3">
+                            <div className="flex flex-col md:flex-row items-stretch gap-3">
                                 <input
                                     type="text"
                                     placeholder="Add new English ingredient name (e.g. Milk)"
                                     value={newIngredientName}
                                     onChange={(e) => setNewIngredientName(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 focus:bg-white transition-colors"
+                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 focus:bg-white transition-colors"
                                     disabled={addingIngredient}
                                 />
+                                <select
+                                    value={newIngredientCategory}
+                                    onChange={(e) => setNewIngredientCategory(e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-700 transition-colors"
+                                    disabled={addingIngredient}
+                                >
+                                    <option value="Dairy">Dairy</option>
+                                    <option value="Kirayana">Kirayana</option>
+                                    <option value="Shak Shabji">Shak Shabji</option>
+                                </select>
+                                <select
+                                    value={newIngredientUnit}
+                                    onChange={(e) => setNewIngredientUnit(e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-700 transition-colors"
+                                    disabled={addingIngredient}
+                                >
+                                    <option value="kg">kg</option>
+                                    <option value="L">L</option>
+                                    <option value="packet">packet</option>
+                                    <option value="piece">piece</option>
+                                    <option value="disposable_glass">Disposable Glass</option>
+                                    <option value="cold_drink">Cold Drink</option>
+                                </select>
+                                <button
+                                    type="submit"
+                                    disabled={addingIngredient || !newIngredientName.trim()}
+                                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold text-sm px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm shadow-purple-100 whitespace-nowrap"
+                                >
+                                    {addingIngredient ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        <Plus size={16} />
+                                    )}
+                                    Add
+                                </button>
                             </div>
-                            <button
-                                type="submit"
-                                disabled={addingIngredient || !newIngredientName.trim()}
-                                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold text-sm px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm shadow-purple-100"
-                            >
-                                {addingIngredient ? (
-                                    <Loader2 size={16} className="animate-spin" />
-                                ) : (
-                                    <Plus size={16} />
-                                )}
-                                Add
-                            </button>
                         </form>
                         {addError && (
                             <p className="text-xs text-red-500 font-semibold flex items-center gap-1.5 mt-1 bg-red-50 p-2.5 rounded-lg border border-red-100">
@@ -398,65 +488,99 @@ export default function ChefPortalPage() {
                                 <p className="text-xs text-slate-400">Try searching for something else or add this ingredient above.</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                                {filteredIngredients.map((ing) => {
-                                    const isChecked = !!selectedQuantities[ing.id];
-                                    const qty = selectedQuantities[ing.id];
-                                    return (
-                                        <div 
-                                            key={ing.id} 
-                                            className={`flex items-center justify-between px-5 py-4 transition-colors ${
-                                                isChecked ? "bg-purple-50/40" : "hover:bg-slate-50/50"
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-4 flex-1">
-                                                {/* Customized Checkbox */}
-                                                <label className="flex items-center cursor-pointer relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={() => handleCheckboxChange(ing)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-purple-600 peer-checked:border-purple-600 transition-all shadow-sm">
-                                                        <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
-                                                    </div>
-                                                </label>
+                            <div className="max-h-[600px] overflow-y-auto divide-y divide-slate-100">
+                                {(() => {
+                                    const categoriesList = ["Dairy", "Kirayana", "Shak Shabji"];
+                                    const grouped: Record<string, Ingredient[]> = {
+                                        "Dairy": [],
+                                        "Kirayana": [],
+                                        "Shak Shabji": []
+                                    };
+                                    for (const ing of filteredIngredients) {
+                                        const cat = ing.category || "Dairy";
+                                        if (!grouped[cat]) {
+                                            grouped[cat] = [];
+                                        }
+                                        grouped[cat].push(ing);
+                                    }
 
-                                                {/* Text Names */}
-                                                <div 
-                                                    className="cursor-pointer flex-1"
-                                                    onClick={() => handleCheckboxChange(ing)}
-                                                >
-                                                    <span className="font-semibold text-slate-800 text-sm sm:text-base">
-                                                        {ing.nameEn}
+                                    return categoriesList.map((categoryName) => {
+                                        const items = grouped[categoryName] || [];
+                                        if (items.length === 0) return null;
+                                        return (
+                                            <div key={categoryName} className="space-y-0 bg-white">
+                                                <div className="bg-purple-50/50 px-5 py-2.5 border-y border-purple-100/40 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md">
+                                                    <h3 className="text-xs font-extrabold text-purple-800 uppercase tracking-widest">
+                                                        {categoryName}
+                                                    </h3>
+                                                    <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200/50">
+                                                        {items.length} {items.length === 1 ? "Item" : "Items"}
                                                     </span>
-                                                    <span className="text-slate-400 font-medium text-xs sm:text-sm ml-2">
-                                                        ({ing.nameHi})
-                                                    </span>
-                                                    
-                                                    {/* Selected Quantity Badge */}
-                                                    {isChecked && qty && (
-                                                        <span className="ml-3 inline-flex items-center bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-purple-200 animate-in zoom-in-90 duration-150">
-                                                            {qty}
-                                                        </span>
-                                                    )}
+                                                </div>
+                                                <div className="divide-y divide-slate-100">
+                                                    {items.map((ing) => {
+                                                        const isChecked = !!selectedQuantities[ing.id];
+                                                        const qty = selectedQuantities[ing.id];
+                                                        return (
+                                                            <div 
+                                                                key={ing.id} 
+                                                                className={`flex items-center justify-between px-5 py-4 transition-colors ${
+                                                                    isChecked ? "bg-purple-50/20" : "hover:bg-slate-50/50"
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-4 flex-1">
+                                                                    {/* Customized Checkbox */}
+                                                                    <label className="flex items-center cursor-pointer relative">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChecked}
+                                                                            onChange={() => handleCheckboxChange(ing)}
+                                                                            className="sr-only peer"
+                                                                        />
+                                                                        <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-purple-600 peer-checked:border-purple-600 transition-all shadow-sm">
+                                                                            <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
+                                                                        </div>
+                                                                    </label>
+
+                                                                    {/* Text Names */}
+                                                                    <div 
+                                                                        className="cursor-pointer flex-1"
+                                                                        onClick={() => handleCheckboxChange(ing)}
+                                                                    >
+                                                                        <span className="font-semibold text-slate-800 text-sm sm:text-base">
+                                                                            {ing.nameEn}
+                                                                        </span>
+                                                                        <span className="text-slate-400 font-medium text-xs sm:text-sm ml-2">
+                                                                            ({ing.nameHi})
+                                                                        </span>
+                                                                        
+                                                                        {/* Selected Quantity Badge */}
+                                                                        {isChecked && qty && (
+                                                                            <span className="ml-3 inline-flex items-center bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-purple-200 animate-in zoom-in-90 duration-150 font-mono">
+                                                                                {qty}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Action Icon (Delete for Owner Only) */}
+                                                                {isOwnerOrDev && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteIngredient(ing.id)}
+                                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-4"
+                                                                        title="Delete ingredient"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
-
-                                            {/* Action Icon (Delete for Owner Only) */}
-                                            {isOwnerOrDev && (
-                                                <button
-                                                    onClick={() => handleDeleteIngredient(ing.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-4"
-                                                    title="Delete ingredient"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    });
+                                })()}
                             </div>
                         )}
                     </div>
@@ -585,20 +709,53 @@ export default function ChefPortalPage() {
                         </p>
 
                         <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left mb-1.5 ml-1">
-                                    Quantity (dropdown)
-                                </label>
-                                <select 
-                                    value={tempQuantity} 
-                                    onChange={(e) => setTempQuantity(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
-                                >
-                                    {quantityOptions.map(qty => (
-                                        <option key={qty} value={qty}>{qty}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {activeIngredient.unit === "cold_drink" ? (
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left mb-1.5 ml-1">
+                                            Brand
+                                        </label>
+                                        <select
+                                            value={selectedBrand}
+                                            onChange={(e) => setSelectedBrand(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
+                                        >
+                                            {BRANDS.map(brand => (
+                                                <option key={brand} value={brand}>{brand}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left mb-1.5 ml-1">
+                                            Volume
+                                        </label>
+                                        <select
+                                            value={selectedVolume}
+                                            onChange={(e) => setSelectedVolume(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
+                                        >
+                                            {volumes.map(vol => (
+                                                <option key={vol} value={vol}>{vol}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left mb-1.5 ml-1">
+                                        Quantity (dropdown)
+                                    </label>
+                                    <select 
+                                        value={tempQuantity} 
+                                        onChange={(e) => setTempQuantity(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
+                                    >
+                                        {getQuantityOptions(activeIngredient.unit).map(qty => (
+                                            <option key={qty} value={qty}>{qty}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-3 pt-3">
                                 <button
@@ -639,16 +796,21 @@ export default function ChefPortalPage() {
                         </p>
 
                         <div className="space-y-2.5">
-                            {pdfDownloadUrl && isOwnerOrDev && (
-                                <a
-                                    href={pdfDownloadUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm"
-                                >
-                                    <Download size={16} />
-                                    Download PDF
-                                </a>
+                            {pdfDownloadLinks.length > 0 && isOwnerOrDev && (
+                                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                                    {pdfDownloadLinks.map((item, index) => (
+                                        <a
+                                            key={index}
+                                            href={item.downloadLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm text-center"
+                                        >
+                                            <Download size={16} />
+                                            Download {item.category} PDF
+                                        </a>
+                                    ))}
+                                </div>
                             )}
                             <button
                                 onClick={() => setSubmitSuccess(false)}
