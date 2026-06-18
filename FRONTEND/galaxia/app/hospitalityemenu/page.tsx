@@ -244,9 +244,8 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
             <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-3">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Your Villa / Cottage</label>
                 {isLockedVilla ? (
-                    <div className="bg-amber-50/50 border border-amber-200/50 text-amber-950 font-bold rounded-xl px-4 py-3.5 text-sm flex items-center justify-between">
+                    <div className="bg-amber-50/50 border border-amber-200/50 text-amber-950 font-bold rounded-xl px-4 py-3.5 text-sm text-center">
                         <span>{VILLAS_LIST.find(v => v.value === selectedVilla)?.name || selectedVilla}</span>
-                        <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-200/50">Auto-Locked</span>
                     </div>
                 ) : (
                     <select
