@@ -186,7 +186,11 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1">
                     {isAdmin3 ? (
                         <>
-                            {adminRole === "chef" ? (
+                            {adminRole === "housekeeping" ? (
+                                <>
+                                    {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
+                                </>
+                            ) : adminRole === "chef" ? (
                                 <>
                                     {renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
                                 </>
@@ -259,8 +263,9 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                         visibleReceptionistItems.map(item => renderNavItem(item))
                                     )}
 
-                                    {/* Owner/Dev only: Chef Portal Link */}
+                                    {/* Owner/Dev only: Chef & Housekeeping Portal Links */}
                                     {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
+                                    {hasFullAccess && renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
 
                                     {/* Owner/Dev only: Bottom items */}
                                     {hasFullAccess && admin3BottomItems.map(item => renderNavItem(item))}

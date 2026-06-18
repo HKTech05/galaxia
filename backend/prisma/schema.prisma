@@ -353,10 +353,12 @@ model StaycationBooking {
   createdBy          Int?             @map("created_by")
   updatedAt          DateTime         @updatedAt @map("updated_at")
   addons             Json?            @map("addons")
+  assignedUnit       String?          @map("assigned_unit") @db.VarChar(50)
   payments           BookingPayment[]
   extraGuests        ExtraGuest[]
   guestIds           GuestId[]
   foodBills          StaycationFoodBill[]
+  hospitalityRequests HospitalityRequest[]
   coupon             Coupon?          @relation(fields: [couponId], references: [id])
   creator            AdminAccount?    @relation("StayBookingCreator", fields: [createdBy], references: [id])
   property           Property         @relation(fields: [propertyId], references: [id])
@@ -736,6 +738,21 @@ model Quotation {
   createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("quotations")
+}
+
+model HospitalityRequest {
+  id           Int      @id @default(autoincrement())
+  villaName    String   @map("villa_name") @db.VarChar(100)
+  itemCategory String   @map("item_category") @db.VarChar(50)
+  items        Json
+  status       String   @default("pending") @db.VarChar(30)
+  isBilled     Boolean  @default(false) @map("is_billed")
+  bookingId    Int?     @map("booking_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  booking      StaycationBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@map("hospitality_requests")
 }
 
 

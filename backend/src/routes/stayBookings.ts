@@ -455,7 +455,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
 // PATCH /api/bookings/staycation/:id/status — Update status
 router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { status } = req.body;
+        const { status, assignedUnit } = req.body;
         const bookingId = parseInt(req.params.id as string);
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
@@ -463,13 +463,14 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
             where: { id: bookingId },
             data: {
                 status,
+                ...(assignedUnit !== undefined ? { assignedUnit } : {}),
                 ...(status === "checked_in" ? { checkInTime: new Date() } : {}),
                 ...(status === "checked_out" ? { checkOutTime: new Date() } : {}),
             },
         });
 
         // Audit log
-        auditLog({ adminId: req.admin!.id, action: "booking_status_update", entityType: "staycation_booking", entityId: booking.id, details: { newStatus: status } });
+        auditLog({ adminId: req.admin!.id, action: "booking_status_update", entityType: "staycation_booking", entityId: booking.id, details: { newStatus: status, assignedUnit } });
 
         return res.json(booking);
     } catch (error) {

@@ -8,6 +8,23 @@ import { api } from "../../lib/api";
 import ManualBookingModal from "./ManualBookingModal";
 
 
+const getUnitOptions = (booking: any) => {
+    if (!booking) return [];
+    const parent = (booking.parentProperty || "").toLowerCase();
+    const sub = (booking.property || "").toLowerCase();
+    
+    if (parent.includes("amstel") || sub.includes("amstel")) {
+        if (sub.includes("family")) {
+            return ["Family Cottage"];
+        } else {
+            return Array.from({ length: 14 }, (_, i) => `Cottage ${i + 1}`);
+        }
+    } else if (parent.includes("ambrose") || sub.includes("ambrose")) {
+        return ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
+    }
+    return [booking.property || ""];
+};
+
 export default function StaycationPropertyPortal({ properties, portalName }: { properties: string[], portalName: string }) {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -110,8 +127,78 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [foodBillUpiProof, setFoodBillUpiProof] = useState<File | null>(null);
     const [foodBillSubmitting, setFoodBillSubmitting] = useState(false);
 
+    // E-menu food bill states
+    const [foodBillItems, setFoodBillItems] = useState<Array<{ id: string; description: string; amount: number; isEMenu?: boolean }>>([]);
+    const [customTotalAmount, setCustomTotalAmount] = useState<number | null>(null);
+    const [customDescription, setCustomDescription] = useState<string | null>(null);
+    const [assignedUnitInput, setAssignedUnitInput] = useState<string>("");
+
+    useEffect(() => {
+        if (selectedBooking && modalType === "checkin") {
+            const opts = getUnitOptions(selectedBooking);
+            if (opts.length > 0) {
+                setAssignedUnitInput(opts[0]);
+            } else {
+                setAssignedUnitInput("");
+            }
+        }
+    }, [selectedBooking, modalType]);
+
+    useEffect(() => {
+        if (isFoodBillModalOpen && foodBillBooking) {
+            const fetchEMenuRequests = async () => {
+                try {
+                    const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                    const res = await fetch(`/api/hospitality/requests?bookingId=${foodBillBooking.rawId}&isBilled=false&status=fulfilled`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const itemsList: Array<{ id: string; description: string; amount: number; isEMenu?: boolean }> = [];
+                        data.forEach((req: any) => {
+                            if (Array.isArray(req.items)) {
+                                req.items.forEach((item: any, idx: number) => {
+                                    itemsList.push({
+                                        id: `emenu-${req.id}-${idx}`,
+                                        description: `${item.name} x${item.quantity}`,
+                                        amount: (item.price || 0) * (item.quantity || 0),
+                                        isEMenu: true
+                                    });
+                                });
+                            }
+                        });
+                        setFoodBillItems(itemsList);
+                    } else {
+                        setFoodBillItems([]);
+                    }
+                } catch (err) {
+                    console.error("Error fetching e-menu requests:", err);
+                    setFoodBillItems([]);
+                }
+                setCustomTotalAmount(null);
+                setCustomDescription(null);
+            };
+            fetchEMenuRequests();
+        } else {
+            setFoodBillItems([]);
+            setCustomTotalAmount(null);
+            setCustomDescription(null);
+        }
+    }, [isFoodBillModalOpen, foodBillBooking]);
+
     const handleFoodBillSubmit = async () => {
-        if (!foodBillBooking || !foodBillForm.description || !foodBillForm.amount) return;
+        if (!foodBillBooking) return;
+
+        const sumOfItems = foodBillItems.reduce((sum, item) => sum + (parseInt(item.amount as any) || 0), 0);
+        const finalAmount = customTotalAmount !== null ? customTotalAmount : sumOfItems;
+        const autoDescription = foodBillItems.map(item => `${item.description} (₹${item.amount})`).join(", ");
+        const finalDescription = customDescription !== null ? customDescription : autoDescription;
+
+        if (!finalDescription || !finalAmount) {
+            alert("Description and Amount are required.");
+            return;
+        }
+
         setFoodBillSubmitting(true);
         try {
             let upiProofUrl = null;
@@ -134,12 +221,27 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             }
             await api.post("/stay-food-bills", {
                 bookingId: foodBillBooking.rawId,
-                description: foodBillForm.description,
-                amount: parseInt(foodBillForm.amount),
+                description: finalDescription,
+                amount: finalAmount,
                 paymentMethod: foodBillForm.paymentMethod,
                 upiProofUrl,
                 upiProofKey,
             });
+
+            // Mark e-menu requests as billed
+            try {
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                await fetch(`/api/hospitality/requests/bill/${foodBillBooking.rawId}`, {
+                    method: "PUT",
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+            } catch (err) {
+                console.error("Failed to mark hospitality requests as billed:", err);
+            }
+
             setIsFoodBillModalOpen(false);
             setFoodBillForm({ description: "", amount: "", paymentMethod: "cash" });
             setFoodBillUpiProof(null);
@@ -260,7 +362,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             await api.patch(`/bookings/staycation/${numericId}/status`, { 
                 status: newStatus === "Checked In" ? "checked_in" : 
                         newStatus === "Cancelled" ? "cancelled" : 
-                        (newStatus === "Checked Out" || newStatus === "Completed") ? "checked_out" : "confirmed"
+                        (newStatus === "Checked Out" || newStatus === "Completed") ? "checked_out" : "confirmed",
+                ...(newStatus === "Checked In" ? { assignedUnit: assignedUnitInput } : {})
             });
             
             // Record payment if checking in
@@ -698,6 +801,21 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         <div className="p-5 space-y-6">
                             {modalType === 'checkin' ? (
                                 <>
+                                    <div className="space-y-1.5 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Assign Cottage / Room / Villa</label>
+                                        <select
+                                            value={assignedUnitInput}
+                                            onChange={(e) => setAssignedUnitInput(e.target.value)}
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                        >
+                                            {getUnitOptions(selectedBooking).map((opt) => (
+                                                <option key={opt} value={opt}>
+                                                    {opt}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
                                     <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-sm font-bold text-amber-800">20% Remaining Balance</span>
@@ -1162,24 +1280,121 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             {/* Food Bill Modal */}
             {isFoodBillModalOpen && foodBillBooking && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50 shrink-0">
                             <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Plus size={18} className="text-amber-600" /> Add Food Bill</h3>
                             <button onClick={() => setIsFoodBillModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                        <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 shrink-0">
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Booking</p>
                                 <p className="text-sm font-bold text-slate-800 mt-0.5">{foodBillBooking.id} — {foodBillBooking.customer}</p>
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Description *</label>
-                                <input type="text" value={foodBillForm.description} onChange={e => setFoodBillForm({ ...foodBillForm, description: e.target.value })} placeholder="e.g. Dinner for 4, Snacks order" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+
+                            {/* Items List */}
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Items list</label>
+                                {foodBillItems.map((item, index) => (
+                                    <div key={item.id} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <input
+                                            type="text"
+                                            value={item.description}
+                                            onChange={(e) => {
+                                                const updated = [...foodBillItems];
+                                                updated[index].description = e.target.value;
+                                                setFoodBillItems(updated);
+                                            }}
+                                            placeholder="Item description"
+                                            className="flex-1 min-w-0 bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-medium focus:outline-none focus:border-amber-500"
+                                        />
+                                        <input
+                                            type="number"
+                                            value={item.amount || ''}
+                                            onChange={(e) => {
+                                                const updated = [...foodBillItems];
+                                                updated[index].amount = parseInt(e.target.value) || 0;
+                                                setFoodBillItems(updated);
+                                            }}
+                                            placeholder="Price"
+                                            className="w-20 bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-amber-500"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const updated = foodBillItems.filter((_, idx) => idx !== index);
+                                                setFoodBillItems(updated);
+                                            }}
+                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {foodBillItems.length === 0 && (
+                                    <p className="text-xs text-slate-400 italic">No e-menu requests or items added yet.</p>
+                                )}
                             </div>
+
+                            {/* Add Item Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setFoodBillItems([
+                                        ...foodBillItems,
+                                        { id: `custom-${Date.now()}`, description: '', amount: 0 }
+                                    ]);
+                                }}
+                                className="w-full border border-dashed border-slate-300 hover:border-amber-500 py-2 rounded-lg text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                                <Plus size={14} /> Add Item Line
+                            </button>
+
+                            {/* Final Description Override */}
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Amount (₹) *</label>
-                                <input type="text" inputMode="numeric" value={foodBillForm.amount} onChange={e => { const val = e.target.value.replace(/[^0-9]/g, ''); setFoodBillForm({ ...foodBillForm, amount: val }); }} placeholder="e.g. 2500" className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Final Description *</label>
+                                    {customDescription !== null && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCustomDescription(null)}
+                                            className="text-[10px] text-amber-600 font-bold hover:underline"
+                                        >
+                                            Reset to auto
+                                        </button>
+                                    )}
+                                </div>
+                                <textarea
+                                    value={customDescription !== null ? customDescription : foodBillItems.map(item => `${item.description} (₹${item.amount})`).join(", ")}
+                                    onChange={(e) => setCustomDescription(e.target.value)}
+                                    rows={2}
+                                    placeholder="Final food bill description"
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                />
                             </div>
+
+                            {/* Final Amount Override */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Final Amount (₹) *</label>
+                                    {customTotalAmount !== null && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCustomTotalAmount(null)}
+                                            className="text-[10px] text-amber-600 font-bold hover:underline"
+                                        >
+                                            Reset to sum (₹{foodBillItems.reduce((sum, item) => sum + (parseInt(item.amount as any) || 0), 0)})
+                                        </button>
+                                    )}
+                                </div>
+                                <input
+                                    type="number"
+                                    value={customTotalAmount !== null ? customTotalAmount : foodBillItems.reduce((sum, item) => sum + (parseInt(item.amount as any) || 0), 0)}
+                                    onChange={(e) => setCustomTotalAmount(parseInt(e.target.value) || 0)}
+                                    placeholder="Final total amount"
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                />
+                            </div>
+
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Paid via</label>
                                 <div className="bg-slate-50 rounded-lg p-1 flex">
@@ -1212,13 +1427,22 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     )}
                                 </div>
                             )}
-                            <button
-                                onClick={handleFoodBillSubmit}
-                                disabled={foodBillSubmitting || !foodBillForm.description || !foodBillForm.amount}
-                                className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {foodBillSubmitting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus size={16} /> Submit Food Bill</>}
-                            </button>
+                            {(() => {
+                                const computedSum = foodBillItems.reduce((sum, item) => sum + (parseInt(item.amount as any) || 0), 0);
+                                const finalAmt = customTotalAmount !== null ? customTotalAmount : computedSum;
+                                const autoDesc = foodBillItems.map(item => `${item.description} (₹${item.amount})`).join(", ");
+                                const finalDesc = customDescription !== null ? customDescription : autoDesc;
+                                const isSubmitDisabled = foodBillSubmitting || !finalDesc || !finalAmt;
+                                return (
+                                    <button
+                                        onClick={handleFoodBillSubmit}
+                                        disabled={isSubmitDisabled}
+                                        className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {foodBillSubmitting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus size={16} /> Submit Food Bill</>}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
