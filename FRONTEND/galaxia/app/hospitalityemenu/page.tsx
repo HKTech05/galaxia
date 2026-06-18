@@ -51,20 +51,24 @@ const VILLAS_LIST = [
     { name: "Amstel Nest — Family Cottage", value: "Family Cottage" },
 ];
 
-function EMenuContent() {
+function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
     const searchParams = useSearchParams();
     
-    // Resolve initial villa from query param
-    const queryVilla = searchParams.get("villa") || "";
-    const isLockedVilla = !!queryVilla && VILLAS_LIST.some(v => v.value.toLowerCase() === queryVilla.toLowerCase());
+    // Resolve initial villa from query param or overrideVilla prop
+    const rawVillaInput = overrideVilla || searchParams.get("villa") || "";
     
-    const initialVillaValue = useMemo(() => {
-        if (isLockedVilla) {
-            const match = VILLAS_LIST.find(v => v.value.toLowerCase() === queryVilla.toLowerCase());
-            return match ? match.value : "";
-        }
-        return "";
-    }, [queryVilla, isLockedVilla]);
+    // Match the villa using useMemo
+    const match = useMemo(() => {
+        if (!rawVillaInput) return null;
+        const slug = rawVillaInput.toLowerCase().replace(/-/g, " ");
+        return VILLAS_LIST.find(v => {
+            const normalizedVal = v.value.toLowerCase().replace(/-/g, " ");
+            return normalizedVal === slug || v.value.toLowerCase() === rawVillaInput.toLowerCase();
+        });
+    }, [rawVillaInput]);
+
+    const isLockedVilla = !!match;
+    const initialVillaValue = match ? match.value : "";
 
     const [selectedVilla, setSelectedVilla] = useState(initialVillaValue);
     
@@ -241,7 +245,7 @@ function EMenuContent() {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">Your Villa / Cottage</label>
                 {isLockedVilla ? (
                     <div className="bg-amber-50/50 border border-amber-200/50 text-amber-950 font-bold rounded-xl px-4 py-3.5 text-sm flex items-center justify-between">
-                        <span>{VILLAS_LIST.find(v => v.value.toLowerCase() === queryVilla.toLowerCase())?.name || queryVilla}</span>
+                        <span>{VILLAS_LIST.find(v => v.value === selectedVilla)?.name || selectedVilla}</span>
                         <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-200/50">Auto-Locked</span>
                     </div>
                 ) : (
@@ -318,16 +322,20 @@ function EMenuContent() {
                     )}
                 </div>
 
-                {/* Overlap overlay if locked */}
                 {!highTeaUnlocked && (
-                    <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[1px] z-20 flex flex-col items-center justify-center p-6 text-center">
-                        <div className="bg-white/95 rounded-2xl shadow-xl border border-slate-100 p-5 max-w-xs space-y-2.5">
-                            <Clock size={28} className="text-amber-600 mx-auto" />
-                            <h3 className="text-sm font-bold text-slate-800">Locked Until 5:00 PM</h3>
-                            <p className="text-slate-400 text-xs leading-relaxed">
-                                High Tea specialties unlock automatically at 5:00 PM every day. Remaining time:
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 animate-in fade-in duration-200">
+                        <div className="space-y-1">
+                            <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-slate-800 uppercase tracking-wider">
+                                <Clock size={14} className="text-amber-600 animate-pulse" />
+                                Locked Until 5:00 PM
+                            </h3>
+                            <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                                High Tea specialties unlock automatically at 5:00 PM every day.
                             </p>
-                            <div className="font-mono font-bold text-base text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100">
+                        </div>
+                        <div className="shrink-0 flex items-center gap-2">
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500">Remaining:</span>
+                            <div className="font-mono font-black text-xs bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-sm min-w-[80px] text-center">
                                 {timeRemaining || "00:00:00"}
                             </div>
                         </div>
@@ -339,7 +347,7 @@ function EMenuContent() {
                         const isChecked = !!quantities[item.id];
                         const qty = quantities[item.id] || 0;
                         return (
-                            <div key={item.id} className="flex items-center justify-between py-3.5">
+                            <div key={item.id} className={`flex items-center justify-between py-3.5 transition-opacity duration-200 ${!highTeaUnlocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
                                 <div className="flex items-center gap-3.5 flex-1">
                                     <label className="flex items-center cursor-pointer relative">
                                         <input
@@ -432,7 +440,7 @@ function EMenuContent() {
     );
 }
 
-export default function HospitalityEMenuPage() {
+export default function HospitalityEMenuPage({ overrideVilla }: { overrideVilla?: string }) {
     return (
         <div className="min-h-screen bg-slate-50 p-4 sm:p-8">
             <Suspense fallback={
@@ -441,7 +449,7 @@ export default function HospitalityEMenuPage() {
                     <p className="text-sm font-semibold tracking-wide">Loading menu...</p>
                 </div>
             }>
-                <EMenuContent />
+                <EMenuContent overrideVilla={overrideVilla} />
             </Suspense>
         </div>
     );
