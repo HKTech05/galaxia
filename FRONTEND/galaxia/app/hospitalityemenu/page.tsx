@@ -19,6 +19,7 @@ const MENU_ITEMS: MenuItem[] = [
     { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal" },
     { id: "sprite", name: "Sprite", price: 70, category: "Normal" },
     { id: "thums_up", name: "Thums Up", price: 70, category: "Normal" },
+    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal" },
     // High Tea Items
     { id: "tea", name: "Tea", price: 40, category: "High Tea" },
     { id: "coffee", name: "Coffee", price: 44, category: "High Tea" },
