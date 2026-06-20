@@ -221,7 +221,7 @@ router.get("/allocations", async (req: AuthRequest, res) => {
 
         const bookings = await prisma.staycationBooking.findMany({
             where: {
-                status: { notIn: ["cancelled", "no_show", "transferred"] },
+                status: "checked_in",
                 checkInDate: { lte: targetDate },
                 checkOutDate: { gte: targetDate }
             },

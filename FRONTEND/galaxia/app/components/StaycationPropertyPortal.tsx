@@ -137,7 +137,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         if (selectedBooking && modalType === "checkin") {
             const opts = getUnitOptions(selectedBooking);
             if (opts.length > 0) {
-                setAssignedUnitInput(opts[0]);
+                const bookingProperty = (selectedBooking.property || "").toLowerCase();
+                const matchedIdx = opts.findIndex(opt => opt.toLowerCase() === bookingProperty || opt.toLowerCase().includes(bookingProperty));
+                if (matchedIdx !== -1) {
+                    setAssignedUnitInput(opts[matchedIdx]);
+                } else {
+                    setAssignedUnitInput(opts[0]);
+                }
             } else {
                 setAssignedUnitInput("");
             }
