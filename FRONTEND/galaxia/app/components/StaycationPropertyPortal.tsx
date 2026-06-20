@@ -135,17 +135,24 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
     useEffect(() => {
         if (selectedBooking && modalType === "checkin") {
-            const opts = getUnitOptions(selectedBooking);
-            if (opts.length > 0) {
-                const bookingProperty = (selectedBooking.property || "").toLowerCase();
-                const matchedIdx = opts.findIndex(opt => opt.toLowerCase() === bookingProperty || opt.toLowerCase().includes(bookingProperty));
-                if (matchedIdx !== -1) {
-                    setAssignedUnitInput(opts[matchedIdx]);
-                } else {
-                    setAssignedUnitInput(opts[0]);
-                }
+            const parent = (selectedBooking.parentProperty || "").toLowerCase();
+            const isAmbrose = parent.includes("ambrose");
+            
+            if (isAmbrose) {
+                setAssignedUnitInput(selectedBooking.property || "");
             } else {
-                setAssignedUnitInput("");
+                const opts = getUnitOptions(selectedBooking);
+                if (opts.length > 0) {
+                    const bookingProperty = (selectedBooking.property || "").toLowerCase();
+                    const matchedIdx = opts.findIndex(opt => opt.toLowerCase() === bookingProperty || opt.toLowerCase().includes(bookingProperty));
+                    if (matchedIdx !== -1) {
+                        setAssignedUnitInput(opts[matchedIdx]);
+                    } else {
+                        setAssignedUnitInput(opts[0]);
+                    }
+                } else {
+                    setAssignedUnitInput("");
+                }
             }
         }
     }, [selectedBooking, modalType]);
@@ -807,20 +814,27 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         <div className="p-5 space-y-6">
                             {modalType === 'checkin' ? (
                                 <>
-                                    <div className="space-y-1.5 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Assign Cottage / Room / Villa</label>
-                                        <select
-                                            value={assignedUnitInput}
-                                            onChange={(e) => setAssignedUnitInput(e.target.value)}
-                                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                        >
-                                            {getUnitOptions(selectedBooking).map((opt) => (
-                                                <option key={opt} value={opt}>
-                                                    {opt}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    {((selectedBooking.parentProperty || "").toLowerCase().includes("ambrose")) ? (
+                                        <div className="space-y-1.5 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Assigned Villa (Auto-Allotted)</label>
+                                            <div className="text-sm font-extrabold text-slate-800 tracking-wide">{selectedBooking.property}</div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1.5 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Assign Cottage / Room / Villa</label>
+                                            <select
+                                                value={assignedUnitInput}
+                                                onChange={(e) => setAssignedUnitInput(e.target.value)}
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                            >
+                                                {getUnitOptions(selectedBooking).map((opt) => (
+                                                    <option key={opt} value={opt}>
+                                                        {opt}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
                                         <div className="flex justify-between items-center mb-2">
