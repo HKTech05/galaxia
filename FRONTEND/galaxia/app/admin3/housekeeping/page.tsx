@@ -102,10 +102,10 @@ export default function HousekeepingPortalPage() {
             } else if (co === targetDateStr) {
                 return { label: "Check-Out", bg: "bg-amber-50 text-amber-700 border-amber-100" };
             } else {
-                return { label: "Stayover", bg: "bg-emerald-50 text-emerald-700 border-emerald-100" };
+                return { label: "Continue", bg: "bg-emerald-50 text-emerald-700 border-emerald-100" };
             }
         } catch (e) {
-            return { label: "Stayover", bg: "bg-emerald-50 text-emerald-700 border-emerald-100" };
+            return { label: "Continue", bg: "bg-emerald-50 text-emerald-700 border-emerald-100" };
         }
     };
 
@@ -180,69 +180,7 @@ export default function HousekeepingPortalPage() {
                 </div>
             </div>
 
-            {/* Villa Allotments Table */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <ClipboardCheck size={20} className="text-indigo-600" />
-                        Villa Allotments ({selectedDate})
-                    </h2>
-                    <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100">
-                        {allocations.length} Active Guests
-                    </span>
-                </div>
 
-                {loadingAllocations ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
-                        <RefreshCw size={24} className="animate-spin text-indigo-600" />
-                        <p className="text-xs font-semibold">Loading allotments...</p>
-                    </div>
-                ) : allocationsError ? (
-                    <div className="text-red-500 text-xs font-semibold p-3 bg-red-50 rounded-xl flex items-center gap-2">
-                        <AlertCircle size={14} />
-                        {allocationsError}
-                    </div>
-                ) : allocations.length === 0 ? (
-                    <p className="text-center py-8 text-slate-400 text-xs font-medium">
-                        No guest allotments for this day.
-                    </p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <th className="py-2.5 px-3">Villa / Cottage</th>
-                                    <th className="py-2.5 px-3">Guest Name</th>
-                                    <th className="py-2.5 px-3">Booking Ref</th>
-                                    <th className="py-2.5 px-3">Stay Dates</th>
-                                    <th className="py-2.5 px-3 text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 text-xs">
-                                {allocations.map((alloc) => {
-                                    const statusInfo = getStayStatus(alloc, selectedDate);
-                                    const unitName = alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
-                                    return (
-                                        <tr key={alloc.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="py-3 px-3 font-bold text-slate-800">{unitName}</td>
-                                            <td className="py-3 px-3 font-semibold text-slate-700">{alloc.customerName}</td>
-                                            <td className="py-3 px-3 font-mono font-medium text-slate-400">{alloc.bookingRef}</td>
-                                            <td className="py-3 px-3 text-slate-500 font-medium">
-                                                {new Date(alloc.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} - {new Date(alloc.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                                            </td>
-                                            <td className="py-3 px-3 text-center">
-                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${statusInfo.bg}`}>
-                                                    {statusInfo.label}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
 
             {/* Main view grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -390,6 +328,70 @@ export default function HousekeepingPortalPage() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* Villa Allotments Table */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <ClipboardCheck size={20} className="text-indigo-600" />
+                        Villa Allotments ({selectedDate})
+                    </h2>
+                    <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100">
+                        {allocations.length} Active Guests
+                    </span>
+                </div>
+
+                {loadingAllocations ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                        <RefreshCw size={24} className="animate-spin text-indigo-600" />
+                        <p className="text-xs font-semibold">Loading allotments...</p>
+                    </div>
+                ) : allocationsError ? (
+                    <div className="text-red-500 text-xs font-semibold p-3 bg-red-50 rounded-xl flex items-center gap-2">
+                        <AlertCircle size={14} />
+                        {allocationsError}
+                    </div>
+                ) : allocations.length === 0 ? (
+                    <p className="text-center py-8 text-slate-400 text-xs font-medium">
+                        No guest allotments for this day.
+                    </p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th className="py-2.5 px-3">Villa / Cottage</th>
+                                    <th className="py-2.5 px-3">Guest Name</th>
+                                    <th className="py-2.5 px-3">Booking Ref</th>
+                                    <th className="py-2.5 px-3">Stay Dates</th>
+                                    <th className="py-2.5 px-3 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 text-xs">
+                                {allocations.map((alloc) => {
+                                    const statusInfo = getStayStatus(alloc, selectedDate);
+                                    const unitName = alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
+                                    return (
+                                        <tr key={alloc.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-3 px-3 font-bold text-slate-800">{unitName}</td>
+                                            <td className="py-3 px-3 font-semibold text-slate-700">{alloc.customerName}</td>
+                                            <td className="py-3 px-3 font-mono font-medium text-slate-400">{alloc.bookingRef}</td>
+                                            <td className="py-3 px-3 text-slate-500 font-medium">
+                                                {new Date(alloc.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} - {new Date(alloc.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                            </td>
+                                            <td className="py-3 px-3 text-center">
+                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${statusInfo.bg}`}>
+                                                    {statusInfo.label}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

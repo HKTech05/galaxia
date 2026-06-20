@@ -243,17 +243,22 @@ router.get("/allocations", async (req: AuthRequest, res) => {
             ]
         });
 
-        const result = bookings.map(b => ({
-            id: b.id,
-            bookingRef: b.bookingRef,
-            customerName: b.customerName,
-            checkInDate: b.checkInDate,
-            checkOutDate: b.checkOutDate,
-            assignedUnit: b.assignedUnit,
-            status: b.status,
-            propertyName: b.property.name,
-            subPropertyName: b.subProperty?.name || null
-        }));
+        const result = bookings
+            .filter(b => {
+                const name = (b.property.name || "").toLowerCase();
+                return name.includes("ambrose") || name.includes("amstel");
+            })
+            .map(b => ({
+                id: b.id,
+                bookingRef: b.bookingRef,
+                customerName: b.customerName,
+                checkInDate: b.checkInDate,
+                checkOutDate: b.checkOutDate,
+                assignedUnit: b.assignedUnit,
+                status: b.status,
+                propertyName: b.property.name,
+                subPropertyName: b.subProperty?.name || null
+            }));
 
         return res.json(result);
     } catch (error) {
