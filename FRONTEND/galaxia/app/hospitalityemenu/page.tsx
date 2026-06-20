@@ -14,16 +14,22 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
     // Normal Items
-    { id: "water", name: "Mineral Water Bottle", price: 50, category: "Normal" },
-    { id: "coke", name: "Coca Cola 250ml", price: 60, category: "Normal" },
-    { id: "sprite", name: "Sprite 250ml", price: 60, category: "Normal" },
-    { id: "soda", name: "Soda Bottle", price: 40, category: "Normal" },
+    { id: "water", name: "Water", price: 30, category: "Normal" },
+    { id: "limbu_pani", name: "Limbu pani", price: 50, category: "Normal" },
+    { id: "limbu_soda", name: "Limbu soda", price: 90, category: "Normal" },
+    { id: "sprite", name: "Sprite", price: 70, category: "Normal" },
+    { id: "thumps_up", name: "Thumps up", price: 70, category: "Normal" },
     // High Tea Items
-    { id: "sandwich", name: "Veg Sandwich", price: 150, category: "High Tea" },
-    { id: "pakoda", name: "Paneer Pakoda", price: 180, category: "High Tea" },
-    { id: "fries", name: "French Fries", price: 120, category: "High Tea" },
-    { id: "tea", name: "Hot Tea/Chai", price: 40, category: "High Tea" },
-    { id: "coffee", name: "Hot Coffee", price: 60, category: "High Tea" },
+    { id: "tea", name: "Tea", price: 40, category: "High Tea" },
+    { id: "coffeee", name: "Coffeee", price: 44, category: "High Tea" },
+    { id: "milk", name: "Milk", price: 40, category: "High Tea" },
+    { id: "maggie", name: "Maggie", price: 84, category: "High Tea" },
+    { id: "fries", name: "French fries", price: 147, category: "High Tea" },
+    { id: "kanda_bhaji", name: "Kanda bhaji", price: 147, category: "High Tea" },
+    { id: "aloo_bhaji", name: "Aloo bhaji", price: 147, category: "High Tea" },
+    { id: "corn_bhaji", name: "Corn bhaji", price: 147, category: "High Tea" },
+    { id: "black_coffee", name: "Black coffee", price: 35, category: "High Tea" },
+    { id: "cold_coffee", name: "Cold coffee", price: 90, category: "High Tea" },
 ];
 
 const VILLAS_LIST = [
@@ -90,20 +96,41 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
         }
     }, [initialVillaValue]);
 
-    // Live countdown timer to 5:00 PM (17:00) local time
+    // Live countdown timer to High Tea window 4:30 PM - 6:30 PM (16:30 - 18:30) local time
     useEffect(() => {
         const updateTimer = () => {
             const now = new Date();
-            const targetTime = new Date();
-            targetTime.setHours(17, 0, 0, 0); // 5:00 PM
+            
+            const startTarget = new Date();
+            startTarget.setHours(16, 30, 0, 0); // 4:30 PM
+            
+            const endTarget = new Date();
+            endTarget.setHours(18, 30, 0, 0); // 6:30 PM
 
-            if (now >= targetTime) {
+            // Check if timer should be temporarily bypassed for testing
+            const TEMPORARILY_DISABLE_TIMER = true; // Set to false to enable actual timer logic
+
+            if (TEMPORARILY_DISABLE_TIMER) {
+                setHighTeaUnlocked(true);
+                setTimeRemaining("");
+                return;
+            }
+
+            if (now >= startTarget && now <= endTarget) {
                 // High tea is unlocked
                 setHighTeaUnlocked(true);
                 setTimeRemaining("");
             } else {
                 setHighTeaUnlocked(false);
-                const diffMs = targetTime.getTime() - now.getTime();
+                
+                // Calculate time remaining until the next 4:30 PM
+                let nextStart = new Date(startTarget);
+                if (now > endTarget) {
+                    // Next start is tomorrow
+                    nextStart.setDate(nextStart.getDate() + 1);
+                }
+                
+                const diffMs = nextStart.getTime() - now.getTime();
                 const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
                 const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
                 const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
@@ -326,10 +353,10 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                         <div className="space-y-1">
                             <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-slate-800 uppercase tracking-wider">
                                 <Clock size={14} className="text-amber-600 animate-pulse" />
-                                Locked Until 5:00 PM
+                                Locked Until 4:30 PM
                             </h3>
                             <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
-                                High Tea specialties unlock automatically at 5:00 PM every day.
+                                High Tea specialties unlock automatically between 4:30 PM and 6:30 PM every day.
                             </p>
                         </div>
                         <div className="shrink-0 flex items-center gap-2">
