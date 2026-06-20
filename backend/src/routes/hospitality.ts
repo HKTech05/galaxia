@@ -208,4 +208,58 @@ router.put("/requests/bill/:bookingId", async (req: AuthRequest, res) => {
     }
 });
 
+// 5. GET /api/hospitality/allocations — Fetch active bookings/allocations for a given date
+router.get("/allocations", async (req: AuthRequest, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ error: "Date parameter is required" });
+        }
+
+        const dateStr = String(date); // YYYY-MM-DD
+        const targetDate = new Date(`${dateStr}T00:00:00`);
+
+        const bookings = await prisma.staycationBooking.findMany({
+            where: {
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
+                checkInDate: { lte: targetDate },
+                checkOutDate: { gte: targetDate }
+            },
+            include: {
+                property: {
+                    select: {
+                        name: true
+                    }
+                },
+                subProperty: {
+                    select: {
+                        name: true
+                    }
+                }
+            },
+            orderBy: [
+                { propertyId: "asc" },
+                { checkInDate: "asc" }
+            ]
+        });
+
+        const result = bookings.map(b => ({
+            id: b.id,
+            bookingRef: b.bookingRef,
+            customerName: b.customerName,
+            checkInDate: b.checkInDate,
+            checkOutDate: b.checkOutDate,
+            assignedUnit: b.assignedUnit,
+            status: b.status,
+            propertyName: b.property.name,
+            subPropertyName: b.subProperty?.name || null
+        }));
+
+        return res.json(result);
+    } catch (error) {
+        console.error("Error fetching hospitality allocations:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

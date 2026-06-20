@@ -108,7 +108,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
             endTarget.setHours(18, 30, 0, 0); // 6:30 PM
 
             // Check if timer should be temporarily bypassed for testing
-            const TEMPORARILY_DISABLE_TIMER = true; // Set to false to enable actual timer logic
+            const TEMPORARILY_DISABLE_TIMER = false; // Set to false to enable actual timer logic
 
             if (TEMPORARILY_DISABLE_TIMER) {
                 setHighTeaUnlocked(true);
