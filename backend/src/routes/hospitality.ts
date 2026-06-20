@@ -150,11 +150,11 @@ router.get("/requests", async (req: AuthRequest, res) => {
     }
 });
 
-// 3. PUT /api/hospitality/requests/:id — Mark a request status as done / fulfilled
+// 3. PUT /api/hospitality/requests/:id — Update request (status, villa, items)
 router.put("/requests/:id", async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
-        const { status } = req.body;
+        const { status, villaName, itemCategory, items } = req.body;
 
         if (isNaN(id)) {
             return res.status(400).json({ error: "Invalid request ID" });
@@ -168,16 +168,40 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
             return res.status(404).json({ error: "Hospitality request not found" });
         }
 
+        const data: any = {};
+        if (status !== undefined) data.status = status;
+        if (villaName !== undefined) data.villaName = villaName;
+        if (itemCategory !== undefined) data.itemCategory = itemCategory;
+        if (items !== undefined) {
+            data.items = JSON.stringify(items);
+            
+            // Re-calculate bookingId based on target villa
+            const targetVilla = villaName || existing.villaName;
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            const activeBooking = await prisma.staycationBooking.findFirst({
+                where: {
+                    status: { in: ["confirmed", "checked_in"] },
+                    checkInDate: { lte: todayStart },
+                    checkOutDate: { gt: todayStart },
+                    OR: [
+                        { assignedUnit: targetVilla },
+                        { subProperty: { name: { equals: targetVilla, mode: "insensitive" } } }
+                    ]
+                }
+            });
+            data.bookingId = activeBooking ? activeBooking.id : null;
+        }
+
         const updated = await prisma.hospitalityRequest.update({
             where: { id },
-            data: {
-                status: status || "fulfilled"
-            }
+            data
         });
 
         return res.json({ success: true, request: updated });
     } catch (error) {
-        console.error("Error updating hospitality request status:", error);
+        console.error("Error updating hospitality request:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -264,6 +288,33 @@ router.get("/allocations", async (req: AuthRequest, res) => {
         return res.json(result);
     } catch (error) {
         console.error("Error fetching hospitality allocations:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// 6. DELETE /api/hospitality/requests/:id — Delete a hospitality request
+router.delete("/requests/:id", async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: "Invalid request ID" });
+        }
+
+        const existing = await prisma.hospitalityRequest.findUnique({
+            where: { id }
+        });
+
+        if (!existing) {
+            return res.status(404).json({ error: "Hospitality request not found" });
+        }
+
+        await prisma.hospitalityRequest.delete({
+            where: { id }
+        });
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting hospitality request:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

@@ -11,7 +11,10 @@ import {
     AlertCircle,
     UserCheck,
     Coffee,
-    X
+    X,
+    Plus,
+    Trash2,
+    Edit
 } from "lucide-react";
 import { api } from "../../../lib/api";
 
@@ -31,12 +34,169 @@ interface HospitalityRequest {
     };
 }
 
+const VILLAS_LIST = [
+    // Ambrose
+    { name: "Ambrose — TAKE-1", value: "TAKE-1" },
+    { name: "Ambrose — ALTA", value: "ALTA" },
+    { name: "Ambrose — SANTORINI", value: "SANTORINI" },
+    { name: "Ambrose — BAMBOOSA", value: "BAMBOOSA" },
+    { name: "Ambrose — CYPRESS", value: "CYPRESS" },
+    // Amstel Nest
+    { name: "Amstel Nest — Cottage 1", value: "Cottage 1" },
+    { name: "Amstel Nest — Cottage 2", value: "Cottage 2" },
+    { name: "Amstel Nest — Cottage 3", value: "Cottage 3" },
+    { name: "Amstel Nest — Cottage 4", value: "Cottage 4" },
+    { name: "Amstel Nest — Cottage 5", value: "Cottage 5" },
+    { name: "Amstel Nest — Cottage 6", value: "Cottage 6" },
+    { name: "Amstel Nest — Cottage 7", value: "Cottage 7" },
+    { name: "Amstel Nest — Cottage 8", value: "Cottage 8" },
+    { name: "Amstel Nest — Cottage 9", value: "Cottage 9" },
+    { name: "Amstel Nest — Cottage 10", value: "Cottage 10" },
+    { name: "Amstel Nest — Cottage 11", value: "Cottage 11" },
+    { name: "Amstel Nest — Cottage 12", value: "Cottage 12" },
+    { name: "Amstel Nest — Cottage 13", value: "Cottage 13" },
+    { name: "Amstel Nest — Cottage 14", value: "Cottage 14" },
+    { name: "Amstel Nest — Family Cottage", value: "Family Cottage" },
+];
+
+const MENU_ITEMS = [
+    // Normal Items
+    { id: "water", name: "Water", price: 30, category: "Normal" },
+    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal" },
+    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal" },
+    { id: "sprite", name: "Sprite", price: 70, category: "Normal" },
+    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal" },
+    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal" },
+    // High Tea Items
+    { id: "tea", name: "Tea", price: 40, category: "High Tea" },
+    { id: "coffee", name: "Coffee", price: 44, category: "High Tea" },
+    { id: "milk", name: "Milk", price: 40, category: "High Tea" },
+    { id: "maggi", name: "Maggi", price: 84, category: "High Tea" },
+    { id: "fries", name: "French Fries", price: 147, category: "High Tea" },
+    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea" },
+    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea" },
+    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea" },
+    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
+    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
+];
+
 export default function HousekeepingPortalPage() {
     const [requests, setRequests] = useState<HospitalityRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [userRole, setUserRole] = useState("");
 
+    // Modal states for creation and editing
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+    const [editingRequestId, setEditingRequestId] = useState<number | null>(null);
+    const [formVilla, setFormVilla] = useState(VILLAS_LIST[0].value);
+    const [formCategory, setFormCategory] = useState<"Normal" | "High Tea">("Normal");
+    const [formQuantities, setFormQuantities] = useState<Record<string, number>>({});
+    const [formStatus, setFormStatus] = useState("pending");
+    const [modalSubmitting, setModalSubmitting] = useState(false);
+
+    const handleOpenCreateModal = () => {
+        setModalMode("create");
+        setEditingRequestId(null);
+        setFormVilla(VILLAS_LIST[0].value);
+        setFormCategory("Normal");
+        setFormQuantities({});
+        setFormStatus("pending");
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (req: HospitalityRequest) => {
+        setModalMode("edit");
+        setEditingRequestId(req.id);
+        setFormVilla(req.villaName);
+        setFormCategory(req.itemCategory as any);
+        setFormStatus(req.status);
+        
+        // Parse items back to record
+        const parsedQuantities: Record<string, number> = {};
+        req.items.forEach(item => {
+            const menuItem = MENU_ITEMS.find(m => m.name === item.name);
+            if (menuItem) {
+                parsedQuantities[menuItem.id] = item.quantity;
+            }
+        });
+        setFormQuantities(parsedQuantities);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteRequest = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this request?")) return;
+        try {
+            await api.delete(`/hospitality/requests/${id}`);
+            fetchRequests();
+        } catch (err: any) {
+            alert(err.message || "Failed to delete request.");
+        }
+    };
+
+    const handleFormIncrement = (id: string) => {
+        setFormQuantities(prev => ({
+            ...prev,
+            [id]: (prev[id] || 0) + 1
+        }));
+    };
+
+    const handleFormDecrement = (id: string) => {
+        setFormQuantities(prev => {
+            const current = prev[id] || 0;
+            if (current <= 1) {
+                const updated = { ...prev };
+                delete updated[id];
+                return updated;
+            }
+            return {
+                ...prev,
+                [id]: current - 1
+            };
+        });
+    };
+
+    const handleFormSubmit = async () => {
+        const selectedItems = Object.entries(formQuantities).map(([itemId, qty]) => {
+            const item = MENU_ITEMS.find(m => m.id === itemId);
+            return {
+                name: item?.name || "",
+                quantity: qty,
+                price: item?.price || 0,
+                category: item?.category || "Normal"
+            };
+        });
+
+        if (selectedItems.length === 0) {
+            alert("Please select at least one item.");
+            return;
+        }
+
+        setModalSubmitting(true);
+        try {
+            if (modalMode === "create") {
+                await api.post("/hospitality/requests", {
+                    villaName: formVilla,
+                    itemCategory: formCategory,
+                    items: selectedItems
+                });
+            } else {
+                await api.put(`/hospitality/requests/${editingRequestId}`, {
+                    villaName: formVilla,
+                    itemCategory: formCategory,
+                    status: formStatus,
+                    items: selectedItems
+                });
+            }
+            setIsModalOpen(false);
+            fetchRequests();
+        } catch (err: any) {
+            alert(err.message || "Something went wrong.");
+        } finally {
+            setModalSubmitting(false);
+        }
+    };
     // Guest allocations/allotments states
     const [allocations, setAllocations] = useState<any[]>([]);
     const [loadingAllocations, setLoadingAllocations] = useState(false);
@@ -187,90 +347,117 @@ export default function HousekeepingPortalPage() {
                 
                 {/* Pending Requests Column */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm lg:h-[550px] flex flex-col justify-between">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <Clock size={20} className="text-blue-600" />
                                 Pending Requests
                             </h2>
-                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200">
-                                {pendingRequests.length} Pending
-                            </span>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handleOpenCreateModal}
+                                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                                >
+                                    <Plus size={14} />
+                                    New Request
+                                </button>
+                                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200">
+                                    {pendingRequests.length} Pending
+                                </span>
+                            </div>
                         </div>
 
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-                                <RefreshCw size={36} className="animate-spin text-blue-600" />
-                                <p className="text-sm font-semibold tracking-wide">Loading requests...</p>
-                            </div>
-                        ) : pendingRequests.length === 0 ? (
-                            <div className="py-16 text-center text-slate-400 border border-dashed border-slate-200 rounded-xl">
-                                <Check size={36} className="text-emerald-500 mx-auto mb-2" />
-                                <p className="font-semibold text-sm text-slate-700">All caught up!</p>
-                                <p className="text-xs mt-1">No pending housekeeping requests for this day.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {pendingRequests.map((req) => (
-                                    <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-4 hover:shadow-sm transition-shadow">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
-                                            <div>
-                                                <h3 className="text-base font-extrabold text-slate-800">
-                                                    {req.villaName}
-                                                </h3>
-                                                {req.booking ? (
-                                                    <p className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-                                                        <User size={12} />
-                                                        {req.booking.customerName} ({req.booking.bookingRef})
-                                                    </p>
-                                                ) : (
-                                                    <p className="text-xs text-red-500 font-semibold mt-0.5 flex items-center gap-1">
-                                                        <AlertCircle size={12} />
-                                                        No active booking found today
-                                                    </p>
-                                                )}
+                        <div className="flex-1 overflow-y-auto min-h-0 pr-1 mt-4">
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 py-10">
+                                    <RefreshCw size={36} className="animate-spin text-blue-600" />
+                                    <p className="text-sm font-semibold tracking-wide">Loading requests...</p>
+                                </div>
+                            ) : pendingRequests.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 border border-dashed border-slate-200 rounded-xl py-12 px-4">
+                                    <Check size={36} className="text-emerald-500 mb-2" />
+                                    <p className="font-semibold text-sm text-slate-700">All caught up!</p>
+                                    <p className="text-xs mt-1">No pending housekeeping requests for this day.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {pendingRequests.map((req) => (
+                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-4 hover:shadow-sm transition-shadow">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+                                                <div>
+                                                    <h3 className="text-base font-extrabold text-slate-800">
+                                                        {req.villaName}
+                                                    </h3>
+                                                    {req.booking ? (
+                                                        <p className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                                                            <User size={12} />
+                                                            {req.booking.customerName} ({req.booking.bookingRef})
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-xs text-red-500 font-semibold mt-0.5 flex items-center gap-1">
+                                                            <AlertCircle size={12} />
+                                                            No active booking found today
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className="text-[11px] font-mono font-bold text-slate-400 self-start sm:self-auto bg-slate-200/50 px-2 py-0.5 rounded">
+                                                    {new Date(req.createdAt).toLocaleTimeString("en-IN", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit"
+                                                    })}
+                                                </span>
                                             </div>
-                                            <span className="text-[11px] font-mono font-bold text-slate-400 self-start sm:self-auto bg-slate-200/50 px-2 py-0.5 rounded">
-                                                {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit"
-                                                })}
-                                            </span>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Requested Items</p>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {req.items.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between text-xs bg-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
-                                                        <span className="font-semibold text-slate-700">{item.name}</span>
-                                                        <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">
-                                                            × {item.quantity}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-2">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Requested Items</p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {req.items.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between text-xs bg-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
+                                                            <span className="font-semibold text-slate-700">{item.name}</span>
+                                                            <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">
+                                                                × {item.quantity}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-2 flex justify-between items-center gap-2 border-t border-slate-200/40 mt-1">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Request"
+                                                    >
+                                                        <Edit size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Request"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleFulfilRequest(req.id)}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100 hover:shadow"
+                                                >
+                                                    <Check size={14} className="stroke-[3px]" />
+                                                    Mark as Done
+                                                </button>
                                             </div>
                                         </div>
-
-                                        <div className="pt-2 flex justify-end">
-                                            <button
-                                                onClick={() => handleFulfilRequest(req.id)}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100 hover:shadow"
-                                            >
-                                                <Check size={14} className="stroke-[3px]" />
-                                                Mark as Done
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Fulfilled Requests Column */}
                 <div className="space-y-6">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm lg:h-[550px] flex flex-col justify-between">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
                                 <UserCheck size={18} className="text-slate-500" />
@@ -281,51 +468,72 @@ export default function HousekeepingPortalPage() {
                             </span>
                         </div>
 
-                        {loading ? (
-                            <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
-                                <RefreshCw size={16} className="animate-spin text-slate-400" />
-                                <span className="text-xs font-semibold">Loading...</span>
-                            </div>
-                        ) : fulfilledRequests.length === 0 ? (
-                            <p className="text-center py-8 text-slate-400 text-xs font-medium">
-                                No fulfilled requests yet for this day.
-                            </p>
-                        ) : (
-                            <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
-                                {fulfilledRequests.map((req) => (
-                                    <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
-                                        <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
-                                            <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
-                                            <span>
-                                                {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit"
-                                                })}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-1">
-                                            {req.items.map((item, idx) => (
-                                                <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
-                                                    <span>{item.name}</span>
-                                                    <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
+                        <div className="flex-1 overflow-y-auto min-h-0 pr-1 mt-4">
+                            {loading ? (
+                                <div className="flex items-center justify-center h-full text-slate-400 gap-2 py-10">
+                                    <RefreshCw size={16} className="animate-spin text-slate-400" />
+                                    <span className="text-xs font-semibold">Loading...</span>
+                                </div>
+                            ) : fulfilledRequests.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center py-12 text-slate-400">
+                                    <p className="text-xs font-medium">No fulfilled requests yet for this day.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {fulfilledRequests.map((req) => (
+                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
+                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
+                                                <span>
+                                                    {new Date(req.createdAt).toLocaleTimeString("en-IN", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit"
+                                                    })}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {req.items.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
+                                                        <span>{item.name}</span>
+                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2 border-t border-slate-200/40 pt-2 mt-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-1">
+                                                    <span className="font-bold flex items-center gap-1">
+                                                        <Check size={10} className="stroke-[3px]" />
+                                                        Fulfilled
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    {req.isBilled ? (
+                                                        <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
+                                                    ) : (
+                                                        <span className="text-slate-400 font-semibold">Unbilled</span>
+                                                    )}
                                                 </div>
-                                            ))}
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Request"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Request"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">
-                                            <span className="font-bold flex items-center gap-1">
-                                                <Check size={10} className="stroke-[3px]" />
-                                                Fulfilled
-                                            </span>
-                                            {req.isBilled ? (
-                                                <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
-                                            ) : (
-                                                <span className="text-slate-400 font-semibold">Unbilled</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -393,6 +601,181 @@ export default function HousekeepingPortalPage() {
                     </div>
                 )}
             </div>
+
+            {/* Request Modal (Create/Edit) */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md flex flex-col overflow-hidden max-h-[90vh]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                            <h3 className="text-lg font-bold text-slate-800">
+                                {modalMode === "create" ? "New Housekeeping Request" : "Edit Request"}
+                            </h3>
+                            <button 
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                            {/* Villa Selection */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    Villa / Cottage
+                                </label>
+                                <select
+                                    value={formVilla}
+                                    onChange={(e) => setFormVilla(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                >
+                                    {VILLAS_LIST.map((villa) => (
+                                        <option key={villa.value} value={villa.value}>
+                                            {villa.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Category Selector */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                                    Category
+                                </label>
+                                <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormCategory("Normal");
+                                        }}
+                                        className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                            formCategory === "Normal"
+                                                ? "bg-white text-blue-600 shadow-sm"
+                                                : "text-slate-500 hover:text-slate-800"
+                                        }`}
+                                    >
+                                        Normal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormCategory("High Tea");
+                                        }}
+                                        className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                            formCategory === "High Tea"
+                                                ? "bg-white text-indigo-600 shadow-sm"
+                                                : "text-slate-500 hover:text-slate-800"
+                                        }`}
+                                    >
+                                        High Tea
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Status Selector (Only in Edit Mode) */}
+                            {modalMode === "edit" && (
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        Status
+                                    </label>
+                                    <select
+                                        value={formStatus}
+                                        onChange={(e) => setFormStatus(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="fulfilled">Fulfilled</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Items Selection list */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                                    Items Menu
+                                </label>
+                                <div className="border border-slate-150 rounded-xl divide-y divide-slate-100 max-h-[220px] overflow-y-auto bg-slate-50/50 p-2 space-y-1.5">
+                                    {MENU_ITEMS.filter(m => m.category === formCategory).map((item) => {
+                                        const qty = formQuantities[item.id] || 0;
+                                        return (
+                                            <div 
+                                                key={item.id} 
+                                                className={`flex items-center justify-between p-2.5 rounded-lg border transition-all ${
+                                                    qty > 0 
+                                                        ? "bg-white border-blue-200 shadow-sm" 
+                                                        : "bg-transparent border-transparent hover:bg-white/60"
+                                                }`}
+                                            >
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800">{item.name}</p>
+                                                    <p className="text-[10px] font-semibold text-slate-400">₹{item.price}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {qty > 0 && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleFormDecrement(item.id)}
+                                                                className="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-sm transition-colors"
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <span className="font-mono font-bold text-xs text-blue-700 w-4 text-center">
+                                                                {qty}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleFormIncrement(item.id)}
+                                                        className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
+                                                            qty > 0 
+                                                                ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                                                                : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+                                                        }`}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={modalSubmitting}
+                                onClick={handleFormSubmit}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100"
+                            >
+                                {modalSubmitting ? (
+                                    <>
+                                        <RefreshCw size={14} className="animate-spin" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        {modalMode === "create" ? "Create Request" : "Save Changes"}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
