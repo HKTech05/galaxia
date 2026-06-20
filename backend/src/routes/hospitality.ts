@@ -45,7 +45,6 @@ router.post("/requests", async (req, res) => {
 
         // Send WhatsApp notification to hospitality staff
         try {
-            const recipientPhone = "8237309564";
             // Build items summary string: "2x Tea, 1x Maggi, 3x French Fries"
             const itemsSummary = items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ");
             // Calculate total
@@ -56,16 +55,27 @@ router.post("/requests", async (req, res) => {
                 hour12: true, timeZone: "Asia/Kolkata"
             });
 
-            const templateName = itemCategory === "High Tea"
+            const isHighTea = itemCategory === "High Tea";
+            const templateName = isHighTea
                 ? "hospitality_hightea_order"
                 : "hospitality_housekeeping_order";
 
-            await sendWhatsAppTemplateMessage(
-                "otp",
-                recipientPhone,
-                templateName,
-                [villaName, itemsSummary, String(total), orderTime]
-            );
+            const recipientPhones = isHighTea
+                ? ["7355630009", "9867677811"]
+                : ["7355630009"];
+
+            for (const recipientPhone of recipientPhones) {
+                try {
+                    await sendWhatsAppTemplateMessage(
+                        "otp",
+                        recipientPhone,
+                        templateName,
+                        [villaName, itemsSummary, String(total), orderTime]
+                    );
+                } catch (sendErr: any) {
+                    console.error(`Hospitality WhatsApp failed for ${recipientPhone}:`, sendErr.message);
+                }
+            }
         } catch (waErr: any) {
             console.error("Hospitality WhatsApp notification failed:", waErr.message);
             // Don't fail the request if WhatsApp fails
