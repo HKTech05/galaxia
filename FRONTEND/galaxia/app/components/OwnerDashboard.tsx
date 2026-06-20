@@ -2442,7 +2442,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const liveProperties = propertyStatusLive.length > 0 ? propertyStatusLive : [];
         const liveAmbrose = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Ambrose')?.villas || [] : [];
         const liveAmstel = propertyStatusLive.length > 0 ? propertyStatusLive.find((p: any) => p.name === 'Amstel Nest')?.villas || [] : [];
-        const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest'].includes(p.name));
+        const liveStandalone = liveProperties.filter((p: any) => !['Ambrose', 'Amstel Nest', 'Digital Diaries'].includes(p.name));
 
         return (
             <div className="space-y-6">
