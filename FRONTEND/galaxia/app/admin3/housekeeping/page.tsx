@@ -171,10 +171,19 @@ export default function HousekeepingPortalPage() {
         try {
             const date = new Date(dateStr + "T00:00:00");
             const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
-            const day = String(date.getDate()).padStart(2, "0");
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const year = date.getFullYear();
-            return `${dayOfWeek}, ${day}-${month}-${year}`;
+            const day = date.getDate();
+            const month = date.toLocaleDateString("en-US", { month: "long" });
+            
+            let suffix = "th";
+            if (day === 1 || day === 21 || day === 31) {
+                suffix = "st";
+            } else if (day === 2 || day === 22) {
+                suffix = "nd";
+            } else if (day === 3 || day === 23) {
+                suffix = "rd";
+            }
+            
+            return `${dayOfWeek}, ${day}${suffix} ${month}`;
         } catch (e) {
             return dateStr;
         }
@@ -436,7 +445,19 @@ export default function HousekeepingPortalPage() {
                     </div>
                     
                     {/* Date picker */}
-                    <div className="relative flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/5 self-start md:self-auto cursor-pointer hover:bg-black/30 transition-colors">
+                    <div 
+                        onClick={(e) => {
+                            const inputEl = e.currentTarget.querySelector("input");
+                            if (inputEl) {
+                                try {
+                                    inputEl.showPicker();
+                                } catch (err) {
+                                    console.error("showPicker error:", err);
+                                }
+                            }
+                        }}
+                        className="relative flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/5 self-start md:self-auto cursor-pointer hover:bg-black/30 transition-colors animate-none"
+                    >
                         <Calendar size={18} className="text-blue-300 pointer-events-none" />
                         <span className="text-xs sm:text-sm font-semibold tracking-wide font-mono text-blue-100 pointer-events-none">
                             {selectedDate.split("-").reverse().join("-")}
@@ -445,7 +466,7 @@ export default function HousekeepingPortalPage() {
                             type="date"
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
                         />
                     </div>
                 </div>
@@ -472,7 +493,7 @@ export default function HousekeepingPortalPage() {
                                     <Plus size={14} />
                                     New Request
                                 </button>
-                                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200 inline-flex items-center justify-center">
+                                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200 inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
                                     {pendingRequests.length} Pending
                                 </span>
                             </div>
@@ -574,7 +595,7 @@ export default function HousekeepingPortalPage() {
                                 <UserCheck size={18} className="text-slate-500" />
                                 Fulfilled Requests
                             </h2>
-                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center justify-center">
+                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
                                 {fulfilledRequests.length} Done
                             </span>
                         </div>
@@ -656,7 +677,7 @@ export default function HousekeepingPortalPage() {
                         <ClipboardCheck size={20} className="text-indigo-600" />
                         Villa Allotments ({formatDisplayDate(selectedDate)})
                     </h2>
-                    <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100 inline-flex items-center justify-center">
+                    <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100 inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
                         {allocations.length} Active Guests
                     </span>
                 </div>
