@@ -167,6 +167,19 @@ export default function HousekeepingPortalPage() {
         }
     };
 
+    const formatDisplayDate = (dateStr: string) => {
+        try {
+            const date = new Date(dateStr + "T00:00:00");
+            const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
+            return `${dayOfWeek}, ${day}-${month}-${year}`;
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
     const fetchMenu = async () => {
         try {
             const data = await api.get<any[]>("/hospitality/menu");
@@ -423,13 +436,16 @@ export default function HousekeepingPortalPage() {
                     </div>
                     
                     {/* Date picker */}
-                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/5 self-start md:self-auto">
-                        <Calendar size={18} className="text-blue-300" />
+                    <div className="relative flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/5 self-start md:self-auto cursor-pointer hover:bg-black/30 transition-colors">
+                        <Calendar size={18} className="text-blue-300 pointer-events-none" />
+                        <span className="text-xs sm:text-sm font-semibold tracking-wide font-mono text-blue-100 pointer-events-none">
+                            {selectedDate.split("-").reverse().join("-")}
+                        </span>
                         <input
                             type="date"
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
-                            className="bg-transparent border-none focus:outline-none text-xs sm:text-sm font-semibold tracking-wide font-mono text-blue-100 cursor-pointer"
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                         />
                     </div>
                 </div>
@@ -456,7 +472,7 @@ export default function HousekeepingPortalPage() {
                                     <Plus size={14} />
                                     New Request
                                 </button>
-                                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200">
+                                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200 inline-flex items-center justify-center">
                                     {pendingRequests.length} Pending
                                 </span>
                             </div>
@@ -558,7 +574,7 @@ export default function HousekeepingPortalPage() {
                                 <UserCheck size={18} className="text-slate-500" />
                                 Fulfilled Requests
                             </h2>
-                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center justify-center">
                                 {fulfilledRequests.length} Done
                             </span>
                         </div>
@@ -638,9 +654,9 @@ export default function HousekeepingPortalPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <ClipboardCheck size={20} className="text-indigo-600" />
-                        Villa Allotments ({selectedDate})
+                        Villa Allotments ({formatDisplayDate(selectedDate)})
                     </h2>
-                    <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100">
+                    <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100 inline-flex items-center justify-center">
                         {allocations.length} Active Guests
                     </span>
                 </div>
