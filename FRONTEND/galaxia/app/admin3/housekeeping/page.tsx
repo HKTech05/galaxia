@@ -59,7 +59,7 @@ const VILLAS_LIST = [
     { name: "Amstel Nest — Family Cottage", value: "Family Cottage" },
 ];
 
-const MENU_ITEMS = [
+const DEFAULT_MENU_ITEMS = [
     // Normal Items
     { id: "water", name: "Water", price: 30, category: "Normal" },
     { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal" },
@@ -85,6 +85,98 @@ export default function HousekeepingPortalPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [userRole, setUserRole] = useState("");
+
+    // Dynamic menu state
+    const [menuItems, setMenuItems] = useState<any[]>(DEFAULT_MENU_ITEMS);
+    const [isHousekeepingMenuOpen, setIsHousekeepingMenuOpen] = useState(false);
+    const [isHighTeaMenuOpen, setIsHighTeaMenuOpen] = useState(false);
+
+    // States for adding new menu item
+    const [newItemName, setNewItemName] = useState("");
+    const [newItemPrice, setNewItemPrice] = useState("");
+
+    // Draft editing copy of menu items
+    const [tempMenuItems, setTempMenuItems] = useState<any[]>([]);
+
+    const handleOpenHousekeepingMenu = () => {
+        setTempMenuItems(JSON.parse(JSON.stringify(menuItems)));
+        setNewItemName("");
+        setNewItemPrice("");
+        setIsHousekeepingMenuOpen(true);
+    };
+
+    const handleOpenHighTeaMenu = () => {
+        setTempMenuItems(JSON.parse(JSON.stringify(menuItems)));
+        setNewItemName("");
+        setNewItemPrice("");
+        setIsHighTeaMenuOpen(true);
+    };
+
+    const handleAddMenuItem = (category: "Normal" | "High Tea") => {
+        if (!newItemName || !newItemPrice) {
+            alert("Please fill in both Name and Price.");
+            return;
+        }
+        const priceNum = parseFloat(newItemPrice);
+        if (isNaN(priceNum) || priceNum < 0) {
+            alert("Please enter a valid price.");
+            return;
+        }
+        const id = newItemName.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        if (tempMenuItems.some(item => item.id === id)) {
+            alert("An item with a similar name already exists.");
+            return;
+        }
+        const newItem = {
+            id,
+            name: newItemName,
+            price: priceNum,
+            category
+        };
+        setTempMenuItems(prev => [...prev, newItem]);
+        setNewItemName("");
+        setNewItemPrice("");
+    };
+
+    const handleDeleteMenuItem = (itemId: string) => {
+        setTempMenuItems(prev => prev.filter(item => item.id !== itemId));
+    };
+
+    const handleUpdateMenuItem = (itemId: string, updates: Partial<{ name: string; price: number }>) => {
+        setTempMenuItems(prev => prev.map(item => {
+            if (item.id === itemId) {
+                return { ...item, ...updates };
+            }
+            return item;
+        }));
+    };
+
+    const handleSaveMenuChanges = async () => {
+        try {
+            const res = await api.put<{ success: boolean; menuItems: any[] }>("/hospitality/menu", {
+                menuItems: tempMenuItems
+            });
+            if (res.success) {
+                setMenuItems(res.menuItems);
+                setIsHousekeepingMenuOpen(false);
+                setIsHighTeaMenuOpen(false);
+                alert("Menu updated successfully!");
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to update menu.");
+        }
+    };
+
+    const fetchMenu = async () => {
+        try {
+            const data = await api.get<any[]>("/hospitality/menu");
+            if (Array.isArray(data)) {
+                setMenuItems(data);
+            }
+        } catch (err) {
+            console.error("Error fetching menu items:", err);
+        }
+    };
 
     // Modal states for creation and editing
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,7 +208,7 @@ export default function HousekeepingPortalPage() {
         // Parse items back to record
         const parsedQuantities: Record<string, number> = {};
         req.items.forEach(item => {
-            const menuItem = MENU_ITEMS.find(m => m.name === item.name);
+            const menuItem = menuItems.find(m => m.name === item.name);
             if (menuItem) {
                 parsedQuantities[menuItem.id] = item.quantity;
             }
@@ -159,7 +251,7 @@ export default function HousekeepingPortalPage() {
 
     const handleFormSubmit = async () => {
         const selectedItems = Object.entries(formQuantities).map(([itemId, qty]) => {
-            const item = MENU_ITEMS.find(m => m.id === itemId);
+            const item = menuItems.find(m => m.id === itemId);
             return {
                 name: item?.name || "",
                 quantity: qty,
@@ -217,6 +309,9 @@ export default function HousekeepingPortalPage() {
             .catch(err => {
                 console.error("Error fetching user role:", err);
             });
+        
+        // Fetch menu dynamically
+        fetchMenu();
     }, []);
 
     const fetchRequests = async () => {
@@ -696,8 +791,8 @@ export default function HousekeepingPortalPage() {
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                                     Items Menu
                                 </label>
-                                <div className="border border-slate-150 rounded-xl divide-y divide-slate-100 max-h-[220px] overflow-y-auto bg-slate-50/50 p-2 space-y-1.5">
-                                    {MENU_ITEMS.filter(m => m.category === formCategory).map((item) => {
+                                <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-[220px] overflow-y-auto bg-slate-50/50 p-2 space-y-1.5 scroll-smooth overscroll-contain touch-pan-y [scrollbar-width:thin]">
+                                    {menuItems.filter(m => m.category === formCategory).map((item) => {
                                         const qty = formQuantities[item.id] || 0;
                                         return (
                                             <div 
@@ -771,6 +866,231 @@ export default function HousekeepingPortalPage() {
                                         {modalMode === "create" ? "Create Request" : "Save Changes"}
                                     </>
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Menu Management Controls */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 mt-8">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <Coffee size={20} className="text-amber-600" />
+                        Menu Items Management
+                    </h2>
+                    <span className="text-xs text-slate-400 font-medium">Configure menu items, prices and availability</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                        onClick={handleOpenHousekeepingMenu}
+                        className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
+                    >
+                        <div>
+                            <p className="text-sm font-bold text-slate-800">Housekeeping Menu</p>
+                            <p className="text-xs text-slate-500 mt-1">Edit items, custom rates, and Normal category menu.</p>
+                        </div>
+                        <span className="text-blue-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
+                    </button>
+                    <button
+                        onClick={handleOpenHighTeaMenu}
+                        className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
+                    >
+                        <div>
+                            <p className="text-sm font-bold text-slate-800">High Tea Menu</p>
+                            <p className="text-xs text-slate-500 mt-1">Edit evening tea menu, rates, and High Tea category items.</p>
+                        </div>
+                        <span className="text-indigo-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Manage Housekeeping Menu Modal */}
+            {isHousekeepingMenuOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-800">Manage Housekeeping Menu</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Add, edit, or delete items in the Normal category</p>
+                            </div>
+                            <button onClick={() => setIsHousekeepingMenuOpen(false)} className="p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Add Item Form */}
+                        <div className="p-6 border-b border-slate-100 space-y-3 bg-blue-50/20">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Add New Item</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Item Name (e.g. Limbu Soda)"
+                                    value={newItemName}
+                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Price (₹)"
+                                    value={newItemPrice}
+                                    onChange={(e) => setNewItemPrice(e.target.value)}
+                                    className="w-full sm:w-28 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
+                                />
+                                <button
+                                    onClick={() => handleAddMenuItem("Normal")}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shrink-0"
+                                >
+                                    + Add Item
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* List & Edit Area */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-3 min-h-0 [scrollbar-width:thin] scroll-smooth overscroll-contain">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Housekeeping Items</p>
+                            <div className="space-y-2">
+                                {tempMenuItems.filter(item => item.category === "Normal").map((item) => (
+                                    <div key={item.id} className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-xl p-2.5 hover:bg-white hover:shadow-sm transition-all">
+                                        <input
+                                            type="text"
+                                            value={item.name}
+                                            onChange={(e) => handleUpdateMenuItem(item.id, { name: e.target.value })}
+                                            className="flex-1 bg-transparent border-none focus:bg-white focus:ring-1 focus:ring-blue-500 focus:outline-none text-xs font-bold text-slate-800 rounded px-2 py-1"
+                                        />
+                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 border border-slate-200 rounded-lg px-2 py-1">
+                                            <span className="text-[10px] font-bold text-slate-400">₹</span>
+                                            <input
+                                                type="number"
+                                                value={item.price}
+                                                onChange={(e) => handleUpdateMenuItem(item.id, { price: parseFloat(e.target.value) || 0 })}
+                                                className="w-16 bg-transparent border-none text-right focus:bg-white focus:outline-none text-xs font-bold text-slate-800 focus:ring-1 focus:ring-blue-500 rounded p-0"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteMenuItem(item.id)}
+                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
+                                            title="Delete Item"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {tempMenuItems.filter(item => item.category === "Normal").length === 0 && (
+                                    <p className="text-xs text-slate-400 italic text-center py-6">No housekeeping items in menu.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setIsHousekeepingMenuOpen(false)}
+                                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveMenuChanges}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                            >
+                                Save Menu Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Manage High Tea Menu Modal */}
+            {isHighTeaMenuOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-800">Manage High Tea Menu</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Add, edit, or delete items in the High Tea category</p>
+                            </div>
+                            <button onClick={() => setIsHighTeaMenuOpen(false)} className="p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Add Item Form */}
+                        <div className="p-6 border-b border-slate-100 space-y-3 bg-indigo-50/20">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Add New Item</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Item Name (e.g. French Fries)"
+                                    value={newItemName}
+                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Price (₹)"
+                                    value={newItemPrice}
+                                    onChange={(e) => setNewItemPrice(e.target.value)}
+                                    className="w-full sm:w-28 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
+                                />
+                                <button
+                                    onClick={() => handleAddMenuItem("High Tea")}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shrink-0"
+                                >
+                                    + Add Item
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* List & Edit Area */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-3 min-h-0 [scrollbar-width:thin] scroll-smooth overscroll-contain">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current High Tea Items</p>
+                            <div className="space-y-2">
+                                {tempMenuItems.filter(item => item.category === "High Tea").map((item) => (
+                                    <div key={item.id} className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-xl p-2.5 hover:bg-white hover:shadow-sm transition-all">
+                                        <input
+                                            type="text"
+                                            value={item.name}
+                                            onChange={(e) => handleUpdateMenuItem(item.id, { name: e.target.value })}
+                                            className="flex-1 bg-transparent border-none focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none text-xs font-bold text-slate-800 rounded px-2 py-1"
+                                        />
+                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 border border-slate-200 rounded-lg px-2 py-1">
+                                            <span className="text-[10px] font-bold text-slate-400">₹</span>
+                                            <input
+                                                type="number"
+                                                value={item.price}
+                                                onChange={(e) => handleUpdateMenuItem(item.id, { price: parseFloat(e.target.value) || 0 })}
+                                                className="w-16 bg-transparent border-none text-right focus:bg-white focus:outline-none text-xs font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500 rounded p-0"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteMenuItem(item.id)}
+                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
+                                            title="Delete Item"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {tempMenuItems.filter(item => item.category === "High Tea").length === 0 && (
+                                    <p className="text-xs text-slate-400 italic text-center py-6">No High Tea items in menu.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setIsHighTeaMenuOpen(false)}
+                                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveMenuChanges}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                            >
+                                Save Menu Changes
                             </button>
                         </div>
                     </div>

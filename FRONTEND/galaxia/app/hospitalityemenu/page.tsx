@@ -12,7 +12,7 @@ interface MenuItem {
     category: "Normal" | "High Tea";
 }
 
-const MENU_ITEMS: MenuItem[] = [
+const DEFAULT_MENU_ITEMS: MenuItem[] = [
     // Normal Items
     { id: "water", name: "Water", price: 30, category: "Normal" },
     { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal" },
@@ -79,6 +79,21 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
 
     const [selectedVilla, setSelectedVilla] = useState(initialVillaValue);
     
+    // Dynamic menu state
+    const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_MENU_ITEMS);
+
+    useEffect(() => {
+        api.get<MenuItem[]>("/hospitality/menu")
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setMenuItems(data);
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching menu:", err);
+            });
+    }, []);
+
     // Quantity selections: { itemId: quantity }
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     
@@ -229,7 +244,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
         try {
             // Group items into Normal and High Tea categories to submit separately
             const selectedItems = Object.entries(quantities).map(([itemId, qty]) => {
-                const item = MENU_ITEMS.find(m => m.id === itemId);
+                const item = menuItems.find(m => m.id === itemId);
                 return {
                     name: item?.name || "",
                     quantity: qty,
@@ -278,8 +293,8 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
         }
     };
 
-    const normalItems = MENU_ITEMS.filter(item => item.category === "Normal");
-    const highTeaItems = MENU_ITEMS.filter(item => item.category === "High Tea");
+    const normalItems = menuItems.filter(item => item.category === "Normal");
+    const highTeaItems = menuItems.filter(item => item.category === "High Tea");
 
     return (
         <div className="max-w-2xl mx-auto space-y-6 pb-12">

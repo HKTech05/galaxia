@@ -2,8 +2,61 @@ import { Router } from "express";
 import prisma from "../lib/prisma";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
+import fs from "fs";
+import path from "path";
 
 const router = Router();
+
+const MENU_FILE_PATH = path.join(__dirname, "../../../menu_items.json");
+
+const DEFAULT_MENU_ITEMS = [
+    // Normal Items
+    { id: "water", name: "Water", price: 30, category: "Normal" },
+    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal" },
+    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal" },
+    { id: "sprite", name: "Sprite", price: 70, category: "Normal" },
+    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal" },
+    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal" },
+    // High Tea Items
+    { id: "tea", name: "Tea", price: 40, category: "High Tea" },
+    { id: "coffee", name: "Coffee", price: 44, category: "High Tea" },
+    { id: "milk", name: "Milk", price: 40, category: "High Tea" },
+    { id: "maggi", name: "Maggi", price: 84, category: "High Tea" },
+    { id: "fries", name: "French Fries", price: 147, category: "High Tea" },
+    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea" },
+    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea" },
+    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea" },
+    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
+    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" }
+];
+
+function getMenuItems() {
+    try {
+        if (fs.existsSync(MENU_FILE_PATH)) {
+            const content = fs.readFileSync(MENU_FILE_PATH, "utf8");
+            return JSON.parse(content);
+        }
+    } catch (err) {
+        console.error("Error reading menu file:", err);
+    }
+    // Write default if it doesn't exist
+    try {
+        fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(DEFAULT_MENU_ITEMS, null, 2), "utf8");
+    } catch (err) {
+        console.error("Error writing default menu file:", err);
+    }
+    return DEFAULT_MENU_ITEMS;
+}
+
+// Public Route: GET /api/hospitality/menu — Fetch all menu items
+router.get("/menu", (req, res) => {
+    try {
+        const menu = getMenuItems();
+        return res.json(menu);
+    } catch (err) {
+        return res.status(500).json({ error: "Failed to read menu items" });
+    }
+});
 
 // 1. Public Route: POST /api/hospitality/requests — Submit request from a guest villa e-menu
 router.post("/requests", async (req, res) => {
@@ -316,6 +369,22 @@ router.delete("/requests/:id", async (req: AuthRequest, res) => {
     } catch (error) {
         console.error("Error deleting hospitality request:", error);
         return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// 7. PUT /api/hospitality/menu — Update menu items list
+router.put("/menu", async (req: AuthRequest, res) => {
+    try {
+        const { menuItems } = req.body;
+        if (!menuItems || !Array.isArray(menuItems)) {
+            return res.status(400).json({ error: "menuItems array is required" });
+        }
+        // Write to file
+        fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(menuItems, null, 2), "utf8");
+        return res.json({ success: true, menuItems });
+    } catch (err) {
+        console.error("Error saving menu file:", err);
+        return res.status(500).json({ error: "Failed to save menu items" });
     }
 });
 
