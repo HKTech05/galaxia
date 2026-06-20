@@ -86,6 +86,10 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
     const [highTeaUnlocked, setHighTeaUnlocked] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState("");
 
+    // Normal menu unlock states
+    const [normalUnlocked, setNormalUnlocked] = useState(false);
+    const [normalTimeRemaining, setNormalTimeRemaining] = useState("");
+
     // Submit states
     const [submitting, setSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -97,40 +101,38 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
         }
     }, [initialVillaValue]);
 
-    // Live countdown timer to High Tea window 4:30 PM - 6:30 PM (16:30 - 18:30) local time
+    // Live countdown timer to High Tea (4:30 PM - 6:30 PM) and Normal Menu (8:30 AM - 10:30 PM) local time
     useEffect(() => {
         const updateTimer = () => {
             const now = new Date();
             
-            const startTarget = new Date();
-            startTarget.setHours(16, 30, 0, 0); // 4:30 PM
-            
-            const endTarget = new Date();
-            endTarget.setHours(18, 30, 0, 0); // 6:30 PM
-
             // Check if timer should be temporarily bypassed for testing
             const TEMPORARILY_DISABLE_TIMER = false; // Set to false to enable actual timer logic
 
             if (TEMPORARILY_DISABLE_TIMER) {
                 setHighTeaUnlocked(true);
                 setTimeRemaining("");
+                setNormalUnlocked(true);
+                setNormalTimeRemaining("");
                 return;
             }
 
+            // 1. High Tea Targets
+            const startTarget = new Date();
+            startTarget.setHours(16, 30, 0, 0); // 4:30 PM
+            
+            const endTarget = new Date();
+            endTarget.setHours(18, 30, 0, 0); // 6:30 PM
+
             if (now >= startTarget && now <= endTarget) {
-                // High tea is unlocked
                 setHighTeaUnlocked(true);
                 setTimeRemaining("");
             } else {
                 setHighTeaUnlocked(false);
-                
-                // Calculate time remaining until the next 4:30 PM
                 let nextStart = new Date(startTarget);
                 if (now > endTarget) {
-                    // Next start is tomorrow
                     nextStart.setDate(nextStart.getDate() + 1);
                 }
-                
                 const diffMs = nextStart.getTime() - now.getTime();
                 const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
                 const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -141,6 +143,34 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                 const secsStr = String(diffSecs).padStart(2, "0");
 
                 setTimeRemaining(`${hrsStr}:${minsStr}:${secsStr}`);
+            }
+
+            // 2. Normal refreshments targets
+            const normalStart = new Date();
+            normalStart.setHours(8, 30, 0, 0); // 8:30 AM
+            
+            const normalEnd = new Date();
+            normalEnd.setHours(22, 30, 0, 0); // 10:30 PM
+
+            if (now >= normalStart && now <= normalEnd) {
+                setNormalUnlocked(true);
+                setNormalTimeRemaining("");
+            } else {
+                setNormalUnlocked(false);
+                let nextNormalStart = new Date(normalStart);
+                if (now > normalEnd) {
+                    nextNormalStart.setDate(nextNormalStart.getDate() + 1);
+                }
+                const diffMs = nextNormalStart.getTime() - now.getTime();
+                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+                const hrsStr = String(diffHrs).padStart(2, "0");
+                const minsStr = String(diffMins).padStart(2, "0");
+                const secsStr = String(diffSecs).padStart(2, "0");
+
+                setNormalTimeRemaining(`${hrsStr}:${minsStr}:${secsStr}`);
             }
         };
 
@@ -291,17 +321,46 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
 
             {/* Normal refreshments section */}
             <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="border-b border-slate-50 pb-3 flex items-center gap-2">
-                    <ClipboardList size={18} className="text-amber-600" />
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Beverages & Refreshments</h2>
+                <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <ClipboardList size={18} className="text-amber-600" />
+                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Beverages & Refreshments</h2>
+                    </div>
+
+                    {!normalUnlocked && normalTimeRemaining && (
+                        <div className="bg-red-50 text-red-700 text-xs font-extrabold px-3 py-1 rounded-full border border-red-100 flex items-center gap-1.5 font-mono">
+                            <Clock size={12} className="animate-pulse" />
+                            {normalTimeRemaining}
+                        </div>
+                    )}
                 </div>
+
+                {!normalUnlocked && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 animate-in fade-in duration-200">
+                        <div className="space-y-1">
+                            <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-slate-800 uppercase tracking-wider">
+                                <Clock size={14} className="text-amber-600 animate-pulse" />
+                                Locked Until 8:30 AM
+                            </h3>
+                            <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                                Housekeeping ordering unlocks automatically between 8:30 AM and 10:30 PM every day.
+                            </p>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-2">
+                            <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500">Remaining:</span>
+                            <div className="font-mono font-black text-xs bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-sm min-w-[80px] text-center">
+                                {normalTimeRemaining || "00:00:00"}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="divide-y divide-slate-100">
                     {normalItems.map(item => {
                         const isChecked = !!quantities[item.id];
                         const qty = quantities[item.id] || 0;
                         return (
-                            <div key={item.id} className="flex items-center justify-between py-3.5">
+                            <div key={item.id} className={`flex items-center justify-between py-3.5 transition-opacity duration-200 ${!normalUnlocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
                                 <div className="flex items-center gap-3.5 flex-1">
                                     <label className="flex items-center cursor-pointer relative">
                                         <input
@@ -309,12 +368,13 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                             checked={isChecked}
                                             onChange={() => handleCheckboxToggle(item.id)}
                                             className="sr-only peer"
+                                            disabled={!normalUnlocked}
                                         />
                                         <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
                                             <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
                                         </div>
                                     </label>
-                                    <div className="cursor-pointer" onClick={() => handleCheckboxToggle(item.id)}>
+                                    <div className="cursor-pointer" onClick={() => normalUnlocked && handleCheckboxToggle(item.id)}>
                                         <p className="font-semibold text-slate-800 text-sm sm:text-base">{item.name}</p>
                                         <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
                                     </div>
