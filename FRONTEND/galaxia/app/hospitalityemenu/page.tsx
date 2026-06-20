@@ -15,21 +15,21 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
     // Normal Items
     { id: "water", name: "Water", price: 30, category: "Normal" },
-    { id: "limbu_pani", name: "Limbu pani", price: 50, category: "Normal" },
-    { id: "limbu_soda", name: "Limbu soda", price: 90, category: "Normal" },
+    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal" },
+    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal" },
     { id: "sprite", name: "Sprite", price: 70, category: "Normal" },
-    { id: "thumps_up", name: "Thumps up", price: 70, category: "Normal" },
+    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal" },
     // High Tea Items
     { id: "tea", name: "Tea", price: 40, category: "High Tea" },
-    { id: "coffeee", name: "Coffeee", price: 44, category: "High Tea" },
+    { id: "coffee", name: "Coffee", price: 44, category: "High Tea" },
     { id: "milk", name: "Milk", price: 40, category: "High Tea" },
-    { id: "maggie", name: "Maggie", price: 84, category: "High Tea" },
-    { id: "fries", name: "French fries", price: 147, category: "High Tea" },
-    { id: "kanda_bhaji", name: "Kanda bhaji", price: 147, category: "High Tea" },
-    { id: "aloo_bhaji", name: "Aloo bhaji", price: 147, category: "High Tea" },
-    { id: "corn_bhaji", name: "Corn bhaji", price: 147, category: "High Tea" },
-    { id: "black_coffee", name: "Black coffee", price: 35, category: "High Tea" },
-    { id: "cold_coffee", name: "Cold coffee", price: 90, category: "High Tea" },
+    { id: "maggi", name: "Maggi", price: 84, category: "High Tea" },
+    { id: "fries", name: "French Fries", price: 147, category: "High Tea" },
+    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea" },
+    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea" },
+    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea" },
+    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
+    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
 ];
 
 const VILLAS_LIST = [
