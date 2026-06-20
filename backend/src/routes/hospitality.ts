@@ -246,7 +246,8 @@ router.get("/allocations", async (req: AuthRequest, res) => {
         const result = bookings
             .filter(b => {
                 const name = (b.property.name || "").toLowerCase();
-                return name.includes("ambrose") || name.includes("amstel");
+                const isAmbroseOrAmstel = name.includes("ambrose") || name.includes("amstel");
+                return isAmbroseOrAmstel && b.assignedUnit && b.assignedUnit.trim() !== "";
             })
             .map(b => ({
                 id: b.id,
