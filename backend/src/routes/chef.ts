@@ -267,7 +267,7 @@ router.post("/submit", async (req: AuthRequest, res) => {
 
             const itemsList = categoryIngredients
                 .map((ing: any) => `• ${ing.nameEn} (${ing.nameHi}) - ${ing.quantity} ${ing.unit || 'kg'}`)
-                .join("\n");
+                .join(" | ");
 
             const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
             const catDateStr = `${dateStr} (${categoryName})`;
