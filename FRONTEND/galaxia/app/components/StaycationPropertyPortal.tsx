@@ -183,7 +183,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                 req.items.forEach((item: any, idx: number) => {
                                     itemsList.push({
                                         id: `emenu-${req.id}-${idx}`,
-                                        description: `${item.name} x${item.quantity}`,
+                                        description: `${item.name} x${item.quantity}${item.comment ? ` (${item.comment})` : ''}`,
                                         amount: (item.price || 0) * (item.quantity || 0),
                                         isEMenu: true
                                     });

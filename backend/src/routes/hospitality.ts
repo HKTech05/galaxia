@@ -27,17 +27,39 @@ const DEFAULT_MENU_ITEMS = [
     { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea" },
     { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea" },
     { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
-    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" }
+    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
+    // Timepass Items
+    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass" },
+    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass" },
+    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass" },
+    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass" },
+    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass" },
+    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass" },
+    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass" },
+    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass" },
+    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass" },
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass" }
 ];
 
 function getMenuItems() {
     try {
         if (fs.existsSync(MENU_FILE_PATH)) {
             const content = fs.readFileSync(MENU_FILE_PATH, "utf8");
-            return JSON.parse(content);
+            const items = JSON.parse(content);
+            let updated = false;
+            for (const defItem of DEFAULT_MENU_ITEMS) {
+                if (!items.some((it: any) => it.id === defItem.id)) {
+                    items.push(defItem);
+                    updated = true;
+                }
+            }
+            if (updated) {
+                fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
+            }
+            return items;
         }
     } catch (err) {
-        console.error("Error reading menu file:", err);
+        console.error("Error reading/merging menu file:", err);
     }
     // Write default if it doesn't exist
     try {
@@ -98,8 +120,11 @@ router.post("/requests", async (req, res) => {
 
         // Send WhatsApp notification to hospitality staff
         try {
-            // Build items summary string: "2x Tea, 1x Maggi, 3x French Fries"
-            const itemsSummary = items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ");
+            // Build items summary string with comments on separate lines
+            const itemsSummary = items.map((i: any) => {
+                const commentText = i.comment && i.comment.trim() ? ` (${i.comment.trim()})` : '';
+                return `${i.quantity}x ${i.name}${commentText}`;
+            }).join("\n");
             // Calculate total
             const total = items.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
             // Format timestamp in IST
@@ -109,11 +134,12 @@ router.post("/requests", async (req, res) => {
             });
 
             const isHighTea = itemCategory === "High Tea";
-            const templateName = isHighTea
+            const isTimepass = itemCategory === "Timepass";
+            const templateName = (isHighTea || isTimepass)
                 ? "hospitality_hightea_order"
                 : "hospitality_housekeeping_order";
 
-            const recipientPhones = isHighTea
+            const recipientPhones = (isHighTea || isTimepass)
                 ? ["7355630009", "9867677811"]
                 : ["7355630009"];
 

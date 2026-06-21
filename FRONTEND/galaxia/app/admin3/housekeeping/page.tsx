@@ -22,7 +22,7 @@ interface HospitalityRequest {
     id: number;
     villaName: string;
     itemCategory: string;
-    items: { name: string; quantity: number; price: number }[];
+    items: { name: string; quantity: number; price: number; comment?: string }[];
     status: string;
     isBilled: boolean;
     bookingId: number | null;
@@ -78,6 +78,17 @@ const DEFAULT_MENU_ITEMS = [
     { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea" },
     { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
     { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
+    // Timepass Items
+    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass" },
+    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass" },
+    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass" },
+    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass" },
+    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass" },
+    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass" },
+    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass" },
+    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass" },
+    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass" },
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass" }
 ];
 
 export default function HousekeepingPortalPage() {
@@ -90,6 +101,7 @@ export default function HousekeepingPortalPage() {
     const [menuItems, setMenuItems] = useState<any[]>(DEFAULT_MENU_ITEMS);
     const [isHousekeepingMenuOpen, setIsHousekeepingMenuOpen] = useState(false);
     const [isHighTeaMenuOpen, setIsHighTeaMenuOpen] = useState(false);
+    const [isTimepassMenuOpen, setIsTimepassMenuOpen] = useState(false);
 
     // States for adding new menu item
     const [newItemName, setNewItemName] = useState("");
@@ -112,7 +124,14 @@ export default function HousekeepingPortalPage() {
         setIsHighTeaMenuOpen(true);
     };
 
-    const handleAddMenuItem = (category: "Normal" | "High Tea") => {
+    const handleOpenTimepassMenu = () => {
+        setTempMenuItems(JSON.parse(JSON.stringify(menuItems)));
+        setNewItemName("");
+        setNewItemPrice("");
+        setIsTimepassMenuOpen(true);
+    };
+
+    const handleAddMenuItem = (category: "Normal" | "High Tea" | "Timepass") => {
         if (!newItemName || !newItemPrice) {
             alert("Please fill in both Name and Price.");
             return;
@@ -160,6 +179,7 @@ export default function HousekeepingPortalPage() {
                 setMenuItems(res.menuItems);
                 setIsHousekeepingMenuOpen(false);
                 setIsHighTeaMenuOpen(false);
+                setIsTimepassMenuOpen(false);
                 alert("Menu updated successfully!");
             }
         } catch (err: any) {
@@ -205,9 +225,10 @@ export default function HousekeepingPortalPage() {
     const [modalMode, setModalMode] = useState<"create" | "edit">("create");
     const [editingRequestId, setEditingRequestId] = useState<number | null>(null);
     const [formVilla, setFormVilla] = useState(VILLAS_LIST[0].value);
-    const [formCategory, setFormCategory] = useState<"Normal" | "High Tea">("Normal");
+    const [formCategory, setFormCategory] = useState<"Normal" | "High Tea" | "Timepass">("Normal");
     const [formQuantities, setFormQuantities] = useState<Record<string, number>>({});
     const [formStatus, setFormStatus] = useState("pending");
+    const [formComments, setFormComments] = useState<Record<string, string>>({});
     const [modalSubmitting, setModalSubmitting] = useState(false);
 
     const handleOpenCreateModal = () => {
@@ -216,6 +237,7 @@ export default function HousekeepingPortalPage() {
         setFormVilla(VILLAS_LIST[0].value);
         setFormCategory("Normal");
         setFormQuantities({});
+        setFormComments({});
         setFormStatus("pending");
         setIsModalOpen(true);
     };
@@ -229,13 +251,16 @@ export default function HousekeepingPortalPage() {
         
         // Parse items back to record
         const parsedQuantities: Record<string, number> = {};
+        const parsedComments: Record<string, string> = {};
         req.items.forEach(item => {
             const menuItem = menuItems.find(m => m.name === item.name);
             if (menuItem) {
                 parsedQuantities[menuItem.id] = item.quantity;
+                parsedComments[menuItem.id] = item.comment || "";
             }
         });
         setFormQuantities(parsedQuantities);
+        setFormComments(parsedComments);
         setIsModalOpen(true);
     };
 
@@ -278,7 +303,8 @@ export default function HousekeepingPortalPage() {
                 name: item?.name || "",
                 quantity: qty,
                 price: item?.price || 0,
-                category: item?.category || "Normal"
+                category: item?.category || "Normal",
+                comment: formComments[itemId] || ""
             };
         });
 
@@ -545,7 +571,14 @@ export default function HousekeepingPortalPage() {
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                     {req.items.map((item, idx) => (
                                                         <div key={idx} className="flex items-center justify-between text-xs bg-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
-                                                            <span className="font-semibold text-slate-700">{item.name}</span>
+                                                            <span className="font-semibold text-slate-700">
+                                                                {item.name}
+                                                                {item.comment && (
+                                                                    <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.5 rounded ml-1.5 font-semibold">
+                                                                        {item.comment}
+                                                                    </span>
+                                                                )}
+                                                            </span>
                                                             <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">
                                                                 × {item.quantity}
                                                             </span>
@@ -626,7 +659,14 @@ export default function HousekeepingPortalPage() {
                                             <div className="space-y-1">
                                                 {req.items.map((item, idx) => (
                                                     <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
-                                                        <span>{item.name}</span>
+                                                        <span>
+                                                            {item.name}
+                                                            {item.comment && (
+                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
+                                                                    {item.comment}
+                                                                </span>
+                                                            )}
+                                                        </span>
                                                         <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
                                                     </div>
                                                 ))}
@@ -776,7 +816,7 @@ export default function HousekeepingPortalPage() {
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                                     Category
                                 </label>
-                                <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                                <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -802,6 +842,19 @@ export default function HousekeepingPortalPage() {
                                         }`}
                                     >
                                         High Tea
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormCategory("Timepass");
+                                        }}
+                                        className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                            formCategory === "Timepass"
+                                                ? "bg-white text-emerald-600 shadow-sm"
+                                                : "text-slate-500 hover:text-slate-800"
+                                        }`}
+                                    >
+                                        Timepass
                                     </button>
                                 </div>
                             </div>
@@ -832,45 +885,57 @@ export default function HousekeepingPortalPage() {
                                     {menuItems.filter(m => m.category === formCategory).map((item) => {
                                         const qty = formQuantities[item.id] || 0;
                                         return (
-                                            <div 
-                                                key={item.id} 
-                                                className={`flex items-center justify-between p-2.5 rounded-lg border transition-all ${
-                                                    qty > 0 
-                                                        ? "bg-white border-blue-200 shadow-sm" 
-                                                        : "bg-transparent border-transparent hover:bg-white/60"
-                                                }`}
-                                            >
-                                                <div>
-                                                    <p className="text-xs font-bold text-slate-800">{item.name}</p>
-                                                    <p className="text-[10px] font-semibold text-slate-400">₹{item.price}</p>
+                                            <div key={item.id} className="py-2 border-b border-slate-100 last:border-0">
+                                                <div 
+                                                    className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
+                                                        qty > 0 
+                                                            ? "bg-white border-blue-200 shadow-sm" 
+                                                            : "bg-transparent border-transparent hover:bg-white/60"
+                                                    }`}
+                                                >
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-800">{item.name}</p>
+                                                        <p className="text-[10px] font-semibold text-slate-400">₹{item.price}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {qty > 0 && (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleFormDecrement(item.id)}
+                                                                    className="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-sm transition-colors"
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span className="font-mono font-bold text-xs text-blue-700 w-4 text-center">
+                                                                    {qty}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleFormIncrement(item.id)}
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
+                                                                qty > 0 
+                                                                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                                                                    : "bg-slate-200 hover:bg-slate-300 text-slate-700"
+                                                            }`}
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    {qty > 0 && (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleFormDecrement(item.id)}
-                                                                className="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-sm transition-colors"
-                                                            >
-                                                                -
-                                                            </button>
-                                                            <span className="font-mono font-bold text-xs text-blue-700 w-4 text-center">
-                                                                {qty}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleFormIncrement(item.id)}
-                                                        className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
-                                                            qty > 0 
-                                                                ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                                                                : "bg-slate-200 hover:bg-slate-300 text-slate-700"
-                                                        }`}
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
+                                                {qty > 0 && (
+                                                    <div className="mt-1.5 pl-2 animate-in slide-in-from-top-1 duration-100">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Add notes / item comments..."
+                                                            value={formComments[item.id] || ""}
+                                                            onChange={(e) => setFormComments(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                            className="w-full border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-medium text-slate-700 focus:outline-none focus:border-blue-500 bg-white"
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -918,7 +983,7 @@ export default function HousekeepingPortalPage() {
                     </h2>
                     <span className="text-xs text-slate-400 font-medium">Configure menu items, prices and availability</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <button
                         onClick={handleOpenHousekeepingMenu}
                         className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
@@ -938,6 +1003,16 @@ export default function HousekeepingPortalPage() {
                             <p className="text-xs text-slate-500 mt-1">Edit evening tea menu, rates, and High Tea category items.</p>
                         </div>
                         <span className="text-indigo-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
+                    </button>
+                    <button
+                        onClick={handleOpenTimepassMenu}
+                        className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
+                    >
+                        <div>
+                            <p className="text-sm font-bold text-slate-800">Timepass Menu</p>
+                            <p className="text-xs text-slate-500 mt-1">Edit snacks/papad menu, rates, and Timepass category items.</p>
+                        </div>
+                        <span className="text-emerald-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
                     </button>
                 </div>
             </div>
@@ -1126,6 +1201,102 @@ export default function HousekeepingPortalPage() {
                             <button
                                 onClick={handleSaveMenuChanges}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                            >
+                                Save Menu Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Manage Timepass Menu Modal */}
+            {isTimepassMenuOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-800">Manage Timepass Menu</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Add, edit, or delete items in the Timepass category</p>
+                            </div>
+                            <button onClick={() => setIsTimepassMenuOpen(false)} className="p-1 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Add Item Form */}
+                        <div className="p-6 border-b border-slate-100 space-y-3 bg-emerald-50/20">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Add New Item</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Item Name (e.g. Khichiya Masala Papad)"
+                                    value={newItemName}
+                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Price (₹)"
+                                    value={newItemPrice}
+                                    onChange={(e) => setNewItemPrice(e.target.value)}
+                                    className="w-full sm:w-28 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
+                                />
+                                <button
+                                    onClick={() => handleAddMenuItem("Timepass")}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shrink-0"
+                                >
+                                    + Add Item
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* List & Edit Area */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-3 min-h-0 [scrollbar-width:thin] scroll-smooth overscroll-contain">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Timepass Items</p>
+                            <div className="space-y-2">
+                                {tempMenuItems.filter(item => item.category === "Timepass").map((item) => (
+                                    <div key={item.id} className="flex gap-2 items-center bg-slate-50 border border-slate-200 rounded-xl p-2.5 hover:bg-white hover:shadow-sm transition-all">
+                                        <input
+                                            type="text"
+                                            value={item.name}
+                                            onChange={(e) => handleUpdateMenuItem(item.id, { name: e.target.value })}
+                                            className="flex-1 bg-transparent border-none focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none text-xs font-bold text-slate-800 rounded px-2 py-1"
+                                        />
+                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 border border-slate-200 rounded-lg px-2 py-1">
+                                            <span className="text-[10px] font-bold text-slate-400">₹</span>
+                                            <input
+                                                type="number"
+                                                value={item.price}
+                                                onChange={(e) => handleUpdateMenuItem(item.id, { price: parseFloat(e.target.value) || 0 })}
+                                                className="w-16 bg-transparent border-none text-right focus:bg-white focus:outline-none text-xs font-bold text-slate-800 focus:ring-1 focus:ring-emerald-500 rounded p-0"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteMenuItem(item.id)}
+                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
+                                            title="Delete Item"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {tempMenuItems.filter(item => item.category === "Timepass").length === 0 && (
+                                    <p className="text-xs text-slate-400 italic text-center py-6">No Timepass items in menu.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setIsTimepassMenuOpen(false)}
+                                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveMenuChanges}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-colors shadow-sm"
                             >
                                 Save Menu Changes
                             </button>
