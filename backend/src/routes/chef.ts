@@ -241,11 +241,11 @@ router.post("/submit", async (req: AuthRequest, res) => {
             year: "numeric"
         });
 
-        // Supplier map (for testing all are set to "8237309564")
+        // Supplier map (for testing all are set to "9653176436")
         const CATEGORY_SUPPLIER_MAP: Record<string, string> = {
-            "Dairy": "8237309564",
-            "Kirayana": "8237309564",
-            "Shak Shabji": "8237309564"
+            "Dairy": "9653176436",
+            "Kirayana": "9653176436",
+            "Shak Shabji": "9653176436"
         };
 
         const results = [];
@@ -269,7 +269,7 @@ router.post("/submit", async (req: AuthRequest, res) => {
                 .map((ing: any) => `${ing.nameEn} (${ing.nameHi}) - ${ing.quantity}`)
                 .join("\n");
 
-            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
+            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "9653176436";
             const waMessage = `*Galaxia Resorts — Kitchen Requirements*\n\nDaily ingredients checklist for *${dateStr} (${categoryName})*:\n\n${itemsList}`;
 
             const waSuccess = await sendWhatsAppMessage(
