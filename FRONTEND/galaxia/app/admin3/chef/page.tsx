@@ -695,10 +695,10 @@ export default function ChefPortalPage() {
                 </div>
 
                 {/* Right Column (Summary & Logs) */}
-                <div className="space-y-6">
+                <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                     
                     {/* Selected Summary Card */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5 sticky top-24">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
                         <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                             <h2 className="text-base font-bold text-slate-800">Checklist Summary</h2>
                             <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
