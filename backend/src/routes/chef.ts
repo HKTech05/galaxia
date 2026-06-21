@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import prisma from "../lib/prisma";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
-import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
+import { sendWhatsAppMessage } from "../lib/whatsappService";
 
 const router = Router();
 
@@ -266,17 +266,16 @@ router.post("/submit", async (req: AuthRequest, res) => {
             });
 
             const itemsList = categoryIngredients
-                .map((ing: any) => `• ${ing.nameEn} (${ing.nameHi}) - ${ing.quantity} ${ing.unit || 'kg'}`)
-                .join(" | ");
+                .map((ing: any) => `${ing.nameEn} (${ing.nameHi}) - ${ing.quantity}`)
+                .join("\n");
 
             const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
-            const catDateStr = `${dateStr} (${categoryName})`;
+            const waMessage = `*Galaxia Resorts — Kitchen Requirements*\n\nDaily ingredients checklist for *${dateStr} (${categoryName})*:\n\n${itemsList}`;
 
-            const waSuccess = await sendWhatsAppTemplateMessage(
+            const waSuccess = await sendWhatsAppMessage(
                 "otp",
                 recipientPhone,
-                "kitchen_checklist_ready",
-                [catDateStr, itemsList, req.admin!.username]
+                waMessage
             );
 
             results.push({
