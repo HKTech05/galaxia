@@ -6,7 +6,7 @@ import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
 import { sendBookingConfirmation, sendOwnerBookingNotification } from "../lib/emailService";
 import { generateStaycationBookingPDF } from "../lib/pdfService";
-import { sendStaycationBookingConfirmation } from "../lib/whatsappService";
+import { sendStaycationBookingConfirmation, sendWhatsAppTemplateMessage } from "../lib/whatsappService";
 
 const router = Router();
 
@@ -459,6 +459,11 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         const bookingId = parseInt(req.params.id as string);
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
+        const existing = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId }
+        });
+        if (!existing) return res.status(404).json({ error: "Booking not found" });
+
         const booking = await prisma.staycationBooking.update({
             where: { id: bookingId },
             data: {
@@ -467,7 +472,38 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
                 ...(status === "checked_in" ? { checkInTime: new Date() } : {}),
                 ...(status === "checked_out" ? { checkOutTime: new Date() } : {}),
             },
+            include: {
+                property: true,
+            }
         });
+
+        // Send WhatsApp check-in notification from OTP bot
+        if (status === "checked_in" && existing.status !== "checked_in") {
+            try {
+                const allottedUnit = booking.assignedUnit;
+                if (allottedUnit && allottedUnit.trim() !== "") {
+                    const guestPhone = decrypt(booking.customerPhone);
+
+                    // Support phone routing
+                    const supportPhone = booking.property.slug === "ambrose"
+                        ? "+91 81695 19564"
+                        : "+91 99877 34458";
+
+                    // Menu URL routing
+                    const slugifiedUnit = allottedUnit.trim().toLowerCase().replace(/\s+/g, "-");
+                    const menuUrl = `galaxiaresorts.com/hospitalityemenu/${slugifiedUnit}`;
+
+                    await sendWhatsAppTemplateMessage(
+                        "otp",
+                        guestPhone,
+                        "hospitality_checkin_notification",
+                        [allottedUnit, menuUrl, supportPhone]
+                    );
+                }
+            } catch (waErr: any) {
+                console.error("Staycation check-in WhatsApp notification failed:", waErr.message);
+            }
+        }
 
         // Audit log
         auditLog({ adminId: req.admin!.id, action: "booking_status_update", entityType: "staycation_booking", entityId: booking.id, details: { newStatus: status, assignedUnit } });
