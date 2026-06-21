@@ -266,7 +266,12 @@ router.post("/submit", async (req: AuthRequest, res) => {
             });
 
             const itemsList = categoryIngredients
-                .map((ing: any) => `${ing.nameEn} (${ing.nameHi}) - ${ing.quantity}`)
+                .map((ing: any) => {
+                    if (ing.unit === "cold_drink") {
+                        return ing.quantity.split(", ").join("\n");
+                    }
+                    return `${ing.nameEn} (${ing.nameHi}) - ${ing.quantity}`;
+                })
                 .join("\n");
 
             const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "9653176436";

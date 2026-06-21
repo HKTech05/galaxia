@@ -67,6 +67,7 @@ export default function ChefPortalPage() {
     const [tempQuantity, setTempQuantity] = useState("0.5kg");
     const [selectedBrand, setSelectedBrand] = useState("Thumps Up");
     const [selectedVolume, setSelectedVolume] = useState("0.25L");
+    const [tempColdDrinks, setTempColdDrinks] = useState<Record<string, string>>({});
 
     // Submission State
     const [submitting, setSubmitting] = useState(false);
@@ -218,31 +219,50 @@ export default function ChefPortalPage() {
     }, [ingredients, searchTerm]);
 
     // Handle when checkbox is clicked
-    const handleCheckboxChange = (ingredient: Ingredient) => {
+    const handleCheckboxChange = (ingredient: Ingredient, isCheckboxClick: boolean = false) => {
         const isChecked = !!selectedQuantities[ingredient.id];
         
-        if (isChecked) {
-            // Already checked: uncheck directly
+        if (isChecked && isCheckboxClick) {
+            // Checked and checkbox clicked: uncheck directly
             const updated = { ...selectedQuantities };
             delete updated[ingredient.id];
             setSelectedQuantities(updated);
         } else {
-            // Not checked: open centered modal to select quantity
+            // Open centered modal to select/edit quantity
             setActiveIngredient(ingredient);
+            const currentVal = selectedQuantities[ingredient.id] || "";
+            
             if (ingredient.unit === "cold_drink") {
-                setSelectedBrand("Thumps Up");
-                setSelectedVolume("0.25L");
-                setTempQuantity("Thumps Up (0.25L)");
-            } else if (ingredient.unit === "disposable_glass") {
-                setTempQuantity("10 glasses");
-            } else if (ingredient.unit === "piece") {
-                setTempQuantity("1 piece");
-            } else if (ingredient.unit === "packet") {
-                setTempQuantity("1 packet");
-            } else if (ingredient.unit === "L") {
-                setTempQuantity("0.5L");
+                // Parse existing selections
+                const initialTemp: Record<string, string> = {};
+                if (currentVal) {
+                    const parts = currentVal.split(", ");
+                    for (const part of parts) {
+                        const matchedBrand = BRANDS.find(brand => part.startsWith(brand));
+                        if (matchedBrand) {
+                            const vol = part.substring(matchedBrand.length).trim();
+                            initialTemp[matchedBrand] = vol;
+                        }
+                    }
+                }
+                setTempColdDrinks(initialTemp);
             } else {
-                setTempQuantity("0.5kg"); // kg
+                // For other ingredients, pre-select the existing quantity or fallback to default
+                if (currentVal) {
+                    setTempQuantity(currentVal);
+                } else {
+                    if (ingredient.unit === "disposable_glass") {
+                        setTempQuantity("10 glasses");
+                    } else if (ingredient.unit === "piece") {
+                        setTempQuantity("1 piece");
+                    } else if (ingredient.unit === "packet") {
+                        setTempQuantity("1 packet");
+                    } else if (ingredient.unit === "L") {
+                        setTempQuantity("0.5L");
+                    } else {
+                        setTempQuantity("0.5kg"); // kg
+                    }
+                }
             }
             setModalOpen(true);
         }
@@ -254,7 +274,20 @@ export default function ChefPortalPage() {
         
         let finalQty = tempQuantity;
         if (activeIngredient.unit === "cold_drink") {
-            finalQty = `${selectedBrand} (${selectedVolume})`;
+            const selections = Object.entries(tempColdDrinks)
+                .filter(([_, vol]) => vol && vol !== "None")
+                .map(([brand, vol]) => `${brand} ${vol}`);
+            
+            if (selections.length === 0) {
+                // If nothing selected, uncheck it
+                const updated = { ...selectedQuantities };
+                delete updated[activeIngredient.id];
+                setSelectedQuantities(updated);
+                setModalOpen(false);
+                setActiveIngredient(null);
+                return;
+            }
+            finalQty = selections.join(", ");
         }
         
         setSelectedQuantities(prev => ({
@@ -642,7 +675,7 @@ export default function ChefPortalPage() {
                                                                         <input
                                                                             type="checkbox"
                                                                             checked={isChecked}
-                                                                            onChange={() => handleCheckboxChange(ing)}
+                                                                            onChange={() => handleCheckboxChange(ing, true)}
                                                                             className="sr-only peer"
                                                                         />
                                                                         <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-purple-600 peer-checked:border-purple-600 transition-all shadow-sm">
@@ -653,7 +686,7 @@ export default function ChefPortalPage() {
                                                                     {/* Text Names */}
                                                                     <div 
                                                                         className="cursor-pointer flex-1"
-                                                                        onClick={() => handleCheckboxChange(ing)}
+                                                                        onClick={() => handleCheckboxChange(ing, false)}
                                                                     >
                                                                         <span className="font-semibold text-slate-800 text-sm sm:text-base">
                                                                             {ing.nameEn}
@@ -809,12 +842,23 @@ export default function ChefPortalPage() {
                                                 </p>
                                                 {isExpanded && log.actionType === "submit_order" && detailsObj.ingredients && (
                                                     <div className="mt-2 pt-2 border-t border-slate-200/60 text-slate-500 space-y-1 font-mono text-[10px] bg-white p-2 rounded-lg max-h-[200px] overflow-y-auto shadow-inner">
-                                                        {detailsObj.ingredients.map((ing: any, idx: number) => (
-                                                            <div key={idx} className="flex justify-between border-b border-slate-50 py-0.5 last:border-b-0">
-                                                                <span>• {ing.nameEn} ({ing.nameHi})</span>
-                                                                <span className="font-bold text-slate-700">{ing.quantity} {ing.unit || 'kg'}</span>
-                                                            </div>
-                                                        ))}
+                                                        {detailsObj.ingredients.flatMap((ing: any, idx: number) => {
+                                                            if (ing.unit === "cold_drink") {
+                                                                const drinks = ing.quantity.split(", ");
+                                                                return drinks.map((drink: string, dIdx: number) => (
+                                                                    <div key={`${idx}-${dIdx}`} className="flex justify-between border-b border-slate-50 py-0.5 last:border-b-0">
+                                                                        <span>• {drink}</span>
+                                                                        <span className="font-bold text-slate-700"></span>
+                                                                    </div>
+                                                                ));
+                                                            }
+                                                            return [
+                                                                <div key={idx} className="flex justify-between border-b border-slate-50 py-0.5 last:border-b-0">
+                                                                    <span>• {ing.nameEn} ({ing.nameHi})</span>
+                                                                    <span className="font-bold text-slate-700">{ing.quantity}</span>
+                                                                </div>
+                                                            ];
+                                                        })}
                                                     </div>
                                                 )}
                                             </div>
@@ -826,11 +870,10 @@ export default function ChefPortalPage() {
                     )}
                 </div>
             </div>
-
             {/* Quantity Modal (Centered, Responsive) */}
             {modalOpen && activeIngredient && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-sm w-full p-6 relative animate-in zoom-in-95 duration-200 flex flex-col text-center">
+                    <div className={`bg-white rounded-2xl shadow-xl border border-slate-100 w-full p-6 relative animate-in zoom-in-95 duration-200 flex flex-col text-center ${activeIngredient.unit === "cold_drink" ? "max-w-md" : "max-w-sm"}`}>
                         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 mx-auto mb-4">
                             <ChefHat size={24} />
                         </div>
@@ -841,38 +884,39 @@ export default function ChefPortalPage() {
                         <p className="text-sm font-semibold text-purple-700 bg-purple-50 px-3 py-1.5 rounded-lg inline-block mx-auto mb-5 border border-purple-100">
                             {activeIngredient.nameEn} <span className="font-medium text-slate-400">({activeIngredient.nameHi})</span>
                         </p>
-
+ 
                         <div className="space-y-4">
                             {activeIngredient.unit === "cold_drink" ? (
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left mb-1.5 ml-1">
-                                            Brand
-                                        </label>
-                                        <select
-                                            value={selectedBrand}
-                                            onChange={(e) => setSelectedBrand(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
-                                        >
-                                            {BRANDS.map(brand => (
-                                                <option key={brand} value={brand}>{brand}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-left mb-1.5 ml-1">
-                                            Volume
-                                        </label>
-                                        <select
-                                            value={selectedVolume}
-                                            onChange={(e) => setSelectedVolume(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
-                                        >
-                                            {volumes.map(vol => (
-                                                <option key={vol} value={vol}>{vol}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                <div className="space-y-2 px-1 max-h-[280px] overflow-y-auto pr-1 text-left">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                                        Brands & Volumes
+                                    </p>
+                                    {BRANDS.map(brand => {
+                                        const currentVol = tempColdDrinks[brand] || "None";
+                                        return (
+                                            <div key={brand} className="flex items-center justify-between py-1.5 border-b border-slate-100/50 last:border-b-0">
+                                                <span className="font-semibold text-slate-700 text-xs sm:text-sm">
+                                                    {brand}
+                                                </span>
+                                                <select
+                                                    value={currentVol}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setTempColdDrinks(prev => ({
+                                                            ...prev,
+                                                            [brand]: val
+                                                        }));
+                                                    }}
+                                                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors w-24"
+                                                >
+                                                    <option value="None">None</option>
+                                                    {volumes.map(vol => (
+                                                        <option key={vol} value={vol}>{vol}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div>
@@ -890,7 +934,7 @@ export default function ChefPortalPage() {
                                     </select>
                                 </div>
                             )}
-
+ 
                             <div className="grid grid-cols-2 gap-3 pt-3">
                                 <button
                                     onClick={handleCancelModal}
