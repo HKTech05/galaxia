@@ -71,8 +71,8 @@ export default function ChefPortalPage() {
     // Submission State
     const [submitting, setSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
-    const [pdfDownloadLinks, setPdfDownloadLinks] = useState<{ category: string; downloadLink: string }[]>([]);
     const [submitError, setSubmitError] = useState("");
+    const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
 
     // High Tea Requests
     const [highTeaRequests, setHighTeaRequests] = useState<any[]>([]);
@@ -332,7 +332,6 @@ export default function ChefPortalPage() {
         setSubmitting(true);
         setSubmitError("");
         setSubmitSuccess(false);
-        setPdfDownloadLinks([]);
 
         // Map selections to structure expected by endpoint
         const submissionList = selectedIds.map(id => {
@@ -355,11 +354,6 @@ export default function ChefPortalPage() {
 
             if (res.success) {
                 setSubmitSuccess(true);
-                if (Array.isArray(res.results)) {
-                    setPdfDownloadLinks(res.results);
-                } else if (res.downloadLink) {
-                    setPdfDownloadLinks([{ category: "Checklist", downloadLink: res.downloadLink }]);
-                }
                 // Clear selections upon success
                 setSelectedQuantities({});
                 
@@ -779,27 +773,53 @@ export default function ChefPortalPage() {
                                 <p className="text-center py-6 text-slate-400 text-xs">No audit logs found.</p>
                             ) : (
                                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                                    {logs.map((log) => (
-                                        <div key={log.id} className="text-[11px] bg-slate-50/80 p-3 rounded-lg border border-slate-100 space-y-1 hover:bg-slate-50 transition-colors">
-                                            <div className="flex items-center justify-between text-slate-400 font-medium">
-                                                <span className="flex items-center gap-1">
-                                                    <User size={10} />
-                                                    {log.admin?.username || "Admin"} ({log.admin?.role || "staff"})
-                                                </span>
-                                                <span>
-                                                    {new Date(log.createdAt).toLocaleDateString("en-IN", {
-                                                        day: "2-digit",
-                                                        month: "short",
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    })}
-                                                </span>
+                                    {logs.map((log) => {
+                                        const isExpanded = expandedLogId === log.id;
+                                        let detailsObj: any = {};
+                                        try {
+                                            detailsObj = JSON.parse(log.details);
+                                        } catch (_) {}
+
+                                        return (
+                                            <div 
+                                                key={log.id} 
+                                                onClick={() => {
+                                                    if (log.actionType === "submit_order") {
+                                                        setExpandedLogId(isExpanded ? null : log.id);
+                                                    }
+                                                }}
+                                                className={`text-[11px] bg-slate-50/80 p-3 rounded-lg border border-slate-100 space-y-1 hover:bg-slate-100 transition-colors ${log.actionType === "submit_order" ? "cursor-pointer" : ""}`}
+                                            >
+                                                <div className="flex items-center justify-between text-slate-400 font-medium">
+                                                    <span className="flex items-center gap-1">
+                                                        <User size={10} />
+                                                        {log.admin?.username || "Admin"} ({log.admin?.role || "staff"})
+                                                    </span>
+                                                    <span>
+                                                        {new Date(log.createdAt).toLocaleDateString("en-IN", {
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit"
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                <p className="font-semibold text-slate-700 leading-tight">
+                                                    {renderLogAction(log)}
+                                                </p>
+                                                {isExpanded && log.actionType === "submit_order" && detailsObj.ingredients && (
+                                                    <div className="mt-2 pt-2 border-t border-slate-200/60 text-slate-500 space-y-1 font-mono text-[10px] bg-white p-2 rounded-lg max-h-[200px] overflow-y-auto shadow-inner">
+                                                        {detailsObj.ingredients.map((ing: any, idx: number) => (
+                                                            <div key={idx} className="flex justify-between border-b border-slate-50 py-0.5 last:border-b-0">
+                                                                <span>• {ing.nameEn} ({ing.nameHi})</span>
+                                                                <span className="font-bold text-slate-700">{ing.quantity} {ing.unit || 'kg'}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <p className="font-semibold text-slate-700 leading-tight">
-                                                {renderLogAction(log)}
-                                            </p>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -906,26 +926,10 @@ export default function ChefPortalPage() {
                         </p>
                         
                         <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                            The daily ingredients PDF has been generated and the download link was sent to WhatsApp.
+                            The daily ingredients list has been submitted and the order details were sent directly to WhatsApp.
                         </p>
 
                         <div className="space-y-2.5">
-                            {pdfDownloadLinks.length > 0 && isOwnerOrDev && (
-                                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-                                    {pdfDownloadLinks.map((item, index) => (
-                                        <a
-                                            key={index}
-                                            href={item.downloadLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm text-center"
-                                        >
-                                            <Download size={16} />
-                                            Download {item.category} PDF
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
                             <button
                                 onClick={() => setSubmitSuccess(false)}
                                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm py-2.5 rounded-xl transition-colors border border-slate-200/50"

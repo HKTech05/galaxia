@@ -1,7 +1,6 @@
 import { Router, Response } from "express";
 import prisma from "../lib/prisma";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
-import { generateChefIngredientsPDF } from "../lib/pdfService";
 import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
 
 const router = Router();
@@ -82,42 +81,7 @@ async function translateEnglishToHindi(text: string): Promise<string> {
     return trimmed;
 }
 
-// ───────────────────────────────────────────────────────────────
-//  Public Route: GET /api/chef/pdf/:id
-//  Needs to be public for external WhatsApp link access
-// ───────────────────────────────────────────────────────────────
-router.get("/pdf/:id", async (req, res) => {
-    try {
-        const logId = parseInt(req.params.id);
-        if (isNaN(logId)) {
-            return res.status(400).json({ error: "Invalid log ID" });
-        }
 
-        const log = await prisma.chefLog.findUnique({
-            where: { id: logId }
-        });
-
-        if (!log || log.actionType !== "submit_order") {
-            return res.status(404).json({ error: "Checklist PDF not found" });
-        }
-
-        const details = JSON.parse(log.details);
-        const pdfDate = details.date ? new Date(details.date) : log.createdAt;
-        const ingredients = details.ingredients || [];
-        const category = details.category || undefined;
-
-        // Generate the PDF buffer
-        const pdfBuffer = await generateChefIngredientsPDF(ingredients, pdfDate, category);
-
-        // Send PDF response
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename="chef-ingredients-${logId}.pdf"`);
-        return res.send(pdfBuffer);
-    } catch (error: any) {
-        console.error("Error generating PDF download:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-});
 
 // ───────────────────────────────────────────────────────────────
 //  Authenticated Routes
@@ -301,7 +265,10 @@ router.post("/submit", async (req: AuthRequest, res) => {
                 }
             });
 
-            const downloadLink = `${baseUrl}/api/chef/pdf/${log.id}`;
+            const itemsList = categoryIngredients
+                .map((ing: any) => `• ${ing.nameEn} (${ing.nameHi}) - ${ing.quantity} ${ing.unit || 'kg'}`)
+                .join("\n");
+
             const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
             const catDateStr = `${dateStr} (${categoryName})`;
 
@@ -309,13 +276,12 @@ router.post("/submit", async (req: AuthRequest, res) => {
                 "otp",
                 recipientPhone,
                 "kitchen_checklist_ready",
-                [catDateStr, downloadLink, req.admin!.username]
+                [catDateStr, itemsList, req.admin!.username]
             );
 
             results.push({
                 category: categoryName,
                 logId: log.id,
-                downloadLink,
                 whatsAppSent: waSuccess
             });
         }
@@ -325,9 +291,8 @@ router.post("/submit", async (req: AuthRequest, res) => {
             results,
             // Provide fallback values matching the original keys for backward compatibility
             logId: results[0]?.logId,
-            downloadLink: results[0]?.downloadLink,
             whatsAppSent: results[0]?.whatsAppSent,
-            message: "Kitchen checklist submitted and link sent successfully."
+            message: "Kitchen checklist submitted and order sent successfully."
         });
     } catch (error: any) {
         console.error("Error submitting chef order:", error);
