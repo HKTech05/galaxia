@@ -12,10 +12,10 @@ export default function Admin3Layout({
     children: React.ReactNode
 }) {
     return (
-        <div className="admin-theme h-screen w-full overflow-y-auto bg-slate-50 flex flex-col selection:bg-purple-100 selection:text-purple-900 font-manrope">
+        <div className="admin-theme h-screen w-full overflow-y-auto overflow-x-hidden bg-slate-50 flex flex-col selection:bg-purple-100 selection:text-purple-900 font-manrope">
             <AdminSidebar isAdmin3={true} />
             <AdminHeader />
-            <main className="flex-1 ml-0 lg:ml-72 p-4 sm:p-8 overflow-x-hidden">
+            <main className="flex-1 ml-0 lg:ml-72 p-4 sm:p-8">
                 {children}
             </main>
         </div>
