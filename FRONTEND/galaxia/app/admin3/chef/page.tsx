@@ -41,20 +41,11 @@ interface ChefLog {
     };
 }
 
-const getLocalDateString = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-};
-
 export default function ChefPortalPage() {
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [logs, setLogs] = useState<ChefLog[]>([]);
     const [userRole, setUserRole] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
-    const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString);
     const [loadingIngredients, setLoadingIngredients] = useState(true);
     const [loadingLogs, setLoadingLogs] = useState(false);
     
@@ -388,9 +379,10 @@ export default function ChefPortalPage() {
         });
 
         try {
+            const todayStr = new Date().toISOString().split("T")[0];
             const res = await api.post("/chef/submit", {
                 ingredients: submissionList,
-                date: selectedDate
+                date: todayStr
             });
 
             if (res.success) {
@@ -459,30 +451,11 @@ export default function ChefPortalPage() {
                         </div>
                     </div>
                     
-                    {/* Date picker */}
-                    <div 
-                        onClick={(e) => {
-                            const inputEl = e.currentTarget.querySelector("input");
-                            if (inputEl) {
-                                try {
-                                    inputEl.showPicker();
-                                } catch (err) {
-                                    console.error("showPicker error:", err);
-                                }
-                            }
-                        }}
-                        className="relative flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/5 self-start md:self-auto cursor-pointer hover:bg-black/30 transition-colors animate-none"
-                    >
-                        <Calendar size={18} className="text-purple-300 pointer-events-none" />
-                        <span className="text-xs sm:text-sm font-semibold tracking-wide font-mono text-purple-100 pointer-events-none">
-                            {selectedDate.split("-").reverse().join("-")}
+                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/5 self-start md:self-auto">
+                        <Calendar size={18} className="text-purple-300" />
+                        <span className="text-xs sm:text-sm font-semibold tracking-wide font-mono text-purple-100">
+                            {getTodayDateString()}
                         </span>
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
-                        />
                     </div>
                 </div>
             </div>
