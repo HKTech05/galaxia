@@ -77,7 +77,7 @@ router.post("/requests", async (req, res) => {
             where: {
                 status: { in: ["confirmed", "checked_in"] },
                 checkInDate: { lte: todayStart },
-                checkOutDate: { gt: todayStart },
+                checkOutDate: { gte: todayStart },
                 OR: [
                     { assignedUnit: villaName },
                     { subProperty: { name: { equals: villaName, mode: "insensitive" } } }
@@ -237,7 +237,7 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
                 where: {
                     status: { in: ["confirmed", "checked_in"] },
                     checkInDate: { lte: todayStart },
-                    checkOutDate: { gt: todayStart },
+                    checkOutDate: { gte: todayStart },
                     OR: [
                         { assignedUnit: targetVilla },
                         { subProperty: { name: { equals: targetVilla, mode: "insensitive" } } }

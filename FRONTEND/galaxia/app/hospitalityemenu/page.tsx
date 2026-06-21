@@ -116,7 +116,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
         }
     }, [initialVillaValue]);
 
-    // Live countdown timer to High Tea (4:30 PM - 6:30 PM) and Normal Menu (8:30 AM - 10:30 PM) local time
+    // Live countdown timer to High Tea (4:30 PM - 6:30 PM) and Normal Menu (8:30 AM - 12:00 AM Midnight) local time
     useEffect(() => {
         const updateTimer = () => {
             const now = new Date();
@@ -165,7 +165,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
             normalStart.setHours(8, 30, 0, 0); // 8:30 AM
             
             const normalEnd = new Date();
-            normalEnd.setHours(22, 30, 0, 0); // 10:30 PM
+            normalEnd.setHours(23, 59, 59, 999); // 12:00 AM Midnight
 
             if (now >= normalStart && now <= normalEnd) {
                 setNormalUnlocked(true);
@@ -337,9 +337,16 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
             {/* Normal refreshments section */}
             <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <ClipboardList size={18} className="text-amber-600" />
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Beverages & Refreshments</h2>
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                            <ClipboardList size={18} className="text-amber-600" />
+                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Beverages & Refreshments</h2>
+                        </div>
+                        {normalUnlocked && (
+                            <p className="text-[11px] text-slate-400 font-medium ml-6">
+                                Orders can be served from 8:30 AM to 12:00 AM Midnight
+                            </p>
+                        )}
                     </div>
 
                     {!normalUnlocked && normalTimeRemaining && (
@@ -358,7 +365,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                 Locked Until 8:30 AM
                             </h3>
                             <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
-                                Housekeeping ordering unlocks automatically between 8:30 AM and 10:30 PM every day.
+                                Housekeeping ordering unlocks automatically between 8:30 AM and 12:00 AM Midnight every day.
                             </p>
                         </div>
                         <div className="shrink-0 flex items-center gap-2">
@@ -411,9 +418,16 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
             {/* High Tea Menu */}
             <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
                 <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Coffee size={18} className="text-amber-600" />
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">High Tea Specials</h2>
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                            <Coffee size={18} className="text-amber-600" />
+                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">High Tea Specials</h2>
+                        </div>
+                        {highTeaUnlocked && (
+                            <p className="text-[11px] text-slate-400 font-medium ml-6">
+                                Orders can be served from 4:30 PM to 6:30 PM
+                            </p>
+                        )}
                     </div>
 
                     {!highTeaUnlocked && timeRemaining && (
