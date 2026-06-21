@@ -79,6 +79,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     foodBills: b.foodBills || [],
                     extraGuestCharge: (b.extraGuests || []).reduce((sum: number, eg: any) => sum + (eg.chargeAmount || 0), 0),
                     extraGuestPayment: (b.extraGuests || []).map((eg: any) => eg.paymentMethod).filter(Boolean).join(", ") || "UPI",
+                    assignedUnit: b.assignedUnit || null,
                 }));
                 setBookings(mapped);
             }
@@ -141,7 +142,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             if (isAmbrose) {
                 setAssignedUnitInput(selectedBooking.property || "");
             } else {
-                const opts = getUnitOptions(selectedBooking);
+                const allOpts = getUnitOptions(selectedBooking);
+                const opts = allOpts.filter(opt => {
+                    const isOccupied = bookings.some(b => 
+                        b.rawId !== selectedBooking.rawId &&
+                        b.status === "Checked In" &&
+                        b.assignedUnit === opt
+                    );
+                    return !isOccupied;
+                });
+
                 if (opts.length > 0) {
                     const bookingProperty = (selectedBooking.property || "").toLowerCase();
                     const matchedIdx = opts.findIndex(opt => opt.toLowerCase() === bookingProperty || opt.toLowerCase().includes(bookingProperty));
@@ -151,11 +161,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         setAssignedUnitInput(opts[0]);
                     }
                 } else {
-                    setAssignedUnitInput("");
+                    setAssignedUnitInput(allOpts[0] || "");
                 }
             }
         }
-    }, [selectedBooking, modalType]);
+    }, [selectedBooking, modalType, bookings]);
 
     useEffect(() => {
         if (isFoodBillModalOpen && foodBillBooking) {
@@ -827,11 +837,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 onChange={(e) => setAssignedUnitInput(e.target.value)}
                                                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                             >
-                                                {getUnitOptions(selectedBooking).map((opt) => (
-                                                    <option key={opt} value={opt}>
-                                                        {opt}
-                                                    </option>
-                                                ))}
+                                                {getUnitOptions(selectedBooking)
+                                                    .filter(opt => {
+                                                        const isOccupied = bookings.some(b => 
+                                                            b.rawId !== selectedBooking.rawId &&
+                                                            b.status === "Checked In" &&
+                                                            b.assignedUnit === opt
+                                                        );
+                                                        return !isOccupied;
+                                                    })
+                                                    .map((opt) => (
+                                                        <option key={opt} value={opt}>
+                                                            {opt}
+                                                        </option>
+                                                    ))}
                                             </select>
                                         </div>
                                     )}
