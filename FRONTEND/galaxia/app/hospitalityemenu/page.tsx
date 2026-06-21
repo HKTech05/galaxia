@@ -600,7 +600,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
                             <Coffee size={18} className="text-amber-600" />
-                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Timepass Specials</h2>
+                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Timepass</h2>
                         </div>
                         {timepassUnlocked && (
                             <p className="text-[11px] text-slate-400 font-medium ml-6">
@@ -625,7 +625,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                 Locked Until 4:00 PM
                             </h3>
                             <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
-                                Timepass specialties unlock automatically between 4:00 PM and 10:00 PM every day.
+                                Timepass menu unlocks automatically between 4:00 PM and 10:00 PM every day.
                             </p>
                         </div>
                         <div className="shrink-0 flex items-center gap-2">
