@@ -164,6 +164,12 @@ app.post("/webhook", async (req, res) => {
       return;
     }
 
+    // Skip auto-reply for Galaxia OTP Bot
+    if (phoneId === "1015208551685641") {
+      console.log(`[WhatsApp] Message received on Galaxia OTP bot (${phoneId}) — skipping auto-reply.`);
+      return;
+    }
+
     // 5. Generate bot reply
     const choice = userText.toLowerCase();
     const isGreeting = ["hi", "hello", "hey", "start", "menu"].includes(choice);

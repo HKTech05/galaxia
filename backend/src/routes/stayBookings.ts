@@ -484,11 +484,6 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
                 if (allottedUnit && allottedUnit.trim() !== "") {
                     const guestPhone = decrypt(booking.customerPhone);
 
-                    // Support phone routing
-                    const supportPhone = booking.property.slug === "ambrose"
-                        ? "+91 81695 19564"
-                        : "+91 99877 34458";
-
                     // Menu URL routing
                     const slugifiedUnit = allottedUnit.trim().toLowerCase().replace(/\s+/g, "-");
                     const menuUrl = `galaxiaresorts.com/hospitalityemenu/${slugifiedUnit}`;
@@ -497,7 +492,7 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
                         "otp",
                         guestPhone,
                         "hospitality_checkin_notification",
-                        [allottedUnit, menuUrl, supportPhone]
+                        [allottedUnit, menuUrl]
                     );
                 }
             } catch (waErr: any) {
