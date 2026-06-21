@@ -345,20 +345,20 @@ async function main() {
 
     // Seed default ingredients
     const defaultIngredients = [
-        { nameEn: "Potato", nameHi: "आलू" },
-        { nameEn: "Tomato", nameHi: "टमाटर" },
-        { nameEn: "Onion", nameHi: "प्याज" },
-        { nameEn: "Garlic", nameHi: "लहसुन" },
-        { nameEn: "Ginger", nameHi: "अदरक" },
-        { nameEn: "Rice", nameHi: "चावल" },
-        { nameEn: "Wheat Flour", nameHi: "गेहूं का आटा" },
-        { nameEn: "Sugar", nameHi: "चीनी" },
-        { nameEn: "Salt", nameHi: "नमक" },
+        { nameEn: "Potato", nameHi: "बटाटा" },
+        { nameEn: "Tomato", nameHi: "टोमॅटो" },
+        { nameEn: "Onion", nameHi: "कांदा" },
+        { nameEn: "Garlic", nameHi: "लसूण" },
+        { nameEn: "Ginger", nameHi: "आले" },
+        { nameEn: "Rice", nameHi: "तांदूळ" },
+        { nameEn: "Wheat Flour", nameHi: "गव्हाचे पीठ" },
+        { nameEn: "Sugar", nameHi: "साखर" },
+        { nameEn: "Salt", nameHi: "मीठ" },
         { nameEn: "Milk", nameHi: "दूध" },
-        { nameEn: "Butter", nameHi: "मक्खन" },
-        { nameEn: "Coriander", nameHi: "धनिया" },
-        { nameEn: "Cooking Oil", nameHi: "तेल" },
-        { nameEn: "Green Chillies", nameHi: "हरी मिर्च" },
+        { nameEn: "Butter", nameHi: "लोणी" },
+        { nameEn: "Coriander", nameHi: "कोथिंबीर" },
+        { nameEn: "Cooking Oil", nameHi: "खाद्यतेल" },
+        { nameEn: "Green Chillies", nameHi: "हिरवी मिरची" },
         { nameEn: "Paneer", nameHi: "पनीर" },
     ];
     for (const ing of defaultIngredients) {

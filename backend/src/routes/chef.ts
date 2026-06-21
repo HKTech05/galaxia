@@ -7,50 +7,50 @@ const router = Router();
 
 // Dictionary for fallback translation of common ingredients
 const INGREDIENT_TRANSLATION_MAP: Record<string, string> = {
-    potato: "आलू",
-    tomato: "टमाटर",
-    onion: "प्याज",
-    garlic: "लहसुन",
-    ginger: "अदरक",
-    rice: "चावल",
-    sugar: "चीनी",
-    salt: "नमक",
+    potato: "बटाटा",
+    tomato: "टोमॅटो",
+    onion: "कांदा",
+    garlic: "लसूण",
+    ginger: "आले",
+    rice: "तांदूळ",
+    sugar: "साखर",
+    salt: "मीठ",
     milk: "दूध",
-    butter: "मक्खन",
-    coriander: "धनिया",
+    butter: "लोणी",
+    coriander: "कोथिंबीर",
     paneer: "पनीर",
-    cheese: "पनीर/चीज़",
+    cheese: "चीझ",
     bread: "ब्रेड",
-    egg: "अंडा",
+    egg: "अंडे",
     chicken: "चिकन",
-    mutton: "मटन",
-    fish: "मछली",
-    turmeric: "हल्दी",
-    cumin: "जीरा",
-    mustard: "सरसों",
-    pepper: "काली मिर्च",
-    cardamom: "इलायची",
-    clove: "लौंग",
-    cinnamon: "दालचीनी",
-    ghee: "घी",
+    mutton: "मटण",
+    fish: "मासा",
+    turmeric: "हळद",
+    cumin: "जिरे",
+    mustard: "मोहरी",
+    pepper: "काळी मिरी",
+    cardamom: "वेलची",
+    clove: "लवंग",
+    cinnamon: "दालचिनी",
+    ghee: "तूप",
     curd: "दही",
     yogurt: "दही",
-    flour: "आटा",
-    "wheat flour": "गेहूं का आटा",
-    "cooking oil": "तेल",
+    flour: "पीठ",
+    "wheat flour": "गव्हाचे पीठ",
+    "cooking oil": "खाद्यतेल",
     oil: "तेल",
-    "green chillies": "हरी मिर्च",
-    chili: "मिर्च",
-    lemon: "नींबू",
-    water: "पानी",
+    "green chillies": "हिरवी मिरची",
+    chili: "मिरची",
+    lemon: "लिंबू",
+    water: "पाणी",
     mint: "पुदीना",
 };
 
 /**
- * Translates an English ingredient name to Hindi.
+ * Translates an English ingredient name to Marathi.
  * First checks local dictionary, then tries MyMemory API, and falls back to English.
  */
-async function translateEnglishToHindi(text: string): Promise<string> {
+async function translateEnglishToMarathi(text: string): Promise<string> {
     const trimmed = text.trim();
     const normalized = trimmed.toLowerCase();
 
@@ -61,7 +61,7 @@ async function translateEnglishToHindi(text: string): Promise<string> {
 
     // Try MyMemory translation API
     try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=en|hi`;
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=en|mr`;
         const response = await fetch(url);
         if (response.ok) {
             const data: any = await response.json();
@@ -126,8 +126,8 @@ router.post("/ingredients", async (req: AuthRequest, res) => {
             return res.status(400).json({ error: "Ingredient already exists" });
         }
 
-        // Auto-translate nameEn to Hindi
-        const nameHi = await translateEnglishToHindi(cleanEn);
+        // Auto-translate nameEn to Marathi
+        const nameHi = await translateEnglishToMarathi(cleanEn);
 
         const newIngredient = await prisma.ingredient.create({
             data: {
@@ -241,11 +241,11 @@ router.post("/submit", async (req: AuthRequest, res) => {
             year: "numeric"
         });
 
-        // Supplier map (for testing all are set to "9653176436")
+        // Supplier map (for testing all are set to "8237309564")
         const CATEGORY_SUPPLIER_MAP: Record<string, string> = {
-            "Dairy": "9653176436",
-            "Kirayana": "9653176436",
-            "Shak Shabji": "9653176436"
+            "Dairy": "8237309564",
+            "Kirayana": "8237309564",
+            "Shak Shabji": "8237309564"
         };
 
         const results = [];
@@ -274,8 +274,8 @@ router.post("/submit", async (req: AuthRequest, res) => {
                 })
                 .join("\n");
 
-            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "9653176436";
-            const waMessage = `*Galaxia Resorts — Kitchen Requirements*\n\nDaily ingredients checklist for *${dateStr} (${categoryName})*:\n\n${itemsList}`;
+            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
+            const waMessage = `*Galaxia Resorts — Kitchen Requirements*\nDaily ingredients checklist for *${dateStr} (${categoryName})*:\n\n${itemsList}`;
 
             const waSuccess = await sendWhatsAppMessage(
                 "otp",
