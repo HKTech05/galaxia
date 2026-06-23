@@ -282,6 +282,8 @@
     // ─── FILTER SESSIONS ─────────────────────────────────
     function getFilteredSessions(tab) {
         return chatSessions.filter(s => {
+            if (s.phone_number_id === '1015208551685641') return false;
+            if (['917355630009', '919867677811', '7355630009', '9867677811'].includes(s.customer_phone)) return false;
             if (tab !== 'all') {
                 const num = PHONE_NUMBERS[tab];
                 if (num && s.phone_number_id !== num.id) return false;

@@ -74,11 +74,20 @@ async function saveMessage(sessionId, role, message, isHuman = false) {
  * Optionally filter by phone_number_id.
  */
 async function getChats(phoneNumberId = null) {
-  let query = `SELECT * FROM chat_sessions ORDER BY last_message_at DESC NULLS LAST`;
+  let query = `
+    SELECT * FROM chat_sessions 
+    WHERE phone_number_id != '1015208551685641'
+      AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
+    ORDER BY last_message_at DESC NULLS LAST`;
   let params = [];
 
   if (phoneNumberId) {
-    query = `SELECT * FROM chat_sessions WHERE phone_number_id = $1 ORDER BY last_message_at DESC NULLS LAST`;
+    query = `
+      SELECT * FROM chat_sessions 
+      WHERE phone_number_id = $1
+        AND phone_number_id != '1015208551685641'
+        AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
+      ORDER BY last_message_at DESC NULLS LAST`;
     params = [phoneNumberId];
   }
 

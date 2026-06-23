@@ -121,8 +121,13 @@ app.post("/webhook", async (req, res) => {
 
     if (!message) return;
 
-    const from = message.from; // e.g. "919876543210"
     const phoneId = changes?.value?.metadata?.phone_number_id || "1117204771469353";
+    if (phoneId === "1015208551685641") {
+      console.log(`[WhatsApp] Message received on Galaxia OTP bot (${phoneId}) — skipping logging and auto-reply.`);
+      return;
+    }
+
+    const from = message.from; // e.g. "919876543210"
     const sessionId = `wa_${from}`;
     const botType = "celebration";
 
@@ -161,12 +166,6 @@ app.post("/webhook", async (req, res) => {
     // 4. Check if human mode is active — if so, don't auto-reply
     if (session.is_human_active) {
       console.log(`[WhatsApp] Human mode active for ${sessionId} — skipping bot reply.`);
-      return;
-    }
-
-    // Skip auto-reply for Galaxia OTP Bot
-    if (phoneId === "1015208551685641") {
-      console.log(`[WhatsApp] Message received on Galaxia OTP bot (${phoneId}) — skipping auto-reply.`);
       return;
     }
 

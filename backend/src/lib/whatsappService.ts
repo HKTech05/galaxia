@@ -244,6 +244,9 @@ export async function sendWhatsAppDocument(
  * This ensures the confirmation shows up in the chatbot dashboard.
  */
 async function logConfirmationToChat(phoneNumberId: string, customerPhone: string, message: string, addBookedTag: boolean) {
+    if (phoneNumberId === "1015208551685641") {
+        return;
+    }
     const prisma = (await import("../lib/prisma")).default;
     const sessionId = `${phoneNumberId}_${customerPhone}`;
 

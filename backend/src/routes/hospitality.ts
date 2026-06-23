@@ -120,11 +120,11 @@ router.post("/requests", async (req, res) => {
 
         // Send WhatsApp notification to hospitality staff
         try {
-            // Build items summary string with comments on separate lines
+            // Build items summary string joined by commas (Meta templates reject newlines)
             const itemsSummary = items.map((i: any) => {
-                const commentText = i.comment && i.comment.trim() ? ` (${i.comment.trim()})` : '';
+                const commentText = i.comment && i.comment.trim() ? ` (${i.comment.trim().replace(/\s+/g, " ")})` : '';
                 return `${i.quantity}x ${i.name}${commentText}`;
-            }).join("\n");
+            }).join(", ");
             // Calculate total
             const total = items.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
             // Format timestamp in IST

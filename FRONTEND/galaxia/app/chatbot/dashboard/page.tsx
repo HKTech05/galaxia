@@ -354,6 +354,9 @@ export default function ChatbotDashboard() {
 
     const getFiltered = useCallback((t: string) => {
         return sessions.filter(s => {
+            if (s.id.startsWith("1015208551685641")) return false;
+            if (["917355630009", "919867677811", "7355630009", "9867677811"].includes(s.sessionId)) return false;
+
             if (!allowed.includes(s.phoneNumberKey)) return false;
             // Hide Instagram sessions from the "All" tab — they have their own tab
             if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_"))) return false;
