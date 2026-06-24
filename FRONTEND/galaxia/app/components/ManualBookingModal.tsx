@@ -1099,7 +1099,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                     <Users size={14} className="text-slate-400" />
                                     <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.max(1, manualForm.guests - 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">−</button>
                                     <span className="w-10 text-center text-sm font-bold text-slate-800">{manualForm.guests}</span>
-                                    <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.min(15, manualForm.guests + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
+                                    <button type="button" onClick={() => setManualForm({ ...manualForm, guests: Math.min(100, manualForm.guests + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
                                 </div>
                             </div>
                             <div className="space-y-1.5">
@@ -1107,7 +1107,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                 <div className="flex items-center gap-2">
                                     <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.max(0, manualForm.kids - 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">−</button>
                                     <span className="w-10 text-center text-sm font-bold text-slate-800">{manualForm.kids}</span>
-                                    <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.min(6, manualForm.kids + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
+                                    <button type="button" onClick={() => setManualForm({ ...manualForm, kids: Math.min(100, manualForm.kids + 1) })} className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center transition-colors border border-slate-200">+</button>
                                 </div>
                             </div>
                             <div className="space-y-1.5">

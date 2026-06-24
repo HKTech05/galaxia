@@ -1211,7 +1211,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         <span className="text-lg font-black text-slate-800 w-6 text-center">{extraGuestForm.guests}</span>
                                         <button
                                             type="button"
-                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.min(10, extraGuestForm.guests + 1) })}
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, guests: Math.min(100, extraGuestForm.guests + 1) })}
                                             className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
                                         >+</button>
                                     </div>
