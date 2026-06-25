@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
     LayoutDashboard, Building, Film, Globe, CalendarDays,
     CheckCircle, XCircle, Clock, IndianRupee, Users, ChevronRight,
-    X, Upload, Trash2, Ban, User as UserIcon, Phone, Image as ImageIcon, Download
+    X, Upload, Trash2, Ban, User as UserIcon, Phone, Image as ImageIcon, Download, Eye
 } from "lucide-react";
 import {
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -205,6 +205,44 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [timeRange, setTimeRange] = useState("1m");
     const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar" | "bulk" | "calendar2">("insights");
     const [propertyStatusMode, setPropertyStatusMode] = useState<"checkin" | "checkout">("checkin");
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+    const fetchImageBlob = async (logId: number): Promise<string | null> => {
+        try {
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/upi-payments/image/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return URL.createObjectURL(blob);
+        } catch { return null; }
+    };
+
+    const handleViewProof = async (logId: number) => {
+        const url = await fetchImageBlob(logId);
+        if (url) setPreviewImageUrl(url);
+        else alert("Failed to load proof image");
+    };
+
+    const handleDownloadProof = async (logId: number) => {
+        try {
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/upi-payments/download/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error();
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `upi-proof-${logId}.jpg`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            alert("Failed to download proof");
+        }
+    };
 
     // Live Calendar 2 states
     const [calendar2Month, setCalendar2Month] = useState<Date>(() => {
@@ -1250,9 +1288,29 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </p>
                                 {balanceAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(balanceAmt).toLocaleString('en-IN')}</p>}
                                 {isBalanceCollected && item.balanceCollected && (
-                                    <p className="text-xs font-medium text-slate-600 mt-1">
-                                        via {item.balanceMode} · {item.balanceTime}
-                                    </p>
+                                    <div className="flex items-center justify-between gap-2 mt-1">
+                                        <p className="text-xs font-medium text-slate-600">
+                                            via {item.balanceMode} · {item.balanceTime}
+                                        </p>
+                                        {item.balanceUpiId && (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => handleViewProof(item.balanceUpiId)}
+                                                    className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
+                                                    title="View proof"
+                                                >
+                                                    <Eye size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDownloadProof(item.balanceUpiId)}
+                                                    className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                                                    title="Download proof"
+                                                >
+                                                    <Download size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <div className={`p-3 rounded-lg border ${isDepositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
@@ -1261,9 +1319,29 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 </p>
                                 {depositAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(depositAmt).toLocaleString('en-IN')}</p>}
                                 {isDepositCollected && item.depositCollected && (
-                                    <p className="text-xs font-medium text-slate-600 mt-1">
-                                        via {item.depositMode} · {item.depositTime}
-                                    </p>
+                                    <div className="flex items-center justify-between gap-2 mt-1">
+                                        <p className="text-xs font-medium text-slate-600">
+                                            via {item.depositMode} · {item.depositTime}
+                                        </p>
+                                        {item.depositUpiId && (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => handleViewProof(item.depositUpiId)}
+                                                    className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
+                                                    title="View proof"
+                                                >
+                                                    <Eye size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDownloadProof(item.depositUpiId)}
+                                                    className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                                                    title="Download proof"
+                                                >
+                                                    <Download size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             {isDepositRefunded && (
@@ -2756,9 +2834,29 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     </p>
                                                     {balanceAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(balanceAmt).toLocaleString('en-IN')}</p>}
                                                     {isBalanceCollected && villa.balanceCollected && (
-                                                        <p className="text-xs font-medium text-slate-600 mt-1">
-                                                            via {villa.balanceMode} · {villa.balanceTime}
-                                                        </p>
+                                                        <div className="flex items-center justify-between gap-2 mt-1">
+                                                            <p className="text-xs font-medium text-slate-600">
+                                                                via {villa.balanceMode} · {villa.balanceTime}
+                                                            </p>
+                                                            {villa.balanceUpiId && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <button
+                                                                        onClick={() => handleViewProof(villa.balanceUpiId)}
+                                                                        className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
+                                                                        title="View proof"
+                                                                    >
+                                                                        <Eye size={12} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDownloadProof(villa.balanceUpiId)}
+                                                                        className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                                                                        title="Download proof"
+                                                                    >
+                                                                        <Download size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className={`p-3 rounded-lg border ${isDepositCollected ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
@@ -2767,9 +2865,29 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     </p>
                                                     {depositAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(depositAmt).toLocaleString('en-IN')}</p>}
                                                     {isDepositCollected && villa.depositCollected && (
-                                                        <p className="text-xs font-medium text-slate-600 mt-1">
-                                                            via {villa.depositMode} · {villa.depositTime}
-                                                        </p>
+                                                        <div className="flex items-center justify-between gap-2 mt-1">
+                                                            <p className="text-xs font-medium text-slate-600">
+                                                                via {villa.depositMode} · {villa.depositTime}
+                                                            </p>
+                                                            {villa.depositUpiId && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <button
+                                                                        onClick={() => handleViewProof(villa.depositUpiId)}
+                                                                        className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
+                                                                        title="View proof"
+                                                                    >
+                                                                        <Eye size={12} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDownloadProof(villa.depositUpiId)}
+                                                                        className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                                                                        title="Download proof"
+                                                                    >
+                                                                        <Download size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 {isDepositRefunded && (
@@ -3324,6 +3442,41 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Image Preview Lightbox */}
+            {previewImageUrl && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImageUrl(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setPreviewImageUrl(null)}
+                            className="absolute -top-3 -right-3 p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-red-500 transition-colors z-10"
+                        >
+                            <X size={18} />
+                        </button>
+                        <img
+                            src={previewImageUrl}
+                            alt="UPI Payment Proof"
+                            className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain bg-white"
+                        />
+                        <div className="mt-3 flex justify-center">
+                            <button
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = previewImageUrl;
+                                    a.download = "upi-proof.jpg";
+                                    a.click();
+                                }}
+                                className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-colors"
+                            >
+                                <Download size={16} /> Download Image
+                            </button>
                         </div>
                     </div>
                 </div>

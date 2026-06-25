@@ -306,6 +306,14 @@ router.get("/property-status", authMiddleware, async (req, res) => {
             console.log(`  booking #${b.id}: ${b.customerName} @ propId=${b.propertyId} subPropId=${b.subPropertyId} status=${b.status} checkIn=${b.checkInDate} checkOut=${b.checkOutDate}`);
         });
 
+        // Fetch matching UpiPayments for active bookings
+        const bookingRefs = activeBookings.map(b => b.bookingRef).filter(Boolean) as string[];
+        const upiPayments = bookingRefs.length > 0 ? await prisma.upiPayment.findMany({
+            where: {
+                bookingRef: { in: bookingRefs },
+            }
+        }) : [];
+
         // Decorate properties with check-in info for frontend
         const decoratedProperties = properties.map(p => {
             const propBookings = activeBookings.filter(b => b.propertyId === p.id && !b.subPropertyId);
@@ -315,6 +323,10 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 return checkOutStr !== todayStr || checkInStr === todayStr;
             });
             const booking = propBookings[0];
+
+            const propUpiPayments = booking ? upiPayments.filter(upi => upi.bookingRef === booking.bookingRef) : [];
+            const balanceUpi = propUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
+            const depositUpi = propUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
 
             return {
                 ...p,
@@ -326,6 +338,10 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                         return checkOutStr !== todayStr || checkInStr === todayStr;
                     });
                     const spBooking = spBookings[0];
+
+                    const spUpiPayments = spBooking ? upiPayments.filter(upi => upi.bookingRef === spBooking.bookingRef) : [];
+                    const spBalanceUpi = spUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
+                    const spDepositUpi = spUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
 
                     return {
                         ...sp,
@@ -347,6 +363,8 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                         depositMode: spBooking?.depositMethod || "UPI",
                         depositTime: spBooking?.depositCollectedAt ? new Date(spBooking.depositCollectedAt).toLocaleString('en-IN') : null,
                         extraGuests: spBooking?.extraGuests || [],
+                        balanceUpiId: spBalanceUpi?.id || null,
+                        depositUpiId: spDepositUpi?.id || null,
                     };
                 }),
                 checkedIn: isBooked && booking?.status === 'checked_in',
@@ -367,6 +385,8 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 depositMode: booking?.depositMethod || "UPI",
                 depositTime: booking?.depositCollectedAt ? new Date(booking.depositCollectedAt).toLocaleString('en-IN') : null,
                 extraGuests: booking?.extraGuests || [],
+                balanceUpiId: balanceUpi?.id || null,
+                depositUpiId: depositUpi?.id || null,
             };
         });
 

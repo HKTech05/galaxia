@@ -241,11 +241,12 @@ router.post("/submit", async (req: AuthRequest, res) => {
             year: "numeric"
         });
 
-        // Supplier map (for testing all are set to "8237309564")
+        // Supplier map (loads from env variables or falls back to "8237309564")
+        const defaultSupplierPhone = process.env.CHEF_SUPPLIER_PHONE || process.env.CHEF_PHONE || "8237309564";
         const CATEGORY_SUPPLIER_MAP: Record<string, string> = {
-            "Dairy": "8237309564",
-            "Kirayana": "8237309564",
-            "Shak Shabji": "8237309564"
+            "Dairy": process.env.CHEF_DAIRY_PHONE || defaultSupplierPhone,
+            "Kirayana": process.env.CHEF_KIRAYANA_PHONE || defaultSupplierPhone,
+            "Shak Shabji": process.env.CHEF_SHAK_SHABJI_PHONE || process.env.CHEF_VEG_PHONE || defaultSupplierPhone
         };
 
         const results = [];

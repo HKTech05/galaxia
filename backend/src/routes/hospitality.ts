@@ -45,21 +45,10 @@ function getMenuItems() {
     try {
         if (fs.existsSync(MENU_FILE_PATH)) {
             const content = fs.readFileSync(MENU_FILE_PATH, "utf8");
-            const items = JSON.parse(content);
-            let updated = false;
-            for (const defItem of DEFAULT_MENU_ITEMS) {
-                if (!items.some((it: any) => it.id === defItem.id)) {
-                    items.push(defItem);
-                    updated = true;
-                }
-            }
-            if (updated) {
-                fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
-            }
-            return items;
+            return JSON.parse(content);
         }
     } catch (err) {
-        console.error("Error reading/merging menu file:", err);
+        console.error("Error reading menu file:", err);
     }
     // Write default if it doesn't exist
     try {

@@ -296,14 +296,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         else if (prop.includes("Mount View") || parentProp.includes("Mount View")) extraAdultPrice = 800;
         else if (prop.includes("Heavenly Villa") || parentProp.includes("Heavenly Villa")) extraAdultPrice = 800;
         else if (prop.includes("La Paraiso") || parentProp.includes("La Paraiso")) extraAdultPrice = 1200;
-        else if (prop.includes("Amstel") || parentProp.includes("Amstel")) extraAdultPrice = 1000;
+        else if (prop.includes("Amstel") || parentProp.includes("Amstel")) extraAdultPrice = 2000;
         else if (prop.includes("Ambrose") || parentProp.includes("Ambrose")) extraAdultPrice = 2000;
 
         let total = 0;
         if (includeGuests) total += extraAdultPrice * extraGuestForm.guests * nights;
         if (includePets) total += 600 * extraGuestForm.pets * nights;
 
-        return Math.round(total + (total * 0.05));
+        return Math.round(total);
     };
 
     const handleAddExtraGuestSubmit = async () => {
@@ -1242,7 +1242,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             <div className="bg-purple-50 rounded-xl p-5 border border-purple-100">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                     <div>
-                                        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Additional Cost (Inc. Taxes)</p>
+                                        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">Additional Cost</p>
                                         <h2 className="text-3xl font-black text-purple-900 flex items-center">
                                             <IndianRupee size={24} className="mr-1" /> {calculateExtraGuestPrice().toLocaleString('en-IN')}
                                         </h2>
@@ -1258,13 +1258,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             else if (prop.includes('Mount View') || parentProp.includes('Mount View')) extraAdultPrice = 800;
                                             else if (prop.includes('Heavenly Villa') || parentProp.includes('Heavenly Villa')) extraAdultPrice = 800;
                                             else if (prop.includes('La Paraiso') || parentProp.includes('La Paraiso')) extraAdultPrice = 1200;
-                                            else if (prop.includes('Amstel') || parentProp.includes('Amstel')) extraAdultPrice = 1000;
+                                            else if (prop.includes('Amstel') || parentProp.includes('Amstel')) extraAdultPrice = 2000;
                                             else if (prop.includes('Ambrose') || parentProp.includes('Ambrose')) extraAdultPrice = 2000;
                                             return (
                                                 <div className="mt-2 space-y-0.5 text-[11px] font-medium text-purple-700">
                                                     {extraGuestForm.guests > 0 && <p>Extra guests: {extraGuestForm.guests} × ₹{extraAdultPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.guests * extraAdultPrice * nights).toLocaleString('en-IN')}</p>}
                                                     {extraGuestForm.pets > 0 && <p>Pets: {extraGuestForm.pets} × ₹600/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.pets * 600 * nights).toLocaleString('en-IN')}</p>}
-                                                    <p className="text-purple-500">+ Taxes</p>
                                                 </div>
                                             );
                                         })()}
