@@ -20,6 +20,21 @@ const s3 = new S3Client({
 
 const BUCKET = process.env.AWS_S3_BUCKET || "galaxia-uploads";
 
+/**
+ * Safely extract relative key from a full S3 URL or return relative key directly.
+ */
+function getRelativeS3Key(key: string): string {
+    if (key.startsWith("http://") || key.startsWith("https://")) {
+        try {
+            const urlObj = new URL(key);
+            return urlObj.pathname.slice(1); // remove leading slash
+        } catch {
+            return key;
+        }
+    }
+    return key;
+}
+
 // No file size limit for UPI proofs
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -141,8 +156,9 @@ router.get("/image/:id", authMiddleware, async (req, res) => {
 
         // If we have S3 key, stream from S3; otherwise redirect to URL
         if (payment.proofImageKey) {
-            const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: payment.proofImageKey }));
-            const ext = path.extname(payment.proofImageKey).toLowerCase();
+            const s3Key = getRelativeS3Key(payment.proofImageKey);
+            const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: s3Key }));
+            const ext = path.extname(s3Key).toLowerCase();
             const mimeMap: Record<string, string> = {
                 ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
                 ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
@@ -170,8 +186,9 @@ router.get("/download/:id", authMiddleware, async (req, res) => {
         if (!payment) return res.status(404).json({ error: "Payment not found" });
 
         if (payment.proofImageKey) {
-            const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: payment.proofImageKey }));
-            const ext = path.extname(payment.proofImageKey).toLowerCase();
+            const s3Key = getRelativeS3Key(payment.proofImageKey);
+            const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: s3Key }));
+            const ext = path.extname(s3Key).toLowerCase();
             const mimeMap: Record<string, string> = {
                 ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
                 ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
@@ -221,8 +238,9 @@ router.get("/download-all/:employeeId", authMiddleware, requireRole("owner", "de
         for (const payment of payments) {
             if (payment.proofImageKey) {
                 try {
-                    const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: payment.proofImageKey }));
-                    const ext = path.extname(payment.proofImageKey) || ".jpg";
+                    const s3Key = getRelativeS3Key(payment.proofImageKey);
+                    const s3Response = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: s3Key }));
+                    const ext = path.extname(s3Key) || ".jpg";
                     const date = new Date(payment.createdAt).toISOString().slice(0, 10);
                     const fileName = `${date}_${payment.paymentType}_Rs${payment.amount}_${payment.guestName || "Guest"}${ext}`;
                     archive.append(s3Response.Body as any, { name: fileName });

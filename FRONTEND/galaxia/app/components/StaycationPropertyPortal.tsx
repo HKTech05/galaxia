@@ -239,7 +239,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 if (uploadRes.ok) {
                     const uploadData = await uploadRes.json();
                     upiProofUrl = uploadData.url;
-                    upiProofKey = uploadData.url;
+                    try {
+                        const urlObj = new URL(uploadData.url);
+                        upiProofKey = urlObj.pathname.slice(1);
+                    } catch {
+                        upiProofKey = uploadData.url;
+                    }
                 }
             }
             await api.post("/stay-food-bills", {
