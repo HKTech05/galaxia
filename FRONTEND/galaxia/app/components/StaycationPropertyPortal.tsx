@@ -60,6 +60,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     depositAmt: `₹${(b.securityDeposit !== null && b.securityDeposit !== undefined ? b.securityDeposit : ((b.property?.name?.includes("Amstel") || b.property?.name?.includes("Hill View")) ? 2000 : 3000)).toLocaleString('en-IN')}`,
                     remainingAmt: `₹${(b.balanceAmount || 0).toLocaleString('en-IN')}`,
                     idProofUrl: b.idProofUrl || null,
+                    propertyId: b.propertyId,
+                    subPropertyId: b.subPropertyId,
                     guestIds: (b.guestIds || []).map((g: any) => ({
                         id: g.id,
                         fileName: g.fileName,
