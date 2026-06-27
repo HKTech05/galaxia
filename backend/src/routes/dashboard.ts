@@ -391,10 +391,17 @@ router.get("/property-status", authMiddleware, async (req, res) => {
         });
 
         // Decrypt phone numbers in activeBookings for frontend display
-        const decryptedBookings = activeBookings.map(b => ({
-            ...b,
-            customerPhone: b.customerPhone ? decrypt(b.customerPhone) : null,
-        }));
+        const decryptedBookings = activeBookings.map(b => {
+            const bookingUpiPayments = upiPayments.filter(upi => upi.bookingRef === b.bookingRef);
+            const balanceUpi = bookingUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
+            const depositUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
+            return {
+                ...b,
+                customerPhone: b.customerPhone ? decrypt(b.customerPhone) : null,
+                balanceUpiId: balanceUpi?.id || null,
+                depositUpiId: depositUpi?.id || null,
+            };
+        });
 
         return res.json({ properties: decoratedProperties, activeBookings: decryptedBookings });
     } catch (error) {

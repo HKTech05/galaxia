@@ -757,6 +757,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             depositMode: primaryBooking?.depositMethod || "UPI",
                             depositTime: primaryBooking?.depositCollectedAt ? new Date(primaryBooking.depositCollectedAt).toLocaleString('en-IN') : null,
                             extraGuests: primaryBooking?.extraGuests || [],
+                            balanceUpiId: primaryBooking?.balanceUpiId || null,
+                            depositUpiId: primaryBooking?.depositUpiId || null,
                             _allBookings: villaBookings, // Store all bookings for this sub-property
                             _checkoutBooking: checkoutBooking, // Separate checkout booking for badge
                         };
@@ -788,6 +790,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         depositMode: primaryPropBooking?.depositMethod || "UPI",
                         depositTime: primaryPropBooking?.depositCollectedAt ? new Date(primaryPropBooking.depositCollectedAt).toLocaleString('en-IN') : null,
                         extraGuests: primaryPropBooking?.extraGuests || [],
+                        balanceUpiId: primaryPropBooking?.balanceUpiId || null,
+                        depositUpiId: primaryPropBooking?.depositUpiId || null,
                         _checkoutBooking: propCheckoutBooking,
                         villas: enrichedVillas,
                     };
@@ -1224,6 +1228,30 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
         const showContinueRed = propertyStatusMode === "checkin" && item.booked && !item.isCheckinDay;
 
+        const balanceMode = displayBooking === item
+            ? item.balanceMode
+            : (item._checkoutBooking?.balanceMethod || "Online");
+
+        const balanceTime = displayBooking === item
+            ? item.balanceTime
+            : (item._checkoutBooking?.balanceCollectedAt ? new Date(item._checkoutBooking.balanceCollectedAt).toLocaleString('en-IN') : null);
+
+        const balanceUpiId = displayBooking === item
+            ? item.balanceUpiId
+            : (item._checkoutBooking?.balanceUpiId || null);
+
+        const depositMode = displayBooking === item
+            ? item.depositMode
+            : (item._checkoutBooking?.depositMethod || "UPI");
+
+        const depositTime = displayBooking === item
+            ? item.depositTime
+            : (item._checkoutBooking?.depositCollectedAt ? new Date(item._checkoutBooking.depositCollectedAt).toLocaleString('en-IN') : null);
+
+        const depositUpiId = displayBooking === item
+            ? item.depositUpiId
+            : (item._checkoutBooking?.depositUpiId || null);
+
         return (
             <div className="border border-slate-200 rounded-xl overflow-hidden">
                 <button onClick={toggle} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
@@ -1287,22 +1315,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     Balance {isBalanceCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
                                 {balanceAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(balanceAmt).toLocaleString('en-IN')}</p>}
-                                {isBalanceCollected && item.balanceCollected && (
+                                {isBalanceCollected && (
                                     <div className="flex items-center justify-between gap-2 mt-1">
                                         <p className="text-xs font-medium text-slate-600">
-                                            via {item.balanceMode} · {item.balanceTime}
+                                            via {balanceMode} · {balanceTime || 'N/A'}
                                         </p>
-                                        {item.balanceUpiId && (
+                                        {balanceUpiId && (
                                             <div className="flex items-center gap-1.5">
                                                 <button
-                                                    onClick={() => handleViewProof(item.balanceUpiId)}
+                                                    onClick={() => handleViewProof(balanceUpiId)}
                                                     className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
                                                     title="View proof"
                                                 >
                                                     <Eye size={12} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDownloadProof(item.balanceUpiId)}
+                                                    onClick={() => handleDownloadProof(balanceUpiId)}
                                                     className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
                                                     title="Download proof"
                                                 >
@@ -1318,22 +1346,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     Security Deposit {isDepositCollected ? '✓ Collected' : '⏳ Pending'}
                                 </p>
                                 {depositAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(depositAmt).toLocaleString('en-IN')}</p>}
-                                {isDepositCollected && item.depositCollected && (
+                                {isDepositCollected && (
                                     <div className="flex items-center justify-between gap-2 mt-1">
                                         <p className="text-xs font-medium text-slate-600">
-                                            via {item.depositMode} · {item.depositTime}
+                                            via {depositMode} · {depositTime || 'N/A'}
                                         </p>
-                                        {item.depositUpiId && (
+                                        {depositUpiId && (
                                             <div className="flex items-center gap-1.5">
                                                 <button
-                                                    onClick={() => handleViewProof(item.depositUpiId)}
+                                                    onClick={() => handleViewProof(depositUpiId)}
                                                     className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
                                                     title="View proof"
                                                 >
                                                     <Eye size={12} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDownloadProof(item.depositUpiId)}
+                                                    onClick={() => handleDownloadProof(depositUpiId)}
                                                     className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
                                                     title="Download proof"
                                                 >
@@ -2658,6 +2686,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     balanceAmount: booking.balanceAmount ?? stdCottage.balanceAmount,
                                                     depositAmount: booking.securityDeposit ?? stdCottage.depositAmount,
                                                     totalAmount: booking.totalAmount ?? stdCottage.totalAmount,
+                                                    addons: booking.addons || null,
+                                                    balanceCollected: booking.balanceCollected || false,
+                                                    balanceMode: booking.balanceMethod || "Online",
+                                                    balanceTime: booking.balanceCollectedAt ? new Date(booking.balanceCollectedAt).toLocaleString('en-IN') : null,
+                                                    balanceUpiId: booking.balanceUpiId || null,
+                                                    depositCollected: booking.depositCollected || false,
+                                                    depositMode: booking.depositMethod || "UPI",
+                                                    depositTime: booking.depositCollectedAt ? new Date(booking.depositCollectedAt).toLocaleString('en-IN') : null,
+                                                    depositUpiId: booking.depositUpiId || null,
+                                                    depositRefunded: booking.depositRefunded || false,
+                                                    depositRefundMethod: booking.depositRefundMethod || null,
+                                                    depositRefundedAt: booking.depositRefundedAt || null,
+                                                    extraGuests: booking.extraGuests || [],
                                                     _numCottages: booking.numCottages || 1,
                                                 });
                                             } else {
@@ -2767,6 +2808,30 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
                                 const showContinueRed = propertyStatusMode === "checkin" && villa.booked && !villa.isCheckinDay;
 
+                                const balanceMode = displayBooking === villa
+                                    ? villa.balanceMode
+                                    : (villa._checkoutBooking?.balanceMethod || "Online");
+
+                                const balanceTime = displayBooking === villa
+                                    ? villa.balanceTime
+                                    : (villa._checkoutBooking?.balanceCollectedAt ? new Date(villa._checkoutBooking.balanceCollectedAt).toLocaleString('en-IN') : null);
+
+                                const balanceUpiId = displayBooking === villa
+                                    ? villa.balanceUpiId
+                                    : (villa._checkoutBooking?.balanceUpiId || null);
+
+                                const depositMode = displayBooking === villa
+                                    ? villa.depositMode
+                                    : (villa._checkoutBooking?.depositMethod || "UPI");
+
+                                const depositTime = displayBooking === villa
+                                    ? villa.depositTime
+                                    : (villa._checkoutBooking?.depositCollectedAt ? new Date(villa._checkoutBooking.depositCollectedAt).toLocaleString('en-IN') : null);
+
+                                const depositUpiId = displayBooking === villa
+                                    ? villa.depositUpiId
+                                    : (villa._checkoutBooking?.depositUpiId || null);
+
                                 return (
                                 <div key={villa.name} className="border border-slate-200 rounded-xl overflow-hidden">
                                     <button
@@ -2833,22 +2898,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         Balance {isBalanceCollected ? '✓ Collected' : '⏳ Pending'}
                                                     </p>
                                                     {balanceAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(balanceAmt).toLocaleString('en-IN')}</p>}
-                                                    {isBalanceCollected && villa.balanceCollected && (
+                                                    {isBalanceCollected && (
                                                         <div className="flex items-center justify-between gap-2 mt-1">
                                                             <p className="text-xs font-medium text-slate-600">
-                                                                via {villa.balanceMode} · {villa.balanceTime}
+                                                                via {balanceMode} · {balanceTime || 'N/A'}
                                                             </p>
-                                                            {villa.balanceUpiId && (
+                                                            {balanceUpiId && (
                                                                 <div className="flex items-center gap-1.5">
                                                                     <button
-                                                                        onClick={() => handleViewProof(villa.balanceUpiId)}
+                                                                        onClick={() => handleViewProof(balanceUpiId)}
                                                                         className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
                                                                         title="View proof"
                                                                     >
                                                                         <Eye size={12} />
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleDownloadProof(villa.balanceUpiId)}
+                                                                        onClick={() => handleDownloadProof(balanceUpiId)}
                                                                         className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
                                                                         title="Download proof"
                                                                     >
@@ -2864,22 +2929,22 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         Security Deposit {isDepositCollected ? '✓ Collected' : '⏳ Pending'}
                                                     </p>
                                                     {depositAmt && <p className="text-xs font-bold text-slate-700 mt-0.5">₹{Number(depositAmt).toLocaleString('en-IN')}</p>}
-                                                    {isDepositCollected && villa.depositCollected && (
+                                                    {isDepositCollected && (
                                                         <div className="flex items-center justify-between gap-2 mt-1">
                                                             <p className="text-xs font-medium text-slate-600">
-                                                                via {villa.depositMode} · {villa.depositTime}
+                                                                via {depositMode} · {depositTime || 'N/A'}
                                                             </p>
-                                                            {villa.depositUpiId && (
+                                                            {depositUpiId && (
                                                                 <div className="flex items-center gap-1.5">
                                                                     <button
-                                                                        onClick={() => handleViewProof(villa.depositUpiId)}
+                                                                        onClick={() => handleViewProof(depositUpiId)}
                                                                         className="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
                                                                         title="View proof"
                                                                     >
                                                                         <Eye size={12} />
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleDownloadProof(villa.depositUpiId)}
+                                                                        onClick={() => handleDownloadProof(depositUpiId)}
                                                                         className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
                                                                         title="Download proof"
                                                                     >
