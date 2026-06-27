@@ -277,13 +277,11 @@ router.post("/submit", async (req: AuthRequest, res) => {
 
             const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
             const dateAndCategory = `${dateStr} (${categoryName})`;
-            const creatorName = req.admin?.username || "Chef";
-
             const waSuccess = await sendWhatsAppTemplateMessage(
                 "otp",
                 recipientPhone,
-                "kitchen_checklist_ready",
-                [dateAndCategory, itemsList, creatorName]
+                "kitchen_checklist_ready_v2",
+                [dateAndCategory, itemsList]
             );
 
             results.push({
