@@ -569,19 +569,19 @@ export default function Admin1Dashboard() {
                     try {
                         const props = await api.get("/properties");
                         const ddProp = Array.isArray(props) ? props.find((p: any) => p.slug === "digital-diaries") : null;
-                        const employees = ddProp ? await api.get(`/employees?propertyId=${ddProp.id}`) : [];
+                        const employees = ddProp ? await api.get(`/employees?propertyId=${ddProp.id}`).catch(() => null) : [];
                         const empId = Array.isArray(employees) && employees[0] ? employees[0].id : null;
-                        if (empId) {
-                            const fd = new FormData();
-                            fd.append("employeeId", String(empId));
-                            fd.append("bookingRef", result.bookingRef || `DD-${result.id}`);
-                            fd.append("guestName", (document.querySelector('input[placeholder="John Doe"]') as HTMLInputElement)?.value || "Walk-in Guest");
-                            fd.append("amount", String(customPaymentMode ? parseInt(customPrepaid || '0') : totalPrice));
-                            fd.append("paymentType", "balance");
-                            fd.append("note", `DD Walk-in UPI payment — ${selectedScreen}`);
-                            fd.append("file", walkInUpiProof, walkInUpiProof.name);
-                            await api.upload("/upi-payments/upload", fd);
-                        }
+                        
+                        const fd = new FormData();
+                        if (empId) fd.append("employeeId", String(empId));
+                        fd.append("propertySlug", "digital-diaries");
+                        fd.append("bookingRef", result.bookingRef || `DD-${result.id}`);
+                        fd.append("guestName", (document.querySelector('input[placeholder="John Doe"]') as HTMLInputElement)?.value || "Walk-in Guest");
+                        fd.append("amount", String(customPaymentMode ? parseInt(customPrepaid || '0') : totalPrice));
+                        fd.append("paymentType", "balance");
+                        fd.append("note", `DD Walk-in UPI payment — ${selectedScreen}`);
+                        fd.append("file", walkInUpiProof, walkInUpiProof.name);
+                        await api.upload("/upi-payments/upload", fd);
                     } catch (e) { console.error("UPI proof upload failed:", e); }
                 }
             }

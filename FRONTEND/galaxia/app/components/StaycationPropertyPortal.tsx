@@ -453,10 +453,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                 const hasUpiBalance = collected20 === "UPI" || (collected20 === "Split" && splitUpiBalance > 0);
                 const actualUpiBalanceAmt = collected20 === "UPI" ? balanceAmt : splitUpiBalance;
-                if (hasUpiBalance && upiProofBalance && empId) {
+                if (hasUpiBalance && upiProofBalance) {
                     const fd = new FormData();
                     fd.append("file", upiProofBalance);
-                    fd.append("employeeId", String(empId));
+                    if (empId) fd.append("employeeId", String(empId));
                     fd.append("bookingRef", booking.id || '');
                     fd.append("guestName", booking.customer || '');
                     fd.append("amount", String(actualUpiBalanceAmt));
@@ -471,10 +471,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                 const hasUpiDeposit = collectedSec === "UPI" || (collectedSec === "Split" && splitUpiDeposit > 0);
                 const actualUpiDepositAmt = collectedSec === "UPI" ? depositAmt : splitUpiDeposit;
-                if (hasUpiDeposit && upiProofDeposit && empId) {
+                if (hasUpiDeposit && upiProofDeposit) {
                     const fd = new FormData();
                     fd.append("file", upiProofDeposit);
-                    fd.append("employeeId", String(empId));
+                    if (empId) fd.append("employeeId", String(empId));
                     fd.append("bookingRef", booking.id || '');
                     fd.append("guestName", booking.customer || '');
                     fd.append("amount", String(actualUpiDepositAmt));

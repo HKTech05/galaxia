@@ -84,6 +84,32 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req: AuthRe
                 if (emp) resolvedEmployeeId = emp.id;
             }
         }
+        if (!resolvedEmployeeId && bookingRef) {
+            const stayBooking = await prisma.staycationBooking.findFirst({
+                where: { bookingRef }
+            });
+            if (stayBooking) {
+                const emp = await prisma.employee.findFirst({
+                    where: { propertyId: stayBooking.propertyId, isActive: true }
+                });
+                if (emp) resolvedEmployeeId = emp.id;
+            } else {
+                const ddBooking = await prisma.ddBooking.findFirst({
+                    where: { bookingRef }
+                });
+                if (ddBooking) {
+                    const ddProp = await prisma.property.findFirst({
+                        where: { slug: "digital-diaries" }
+                    });
+                    if (ddProp) {
+                        const emp = await prisma.employee.findFirst({
+                            where: { propertyId: ddProp.id, isActive: true }
+                        });
+                        if (emp) resolvedEmployeeId = emp.id;
+                    }
+                }
+            }
+        }
 
         if (!resolvedEmployeeId || !amount || !paymentType) {
             return res.status(400).json({ error: "employeeId (or propertySlug), amount, and paymentType are required" });
