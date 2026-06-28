@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { FileText, Download, Calendar, IndianRupee, Users, TrendingUp, Filter, ChevronDown } from "lucide-react";
+import { FileText, Download, Calendar, IndianRupee, Users, TrendingUp, Filter, ChevronDown, Hotel } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -515,6 +515,47 @@ export default function ReportsPage() {
                     </div>
                 )}
 
+                {/* Occupancy by Property / Villa */}
+                {reportType === "occupancy" && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
+                        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2"><Hotel size={16} className="text-indigo-600" /> Occupancy & Times Booked by Property</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b-2 border-slate-100">
+                                        <th className="text-left py-3 px-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Property / Villa</th>
+                                        <th className="text-right py-3 px-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Times Booked</th>
+                                        <th className="text-right py-3 px-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Total Nights Booked</th>
+                                        <th className="text-right py-3 px-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Total Revenue Generated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        const occData: Record<string, { count: number; nights: number; revenue: number }> = {};
+                                        filteredBookings.forEach(b => {
+                                            const name = b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "Other");
+                                            if (!occData[name]) occData[name] = { count: 0, nights: 0, revenue: 0 };
+                                            occData[name].count++;
+                                            const ci = new Date(b.checkInDate), co = new Date(b.checkOutDate);
+                                            const nights = Math.max(1, Math.ceil((co.getTime() - ci.getTime()) / (1000 * 3600 * 24)));
+                                            occData[name].nights += nights;
+                                            occData[name].revenue += (b.totalAmount || 0);
+                                        });
+                                        return Object.entries(occData).sort((a, b) => b[1].count - a[1].count).map(([name, data]) => (
+                                            <tr key={name} className="border-b border-slate-50 hover:bg-slate-50/50">
+                                                <td className="py-3 px-4 font-bold text-slate-800">{name}</td>
+                                                <td className="py-3 px-4 text-right font-bold text-indigo-600">{data.count} times</td>
+                                                <td className="py-3 px-4 text-right text-slate-700 font-semibold">{data.nights} nights</td>
+                                                <td className="py-3 px-4 text-right font-bold text-emerald-600">{fmt(data.revenue)}</td>
+                                            </tr>
+                                        ));
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
                 {/* Booking Source Breakdown */}
                 {reportType === "bookings" && (
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
@@ -526,76 +567,6 @@ export default function ReportsPage() {
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">{source}</p>
                                 </div>
                             ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Collection Summary */}
-                {reportType !== "gst" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
-                        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">Collection Summary</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-                                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Collected (Advance)</p>
-                                <p className="text-xl font-black text-emerald-700 mt-1">{fmt(stats.collected)}</p>
-                            </div>
-                            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Pending (Balance)</p>
-                                <p className="text-xl font-black text-amber-700 mt-1">{fmt(stats.pending)}</p>
-                            </div>
-                            <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-                                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">GST Component</p>
-                                <p className="text-xl font-black text-purple-700 mt-1">{fmt(stats.gst)}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Booking Details Table */}
-                {reportType !== "gst" && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">All Bookings ({filteredBookings.length})</h2>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b-2 border-slate-100">
-                                        <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Guest</th>
-                                        <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Property</th>
-                                        <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Check-in</th>
-                                        <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Nights</th>
-                                        <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Total</th>
-                                        <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Source</th>
-                                        <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredBookings.slice(0, 100).map(b => {
-                                        const ci = new Date(b.checkInDate), co = new Date(b.checkOutDate);
-                                        const nights = Math.max(1, Math.ceil((co.getTime() - ci.getTime()) / (1000 * 3600 * 24)));
-                                        return (
-                                            <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                                <td className="py-2.5 px-3 font-medium text-slate-800 max-w-[150px] truncate">{b.customerName}</td>
-                                                <td className="py-2.5 px-3 text-slate-600 max-w-[120px] truncate">{b.property?.name || "-"}</td>
-                                                <td className="py-2.5 px-3 text-slate-600">{ci.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</td>
-                                                <td className="py-2.5 px-3 text-slate-600">{nights}</td>
-                                                <td className="py-2.5 px-3 text-right font-bold text-emerald-600">{fmt(b.totalAmount || 0)}</td>
-                                                <td className="py-2.5 px-3">
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                                                        b.source === "admin-bulk" 
-                                                            ? "bg-purple-50 text-purple-700" 
-                                                            : (b.source === "walk-in" || (b._business === "staycation" && b.source === "manual")) 
-                                                                ? "bg-amber-50 text-amber-700" 
-                                                                : "bg-indigo-50 text-indigo-700"
-                                                    }`}>
-                                                        {(b._business === "staycation" && b.source === "walk-in") ? "manual" : (b.source || "website")}
-                                                    </span>
-                                                </td>
-                                                <td className="py-2.5 px-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${b.status === "checked_in" ? "bg-indigo-50 text-indigo-700" : b.status === "checked_out" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{b.status}</span></td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 )}

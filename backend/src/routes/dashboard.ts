@@ -298,6 +298,7 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 property: true,
                 subProperty: true,
                 extraGuests: true,
+                foodBills: true,
             },
         });
 

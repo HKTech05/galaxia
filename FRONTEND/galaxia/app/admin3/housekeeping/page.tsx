@@ -96,6 +96,7 @@ export default function HousekeepingPortalPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [userRole, setUserRole] = useState("");
+    const [userName, setUserName] = useState("");
 
     // Dynamic menu state
     const [menuItems, setMenuItems] = useState<any[]>(DEFAULT_MENU_ITEMS);
@@ -104,57 +105,48 @@ export default function HousekeepingPortalPage() {
     const [isTimepassMenuOpen, setIsTimepassMenuOpen] = useState(false);
 
     // States for adding new menu item
-    const [newItemName, setNewItemName] = useState("");
-    const [newItemPrice, setNewItemPrice] = useState("");
+    const [newMenuName, setNewMenuName] = useState("");
+    const [newMenuPrice, setNewMenuPrice] = useState("");
 
     // Draft editing copy of menu items
     const [tempMenuItems, setTempMenuItems] = useState<any[]>([]);
 
     const handleOpenHousekeepingMenu = () => {
         setTempMenuItems(JSON.parse(JSON.stringify(menuItems)));
-        setNewItemName("");
-        setNewItemPrice("");
         setIsHousekeepingMenuOpen(true);
     };
 
     const handleOpenHighTeaMenu = () => {
         setTempMenuItems(JSON.parse(JSON.stringify(menuItems)));
-        setNewItemName("");
-        setNewItemPrice("");
         setIsHighTeaMenuOpen(true);
     };
 
     const handleOpenTimepassMenu = () => {
         setTempMenuItems(JSON.parse(JSON.stringify(menuItems)));
-        setNewItemName("");
-        setNewItemPrice("");
         setIsTimepassMenuOpen(true);
     };
 
     const handleAddMenuItem = (category: "Normal" | "High Tea" | "Timepass") => {
-        if (!newItemName || !newItemPrice) {
-            alert("Please fill in both Name and Price.");
+        const name = newMenuName.trim();
+        const price = parseFloat(newMenuPrice);
+        if (!name || isNaN(price)) {
+            alert("Please enter valid item name and price.");
             return;
         }
-        const priceNum = parseFloat(newItemPrice);
-        if (isNaN(priceNum) || priceNum < 0) {
-            alert("Please enter a valid price.");
-            return;
-        }
-        const id = newItemName.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        const id = name.toLowerCase().replace(/[^a-z0-9]/g, "_");
         if (tempMenuItems.some(item => item.id === id)) {
-            alert("An item with a similar name already exists.");
+            alert("An item with this name already exists.");
             return;
         }
         const newItem = {
             id,
-            name: newItemName,
-            price: priceNum,
+            name,
+            price,
             category
         };
         setTempMenuItems(prev => [...prev, newItem]);
-        setNewItemName("");
-        setNewItemPrice("");
+        setNewMenuName("");
+        setNewMenuPrice("");
     };
 
     const handleDeleteMenuItem = (itemId: string) => {
@@ -175,7 +167,7 @@ export default function HousekeepingPortalPage() {
             const res = await api.put<{ success: boolean; menuItems: any[] }>("/hospitality/menu", {
                 menuItems: tempMenuItems
             });
-            if (res.success) {
+            if (res.success && Array.isArray(res.menuItems)) {
                 setMenuItems(res.menuItems);
                 setIsHousekeepingMenuOpen(false);
                 setIsHighTeaMenuOpen(false);
@@ -187,32 +179,10 @@ export default function HousekeepingPortalPage() {
         }
     };
 
-    const formatDisplayDate = (dateStr: string) => {
-        try {
-            const date = new Date(dateStr + "T00:00:00");
-            const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
-            const day = date.getDate();
-            const month = date.toLocaleDateString("en-US", { month: "long" });
-            
-            let suffix = "th";
-            if (day === 1 || day === 21 || day === 31) {
-                suffix = "st";
-            } else if (day === 2 || day === 22) {
-                suffix = "nd";
-            } else if (day === 3 || day === 23) {
-                suffix = "rd";
-            }
-            
-            return `${dayOfWeek}, ${day}${suffix} ${month}`;
-        } catch (e) {
-            return dateStr;
-        }
-    };
-
     const fetchMenu = async () => {
         try {
             const data = await api.get<any[]>("/hospitality/menu");
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length > 0) {
                 setMenuItems(data);
             }
         } catch (err) {
@@ -353,6 +323,7 @@ export default function HousekeepingPortalPage() {
         api.get("/auth/me")
             .then(data => {
                 setUserRole(data?.role || "");
+                setUserName(data?.username || "");
             })
             .catch(err => {
                 console.error("Error fetching user role:", err);
@@ -715,7 +686,7 @@ export default function HousekeepingPortalPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <ClipboardCheck size={20} className="text-indigo-600" />
-                        Villa Allotments ({formatDisplayDate(selectedDate)})
+                        Villa Allotments ({selectedDate.split("-").reverse().join("-")})
                     </h2>
                     <span className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-indigo-100 inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
                         {allocations.length} Active Guests
@@ -974,48 +945,50 @@ export default function HousekeepingPortalPage() {
                 </div>
             )}
 
-            {/* Menu Management Controls */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 mt-8">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <Coffee size={20} className="text-amber-600" />
-                        Menu Items Management
-                    </h2>
-                    <span className="text-xs text-slate-400 font-medium">Configure menu items, prices and availability</span>
+            {/* Menu Management Controls (Only for Owner / Developer) */}
+            {(userRole === "owner" || userRole === "developer") && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 mt-8">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <Coffee size={20} className="text-amber-600" />
+                            Menu Items Management
+                        </h2>
+                        <span className="text-xs text-slate-400 font-medium">Configure menu items, prices and availability</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <button
+                            onClick={handleOpenHousekeepingMenu}
+                            className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
+                        >
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">Housekeeping Menu</p>
+                                <p className="text-xs text-slate-500 mt-1">Edit items, custom rates, and Normal category menu.</p>
+                            </div>
+                            <span className="text-blue-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
+                        </button>
+                        <button
+                            onClick={handleOpenHighTeaMenu}
+                            className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
+                        >
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">High Tea Menu</p>
+                                <p className="text-xs text-slate-500 mt-1">Edit evening tea menu, rates, and High Tea category items.</p>
+                            </div>
+                            <span className="text-indigo-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
+                        </button>
+                        <button
+                            onClick={handleOpenTimepassMenu}
+                            className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
+                        >
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">Timepass Menu</p>
+                                <p className="text-xs text-slate-500 mt-1">Edit snacks/papad menu, rates, and Timepass category items.</p>
+                            </div>
+                            <span className="text-emerald-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
+                        </button>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <button
-                        onClick={handleOpenHousekeepingMenu}
-                        className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
-                    >
-                        <div>
-                            <p className="text-sm font-bold text-slate-800">Housekeeping Menu</p>
-                            <p className="text-xs text-slate-500 mt-1">Edit items, custom rates, and Normal category menu.</p>
-                        </div>
-                        <span className="text-blue-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
-                    </button>
-                    <button
-                        onClick={handleOpenHighTeaMenu}
-                        className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
-                    >
-                        <div>
-                            <p className="text-sm font-bold text-slate-800">High Tea Menu</p>
-                            <p className="text-xs text-slate-500 mt-1">Edit evening tea menu, rates, and High Tea category items.</p>
-                        </div>
-                        <span className="text-indigo-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
-                    </button>
-                    <button
-                        onClick={handleOpenTimepassMenu}
-                        className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
-                    >
-                        <div>
-                            <p className="text-sm font-bold text-slate-800">Timepass Menu</p>
-                            <p className="text-xs text-slate-500 mt-1">Edit snacks/papad menu, rates, and Timepass category items.</p>
-                        </div>
-                        <span className="text-emerald-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
-                    </button>
-                </div>
-            </div>
+            )}
 
             {/* Manage Housekeeping Menu Modal */}
             {isHousekeepingMenuOpen && (
@@ -1038,17 +1011,17 @@ export default function HousekeepingPortalPage() {
                                 <input
                                     type="text"
                                     placeholder="Item Name (e.g. Limbu Soda)"
-                                    value={newItemName}
-                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    value={newMenuName}
+                                    onChange={(e) => setNewMenuName(e.target.value)}
                                     className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-                                />
+                                  />
                                 <input
                                     type="number"
                                     placeholder="Price (₹)"
-                                    value={newItemPrice}
-                                    onChange={(e) => setNewItemPrice(e.target.value)}
+                                    value={newMenuPrice}
+                                    onChange={(e) => setNewMenuPrice(e.target.value)}
                                     className="w-full sm:w-28 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
-                                />
+                                  />
                                 <button
                                     onClick={() => handleAddMenuItem("Normal")}
                                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shrink-0"
@@ -1134,17 +1107,17 @@ export default function HousekeepingPortalPage() {
                                 <input
                                     type="text"
                                     placeholder="Item Name (e.g. French Fries)"
-                                    value={newItemName}
-                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    value={newMenuName}
+                                    onChange={(e) => setNewMenuName(e.target.value)}
                                     className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
-                                />
+                                  />
                                 <input
                                     type="number"
                                     placeholder="Price (₹)"
-                                    value={newItemPrice}
-                                    onChange={(e) => setNewItemPrice(e.target.value)}
+                                    value={newMenuPrice}
+                                    onChange={(e) => setNewMenuPrice(e.target.value)}
                                     className="w-full sm:w-28 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
-                                />
+                                  />
                                 <button
                                     onClick={() => handleAddMenuItem("High Tea")}
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shrink-0"
@@ -1230,17 +1203,17 @@ export default function HousekeepingPortalPage() {
                                 <input
                                     type="text"
                                     placeholder="Item Name (e.g. Khichiya Masala Papad)"
-                                    value={newItemName}
-                                    onChange={(e) => setNewItemName(e.target.value)}
+                                    value={newMenuName}
+                                    onChange={(e) => setNewMenuName(e.target.value)}
                                     className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
-                                />
+                                  />
                                 <input
                                     type="number"
                                     placeholder="Price (₹)"
-                                    value={newItemPrice}
-                                    onChange={(e) => setNewItemPrice(e.target.value)}
+                                    value={newMenuPrice}
+                                    onChange={(e) => setNewMenuPrice(e.target.value)}
                                     className="w-full sm:w-28 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
-                                />
+                                  />
                                 <button
                                     onClick={() => handleAddMenuItem("Timepass")}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shrink-0"

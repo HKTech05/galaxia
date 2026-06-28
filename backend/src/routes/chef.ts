@@ -190,8 +190,8 @@ router.delete("/ingredients/:id", requireRole("owner", "developer"), async (req:
     }
 });
 
-// GET /api/chef/logs — Fetch chef logs (Owner/Developer only)
-router.get("/logs", requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+// GET /api/chef/logs — Fetch chef logs
+router.get("/logs", requireRole("owner", "developer", "chef", "sub-admin", "housekeeping"), async (req: AuthRequest, res) => {
     try {
         const logs = await prisma.chefLog.findMany({
             include: {

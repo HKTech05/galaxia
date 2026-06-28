@@ -2,6 +2,7 @@ import { Router } from "express";
 import prisma from "../lib/prisma";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
+import { sendOrderDeletionNotification } from "../lib/emailService";
 import fs from "fs";
 import path from "path";
 
@@ -236,6 +237,16 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
             return res.status(404).json({ error: "Hospitality request not found" });
         }
 
+        const userRole = req.admin?.role || "";
+        const cat = itemCategory || existing.itemCategory;
+        
+        // Restriction: Only chef/owner/dev can edit/modify items in active High Tea or Timepass requests
+        if ((cat === "High Tea" || cat === "Timepass") && status !== "fulfilled") {
+            if (userRole !== "chef" && userRole !== "owner" && userRole !== "developer") {
+                return res.status(403).json({ error: "Only chef profile can modify active High Tea / Timepass requests." });
+            }
+        }
+
         const data: any = {};
         if (status !== undefined) data.status = status;
         if (villaName !== undefined) data.villaName = villaName;
@@ -243,6 +254,49 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
         if (items !== undefined) {
             data.items = JSON.stringify(items);
             
+            // Send email if items were removed or reduced
+            try {
+                let existingItems: any[] = [];
+                let newItemsList: any[] = items;
+                if (typeof existing.items === "string") {
+                    existingItems = JSON.parse(existing.items);
+                } else if (Array.isArray(existing.items)) {
+                    existingItems = existing.items as any[];
+                }
+                
+                const removedDetails: string[] = [];
+                existingItems.forEach((oldItem: any) => {
+                    const matched = newItemsList.find((newItem: any) => newItem.name === oldItem.name);
+                    if (!matched) {
+                        removedDetails.push(`Removed item: ${oldItem.name} (Qty: ${oldItem.quantity})`);
+                    } else if (matched.quantity < oldItem.quantity) {
+                        removedDetails.push(`Reduced item: ${oldItem.name} from ${oldItem.quantity} to ${matched.quantity}`);
+                    }
+                });
+
+                if (removedDetails.length > 0) {
+                    sendOrderDeletionNotification({
+                        performedBy: req.admin?.username || "Staff",
+                        role: userRole,
+                        actionType: "modification",
+                        villaName: villaName || existing.villaName,
+                        category: cat,
+                        details: removedDetails.join("\n")
+                    });
+
+                    // Log to database chefLogs
+                    await prisma.chefLog.create({
+                        data: {
+                            adminId: req.admin?.id,
+                            actionType: "modify_request",
+                            details: `Villa ${villaName || existing.villaName} (${cat}): ${removedDetails.join("\n")}`
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Error parsing items for email alert:", err);
+            }
+
             // Re-calculate bookingId based on target villa
             const targetVilla = villaName || existing.villaName;
             const now = new Date();
@@ -303,55 +357,31 @@ router.put("/requests/bill/:bookingId", async (req: AuthRequest, res) => {
 // 5. GET /api/hospitality/allocations — Fetch active bookings/allocations for a given date
 router.get("/allocations", async (req: AuthRequest, res) => {
     try {
-        const { date } = req.query;
-        if (!date) {
-            return res.status(400).json({ error: "Date parameter is required" });
-        }
-
-        const dateStr = String(date); // YYYY-MM-DD
-        const targetDate = new Date(`${dateStr}T00:00:00`);
+        const dateStr = req.query.date as string;
+        const filterDate = dateStr ? new Date(dateStr) : new Date();
+        const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+        const endOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999);
 
         const bookings = await prisma.staycationBooking.findMany({
             where: {
-                status: "checked_in",
-                checkInDate: { lte: targetDate },
-                checkOutDate: { gte: targetDate }
+                status: { in: ["confirmed", "checked_in"] },
+                checkInDate: { lte: endOfDay },
+                checkOutDate: { gte: startOfDay }
             },
             include: {
-                property: {
-                    select: {
-                        name: true
-                    }
-                },
-                subProperty: {
-                    select: {
-                        name: true
-                    }
-                }
-            },
-            orderBy: [
-                { propertyId: "asc" },
-                { checkInDate: "asc" }
-            ]
+                subProperty: true
+            }
         });
 
-        const result = bookings
-            .filter(b => {
-                const name = (b.property.name || "").toLowerCase();
-                const isAmbroseOrAmstel = name.includes("ambrose") || name.includes("amstel");
-                return isAmbroseOrAmstel && b.assignedUnit && b.assignedUnit.trim() !== "";
-            })
-            .map(b => ({
-                id: b.id,
-                bookingRef: b.bookingRef,
-                customerName: b.customerName,
-                checkInDate: b.checkInDate,
-                checkOutDate: b.checkOutDate,
-                assignedUnit: b.assignedUnit,
-                status: b.status,
-                propertyName: b.property.name,
-                subPropertyName: b.subProperty?.name || null
-            }));
+        const result = bookings.map(b => ({
+            bookingId: b.id,
+            bookingRef: b.bookingRef,
+            guestName: b.customerName,
+            villaName: b.assignedUnit || b.subProperty?.name || "Unassigned",
+            checkInDate: b.checkInDate,
+            checkOutDate: b.checkOutDate,
+            status: b.status
+        }));
 
         return res.json(result);
     } catch (error) {
@@ -374,6 +404,43 @@ router.delete("/requests/:id", async (req: AuthRequest, res) => {
 
         if (!existing) {
             return res.status(404).json({ error: "Hospitality request not found" });
+        }
+
+        const userRole = req.admin?.role || "";
+        if ((existing.itemCategory === "High Tea" || existing.itemCategory === "Timepass") && existing.status !== "fulfilled") {
+            if (userRole !== "chef" && userRole !== "owner" && userRole !== "developer") {
+                return res.status(403).json({ error: "Only chef profile can cancel/delete active High Tea / Timepass requests." });
+            }
+        }
+
+        // Send email alert on order deletion
+        try {
+            let itemDesc = "";
+            if (typeof existing.items === "string") {
+                const parsed = JSON.parse(existing.items);
+                itemDesc = parsed.map((i: any) => `${i.name} (Qty: ${i.quantity})`).join(", ");
+            } else if (Array.isArray(existing.items)) {
+                itemDesc = (existing.items as any[]).map((i: any) => `${i.name} (Qty: ${i.quantity})`).join(", ");
+            }
+            sendOrderDeletionNotification({
+                performedBy: req.admin?.username || "Staff",
+                role: userRole,
+                actionType: "deletion",
+                villaName: existing.villaName,
+                category: existing.itemCategory,
+                details: `Entire order deleted. Items included: ${itemDesc}`
+            });
+
+            // Log to database chefLogs
+            await prisma.chefLog.create({
+                data: {
+                    adminId: req.admin?.id,
+                    actionType: "delete_request",
+                    details: `Villa ${existing.villaName} (${existing.itemCategory}): Entire order deleted. Items included: ${itemDesc}`
+                }
+            });
+        } catch (err) {
+            console.error("Error constructing deletion email details:", err);
         }
 
         await prisma.hospitalityRequest.delete({

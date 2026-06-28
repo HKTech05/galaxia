@@ -98,7 +98,10 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
         const bills = await prisma.staycationFoodBill.findMany({
             where,
             orderBy: { createdAt: "desc" },
-            include: { creator: { select: { displayName: true } } },
+            include: { 
+                creator: { select: { displayName: true } },
+                booking: { select: { customerName: true, assignedUnit: true, bookingRef: true, subProperty: { select: { name: true } } } }
+            },
         });
 
         return res.json(bills);

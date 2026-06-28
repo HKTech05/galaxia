@@ -709,3 +709,27 @@ export async function sendOwnerBookingNotification(opts: {
         console.error("[Email] Failed to send owner notification:", error);
     }
 }
+
+export async function sendOrderDeletionNotification(opts: {
+    performedBy: string;
+    role: string;
+    actionType: "deletion" | "modification";
+    villaName: string;
+    category: string;
+    details: string;
+}): Promise<void> {
+    if (!process.env.RESEND_API_KEY) return;
+    try {
+        await getResend()?.emails.send({
+            from: FROM_EMAIL,
+            to: "admin@galaxiaresorts.com",
+            replyTo: REPLY_TO,
+            subject: `Order Deletion/Modification Alert: ${opts.villaName} (${opts.category})`,
+            text: `Order Deletion / Modification Notification\n\nUser: ${opts.performedBy} (${opts.role})\nAction: ${opts.actionType.toUpperCase()}\nVilla/Screen: ${opts.villaName}\nCategory: ${opts.category}\n\nDetails of Change:\n${opts.details}\n\nTimestamp: ${new Date().toLocaleString("en-IN")}\n— Galaxia Operations System`,
+        });
+        console.log(`[Email] Deletion alert sent for ${opts.villaName}`);
+    } catch (error) {
+        console.error("[Email] Failed to send order deletion notification:", error);
+    }
+}
+

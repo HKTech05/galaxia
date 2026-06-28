@@ -84,6 +84,62 @@ export default function ChefPortalPage() {
     const [timepassRequests, setTimepassRequests] = useState<any[]>([]);
     const [loadingTimepass, setLoadingTimepass] = useState(false);
 
+    // Chef New Request Modal state
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [formVilla, setFormVilla] = useState("");
+    const [formCategory, setFormCategory] = useState<"High Tea" | "Timepass" | "Normal">("High Tea");
+    const [formQuantities, setFormQuantities] = useState<Record<string, number>>({});
+    const [formComments, setFormComments] = useState<Record<string, string>>({});
+    const [menuItems, setMenuItems] = useState<any[]>([]);
+    const [modalSubmitting, setModalSubmitting] = useState(false);
+
+    useEffect(() => {
+        api.get<any[]>("/hospitality/menu").then(data => {
+            if (Array.isArray(data)) setMenuItems(data);
+        }).catch(() => {});
+    }, []);
+
+    const handleChefCreateSubmit = async () => {
+        if (!formVilla.trim()) {
+            alert("Please enter a Villa / Screen name.");
+            return;
+        }
+        const selectedItems = Object.entries(formQuantities).map(([itemId, qty]) => {
+            const item = menuItems.find(m => m.id === itemId);
+            return {
+                name: item?.name || "",
+                quantity: qty,
+                price: item?.price || 0,
+                category: item?.category || formCategory,
+                comment: formComments[itemId] || ""
+            };
+        });
+
+        if (selectedItems.length === 0) {
+            alert("Please select at least one item.");
+            return;
+        }
+
+        setModalSubmitting(true);
+        try {
+            await api.post("/hospitality/requests", {
+                villaName: formVilla,
+                itemCategory: formCategory,
+                items: selectedItems
+            });
+            setIsCreateModalOpen(false);
+            setFormVilla("");
+            setFormQuantities({});
+            fetchHighTeaRequests();
+            fetchTimepassRequests();
+            alert("Request created successfully!");
+        } catch (err: any) {
+            alert(err.message || "Failed to create request.");
+        } finally {
+            setModalSubmitting(false);
+        }
+    };
+
     const isOwnerOrDev = userRole === "owner" || userRole === "developer";
 
     // Generate dynamic quantity options based on unit
@@ -505,14 +561,23 @@ export default function ChefPortalPage() {
                                 <Coffee size={20} className="text-purple-600" />
                                 High Tea Requests
                             </h2>
-                            <button
-                                onClick={fetchHighTeaRequests}
-                                disabled={loadingHighTea}
-                                className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
-                            >
-                                <RefreshCw size={12} className={loadingHighTea ? "animate-spin" : ""} />
-                                Refresh Orders
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => { setFormCategory("High Tea"); setIsCreateModalOpen(true); }}
+                                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                                >
+                                    <Plus size={14} />
+                                    New Request
+                                </button>
+                                <button
+                                    onClick={fetchHighTeaRequests}
+                                    disabled={loadingHighTea}
+                                    className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
+                                >
+                                    <RefreshCw size={12} className={loadingHighTea ? "animate-spin" : ""} />
+                                    Refresh Orders
+                                </button>
+                            </div>
                         </div>
 
                         {/* Tabs for Active / Fulfilled */}
@@ -1204,6 +1269,108 @@ export default function ChefPortalPage() {
                         >
                             Close
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* New Hospitality Request Modal for Chef */}
+            {isCreateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-purple-50">
+                            <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <Plus size={18} className="text-purple-600" />
+                                Create New Request
+                            </h3>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Villa / Screen Name</label>
+                                <input
+                                    type="text"
+                                    value={formVilla}
+                                    onChange={e => setFormVilla(e.target.value)}
+                                    placeholder="e.g. V1, V2, Amstel C1..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-purple-600"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Category</label>
+                                <select
+                                    value={formCategory}
+                                    onChange={e => setFormCategory(e.target.value as any)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-purple-600"
+                                >
+                                    <option value="High Tea">High Tea</option>
+                                    <option value="Timepass">Timepass</option>
+                                    <option value="Normal">Normal</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Select Items & Quantities</label>
+                                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                    {menuItems.filter(m => m.category === formCategory || formCategory === "Normal").map(item => (
+                                        <div key={item.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-800">{item.name}</p>
+                                                <p className="text-[10px] text-slate-500 font-semibold">₹{item.price}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const cur = formQuantities[item.id] || 0;
+                                                        if (cur <= 1) {
+                                                            const updated = { ...formQuantities };
+                                                            delete updated[item.id];
+                                                            setFormQuantities(updated);
+                                                        } else {
+                                                            setFormQuantities({ ...formQuantities, [item.id]: cur - 1 });
+                                                        }
+                                                    }}
+                                                    className="w-7 h-7 bg-white border border-slate-300 rounded-lg flex items-center justify-center font-bold text-slate-700 hover:bg-slate-100"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="w-6 text-center font-mono font-bold text-xs">{formQuantities[item.id] || 0}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const cur = formQuantities[item.id] || 0;
+                                                        setFormQuantities({ ...formQuantities, [item.id]: cur + 1 });
+                                                    }}
+                                                    className="w-7 h-7 bg-white border border-slate-300 rounded-lg flex items-center justify-center font-bold text-slate-700 hover:bg-slate-100"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+                            <button
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleChefCreateSubmit}
+                                disabled={modalSubmitting}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                            >
+                                {modalSubmitting ? "Submitting..." : "Submit Request"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

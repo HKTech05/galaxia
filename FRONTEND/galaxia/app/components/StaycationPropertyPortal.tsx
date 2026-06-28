@@ -28,6 +28,13 @@ const getUnitOptions = (booking: any) => {
 export default function StaycationPropertyPortal({ properties, portalName }: { properties: string[], portalName: string }) {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string>("");
+
+    useEffect(() => {
+        api.get("/auth/me").then(data => {
+            setUserRole(data?.role || "");
+        }).catch(() => {});
+    }, []);
 
     // Date Range Filters
     const [startDate, setStartDate] = useState(new Date());
@@ -751,7 +758,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <button
                                                 onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
                                                 className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
-                                                <Plus size={18} /> Add Food Bill
+                                                <Plus size={18} /> Collect Food Bill
                                             </button>
                                             )}
                                         </>
@@ -766,7 +773,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <button
                                                 onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
                                                 className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
-                                                <Plus size={18} /> Add Food Bill
+                                                <Plus size={18} /> Collect Food Bill
                                             </button>
                                             )}
                                         </>
@@ -796,7 +803,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <button
                                                 onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
                                                 className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
-                                                <Plus size={18} /> Add Food Bill
+                                                <Plus size={18} /> Collect Food Bill
                                             </button>
                                             )}
                                         </>
@@ -1362,16 +1369,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             placeholder="Price"
                                             className="w-20 bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-amber-500"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const updated = foodBillItems.filter((_, idx) => idx !== index);
-                                                setFoodBillItems(updated);
-                                            }}
-                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                        >
-                                            <X size={14} />
-                                        </button>
+                                        {(userRole === "owner" || userRole === "developer" || userRole === "chef") && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const updated = foodBillItems.filter((_, idx) => idx !== index);
+                                                    setFoodBillItems(updated);
+                                                }}
+                                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                                 {foodBillItems.length === 0 && (

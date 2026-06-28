@@ -24,7 +24,8 @@ import {
     Smartphone,
     FileText,
     ScrollText,
-    ChefHat
+    ChefHat,
+    UtensilsCrossed
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -48,6 +49,7 @@ const admin3TopItems = [
 // Admin3 Daily Checkins dropdown items
 const admin3DailyCheckinItems = [
     { name: "Properties", href: "/admin3/properties-view", icon: Building },
+    { name: "Properties 2", href: "/admin3/properties-view-2", icon: Hotel },
     { name: "Digital Diaries", href: "/admin3/dd-view", icon: Film },
 ];
 
@@ -103,7 +105,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     const visibleReceptionistItems = hasFullAccess
         ? admin3ReceptionistItems
         : admin3ReceptionistItems.filter(item =>
-            item.slugs.some(s => assignedProperties!.includes(s))
+            item.slugs.some(s => assignedProperties!.includes(s)) || (assignedProperties!.includes("ambrose") && item.slugs.includes("amstel-nest"))
         );
 
     const isReceptionistActive = visibleReceptionistItems.some(item => pathname.startsWith(item.href));
@@ -177,7 +179,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                         )}
                         <div>
                             <h1 className="font-bold text-xl text-slate-800 tracking-tight leading-none">Galaxia</h1>
-                            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-widest mt-1">{isAdmin3 ? (hasFullAccess ? "Owner Panel" : "Digital Diaries") : "Admin Panel"}</p>
+                            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-widest mt-1">{isAdmin3 ? (hasFullAccess ? "Owner Panel" : "Staff Panel") : "Admin Panel"}</p>
                         </div>
                     </div>
                 </div>
@@ -193,6 +195,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             ) : adminRole === "chef" ? (
                                 <>
                                     {renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
+                                    {renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
                                 </>
                             ) : (
                                 <>
@@ -259,12 +262,17 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                             )}
                                         </>
                                     ) : (
-                                        /* Sub-admins: show items directly, no dropdown */
-                                        visibleReceptionistItems.map(item => renderNavItem(item))
+                                        /* Sub-admins (e.g., Amb profile): show assigned receptionist items, Housekeeping, and Food Bill History */
+                                        <>
+                                            {visibleReceptionistItems.map(item => renderNavItem(item))}
+                                            {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
+                                            {renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
+                                        </>
                                     )}
 
                                     {/* Owner/Dev only: Chef & Housekeeping Portal Links */}
                                     {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
+                                    {hasFullAccess && renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
                                     {hasFullAccess && renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
 
                                     {/* Owner/Dev only: Bottom items */}
