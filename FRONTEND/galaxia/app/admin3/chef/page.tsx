@@ -78,6 +78,7 @@ export default function ChefPortalPage() {
     // High Tea Requests
     const [highTeaRequests, setHighTeaRequests] = useState<any[]>([]);
     const [loadingHighTea, setLoadingHighTea] = useState(false);
+    const [highTeaTab, setHighTeaTab] = useState<"active" | "fulfilled">("active");
 
     // Timepass Requests
     const [timepassRequests, setTimepassRequests] = useState<any[]>([]);
@@ -502,7 +503,7 @@ export default function ChefPortalPage() {
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <Coffee size={20} className="text-purple-600" />
-                                Active High Tea Requests
+                                High Tea Requests
                             </h2>
                             <button
                                 onClick={fetchHighTeaRequests}
@@ -514,64 +515,139 @@ export default function ChefPortalPage() {
                             </button>
                         </div>
 
+                        {/* Tabs for Active / Fulfilled */}
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                            <button
+                                onClick={() => setHighTeaTab("active")}
+                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                                    highTeaTab === "active" 
+                                        ? "bg-white text-purple-700 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Active ({highTeaRequests.filter(r => r.status === "pending").length})
+                            </button>
+                            <button
+                                onClick={() => setHighTeaTab("fulfilled")}
+                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                                    highTeaTab === "fulfilled" 
+                                        ? "bg-white text-purple-700 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Fulfilled ({highTeaRequests.filter(r => r.status === "fulfilled").length})
+                            </button>
+                        </div>
+
                         {loadingHighTea ? (
                             <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
                                 <RefreshCw size={18} className="animate-spin text-purple-600" />
                                 <span className="text-xs font-semibold">Loading orders...</span>
                             </div>
-                        ) : highTeaRequests.filter(r => r.status === "pending").length === 0 ? (
-                            <p className="text-center py-8 text-slate-400 text-sm">No pending High Tea orders.</p>
-                        ) : (
-                            <div className="space-y-4">
-                                {highTeaRequests.filter(r => r.status === "pending").map((req) => (
-                                    <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
-                                                <div>
-                                                    <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
-                                                    {req.booking ? (
-                                                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
-                                                    ) : (
-                                                        <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
-                                                    )}
+                        ) : highTeaTab === "active" ? (
+                            highTeaRequests.filter(r => r.status === "pending").length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">No pending High Tea orders.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                                    {highTeaRequests.filter(r => r.status === "pending").map((req) => (
+                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                                                    <div>
+                                                        <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
+                                                        {req.booking ? (
+                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
+                                                        ) : (
+                                                            <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
+                                                        {new Date(req.createdAt).toLocaleTimeString("en-IN", {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit"
+                                                        })}
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
+
+                                                <div className="space-y-1">
+                                                    {req.items.map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
+                                                            <span>
+                                                                {item.name}
+                                                                {item.comment && (
+                                                                    <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
+                                                                        ({item.comment})
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-mono text-purple-700 font-bold bg-purple-50 px-1.5 py-0.2 rounded border border-purple-100/50">× {item.quantity}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-2 flex justify-end">
+                                                <button
+                                                    onClick={() => handleFulfilHighTea(req.id)}
+                                                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
+                                                >
+                                                    <Check size={12} className="stroke-[3px]" />
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        ) : (
+                            highTeaRequests.filter(r => r.status === "fulfilled").length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">No past High Tea orders.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                                    {highTeaRequests.filter(r => r.status === "fulfilled").map((req) => (
+                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5 hover:shadow-sm transition-shadow">
+                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
+                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
+                                                <span className="font-mono">
                                                     {new Date(req.createdAt).toLocaleTimeString("en-IN", {
                                                         hour: "2-digit",
                                                         minute: "2-digit"
                                                     })}
                                                 </span>
                                             </div>
-
                                             <div className="space-y-1">
                                                 {req.items.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
+                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
                                                         <span>
                                                             {item.name}
                                                             {item.comment && (
-                                                                <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
+                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
                                                                     ({item.comment})
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        <span className="font-mono text-purple-700 font-bold bg-purple-50 px-1.5 py-0.2 rounded border border-purple-100/50">× {item.quantity}</span>
+                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
                                                     </div>
                                                 ))}
                                             </div>
+                                            <div className="flex items-center justify-between gap-2 border-t border-slate-200/40 pt-2 mt-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-1">
+                                                    <span className="font-bold flex items-center gap-1">
+                                                        <Check size={10} className="stroke-[3px]" />
+                                                        Fulfilled
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    {req.isBilled ? (
+                                                        <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
+                                                    ) : (
+                                                        <span className="text-slate-400 font-semibold">Unbilled</span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-
-                                        <div className="pt-2 flex justify-end">
-                                            <button
-                                                onClick={() => handleFulfilHighTea(req.id)}
-                                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
-                                            >
-                                                <Check size={12} className="stroke-[3px]" />
-                                                Done
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )
                         )}
                     </div>
 
