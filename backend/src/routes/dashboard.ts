@@ -401,6 +401,11 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 customerPhone: b.customerPhone ? decrypt(b.customerPhone) : null,
                 balanceUpiId: balanceUpi?.id || null,
                 depositUpiId: depositUpi?.id || null,
+                upiPayments: bookingUpiPayments.map(upi => ({
+                    id: upi.id,
+                    paymentType: upi.paymentType,
+                    amount: upi.amount
+                }))
             };
         });
 

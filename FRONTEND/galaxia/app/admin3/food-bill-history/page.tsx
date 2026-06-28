@@ -42,10 +42,16 @@ export default function FoodHistoryPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [billsData, logsData] = await Promise.all([
-                api.get<FoodBill[]>("/stay-food-bills"),
-                api.get<ChefLog[]>("/chef/logs"),
-            ]);
+            const billsPromise = api.get<FoodBill[]>("/stay-food-bills").catch(err => {
+                console.error("Failed to fetch food bills:", err);
+                return [] as FoodBill[];
+            });
+            const logsPromise = api.get<ChefLog[]>("/chef/logs").catch(err => {
+                console.error("Failed to fetch chef logs:", err);
+                return [] as ChefLog[];
+            });
+
+            const [billsData, logsData] = await Promise.all([billsPromise, logsPromise]);
             setBills(billsData || []);
             setLogs(logsData || []);
         } catch (err) {

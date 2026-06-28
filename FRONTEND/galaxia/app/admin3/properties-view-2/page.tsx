@@ -2,21 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { 
-    Calendar, 
     Home, 
-    Users, 
-    Smartphone, 
-    Coins, 
-    CheckCircle2, 
-    Clock, 
-    XCircle, 
-    HelpCircle, 
-    RefreshCw, 
+    X,
+    Loader2, 
+    IndianRupee,
     ArrowLeftRight,
     Search,
-    Loader2
+    Download,
+    AlertTriangle,
+    UtensilsCrossed
 } from "lucide-react";
 import { api } from "../../../lib/api";
+import CustomDatePicker from "../../components/CustomDatePicker";
 
 interface Booking {
     id: number;
@@ -35,6 +32,7 @@ interface Booking {
     depositCollected: boolean;
     depositMethod: string | null;
     foodBills: Array<{
+        description: string;
         amount: number;
         paymentMethod: string;
     }>;
@@ -42,14 +40,28 @@ interface Booking {
     subProperty?: { name: string } | null;
     propertyId?: number;
     subPropertyId?: number | null;
+    balanceUpiId?: number | null;
+    depositUpiId?: number | null;
+    upiPayments?: Array<{
+        id: number;
+        paymentType: string;
+        amount: number;
+    }>;
+}
+
+interface ChefLog {
+    id: number;
+    actionType: string;
+    details: string;
+    createdAt: string;
+    admin?: {
+        displayName: string;
+        username: string;
+    } | null;
 }
 
 export default function PropertiesView2Page() {
-    const [selectedDate, setSelectedDate] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    });
-
+    const [propertyDate, setPropertyDate] = useState(new Date());
     const [propertyFilter, setPropertyFilter] = useState<"all" | "amstel">("all");
     const [modeFilter, setModeFilter] = useState<"checkin" | "checkout">("checkin");
     const [searchTerm, setSearchTerm] = useState("");
@@ -57,15 +69,28 @@ export default function PropertiesView2Page() {
     
     const [properties, setProperties] = useState<any[]>([]);
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [logs, setLogs] = useState<ChefLog[]>([]);
+    
+    // Preview modals state
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+    const [selectedFoodBooking, setSelectedFoodBooking] = useState<Booking | null>(null);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const res = await api.get<{ properties: any[]; activeBookings: Booking[] }>(
-                `/admin/dashboard/property-status?date=${selectedDate}`
-            );
+            const selectedDateStr = propertyDate.toISOString().split("T")[0];
+            const [res, logsData] = await Promise.all([
+                api.get<{ properties: any[]; activeBookings: Booking[] }>(
+                    `/admin/dashboard/property-status?date=${selectedDateStr}`
+                ),
+                api.get<ChefLog[]>("/chef/logs").catch(err => {
+                    console.error("Failed to fetch chef logs:", err);
+                    return [] as ChefLog[];
+                })
+            ]);
             setProperties(res?.properties || []);
             setBookings(res?.activeBookings || []);
+            setLogs(logsData || []);
         } catch (err) {
             console.error("Failed to fetch property status data:", err);
         } finally {
@@ -75,16 +100,10 @@ export default function PropertiesView2Page() {
 
     useEffect(() => {
         fetchData();
-    }, [selectedDate]);
+    }, [propertyDate]);
 
-    // Format date helper
-    const formatDisplayDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        });
-    };
+    // Format date string for API
+    const selectedDateStr = propertyDate.toISOString().split("T")[0];
 
     // Filter bookings by date selection (check-in day or check-out day matches selected date)
     const filteredBookings = bookings.filter(b => {
@@ -92,77 +111,113 @@ export default function PropertiesView2Page() {
         const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
         
         if (modeFilter === "checkin") {
-            return checkInStr === selectedDate;
+            return checkInStr === selectedDateStr;
         } else {
-            return checkOutStr === selectedDate;
+            return checkOutStr === selectedDateStr;
         }
     });
 
-    // Helper to render payment method icons
-    const renderPaymentIcon = (method: string | null | undefined, collected: boolean) => {
-        if (!collected || !method) return <span className="text-slate-300 font-medium text-xs">—</span>;
-        const normalized = method.toLowerCase();
-        if (normalized.includes("upi") || normalized.includes("online")) {
-            return (
-                <span className="inline-flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 font-bold text-[10px] uppercase">
-                    <Smartphone size={10} className="stroke-[2.5px]" /> UPI
-                </span>
-            );
+    // Helper to fetch UPI proof image blob and preview
+    const handleViewProof = async (logId: number) => {
+        try {
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/upi-payments/image/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+                alert("Failed to load proof image");
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            setPreviewImageUrl(url);
+        } catch (err) {
+            console.error("Error showing proof:", err);
+            alert("Failed to load proof image");
         }
-        return (
-            <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 font-bold text-[10px] uppercase">
-                <Coins size={10} className="stroke-[2.5px]" /> Cash
-            </span>
-        );
     };
 
-    // Helper to render food bill payment info
-    const renderFoodBillStatus = (billList: Array<{ amount: number; paymentMethod: string }> | undefined) => {
-        if (!billList || billList.length === 0) return <span className="text-slate-300 font-medium text-xs">—</span>;
-        const totalAmount = billList.reduce((sum, b) => sum + (b.amount || 0), 0);
-        const upi = billList.some(b => b.paymentMethod?.toLowerCase().includes("upi"));
-        return (
-            <div className="flex flex-col items-end">
-                <span className="text-xs font-black text-slate-800">₹{totalAmount}</span>
-                <span className="mt-0.5">
-                    {renderPaymentIcon(upi ? "UPI" : "Cash", true)}
-                </span>
-            </div>
-        );
-    };
-
-    // Helper to render status tag
+    // Helper to render status badge
     const renderStatusBadge = (status: string) => {
         const normalized = status.toLowerCase();
         if (normalized === "checked_in") {
             return (
-                <span className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    <CheckCircle2 size={10} /> Checked In
+                <span className="inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Checked In
                 </span>
             );
         } else if (normalized === "checked_out") {
             return (
-                <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    <CheckCircle2 size={10} /> Checked Out
+                <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Checked Out
                 </span>
             );
         } else if (normalized === "cancelled" || normalized === "canceled") {
             return (
-                <span className="inline-flex items-center gap-1 bg-red-50 border border-red-100 text-red-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    <XCircle size={10} /> Cancelled
+                <span className="inline-flex items-center bg-red-50 border border-red-100 text-red-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Cancelled
                 </span>
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-100 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                <Clock size={10} /> Pending
+            <span className="inline-flex items-center bg-amber-50 border border-amber-100 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                Pending
             </span>
         );
     };
 
+    // Render Food Bill cell with clickable breakdown and click-to-view UPI proof if applicable
+    const renderFoodBillStatus = (b: Booking) => {
+        const billList = b.foodBills || [];
+        if (billList.length === 0) return <span className="text-slate-300 font-medium text-xs">—</span>;
+        
+        const totalAmount = billList.reduce((sum, f) => sum + (f.amount || 0), 0);
+        const upi = billList.some(f => f.paymentMethod?.toLowerCase().includes("upi"));
+        const upiPaymentRecord = b.upiPayments?.find(u => u.paymentType === "food_collection");
+
+        return (
+            <div className="flex flex-col items-end">
+                <button
+                    onClick={() => setSelectedFoodBooking(b)}
+                    className="text-xs font-black text-slate-800 hover:underline hover:text-indigo-600 transition-colors"
+                >
+                    ₹{totalAmount.toLocaleString("en-IN")}
+                </button>
+                <div className="mt-1">
+                    {upi ? (
+                        upiPaymentRecord ? (
+                            <button
+                                onClick={() => handleViewProof(upiPaymentRecord.id)}
+                                className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                            >
+                                UPI
+                            </button>
+                        ) : (
+                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                UPI
+                            </span>
+                        )
+                    ) : (
+                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                            CASH
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // Get audit logs matching the food modal booking's villa
+    const getAuditLogsForBooking = (b: Booking) => {
+        const villaName = (b.assignedUnit || b.subProperty?.name || "").toLowerCase();
+        if (!villaName) return [];
+        return logs.filter(log => {
+            const details = log.details.toLowerCase();
+            return (log.actionType === "modify_request" || log.actionType === "delete_request") && details.includes(villaName);
+        });
+    };
+
     // Build tabular rows based on requirements
-    // Ambrose Villas first: V1, V2, V3, V4
-    // Then rest of properties (unless filter is "amstel")
     const getPropertiesRows = () => {
         const rows: Array<{
             unitName: string;
@@ -170,53 +225,48 @@ export default function PropertiesView2Page() {
             booking: Booking | null;
         }> = [];
 
-        // 1. Find Ambrose sub-properties/villas
-        const ambroseProp = properties.find(p => p.name?.toLowerCase().includes("ambrose"));
-        const ambroseVillas = ambroseProp ? (ambroseProp.subProperties || []) : [
-            { id: 9991, name: "Villa 1" },
-            { id: 9992, name: "Villa 2" },
-            { id: 9993, name: "Villa 3" },
-            { id: 9994, name: "Villa 4" }
-        ];
+        // 1. Find Ambrose sub-properties/villas (only in "all" view)
+        if (propertyFilter === "all") {
+            const ambroseProp = properties.find(p => p.name?.toLowerCase().includes("ambrose"));
+            const defaultAmbroseVillas = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
+            const villasToUse = ambroseProp && ambroseProp.subProperties && ambroseProp.subProperties.length > 0
+                ? ambroseProp.subProperties.map((v: any) => v.name)
+                : defaultAmbroseVillas;
 
-        ambroseVillas.forEach((v: any) => {
-            const booking = filteredBookings.find(b => 
-                b.assignedUnit === v.name || 
-                (b.property?.name?.toLowerCase().includes("ambrose") && b.assignedUnit === v.name)
-            ) || null;
-            
-            if (propertyFilter === "all") {
+            villasToUse.forEach((vName: string) => {
+                const booking = filteredBookings.find(b => 
+                    b.assignedUnit === vName && b.property?.name?.toLowerCase().includes("ambrose")
+                ) || null;
+
                 rows.push({
-                    unitName: v.name,
+                    unitName: vName,
                     propertyName: "Ambrose",
                     booking
                 });
-            }
-        });
-
-        // 2. Find Amstel Nest sub-properties/cottages
-        const amstelProp = properties.find(p => p.name?.toLowerCase().includes("amstel"));
-        const amstelCottages = amstelProp ? (amstelProp.subProperties || []) : [
-            { id: 8881, name: "Cottage 1" },
-            { id: 8882, name: "Cottage 2" },
-            { id: 8883, name: "Cottage 3" },
-            { id: 8884, name: "Cottage 4" }
-        ];
-
-        amstelCottages.forEach((c: any) => {
-            const booking = filteredBookings.find(b => 
-                b.assignedUnit === c.name || 
-                (b.property?.name?.toLowerCase().includes("amstel") && b.assignedUnit === c.name)
-            ) || null;
-            
-            rows.push({
-                unitName: c.name,
-                propertyName: "Amstel Nest",
-                booking
             });
-        });
+        }
 
-        // 3. Find standalone or other properties
+        // 2. Find Amstel Nest cottages (only in "amstel" view)
+        if (propertyFilter === "amstel") {
+            const amstelCottages = [
+                ...Array.from({ length: 14 }, (_, i) => `Cottage ${i + 1}`),
+                "Family Cottage"
+            ];
+
+            amstelCottages.forEach((cName: string) => {
+                const booking = filteredBookings.find(b => 
+                    b.assignedUnit === cName && b.property?.name?.toLowerCase().includes("amstel")
+                ) || null;
+
+                rows.push({
+                    unitName: cName,
+                    propertyName: "Amstel Nest",
+                    booking
+                });
+            });
+        }
+
+        // 3. Find standalone or other properties (only in "all" view)
         if (propertyFilter === "all") {
             properties.forEach(p => {
                 const nameLower = (p.name || "").toLowerCase();
@@ -264,26 +314,14 @@ export default function PropertiesView2Page() {
                         Villa occupancy list sorted by Ambrose followed by remaining properties.
                     </p>
                 </div>
-                <button
-                    onClick={fetchData}
-                    className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-800 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-100 transition-all uppercase tracking-wider"
-                >
-                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                    Refresh
-                </button>
             </div>
 
             {/* Filters Dashboard */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4 flex-wrap">
-                    {/* Date Selector */}
+                    {/* Same datepicker style & CSS as properties-view */}
                     <div className="relative">
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={e => setSelectedDate(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
-                        />
+                        <CustomDatePicker date={propertyDate} onDateChange={setPropertyDate} />
                     </div>
 
                     {/* All vs Amstel Toggle */}
@@ -354,29 +392,28 @@ export default function PropertiesView2Page() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Villa Allotted</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Property</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Checkin / Checkout</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Guest Name</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">People</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Collected</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Deposit</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Food Bill</th>
-                                <th className="px-4 md:px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Villa Allotted</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Property</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Checkin - Checkout</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Guest Name</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">People</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Deposit</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Food Bill</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={10} className="px-6 py-12 text-center">
+                                    <td colSpan={9} className="px-6 py-12 text-center">
                                         <Loader2 className="animate-spin mx-auto text-indigo-500" size={28} />
                                         <p className="text-sm text-slate-500 mt-2">Loading check-in data...</p>
                                     </td>
                                 </tr>
                             ) : displayRows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={10} className="px-6 py-12 text-center text-slate-500 font-medium">
+                                    <td colSpan={9} className="px-6 py-12 text-center text-slate-500 font-medium">
                                         No checkin records matching criteria.
                                     </td>
                                 </tr>
@@ -384,24 +421,22 @@ export default function PropertiesView2Page() {
                                 displayRows.map((row, idx) => {
                                     const b = row.booking;
                                     return (
-                                        <tr key={idx} className={`hover:bg-slate-50/50 transition-colors ${!b ? "bg-slate-50/20" : ""}`}>
+                                        <tr key={idx} className={`hover:bg-slate-50/50 transition-colors border-b border-slate-100 ${!b ? "bg-slate-50/20" : ""}`}>
                                             {/* Villa Allotted */}
-                                            <td className="px-4 md:px-5 py-4">
+                                            <td className="px-5 py-4 align-middle">
                                                 <span className="font-extrabold text-slate-800 text-sm">{row.unitName}</span>
                                             </td>
 
                                             {/* Property */}
-                                            <td className="px-4 md:px-5 py-4">
+                                            <td className="px-5 py-4 align-middle">
                                                 <span className="text-slate-500 font-semibold text-xs">{row.propertyName}</span>
                                             </td>
 
                                             {/* Check-in / Check-out Date */}
-                                            <td className="px-4 md:px-5 py-4">
+                                            <td className="px-5 py-4 align-middle">
                                                 {b ? (
-                                                    <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                                                        <span>{new Date(b.checkInDate).toLocaleDateString("en-IN", {day:"2-digit", month:"short"})}</span>
-                                                        <ArrowLeftRight size={10} className="text-slate-400 shrink-0" />
-                                                        <span>{new Date(b.checkOutDate).toLocaleDateString("en-IN", {day:"2-digit", month:"short"})}</span>
+                                                    <div className="text-[11px] font-bold text-slate-600">
+                                                        {new Date(b.checkInDate).toLocaleDateString("en-IN", {day:"2-digit", month:"short"})} - {new Date(b.checkOutDate).toLocaleDateString("en-IN", {day:"2-digit", month:"short"})}
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-300 font-semibold text-xs">—</span>
@@ -409,7 +444,7 @@ export default function PropertiesView2Page() {
                                             </td>
 
                                             {/* Guest Name */}
-                                            <td className="px-4 md:px-5 py-4">
+                                            <td className="px-5 py-4 align-middle">
                                                 {b ? (
                                                     <div>
                                                         <p className="font-extrabold text-slate-800 text-xs">{b.customerName}</p>
@@ -421,10 +456,9 @@ export default function PropertiesView2Page() {
                                             </td>
 
                                             {/* Number of People */}
-                                            <td className="px-4 md:px-5 py-4 text-center">
+                                            <td className="px-5 py-4 align-middle text-center">
                                                 {b ? (
-                                                    <span className="text-xs font-bold text-slate-800 flex items-center justify-center gap-1">
-                                                        <Users size={12} className="text-slate-400" />
+                                                    <span className="text-xs font-bold text-slate-800">
                                                         {b.numGuests + b.numKids}
                                                     </span>
                                                 ) : (
@@ -432,37 +466,32 @@ export default function PropertiesView2Page() {
                                                 )}
                                             </td>
 
-                                            {/* Balance Amount */}
-                                            <td className="px-4 md:px-5 py-4 text-right">
+                                            {/* Balance Amount with Payment Method details */}
+                                            <td className="px-5 py-4 align-middle text-right">
                                                 {b ? (
-                                                    <span className="text-xs font-black text-slate-800">₹{(b.balanceAmount || 0).toLocaleString("en-IN")}</span>
-                                                ) : (
-                                                    <span className="text-slate-300 font-semibold text-xs">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Collected in UPI/Cash */}
-                                            <td className="px-4 md:px-5 py-4 text-center">
-                                                {b ? (
-                                                    renderPaymentIcon(b.balanceMethod, b.balanceCollected)
-                                                ) : (
-                                                    <span className="text-slate-300 font-semibold text-xs">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Deposit Collected */}
-                                            <td className="px-4 md:px-5 py-4 text-center">
-                                                {b ? (
-                                                    <div className="flex flex-col items-center">
-                                                        {b.securityDeposit > 0 ? (
-                                                            <>
-                                                                <span className="text-[10px] font-black text-slate-800">₹{b.securityDeposit}</span>
-                                                                <span className="mt-0.5">
-                                                                    {renderPaymentIcon(b.depositMethod, b.depositCollected)}
-                                                                </span>
-                                                            </>
-                                                        ) : (
-                                                            <span className="text-slate-400 text-[10px] font-bold">No Deposit</span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-xs font-black text-slate-800">₹{(b.balanceAmount || 0).toLocaleString("en-IN")}</span>
+                                                        {b.balanceCollected && b.balanceMethod && (
+                                                            <div className="mt-1">
+                                                                {b.balanceMethod.toLowerCase().includes("upi") || b.balanceMethod.toLowerCase().includes("online") ? (
+                                                                    b.balanceUpiId ? (
+                                                                        <button
+                                                                            onClick={() => handleViewProof(b.balanceUpiId!)}
+                                                                            className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                        >
+                                                                            UPI
+                                                                        </button>
+                                                                    ) : (
+                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                                                            UPI
+                                                                        </span>
+                                                                    )
+                                                                ) : (
+                                                                    <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                        CASH
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 ) : (
@@ -470,21 +499,54 @@ export default function PropertiesView2Page() {
                                                 )}
                                             </td>
 
-                                            {/* Food Bill */}
-                                            <td className="px-4 md:px-5 py-4 text-right">
+                                            {/* Security Deposit with Payment Method details */}
+                                            <td className="px-5 py-4 align-middle text-right">
                                                 {b ? (
-                                                    renderFoodBillStatus(b.foodBills)
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-xs font-black text-slate-800">₹{(b.securityDeposit || 0).toLocaleString("en-IN")}</span>
+                                                        {b.depositCollected && b.depositMethod && (
+                                                            <div className="mt-1">
+                                                                {b.depositMethod.toLowerCase().includes("upi") ? (
+                                                                    b.depositUpiId ? (
+                                                                        <button
+                                                                            onClick={() => handleViewProof(b.depositUpiId!)}
+                                                                            className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                        >
+                                                                            UPI
+                                                                        </button>
+                                                                    ) : (
+                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                                                            UPI
+                                                                        </span>
+                                                                    )
+                                                                ) : (
+                                                                    <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                        CASH
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-300 font-semibold text-xs">—</span>
+                                                )}
+                                            </td>
+
+                                            {/* Food Bill with Payment details */}
+                                            <td className="px-5 py-4 align-middle text-right">
+                                                {b ? (
+                                                    renderFoodBillStatus(b)
                                                 ) : (
                                                     <span className="text-slate-300 font-semibold text-xs">—</span>
                                                 )}
                                             </td>
 
                                             {/* Status Badge */}
-                                            <td className="px-4 md:px-5 py-4 text-center">
+                                            <td className="px-5 py-4 align-middle text-center">
                                                 {b ? (
                                                     renderStatusBadge(b.status)
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 text-slate-400 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                    <span className="inline-flex items-center bg-slate-100 border border-slate-200 text-slate-400 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                                                         Vacant
                                                     </span>
                                                 )}
@@ -497,6 +559,128 @@ export default function PropertiesView2Page() {
                     </table>
                 </div>
             </div>
+
+            {/* Food Bill Breakdown Modal */}
+            {selectedFoodBooking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50 shrink-0">
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                                    <UtensilsCrossed className="text-amber-600" size={18} />
+                                    Food Bill Breakdown
+                                </h3>
+                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-0.5">{selectedFoodBooking.bookingRef}</p>
+                            </div>
+                            <button onClick={() => setSelectedFoodBooking(null)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                            {/* Summary Metadata */}
+                            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/50">
+                                <div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Guest Name</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{selectedFoodBooking.customerName}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Villa / Unit</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{selectedFoodBooking.assignedUnit || "Unassigned"}</p>
+                                </div>
+                            </div>
+
+                            {/* Itemized list parsed from bill descriptions */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Line Items Billed</h4>
+                                <div className="divide-y divide-slate-100 bg-white border border-slate-200 rounded-xl overflow-hidden">
+                                    {selectedFoodBooking.foodBills.map((bill, bIdx) => (
+                                        <div key={bIdx} className="p-2 space-y-1 bg-slate-50/30">
+                                            {bill.description.split(", ").map((item, idx) => (
+                                                <div key={idx} className="flex justify-between p-2 text-xs font-semibold text-slate-700">
+                                                    <span>{item.split(" (₹")[0]}</span>
+                                                    <span className="text-emerald-700 font-bold">₹{item.split(" (₹")[1]?.replace(")", "") || ""}</span>
+                                                </div>
+                                            ))}
+                                            <div className="text-right text-[10px] text-slate-400 font-bold px-2">
+                                                Paid via {bill.paymentMethod}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Audit Logs for Order Modifications / Deletions */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 text-red-600">
+                                    <AlertTriangle size={14} className="text-red-500" />
+                                    Order Audit / Modification History
+                                </h4>
+                                <div className="space-y-2">
+                                    {getAuditLogsForBooking(selectedFoodBooking).length === 0 ? (
+                                        <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-200/50 text-center">
+                                            No deletions or modifications logged for this villa's order history.
+                                        </p>
+                                    ) : (
+                                        getAuditLogsForBooking(selectedFoodBooking).map(log => (
+                                            <div key={log.id} className="bg-red-50/50 border border-red-100 rounded-xl p-3 space-y-1">
+                                                <div className="flex justify-between items-center text-[10px] font-bold text-red-700">
+                                                    <span>{log.actionType === "delete_request" ? "Entire Order Deleted" : "Line Item Modified/Reduced"}</span>
+                                                    <span className="text-slate-400">{new Date(log.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                </div>
+                                                <p className="text-[11px] font-semibold text-slate-700">{log.details.split("): ")[1] || log.details}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold text-right">— Performed by {log.admin?.displayName || "Staff"}</p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end shrink-0">
+                            <div className="flex items-center gap-1 text-sm font-bold text-emerald-700">
+                                <span className="text-slate-500 text-xs font-semibold mr-1">Total Food Bill paid:</span>
+                                ₹{selectedFoodBooking.foodBills.reduce((sum, f) => sum + (f.amount || 0), 0).toLocaleString("en-IN")}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Image Preview Lightbox / Modal */}
+            {previewImageUrl && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImageUrl(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setPreviewImageUrl(null)}
+                            className="absolute -top-3 -right-3 p-2 bg-white rounded-full shadow-lg text-slate-600 hover:text-red-500 transition-colors z-10"
+                        >
+                            <X size={18} />
+                        </button>
+                        <img
+                            src={previewImageUrl}
+                            alt="UPI Payment Proof"
+                            className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain bg-white"
+                        />
+                        <div className="mt-3 flex justify-center">
+                            <button
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = previewImageUrl;
+                                    a.download = "upi-proof.jpg";
+                                    a.click();
+                                }}
+                                className="px-4 py-2 bg-white text-slate-700 text-sm font-bold rounded-xl shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-colors"
+                            >
+                                <Download size={16} /> Download Image
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

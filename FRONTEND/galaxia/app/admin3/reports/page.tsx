@@ -42,6 +42,31 @@ const getBookingMethods = (b: any): string[] => {
 const hasCash = (methods: string[]) => methods.some(m => m.includes("cash"));
 const hasUpi = (methods: string[]) => methods.some(m => m.includes("upi"));
 
+const getReportPropertyName = (b: any, reportType: string): string => {
+    const parentName = b.property?.name || "";
+    if (reportType !== "revenue" && reportType !== "occupancy") {
+        return parentName || (b._business === "digital-diaries" ? "Digital Diaries" : "Other");
+    }
+
+    const isAmstel = parentName.toLowerCase().includes("amstel");
+    const isAmbrose = parentName.toLowerCase().includes("ambrose");
+
+    if (isAmstel) {
+        const subName = (b.subProperty?.name || "").toLowerCase();
+        if (subName.includes("family") || (b.assignedUnit || "").toLowerCase().includes("family")) {
+            return "Amstel Nest - Family Cottage";
+        }
+        return "Amstel Nest - Standard Cottage";
+    }
+
+    if (isAmbrose) {
+        const villaName = b.assignedUnit || b.subProperty?.name || "Unassigned";
+        return `Ambrose - ${villaName}`;
+    }
+
+    return parentName || (b._business === "digital-diaries" ? "Digital Diaries" : "Other");
+};
+
 export default function ReportsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [ddBookings, setDdBookings] = useState<any[]>([]);
@@ -145,7 +170,7 @@ export default function ReportsPage() {
         const avgBooking = filteredBookings.length > 0 ? Math.round(total / filteredBookings.length) : 0;
         const byProperty: Record<string, { count: number; revenue: number }> = {};
         filteredBookings.forEach(b => {
-            const pn = b.property?.name || "Unknown";
+            const pn = getReportPropertyName(b, "revenue");
             if (!byProperty[pn]) byProperty[pn] = { count: 0, revenue: 0 };
             byProperty[pn].count++;
             byProperty[pn].revenue += b.totalAmount || 0;
@@ -533,7 +558,7 @@ export default function ReportsPage() {
                                     {(() => {
                                         const occData: Record<string, { count: number; nights: number; revenue: number }> = {};
                                         filteredBookings.forEach(b => {
-                                            const name = b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "Other");
+                                            const name = getReportPropertyName(b, "occupancy");
                                             if (!occData[name]) occData[name] = { count: 0, nights: 0, revenue: 0 };
                                             occData[name].count++;
                                             const ci = new Date(b.checkInDate), co = new Date(b.checkOutDate);

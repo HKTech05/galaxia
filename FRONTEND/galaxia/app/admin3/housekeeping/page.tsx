@@ -406,7 +406,7 @@ export default function HousekeepingPortalPage() {
         }
     };
 
-    if (userRole && userRole !== "housekeeping" && userRole !== "owner" && userRole !== "developer") {
+    if (userRole && userRole !== "housekeeping" && userRole !== "owner" && userRole !== "developer" && userRole !== "staycation_admin") {
         return (
             <div className="max-w-md mx-auto py-20 text-center space-y-4">
                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
@@ -414,7 +414,7 @@ export default function HousekeepingPortalPage() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-800">Access Denied</h2>
                 <p className="text-slate-400 text-sm">
-                    Only Housekeeping staff, Owners, or Developers can access this page.
+                    Only Housekeeping staff, Staycation Admins, Owners, or Developers can access this page.
                 </p>
             </div>
         );
@@ -483,13 +483,15 @@ export default function HousekeepingPortalPage() {
                                 Pending Requests
                             </h2>
                             <div className="flex items-center gap-3">
-                                <button
-                                    onClick={handleOpenCreateModal}
-                                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                                >
-                                    <Plus size={14} />
-                                    New Request
-                                </button>
+                                {userRole !== "housekeeping" && (
+                                    <button
+                                        onClick={handleOpenCreateModal}
+                                        className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                                    >
+                                        <Plus size={14} />
+                                        New Request
+                                    </button>
+                                )}
                                 <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200 inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
                                     {pendingRequests.length} Pending
                                 </span>
