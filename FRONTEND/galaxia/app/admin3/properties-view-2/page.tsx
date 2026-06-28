@@ -138,32 +138,45 @@ export default function PropertiesView2Page() {
     };
 
     // Helper to render status badge
-    const renderStatusBadge = (status: string) => {
-        const normalized = status.toLowerCase();
-        if (normalized === "checked_in") {
-            return (
-                <span className="inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    Checked In
-                </span>
-            );
-        } else if (normalized === "checked_out") {
-            return (
-                <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    Checked Out
-                </span>
-            );
-        } else if (normalized === "cancelled" || normalized === "canceled") {
-            return (
-                <span className="inline-flex items-center bg-red-50 border border-red-100 text-red-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    Cancelled
-                </span>
-            );
+    const renderStatusBadgeForBooking = (b: Booking) => {
+        if (modeFilter === "checkin") {
+            const checkInToday = b.checkInDate ? b.checkInDate.slice(0, 10) === selectedDateStr : false;
+            if (checkInToday) {
+                if (b.status === "checked_in") {
+                    return (
+                        <span className="inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            Checked In
+                        </span>
+                    );
+                } else {
+                    return (
+                        <span className="inline-flex items-center bg-amber-50 border border-amber-100 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            Pending to Arrive
+                        </span>
+                    );
+                }
+            } else {
+                return (
+                    <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Continue
+                    </span>
+                );
+            }
+        } else {
+            if (b.status === "checked_out") {
+                return (
+                    <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Checked Out
+                    </span>
+                );
+            } else {
+                return (
+                    <span className="inline-flex items-center bg-amber-50 border border-amber-100 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Pending checkout
+                    </span>
+                );
+            }
         }
-        return (
-            <span className="inline-flex items-center bg-amber-50 border border-amber-100 text-amber-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Pending
-            </span>
-        );
     };
 
     // Render Food Bill cell with clickable breakdown and click-to-view UPI proof if applicable
@@ -225,7 +238,69 @@ export default function PropertiesView2Page() {
             booking: Booking | null;
         }> = [];
 
-        // 1. Find Ambrose sub-properties/villas (only in "all" view)
+        // Helper to match bookings for a specific unit
+        const getUnitBooking = (unitName: string, propName: string) => {
+            const matches = bookings.filter(b => {
+                const bPropName = b.property?.name?.toLowerCase() || "";
+                const isMatchingProp = propName.toLowerCase().includes("ambrose")
+                    ? bPropName.includes("ambrose")
+                    : propName.toLowerCase().includes("amstel")
+                        ? bPropName.includes("amstel")
+                        : bPropName.includes(propName.toLowerCase()) || propName.toLowerCase().includes(bPropName);
+
+                if (!isMatchingProp) return false;
+                
+                // For Amstel/Ambrose, match unit name
+                if (b.assignedUnit !== unitName) return false;
+
+                return true;
+            });
+
+            if (matches.length === 0) return null;
+
+            if (modeFilter === "checkin") {
+                // Find booking staying today (not checkout-only)
+                // checkout-only means checkOutDate is today and checkInDate is before today
+                const active = matches.find(b => {
+                    const checkInStr = b.checkInDate ? b.checkInDate.slice(0, 10) : "";
+                    const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
+                    const isCheckoutOnly = checkOutStr === selectedDateStr && checkInStr !== selectedDateStr;
+                    return !isCheckoutOnly;
+                });
+                return active || null;
+            } else {
+                // Find booking checking out today
+                const checkout = matches.find(b => {
+                    const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
+                    return checkOutStr === selectedDateStr;
+                });
+                return checkout || null;
+            }
+        };
+
+        // Helper to match bookings for a standalone property
+        const getStandaloneBooking = (propId: number) => {
+            const matches = bookings.filter(b => b.propertyId === propId && !b.subPropertyId);
+            if (matches.length === 0) return null;
+
+            if (modeFilter === "checkin") {
+                const active = matches.find(b => {
+                    const checkInStr = b.checkInDate ? b.checkInDate.slice(0, 10) : "";
+                    const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
+                    const isCheckoutOnly = checkOutStr === selectedDateStr && checkInStr !== selectedDateStr;
+                    return !isCheckoutOnly;
+                });
+                return active || null;
+            } else {
+                const checkout = matches.find(b => {
+                    const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
+                    return checkOutStr === selectedDateStr;
+                });
+                return checkout || null;
+            }
+        };
+
+        // 1. Ambrose (only in "all" view)
         if (propertyFilter === "all") {
             const ambroseProp = properties.find(p => p.name?.toLowerCase().includes("ambrose"));
             const defaultAmbroseVillas = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
@@ -234,10 +309,7 @@ export default function PropertiesView2Page() {
                 : defaultAmbroseVillas;
 
             villasToUse.forEach((vName: string) => {
-                const booking = filteredBookings.find(b => 
-                    b.assignedUnit === vName && b.property?.name?.toLowerCase().includes("ambrose")
-                ) || null;
-
+                const booking = getUnitBooking(vName, "Ambrose");
                 rows.push({
                     unitName: vName,
                     propertyName: "Ambrose",
@@ -246,7 +318,7 @@ export default function PropertiesView2Page() {
             });
         }
 
-        // 2. Find Amstel Nest cottages (only in "amstel" view)
+        // 2. Amstel Nest (only in "amstel" view)
         if (propertyFilter === "amstel") {
             const amstelCottages = [
                 ...Array.from({ length: 14 }, (_, i) => `Cottage ${i + 1}`),
@@ -254,10 +326,7 @@ export default function PropertiesView2Page() {
             ];
 
             amstelCottages.forEach((cName: string) => {
-                const booking = filteredBookings.find(b => 
-                    b.assignedUnit === cName && b.property?.name?.toLowerCase().includes("amstel")
-                ) || null;
-
+                const booking = getUnitBooking(cName, "Amstel Nest");
                 rows.push({
                     unitName: cName,
                     propertyName: "Amstel Nest",
@@ -266,16 +335,13 @@ export default function PropertiesView2Page() {
             });
         }
 
-        // 3. Find standalone or other properties (only in "all" view)
+        // 3. Standalone / other properties (only in "all" view)
         if (propertyFilter === "all") {
             properties.forEach(p => {
                 const nameLower = (p.name || "").toLowerCase();
                 // Exclude Ambrose, Amstel Nest, and DD
                 if (!nameLower.includes("ambrose") && !nameLower.includes("amstel") && !nameLower.includes("diaries") && !nameLower.includes("screen")) {
-                    const booking = filteredBookings.find(b => 
-                        b.propertyId === p.id && !b.subPropertyId
-                    ) || null;
-
+                    const booking = getStandaloneBooking(p.id);
                     rows.push({
                         unitName: p.name,
                         propertyName: p.name,
@@ -285,10 +351,16 @@ export default function PropertiesView2Page() {
             });
         }
 
+        // Apply checkout filter: if mode is checkout, keep only rows with bookings
+        let filteredRows = rows;
+        if (modeFilter === "checkout") {
+            filteredRows = rows.filter(r => r.booking !== null);
+        }
+
         // Apply Search Filter if any
         if (searchTerm.trim() !== "") {
             const s = searchTerm.toLowerCase();
-            return rows.filter(r => 
+            return filteredRows.filter(r => 
                 r.unitName.toLowerCase().includes(s) ||
                 r.propertyName.toLowerCase().includes(s) ||
                 (r.booking && (
@@ -298,7 +370,7 @@ export default function PropertiesView2Page() {
             );
         }
 
-        return rows;
+        return filteredRows;
     };
 
     const displayRows = getPropertiesRows();
@@ -447,7 +519,14 @@ export default function PropertiesView2Page() {
                                             <td className="px-5 py-4 align-middle">
                                                 {b ? (
                                                     <div>
-                                                        <p className="font-extrabold text-slate-800 text-xs">{b.customerName}</p>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <p className="font-extrabold text-slate-800 text-xs">{b.customerName}</p>
+                                                            {modeFilter === "checkin" && b.checkInDate && b.checkInDate.slice(0, 10) !== selectedDateStr && (
+                                                                <span className="text-[9px] text-indigo-600 bg-indigo-50 border border-indigo-100 font-extrabold px-1.5 py-0.25 rounded uppercase">
+                                                                    Continue
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="text-[9px] font-mono font-bold text-slate-400 mt-0.5">{b.bookingRef}</p>
                                                     </div>
                                                 ) : (
@@ -544,7 +623,7 @@ export default function PropertiesView2Page() {
                                             {/* Status Badge */}
                                             <td className="px-5 py-4 align-middle text-center">
                                                 {b ? (
-                                                    renderStatusBadge(b.status)
+                                                    renderStatusBadgeForBooking(b)
                                                 ) : (
                                                     <span className="inline-flex items-center bg-slate-100 border border-slate-200 text-slate-400 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                                                         Vacant

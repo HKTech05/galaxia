@@ -36,6 +36,8 @@ export default function AdminLoginPage() {
                 
                 if (role === "chef") {
                     router.push("/admin3/chef");
+                } else if (role === "housekeeping") {
+                    router.push("/admin3/housekeeping");
                 } else if (hasFullAccess) {
                     router.push("/admin3");
                 } else {
