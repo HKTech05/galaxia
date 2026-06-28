@@ -194,6 +194,9 @@ export default function ReportsPage() {
             const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
             const pageWidth = doc.internal.pageSize.getWidth();
 
+            // Use 'Rs. ' instead of Rupee symbol '₹' to avoid PDF standard font encoding issues
+            const pdfFmt = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
+
             // Set Title
             doc.setFontSize(16);
             doc.setFont("helvetica", "bold");
@@ -219,26 +222,30 @@ export default function ReportsPage() {
             doc.text(`Generated on: ${new Date().toLocaleString("en-IN")}`, pageWidth / 2, 26, { align: "center" });
             doc.setTextColor(0);
 
-            // Summary Stats box
+            // Summary Stats box (Increase height to 25mm to support 2x2 grid layout and prevent text collision/overlapping)
             let startY = 32;
             doc.setFillColor(245, 247, 250);
-            doc.rect(14, startY, pageWidth - 28, 22, "F");
+            doc.rect(14, startY, pageWidth - 28, 25, "F");
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(9);
+            doc.setFontSize(9.5);
             doc.text("SUMMARY STATS", 18, startY + 6);
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8.5);
             
             if (reportType === "gst") {
-                doc.text(`Total Bookings: ${gstStats.count}`, 18, startY + 14);
-                doc.text(`Total Taxable (Base): ${fmt(gstStats.totalBase)}`, 60, startY + 14);
-                doc.text(`Total GST (18%): ${fmt(gstStats.totalGst)}`, 115, startY + 14);
-                doc.text(`Total Gross: ${fmt(gstStats.totalAmount)}`, 160, startY + 14);
+                // Row 1
+                doc.text(`Total Bookings: ${gstStats.count}`, 20, startY + 13);
+                doc.text(`Total Taxable (Base): ${pdfFmt(gstStats.totalBase)}`, 110, startY + 13);
+                // Row 2
+                doc.text(`Total GST (18%): ${pdfFmt(gstStats.totalGst)}`, 20, startY + 20);
+                doc.text(`Total Gross: ${pdfFmt(gstStats.totalAmount)}`, 110, startY + 20);
             } else {
-                doc.text(`Total Bookings: ${stats.count}`, 18, startY + 14);
-                doc.text(`Total Revenue: ${fmt(stats.total)}`, 60, startY + 14);
-                doc.text(`GST Collected: ${fmt(stats.gst)}`, 115, startY + 14);
-                doc.text(`Avg/Booking: ${fmt(stats.avgBooking)}`, 160, startY + 14);
+                // Row 1
+                doc.text(`Total Bookings: ${stats.count}`, 20, startY + 13);
+                doc.text(`Total Revenue: ${pdfFmt(stats.total)}`, 110, startY + 13);
+                // Row 2
+                doc.text(`GST Collected: ${pdfFmt(stats.gst)}`, 20, startY + 20);
+                doc.text(`Avg/Booking: ${pdfFmt(stats.avgBooking)}`, 110, startY + 20);
             }
 
             // Build table
@@ -251,18 +258,18 @@ export default function ReportsPage() {
                     b.bookingRef || `ID-${b.id}`,
                     b.customerName,
                     b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
-                    fmt(b.totalAmount - b.gstAmount),
-                    fmt(b.gstAmount),
-                    fmt(b.totalAmount)
+                    pdfFmt(b.totalAmount - b.gstAmount),
+                    pdfFmt(b.gstAmount),
+                    pdfFmt(b.totalAmount)
                 ]);
                 // Totals row at the bottom
                 body.push([
                     "TOTALS",
                     "",
                     "",
-                    fmt(gstStats.totalBase),
-                    fmt(gstStats.totalGst),
-                    fmt(gstStats.totalAmount)
+                    pdfFmt(gstStats.totalBase),
+                    pdfFmt(gstStats.totalGst),
+                    pdfFmt(gstStats.totalAmount)
                 ]);
             } else if (reportType === "revenue") {
                 headers = ["Property / Screen", "Bookings Count", "Total Revenue", "Avg/Booking"];
@@ -271,8 +278,8 @@ export default function ReportsPage() {
                     .map(([name, data]) => [
                         name,
                         data.count.toString(),
-                        fmt(data.revenue),
-                        fmt(Math.round(data.revenue / data.count))
+                        pdfFmt(data.revenue),
+                        pdfFmt(Math.round(data.revenue / data.count))
                     ]);
             } else if (reportType === "bookings") {
                 headers = ["Source", "Bookings Count"];
@@ -286,14 +293,14 @@ export default function ReportsPage() {
                     b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
                     new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
                     Math.max(1, Math.ceil((new Date(b.checkOutDate).getTime() - new Date(b.checkInDate).getTime()) / (1000 * 3600 * 24))).toString(),
-                    fmt(b.totalAmount),
+                    pdfFmt(b.totalAmount),
                     b.source || "website",
                     b.status
                 ]);
             }
 
             autoTable(doc, {
-                startY: startY + 27,
+                startY: startY + 30,
                 margin: { left: 14, right: 14 },
                 head: [headers],
                 body: body,
