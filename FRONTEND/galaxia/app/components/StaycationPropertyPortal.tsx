@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera } from "lucide-react";
+import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2 } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
 import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
@@ -141,6 +141,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [customTotalAmount, setCustomTotalAmount] = useState<number | null>(null);
     const [customDescription, setCustomDescription] = useState<string | null>(null);
     const [assignedUnitInput, setAssignedUnitInput] = useState<string>("");
+    const [multiAssignedUnits, setMultiAssignedUnits] = useState<string[]>([]);
+    const [upiProofRefund, setUpiProofRefund] = useState<File | null>(null);
+    const [uploadingRefund, setUploadingRefund] = useState(false);
 
     useEffect(() => {
         if (selectedBooking && modalType === "checkin") {
@@ -149,27 +152,37 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             
             if (isAmbrose) {
                 setAssignedUnitInput(selectedBooking.property || "");
+                setMultiAssignedUnits([selectedBooking.property || ""]);
             } else {
                 const allOpts = getUnitOptions(selectedBooking);
                 const opts = allOpts.filter(opt => {
                     const isOccupied = bookings.some(b => 
                         b.rawId !== selectedBooking.rawId &&
                         b.status === "Checked In" &&
-                        b.assignedUnit === opt
+                        b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
                     );
                     return !isOccupied;
                 });
 
-                if (opts.length > 0) {
-                    const bookingProperty = (selectedBooking.property || "").toLowerCase();
-                    const matchedIdx = opts.findIndex(opt => opt.toLowerCase() === bookingProperty || opt.toLowerCase().includes(bookingProperty));
-                    if (matchedIdx !== -1) {
-                        setAssignedUnitInput(opts[matchedIdx]);
-                    } else {
-                        setAssignedUnitInput(opts[0]);
+                const numCottages = selectedBooking.numCottages || 1;
+                if (numCottages > 1) {
+                    const arr: string[] = [];
+                    for (let i = 0; i < numCottages; i++) {
+                        arr.push(opts[i] || opts[0] || allOpts[0] || "");
                     }
+                    setMultiAssignedUnits(arr);
                 } else {
-                    setAssignedUnitInput(allOpts[0] || "");
+                    if (opts.length > 0) {
+                        const bookingProperty = (selectedBooking.property || "").toLowerCase();
+                        const matchedIdx = opts.findIndex(opt => opt.toLowerCase() === bookingProperty || opt.toLowerCase().includes(bookingProperty));
+                        if (matchedIdx !== -1) {
+                            setAssignedUnitInput(opts[matchedIdx]);
+                        } else {
+                            setAssignedUnitInput(opts[0]);
+                        }
+                    } else {
+                        setAssignedUnitInput(allOpts[0] || "");
+                    }
                 }
             }
         }
@@ -399,7 +412,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 status: newStatus === "Checked In" ? "checked_in" : 
                         newStatus === "Cancelled" ? "cancelled" : 
                         (newStatus === "Checked Out" || newStatus === "Completed") ? "checked_out" : "confirmed",
-                ...(newStatus === "Checked In" ? { assignedUnit: assignedUnitInput } : {})
+                ...(newStatus === "Checked In" ? { 
+                    assignedUnit: selectedBooking && selectedBooking.numCottages > 1 
+                        ? multiAssignedUnits.filter(Boolean).join(", ") 
+                        : assignedUnitInput 
+                } : {})
             });
             
             // Record payment if checking in
@@ -844,27 +861,75 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     ) : (
                                         <div className="space-y-1.5 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Assign Cottage / Room / Villa</label>
-                                            <select
-                                                value={assignedUnitInput}
-                                                onChange={(e) => setAssignedUnitInput(e.target.value)}
-                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                            >
-                                                {getUnitOptions(selectedBooking)
-                                                    .filter(opt => {
-                                                        const isOccupied = bookings.some(b => 
-                                                            b.rawId !== selectedBooking.rawId &&
-                                                            b.status === "Checked In" &&
-                                                            b.assignedUnit === opt
+                                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+                                                {selectedBooking.numCottages > 1 ? `Assign Cottages (Select ${selectedBooking.numCottages})` : "Assign Cottage / Room / Villa"}
+                                            </label>
+                                            
+                                            {selectedBooking.numCottages > 1 ? (
+                                                <div className="space-y-3 mt-2">
+                                                    {Array.from({ length: selectedBooking.numCottages }).map((_, idx) => {
+                                                        const availableOpts = getUnitOptions(selectedBooking).filter(opt => {
+                                                            const isOccupiedByOther = bookings.some(b => 
+                                                                b.rawId !== selectedBooking.rawId &&
+                                                                b.status === "Checked In" &&
+                                                                b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
+                                                            );
+                                                            const isSelectedInOtherDropdown = multiAssignedUnits.some((val, valIdx) => valIdx !== idx && val === opt);
+                                                            return !isOccupiedByOther && !isSelectedInOtherDropdown;
+                                                        });
+
+                                                        return (
+                                                            <div key={idx} className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold text-slate-400">Unit {idx + 1}:</span>
+                                                                <select
+                                                                    value={multiAssignedUnits[idx] || ""}
+                                                                    onChange={(e) => {
+                                                                        const newVal = e.target.value;
+                                                                        setMultiAssignedUnits(prev => {
+                                                                            const copy = [...prev];
+                                                                            copy[idx] = newVal;
+                                                                            return copy;
+                                                                        });
+                                                                    }}
+                                                                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                                >
+                                                                    {multiAssignedUnits[idx] && !availableOpts.includes(multiAssignedUnits[idx]) && (
+                                                                        <option value={multiAssignedUnits[idx]}>
+                                                                            {multiAssignedUnits[idx]}
+                                                                        </option>
+                                                                    )}
+                                                                    {availableOpts.map((opt) => (
+                                                                        <option key={opt} value={opt}>
+                                                                            {opt}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
                                                         );
-                                                        return !isOccupied;
-                                                    })
-                                                    .map((opt) => (
-                                                        <option key={opt} value={opt}>
-                                                            {opt}
-                                                        </option>
-                                                    ))}
-                                            </select>
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <select
+                                                    value={assignedUnitInput}
+                                                    onChange={(e) => setAssignedUnitInput(e.target.value)}
+                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                >
+                                                    {getUnitOptions(selectedBooking)
+                                                        .filter(opt => {
+                                                            const isOccupied = bookings.some(b => 
+                                                                b.rawId !== selectedBooking.rawId &&
+                                                                b.status === "Checked In" &&
+                                                                b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
+                                                            );
+                                                            return !isOccupied;
+                                                        })
+                                                        .map((opt) => (
+                                                            <option key={opt} value={opt}>
+                                                                {opt}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                            )}
                                         </div>
                                     )}
 
@@ -1122,33 +1187,96 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                                     <div className="space-y-3">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Refund Method</h4>
+
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-bold text-slate-600">UPI Refund Proof (Optional)</label>
+                                                {upiProofRefund && (
+                                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded uppercase">
+                                                        Selected
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="relative">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    id="refund-file-input"
+                                                    onChange={(e) => setUpiProofRefund(e.target.files?.[0] || null)}
+                                                    className="hidden"
+                                                />
+                                                <label
+                                                    htmlFor="refund-file-input"
+                                                    className="w-full flex items-center justify-center gap-2 border border-dashed border-slate-300 rounded-lg p-3 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                >
+                                                    <Upload size={14} className="text-indigo-600" />
+                                                    {upiProofRefund ? upiProofRefund.name : "Choose Proof File"}
+                                                </label>
+                                            </div>
+                                        </div>
+
                                         <div className="grid grid-cols-3 gap-3">
                                             <button
+                                                disabled={uploadingRefund}
                                                 onClick={async () => {
                                                     await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { method: "cash" });
                                                     handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}
-                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl transition-colors border border-emerald-200 col-span-1"
+                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl transition-colors border border-emerald-200 col-span-1 disabled:opacity-50"
                                             >
                                                 <RotateCcw size={16} /> <span className="text-xs">Cash</span>
                                             </button>
+                                            
                                             <button
+                                                disabled={uploadingRefund}
                                                 onClick={async () => {
-                                                    await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { method: "upi" });
-                                                    handleAction(selectedBooking, "Completed");
-                                                    setIsActionModalOpen(false);
+                                                    try {
+                                                        setUploadingRefund(true);
+                                                        let proofUrl = null;
+                                                        if (upiProofRefund) {
+                                                            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                                                            const fd = new FormData();
+                                                            fd.append("file", upiProofRefund);
+                                                            const uploadRes = await fetch("/api/uploads/general", {
+                                                                method: "POST",
+                                                                headers: { Authorization: `Bearer ${token}` },
+                                                                body: fd,
+                                                            });
+                                                            if (uploadRes.ok) {
+                                                                const uploadData = await uploadRes.json();
+                                                                proofUrl = uploadData.url;
+                                                            }
+                                                        }
+
+                                                        await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { 
+                                                            method: "upi",
+                                                            proofImageUrl: proofUrl,
+                                                            proofImageKey: proofUrl
+                                                        });
+                                                        
+                                                        setUpiProofRefund(null);
+                                                        handleAction(selectedBooking, "Completed");
+                                                        setIsActionModalOpen(false);
+                                                    } catch (err: any) {
+                                                        alert(err.message || "Failed to refund deposit");
+                                                    } finally {
+                                                        setUploadingRefund(false);
+                                                    }
                                                 }}
-                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors border border-indigo-200 col-span-1"
+                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors border border-indigo-200 col-span-1 disabled:opacity-50"
                                             >
-                                                <span className="font-bold text-[10px] bg-indigo-200 text-indigo-800 px-1 py-0.5 rounded-sm leading-none">UPI</span> <span className="text-xs">UPI</span>
+                                                {uploadingRefund ? <Loader2 size={16} className="animate-spin text-indigo-600" /> : <span className="font-bold text-[10px] bg-indigo-200 text-indigo-800 px-1 py-0.5 rounded-sm leading-none">UPI</span>}
+                                                <span className="text-xs">UPI</span>
                                             </button>
+
                                             <button
+                                                disabled={uploadingRefund}
                                                 onClick={() => {
                                                     handleAction(selectedBooking, "Completed");
                                                     setIsActionModalOpen(false);
                                                 }}
-                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold rounded-xl transition-colors border border-slate-200 hover:border-red-200 col-span-1 text-xs"
+                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold rounded-xl transition-colors border border-slate-200 hover:border-red-200 col-span-1 text-xs disabled:opacity-50"
                                             >
                                                 <Ban size={16} /> <span className="text-center px-1">Don't Refund<br />Deposit</span>
                                             </button>

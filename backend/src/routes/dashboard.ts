@@ -422,11 +422,13 @@ router.get("/property-status", authMiddleware, async (req, res) => {
             });
             const balanceUpi = bookingUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
             const depositUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
+            const refundUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit_refund");
             return {
                 ...b,
                 customerPhone: b.customerPhone ? decrypt(b.customerPhone) : null,
                 balanceUpiId: balanceUpi?.id || null,
                 depositUpiId: depositUpi?.id || null,
+                refundUpiId: refundUpi?.id || null,
                 upiPayments: bookingUpiPayments.map(upi => ({
                     id: upi.id,
                     paymentType: upi.paymentType,

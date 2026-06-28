@@ -1283,6 +1283,8 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
                     guestName: booking.customerName || null,
                     amount: -depositAmt,
                     paymentType: "deposit_refund",
+                    proofImageUrl: req.body.proofImageUrl || null,
+                    proofImageKey: req.body.proofImageKey || null,
                     note: `Security deposit refund — ${booking.property?.name || "Staycation"}`,
                 },
             });

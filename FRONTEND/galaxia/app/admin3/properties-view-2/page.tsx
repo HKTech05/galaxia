@@ -42,6 +42,9 @@ interface Booking {
     subPropertyId?: number | null;
     balanceUpiId?: number | null;
     depositUpiId?: number | null;
+    refundUpiId?: number | null;
+    depositRefunded: boolean;
+    depositRefundMethod: string | null;
     upiPayments?: Array<{
         id: number;
         paymentType: string;
@@ -157,7 +160,7 @@ export default function PropertiesView2Page() {
                 }
             } else {
                 return (
-                    <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="inline-flex items-center bg-red-50 border border-red-100 text-red-600 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         Continue
                     </span>
                 );
@@ -251,7 +254,9 @@ export default function PropertiesView2Page() {
                 if (!isMatchingProp) return false;
                 
                 // For Amstel/Ambrose, match unit name
-                if (b.assignedUnit !== unitName) return false;
+                if (!b.assignedUnit) return false;
+                const units = b.assignedUnit.split(", ").map(u => u.trim());
+                if (!units.includes(unitName)) return false;
 
                 return true;
             });
@@ -471,6 +476,7 @@ export default function PropertiesView2Page() {
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">People</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Deposit</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Deposit Refunded</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Food Bill</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
                             </tr>
@@ -478,14 +484,14 @@ export default function PropertiesView2Page() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={9} className="px-6 py-12 text-center">
+                                    <td colSpan={10} className="px-6 py-12 text-center">
                                         <Loader2 className="animate-spin mx-auto text-indigo-500" size={28} />
                                         <p className="text-sm text-slate-500 mt-2">Loading check-in data...</p>
                                     </td>
                                 </tr>
                             ) : displayRows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-6 py-12 text-center text-slate-500 font-medium">
+                                    <td colSpan={10} className="px-6 py-12 text-center text-slate-500 font-medium">
                                         No checkin records matching criteria.
                                     </td>
                                 </tr>
@@ -522,7 +528,7 @@ export default function PropertiesView2Page() {
                                                         <div className="flex items-center gap-1.5 flex-wrap">
                                                             <p className="font-extrabold text-slate-800 text-xs">{b.customerName}</p>
                                                             {modeFilter === "checkin" && b.checkInDate && b.checkInDate.slice(0, 10) !== selectedDateStr && (
-                                                                <span className="text-[9px] text-indigo-600 bg-indigo-50 border border-indigo-100 font-extrabold px-1.5 py-0.25 rounded uppercase">
+                                                                <span className="text-[9px] text-red-600 bg-red-50 border border-red-100 font-extrabold px-1.5 py-0.25 rounded uppercase">
                                                                     Continue
                                                                 </span>
                                                             )}
@@ -606,6 +612,47 @@ export default function PropertiesView2Page() {
                                                             </div>
                                                         )}
                                                     </div>
+                                                ) : (
+                                                    <span className="text-slate-300 font-semibold text-xs">—</span>
+                                                )}
+                                            </td>
+
+                                            {/* Deposit Refunded Column */}
+                                            <td className="px-5 py-4 align-middle text-right">
+                                                {b ? (
+                                                    b.depositRefunded ? (
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-xs font-black text-slate-800">₹{(b.securityDeposit || 0).toLocaleString("en-IN")}</span>
+                                                            {b.depositRefundMethod && (
+                                                                <div className="mt-1">
+                                                                    {b.depositRefundMethod.toLowerCase().includes("upi") ? (
+                                                                        b.refundUpiId ? (
+                                                                            <button
+                                                                                onClick={() => handleViewProof(b.refundUpiId!)}
+                                                                                className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                            >
+                                                                                UPI
+                                                                            </button>
+                                                                        ) : (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                                                                UPI
+                                                                            </span>
+                                                                        )
+                                                                    ) : (
+                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                            CASH
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-200 font-bold px-1.5 py-0.5 rounded uppercase">
+                                                                Pending
+                                                            </span>
+                                                        </div>
+                                                    )
                                                 ) : (
                                                     <span className="text-slate-300 font-semibold text-xs">—</span>
                                                 )}
