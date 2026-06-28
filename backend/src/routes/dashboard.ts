@@ -318,6 +318,15 @@ router.get("/property-status", authMiddleware, async (req, res) => {
             normalizedRefs.push(`#${clean}`);
             normalizedRefs.push(`#${clean.toLowerCase()}`);
             normalizedRefs.push(`#${clean.toUpperCase()}`);
+
+            // If it starts with ST- prefix, also fetch variant with numeric suffix only
+            const numOnly = clean.toLowerCase().replace(/^st-?/, "");
+            if (numOnly && numOnly !== clean.toLowerCase()) {
+                normalizedRefs.push(numOnly);
+                normalizedRefs.push(numOnly.toUpperCase());
+                normalizedRefs.push(`#${numOnly}`);
+                normalizedRefs.push(`#${numOnly.toUpperCase()}`);
+            }
         });
 
         const upiPayments = normalizedRefs.length > 0 ? await prisma.upiPayment.findMany({
@@ -338,12 +347,12 @@ router.get("/property-status", authMiddleware, async (req, res) => {
 
             const propUpiPayments = booking ? upiPayments.filter(upi => {
                 if (!upi.bookingRef || !booking.bookingRef) return false;
-                const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
-                const bRef = booking.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
+                const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
+                const bRef = booking.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
                 return uRef === bRef;
             }) : [];
-            const balanceUpi = propUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
-            const depositUpi = propUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
+            const balanceUpi = propUpiPayments.find(upi => upi.paymentType === "balance");
+            const depositUpi = propUpiPayments.find(upi => upi.paymentType === "deposit");
 
             return {
                 ...p,
@@ -358,12 +367,12 @@ router.get("/property-status", authMiddleware, async (req, res) => {
 
                     const spUpiPayments = spBooking ? upiPayments.filter(upi => {
                         if (!upi.bookingRef || !spBooking.bookingRef) return false;
-                        const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
-                        const bRef = spBooking.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
+                        const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
+                        const bRef = spBooking.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
                         return uRef === bRef;
                     }) : [];
-                    const spBalanceUpi = spUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
-                    const spDepositUpi = spUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
+                    const spBalanceUpi = spUpiPayments.find(upi => upi.paymentType === "balance");
+                    const spDepositUpi = spUpiPayments.find(upi => upi.paymentType === "deposit");
 
                     return {
                         ...sp,
@@ -416,12 +425,12 @@ router.get("/property-status", authMiddleware, async (req, res) => {
         const decryptedBookings = activeBookings.map(b => {
             const bookingUpiPayments = upiPayments.filter(upi => {
                 if (!upi.bookingRef || !b.bookingRef) return false;
-                const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
-                const bRef = b.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
+                const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
+                const bRef = b.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
                 return uRef === bRef;
             });
-            const balanceUpi = bookingUpiPayments.find(upi => upi.paymentType === "balance" && (upi.proofImageKey || upi.proofImageUrl));
-            const depositUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit" && (upi.proofImageKey || upi.proofImageUrl));
+            const balanceUpi = bookingUpiPayments.find(upi => upi.paymentType === "balance");
+            const depositUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit");
             const refundUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit_refund");
             return {
                 ...b,
