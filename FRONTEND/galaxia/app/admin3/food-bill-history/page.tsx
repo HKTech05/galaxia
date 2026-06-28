@@ -43,20 +43,20 @@ export default function FoodHistoryPage() {
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [loadingProof, setLoadingProof] = useState<boolean>(false);
 
-    const handleViewProof = async (upiPaymentId: number) => {
+    const handleViewProof = async (logId: number) => {
         try {
             setLoadingProof(true);
             const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
-            const res = await fetch(`/api/upi-payments/${upiPaymentId}/proof`, {
-                headers: { Authorization: `Bearer ${token}` }
+            const res = await fetch(`/api/upi-payments/image/${logId}`, {
+                headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error("Failed to load proof image");
-            const data = await res.json();
-            if (data.url) {
-                setLightboxImage(data.url);
-            } else {
-                alert("No proof image found for this payment.");
+            if (!res.ok) {
+                alert("Failed to load proof image");
+                return;
             }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            setLightboxImage(url);
         } catch (err: any) {
             alert(err.message || "Failed to load proof image");
         } finally {

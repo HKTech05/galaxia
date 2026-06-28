@@ -85,8 +85,20 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req: AuthRe
             }
         }
         if (!resolvedEmployeeId && bookingRef) {
+            const cleanRef = bookingRef.replace("#", "").trim();
+            const numOnly = cleanRef.toLowerCase().replace(/^st-?/, "");
             const stayBooking = await prisma.staycationBooking.findFirst({
-                where: { bookingRef }
+                where: {
+                    bookingRef: {
+                        in: [
+                            cleanRef,
+                            cleanRef.toLowerCase(),
+                            cleanRef.toUpperCase(),
+                            numOnly,
+                            numOnly.toUpperCase()
+                        ]
+                    }
+                }
             });
             if (stayBooking) {
                 const emp = await prisma.employee.findFirst({

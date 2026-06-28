@@ -307,33 +307,8 @@ router.get("/property-status", authMiddleware, async (req, res) => {
             console.log(`  booking #${b.id}: ${b.customerName} @ propId=${b.propertyId} subPropId=${b.subPropertyId} status=${b.status} checkIn=${b.checkInDate} checkOut=${b.checkOutDate}`);
         });
 
-        // Fetch matching UpiPayments for active bookings (case-insensitive, optional leading #)
-        const bookingRefs = activeBookings.map(b => b.bookingRef).filter(Boolean) as string[];
-        const normalizedRefs: string[] = [];
-        bookingRefs.forEach(r => {
-            const clean = r.replace("#", "").trim();
-            normalizedRefs.push(clean);
-            normalizedRefs.push(clean.toLowerCase());
-            normalizedRefs.push(clean.toUpperCase());
-            normalizedRefs.push(`#${clean}`);
-            normalizedRefs.push(`#${clean.toLowerCase()}`);
-            normalizedRefs.push(`#${clean.toUpperCase()}`);
-
-            // If it starts with ST- prefix, also fetch variant with numeric suffix only
-            const numOnly = clean.toLowerCase().replace(/^st-?/, "");
-            if (numOnly && numOnly !== clean.toLowerCase()) {
-                normalizedRefs.push(numOnly);
-                normalizedRefs.push(numOnly.toUpperCase());
-                normalizedRefs.push(`#${numOnly}`);
-                normalizedRefs.push(`#${numOnly.toUpperCase()}`);
-            }
-        });
-
-        const upiPayments = normalizedRefs.length > 0 ? await prisma.upiPayment.findMany({
-            where: {
-                bookingRef: { in: Array.from(new Set(normalizedRefs)) },
-            }
-        }) : [];
+        // Fetch all UpiPayments to match them prefix/case-insensitively in JS
+        const upiPayments = await prisma.upiPayment.findMany();
 
         // Decorate properties with check-in info for frontend
         const decoratedProperties = properties.map(p => {
