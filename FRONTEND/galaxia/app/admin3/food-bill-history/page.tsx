@@ -11,6 +11,7 @@ interface FoodBill {
     amount: number;
     paymentMethod: string;
     upiProofUrl: string | null;
+    upiPaymentId?: number | null;
     createdAt: string;
     creator?: { displayName: string } | null;
     booking?: {
@@ -38,6 +39,30 @@ export default function FoodHistoryPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedBill, setSelectedBill] = useState<FoodBill | null>(null);
+
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+    const [loadingProof, setLoadingProof] = useState<boolean>(false);
+
+    const handleViewProof = async (upiPaymentId: number) => {
+        try {
+            setLoadingProof(true);
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/upi-payments/${upiPaymentId}/proof`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("Failed to load proof image");
+            const data = await res.json();
+            if (data.url) {
+                setLightboxImage(data.url);
+            } else {
+                alert("No proof image found for this payment.");
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to load proof image");
+        } finally {
+            setLoadingProof(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -205,13 +230,37 @@ export default function FoodHistoryPage() {
                                         </td>
                                         <td className="px-4 md:px-6 py-3 font-black text-emerald-700 font-bold">₹{bill.amount.toLocaleString("en-IN")}</td>
                                         <td className="px-4 md:px-6 py-3">
-                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                                bill.paymentMethod === "cash"
-                                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                    : "bg-purple-50 text-purple-700 border-purple-200"
-                                            }`}>
-                                                {bill.paymentMethod}
-                                            </span>
+                                            {bill.paymentMethod.toLowerCase() === "cash" ? (
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-50 text-amber-700 border-amber-200">
+                                                    CASH
+                                                </span>
+                                            ) : (
+                                                bill.upiProofUrl ? (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setLightboxImage(bill.upiProofUrl);
+                                                        }}
+                                                        className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 transition-colors cursor-pointer"
+                                                    >
+                                                        UPI
+                                                    </button>
+                                                ) : bill.upiPaymentId ? (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleViewProof(bill.upiPaymentId!);
+                                                        }}
+                                                        className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 transition-colors cursor-pointer"
+                                                    >
+                                                        UPI
+                                                    </button>
+                                                ) : (
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-indigo-50 text-indigo-700 border-indigo-200">
+                                                        UPI
+                                                    </span>
+                                                )
+                                            )}
                                         </td>
                                         <td className="px-4 md:px-6 py-3 text-xs font-semibold text-slate-500">{bill.creator?.displayName || "System"}</td>
                                     </tr>
@@ -297,6 +346,50 @@ export default function FoodHistoryPage() {
                                 <span className="text-slate-500 text-xs font-semibold mr-1">Total Bill Paid:</span>
                                 <IndianRupee size={16} /> {selectedBill.amount.toLocaleString("en-IN")}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* UPI Proof Lightbox */}
+            {lightboxImage && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 animate-in fade-in duration-200">
+                    <div className="relative max-w-3xl w-full max-h-[90vh] flex flex-col bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-4 border-b border-slate-800 shrink-0">
+                            <span className="text-sm font-bold text-slate-200">UPI Payment Proof</span>
+                            <button
+                                onClick={() => setLightboxImage(null)}
+                                className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        {/* Image Body */}
+                        <div className="flex-1 overflow-auto p-6 flex items-center justify-center bg-slate-950">
+                            <img
+                                src={lightboxImage}
+                                alt="UPI Proof"
+                                className="max-w-full max-h-[60vh] object-contain rounded-lg border border-slate-800 shadow-2xl"
+                            />
+                        </div>
+                        {/* Footer */}
+                        <div className="p-4 border-t border-slate-800 shrink-0 flex justify-end gap-3 bg-slate-900">
+                            <a
+                                href={lightboxImage}
+                                download="upi_proof.png"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer"
+                            >
+                                Open in New Tab
+                            </a>
+                            <button
+                                onClick={() => setLightboxImage(null)}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>

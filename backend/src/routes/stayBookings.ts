@@ -485,8 +485,9 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
                 if (allottedUnit && allottedUnit.trim() !== "") {
                     const guestPhone = decrypt(booking.customerPhone);
 
-                    // Menu URL routing
-                    const slugifiedUnit = allottedUnit.trim().toLowerCase().replace(/\s+/g, "-");
+                    // Menu URL routing (using only the first unit for slug in case of multiple units)
+                    const firstUnit = allottedUnit.split(",")[0].trim();
+                    const slugifiedUnit = firstUnit.toLowerCase().replace(/\s+/g, "-");
                     const menuUrl = `galaxiaresorts.com/hospitalityemenu/${slugifiedUnit}`;
 
                     await sendWhatsAppTemplateMessage(

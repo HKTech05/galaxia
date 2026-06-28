@@ -104,7 +104,25 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             },
         });
 
-        return res.json(bills);
+        // Fetch matching upi payments for food collections
+        const upiPayments = await prisma.upiPayment.findMany({
+            where: { paymentType: "food_collection" }
+        });
+
+        const mappedBills = bills.map(bill => {
+            const match = upiPayments.find(upi => {
+                if (!upi.bookingRef || !bill.booking?.bookingRef) return false;
+                const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
+                const bRef = bill.booking.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "");
+                return uRef === bRef && Math.abs(upi.amount - bill.amount) < 0.01;
+            });
+            return {
+                ...bill,
+                upiPaymentId: match?.id || null
+            };
+        });
+
+        return res.json(mappedBills);
     } catch (error) {
         console.error("List stay food bills error:", error);
         return res.status(500).json({ error: "Internal server error" });

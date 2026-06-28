@@ -498,6 +498,16 @@ export default function PropertiesView2Page() {
                             ) : (
                                 displayRows.map((row, idx) => {
                                     const b = row.booking;
+                                    
+                                    // Robust UPI lookups
+                                    const balanceUpi = b?.upiPayments?.find(u => u.paymentType === "balance") || b?.upiPayments?.find(u => u.amount === b.balanceAmount);
+                                    const depositUpi = b?.upiPayments?.find(u => u.paymentType === "deposit") || b?.upiPayments?.find(u => u.amount === b.securityDeposit);
+                                    const refundUpi = b?.upiPayments?.find(u => u.paymentType === "deposit_refund") || b?.upiPayments?.find(u => u.amount === -b.securityDeposit);
+
+                                    const balanceUpiId = balanceUpi?.id || b?.balanceUpiId || null;
+                                    const depositUpiId = depositUpi?.id || b?.depositUpiId || null;
+                                    const refundUpiId = refundUpi?.id || b?.refundUpiId || null;
+                                    
                                     return (
                                         <tr key={idx} className={`hover:bg-slate-50/50 transition-colors border-b border-slate-100 ${!b ? "bg-slate-50/20" : ""}`}>
                                             {/* Villa Allotted */}
@@ -559,9 +569,9 @@ export default function PropertiesView2Page() {
                                                         {b.balanceCollected && b.balanceMethod && (
                                                             <div className="mt-1">
                                                                 {b.balanceMethod.toLowerCase().includes("upi") || b.balanceMethod.toLowerCase().includes("online") ? (
-                                                                    b.balanceUpiId ? (
+                                                                    balanceUpiId ? (
                                                                         <button
-                                                                            onClick={() => handleViewProof(b.balanceUpiId!)}
+                                                                            onClick={() => handleViewProof(balanceUpiId)}
                                                                             className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
                                                                         >
                                                                             UPI
@@ -592,9 +602,9 @@ export default function PropertiesView2Page() {
                                                         {b.depositCollected && b.depositMethod && (
                                                             <div className="mt-1">
                                                                 {b.depositMethod.toLowerCase().includes("upi") ? (
-                                                                    b.depositUpiId ? (
+                                                                    depositUpiId ? (
                                                                         <button
-                                                                            onClick={() => handleViewProof(b.depositUpiId!)}
+                                                                            onClick={() => handleViewProof(depositUpiId)}
                                                                             className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
                                                                         >
                                                                             UPI
@@ -626,9 +636,9 @@ export default function PropertiesView2Page() {
                                                             {b.depositRefundMethod && (
                                                                 <div className="mt-1">
                                                                     {b.depositRefundMethod.toLowerCase().includes("upi") ? (
-                                                                        b.refundUpiId ? (
+                                                                        refundUpiId ? (
                                                                             <button
-                                                                                onClick={() => handleViewProof(b.refundUpiId!)}
+                                                                                onClick={() => handleViewProof(refundUpiId)}
                                                                                 className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
                                                                             >
                                                                                 UPI
