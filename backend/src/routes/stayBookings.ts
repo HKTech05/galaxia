@@ -424,6 +424,7 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
                 guestIds: true,
                 foodBills: true,
                 coupon: true,
+                payments: true,
             },
             orderBy: { checkInDate: "desc" },
         });
