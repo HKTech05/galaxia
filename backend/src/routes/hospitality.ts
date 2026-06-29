@@ -387,15 +387,18 @@ router.get("/allocations", async (req: AuthRequest, res) => {
         const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
         const endOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999);
 
+        // Only show allocations for Ambrose and Amstel Nest
         const bookings = await prisma.staycationBooking.findMany({
             where: {
-                status: { in: ["confirmed", "checked_in", "checked_out"] },
+                status: { in: ["confirmed", "checked_in"] },
                 checkInDate: { lte: endOfDay },
-                checkOutDate: { gte: startOfDay }
+                checkOutDate: { gte: startOfDay },
+                property: {
+                    slug: { in: ["ambrose", "amstel-nest"] }
+                }
             },
             include: {
-                subProperty: true,
-                property: true
+                subProperty: true
             }
         });
 
@@ -403,7 +406,7 @@ router.get("/allocations", async (req: AuthRequest, res) => {
             bookingId: b.id,
             bookingRef: b.bookingRef,
             guestName: b.customerName,
-            villaName: b.assignedUnit || b.subProperty?.name || b.property?.name || "Unassigned",
+            villaName: b.assignedUnit || b.subProperty?.name || "Unassigned",
             checkInDate: b.checkInDate,
             checkOutDate: b.checkOutDate,
             status: b.status

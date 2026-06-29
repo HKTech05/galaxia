@@ -40,6 +40,7 @@ export default function FoodHistoryPage() {
     const [logs, setLogs] = useState<ChefLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [checkingRole, setCheckingRole] = useState(true);
+    const [userRole, setUserRole] = useState<string>("");
     const [searchTerm, setSearchTerm] = useState("");
     const [dateFrom, setDateFrom] = useState<string>("");
     const [dateTo, setDateTo] = useState<string>("");
@@ -96,6 +97,7 @@ export default function FoodHistoryPage() {
             if (data?.role === "chef") {
                 router.replace("/admin3/chef");
             } else {
+                setUserRole(data?.role || "");
                 setCheckingRole(false);
                 fetchData();
             }
@@ -169,7 +171,8 @@ export default function FoodHistoryPage() {
                 </button>
             </div>
 
-            {/* Summary Cards */}
+            {/* Summary Cards — only visible to owner/developer */}
+            {(userRole === "owner" || userRole === "developer") && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Food Revenue</p>
@@ -193,6 +196,7 @@ export default function FoodHistoryPage() {
                     <p className="text-[10px] font-bold text-emerald-400 mt-1">Collected at reception</p>
                 </div>
             </div>
+            )}
 
             {/* Search and Filters */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
