@@ -495,4 +495,108 @@ router.put("/menu", async (req: AuthRequest, res) => {
     }
 });
 
+// 8. GET /api/hospitality/insights — Aggregated item order analytics
+router.get("/insights", async (req: AuthRequest, res) => {
+    try {
+        const allRequests = await prisma.hospitalityRequest.findMany({
+            where: { status: "fulfilled" },
+            select: { items: true, itemCategory: true, createdAt: true, villaName: true }
+        });
+
+        const menu = getMenuItems();
+
+        // Assumed cost prices (placeholder — ~50% of selling price as estimated wholesale cost)
+        const costMultiplier: Record<string, number> = {};
+        menu.forEach((item: any) => {
+            // Rough heuristic: cheaper items have higher cost ratio, expensive items lower
+            if (item.price <= 50) costMultiplier[item.id] = 0.55;
+            else if (item.price <= 100) costMultiplier[item.id] = 0.45;
+            else if (item.price <= 200) costMultiplier[item.id] = 0.40;
+            else costMultiplier[item.id] = 0.35;
+        });
+
+        // Build per-item stats
+        const itemStats: Record<string, {
+            id: string; name: string; price: number; category: string;
+            totalOrdered: number; totalRevenue: number; estimatedCost: number;
+            orderDates: string[];
+        }> = {};
+
+        // Initialize from menu
+        menu.forEach((item: any) => {
+            itemStats[item.id] = {
+                id: item.id, name: item.name, price: item.price, category: item.category,
+                totalOrdered: 0, totalRevenue: 0, estimatedCost: 0, orderDates: []
+            };
+        });
+
+        // Aggregate from fulfilled requests
+        let totalOrders = 0;
+        let totalRevenue = 0;
+        const categoryStats: Record<string, { orders: number; revenue: number; cost: number }> = {
+            "Normal": { orders: 0, revenue: 0, cost: 0 },
+            "High Tea": { orders: 0, revenue: 0, cost: 0 },
+            "Timepass": { orders: 0, revenue: 0, cost: 0 }
+        };
+
+        for (const req of allRequests) {
+            const items = req.items as any[];
+            if (!Array.isArray(items)) continue;
+            totalOrders++;
+            const dateStr = req.createdAt.toISOString().split("T")[0];
+
+            for (const item of items) {
+                const qty = item.quantity || 1;
+                const itemId = item.id || item.name?.toLowerCase().replace(/\s+/g, "_");
+                const price = item.price || 0;
+                const revenue = price * qty;
+                const costRatio = costMultiplier[itemId] || 0.45;
+                const cost = Math.round(price * costRatio) * qty;
+
+                if (!itemStats[itemId]) {
+                    itemStats[itemId] = {
+                        id: itemId, name: item.name || itemId, price, category: req.itemCategory || "Normal",
+                        totalOrdered: 0, totalRevenue: 0, estimatedCost: 0, orderDates: []
+                    };
+                }
+
+                itemStats[itemId].totalOrdered += qty;
+                itemStats[itemId].totalRevenue += revenue;
+                itemStats[itemId].estimatedCost += cost;
+                if (!itemStats[itemId].orderDates.includes(dateStr)) {
+                    itemStats[itemId].orderDates.push(dateStr);
+                }
+
+                totalRevenue += revenue;
+                const cat = req.itemCategory || "Normal";
+                if (categoryStats[cat]) {
+                    categoryStats[cat].orders += qty;
+                    categoryStats[cat].revenue += revenue;
+                    categoryStats[cat].cost += cost;
+                }
+            }
+        }
+
+        const itemList = Object.values(itemStats)
+            .filter(i => i.totalOrdered > 0)
+            .sort((a, b) => b.totalOrdered - a.totalOrdered);
+
+        const totalEstimatedCost = itemList.reduce((s, i) => s + i.estimatedCost, 0);
+
+        return res.json({
+            totalOrders,
+            totalRevenue,
+            totalEstimatedCost,
+            totalProfit: totalRevenue - totalEstimatedCost,
+            categoryStats,
+            items: itemList,
+            mostOrdered: itemList.slice(0, 5),
+            leastOrdered: [...itemList].sort((a, b) => a.totalOrdered - b.totalOrdered).slice(0, 5),
+        });
+    } catch (error) {
+        console.error("Error generating insights:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

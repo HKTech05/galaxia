@@ -1032,90 +1032,7 @@ export default function ChefPortalPage() {
                 </div>
             )}
 
-            {/* View Tabs Selector */}
-            <div className="flex items-center gap-4 border-b border-slate-200 pb-2">
-                <button
-                    onClick={() => setCurrentChefView("checklist")}
-                    className={`pb-2 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${currentChefView === "checklist" ? "border-purple-600 text-purple-600 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-600"}`}
-                >
-                    Ingredients Checklist
-                </button>
-                <button
-                    onClick={() => setCurrentChefView("inventory")}
-                    className={`pb-2 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${currentChefView === "inventory" ? "border-purple-600 text-purple-600 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-600"}`}
-                >
-                    E-Menu Stock & Inventory
-                </button>
-            </div>
-
-            {currentChefView === "inventory" ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Package className="text-purple-600" size={22} />
-                                E-Menu Stock Levels
-                            </h2>
-                            <p className="text-xs text-slate-400 font-medium mt-1">
-                                Update stock counts. Setting an item's stock to 0 shows it as "Sold Out" on guest e-menus.
-                            </p>
-                        </div>
-                        <button
-                            onClick={handleSaveStock}
-                            disabled={savingStock}
-                            className="flex items-center gap-1.5 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
-                        >
-                            <Save size={14} />
-                            {savingStock ? "Saving..." : "Save Stock Levels"}
-                        </button>
-                    </div>
-
-                    <div className="space-y-6">
-                        {["Normal", "High Tea", "Timepass"].map(cat => {
-                            const catItems = menuItems.filter(item => item.category === cat);
-                            if (catItems.length === 0) return null;
-                            return (
-                                <div key={cat} className="space-y-3">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        {cat === "Normal" ? <ShoppingBag size={14} className="text-amber-500" /> : <Coffee size={14} className="text-purple-500" />}
-                                        {cat === "Normal" ? "Beverages & Refreshments" : cat}
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {catItems.map(item => {
-                                            const stockVal = editStocks[item.id] || "0";
-                                            const isOut = stockVal === "0";
-                                            return (
-                                                <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-sm transition-all">
-                                                    <div>
-                                                        <p className="text-sm font-extrabold text-slate-800">{item.name}</p>
-                                                        <p className="text-xs text-slate-400 font-bold font-mono mt-0.5">₹{item.price}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        {isOut && (
-                                                            <span className="text-[10px] font-black px-2 py-1 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
-                                                        )}
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-bold text-slate-500">Stock:</span>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                value={stockVal}
-                                                                onChange={e => setEditStocks(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                                                className="w-20 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            ) : (
-                /* Layout Grid */
+                {/* Layout Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 {/* Left Columns (Checklist & Search & Add) */}
@@ -1452,7 +1369,7 @@ export default function ChefPortalPage() {
                     )}
                 </div>
             </div>
-            )}
+
             {/* Quantity Modal (Centered, Responsive) */}
             {modalOpen && activeIngredient && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">

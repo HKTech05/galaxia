@@ -728,11 +728,11 @@ export default function HousekeepingPortalPage() {
                             <tbody className="divide-y divide-slate-50 text-xs">
                                 {allocations.map((alloc) => {
                                     const statusInfo = getStayStatus(alloc, selectedDate);
-                                    const unitName = alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
+                                    const unitName = alloc.villaName || alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
                                     return (
                                         <tr key={alloc.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="py-3 px-3 font-bold text-slate-800">{unitName}</td>
-                                            <td className="py-3 px-3 font-semibold text-slate-700">{alloc.customerName}</td>
+                                            <td className="py-3 px-3 font-semibold text-slate-700">{alloc.guestName || alloc.customerName}</td>
                                             <td className="py-3 px-3 font-mono font-medium text-slate-400">{alloc.bookingRef}</td>
                                             <td className="py-3 px-3 text-slate-500 font-medium">
                                                 {new Date(alloc.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} - {new Date(alloc.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}

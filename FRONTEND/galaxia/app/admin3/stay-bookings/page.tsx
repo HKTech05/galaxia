@@ -58,6 +58,7 @@ interface StayBooking {
     cakeMessage?: string;
     specialRequests?: string;
     bookingDate?: string;
+    assignedUnit?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -302,6 +303,7 @@ export default function StayBookingsPage() {
                 extraGuests: b.extraGuests || [],
                 addons: b.addons || null,
                 foodBills: b.foodBills || null,
+                assignedUnit: b.assignedUnit || null,
                 isDd: false,
             }));
             setBookings(mapped);
@@ -993,6 +995,11 @@ export default function StayBookingsPage() {
                                                 <span className="text-sm font-bold text-slate-800">{b.propertyName}</span>
                                                 {b.subPropertyName && (
                                                     <p className="text-[11px] text-slate-500 mt-0.5">{b.subPropertyName}</p>
+                                                )}
+                                                {b.assignedUnit && b.assignedUnit !== b.subPropertyName && (
+                                                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                                                        ✏️ Override: {b.assignedUnit}
+                                                    </span>
                                                 )}
                                             </td>
                                             <td className="px-5 py-4">

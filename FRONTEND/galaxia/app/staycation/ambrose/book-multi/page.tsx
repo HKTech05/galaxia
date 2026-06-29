@@ -108,14 +108,14 @@ export default function BookMultiPage() {
 
     // Site images from admin panel (for celebration thumbnails)
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
-    const [celebrationEnabled, setCelebrationEnabled] = useState(true);
+    const [celebrationEnabled, setCelebrationEnabled] = useState(false);
     useEffect(() => {
         fetch("/api/site-images").then(r => r.json()).then(data => {
             if (data && typeof data === 'object') setSiteImages(data);
         }).catch(() => {});
         // Fetch Ambrose property config for celebration toggle
         fetch("/api/properties/ambrose/availability").then(r => r.json()).then(data => {
-            if (data?.configuration?.celebrationEnabled === false) setCelebrationEnabled(false);
+            if (data?.configuration?.celebrationEnabled === true) setCelebrationEnabled(true);
         }).catch(() => {});
     }, []);
 

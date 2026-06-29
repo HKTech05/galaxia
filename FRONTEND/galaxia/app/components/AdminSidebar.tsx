@@ -272,7 +272,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
 
                                     {/* Owner/Dev only: Chef & Housekeeping Portal Links */}
                                     {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
-                                    {hasFullAccess && renderNavItem({ name: "Inventory", href: "/admin3/inventory", icon: Package })}
+                                    {hasFullAccess && renderNavItem({ name: "Inventory Management", href: "/admin3/inventory", icon: Package })}
                                     {hasFullAccess && renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
                                     {hasFullAccess && renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
 
