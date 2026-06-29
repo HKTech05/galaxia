@@ -6,6 +6,7 @@ import CustomDatePicker from "./CustomDatePicker";
 import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
 import ManualBookingModal from "./ManualBookingModal";
+import { compressImage } from "../../lib/imageCompressor";
 
 
 const getUnitOptions = (booking: any) => {
@@ -247,27 +248,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         try {
             let upiProofUrl = null;
             let upiProofKey = null;
-            if (foodBillForm.paymentMethod === "upi" && foodBillUpiProof) {
-                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
-                const formData = new FormData();
-                formData.append("file", foodBillUpiProof);
-                formData.append("category", "food-bill-proofs");
-                const uploadRes = await fetch("/api/uploads/general", {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: formData,
-                });
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json();
-                    upiProofUrl = uploadData.url;
-                    try {
-                        const urlObj = new URL(uploadData.url);
-                        upiProofKey = urlObj.pathname.slice(1);
-                    } catch {
-                        upiProofKey = uploadData.url;
-                    }
-                }
-            }
+             if (foodBillForm.paymentMethod === "upi" && foodBillUpiProof) {
+                 const compressed = await compressImage(foodBillUpiProof);
+                 const formData = new FormData();
+                 formData.append("file", compressed);
+                 formData.append("category", "food-bill-proofs");
+                 const uploadData = await api.upload<{ url: string }>("/uploads/general", formData);
+                 upiProofUrl = uploadData.url;
+                 try {
+                     const urlObj = new URL(uploadData.url);
+                     upiProofKey = urlObj.pathname.slice(1);
+                 } catch {
+                     upiProofKey = uploadData.url;
+                 }
+             }
             await api.post("/stay-food-bills", {
                 bookingId: foodBillBooking.rawId,
                 description: finalDescription,
@@ -478,37 +472,31 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 const hasUpiBalance = collected20 === "UPI" || (collected20 === "Split" && splitUpiBalance > 0);
                 const actualUpiBalanceAmt = collected20 === "UPI" ? balanceAmt : splitUpiBalance;
                 if (hasUpiBalance && upiProofBalance) {
+                    const compressed = await compressImage(upiProofBalance);
                     const fd = new FormData();
-                    fd.append("file", upiProofBalance);
+                    fd.append("file", compressed);
                     if (empId) fd.append("employeeId", String(empId));
                     fd.append("bookingRef", booking.id || '');
                     fd.append("guestName", booking.customer || '');
                     fd.append("amount", String(actualUpiBalanceAmt));
                     fd.append("paymentType", "balance");
                     fd.append("note", `Balance — ${selectedBooking.property}`);
-                    await fetch("/api/upi-payments/upload", {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: fd,
-                    });
+                    await api.upload("/upi-payments/upload", fd);
                 }
 
                 const hasUpiDeposit = collectedSec === "UPI" || (collectedSec === "Split" && splitUpiDeposit > 0);
                 const actualUpiDepositAmt = collectedSec === "UPI" ? depositAmt : splitUpiDeposit;
                 if (hasUpiDeposit && upiProofDeposit) {
+                    const compressed = await compressImage(upiProofDeposit);
                     const fd = new FormData();
-                    fd.append("file", upiProofDeposit);
+                    fd.append("file", compressed);
                     if (empId) fd.append("employeeId", String(empId));
                     fd.append("bookingRef", booking.id || '');
                     fd.append("guestName", booking.customer || '');
                     fd.append("amount", String(actualUpiDepositAmt));
                     fd.append("paymentType", "deposit");
                     fd.append("note", `Security deposit — ${selectedBooking.property}`);
-                    await fetch("/api/upi-payments/upload", {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: fd,
-                    });
+                    await api.upload("/upi-payments/upload", fd);
                 }
                 // Reset states
                 setUpiProofBalance(null);
@@ -1235,18 +1223,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                         setUploadingRefund(true);
                                                         let proofUrl = null;
                                                         if (upiProofRefund) {
-                                                            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                                                            const compressed = await compressImage(upiProofRefund);
                                                             const fd = new FormData();
-                                                            fd.append("file", upiProofRefund);
-                                                            const uploadRes = await fetch("/api/uploads/general", {
-                                                                method: "POST",
-                                                                headers: { Authorization: `Bearer ${token}` },
-                                                                body: fd,
-                                                            });
-                                                            if (uploadRes.ok) {
-                                                                const uploadData = await uploadRes.json();
-                                                                proofUrl = uploadData.url;
-                                                            }
+                                                            fd.append("file", compressed);
+                                                            const uploadData = await api.upload<{ url: string }>("/uploads/general", fd);
+                                                            proofUrl = uploadData.url;
                                                         }
 
                                                         await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { 
