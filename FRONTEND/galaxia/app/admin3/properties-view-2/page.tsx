@@ -209,8 +209,8 @@ export default function PropertiesView2Page() {
                                 UPI
                             </button>
                         ) : (
-                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                UPI
+                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200 uppercase" title="No proof uploaded">
+                                UPI (No Proof)
                             </span>
                         )
                     ) : (
@@ -577,8 +577,8 @@ export default function PropertiesView2Page() {
                                                                             UPI
                                                                         </button>
                                                                     ) : (
-                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                                                            UPI
+                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200 uppercase" title="No proof uploaded">
+                                                                            UPI (No Proof)
                                                                         </span>
                                                                     )
                                                                 ) : (
@@ -610,8 +610,8 @@ export default function PropertiesView2Page() {
                                                                             UPI
                                                                         </button>
                                                                     ) : (
-                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                                                            UPI
+                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200 uppercase" title="No proof uploaded">
+                                                                            UPI (No Proof)
                                                                         </span>
                                                                     )
                                                                 ) : (
@@ -644,8 +644,8 @@ export default function PropertiesView2Page() {
                                                                                 UPI
                                                                             </button>
                                                                         ) : (
-                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                                                                UPI
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200 uppercase" title="No proof uploaded">
+                                                                                UPI (No Proof)
                                                                             </span>
                                                                         )
                                                                     ) : (
