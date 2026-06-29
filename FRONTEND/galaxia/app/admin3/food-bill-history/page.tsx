@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Search, IndianRupee, Loader2, X, UtensilsCrossed, AlertTriangle, RefreshCw } from "lucide-react";
 import { api } from "../../../lib/api";
 
@@ -34,10 +35,14 @@ interface ChefLog {
 }
 
 export default function FoodHistoryPage() {
+    const router = useRouter();
     const [bills, setBills] = useState<FoodBill[]>([]);
     const [logs, setLogs] = useState<ChefLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [checkingRole, setCheckingRole] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [dateFrom, setDateFrom] = useState<string>("");
+    const [dateTo, setDateTo] = useState<string>("");
     const [selectedBill, setSelectedBill] = useState<FoodBill | null>(null);
 
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -87,7 +92,17 @@ export default function FoodHistoryPage() {
     };
 
     useEffect(() => {
-        fetchData();
+        api.get("/auth/me").then(data => {
+            if (data?.role === "chef") {
+                router.replace("/admin3/chef");
+            } else {
+                setCheckingRole(false);
+                fetchData();
+            }
+        }).catch(() => {
+            setCheckingRole(false);
+            fetchData();
+        });
     }, []);
 
     // Filter bills
@@ -96,19 +111,26 @@ export default function FoodHistoryPage() {
         const ref = b.booking?.bookingRef || "";
         const villa = b.booking?.assignedUnit || b.booking?.subProperty?.name || "";
         const s = searchTerm.toLowerCase();
-        return (
+        
+        const matchesSearch = (
             guest.toLowerCase().includes(s) ||
             ref.toLowerCase().includes(s) ||
             villa.toLowerCase().includes(s) ||
             `fb-${b.id}`.toLowerCase().includes(s) ||
             b.description.toLowerCase().includes(s)
         );
+
+        const billDateStr = b.createdAt.split("T")[0]; // YYYY-MM-DD
+        const matchesDateFrom = !dateFrom || billDateStr >= dateFrom;
+        const matchesDateTo = !dateTo || billDateStr <= dateTo;
+
+        return matchesSearch && matchesDateFrom && matchesDateTo;
     });
 
-    // Summary calculations
-    const totalCollected = bills.reduce((sum, b) => sum + (b.amount || 0), 0);
-    const cashCollected = bills.filter(b => b.paymentMethod === "cash").reduce((sum, b) => sum + (b.amount || 0), 0);
-    const upiCollected = bills.filter(b => b.paymentMethod === "upi").reduce((sum, b) => sum + (b.amount || 0), 0);
+    // Summary calculations (dynamic based on filtered list)
+    const totalCollected = filteredBills.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const cashCollected = filteredBills.filter(b => b.paymentMethod === "cash").reduce((sum, b) => sum + (b.amount || 0), 0);
+    const upiCollected = filteredBills.filter(b => b.paymentMethod === "upi").reduce((sum, b) => sum + (b.amount || 0), 0);
 
     // Get audit/modification logs matching selected bill's villa
     const getAuditLogsForBill = (bill: FoodBill) => {
@@ -119,6 +141,15 @@ export default function FoodHistoryPage() {
             return (log.actionType === "modify_request" || log.actionType === "delete_request") && details.includes(villa);
         });
     };
+
+    if (checkingRole) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh] text-slate-400 gap-2">
+                <Loader2 className="animate-spin text-indigo-600" size={28} />
+                <span className="text-sm font-semibold">Verifying access...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-6" style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
@@ -145,7 +176,7 @@ export default function FoodHistoryPage() {
                     <p className="text-2xl font-black text-slate-800 mt-1 flex items-center">
                         <IndianRupee size={20} className="mr-0.5" /> {totalCollected.toLocaleString("en-IN")}
                     </p>
-                    <p className="text-[10px] font-bold text-slate-400 mt-1">{bills.length} bill{bills.length !== 1 ? "s" : ""}</p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-1">{filteredBills.length} bill{filteredBills.length !== 1 ? "s" : ""}{(dateFrom || dateTo) ? " (filtered)" : ""}</p>
                 </div>
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-semibold">UPI Collection</p>
@@ -163,17 +194,40 @@ export default function FoodHistoryPage() {
                 </div>
             </div>
 
-            {/* Search */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div className="relative w-full sm:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search by guest name, villa, or bill ID…"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
-                    />
+            {/* Search and Filters */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-2 relative">
+                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Search</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search by guest name, villa, or bill ID…"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Date From</label>
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={e => setDateFrom(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Date To</label>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            onChange={e => setDateTo(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                        />
+                    </div>
                 </div>
             </div>
 

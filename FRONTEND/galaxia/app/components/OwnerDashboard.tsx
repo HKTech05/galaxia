@@ -206,6 +206,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar" | "bulk" | "calendar2">("insights");
     const [propertyStatusMode, setPropertyStatusMode] = useState<"checkin" | "checkout">("checkin");
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+    const [adminRole, setAdminRole] = useState<string>("");
+
+    // Reports Tab States
+    const [selectedReportsProps, setSelectedReportsProps] = useState<string[]>([]);
+    const [reportDateFrom, setReportDateFrom] = useState<Date>(new Date());
+    const [reportDateTo, setReportDateTo] = useState<Date>(new Date());
+    const [generatingReport, setGeneratingReport] = useState(false);
 
     const fetchImageBlob = async (logId: number): Promise<string | null> => {
         try {
@@ -312,6 +319,133 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     useEffect(() => {
         fetchCalendar2Data();
     }, [fetchCalendar2Data]);
+
+    const downloadCustomReportPDF = async (stayBookings: any[], ddBookings: any[]) => {
+        try {
+            const { default: jsPDF } = await import("jspdf");
+            const autoTable = (await import("jspdf-autotable")).default;
+
+            const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text("Galaxia Resorts — Custom Report", pageWidth / 2, 15, { align: "center" });
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            const dateFromStr = reportDateFrom.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+            const dateToStr = reportDateTo.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+            doc.text(`Period: ${dateFromStr} to ${dateToStr}`, pageWidth / 2, 22, { align: "center" });
+            doc.text(`Properties: ${selectedReportsProps.join(", ")}`, pageWidth / 2, 27, { align: "center" });
+
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`, pageWidth / 2, 32, { align: "center" });
+            doc.setTextColor(0);
+
+            // Summary Stats
+            let totalRevenue = 0;
+            let totalBookings = 0;
+            
+            // Calculate Staycation summary
+            const filteredStay = stayBookings.filter(b => selectedReportsProps.includes(b.property?.name));
+            filteredStay.forEach(b => {
+                totalRevenue += (b.totalAmount || 0);
+                totalBookings += 1;
+            });
+
+            // Calculate DD summary
+            let filteredDd: any[] = [];
+            if (selectedReportsProps.includes("Digital Diaries")) {
+                filteredDd = ddBookings;
+                filteredDd.forEach(b => {
+                    totalRevenue += (b.totalAmount || 0);
+                    totalBookings += 1;
+                });
+            }
+
+            const totalGst = filteredStay.reduce((sum, b) => sum + (b.gstAmount || 0), 0) + filteredDd.reduce((sum, b) => sum + (b.gstAmount || 0), 0);
+            const totalTaxable = totalRevenue - totalGst;
+
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Summary Totals`, 14, 42);
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Total Bookings Count: ${totalBookings}`, 14, 48);
+            doc.text(`Total Taxable Amount: ₹${totalTaxable.toLocaleString('en-IN')}`, 14, 53);
+            doc.text(`Total GST Charged: ₹${totalGst.toLocaleString('en-IN')}`, 14, 58);
+            doc.text(`Total Gross Revenue: ₹${totalRevenue.toLocaleString('en-IN')}`, 14, 63);
+
+            let startY = 70;
+
+            // Staycation Table
+            if (filteredStay.length > 0) {
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+                doc.text("Staycation Bookings", 14, startY);
+                
+                const tableHeaders = ["Booking ID", "Guest Name", "Property", "Check-in", "Check-out", "Amount", "Status"];
+                const tableRows = filteredStay.map(b => [
+                    b.bookingRef || `ID-${b.id}`,
+                    b.customerName,
+                    b.property?.name || "-",
+                    new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+                    new Date(b.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+                    `₹${(b.totalAmount || 0).toLocaleString('en-IN')}`,
+                    b.status
+                ]);
+
+                autoTable(doc, {
+                    head: [tableHeaders],
+                    body: tableRows,
+                    startY: startY + 3,
+                    theme: "striped",
+                    headStyles: { fillColor: [124, 58, 237] }, // Purple
+                    styles: { fontSize: 8 },
+                });
+                
+                startY = (doc as any).lastAutoTable.finalY + 12;
+            }
+
+            // DD Table
+            if (filteredDd.length > 0) {
+                if (startY > 240) {
+                    doc.addPage();
+                    startY = 20;
+                }
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+                doc.text("Digital Diaries Bookings", 14, startY);
+
+                const tableHeaders = ["Booking ID", "Guest Name", "Screen", "Date", "Slot", "Amount", "Status"];
+                const tableRows = filteredDd.map(b => [
+                    b.bookingRef || `#DD-${b.id}`,
+                    b.customerName,
+                    b.screen?.name || "-",
+                    new Date(b.bookingDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+                    b.startHour != null ? `${b.startHour}:00` : "N/A",
+                    `₹${(b.totalAmount || 0).toLocaleString('en-IN')}`,
+                    b.status
+                ]);
+
+                autoTable(doc, {
+                    head: [tableHeaders],
+                    body: tableRows,
+                    startY: startY + 3,
+                    theme: "striped",
+                    headStyles: { fillColor: [99, 102, 241] }, // Indigo
+                    styles: { fontSize: 8 },
+                });
+            }
+
+            doc.save(`galaxia_custom_report_${formatLocalDate(reportDateFrom)}_to_${formatLocalDate(reportDateTo)}.pdf`);
+        } catch (err) {
+            console.error("Failed to download PDF:", err);
+            alert("Failed to generate PDF report");
+        }
+    };
 
     const downloadCalendarPDF = async () => {
         try {
@@ -686,6 +820,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // Fetch dashboard data from API
     useEffect(() => {
+        api.get("/auth/me").then(data => {
+            setAdminRole(data?.role || "");
+        }).catch(() => {});
+
         // Map frontend timeRange to backend period format
         const periodMap: Record<string, string> = { '1m': '1month', '3m': '3months', '6m': '6months', '1y': 'year' };
         const periodParam = periodMap[timeRange] || '1month';
@@ -1222,9 +1360,23 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             ? item.extraGuests
             : (item._checkoutBooking?.extraGuests ?? item.extraGuests);
 
-        const resolvedStatus = propertyStatusMode === "checkin"
-            ? (item.checkedIn ? "Checked In" : "Pending")
-            : ((displayBooking?.bookingStatus === "checked_out" || displayBooking?.status === "checked_out" || item.bookingStatus === "checked_out") ? "Checked Out" : "Pending");
+        const isCheckedOut = displayBooking?.bookingStatus === "checked_out" || 
+                             displayBooking?.status === "checked_out" || 
+                             displayBooking?.status === "completed" || 
+                             displayBooking?.status === "Completed" || 
+                             item.bookingStatus === "checked_out" || 
+                             item.status === "checked_out" || 
+                             item.status === "completed" || 
+                             item.status === "Completed" || 
+                             item._checkoutBooking?.status === "checked_out" ||
+                             item._checkoutBooking?.status === "completed" ||
+                             item._checkoutBooking?.status === "Completed";
+
+        const resolvedStatus = isCheckedOut 
+            ? "Checked Out" 
+            : (propertyStatusMode === "checkin"
+                ? (item.checkedIn ? "Checked In" : "Pending")
+                : "Pending");
 
         const showContinueRed = propertyStatusMode === "checkin" && item.booked && !item.isCheckinDay;
 
@@ -1540,21 +1692,25 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div>
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Staycation Overview</h3>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
-                                    <p className="text-xl font-bold text-emerald-700 mt-1">₹{staycationRevenue.toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-emerald-500 font-medium mt-1">this period</p>
-                                </div>
+                                {(adminRole === "owner" || adminRole === "developer") && (
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
+                                        <p className="text-xl font-bold text-emerald-700 mt-1">₹{staycationRevenue.toLocaleString('en-IN')}</p>
+                                        <p className="text-[10px] text-emerald-500 font-medium mt-1">this period</p>
+                                    </div>
+                                )}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Occupancy Rate</p>
                                     <p className="text-xl font-bold text-purple-700 mt-1">{occupancyRate}%</p>
                                     <p className="text-[10px] text-purple-500 font-medium mt-1">{totalOccupied} / {totalUnits} units occupied</p>
                                 </div>
-                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Nightly Rate</p>
-                                    <p className="text-xl font-bold text-indigo-700 mt-1">₹{avgNightlyRate.toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-indigo-500 font-medium mt-1">Across all properties</p>
-                                </div>
+                                {(adminRole === "owner" || adminRole === "developer") && (
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Nightly Rate</p>
+                                        <p className="text-xl font-bold text-indigo-700 mt-1">₹{avgNightlyRate.toLocaleString('en-IN')}</p>
+                                        <p className="text-[10px] text-indigo-500 font-medium mt-1">Across all properties</p>
+                                    </div>
+                                )}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>
                                     <p className="text-xl font-bold text-amber-700 mt-1">{totalStayBookings}</p>
@@ -1567,21 +1723,25 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div>
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Digital Diaries Overview</h3>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
-                                    <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
-                                    <p className="text-[10px] text-violet-500 font-medium mt-1">this period</p>
-                                </div>
+                                {(adminRole === "owner" || adminRole === "developer") && (
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
+                                        <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
+                                        <p className="text-[10px] text-violet-500 font-medium mt-1">this period</p>
+                                    </div>
+                                )}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Bookings</p>
                                     <p className="text-xl font-bold text-sky-700 mt-1">{dashboardKPIs?.kpis?.totalDdBookings || 0}</p>
                                     <p className="text-[10px] text-sky-500 font-medium mt-1">Across all screens</p>
                                 </div>
-                                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Booking Value</p>
-                                    <p className="text-xl font-bold text-teal-700 mt-1">₹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
-                                    <p className="text-[10px] text-teal-500 font-medium mt-1">Per reservation</p>
-                                </div>
+                                {(adminRole === "owner" || adminRole === "developer") && (
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Booking Value</p>
+                                        <p className="text-xl font-bold text-teal-700 mt-1">₹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
+                                        <p className="text-[10px] text-teal-500 font-medium mt-1">Per reservation</p>
+                                    </div>
+                                )}
                                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cancellation Rate</p>
                                     <p className="text-xl font-bold text-rose-700 mt-1">0%</p>
@@ -1895,61 +2055,66 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                             <p className="text-sm text-slate-500 font-medium mb-6">Generate custom reports based on specific criteria.</p>
                         </div>
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-700 uppercase">Report Type</label>
-                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-600/20">
-                                        <option>Revenue Report</option>
-                                        <option>Occupancy Report</option>
-                                        <option>Guest Analytics</option>
-                                        <option>Payment Summary</option>
-                                        <option>Cancellation Report</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-700 uppercase">Property</label>
-                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-600/20">
-                                        <option>All Properties</option>
-                                        <option>Ambrose</option>
-                                        <option>Amstel Nest</option>
-                                        <option>Hill View</option>
-                                        <option>Mount View</option>
-                                        <option>Heavenly Villa</option>
-                                        <option>La Paraiso</option>
-                                        <option>Digital Diaries</option>
-                                    </select>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                    <label className="text-xs font-bold text-slate-700 uppercase block">Properties</label>
+                                    <div className="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3.5 max-h-32 overflow-y-auto">
+                                        {["Ambrose", "Amstel Nest", "Hill View", "Mount View", "Heavenly Villa", "La Paraiso", "Digital Diaries"].map(prop => (
+                                            <label key={prop} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedReportsProps.includes(prop)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedReportsProps([...selectedReportsProps, prop]);
+                                                        } else {
+                                                            setSelectedReportsProps(selectedReportsProps.filter(p => p !== prop));
+                                                        }
+                                                    }}
+                                                    className="rounded text-purple-600 focus:ring-purple-500"
+                                                />
+                                                {prop}
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-700 uppercase">Date From</label>
-                                    <CustomDatePicker date={propertyDate} onDateChange={setPropertyDate} />
+                                    <CustomDatePicker date={reportDateFrom} onDateChange={setReportDateFrom} />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-700 uppercase">Date To</label>
-                                    <CustomDatePicker date={propertyDate} onDateChange={setPropertyDate} />
+                                    <CustomDatePicker date={reportDateTo} onDateChange={setReportDateTo} />
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-700 uppercase">Payment Mode</label>
-                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-600/20">
-                                        <option>All</option>
-                                        <option>Cash</option>
-                                        <option>UPI</option>
-                                        <option>Online</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-700 uppercase">Booking Source</label>
-                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-600/20">
-                                        <option>All Sources</option>
-                                        <option>Website</option>
-                                        <option>Walk-in</option>
-                                        <option>Phone</option>
-                                    </select>
-                                </div>
-                                <div className="flex items-end">
-                                    <button className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold shadow-sm hover:bg-purple-700 transition-colors">
-                                        Generate Report
+                                <div className="flex items-end lg:col-span-3">
+                                    <button
+                                        onClick={async () => {
+                                            if (selectedReportsProps.length === 0) {
+                                                alert("Please select at least one property.");
+                                                return;
+                                            }
+                                            setGeneratingReport(true);
+                                            try {
+                                                const fromStr = formatLocalDate(reportDateFrom);
+                                                const toStr = formatLocalDate(reportDateTo);
+                                                const [stayData, ddData] = await Promise.all([
+                                                    api.get<any[]>(`/stay-bookings?startDate=${fromStr}&endDate=${toStr}`),
+                                                    selectedReportsProps.includes("Digital Diaries")
+                                                        ? api.get<any[]>(`/bookings/dd?startDate=${fromStr}&endDate=${toStr}`)
+                                                        : Promise.resolve([])
+                                                ]);
+                                                await downloadCustomReportPDF(stayData || [], ddData || []);
+                                            } catch (err) {
+                                                console.error(err);
+                                                alert("Error generating report");
+                                            } finally {
+                                                setGeneratingReport(false);
+                                            }
+                                        }}
+                                        disabled={generatingReport}
+                                        className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold shadow-sm hover:bg-purple-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {generatingReport ? "Generating Report..." : "Generate & Download PDF Report"}
                                     </button>
                                 </div>
                             </div>
@@ -2782,6 +2947,18 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     ? villa.depositCollected
                                     : (villa._checkoutBooking?.status === 'checked_out' || villa._checkoutBooking?.depositRefunded);
 
+                                const isCheckedOut = displayBooking?.bookingStatus === "checked_out" || 
+                                                     displayBooking?.status === "checked_out" || 
+                                                     displayBooking?.status === "completed" || 
+                                                     displayBooking?.status === "Completed" || 
+                                                     villa.bookingStatus === "checked_out" || 
+                                                     villa.status === "checked_out" || 
+                                                     villa.status === "completed" || 
+                                                     villa.status === "Completed" || 
+                                                     villa._checkoutBooking?.status === "checked_out" ||
+                                                     villa._checkoutBooking?.status === "completed" ||
+                                                     villa._checkoutBooking?.status === "Completed";
+
                                 const isDepositRefunded = displayBooking === villa
                                     ? villa.depositRefunded
                                     : (villa._checkoutBooking?.depositRefunded ?? villa.depositRefunded);
@@ -2802,9 +2979,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     ? villa.extraGuests
                                     : (villa._checkoutBooking?.extraGuests ?? villa.extraGuests);
 
-                                const resolvedStatus = propertyStatusMode === "checkin"
-                                    ? (villa.checkedIn ? "Checked In" : "Pending")
-                                    : ((displayBooking?.bookingStatus === "checked_out" || displayBooking?.status === "checked_out" || villa.bookingStatus === "checked_out") ? "Checked Out" : "Pending");
+                                const resolvedStatus = isCheckedOut 
+                                     ? "Checked Out" 
+                                     : (propertyStatusMode === "checkin"
+                                         ? (villa.checkedIn ? "Checked In" : "Pending")
+                                         : "Pending");
 
                                 const showContinueRed = propertyStatusMode === "checkin" && villa.booked && !villa.isCheckinDay;
 
@@ -3287,19 +3466,52 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const renderImageGroup = (group: ImageGroup) => {
         const isOpen = !collapsedSections.has(group.id);
         const totalImages = group.subSections.reduce((sum, sub) => sum + (siteImages[sub.id]?.length || 0), 0);
+        const property = propertyList.find(p => p.slug === group.id);
 
         return (
             <div key={group.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <button
-                    onClick={() => toggleSection(group.id)}
-                    className="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
+                <div className="w-full flex items-center justify-between p-5 hover:bg-slate-50/50 transition-colors">
+                    <button
+                        onClick={() => toggleSection(group.id)}
+                        className="flex items-center gap-3 flex-1 text-left"
+                    >
                         <ChevronRight size={18} className={`text-slate-500 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                         <span className="text-sm font-bold text-slate-800">{group.label}</span>
                         <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-md">{totalImages} photos</span>
-                    </div>
-                </button>
+                    </button>
+                    {property && (
+                        <div className="flex items-center gap-2 mr-4" onClick={e => e.stopPropagation()}>
+                            <span className="text-xs font-semibold text-slate-500">Celebration Add-on:</span>
+                            <button
+                                onClick={async () => {
+                                    const currentConfig = property.configuration || {};
+                                    const newConfig = {
+                                        ...currentConfig,
+                                        celebrationEnabled: !currentConfig.celebrationEnabled
+                                    };
+                                    try {
+                                        await api.patch(`/properties/${property.id}`, {
+                                            configuration: newConfig
+                                        });
+                                        // Update local state
+                                        setPropertyList(prev => prev.map(p => p.id === property.id ? { ...p, configuration: newConfig } : p));
+                                    } catch (err: any) {
+                                        alert("Failed to update celebration addon status");
+                                    }
+                                }}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    property.configuration?.celebrationEnabled ? "bg-purple-600" : "bg-slate-200"
+                                }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                        property.configuration?.celebrationEnabled ? "translate-x-5" : "translate-x-0"
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                    )}
+                </div>
                 {isOpen && (
                     <div className="px-5 pb-5 border-t border-slate-100 space-y-3 mt-3">
                         {group.subSections.map(sub => renderImageSubSection(sub))}

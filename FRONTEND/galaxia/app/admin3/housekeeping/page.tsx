@@ -561,22 +561,24 @@ export default function HousekeepingPortalPage() {
                                             </div>
 
                                             <div className="pt-2 flex justify-between items-center gap-2 border-t border-slate-200/40 mt-1">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Request"
-                                                    >
-                                                        <Edit size={14} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Request"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
+                                                {userRole !== "housekeeping" && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(req)}
+                                                            className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                            title="Edit Request"
+                                                        >
+                                                            <Edit size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteRequest(req.id)}
+                                                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                            title="Delete Request"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <button
                                                     onClick={() => handleFulfilRequest(req.id)}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100 hover:shadow"
@@ -657,22 +659,24 @@ export default function HousekeepingPortalPage() {
                                                         <span className="text-slate-400 font-semibold">Unbilled</span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Request"
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Request"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
+                                                {userRole !== "housekeeping" && (
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(req)}
+                                                            className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                            title="Edit Request"
+                                                        >
+                                                            <Edit size={12} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteRequest(req.id)}
+                                                            className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
+                                                            title="Delete Request"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

@@ -6,6 +6,7 @@ import {
     Search, 
     Plus, 
     Trash2, 
+    Edit,
     Check, 
     Loader2, 
     FileText, 
@@ -15,7 +16,10 @@ import {
     ClipboardCheck,
     Download,
     Coffee,
-    RefreshCw
+    RefreshCw,
+    Package,
+    Save,
+    ShoppingBag
 } from "lucide-react";
 import { api } from "../../../lib/api";
 
@@ -83,9 +87,12 @@ export default function ChefPortalPage() {
     // Timepass Requests
     const [timepassRequests, setTimepassRequests] = useState<any[]>([]);
     const [loadingTimepass, setLoadingTimepass] = useState(false);
+    const [timepassTab, setTimepassTab] = useState<"active" | "fulfilled">("active");
 
     // Chef New Request Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+    const [editingRequestId, setEditingRequestId] = useState<number | null>(null);
     const [formVilla, setFormVilla] = useState("");
     const [formCategory, setFormCategory] = useState<"High Tea" | "Timepass" | "Normal">("High Tea");
     const [formQuantities, setFormQuantities] = useState<Record<string, number>>({});
@@ -93,11 +100,48 @@ export default function ChefPortalPage() {
     const [menuItems, setMenuItems] = useState<any[]>([]);
     const [modalSubmitting, setModalSubmitting] = useState(false);
 
+    // E-menu Stock/Inventory management inside Chef portal
+    const [currentChefView, setCurrentChefView] = useState<"checklist" | "inventory">("checklist");
+    const [savingStock, setSavingStock] = useState(false);
+    const [editStocks, setEditStocks] = useState<Record<string, string>>({});
+
     useEffect(() => {
         api.get<any[]>("/hospitality/menu").then(data => {
-            if (Array.isArray(data)) setMenuItems(data);
+            if (Array.isArray(data)) {
+                setMenuItems(data);
+                const stocks: Record<string, string> = {};
+                data.forEach(item => {
+                    stocks[item.id] = item.stock != null ? String(item.stock) : "100";
+                });
+                setEditStocks(stocks);
+            }
         }).catch(() => {});
     }, []);
+
+    const handleSaveStock = async () => {
+        setSavingStock(true);
+        try {
+            const updatedMenu = menuItems.map(item => {
+                const stockVal = editStocks[item.id];
+                const stockNum = stockVal === "" ? 0 : parseInt(stockVal);
+                if (isNaN(stockNum) || stockNum < 0) {
+                    throw new Error(`Invalid stock value for ${item.name}`);
+                }
+                return {
+                    ...item,
+                    stock: stockNum
+                };
+            });
+
+            await api.put("/hospitality/menu", { menuItems: updatedMenu });
+            setMenuItems(updatedMenu);
+            alert("E-menu stock updated successfully!");
+        } catch (err: any) {
+            alert(err.message || "Failed to update stock.");
+        } finally {
+            setSavingStock(false);
+        }
+    };
 
     const handleChefCreateSubmit = async () => {
         if (!formVilla.trim()) {
@@ -122,21 +166,66 @@ export default function ChefPortalPage() {
 
         setModalSubmitting(true);
         try {
-            await api.post("/hospitality/requests", {
-                villaName: formVilla,
-                itemCategory: formCategory,
-                items: selectedItems
-            });
+            if (modalMode === "edit" && editingRequestId) {
+                await api.put(`/hospitality/requests/${editingRequestId}`, {
+                    villaName: formVilla,
+                    itemCategory: formCategory,
+                    items: selectedItems
+                });
+                alert("Request updated successfully!");
+            } else {
+                await api.post("/hospitality/requests", {
+                    villaName: formVilla,
+                    itemCategory: formCategory,
+                    items: selectedItems
+                });
+                alert("Request created successfully!");
+            }
             setIsCreateModalOpen(false);
             setFormVilla("");
             setFormQuantities({});
+            setFormComments({});
             fetchHighTeaRequests();
             fetchTimepassRequests();
-            alert("Request created successfully!");
         } catch (err: any) {
-            alert(err.message || "Failed to create request.");
+            alert(err.message || "Failed to submit request.");
         } finally {
             setModalSubmitting(false);
+        }
+    };
+
+    const handleOpenEditModal = (req: any) => {
+        setModalMode("edit");
+        setEditingRequestId(req.id);
+        setFormVilla(req.villaName);
+        setFormCategory(req.itemCategory);
+        
+        const qtys: Record<string, number> = {};
+        const cmts: Record<string, string> = {};
+        
+        req.items.forEach((item: any) => {
+            const menuItem = menuItems.find(m => m.name.toLowerCase() === item.name.toLowerCase());
+            if (menuItem) {
+                qtys[menuItem.id] = item.quantity;
+                if (item.comment) {
+                    cmts[menuItem.id] = item.comment;
+                }
+            }
+        });
+        setFormQuantities(qtys);
+        setFormComments(cmts);
+        setIsCreateModalOpen(true);
+    };
+
+    const handleDeleteRequest = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this request?")) return;
+        try {
+            await api.delete(`/hospitality/requests/${id}`);
+            fetchHighTeaRequests();
+            fetchTimepassRequests();
+            alert("Request deleted successfully.");
+        } catch (err: any) {
+            alert(err.message || "Failed to delete request.");
         }
     };
 
@@ -650,8 +739,23 @@ export default function ChefPortalPage() {
                                                     ))}
                                                 </div>
                                             </div>
-
-                                            <div className="pt-2 flex justify-end">
+                                            <div className="pt-2 flex justify-between items-center border-t border-slate-200/40 mt-1">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Order"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Order"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
                                                 <button
                                                     onClick={() => handleFulfilHighTea(req.id)}
                                                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
@@ -708,6 +812,22 @@ export default function ChefPortalPage() {
                                                         <span className="text-slate-400 font-semibold">Unbilled</span>
                                                     )}
                                                 </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Order"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Order"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -721,15 +841,48 @@ export default function ChefPortalPage() {
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <Coffee size={20} className="text-indigo-600" />
-                                Active Timepass Order Requests
+                                Timepass Specials
                             </h2>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => { setModalMode("create"); setFormCategory("Timepass"); setFormVilla(""); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-indigo-100 hover:shadow animate-in fade-in duration-200"
+                                >
+                                    <Plus size={14} className="stroke-[3px]" />
+                                    New Request
+                                </button>
+                                <button
+                                    onClick={fetchTimepassRequests}
+                                    disabled={loadingTimepass}
+                                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
+                                >
+                                    <RefreshCw size={12} className={loadingTimepass ? "animate-spin" : ""} />
+                                    Refresh Orders
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs for Active / Fulfilled */}
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
                             <button
-                                onClick={fetchTimepassRequests}
-                                disabled={loadingTimepass}
-                                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
+                                onClick={() => setTimepassTab("active")}
+                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                                    timepassTab === "active" 
+                                        ? "bg-white text-indigo-700 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
                             >
-                                <RefreshCw size={12} className={loadingTimepass ? "animate-spin" : ""} />
-                                Refresh Orders
+                                Active ({timepassRequests.filter(r => r.status === "pending").length})
+                            </button>
+                            <button
+                                onClick={() => setTimepassTab("fulfilled")}
+                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                                    timepassTab === "fulfilled" 
+                                        ? "bg-white text-indigo-700 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Fulfilled ({timepassRequests.filter(r => r.status === "fulfilled").length})
                             </button>
                         </div>
 
@@ -738,66 +891,232 @@ export default function ChefPortalPage() {
                                 <RefreshCw size={18} className="animate-spin text-indigo-600" />
                                 <span className="text-xs font-semibold">Loading orders...</span>
                             </div>
-                        ) : timepassRequests.filter(r => r.status === "pending").length === 0 ? (
-                            <p className="text-center py-8 text-slate-400 text-sm">No pending Timepass orders.</p>
-                        ) : (
-                            <div className="space-y-4">
-                                {timepassRequests.filter(r => r.status === "pending").map((req) => (
-                                    <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
-                                                <div>
-                                                    <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
-                                                    {req.booking ? (
-                                                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
-                                                    ) : (
-                                                        <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
-                                                    )}
+                        ) : timepassTab === "active" ? (
+                            timepassRequests.filter(r => r.status === "pending").length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">No pending Timepass orders.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                                    {timepassRequests.filter(r => r.status === "pending").map((req) => (
+                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                                                    <div>
+                                                        <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
+                                                        {req.booking ? (
+                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
+                                                        ) : (
+                                                            <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
+                                                        {new Date(req.createdAt).toLocaleTimeString("en-IN", {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit"
+                                                        })}
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
+
+                                                <div className="space-y-1">
+                                                    {req.items.map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
+                                                            <span>
+                                                                {item.name}
+                                                                {item.comment && (
+                                                                    <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
+                                                                        ({item.comment})
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-mono text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100/50">× {item.quantity}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-2 flex justify-between items-center border-t border-slate-200/40 mt-1">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Order"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Order"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleFulfilTimepass(req.id)}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
+                                                >
+                                                    <Check size={12} className="stroke-[3px]" />
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        ) : (
+                            timepassRequests.filter(r => r.status === "fulfilled").length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">No past Timepass orders.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                                    {timepassRequests.filter(r => r.status === "fulfilled").map((req) => (
+                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5 hover:shadow-sm transition-shadow">
+                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
+                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
+                                                <span className="font-mono">
                                                     {new Date(req.createdAt).toLocaleTimeString("en-IN", {
                                                         hour: "2-digit",
                                                         minute: "2-digit"
                                                     })}
                                                 </span>
                                             </div>
-
                                             <div className="space-y-1">
                                                 {req.items.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
+                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
                                                         <span>
                                                             {item.name}
                                                             {item.comment && (
-                                                                <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
+                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
                                                                     ({item.comment})
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        <span className="font-mono text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100/50">× {item.quantity}</span>
+                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
                                                     </div>
                                                 ))}
                                             </div>
+                                            <div className="flex items-center justify-between gap-2 border-t border-slate-200/40 pt-2 mt-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-1">
+                                                    <span className="font-bold flex items-center gap-1">
+                                                        <Check size={10} className="stroke-[3px]" />
+                                                        Fulfilled
+                                                    </span>
+                                                    <span className="text-slate-300">|</span>
+                                                    {req.isBilled ? (
+                                                        <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
+                                                    ) : (
+                                                        <span className="text-slate-400 font-semibold">Unbilled</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Order"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Order"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-
-                                        <div className="pt-2 flex justify-end">
-                                            <button
-                                                onClick={() => handleFulfilTimepass(req.id)}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
-                                            >
-                                                <Check size={12} className="stroke-[3px]" />
-                                                Done
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )
                         )}
                     </div>
                 </div>
             )}
 
-            {/* Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* View Tabs Selector */}
+            <div className="flex items-center gap-4 border-b border-slate-200 pb-2">
+                <button
+                    onClick={() => setCurrentChefView("checklist")}
+                    className={`pb-2 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${currentChefView === "checklist" ? "border-purple-600 text-purple-600 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+                >
+                    Ingredients Checklist
+                </button>
+                <button
+                    onClick={() => setCurrentChefView("inventory")}
+                    className={`pb-2 text-sm font-bold border-b-2 transition-all uppercase tracking-wider ${currentChefView === "inventory" ? "border-purple-600 text-purple-600 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+                >
+                    E-Menu Stock & Inventory
+                </button>
+            </div>
+
+            {currentChefView === "inventory" ? (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Package className="text-purple-600" size={22} />
+                                E-Menu Stock Levels
+                            </h2>
+                            <p className="text-xs text-slate-400 font-medium mt-1">
+                                Update stock counts. Setting an item's stock to 0 shows it as "Sold Out" on guest e-menus.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleSaveStock}
+                            disabled={savingStock}
+                            className="flex items-center gap-1.5 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            <Save size={14} />
+                            {savingStock ? "Saving..." : "Save Stock Levels"}
+                        </button>
+                    </div>
+
+                    <div className="space-y-6">
+                        {["Normal", "High Tea", "Timepass"].map(cat => {
+                            const catItems = menuItems.filter(item => item.category === cat);
+                            if (catItems.length === 0) return null;
+                            return (
+                                <div key={cat} className="space-y-3">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                        {cat === "Normal" ? <ShoppingBag size={14} className="text-amber-500" /> : <Coffee size={14} className="text-purple-500" />}
+                                        {cat === "Normal" ? "Beverages & Refreshments" : cat}
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {catItems.map(item => {
+                                            const stockVal = editStocks[item.id] || "0";
+                                            const isOut = stockVal === "0";
+                                            return (
+                                                <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-sm transition-all">
+                                                    <div>
+                                                        <p className="text-sm font-extrabold text-slate-800">{item.name}</p>
+                                                        <p className="text-xs text-slate-400 font-bold font-mono mt-0.5">₹{item.price}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        {isOut && (
+                                                            <span className="text-[10px] font-black px-2 py-1 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-bold text-slate-500">Stock:</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={stockVal}
+                                                                onChange={e => setEditStocks(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                className="w-20 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            ) : (
+                /* Layout Grid */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 {/* Left Columns (Checklist & Search & Add) */}
                 <div className="lg:col-span-2 space-y-6">
@@ -1133,6 +1452,7 @@ export default function ChefPortalPage() {
                     )}
                 </div>
             </div>
+            )}
             {/* Quantity Modal (Centered, Responsive) */}
             {modalOpen && activeIngredient && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1279,8 +1599,8 @@ export default function ChefPortalPage() {
                     <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
                         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-purple-50">
                             <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <Plus size={18} className="text-purple-600" />
-                                Create New Request
+                                {modalMode === "edit" ? <Edit size={18} className="text-purple-600" /> : <Plus size={18} className="text-purple-600" />}
+                                {modalMode === "edit" ? "Edit Request" : "Create New Request"}
                             </h3>
                             <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                                 ×

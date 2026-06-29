@@ -10,6 +10,7 @@ interface MenuItem {
     name: string;
     price: number;
     category: "Normal" | "High Tea" | "Timepass";
+    stock?: number;
 }
 
 const DEFAULT_MENU_ITEMS: MenuItem[] = [
@@ -249,10 +250,20 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
     }, []);
 
     const handleIncrement = (id: string) => {
-        setQuantities(prev => ({
-            ...prev,
-            [id]: (prev[id] || 0) + 1
-        }));
+        const item = menuItems.find(m => m.id === id);
+        const currentStock = item && typeof item.stock === "number" ? item.stock : Infinity;
+        
+        setQuantities(prev => {
+            const currentQty = prev[id] || 0;
+            if (currentQty >= currentStock) {
+                alert(`Sorry, only ${currentStock} units of ${item?.name || "this item"} are available in stock.`);
+                return prev;
+            }
+            return {
+                ...prev,
+                [id]: currentQty + 1
+            };
+        });
     };
 
     const handleDecrement = (id: string) => {
@@ -271,6 +282,13 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
     };
 
     const handleCheckboxToggle = (id: string) => {
+        const item = menuItems.find(m => m.id === id);
+        const currentStock = item && typeof item.stock === "number" ? item.stock : Infinity;
+        if (currentStock <= 0) {
+            alert("Sorry, this item is sold out!");
+            return;
+        }
+
         setQuantities(prev => {
             if (prev[id]) {
                 const updated = { ...prev };
@@ -453,8 +471,9 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                     {normalItems.map(item => {
                         const isChecked = !!quantities[item.id];
                         const qty = quantities[item.id] || 0;
+                        const isSoldOut = typeof item.stock === "number" && item.stock <= 0;
                         return (
-                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${!normalUnlocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
+                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!normalUnlocked || isSoldOut) ? "opacity-50 select-none" : ""}`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3.5 flex-1">
                                         <label className="flex items-center cursor-pointer relative">
@@ -463,19 +482,24 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                                 checked={isChecked}
                                                 onChange={() => handleCheckboxToggle(item.id)}
                                                 className="sr-only peer"
-                                                disabled={!normalUnlocked}
+                                                disabled={!normalUnlocked || isSoldOut}
                                             />
                                             <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
                                                 <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
                                             </div>
                                         </label>
-                                        <div className="cursor-pointer" onClick={() => normalUnlocked && handleCheckboxToggle(item.id)}>
-                                            <p className="font-semibold text-slate-800 text-sm sm:text-base">{item.name}</p>
+                                        <div className="cursor-pointer" onClick={() => normalUnlocked && !isSoldOut && handleCheckboxToggle(item.id)}>
+                                            <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                {item.name}
+                                                {isSoldOut && (
+                                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                )}
+                                            </p>
                                             <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
                                         </div>
                                     </div>
 
-                                    {isChecked && (
+                                    {isChecked && !isSoldOut && (
                                         <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1 animate-in zoom-in-95 duration-100">
                                             <button onClick={() => handleDecrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">-</button>
                                             <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{qty}</span>
@@ -547,8 +571,9 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                     {highTeaItems.map(item => {
                         const isChecked = !!quantities[item.id];
                         const qty = quantities[item.id] || 0;
+                        const isSoldOut = typeof item.stock === "number" && item.stock <= 0;
                         return (
-                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${!highTeaUnlocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
+                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!highTeaUnlocked || isSoldOut) ? "opacity-50 select-none" : ""}`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3.5 flex-1">
                                         <label className="flex items-center cursor-pointer relative">
@@ -557,19 +582,24 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                                 checked={isChecked}
                                                 onChange={() => handleCheckboxToggle(item.id)}
                                                 className="sr-only peer"
-                                                disabled={!highTeaUnlocked}
+                                                disabled={!highTeaUnlocked || isSoldOut}
                                             />
                                             <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
                                                 <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
                                             </div>
                                         </label>
-                                        <div className="cursor-pointer" onClick={() => highTeaUnlocked && handleCheckboxToggle(item.id)}>
-                                            <p className="font-semibold text-slate-800 text-sm sm:text-base">{item.name}</p>
+                                        <div className="cursor-pointer" onClick={() => highTeaUnlocked && !isSoldOut && handleCheckboxToggle(item.id)}>
+                                            <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                {item.name}
+                                                {isSoldOut && (
+                                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                )}
+                                            </p>
                                             <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
                                         </div>
                                     </div>
 
-                                    {isChecked && (
+                                    {isChecked && !isSoldOut && (
                                         <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1">
                                             <button onClick={() => handleDecrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm">-</button>
                                             <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{qty}</span>
@@ -641,8 +671,9 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                     {timepassItems.map(item => {
                         const isChecked = !!quantities[item.id];
                         const qty = quantities[item.id] || 0;
+                        const isSoldOut = typeof item.stock === "number" && item.stock <= 0;
                         return (
-                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${!timepassUnlocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
+                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!timepassUnlocked || isSoldOut) ? "opacity-50 select-none" : ""}`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3.5 flex-1">
                                         <label className="flex items-center cursor-pointer relative">
@@ -651,19 +682,24 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                                 checked={isChecked}
                                                 onChange={() => handleCheckboxToggle(item.id)}
                                                 className="sr-only peer"
-                                                disabled={!timepassUnlocked}
+                                                disabled={!timepassUnlocked || isSoldOut}
                                             />
                                             <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
                                                 <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
                                             </div>
                                         </label>
-                                        <div className="cursor-pointer" onClick={() => timepassUnlocked && handleCheckboxToggle(item.id)}>
-                                            <p className="font-semibold text-slate-800 text-sm sm:text-base">{item.name}</p>
+                                        <div className="cursor-pointer" onClick={() => timepassUnlocked && !isSoldOut && handleCheckboxToggle(item.id)}>
+                                            <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                {item.name}
+                                                {isSoldOut && (
+                                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                )}
+                                            </p>
                                             <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
                                         </div>
                                     </div>
 
-                                    {isChecked && (
+                                    {isChecked && !isSoldOut && (
                                         <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1">
                                             <button onClick={() => handleDecrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm">-</button>
                                             <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{qty}</span>

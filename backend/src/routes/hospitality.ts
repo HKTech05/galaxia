@@ -12,34 +12,34 @@ const MENU_FILE_PATH = path.join(__dirname, "../../../menu_items.json");
 
 const DEFAULT_MENU_ITEMS = [
     // Normal Items
-    { id: "water", name: "Water", price: 30, category: "Normal" },
-    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal" },
-    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal" },
-    { id: "sprite", name: "Sprite", price: 70, category: "Normal" },
-    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal" },
-    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal" },
+    { id: "water", name: "Water", price: 30, category: "Normal", stock: 100 },
+    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal", stock: 100 },
+    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal", stock: 100 },
+    { id: "sprite", name: "Sprite", price: 70, category: "Normal", stock: 100 },
+    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal", stock: 100 },
+    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal", stock: 100 },
     // High Tea Items
-    { id: "tea", name: "Tea", price: 40, category: "High Tea" },
-    { id: "coffee", name: "Coffee", price: 44, category: "High Tea" },
-    { id: "milk", name: "Milk", price: 40, category: "High Tea" },
-    { id: "maggi", name: "Maggi", price: 84, category: "High Tea" },
-    { id: "fries", name: "French Fries", price: 147, category: "High Tea" },
-    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea" },
-    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea" },
-    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea" },
-    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
-    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
+    { id: "tea", name: "Tea", price: 40, category: "High Tea", stock: 100 },
+    { id: "coffee", name: "Coffee", price: 44, category: "High Tea", stock: 100 },
+    { id: "milk", name: "Milk", price: 40, category: "High Tea", stock: 100 },
+    { id: "maggi", name: "Maggi", price: 84, category: "High Tea", stock: 100 },
+    { id: "fries", name: "French Fries", price: 147, category: "High Tea", stock: 100 },
+    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea", stock: 100 },
+    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea", stock: 100 },
+    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea", stock: 100 },
+    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea", stock: 100 },
+    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea", stock: 100 },
     // Timepass Items
-    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass" },
-    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass" },
-    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass" },
-    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass" },
-    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass" },
-    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass" },
-    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass" },
-    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass" },
-    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass" },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass" }
+    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass", stock: 100 },
+    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass", stock: 100 },
+    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass", stock: 100 },
+    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass", stock: 100 },
+    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass", stock: 100 },
+    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass", stock: 100 },
+    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass", stock: 100 },
+    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass", stock: 100 },
+    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass", stock: 100 },
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass", stock: 100 }
 ];
 
 function getMenuItems() {
@@ -96,6 +96,31 @@ router.post("/requests", async (req, res) => {
                 ]
             }
         });
+
+        // Auto-decrement stock for each ordered item
+        try {
+            const menu = getMenuItems();
+            let menuChanged = false;
+            
+            for (const orderedItem of items) {
+                // Find matching item in menu (by matching name or id)
+                const menuItem = menu.find((m: any) => 
+                    m.id === orderedItem.id || 
+                    m.name.toLowerCase() === orderedItem.name.toLowerCase()
+                );
+                
+                if (menuItem && typeof menuItem.stock === "number") {
+                    menuItem.stock = Math.max(0, menuItem.stock - (orderedItem.quantity || 1));
+                    menuChanged = true;
+                }
+            }
+            
+            if (menuChanged) {
+                fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(menu, null, 2), "utf8");
+            }
+        } catch (stockErr) {
+            console.error("Failed to auto-decrement stock:", stockErr);
+        }
 
         const request = await prisma.hospitalityRequest.create({
             data: {

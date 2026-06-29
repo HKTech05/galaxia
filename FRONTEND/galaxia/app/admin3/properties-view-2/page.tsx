@@ -78,10 +78,12 @@ export default function PropertiesView2Page() {
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [selectedFoodBooking, setSelectedFoodBooking] = useState<Booking | null>(null);
 
+    const fmtLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
     const fetchData = async () => {
         try {
             setLoading(true);
-            const selectedDateStr = propertyDate.toISOString().split("T")[0];
+            const selectedDateStr = fmtLocalDate(propertyDate);
             const [res, logsData] = await Promise.all([
                 api.get<{ properties: any[]; activeBookings: Booking[] }>(
                     `/admin/dashboard/property-status?date=${selectedDateStr}`
@@ -106,7 +108,7 @@ export default function PropertiesView2Page() {
     }, [propertyDate]);
 
     // Format date string for API
-    const selectedDateStr = propertyDate.toISOString().split("T")[0];
+    const selectedDateStr = fmtLocalDate(propertyDate);
 
     // Filter bookings by date selection (check-in day or check-out day matches selected date)
     const filteredBookings = bookings.filter(b => {
@@ -114,7 +116,7 @@ export default function PropertiesView2Page() {
         const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
         
         if (modeFilter === "checkin") {
-            return checkInStr === selectedDateStr;
+            return checkInStr === selectedDateStr || (checkInStr < selectedDateStr && checkOutStr > selectedDateStr);
         } else {
             return checkOutStr === selectedDateStr;
         }
@@ -142,6 +144,13 @@ export default function PropertiesView2Page() {
 
     // Helper to render status badge
     const renderStatusBadgeForBooking = (b: Booking) => {
+        if (b.status === "checked_out") {
+            return (
+                <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Checked Out
+                </span>
+            );
+        }
         if (modeFilter === "checkin") {
             const checkInToday = b.checkInDate ? b.checkInDate.slice(0, 10) === selectedDateStr : false;
             if (checkInToday) {

@@ -74,7 +74,7 @@ export default function ReportsPage() {
     const [reportType, setReportType] = useState<ReportType>("gst");
     const [businessCategory, setBusinessCategory] = useState<BusinessCategory>("all");
     const [dateRange, setDateRange] = useState({ from: "", to: "" });
-    const [propertyFilter, setPropertyFilter] = useState("all");
+    const [selectedProps, setSelectedProps] = useState<string[]>(["all"]);
     const [paymentFilter, setPaymentFilter] = useState("all");
 
     useEffect(() => {
@@ -130,12 +130,17 @@ export default function ReportsPage() {
             if (dateRange.from && bookingDateStr < dateRange.from) return false;
             if (dateRange.to && bookingDateStr > dateRange.to) return false;
 
-            if (propertyFilter === "all-staycation") {
-                if (b._business !== "staycation") return false;
-            } else if (propertyFilter === "digital-diaries") {
-                if (b._business !== "digital-diaries") return false;
-            } else if (propertyFilter !== "all") {
-                if (b.property?.name !== propertyFilter) return false;
+            if (!selectedProps.includes("all")) {
+                const belongsToSelected = selectedProps.some(sel => {
+                    if (sel === "all-staycation") {
+                        return b._business === "staycation";
+                    } else if (sel === "digital-diaries") {
+                        return b._business === "digital-diaries";
+                    } else {
+                        return b.property?.name === sel;
+                    }
+                });
+                if (!belongsToSelected) return false;
             }
 
             // Payment method filter logic:
@@ -153,7 +158,7 @@ export default function ReportsPage() {
 
             return true;
         });
-    }, [combinedBookings, dateRange, propertyFilter, paymentFilter]);
+    }, [combinedBookings, dateRange, selectedProps, paymentFilter]);
 
     const staycationProperties = useMemo(() => {
         const names = new Set<string>();
@@ -234,13 +239,9 @@ export default function ReportsPage() {
             doc.setFontSize(9);
             doc.setFont("helvetica", "normal");
             doc.setTextColor(100);
-            const propText = propertyFilter === "all" 
-                ? "All Properties" 
-                : propertyFilter === "all-staycation" 
-                    ? "All Staycation Properties" 
-                    : propertyFilter === "digital-diaries" 
-                        ? "Digital Diaries" 
-                        : propertyFilter;
+            const propText = selectedProps.includes("all")
+                ? "All Properties"
+                : selectedProps.join(", ");
             doc.text(`Period: ${dateRange.from} to ${dateRange.to}  |  Property: ${propText}  |  Payment: ${paymentFilter}`, pageWidth / 2, 21, { align: "center" });
 
             doc.setFontSize(8);
@@ -278,7 +279,7 @@ export default function ReportsPage() {
             let body: any[] = [];
 
             if (reportType === "gst") {
-                headers = ["Booking ID", "Guest Name", "Property Name", "Initial Price", "GST Charged", "Total Amount"];
+                headers = ["Booking ID", "Guest Name", "Property Name", "Taxable amount", "GST Charged", "Total Amount"];
                 body = filteredBookings.map(b => [
                     b.bookingRef || `ID-${b.id}`,
                     b.customerName,
@@ -289,7 +290,7 @@ export default function ReportsPage() {
                 ]);
                 // Totals row at the bottom
                 body.push([
-                    "TOTALS",
+                    "Total Taxable Amount",
                     "",
                     "",
                     pdfFmt(gstStats.totalBase),
@@ -403,14 +404,81 @@ export default function ReportsPage() {
                             className="w-full"
                         />
                     </div>
-                    <div>
+                    <div className="relative">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Property / Category</label>
-                        <select value={propertyFilter} onChange={e => setPropertyFilter(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none">
-                            <option value="all">All Properties (Staycation + DD)</option>
-                            <option value="all-staycation">All Staycation Properties</option>
-                            <option value="digital-diaries">Digital Diaries</option>
-                            {staycationProperties.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                        <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50">
+                            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedProps.includes("all")}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedProps(["all"]);
+                                        } else {
+                                            setSelectedProps([]);
+                                        }
+                                    }}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                All
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedProps.includes("all-staycation")}
+                                    onChange={(e) => {
+                                        let updated = selectedProps.filter(p => p !== "all");
+                                        if (e.target.checked) {
+                                            updated.push("all-staycation");
+                                        } else {
+                                            updated = updated.filter(p => p !== "all-staycation");
+                                        }
+                                        if (updated.length === 0) updated = ["all"];
+                                        setSelectedProps(updated);
+                                    }}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                All Staycation
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedProps.includes("digital-diaries")}
+                                    onChange={(e) => {
+                                        let updated = selectedProps.filter(p => p !== "all");
+                                        if (e.target.checked) {
+                                            updated.push("digital-diaries");
+                                        } else {
+                                            updated = updated.filter(p => p !== "digital-diaries");
+                                        }
+                                        if (updated.length === 0) updated = ["all"];
+                                        setSelectedProps(updated);
+                                    }}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Digital Diaries
+                            </label>
+                            {staycationProperties.map(p => (
+                                <label key={p} className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedProps.includes(p)}
+                                        onChange={(e) => {
+                                            let updated = selectedProps.filter(x => x !== "all");
+                                            if (e.target.checked) {
+                                                updated.push(p);
+                                            } else {
+                                                updated = updated.filter(x => x !== p);
+                                            }
+                                            if (updated.length === 0) updated = ["all"];
+                                            setSelectedProps(updated);
+                                        }}
+                                        className="rounded text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    {p}
+                                </label>
+                            ))}
+                        </div>
                     </div>
                     <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Payment Method</label>
@@ -481,7 +549,7 @@ export default function ReportsPage() {
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Guest Name</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Property Name</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Check-in</th>
-                                        <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Initial Price</th>
+                                        <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Taxable amount</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">GST Charged</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Total (Gross)</th>
                                     </tr>
@@ -500,7 +568,7 @@ export default function ReportsPage() {
                                     ))}
                                     {/* Summary Row */}
                                     <tr className="bg-slate-50/80 font-black border-t-2 border-slate-200">
-                                        <td className="py-3 px-3 uppercase text-slate-700" colSpan={4}>Totals Summary</td>
+                                        <td className="py-3 px-3 uppercase text-slate-700" colSpan={4}>Total Taxable Amount</td>
                                         <td className="py-3 px-3 text-right text-slate-800">{fmt(gstStats.totalBase)}</td>
                                         <td className="py-3 px-3 text-right text-purple-700">{fmt(gstStats.totalGst)}</td>
                                         <td className="py-3 px-3 text-right text-emerald-700">{fmt(gstStats.totalAmount)}</td>

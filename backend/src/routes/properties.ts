@@ -544,10 +544,34 @@ router.get("/:slug/availability", async (req, res) => {
             subPropertyPricing,
             subProperties: property.subProperties,
             bookings,
-            blocked: blocked
+            blocked: blocked,
+            configuration: property.configuration || {},
         });
     } catch (error) {
         console.error("Availability error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/:id — Update property configuration (celebration addon toggle, etc.)
+router.patch("/:id", authMiddleware, requireRole("owner", "developer", "manager"), async (req: any, res: any) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: "Invalid property ID" });
+
+        const { configuration } = req.body;
+        if (configuration === undefined) {
+            return res.status(400).json({ error: "No configuration provided" });
+        }
+
+        const updated = await prisma.property.update({
+            where: { id },
+            data: { configuration: configuration },
+        });
+
+        return res.json({ success: true, configuration: updated.configuration });
+    } catch (error) {
+        console.error("Property config update error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

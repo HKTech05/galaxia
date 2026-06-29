@@ -1361,8 +1361,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         </div>
                                     )}
 
-                                    {/* Celebration Add-on (all properties) */}
-                                    {(
+                                    {/* Celebration Add-on (all properties — toggled via admin Website tab) */}
+                                    {(backendData?.configuration?.celebrationEnabled !== false) && (
                                         <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
                                             <div className="flex items-start gap-3">
                                                 <input

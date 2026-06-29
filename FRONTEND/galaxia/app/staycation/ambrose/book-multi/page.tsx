@@ -108,9 +108,14 @@ export default function BookMultiPage() {
 
     // Site images from admin panel (for celebration thumbnails)
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    const [celebrationEnabled, setCelebrationEnabled] = useState(true);
     useEffect(() => {
         fetch("/api/site-images").then(r => r.json()).then(data => {
             if (data && typeof data === 'object') setSiteImages(data);
+        }).catch(() => {});
+        // Fetch Ambrose property config for celebration toggle
+        fetch("/api/properties/ambrose/availability").then(r => r.json()).then(data => {
+            if (data?.configuration?.celebrationEnabled === false) setCelebrationEnabled(false);
         }).catch(() => {});
     }, []);
 
@@ -1420,7 +1425,8 @@ export default function BookMultiPage() {
                                     {idError && <p className="font-inter text-xs text-red-500 mt-1">{idError}</p>}
                                 </div>
 
-                                {/* Celebration Add-on */}
+                                {/* Celebration Add-on (toggled via admin Website tab) */}
+                                {celebrationEnabled && (
                                 <div className="mb-6 p-4 border border-antique-gold/30 rounded-lg bg-antique-gold/5">
                                     <div className="flex items-start sm:items-center gap-3">
                                         <input type="checkbox" id="multi-celebration" checked={celebrationAddon} onChange={(e) => setCelebrationAddon(e.target.checked)} className="mt-1 sm:mt-0 w-4 h-4 accent-[#B8860B] cursor-pointer shrink-0" />
@@ -1455,6 +1461,7 @@ export default function BookMultiPage() {
                                         </div>
                                     )}
                                 </div>
+                                )}
 
                                 {/* Celebration Image Preview Modal */}
                                 {celebrationPreviewOpen && celebrationImageUrl && (
