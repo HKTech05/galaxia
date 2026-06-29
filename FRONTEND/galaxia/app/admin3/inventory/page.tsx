@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Package, RefreshCw, Save, Coffee, Sparkles, AlertCircle, ShoppingBag, Plus, Trash2, Pencil, X, TrendingUp, BarChart3, DollarSign, Award, ArrowDown, ArrowUp, PieChart } from "lucide-react";
 import { api } from "../../../lib/api";
-import AdminSidebar from "../../components/AdminSidebar";
 
 interface MenuItem {
     id: string;
@@ -194,11 +193,7 @@ export default function InventoryPage() {
     const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
     return (
-        <div className="flex h-screen bg-slate-50 overflow-hidden">
-            <AdminSidebar isAdmin3={true} />
-
-            <div className="flex-1 flex flex-col overflow-y-auto">
-                <div className="p-8 max-w-6xl w-full mx-auto space-y-6">
+        <div className="max-w-6xl w-full mx-auto space-y-6">
                     
                     {/* Header */}
                     <div className="flex items-center justify-between flex-wrap gap-4 border-b border-slate-200 pb-5">
@@ -535,8 +530,7 @@ export default function InventoryPage() {
                             </div>
                         )
                     )}
-                </div>
-            </div>
+
 
             {/* Add Item Modal */}
             {showAddModal && (

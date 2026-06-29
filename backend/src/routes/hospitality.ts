@@ -389,12 +389,13 @@ router.get("/allocations", async (req: AuthRequest, res) => {
 
         const bookings = await prisma.staycationBooking.findMany({
             where: {
-                status: { in: ["confirmed", "checked_in"] },
+                status: { in: ["confirmed", "checked_in", "checked_out"] },
                 checkInDate: { lte: endOfDay },
                 checkOutDate: { gte: startOfDay }
             },
             include: {
-                subProperty: true
+                subProperty: true,
+                property: true
             }
         });
 
@@ -402,7 +403,7 @@ router.get("/allocations", async (req: AuthRequest, res) => {
             bookingId: b.id,
             bookingRef: b.bookingRef,
             guestName: b.customerName,
-            villaName: b.assignedUnit || b.subProperty?.name || "Unassigned",
+            villaName: b.assignedUnit || b.subProperty?.name || b.property?.name || "Unassigned",
             checkInDate: b.checkInDate,
             checkOutDate: b.checkOutDate,
             status: b.status

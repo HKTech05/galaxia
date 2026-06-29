@@ -386,6 +386,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (name !== undefined) data.name = name;
         if (location !== undefined) data.location = location;
         if (req.body.securityDeposit !== undefined) data.securityDeposit = parseInt(req.body.securityDeposit);
+        if (req.body.configuration !== undefined) data.configuration = req.body.configuration;
 
         const property = await prisma.property.update({
             where: { id },
