@@ -569,18 +569,12 @@ export default function PropertiesView2Page() {
                                                         {b.balanceCollected && b.balanceMethod && (
                                                             <div className="mt-1">
                                                                 {b.balanceMethod.toLowerCase().includes("upi") || b.balanceMethod.toLowerCase().includes("online") ? (
-                                                                    balanceUpiId ? (
-                                                                        <button
-                                                                            onClick={() => handleViewProof(balanceUpiId)}
-                                                                            className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                        >
-                                                                            UPI
-                                                                        </button>
-                                                                    ) : (
-                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                                                            UPI
-                                                                        </span>
-                                                                    )
+                                                                    <button
+                                                                        onClick={() => balanceUpiId ? handleViewProof(balanceUpiId) : alert("No proof image uploaded for this balance payment")}
+                                                                        className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                    >
+                                                                        UPI
+                                                                    </button>
                                                                 ) : (
                                                                     <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
                                                                         CASH
@@ -602,18 +596,12 @@ export default function PropertiesView2Page() {
                                                         {b.depositCollected && b.depositMethod && (
                                                             <div className="mt-1">
                                                                 {b.depositMethod.toLowerCase().includes("upi") ? (
-                                                                    depositUpiId ? (
-                                                                        <button
-                                                                            onClick={() => handleViewProof(depositUpiId)}
-                                                                            className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                        >
-                                                                            UPI
-                                                                        </button>
-                                                                    ) : (
-                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                                                            UPI
-                                                                        </span>
-                                                                    )
+                                                                     <button
+                                                                         onClick={() => depositUpiId ? handleViewProof(depositUpiId) : alert("No proof image uploaded for this deposit payment")}
+                                                                         className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                     >
+                                                                         UPI
+                                                                     </button>
                                                                 ) : (
                                                                     <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
                                                                         CASH
@@ -636,18 +624,12 @@ export default function PropertiesView2Page() {
                                                             {b.depositRefundMethod && (
                                                                 <div className="mt-1">
                                                                     {b.depositRefundMethod.toLowerCase().includes("upi") ? (
-                                                                        refundUpiId ? (
-                                                                            <button
-                                                                                onClick={() => handleViewProof(refundUpiId)}
-                                                                                className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                            >
-                                                                                UPI
-                                                                            </button>
-                                                                        ) : (
-                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-                                                                                UPI
-                                                                            </span>
-                                                                        )
+                                                                        <button
+                                                                            onClick={() => refundUpiId ? handleViewProof(refundUpiId) : alert("No proof image uploaded for this refund")}
+                                                                            className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                        >
+                                                                            UPI
+                                                                        </button>
                                                                     ) : (
                                                                         <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
                                                                             CASH

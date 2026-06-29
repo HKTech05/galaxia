@@ -1,0 +1,136 @@
+﻿=== STEP 15 ===
+## Latest page snapshot
+uid=1_0 RootWebArea "Galaxia Automation - Dashboard - Meta for Developers" url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112"
+  uid=1_1 Iframe
+    uid=1_2 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_3 Iframe
+    uid=1_4 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_5 Iframe
+    uid=1_6 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_7 Iframe
+    uid=1_8 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_9 link "Meta logo" url="https://developers.facebook.com/?no_redirect=true"
+    uid=1_10 image "Meta logo"
+  uid=1_11 link "My Apps" url="https://developers.facebook.com/apps/"
+  uid=1_12 link "Required actions" url="https://developers.facebook.com/required-actions/"
+  uid=1_13 tab "Docs" haspopup="menu" selectable
+  uid=1_14 tab "Tools" haspopup="menu" selectable
+  uid=1_15 tab "Support" haspopup="menu" selectable
+  uid=1_16 StaticText "Search input"
+  uid=1_17 StaticText "​"
+  uid=1_18 textbox "Search input"
+  uid=1_19 link url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112#"
+  uid=1_20 link "Facebook" url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112#"
+    uid=1_21 image "Facebook
+------------------------------------------
+=== STEP 18 ===
+## Latest page snapshot
+uid=1_0 RootWebArea "Galaxia Automation - Dashboard - Meta for Developers" url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112"
+  uid=1_1 Iframe
+    uid=1_2 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_3 Iframe
+    uid=1_4 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_5 Iframe
+    uid=1_6 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_7 Iframe
+    uid=1_8 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_9 link "Meta logo" url="https://developers.facebook.com/?no_redirect=true"
+    uid=1_10 image "Meta logo"
+  uid=1_11 link "My Apps" url="https://developers.facebook.com/apps/"
+  uid=1_12 link "Required actions" url="https://developers.facebook.com/required-actions/"
+  uid=1_13 tab "Docs" haspopup="menu" selectable
+  uid=1_14 tab "Tools" haspopup="menu" selectable
+  uid=1_15 tab "Support" haspopup="menu" selectable
+  uid=1_16 StaticText "Search input"
+  uid=1_17 StaticText "​"
+  uid=1_18 textbox "Search input"
+  uid=1_19 link url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112#"
+  uid=1_20 link "Facebook" url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112#"
+    uid=1_21 image "Facebook
+------------------------------------------
+=== STEP 21 ===
+Element matching one of ["WhatsApp"] found.
+## Latest page snapshot
+uid=1_0 RootWebArea "Galaxia Automation - Dashboard - Meta for Developers" url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112"
+  uid=1_1 Iframe
+    uid=1_2 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_3 Iframe
+    uid=1_4 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_5 Iframe
+    uid=1_6 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_7 Iframe
+    uid=1_8 RootWebArea url="https://developers.facebook.com/common/referer_frame.php?cb=1"
+  uid=1_9 link "Meta logo" url="https://developers.facebook.com/?no_redirect=true"
+    uid=1_10 image "Meta logo"
+  uid=1_11 link "My Apps" url="https://developers.facebook.com/apps/"
+  uid=1_12 link "Required actions" url="https://developers.facebook.com/required-actions/"
+  uid=1_13 tab "Docs" haspopup="menu" selectable
+  uid=1_14 tab "Tools" haspopup="menu" selectable
+  uid=1_15 tab "Support" haspopup="menu" selectable
+  uid=1_16 StaticText "Search input"
+  uid=1_17 StaticText "​"
+  uid=1_18 textbox "Search input"
+  uid=1_19 link url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=2343818766129112#"
+  uid=1_20 link "Facebook" url="https://developers.facebook.com/apps/1886284726107284/whatsapp-business/wa-dev-console/?business_id=234
+------------------------------------------
+=== STEP 33 ===
+Element matching one of ["Templates","Template Name","Search","Language","Status","Category"] found.
+## Latest page snapshot
+uid=14_0 RootWebArea "Message Templates | WhatsApp Manager" url="https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=2343818766129112&tab=message-templates&filters=%7B%22date_range%22%3A7%2C%22language%22%3A[]%2C%22quality%22%3A[]%2C%22search_text%22%3A%22%22%2C%22status%22%3A[%22APPROVED%22%2C%22IN_APPEAL%22%2C%22PAUSED%22%2C%22PENDING%22%2C%22REJECTED%22]%2C%22tag%22%3A[]%7D&nav_ref=whatsapp_manager&asset_id=1498006532042145"
+  uid=15_0 navigation "Breadcrumb"
+    uid=15_1 heading "WhatsApp Manager" focusable focused level="1"
+    uid=15_2 heading "Message templates" level="1"
+  uid=15_3 StaticText "Select a WhatsApp Business account"
+  uid=15_4 button "Galaxia OTP"
+  uid=15_5 button "Give feedback"
+  uid=15_6 navigation
+    uid=15_7 link "Overview" url="https://business.facebook.com/latest/whatsapp_manager/overview?business_id=2343818766129112&asset_id=1498006532042145"
+    uid=15_8 StaticText "Overview"
+  uid=15_9 navigation "Message templates"
+    uid=15_10 button "Message templates" expandable expanded
+    uid=15_11 StaticText "Message templates"
+    uid=15_12 button "Toggle group ​"
+    uid=15_13 link "Manage templates" url="https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=2343818766129112&asset_id=1498006532042145"
+    uid=15_14 StaticText "Manage templates"
+    uid=15_15 link "T
+------------------------------------------
+=== STEP 48 ===
+## Latest page snapshot
+uid=14_0 RootWebArea "Message Templates | WhatsApp Manager" url="https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=2343818766129112&tab=message-templates&filters=%7B%22date_range%22%3A7%2C%22language%22%3A[]%2C%22quality%22%3A[]%2C%22search_text%22%3A%22%22%2C%22status%22%3A[%22APPROVED%22%2C%22IN_APPEAL%22%2C%22PAUSED%22%2C%22PENDING%22%2C%22REJECTED%22]%2C%22tag%22%3A[]%7D&nav_ref=whatsapp_manager&asset_id=1498006532042145"
+  uid=15_0 navigation "Breadcrumb"
+    uid=15_1 heading "WhatsApp Manager" focusable focused level="1"
+    uid=15_2 heading "Message templates" level="1"
+  uid=15_3 StaticText "Select a WhatsApp Business account"
+  uid=15_4 button "Galaxia OTP"
+  uid=15_5 button "Give feedback"
+  uid=15_6 navigation
+    uid=15_7 link "Overview" url="https://business.facebook.com/latest/whatsapp_manager/overview?business_id=2343818766129112&asset_id=1498006532042145"
+    uid=15_8 StaticText "Overview"
+  uid=15_9 navigation "Message templates"
+    uid=15_10 button "Message templates" expandable expanded
+    uid=15_11 StaticText "Message templates"
+    uid=15_12 button "Toggle group ​"
+    uid=15_13 link "Manage templates" url="https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=2343818766129112&asset_id=1498006532042145"
+    uid=15_14 StaticText "Manage templates"
+    uid=15_15 link "Template library" url="https://business.facebook.com/latest/whatsapp_manager/template_library?business
+------------------------------------------
+=== STEP 57 ===
+Element matching one of ["kitchen_checklist_ready","Category","Body","Variables"] found.
+## Latest page snapshot
+uid=24_0 RootWebArea "Template Details | WhatsApp Manager" url="https://business.facebook.com/latest/whatsapp_manager/template_details/?business_id=2343818766129112&tab=template-details&childRoute=CAPI&id=1810857856552673&nav_ref=whatsapp_manager&asset_id=1498006532042145"
+  uid=25_0 navigation "Breadcrumb"
+    uid=25_1 heading "WhatsApp Manager" level="1"
+    uid=25_2 link "Manage templates" url="https://business.facebook.com/latest/whatsapp_manager/template_details/?business_id=2343818766129112&tab=template-details&childRoute=CAPI&id=1810857856552673&nav_ref=whatsapp_manager&asset_id=1498006532042145#"
+      uid=25_3 heading "Manage templates" level="1"
+    uid=25_4 heading "Template insights" level="1"
+  uid=25_5 navigation
+    uid=25_6 link "Overview" url="https://business.facebook.com/latest/whatsapp_manager/overview?business_id=2343818766129112&asset_id=1498006532042145"
+    uid=25_7 StaticText "Overview"
+  uid=25_8 navigation "Message templates"
+    uid=25_9 button "Message templates" expandable expanded
+    uid=25_10 StaticText "Message templates"
+    uid=25_11 button "Toggle group ​"
+    uid=25_12 link "Manage templates" url="https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=2343818766129112&asset_id=1498006532042145"
+    uid=25_13 StaticText "Manage templates"
+    uid=25_14 link "Template library" url="https://business.fa
+------------------------------------------
