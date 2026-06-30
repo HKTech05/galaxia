@@ -208,8 +208,9 @@ export default function ReportsPage() {
             totalGst += gst;
             totalAmount += total;
             const bp = b.basePrice || 0;
+            const extraGuest = (b.extraPersonCharge || 0) + (b.extraAdultCharge || 0) + (b.extraKidsCharge || 0);
             totalBasePrice += bp;
-            totalExtraGuest += (base - bp);
+            totalExtraGuest += extraGuest;
         });
 
         return {
@@ -290,7 +291,7 @@ export default function ReportsPage() {
                 body = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
-                    const extra = taxable - bp;
+                    const extra = (b.extraPersonCharge || 0) + (b.extraAdultCharge || 0) + (b.extraKidsCharge || 0);
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
@@ -576,7 +577,7 @@ export default function ReportsPage() {
                                     {filteredBookings.map(b => {
                                         const taxable = b.totalAmount - b.gstAmount;
                                         const bp = b.basePrice || 0;
-                                        const extra = taxable - bp;
+                                        const extra = (b.extraPersonCharge || 0) + (b.extraAdultCharge || 0) + (b.extraKidsCharge || 0);
                                         return (
                                         <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                                             <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">{b.bookingRef || `ID-${b.id}`}</td>

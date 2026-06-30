@@ -10,6 +10,8 @@ interface MenuItem {
     price: number;
     category: "Normal" | "High Tea" | "Timepass";
     stock?: number;
+    tracked?: boolean;
+    costPrice?: number;
 }
 
 interface InsightItem {
@@ -41,9 +43,10 @@ export default function InventoryPage() {
     const [editStocks, setEditStocks] = useState<Record<string, string>>({});
     const [editNames, setEditNames] = useState<Record<string, string>>({});
     const [editPrices, setEditPrices] = useState<Record<string, string>>({});
+    const [editCostPrices, setEditCostPrices] = useState<Record<string, string>>({});
     const [error, setError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
-    const [currentTab, setCurrentTab] = useState<"stock" | "insights">("stock");
+    const [currentTab, setCurrentTab] = useState<"stock" | "manage" | "insights">("stock");
 
     // Add Item Modal
     const [showAddModal, setShowAddModal] = useState(false);
@@ -51,6 +54,7 @@ export default function InventoryPage() {
     const [newItemPrice, setNewItemPrice] = useState("");
     const [newItemCategory, setNewItemCategory] = useState<MenuItem["category"]>("Normal");
     const [newItemStock, setNewItemStock] = useState("100");
+    const [newItemCostPrice, setNewItemCostPrice] = useState("");
 
     // Insights
     const [insights, setInsights] = useState<InsightsData | null>(null);
@@ -65,14 +69,17 @@ export default function InventoryPage() {
                 const stocks: Record<string, string> = {};
                 const names: Record<string, string> = {};
                 const prices: Record<string, string> = {};
+                const costPrices: Record<string, string> = {};
                 data.forEach(item => {
                     stocks[item.id] = item.stock != null ? String(item.stock) : "100";
                     names[item.id] = item.name;
                     prices[item.id] = String(item.price);
+                    costPrices[item.id] = item.costPrice != null ? String(item.costPrice) : "0";
                 });
                 setEditStocks(stocks);
                 setEditNames(names);
                 setEditPrices(prices);
+                setEditCostPrices(costPrices);
             }
         } catch (err: any) {
             setError("Failed to fetch menu items.");
@@ -119,11 +126,14 @@ export default function InventoryPage() {
                 if (isNaN(priceNum) || priceNum < 0) {
                     throw new Error(`Invalid price for ${item.name}`);
                 }
+                const costPriceVal = editCostPrices[item.id];
+                const costPriceNum = costPriceVal === "" ? 0 : parseInt(costPriceVal);
                 return {
                     ...item,
                     name: editNames[item.id] || item.name,
                     price: priceNum,
-                    stock: stockNum
+                    stock: stockNum,
+                    costPrice: isNaN(costPriceNum) ? 0 : costPriceNum
                 };
             });
 
@@ -149,7 +159,9 @@ export default function InventoryPage() {
             name: newItemName.trim(),
             price: parseInt(newItemPrice),
             category: newItemCategory,
-            stock: parseInt(newItemStock) || 100
+            stock: parseInt(newItemStock) || 100,
+            tracked: true,
+            costPrice: parseInt(newItemCostPrice) || 0
         };
 
         const updatedMenu = [...menuItems, newItem];
@@ -160,6 +172,7 @@ export default function InventoryPage() {
             setEditStocks(prev => ({ ...prev, [id]: String(newItem.stock) }));
             setEditNames(prev => ({ ...prev, [id]: newItem.name }));
             setEditPrices(prev => ({ ...prev, [id]: String(newItem.price) }));
+            setEditCostPrices(prev => ({ ...prev, [id]: String(newItem.costPrice || 0) }));
             setShowAddModal(false);
             setNewItemName("");
             setNewItemPrice("");
@@ -246,6 +259,12 @@ export default function InventoryPage() {
                             Stock Management
                         </button>
                         <button
+                            onClick={() => setCurrentTab("manage")}
+                            className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${currentTab === "manage" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                        >
+                            <span className="flex items-center gap-1.5">Manage Items</span>
+                        </button>
+                        <button
                             onClick={() => setCurrentTab("insights")}
                             className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${currentTab === "insights" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                         >
@@ -279,7 +298,7 @@ export default function InventoryPage() {
                         ) : (
                             <div className="space-y-8">
                                 {categories.map(cat => {
-                                    const catItems = menuItems.filter(item => item.category === cat);
+                                    const catItems = menuItems.filter(item => item.category === cat && item.tracked);
                                     if (catItems.length === 0) return null;
                                     return (
                                         <div key={cat} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
@@ -332,6 +351,18 @@ export default function InventoryPage() {
                                                                 />
                                                             </div>
 
+                                                            {/* Cost Price */}
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <span className="text-xs font-bold text-slate-400">Cost:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    value={editCostPrices[item.id] || "0"}
+                                                                    onChange={e => setEditCostPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                    className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                                />
+                                                            </div>
+
                                                             {/* Delete */}
                                                             <button
                                                                 onClick={() => handleDeleteItem(item.id)}
@@ -349,6 +380,52 @@ export default function InventoryPage() {
                                 })}
                             </div>
                         )
+                    )}
+
+                    {/* ===== MANAGE ITEMS TAB ===== */}
+                    {currentTab === "manage" && (
+                        <div className="space-y-6">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-1">Select Items for Inventory Tracking</h2>
+                                <p className="text-xs text-slate-400 mb-4">Toggle items on/off to include them in the Stock Management tab. Only tracked items will have stock managed.</p>
+                                {categories.map(cat => {
+                                    const catItems = menuItems.filter(item => item.category === cat);
+                                    if (catItems.length === 0) return null;
+                                    return (
+                                        <div key={cat} className="mb-6 last:mb-0">
+                                            <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
+                                                {cat === "Normal" ? <ShoppingBag size={16} className="text-amber-500" /> : <Coffee size={16} className="text-purple-500" />}
+                                                {cat === "Normal" ? "Beverages & Refreshments" : cat}
+                                            </h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                {catItems.map(item => (
+                                                    <label key={item.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                                        item.tracked ? "bg-purple-50 border-purple-200" : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                                                    }`}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!item.tracked}
+                                                            onChange={() => {
+                                                                const updated = menuItems.map(m => m.id === item.id ? { ...m, tracked: !m.tracked } : m);
+                                                                setMenuItems(updated);
+                                                                // Auto-save
+                                                                api.put("/hospitality/menu", { menuItems: updated }).catch(() => {});
+                                                            }}
+                                                            className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className="text-sm font-bold text-slate-800">{item.name}</span>
+                                                            <span className="text-xs text-slate-400 ml-2">₹{item.price}</span>
+                                                        </div>
+                                                        {item.tracked && <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">TRACKED</span>}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     )}
 
                     {/* ===== INSIGHTS TAB ===== */}

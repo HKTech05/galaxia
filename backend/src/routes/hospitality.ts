@@ -12,34 +12,34 @@ const MENU_FILE_PATH = path.join(__dirname, "../../../menu_items.json");
 
 const DEFAULT_MENU_ITEMS = [
     // Normal Items
-    { id: "water", name: "Water", price: 30, category: "Normal", stock: 100 },
-    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal", stock: 100 },
-    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal", stock: 100 },
-    { id: "sprite", name: "Sprite", price: 70, category: "Normal", stock: 100 },
-    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal", stock: 100 },
-    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal", stock: 100 },
+    { id: "water", name: "Water", price: 30, category: "Normal", stock: 100, tracked: true, costPrice: 10 },
+    { id: "limbu_pani", name: "Limbu Pani", price: 50, category: "Normal", stock: 100, tracked: false, costPrice: 15 },
+    { id: "limbu_soda", name: "Limbu Soda", price: 90, category: "Normal", stock: 100, tracked: false, costPrice: 30 },
+    { id: "sprite", name: "Sprite", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
+    { id: "thums_up", name: "Thums Up", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
+    { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal", stock: 100, tracked: true, costPrice: 400 },
     // High Tea Items
-    { id: "tea", name: "Tea", price: 40, category: "High Tea", stock: 100 },
-    { id: "coffee", name: "Coffee", price: 44, category: "High Tea", stock: 100 },
-    { id: "milk", name: "Milk", price: 40, category: "High Tea", stock: 100 },
-    { id: "maggi", name: "Maggi", price: 84, category: "High Tea", stock: 100 },
-    { id: "fries", name: "French Fries", price: 147, category: "High Tea", stock: 100 },
-    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea", stock: 100 },
-    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea", stock: 100 },
-    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea", stock: 100 },
-    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea", stock: 100 },
-    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea", stock: 100 },
+    { id: "tea", name: "Tea", price: 40, category: "High Tea", stock: 100, tracked: false, costPrice: 10 },
+    { id: "coffee", name: "Coffee", price: 44, category: "High Tea", stock: 100, tracked: false, costPrice: 12 },
+    { id: "milk", name: "Milk", price: 40, category: "High Tea", stock: 100, tracked: false, costPrice: 15 },
+    { id: "maggi", name: "Maggi", price: 84, category: "High Tea", stock: 100, tracked: false, costPrice: 20 },
+    { id: "fries", name: "French Fries", price: 147, category: "High Tea", stock: 100, tracked: false, costPrice: 50 },
+    { id: "kanda_bhaji", name: "Kanda Bhaji", price: 147, category: "High Tea", stock: 100, tracked: false, costPrice: 40 },
+    { id: "aloo_bhaji", name: "Aloo Bhaji", price: 147, category: "High Tea", stock: 100, tracked: false, costPrice: 40 },
+    { id: "corn_bhaji", name: "Corn Bhaji", price: 147, category: "High Tea", stock: 100, tracked: false, costPrice: 45 },
+    { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea", stock: 100, tracked: false, costPrice: 8 },
+    { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea", stock: 100, tracked: false, costPrice: 25 },
     // Timepass Items
-    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass", stock: 100 },
-    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass", stock: 100 },
-    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass", stock: 100 },
-    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass", stock: 100 },
-    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass", stock: 100 },
-    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass", stock: 100 },
-    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass", stock: 100 },
-    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass", stock: 100 },
-    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass", stock: 100 },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass", stock: 100 }
+    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass", stock: 100, tracked: false, costPrice: 30 },
+    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass", stock: 100, tracked: false, costPrice: 35 },
+    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass", stock: 100, tracked: false, costPrice: 45 },
+    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass", stock: 100, tracked: false, costPrice: 45 },
+    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass", stock: 100, tracked: false, costPrice: 55 },
+    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass", stock: 100, tracked: false, costPrice: 40 },
+    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass", stock: 100, tracked: false, costPrice: 40 },
+    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass", stock: 100, tracked: false, costPrice: 35 },
+    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass", stock: 100, tracked: false, costPrice: 80 },
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass", stock: 100, tracked: false, costPrice: 90 }
 ];
 
 function getMenuItems() {
@@ -126,7 +126,7 @@ router.post("/requests", async (req, res) => {
             data: {
                 villaName,
                 itemCategory,
-                items: JSON.stringify(items),
+                items: items,
                 status: "pending",
                 isBilled: false,
                 bookingId: activeBooking ? activeBooking.id : null
@@ -509,28 +509,19 @@ router.get("/insights", async (req: AuthRequest, res) => {
 
         const menu = getMenuItems();
 
-        // Assumed cost prices (placeholder — ~50% of selling price as estimated wholesale cost)
-        const costMultiplier: Record<string, number> = {};
-        menu.forEach((item: any) => {
-            // Rough heuristic: cheaper items have higher cost ratio, expensive items lower
-            if (item.price <= 50) costMultiplier[item.id] = 0.55;
-            else if (item.price <= 100) costMultiplier[item.id] = 0.45;
-            else if (item.price <= 200) costMultiplier[item.id] = 0.40;
-            else costMultiplier[item.id] = 0.35;
-        });
-
-        // Build per-item stats
+        // Build per-item stats with costPrice from menu
         const itemStats: Record<string, {
             id: string; name: string; price: number; category: string;
             totalOrdered: number; totalRevenue: number; estimatedCost: number;
-            orderDates: string[];
+            orderDates: string[]; costPrice: number;
         }> = {};
 
         // Initialize from menu
         menu.forEach((item: any) => {
             itemStats[item.id] = {
                 id: item.id, name: item.name, price: item.price, category: item.category,
-                totalOrdered: 0, totalRevenue: 0, estimatedCost: 0, orderDates: []
+                totalOrdered: 0, totalRevenue: 0, estimatedCost: 0, orderDates: [],
+                costPrice: item.costPrice || 0
             };
         });
 
@@ -544,23 +535,28 @@ router.get("/insights", async (req: AuthRequest, res) => {
         };
 
         for (const req of allRequests) {
-            const items = req.items as any[];
-            if (!Array.isArray(items)) continue;
+            let parsedItems = req.items as any;
+            // Handle double-stringified items from old data
+            if (typeof parsedItems === "string") {
+                try { parsedItems = JSON.parse(parsedItems); } catch { continue; }
+            }
+            if (!Array.isArray(parsedItems)) continue;
             totalOrders++;
             const dateStr = req.createdAt.toISOString().split("T")[0];
 
-            for (const item of items) {
+            for (const item of parsedItems) {
                 const qty = item.quantity || 1;
                 const itemId = item.id || item.name?.toLowerCase().replace(/\s+/g, "_");
                 const price = item.price || 0;
                 const revenue = price * qty;
-                const costRatio = costMultiplier[itemId] || 0.45;
-                const cost = Math.round(price * costRatio) * qty;
+                // Use costPrice from menu item if available, otherwise fallback
+                const menuCostPrice = itemStats[itemId]?.costPrice || 0;
+                const cost = menuCostPrice > 0 ? menuCostPrice * qty : Math.round(price * 0.45) * qty;
 
                 if (!itemStats[itemId]) {
                     itemStats[itemId] = {
                         id: itemId, name: item.name || itemId, price, category: req.itemCategory || "Normal",
-                        totalOrdered: 0, totalRevenue: 0, estimatedCost: 0, orderDates: []
+                        totalOrdered: 0, totalRevenue: 0, estimatedCost: 0, orderDates: [], costPrice: 0
                     };
                 }
 
