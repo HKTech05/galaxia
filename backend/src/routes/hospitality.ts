@@ -18,6 +18,8 @@ const DEFAULT_MENU_ITEMS = [
     { id: "sprite", name: "Sprite", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
     { id: "thums_up", name: "Thums Up", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
     { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal", stock: 100, tracked: true, costPrice: 400 },
+    { id: "redbull", name: "Red Bull", price: 200, category: "Normal", stock: 100, tracked: true, costPrice: 110 },
+    { id: "hell_energy", name: "Hell Energy", price: 150, category: "Normal", stock: 100, tracked: true, costPrice: 80 },
     // High Tea Items
     { id: "tea", name: "Tea", price: 40, category: "High Tea", stock: 100, tracked: false, costPrice: 10 },
     { id: "coffee", name: "Coffee", price: 44, category: "High Tea", stock: 100, tracked: false, costPrice: 12 },
@@ -231,11 +233,14 @@ router.get("/requests", async (req: AuthRequest, res) => {
             }
         });
 
-        // Parse items JSON back into object
-        const parsedRequests = requests.map(req => ({
-            ...req,
-            items: JSON.parse(req.items as string)
-        }));
+        // Parse items — handle both old stringified and new array format
+        const parsedRequests = requests.map(req => {
+            let parsedItems = req.items;
+            if (typeof parsedItems === "string") {
+                try { parsedItems = JSON.parse(parsedItems); } catch { parsedItems = []; }
+            }
+            return { ...req, items: parsedItems };
+        });
 
         return res.json(parsedRequests);
     } catch (error) {
@@ -277,7 +282,7 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
         if (villaName !== undefined) data.villaName = villaName;
         if (itemCategory !== undefined) data.itemCategory = itemCategory;
         if (items !== undefined) {
-            data.items = JSON.stringify(items);
+            data.items = items;
             
             // Send email if items were removed or reduced
             try {

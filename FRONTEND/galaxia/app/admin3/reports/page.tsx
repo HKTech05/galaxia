@@ -208,8 +208,9 @@ export default function ReportsPage() {
             totalGst += gst;
             totalAmount += total;
             const bp = b.basePrice || 0;
-            const extraGuest = (b.extraPersonCharge || 0) + (b.extraAdultCharge || 0) + (b.extraKidsCharge || 0);
-            totalBasePrice += bp;
+            const rawExtra = base - bp;
+            const extraGuest = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
+            totalBasePrice += (base - extraGuest);
             totalExtraGuest += extraGuest;
         });
 
@@ -291,12 +292,14 @@ export default function ReportsPage() {
                 body = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
-                    const extra = (b.extraPersonCharge || 0) + (b.extraAdultCharge || 0) + (b.extraKidsCharge || 0);
+                    const rawExtra = taxable - bp;
+                    const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
+                    const displayBase = taxable - extra;
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
-                        pdfFmt(bp),
+                        pdfFmt(displayBase),
                         pdfFmt(extra),
                         pdfFmt(taxable),
                         pdfFmt(b.gstAmount),
@@ -577,14 +580,16 @@ export default function ReportsPage() {
                                     {filteredBookings.map(b => {
                                         const taxable = b.totalAmount - b.gstAmount;
                                         const bp = b.basePrice || 0;
-                                        const extra = (b.extraPersonCharge || 0) + (b.extraAdultCharge || 0) + (b.extraKidsCharge || 0);
+                                        const rawExtra = taxable - bp;
+                                        const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
+                                        const displayBase = taxable - extra;
                                         return (
                                         <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                                             <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">{b.bookingRef || `ID-${b.id}`}</td>
                                             <td className="py-2.5 px-3 font-medium text-slate-800">{b.customerName}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-")}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                                            <td className="py-2.5 px-3 text-right font-bold text-slate-600">{fmt(bp)}</td>
+                                            <td className="py-2.5 px-3 text-right font-bold text-slate-600">{fmt(displayBase)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-orange-600">{fmt(extra)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-700">{fmt(taxable)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-purple-600">{fmt(b.gstAmount)}</td>
