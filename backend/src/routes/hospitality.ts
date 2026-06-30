@@ -1,7 +1,8 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
-import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
+import { decrypt } from "../lib/encryption";
 import { sendOrderDeletionNotification } from "../lib/emailService";
 import fs from "fs";
 import path from "path";
@@ -616,6 +617,71 @@ router.get("/insights", async (req: AuthRequest, res) => {
         });
     } catch (error) {
         console.error("Error generating insights:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// 9. PATCH /api/hospitality/allocations/:bookingId — Re-allot cottage & re-send WhatsApp notification (owner/developer only)
+router.patch("/allocations/:bookingId", requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.bookingId as string);
+        const { assignedUnit } = req.body;
+
+        if (isNaN(bookingId)) {
+            return res.status(400).json({ error: "Invalid booking ID" });
+        }
+        if (!assignedUnit || typeof assignedUnit !== "string" || !assignedUnit.trim()) {
+            return res.status(400).json({ error: "assignedUnit is required" });
+        }
+
+        const existing = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId },
+            include: { property: true }
+        });
+        if (!existing) {
+            return res.status(404).json({ error: "Booking not found" });
+        }
+
+        // Update the assigned unit
+        const updated = await prisma.staycationBooking.update({
+            where: { id: bookingId },
+            data: { assignedUnit: assignedUnit.trim() },
+            include: { property: true, subProperty: true }
+        });
+
+        // Re-send the check-in WhatsApp notification with the new unit
+        let whatsappSent = false;
+        try {
+            const guestPhone = decrypt(updated.customerPhone);
+            const firstUnit = assignedUnit.trim().split(",")[0].trim();
+            const slugifiedUnit = firstUnit.toLowerCase().replace(/\s+/g, "-");
+            const menuUrl = `galaxiaresorts.com/hospitalityemenu/${slugifiedUnit}`;
+
+            whatsappSent = await sendWhatsAppTemplateMessage(
+                "otp",
+                guestPhone,
+                "hospitality_checkin_notification",
+                [assignedUnit.trim(), menuUrl]
+            );
+        } catch (waErr: any) {
+            console.error("Re-allotment WhatsApp notification failed:", waErr.message);
+        }
+
+        return res.json({
+            success: true,
+            booking: {
+                bookingId: updated.id,
+                bookingRef: updated.bookingRef,
+                guestName: updated.customerName,
+                villaName: updated.assignedUnit || updated.subProperty?.name || "Unassigned",
+                checkInDate: updated.checkInDate,
+                checkOutDate: updated.checkOutDate,
+                status: updated.status
+            },
+            whatsappSent
+        });
+    } catch (error) {
+        console.error("Error re-allotting cottage:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });

@@ -14,7 +14,8 @@ import {
     X,
     Plus,
     Trash2,
-    Edit
+    Edit,
+    Save
 } from "lucide-react";
 import { api } from "../../../lib/api";
 
@@ -311,6 +312,11 @@ export default function HousekeepingPortalPage() {
     const [allocations, setAllocations] = useState<any[]>([]);
     const [loadingAllocations, setLoadingAllocations] = useState(false);
     const [allocationsError, setAllocationsError] = useState("");
+
+    // Edit allotment states
+    const [editingAllocationId, setEditingAllocationId] = useState<number | null>(null);
+    const [editAllocationUnit, setEditAllocationUnit] = useState("");
+    const [editAllocationSubmitting, setEditAllocationSubmitting] = useState(false);
     
     // Date filter: defaults to today (YYYY-MM-DD)
     const [selectedDate, setSelectedDate] = useState(() => {
@@ -364,6 +370,33 @@ export default function HousekeepingPortalPage() {
             setAllocationsError(err.message || "Failed to fetch villa allotments.");
         } finally {
             setLoadingAllocations(false);
+        }
+    };
+
+    const handleEditAllocation = async (bookingId: number) => {
+        if (!editAllocationUnit.trim()) {
+            alert("Please select a cottage/villa.");
+            return;
+        }
+        setEditAllocationSubmitting(true);
+        try {
+            const res = await api.patch<{ success: boolean; whatsappSent: boolean }>(
+                `/hospitality/allocations/${bookingId}`,
+                { assignedUnit: editAllocationUnit }
+            );
+            if (res.success) {
+                setEditingAllocationId(null);
+                setEditAllocationUnit("");
+                fetchAllocations();
+                alert(res.whatsappSent
+                    ? "Cottage re-allotted & WhatsApp notification sent!"
+                    : "Cottage re-allotted. WhatsApp notification could not be sent."
+                );
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to update allotment.");
+        } finally {
+            setEditAllocationSubmitting(false);
         }
     };
 
@@ -723,15 +756,35 @@ export default function HousekeepingPortalPage() {
                                     <th className="py-2.5 px-3">Booking Ref</th>
                                     <th className="py-2.5 px-3">Stay Dates</th>
                                     <th className="py-2.5 px-3 text-center">Status</th>
+                                    {(userRole === "owner" || userRole === "developer") && (
+                                        <th className="py-2.5 px-3 text-center">Actions</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-xs">
                                 {allocations.map((alloc) => {
                                     const statusInfo = getStayStatus(alloc, selectedDate);
                                     const unitName = alloc.villaName || alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
+                                    const isEditing = editingAllocationId === alloc.bookingId;
                                     return (
-                                        <tr key={alloc.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="py-3 px-3 font-bold text-slate-800">{unitName}</td>
+                                        <tr key={alloc.bookingId} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-3 px-3 font-bold text-slate-800">
+                                                {isEditing ? (
+                                                    <select
+                                                        value={editAllocationUnit}
+                                                        onChange={(e) => setEditAllocationUnit(e.target.value)}
+                                                        className="bg-white border border-blue-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 w-full min-w-[140px]"
+                                                    >
+                                                        {VILLAS_LIST.map((villa) => (
+                                                            <option key={villa.value} value={villa.value}>
+                                                                {villa.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    unitName
+                                                )}
+                                            </td>
                                             <td className="py-3 px-3 font-semibold text-slate-700">{alloc.guestName || alloc.customerName}</td>
                                             <td className="py-3 px-3 font-mono font-medium text-slate-400">{alloc.bookingRef}</td>
                                             <td className="py-3 px-3 text-slate-500 font-medium">
@@ -742,6 +795,44 @@ export default function HousekeepingPortalPage() {
                                                     {statusInfo.label}
                                                 </span>
                                             </td>
+                                            {(userRole === "owner" || userRole === "developer") && (
+                                                <td className="py-3 px-3 text-center">
+                                                    {isEditing ? (
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button
+                                                                onClick={() => handleEditAllocation(alloc.bookingId)}
+                                                                disabled={editAllocationSubmitting}
+                                                                className="p-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+                                                                title="Save & Notify"
+                                                            >
+                                                                {editAllocationSubmitting ? (
+                                                                    <RefreshCw size={13} className="animate-spin" />
+                                                                ) : (
+                                                                    <Save size={13} />
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setEditingAllocationId(null); setEditAllocationUnit(""); }}
+                                                                className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                                title="Cancel"
+                                                            >
+                                                                <X size={13} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingAllocationId(alloc.bookingId);
+                                                                setEditAllocationUnit(unitName);
+                                                            }}
+                                                            className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors border border-indigo-100"
+                                                            title="Edit Allotment"
+                                                        >
+                                                            <Edit size={13} />
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}
