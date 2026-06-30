@@ -18,8 +18,9 @@ const DEFAULT_MENU_ITEMS = [
     { id: "sprite", name: "Sprite", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
     { id: "thums_up", name: "Thums Up", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
     { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal", stock: 100, tracked: true, costPrice: 400 },
-    { id: "redbull", name: "Red Bull", price: 200, category: "Normal", stock: 100, tracked: true, costPrice: 110 },
-    { id: "hell_energy", name: "Hell Energy", price: 150, category: "Normal", stock: 100, tracked: true, costPrice: 80 },
+    { id: "redbull", name: "Red Bull", price: 220, category: "Normal", stock: 100, tracked: true, costPrice: 100 },
+    { id: "hell_energy", name: "Hell Energy", price: 110, category: "Normal", stock: 100, tracked: true, costPrice: 60 },
+    { id: "jimys_cocktail", name: "Jimy's Cocktail", price: 1500, category: "Normal", stock: 100, tracked: true, costPrice: 400 },
     // High Tea Items
     { id: "tea", name: "Tea", price: 40, category: "High Tea", stock: 100, tracked: false, costPrice: 10 },
     { id: "coffee", name: "Coffee", price: 44, category: "High Tea", stock: 100, tracked: false, costPrice: 12 },

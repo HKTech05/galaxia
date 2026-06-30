@@ -270,7 +270,7 @@ export default function ReportsPage() {
             if (reportType === "gst") {
                 // Row 1
                 doc.text(`Total Bookings: ${gstStats.count}`, 20, startY + 13);
-                doc.text(`Total Taxable (Base): ${pdfFmt(gstStats.totalBase)}`, 110, startY + 13);
+                doc.text(`Total Taxable Amount: ${pdfFmt(gstStats.totalBase)}`, 110, startY + 13);
                 // Row 2
                 doc.text(`Total GST (18%): ${pdfFmt(gstStats.totalGst)}`, 20, startY + 20);
                 doc.text(`Total Gross: ${pdfFmt(gstStats.totalAmount)}`, 110, startY + 20);
@@ -520,7 +520,7 @@ export default function ReportsPage() {
                         [
                             { label: "Total Gross Amount", value: fmt(gstStats.totalAmount), icon: IndianRupee, color: "text-emerald-600", bg: "bg-emerald-50" },
                             { label: "Total GST (18%)", value: fmt(gstStats.totalGst), icon: FileText, color: "text-purple-600", bg: "bg-purple-50" },
-                            { label: "Total Taxable (Base)", value: fmt(gstStats.totalBase), icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
+                            { label: "Total Taxable Amount", value: fmt(gstStats.totalBase), icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
                             { label: "Total Records", value: gstStats.count.toString(), icon: Calendar, color: "text-amber-600", bg: "bg-amber-50" },
                         ].map(card => (
                             <div key={card.label} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
