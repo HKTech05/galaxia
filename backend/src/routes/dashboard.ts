@@ -402,7 +402,14 @@ router.get("/property-status", authMiddleware, async (req, res) => {
                 if (!upi.bookingRef || !b.bookingRef) return false;
                 const uRef = upi.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
                 const bRef = b.bookingRef.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^st/, "");
-                return uRef === bRef;
+                if (uRef === bRef) return true;
+                
+                // Fallback for typed references without the 2-character random suffix
+                // Example: uRef = "20260701001", bRef = "20260701001ab" (length 11 and 13)
+                if (uRef.length === 11 && bRef.length === 13 && bRef.startsWith(uRef)) return true;
+                if (bRef.length === 11 && uRef.length === 13 && uRef.startsWith(bRef)) return true;
+                
+                return false;
             });
             const balanceUpi = bookingUpiPayments.find(upi => upi.paymentType === "balance");
             const depositUpi = bookingUpiPayments.find(upi => upi.paymentType === "deposit");

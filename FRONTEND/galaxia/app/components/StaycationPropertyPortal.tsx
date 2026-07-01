@@ -409,6 +409,53 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const handleAction = async (booking: any, newStatus: string) => {
         try {
             const numericId = booking.rawId;
+
+            // Upload UPI proof images first if checking in
+            if (newStatus === "Checked In" && selectedBooking) {
+                const balanceAmt = parseInt(selectedBooking.remainingAmt.replace('₹', '').replace(/,/g, '')) || 0;
+                const depositAmt = parseInt(selectedBooking.depositAmt.replace('₹', '').replace(/,/g, '')) || 0;
+
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                const employee = await api.get(`/employees?propertyId=${selectedBooking.propertyId || ''}`);
+                const empId = Array.isArray(employee) && employee[0] ? employee[0].id : null;
+
+                const hasUpiBalance = collected20 === "UPI" || (collected20 === "Split" && splitUpiBalance > 0);
+                const actualUpiBalanceAmt = collected20 === "UPI" ? balanceAmt : splitUpiBalance;
+                
+                let balanceUpiPromise = Promise.resolve();
+                if (hasUpiBalance && upiProofBalance) {
+                    const compressed = await compressImage(upiProofBalance);
+                    const fd = new FormData();
+                    fd.append("file", compressed);
+                    if (empId) fd.append("employeeId", String(empId));
+                    fd.append("bookingRef", booking.id || '');
+                    fd.append("guestName", booking.customer || '');
+                    fd.append("amount", String(actualUpiBalanceAmt));
+                    fd.append("paymentType", "balance");
+                    fd.append("note", `Balance — ${selectedBooking.property}`);
+                    balanceUpiPromise = api.upload("/upi-payments/upload", fd);
+                }
+
+                const hasUpiDeposit = collectedSec === "UPI" || (collectedSec === "Split" && splitUpiDeposit > 0);
+                const actualUpiDepositAmt = collectedSec === "UPI" ? depositAmt : splitUpiDeposit;
+                
+                let depositUpiPromise = Promise.resolve();
+                if (hasUpiDeposit && upiProofDeposit) {
+                    const compressed = await compressImage(upiProofDeposit);
+                    const fd = new FormData();
+                    fd.append("file", compressed);
+                    if (empId) fd.append("employeeId", String(empId));
+                    fd.append("bookingRef", booking.id || '');
+                    fd.append("guestName", booking.customer || '');
+                    fd.append("amount", String(actualUpiDepositAmt));
+                    fd.append("paymentType", "deposit");
+                    fd.append("note", `Security deposit — ${selectedBooking.property}`);
+                    depositUpiPromise = api.upload("/upi-payments/upload", fd);
+                }
+
+                await Promise.all([balanceUpiPromise, depositUpiPromise]);
+            }
+
             await api.patch(`/bookings/staycation/${numericId}/status`, { 
                 status: newStatus === "Checked In" ? "checked_in" : 
                         newStatus === "Cancelled" ? "cancelled" : 
@@ -471,40 +518,6 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     });
                 }
 
-                // Upload UPI proof images if UPI was used
-                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
-                const employee = await api.get(`/employees?propertyId=${selectedBooking.propertyId || ''}`);
-                const empId = Array.isArray(employee) && employee[0] ? employee[0].id : null;
-
-                const hasUpiBalance = collected20 === "UPI" || (collected20 === "Split" && splitUpiBalance > 0);
-                const actualUpiBalanceAmt = collected20 === "UPI" ? balanceAmt : splitUpiBalance;
-                if (hasUpiBalance && upiProofBalance) {
-                    const compressed = await compressImage(upiProofBalance);
-                    const fd = new FormData();
-                    fd.append("file", compressed);
-                    if (empId) fd.append("employeeId", String(empId));
-                    fd.append("bookingRef", booking.id || '');
-                    fd.append("guestName", booking.customer || '');
-                    fd.append("amount", String(actualUpiBalanceAmt));
-                    fd.append("paymentType", "balance");
-                    fd.append("note", `Balance — ${selectedBooking.property}`);
-                    await api.upload("/upi-payments/upload", fd);
-                }
-
-                const hasUpiDeposit = collectedSec === "UPI" || (collectedSec === "Split" && splitUpiDeposit > 0);
-                const actualUpiDepositAmt = collectedSec === "UPI" ? depositAmt : splitUpiDeposit;
-                if (hasUpiDeposit && upiProofDeposit) {
-                    const compressed = await compressImage(upiProofDeposit);
-                    const fd = new FormData();
-                    fd.append("file", compressed);
-                    if (empId) fd.append("employeeId", String(empId));
-                    fd.append("bookingRef", booking.id || '');
-                    fd.append("guestName", booking.customer || '');
-                    fd.append("amount", String(actualUpiDepositAmt));
-                    fd.append("paymentType", "deposit");
-                    fd.append("note", `Security deposit — ${selectedBooking.property}`);
-                    await api.upload("/upi-payments/upload", fd);
-                }
                 // Reset states
                 setUpiProofBalance(null);
                 setUpiProofDeposit(null);

@@ -511,7 +511,7 @@ export default function PropertiesView2Page() {
                                     // Robust UPI lookups
                                     const balanceUpi = b?.upiPayments?.find(u => u.paymentType === "balance") || b?.upiPayments?.find(u => u.amount === b.balanceAmount);
                                     const depositUpi = b?.upiPayments?.find(u => u.paymentType === "deposit") || b?.upiPayments?.find(u => u.amount === b.securityDeposit);
-                                    const refundUpi = b?.upiPayments?.find(u => u.paymentType === "deposit_refund") || b?.upiPayments?.find(u => u.amount === -b.securityDeposit);
+                                    const refundUpi = b?.upiPayments?.find(u => u.paymentType === "deposit_refund") || b?.upiPayments?.find(u => u.amount === -b.securityDeposit || Math.abs(u.amount) === Math.abs(b.securityDeposit));
 
                                     const balanceUpiId = balanceUpi?.id || b?.balanceUpiId || null;
                                     const depositUpiId = depositUpi?.id || b?.depositUpiId || null;

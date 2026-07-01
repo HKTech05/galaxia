@@ -733,7 +733,7 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
 // POST /api/bookings/staycation/:id/refund-deposit — Record deposit refund
 router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { method } = req.body; // "cash", "upi", or "none"
+        const { method, proofImageUrl, proofImageKey } = req.body; // "cash", "upi", or "none"
         const bookingId = parseInt(req.params.id as string);
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
@@ -749,6 +749,7 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
             data: {
                 depositRefunded: true,
                 depositRefundedAt: new Date(),
+                depositRefundMethod: method || null,
             },
         });
 
@@ -772,6 +773,34 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
                         amount: -depositAmount,
                         transactionType: "refund",
                         note: `Deposit refund (cash) — ${booking.property?.name || "Property"}`,
+                    },
+                });
+            }
+        }
+
+        // If refund method is UPI, create a UpiPayment record
+        if (method?.toLowerCase() === "upi") {
+            const employee = await prisma.employee.findFirst({
+                where: { propertyId: booking.propertyId, isActive: true },
+            });
+            if (employee) {
+                let relativeKey = proofImageKey || null;
+                if (relativeKey && (relativeKey.startsWith("http://") || relativeKey.startsWith("https://"))) {
+                    try {
+                        const urlObj = new URL(relativeKey);
+                        relativeKey = urlObj.pathname.slice(1);
+                    } catch {}
+                }
+                await prisma.upiPayment.create({
+                    data: {
+                        employeeId: employee.id,
+                        bookingRef: booking.bookingRef,
+                        guestName: booking.customerName,
+                        amount: -depositAmount, // negative since it's a refund
+                        paymentType: "deposit_refund",
+                        proofImageUrl: proofImageUrl || null,
+                        proofImageKey: relativeKey,
+                        note: `Deposit refund (UPI) — ${booking.property?.name || "Property"}`,
                     },
                 });
             }

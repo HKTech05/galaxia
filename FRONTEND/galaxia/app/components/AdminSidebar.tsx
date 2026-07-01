@@ -49,8 +49,7 @@ const admin3TopItems = [
 
 // Admin3 Daily Checkins dropdown items
 const admin3DailyCheckinItems = [
-    { name: "Properties", href: "/admin3/properties-view", icon: Building },
-    { name: "Properties 2", href: "/admin3/properties-view-2", icon: Hotel },
+    { name: "Properties", href: "/admin3/properties-view-2", icon: Hotel },
     { name: "Digital Diaries", href: "/admin3/dd-view", icon: Film },
 ];
 
