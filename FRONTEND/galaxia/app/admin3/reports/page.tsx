@@ -296,14 +296,17 @@ export default function ReportsPage() {
                     const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
                     const displayBase = taxable - extra;
 
-                    const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
                     const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+                    const avgNightlyRate = b._business === "staycation" ? (displayBase / nights) : displayBase;
+                    const formattedNightly = Number.isInteger(avgNightlyRate)
+                        ? pdfFmt(avgNightlyRate)
+                        : `Rs. ${avgNightlyRate.toFixed(2)}`;
 
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
-                        pdfFmt(nightlyRate),
+                        formattedNightly,
                         nights.toString(),
                         pdfFmt(extra),
                         pdfFmt(taxable),
@@ -592,8 +595,11 @@ export default function ReportsPage() {
                                         const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
                                         const displayBase = taxable - extra;
 
-                                        const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
                                         const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+                                        const avgNightlyRate = displayBase / nights;
+                                        const formattedNightly = Number.isInteger(avgNightlyRate)
+                                            ? fmt(avgNightlyRate)
+                                            : `₹${avgNightlyRate.toFixed(2)}`;
 
                                         return (
                                         <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
@@ -601,7 +607,7 @@ export default function ReportsPage() {
                                             <td className="py-2.5 px-3 font-medium text-slate-800">{b.customerName}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-")}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                                            <td className="py-2.5 px-3 text-right font-bold text-slate-600">{fmt(nightlyRate)}</td>
+                                            <td className="py-2.5 px-3 text-right font-bold text-slate-600">{formattedNightly}</td>
                                             <td className="py-2.5 px-3 text-center font-bold text-slate-600">{nights}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-orange-600">{fmt(extra)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-700">{fmt(taxable)}</td>
