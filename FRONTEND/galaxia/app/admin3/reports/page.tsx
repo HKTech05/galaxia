@@ -288,18 +288,23 @@ export default function ReportsPage() {
             let body: any[] = [];
 
             if (reportType === "gst") {
-                headers = ["Booking ID", "Guest Name", "Property Name", "Base Price", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
+                headers = ["Booking ID", "Guest Name", "Property Name", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
                 body = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
                     const rawExtra = taxable - bp;
                     const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
                     const displayBase = taxable - extra;
+
+                    const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
+                    const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
-                        pdfFmt(displayBase),
+                        pdfFmt(nightlyRate),
+                        nights.toString(),
                         pdfFmt(extra),
                         pdfFmt(taxable),
                         pdfFmt(b.gstAmount),
@@ -307,11 +312,13 @@ export default function ReportsPage() {
                     ];
                 });
                 // Totals row at the bottom
+                const totalNights = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0);
                 body.push([
                     "Totals",
                     "",
                     "",
                     pdfFmt(gstStats.totalBasePrice),
+                    totalNights.toString(),
                     pdfFmt(gstStats.totalExtraGuest),
                     pdfFmt(gstStats.totalBase),
                     pdfFmt(gstStats.totalGst),
@@ -570,6 +577,7 @@ export default function ReportsPage() {
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Property Name</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Check-in</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Base Price</th>
+                                        <th className="text-center py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Nights</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Extra Guest</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Taxable Amount</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">GST Charged</th>
@@ -583,13 +591,18 @@ export default function ReportsPage() {
                                         const rawExtra = taxable - bp;
                                         const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
                                         const displayBase = taxable - extra;
+
+                                        const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
+                                        const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+
                                         return (
                                         <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                                             <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">{b.bookingRef || `ID-${b.id}`}</td>
                                             <td className="py-2.5 px-3 font-medium text-slate-800">{b.customerName}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-")}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                                            <td className="py-2.5 px-3 text-right font-bold text-slate-600">{fmt(displayBase)}</td>
+                                            <td className="py-2.5 px-3 text-right font-bold text-slate-600">{fmt(nightlyRate)}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-slate-600">{nights}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-orange-600">{fmt(extra)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-700">{fmt(taxable)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-purple-600">{fmt(b.gstAmount)}</td>
@@ -601,6 +614,9 @@ export default function ReportsPage() {
                                     <tr className="bg-slate-50/80 font-black border-t-2 border-slate-200">
                                         <td className="py-3 px-3 uppercase text-slate-700" colSpan={4}>Totals</td>
                                         <td className="py-3 px-3 text-right text-slate-600">{fmt(gstStats.totalBasePrice)}</td>
+                                        <td className="py-3 px-3 text-center text-slate-600">
+                                            {filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0)}
+                                        </td>
                                         <td className="py-3 px-3 text-right text-orange-600">{fmt(gstStats.totalExtraGuest)}</td>
                                         <td className="py-3 px-3 text-right text-slate-800">{fmt(gstStats.totalBase)}</td>
                                         <td className="py-3 px-3 text-right text-purple-700">{fmt(gstStats.totalGst)}</td>
