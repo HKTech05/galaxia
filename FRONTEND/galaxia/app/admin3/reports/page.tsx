@@ -42,6 +42,26 @@ const getBookingMethods = (b: any): string[] => {
 const hasCash = (methods: string[]) => methods.some(m => m.includes("cash"));
 const hasUpi = (methods: string[]) => methods.some(m => m.includes("upi"));
 
+const getGstPropertyName = (b: any): string => {
+    const parentName = b.property?.name || "";
+    const isAmstel = parentName.toLowerCase().includes("amstel");
+    const isAmbrose = parentName.toLowerCase().includes("ambrose");
+
+    if (isAmstel) {
+        const subName = (b.subProperty?.name || "").toLowerCase();
+        if (subName.includes("family") || (b.assignedUnit || "").toLowerCase().includes("family")) {
+            return "Fam Unit - Amstelnest";
+        }
+        return "Std Unit- Amstelnest";
+    }
+
+    if (isAmbrose) {
+        return b.assignedUnit || b.subProperty?.name || "Unassigned";
+    }
+
+    return parentName || (b._business === "digital-diaries" ? "Digital Diaries" : "-");
+};
+
 const getReportPropertyName = (b: any, reportType: string): string => {
     const parentName = b.property?.name || "";
     if (reportType !== "revenue" && reportType !== "occupancy") {
@@ -233,15 +253,16 @@ export default function ReportsPage() {
             const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
             const pageWidth = doc.internal.pageSize.getWidth();
 
-            // Use 'Rs. ' instead of Rupee symbol '₹' to avoid PDF standard font encoding issues
-            const pdfFmt = (n: number) => `Rs. ${n.toLocaleString("en-IN")}`;
+            // Formatting helper for currency values without "Rs." prefix
+            const rawPdfFmt = (n: number) => n.toLocaleString("en-IN");
 
             // Set Title
             doc.setFontSize(16);
             doc.setFont("helvetica", "bold");
+            const titleSuffix = reportType !== "bookings" ? " (Rs.)" : "";
             const titleStr = reportType === "gst" 
-                ? "Galaxia Resorts — GST Report" 
-                : `Galaxia Resorts — ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`;
+                ? "Galaxia Resorts — GST Report (Rs.)" 
+                : `Galaxia Resorts — ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report${titleSuffix}`;
             doc.text(titleStr, pageWidth / 2, 15, { align: "center" });
 
             // Subtitle
@@ -270,17 +291,17 @@ export default function ReportsPage() {
             if (reportType === "gst") {
                 // Row 1
                 doc.text(`Total Bookings: ${gstStats.count}`, 20, startY + 13);
-                doc.text(`Total Taxable Amount: ${pdfFmt(gstStats.totalBase)}`, 110, startY + 13);
+                doc.text(`Total Taxable Amount: ${rawPdfFmt(gstStats.totalBase)}`, 110, startY + 13);
                 // Row 2
-                doc.text(`Total GST (18%): ${pdfFmt(gstStats.totalGst)}`, 20, startY + 20);
-                doc.text(`Total Gross: ${pdfFmt(gstStats.totalAmount)}`, 110, startY + 20);
+                doc.text(`Total GST (18%): ${rawPdfFmt(gstStats.totalGst)}`, 20, startY + 20);
+                doc.text(`Total Gross: ${rawPdfFmt(gstStats.totalAmount)}`, 110, startY + 20);
             } else {
                 // Row 1
                 doc.text(`Total Bookings: ${stats.count}`, 20, startY + 13);
-                doc.text(`Total Revenue: ${pdfFmt(stats.total)}`, 110, startY + 13);
+                doc.text(`Total Revenue: ${rawPdfFmt(stats.total)}`, 110, startY + 13);
                 // Row 2
-                doc.text(`GST Collected: ${pdfFmt(stats.gst)}`, 20, startY + 20);
-                doc.text(`Avg/Booking: ${pdfFmt(stats.avgBooking)}`, 110, startY + 20);
+                doc.text(`GST Collected: ${rawPdfFmt(stats.gst)}`, 20, startY + 20);
+                doc.text(`Avg/Booking: ${rawPdfFmt(stats.avgBooking)}`, 110, startY + 20);
             }
 
             // Build table
@@ -299,19 +320,19 @@ export default function ReportsPage() {
                     const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
                     const avgNightlyRate = b._business === "staycation" ? (displayBase / nights) : displayBase;
                     const formattedNightly = Number.isInteger(avgNightlyRate)
-                        ? pdfFmt(avgNightlyRate)
-                        : `Rs. ${avgNightlyRate.toFixed(2)}`;
+                        ? rawPdfFmt(avgNightlyRate)
+                        : avgNightlyRate.toFixed(2);
 
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
-                        b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
+                        getGstPropertyName(b),
                         formattedNightly,
                         nights.toString(),
-                        pdfFmt(extra),
-                        pdfFmt(taxable),
-                        pdfFmt(b.gstAmount),
-                        pdfFmt(b.totalAmount)
+                        rawPdfFmt(extra),
+                        rawPdfFmt(taxable),
+                        rawPdfFmt(b.gstAmount),
+                        rawPdfFmt(b.totalAmount)
                     ];
                 });
                 // Totals row at the bottom
@@ -320,12 +341,12 @@ export default function ReportsPage() {
                     "Totals",
                     "",
                     "",
-                    pdfFmt(gstStats.totalBasePrice),
+                    rawPdfFmt(gstStats.totalBasePrice),
                     totalNights.toString(),
-                    pdfFmt(gstStats.totalExtraGuest),
-                    pdfFmt(gstStats.totalBase),
-                    pdfFmt(gstStats.totalGst),
-                    pdfFmt(gstStats.totalAmount)
+                    rawPdfFmt(gstStats.totalExtraGuest),
+                    rawPdfFmt(gstStats.totalBase),
+                    rawPdfFmt(gstStats.totalGst),
+                    rawPdfFmt(gstStats.totalAmount)
                 ]);
             } else if (reportType === "revenue") {
                 headers = ["Property / Screen", "Bookings Count", "Total Revenue", "Avg/Booking"];
@@ -334,8 +355,8 @@ export default function ReportsPage() {
                     .map(([name, data]) => [
                         name,
                         data.count.toString(),
-                        pdfFmt(data.revenue),
-                        pdfFmt(Math.round(data.revenue / data.count))
+                        rawPdfFmt(data.revenue),
+                        rawPdfFmt(Math.round(data.revenue / data.count))
                     ]);
             } else if (reportType === "bookings") {
                 headers = ["Source", "Bookings Count"];
@@ -346,10 +367,10 @@ export default function ReportsPage() {
                 headers = ["Guest", "Property", "Check-in", "Nights", "Total Amount", "Source", "Status"];
                 body = filteredBookings.map(b => [
                     b.customerName,
-                    b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-"),
+                    getGstPropertyName(b),
                     new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
                     Math.max(1, Math.ceil((new Date(b.checkOutDate).getTime() - new Date(b.checkInDate).getTime()) / (1000 * 3600 * 24))).toString(),
-                    pdfFmt(b.totalAmount),
+                    rawPdfFmt(b.totalAmount),
                     b.source || "website",
                     b.status
                 ]);
@@ -378,6 +399,110 @@ export default function ReportsPage() {
         }
     };
 
+    // Direct Excel/CSV download
+    const handleDownloadExcel = () => {
+        try {
+            let headers: string[] = [];
+            let rows: string[][] = [];
+
+            if (reportType === "gst") {
+                headers = ["Booking ID", "Guest Name", "Property Name", "Check-in Date", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
+                rows = filteredBookings.map(b => {
+                    const taxable = b.totalAmount - b.gstAmount;
+                    const bp = b.basePrice || 0;
+                    const rawExtra = taxable - bp;
+                    const extra = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
+                    const displayBase = taxable - extra;
+
+                    const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+                    const avgNightlyRate = displayBase / nights;
+
+                    return [
+                        b.bookingRef || `ID-${b.id}`,
+                        b.customerName,
+                        getGstPropertyName(b),
+                        new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+                        avgNightlyRate.toFixed(2),
+                        nights.toString(),
+                        extra.toFixed(2),
+                        taxable.toFixed(2),
+                        b.gstAmount.toFixed(2),
+                        b.totalAmount.toFixed(2)
+                    ];
+                });
+                
+                // Add totals row
+                const totalNights = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0);
+                rows.push([
+                    "Totals",
+                    "",
+                    "",
+                    "",
+                    gstStats.totalBasePrice.toFixed(2),
+                    totalNights.toString(),
+                    gstStats.totalExtraGuest.toFixed(2),
+                    gstStats.totalBase.toFixed(2),
+                    gstStats.totalGst.toFixed(2),
+                    gstStats.totalAmount.toFixed(2)
+                ]);
+            } else if (reportType === "revenue") {
+                headers = ["Property / Screen", "Bookings Count", "Total Revenue", "Avg/Booking"];
+                rows = Object.entries(stats.byProperty)
+                    .sort((a, b) => b[1].revenue - a[1].revenue)
+                    .map(([name, data]) => [
+                        name,
+                        data.count.toString(),
+                        data.revenue.toFixed(2),
+                        Math.round(data.revenue / data.count).toFixed(2)
+                    ]);
+            } else if (reportType === "bookings") {
+                headers = ["Source", "Bookings Count"];
+                rows = Object.entries(stats.bySource)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([source, count]) => [source, count.toString()]);
+            } else {
+                // Occupancy
+                headers = ["Property / Villa", "Times Booked", "Total Nights Booked", "Total Revenue Generated"];
+                const occData: Record<string, { count: number; nights: number; revenue: number }> = {};
+                filteredBookings.forEach(b => {
+                    const name = getReportPropertyName(b, "occupancy");
+                    if (!occData[name]) occData[name] = { count: 0, nights: 0, revenue: 0 };
+                    occData[name].count++;
+                    const ci = new Date(b.checkInDate), co = new Date(b.checkOutDate);
+                    const nights = Math.max(1, Math.ceil((co.getTime() - ci.getTime()) / (1000 * 3600 * 24)));
+                    occData[name].nights += nights;
+                    occData[name].revenue += (b.totalAmount || 0);
+                });
+                rows = Object.entries(occData).sort((a, b) => b[1].count - a[1].count).map(([name, data]) => [
+                    name,
+                    data.count.toString(),
+                    data.nights.toString(),
+                    data.revenue.toFixed(2)
+                ]);
+            }
+
+            // Convert array of arrays to CSV string
+            const csvContent = [
+                headers.map(h => `"${h.replace(/"/g, '""')}"`).join(","),
+                ...rows.map(r => r.map(val => `"${val.replace(/"/g, '""')}"`).join(","))
+            ].join("\n");
+
+            // Download file
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${reportType}-report-${dateRange.from}-to-${dateRange.to}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error("Error generating Excel/CSV:", err);
+            alert("Failed to generate Excel sheet. Please try again.");
+        }
+    };
+
     const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
     if (loading) return <div className="flex items-center justify-center h-96"><div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" /></div>;
@@ -390,9 +515,14 @@ export default function ReportsPage() {
                     <h1 className="text-xl font-bold text-slate-800 tracking-tight">Reports & Analytics</h1>
                     <p className="text-sm text-slate-500 font-medium mt-1">Generate and download detailed reports.</p>
                 </div>
-                <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow-sm">
-                    <Download size={16} /> Download PDF
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={handleDownloadExcel} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer">
+                        <FileText size={16} /> Download Excel
+                    </button>
+                    <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer">
+                        <Download size={16} /> Download PDF
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -605,7 +735,7 @@ export default function ReportsPage() {
                                         <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                                             <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">{b.bookingRef || `ID-${b.id}`}</td>
                                             <td className="py-2.5 px-3 font-medium text-slate-800">{b.customerName}</td>
-                                            <td className="py-2.5 px-3 text-slate-600">{b.property?.name || (b._business === "digital-diaries" ? "Digital Diaries" : "-")}</td>
+                                            <td className="py-2.5 px-3 text-slate-600">{getGstPropertyName(b)}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-600">{formattedNightly}</td>
                                             <td className="py-2.5 px-3 text-center font-bold text-slate-600">{nights}</td>
