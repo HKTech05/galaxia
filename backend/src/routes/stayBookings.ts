@@ -480,15 +480,21 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
             }
         });
 
-        // Deduct complimentary water bottles (1 per adult guest + extra adult guests) on check-in
+        // Deduct complimentary water bottles (1 per adult guest + extra adult guests) on check-in for Ambrose & Amstel Nest only
         let waterBottlesDeducted = 0;
         if (status === "checked_in" && existing.status !== "checked_in") {
-            const extraAdultsCount = (existing.extraGuests || []).filter(
-                (eg: any) => !eg.guestName?.toLowerCase().includes("pet")
-            ).length;
-            const totalAdults = Math.max(1, (existing.numGuests || 0) + extraAdultsCount);
-            waterBottlesDeducted = totalAdults;
-            deductItemStock("water", totalAdults);
+            const propSlug = (booking.property?.slug || "").toLowerCase();
+            const propName = (booking.property?.name || "").toLowerCase();
+            const isAmbroseOrAmstel = propSlug.includes("ambrose") || propSlug.includes("amstel") || propName.includes("ambrose") || propName.includes("amstel");
+
+            if (isAmbroseOrAmstel) {
+                const extraAdultsCount = (existing.extraGuests || []).filter(
+                    (eg: any) => !eg.guestName?.toLowerCase().includes("pet")
+                ).length;
+                const totalAdults = Math.max(1, (existing.numGuests || 0) + extraAdultsCount);
+                waterBottlesDeducted = totalAdults;
+                deductItemStock("water", totalAdults);
+            }
 
             try {
                 const allottedUnit = booking.assignedUnit;
