@@ -88,6 +88,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     foodBills: b.foodBills || [],
                     extraGuestCharge: (b.extraGuests || []).reduce((sum: number, eg: any) => sum + (eg.chargeAmount || 0), 0),
                     extraGuestPayment: (b.extraGuests || []).map((eg: any) => eg.paymentMethod).filter(Boolean).join(", ") || "UPI",
+                    extraGuests: b.extraGuests || [],
                     assignedUnit: b.assignedUnit || null,
                 }));
                 setBookings(mapped);
@@ -631,10 +632,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         )}
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Number of Guests</p>
-                                        <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests} adults{booking.kids > 0 && <span className="text-sm font-bold text-blue-600 ml-2">+ {booking.kids} kid{booking.kids > 1 ? 's' : ''}</span>}{booking.pets > 0 && <span className="text-sm font-bold text-purple-600 ml-2">+ {booking.pets} pet{booking.pets > 1 ? 's' : ''}</span>}</p>
-                                        {booking.numCottages > 1 && <p className="text-xs font-bold text-indigo-600 mt-1">× {booking.numCottages} cottages</p>}
-                                    </div>
+                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Number of Guests</p>
+                                         <p className="text-xl tracking-tight font-black text-slate-800">{booking.guests} adults{booking.kids > 0 && <span className="text-sm font-bold text-blue-600 ml-2">+ {booking.kids} kid{booking.kids > 1 ? 's' : ''}</span>}{booking.pets > 0 && <span className="text-sm font-bold text-purple-600 ml-2">+ {booking.pets} pet{booking.pets > 1 ? 's' : ''}</span>}</p>
+                                         {booking.numCottages > 1 && <p className="text-xs font-bold text-indigo-600 mt-1">× {booking.numCottages} cottages</p>}
+                                         {(() => {
+                                             const extraAdultsCount = (booking.extraGuests || []).filter((eg: any) => !eg.guestName?.toLowerCase().includes("pet")).length;
+                                             const totalAdults = Math.max(1, (booking.guests || 0) + extraAdultsCount);
+                                             return (
+                                                 <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 text-cyan-800 rounded-lg border border-cyan-200 text-xs font-bold shadow-xs">
+                                                     <span>💧</span>
+                                                     <span>Complimentary Water: <strong className="text-cyan-900">{totalAdults} Free Bottle{totalAdults > 1 ? 's' : ''}</strong> (1/adult)</span>
+                                                 </div>
+                                             );
+                                         })()}
+                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Check-in</p>
                                         <p className="text-sm font-bold text-slate-800">{booking.checkInDate}</p>
@@ -870,6 +881,24 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         <div className="p-5 space-y-6">
                             {modalType === 'checkin' ? (
                                 <>
+                                    {(() => {
+                                        const extraAdultsCount = (selectedBooking.extraGuests || []).filter((eg: any) => !eg.guestName?.toLowerCase().includes("pet")).length;
+                                        const totalAdults = Math.max(1, (selectedBooking.guests || 0) + extraAdultsCount);
+                                        return (
+                                            <div className="bg-cyan-50 border border-cyan-200 p-3.5 rounded-xl flex items-center justify-between shadow-xs mb-4">
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className="text-xl">💧</span>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-cyan-900">Complimentary Room Water Bottles</p>
+                                                        <p className="text-[11px] font-medium text-cyan-700">{totalAdults} adult guest{totalAdults > 1 ? 's' : ''} arrived • 1 bottle/adult</p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs font-black bg-cyan-600 text-white px-2.5 py-1 rounded-lg shadow-xs">
+                                                    {totalAdults} Free Bottle{totalAdults > 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
                                     {((selectedBooking.parentProperty || "").toLowerCase().includes("ambrose")) ? (
                                         <div className="space-y-1.5 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                             <div className="flex items-center justify-between">

@@ -7,6 +7,7 @@ import { auditLog } from "../lib/logger";
 import { sendBookingConfirmation, sendOwnerBookingNotification } from "../lib/emailService";
 import { generateStaycationBookingPDF } from "../lib/pdfService";
 import { sendStaycationBookingConfirmation, sendWhatsAppTemplateMessage } from "../lib/whatsappService";
+import { deductItemStock } from "./hospitality";
 
 const router = Router();
 
@@ -461,7 +462,8 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
         const existing = await prisma.staycationBooking.findUnique({
-            where: { id: bookingId }
+            where: { id: bookingId },
+            include: { extraGuests: true }
         });
         if (!existing) return res.status(404).json({ error: "Booking not found" });
 
@@ -478,8 +480,16 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
             }
         });
 
-        // Send WhatsApp check-in notification from OTP bot
+        // Deduct complimentary water bottles (1 per adult guest + extra adult guests) on check-in
+        let waterBottlesDeducted = 0;
         if (status === "checked_in" && existing.status !== "checked_in") {
+            const extraAdultsCount = (existing.extraGuests || []).filter(
+                (eg: any) => !eg.guestName?.toLowerCase().includes("pet")
+            ).length;
+            const totalAdults = Math.max(1, (existing.numGuests || 0) + extraAdultsCount);
+            waterBottlesDeducted = totalAdults;
+            deductItemStock("water", totalAdults);
+
             try {
                 const allottedUnit = booking.assignedUnit;
                 if (allottedUnit && allottedUnit.trim() !== "") {
@@ -503,7 +513,7 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         }
 
         // Audit log
-        auditLog({ adminId: req.admin!.id, action: "booking_status_update", entityType: "staycation_booking", entityId: booking.id, details: { newStatus: status, assignedUnit } });
+        auditLog({ adminId: req.admin!.id, action: "booking_status_update", entityType: "staycation_booking", entityId: booking.id, details: { newStatus: status, assignedUnit, waterBottlesDeducted } });
 
         return res.json(booking);
     } catch (error) {
