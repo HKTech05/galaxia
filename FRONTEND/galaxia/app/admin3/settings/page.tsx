@@ -85,7 +85,8 @@ export default function SettingsPage() {
         }
     };
 
-    const propertiesLabel = (ap: string[] | null) => {
+    const propertiesLabel = (ap: string[] | null, role?: string) => {
+        if (role === "housekeeping") return "Amb/Amstel Housekeeping";
         if (!ap) return "All Properties (Full Access)";
         return ap.map(s => {
             switch (s) {
@@ -156,7 +157,7 @@ export default function SettingsPage() {
                                                         <tr key={admin.id} className="hover:bg-slate-50/50 transition-colors">
                                                             <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">#{admin.id}</td>
                                                             <td className="px-5 py-3.5">
-                                                                <span className="text-slate-800 font-medium">{propertiesLabel(admin.assignedProperties)}</span>
+                                                                <span className="text-slate-800 font-medium">{propertiesLabel(admin.assignedProperties, admin.role)}</span>
                                                             </td>
                                                             <td className="px-5 py-3.5">
                                                                 {editingId === admin.id ? (
@@ -211,7 +212,7 @@ export default function SettingsPage() {
                                                     <div className="flex items-start justify-between mb-3">
                                                         <div>
                                                             <p className="text-xs text-slate-400 font-mono mb-1">#{admin.id}</p>
-                                                            <p className="text-sm font-semibold text-slate-800">{propertiesLabel(admin.assignedProperties)}</p>
+                                                            <p className="text-sm font-semibold text-slate-800">{propertiesLabel(admin.assignedProperties, admin.role)}</p>
                                                         </div>
                                                         {editingId === admin.id ? (
                                                             <div className="flex items-center gap-1.5">

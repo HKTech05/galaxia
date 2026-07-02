@@ -250,7 +250,8 @@ export default function ReportsPage() {
             const { default: jsPDF } = await import("jspdf");
             const { default: autoTable } = await import("jspdf-autotable");
 
-            const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+            const orientation = reportType === "gst" ? "landscape" : "portrait";
+            const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
             const pageWidth = doc.internal.pageSize.getWidth();
 
             // Formatting helper for currency values without "Rs." prefix
@@ -289,12 +290,13 @@ export default function ReportsPage() {
             doc.setFontSize(8.5);
             
             if (reportType === "gst") {
+                const totalVillasCount = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numCottages || 1) : 0), 0);
                 // Row 1
-                doc.text(`Total Bookings: ${gstStats.count}`, 20, startY + 13);
-                doc.text(`Total Taxable Amount: ${rawPdfFmt(gstStats.totalBase)}`, 110, startY + 13);
+                doc.text(`Total Bookings: ${gstStats.count} (${totalVillasCount} Villas)`, 20, startY + 13);
+                doc.text(`Total Taxable Amount: ${rawPdfFmt(gstStats.totalBase)}`, 160, startY + 13);
                 // Row 2
                 doc.text(`Total GST (18%): ${rawPdfFmt(gstStats.totalGst)}`, 20, startY + 20);
-                doc.text(`Total Gross: ${rawPdfFmt(gstStats.totalAmount)}`, 110, startY + 20);
+                doc.text(`Total Gross: ${rawPdfFmt(gstStats.totalAmount)}`, 160, startY + 20);
             } else {
                 // Row 1
                 doc.text(`Total Bookings: ${stats.count}`, 20, startY + 13);
@@ -309,7 +311,7 @@ export default function ReportsPage() {
             let body: any[] = [];
 
             if (reportType === "gst") {
-                headers = ["Booking ID", "Guest Name", "Property Name", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
+                headers = ["Booking ID", "Guest Name", "Property Name", "No. of Villas", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
                 body = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
@@ -318,6 +320,7 @@ export default function ReportsPage() {
                     const displayBase = taxable - extra;
 
                     const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+                    const villas = b._business === "staycation" ? (b.numCottages || 1) : "-";
                     const avgNightlyRate = b._business === "staycation" ? (displayBase / nights) : displayBase;
                     const formattedNightly = Number.isInteger(avgNightlyRate)
                         ? rawPdfFmt(avgNightlyRate)
@@ -327,6 +330,7 @@ export default function ReportsPage() {
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         getGstPropertyName(b),
+                        villas.toString(),
                         formattedNightly,
                         nights.toString(),
                         rawPdfFmt(extra),
@@ -337,10 +341,12 @@ export default function ReportsPage() {
                 });
                 // Totals row at the bottom
                 const totalNights = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0);
+                const totalVillas = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numCottages || 1) : 0), 0);
                 body.push([
                     "Totals",
                     "",
                     "",
+                    totalVillas.toString(),
                     rawPdfFmt(gstStats.totalBasePrice),
                     totalNights.toString(),
                     rawPdfFmt(gstStats.totalExtraGuest),
@@ -406,7 +412,7 @@ export default function ReportsPage() {
             let rows: string[][] = [];
 
             if (reportType === "gst") {
-                headers = ["Booking ID", "Guest Name", "Property Name", "Check-in Date", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
+                headers = ["Booking ID", "Guest Name", "Property Name", "No. of Villas", "Check-in Date", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
                 rows = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
@@ -415,12 +421,14 @@ export default function ReportsPage() {
                     const displayBase = taxable - extra;
 
                     const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+                    const villas = b._business === "staycation" ? (b.numCottages || 1) : "-";
                     const avgNightlyRate = displayBase / nights;
 
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         getGstPropertyName(b),
+                        villas.toString(),
                         new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
                         avgNightlyRate.toFixed(2),
                         nights.toString(),
@@ -433,10 +441,12 @@ export default function ReportsPage() {
                 
                 // Add totals row
                 const totalNights = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0);
+                const totalVillas = filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numCottages || 1) : 0), 0);
                 rows.push([
                     "Totals",
                     "",
                     "",
+                    totalVillas.toString(),
                     "",
                     gstStats.totalBasePrice.toFixed(2),
                     totalNights.toString(),
@@ -708,6 +718,7 @@ export default function ReportsPage() {
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Booking ID</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Guest Name</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Property Name</th>
+                                        <th className="text-center py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">No. of Villas</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Check-in</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Base Price</th>
                                         <th className="text-center py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Nights</th>
@@ -726,6 +737,7 @@ export default function ReportsPage() {
                                         const displayBase = taxable - extra;
 
                                         const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
+                                        const villas = b._business === "staycation" ? (b.numCottages || 1) : "-";
                                         const avgNightlyRate = displayBase / nights;
                                         const formattedNightly = Number.isInteger(avgNightlyRate)
                                             ? fmt(avgNightlyRate)
@@ -736,6 +748,7 @@ export default function ReportsPage() {
                                             <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">{b.bookingRef || `ID-${b.id}`}</td>
                                             <td className="py-2.5 px-3 font-medium text-slate-800">{b.customerName}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{getGstPropertyName(b)}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-slate-700">{villas}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-600">{formattedNightly}</td>
                                             <td className="py-2.5 px-3 text-center font-bold text-slate-600">{nights}</td>
@@ -748,7 +761,11 @@ export default function ReportsPage() {
                                     })}
                                     {/* Summary Row */}
                                     <tr className="bg-slate-50/80 font-black border-t-2 border-slate-200">
-                                        <td className="py-3 px-3 uppercase text-slate-700" colSpan={4}>Totals</td>
+                                        <td className="py-3 px-3 uppercase text-slate-700" colSpan={3}>Totals</td>
+                                        <td className="py-3 px-3 text-center text-slate-800 font-black">
+                                            {filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numCottages || 1) : 0), 0)}
+                                        </td>
+                                        <td className="py-3 px-3 text-slate-400"></td>
                                         <td className="py-3 px-3 text-right text-slate-600">{fmt(gstStats.totalBasePrice)}</td>
                                         <td className="py-3 px-3 text-center text-slate-600">
                                             {filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0)}
