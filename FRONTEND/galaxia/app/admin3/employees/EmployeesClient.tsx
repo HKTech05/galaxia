@@ -64,7 +64,7 @@ export default function EmployeesClient() {
     const [cashDateFrom, setCashDateFrom] = useState("");
     const [cashDateTo, setCashDateTo] = useState("");
 
-    // Cashout modal state (for DD employees)
+    // Cashout modal state (for DD, Ambrose, and Amstel Nest employees)
     const [showCashoutModal, setShowCashoutModal] = useState(false);
     const [cashoutEmployeeId, setCashoutEmployeeId] = useState<number | null>(null);
     const [cashoutMode, setCashoutMode] = useState<'full' | 'custom'>('full');
@@ -350,7 +350,7 @@ export default function EmployeesClient() {
                                 <span className="text-[10px] font-bold text-slate-400 uppercase group-hover:text-purple-600 transition-colors">Click to view log</span>
                             </div>
                         </div>
-                        {emp.location === 'Digital Diaries' ? (
+                        {['digital diaries', 'ambrose', 'amstel nest'].some(loc => emp.location?.toLowerCase().includes(loc)) ? (
                             <button
                                 onClick={(e) => openCashoutModal(e, emp.id)}
                                 disabled={emp.cashCollected === 0}
@@ -547,7 +547,7 @@ export default function EmployeesClient() {
                 </div>
             )}
 
-            {/* Cashout Modal for DD */}
+            {/* Cashout Modal for DD, Ambrose & Amstel Nest */}
             {showCashoutModal && cashoutEmployeeId && (() => {
                 const emp = employees.find(e => e.id === cashoutEmployeeId);
                 if (!emp) return null;
