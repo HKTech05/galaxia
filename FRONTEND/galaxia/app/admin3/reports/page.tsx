@@ -230,7 +230,10 @@ export default function ReportsPage() {
             const bp = b.basePrice || 0;
             const rawExtra = base - bp;
             const extraGuest = Math.abs(rawExtra) < 10 ? 0 : rawExtra;
-            totalBasePrice += (base - extraGuest);
+            const displayBase = base - extraGuest;
+
+            const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
+            totalBasePrice += nightlyRate;
             totalExtraGuest += extraGuest;
         });
 
@@ -311,7 +314,7 @@ export default function ReportsPage() {
             let body: any[] = [];
 
             if (reportType === "gst") {
-                headers = ["Booking ID", "Guest Name", "Property Name", "No. of Villas", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
+                headers = ["Booking ID", "Guest Name", "Property Name", "Base Price", "No. of Villas", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
                 body = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
@@ -321,17 +324,17 @@ export default function ReportsPage() {
 
                     const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
                     const villas = b._business === "staycation" ? (b.numCottages || 1) : "-";
-                    const avgNightlyRate = b._business === "staycation" ? (displayBase / nights) : displayBase;
-                    const formattedNightly = Number.isInteger(avgNightlyRate)
-                        ? rawPdfFmt(avgNightlyRate)
-                        : avgNightlyRate.toFixed(2);
+                    const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
+                    const formattedNightly = Number.isInteger(nightlyRate)
+                        ? rawPdfFmt(nightlyRate)
+                        : nightlyRate.toFixed(2);
 
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         getGstPropertyName(b),
-                        villas.toString(),
                         formattedNightly,
+                        villas.toString(),
                         nights.toString(),
                         rawPdfFmt(extra),
                         rawPdfFmt(taxable),
@@ -346,8 +349,8 @@ export default function ReportsPage() {
                     "Totals",
                     "",
                     "",
-                    totalVillas.toString(),
                     rawPdfFmt(gstStats.totalBasePrice),
+                    totalVillas.toString(),
                     totalNights.toString(),
                     rawPdfFmt(gstStats.totalExtraGuest),
                     rawPdfFmt(gstStats.totalBase),
@@ -412,7 +415,7 @@ export default function ReportsPage() {
             let rows: string[][] = [];
 
             if (reportType === "gst") {
-                headers = ["Booking ID", "Guest Name", "Property Name", "No. of Villas", "Check-in Date", "Base Price", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
+                headers = ["Booking ID", "Guest Name", "Property Name", "Check-in Date", "Base Price", "No. of Villas", "Nights", "Extra Guest", "Taxable Amount", "GST Charged", "Gross Amount"];
                 rows = filteredBookings.map(b => {
                     const taxable = b.totalAmount - b.gstAmount;
                     const bp = b.basePrice || 0;
@@ -422,15 +425,15 @@ export default function ReportsPage() {
 
                     const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
                     const villas = b._business === "staycation" ? (b.numCottages || 1) : "-";
-                    const avgNightlyRate = displayBase / nights;
+                    const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
 
                     return [
                         b.bookingRef || `ID-${b.id}`,
                         b.customerName,
                         getGstPropertyName(b),
-                        villas.toString(),
                         new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-                        avgNightlyRate.toFixed(2),
+                        nightlyRate.toFixed(2),
+                        villas.toString(),
                         nights.toString(),
                         extra.toFixed(2),
                         taxable.toFixed(2),
@@ -446,9 +449,9 @@ export default function ReportsPage() {
                     "Totals",
                     "",
                     "",
-                    totalVillas.toString(),
                     "",
                     gstStats.totalBasePrice.toFixed(2),
+                    totalVillas.toString(),
                     totalNights.toString(),
                     gstStats.totalExtraGuest.toFixed(2),
                     gstStats.totalBase.toFixed(2),
@@ -718,9 +721,9 @@ export default function ReportsPage() {
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Booking ID</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Guest Name</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Property Name</th>
-                                        <th className="text-center py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">No. of Villas</th>
                                         <th className="text-left py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Check-in</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Base Price</th>
+                                        <th className="text-center py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">No. of Villas</th>
                                         <th className="text-center py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Nights</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Extra Guest</th>
                                         <th className="text-right py-3 px-3 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Taxable Amount</th>
@@ -738,19 +741,19 @@ export default function ReportsPage() {
 
                                         const nights = b._business === "staycation" ? (b.numNights || 1) : 1;
                                         const villas = b._business === "staycation" ? (b.numCottages || 1) : "-";
-                                        const avgNightlyRate = displayBase / nights;
-                                        const formattedNightly = Number.isInteger(avgNightlyRate)
-                                            ? fmt(avgNightlyRate)
-                                            : `₹${avgNightlyRate.toFixed(2)}`;
+                                        const nightlyRate = b._business === "staycation" ? (b.nightlyRate || 0) : displayBase;
+                                        const formattedNightly = Number.isInteger(nightlyRate)
+                                            ? fmt(nightlyRate)
+                                            : `₹${nightlyRate.toFixed(2)}`;
 
                                         return (
                                         <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                                             <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">{b.bookingRef || `ID-${b.id}`}</td>
                                             <td className="py-2.5 px-3 font-medium text-slate-800">{b.customerName}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{getGstPropertyName(b)}</td>
-                                            <td className="py-2.5 px-3 text-center font-bold text-slate-700">{villas}</td>
                                             <td className="py-2.5 px-3 text-slate-600">{new Date(b.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-600">{formattedNightly}</td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-slate-700">{villas}</td>
                                             <td className="py-2.5 px-3 text-center font-bold text-slate-600">{nights}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-orange-600">{fmt(extra)}</td>
                                             <td className="py-2.5 px-3 text-right font-bold text-slate-700">{fmt(taxable)}</td>
@@ -762,11 +765,11 @@ export default function ReportsPage() {
                                     {/* Summary Row */}
                                     <tr className="bg-slate-50/80 font-black border-t-2 border-slate-200">
                                         <td className="py-3 px-3 uppercase text-slate-700" colSpan={3}>Totals</td>
+                                        <td className="py-3 px-3 text-slate-400"></td>
+                                        <td className="py-3 px-3 text-right text-slate-600">{fmt(gstStats.totalBasePrice)}</td>
                                         <td className="py-3 px-3 text-center text-slate-800 font-black">
                                             {filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numCottages || 1) : 0), 0)}
                                         </td>
-                                        <td className="py-3 px-3 text-slate-400"></td>
-                                        <td className="py-3 px-3 text-right text-slate-600">{fmt(gstStats.totalBasePrice)}</td>
                                         <td className="py-3 px-3 text-center text-slate-600">
                                             {filteredBookings.reduce((sum, b) => sum + (b._business === "staycation" ? (b.numNights || 1) : 1), 0)}
                                         </td>
