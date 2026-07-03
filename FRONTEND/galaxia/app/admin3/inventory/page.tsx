@@ -386,18 +386,9 @@ export default function InventoryPage() {
                     {currentTab === "manage" && (
                         <div className="space-y-6">
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                                <div className="flex items-center justify-between flex-wrap gap-4 mb-4 pb-4 border-b border-slate-100">
-                                    <div>
-                                        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Manage Menu Items</h2>
-                                        <p className="text-xs text-slate-400 mt-1">Toggle tracking, edit item details, or remove items permanently from the menu.</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowAddModal(true)}
-                                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm"
-                                    >
-                                        <Plus size={14} />
-                                        Add Item
-                                    </button>
+                                <div className="mb-4 pb-4 border-b border-slate-100">
+                                    <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Manage Menu Items</h2>
+                                    <p className="text-xs text-slate-400 mt-1">Toggle tracking, edit item details, or remove items permanently from the menu.</p>
                                 </div>
 
                                 <div className="space-y-2.5">
