@@ -5,7 +5,7 @@ import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 const router = Router();
 
 // GET /api/employees — List employees
-router.get("/", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+router.get("/", authMiddleware, requireRole("owner", "developer", "staycation_admin", "dd_admin"), async (req, res) => {
     try {
         const { propertyId } = req.query;
         const where: any = { isActive: true };
