@@ -220,7 +220,7 @@ export default function InventoryPage() {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            {currentTab === "stock" && (
+                            {(currentTab === "stock" || currentTab === "manage") && (
                                 <>
                                     <button
                                         onClick={() => setShowAddModal(true)}
@@ -386,44 +386,95 @@ export default function InventoryPage() {
                     {currentTab === "manage" && (
                         <div className="space-y-6">
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-1">Select Items for Inventory Tracking</h2>
-                                <p className="text-xs text-slate-400 mb-4">Toggle items on/off to include them in the Stock Management tab. Only tracked items will have stock managed.</p>
-                                {categories.map(cat => {
-                                    const catItems = menuItems.filter(item => item.category === cat);
-                                    if (catItems.length === 0) return null;
-                                    return (
-                                        <div key={cat} className="mb-6 last:mb-0">
-                                            <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
-                                                {cat === "Normal" ? <ShoppingBag size={16} className="text-amber-500" /> : <Coffee size={16} className="text-purple-500" />}
-                                                {cat === "Normal" ? "Beverages & Refreshments" : cat}
-                                            </h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                {catItems.map(item => (
-                                                    <label key={item.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                                        item.tracked ? "bg-purple-50 border-purple-200" : "bg-slate-50 border-slate-200 hover:bg-slate-100"
-                                                    }`}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={!!item.tracked}
-                                                            onChange={() => {
-                                                                const updated = menuItems.map(m => m.id === item.id ? { ...m, tracked: !m.tracked } : m);
-                                                                setMenuItems(updated);
-                                                                // Auto-save
-                                                                api.put("/hospitality/menu", { menuItems: updated }).catch(() => {});
-                                                            }}
-                                                            className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
-                                                        />
-                                                        <div className="flex-1 min-w-0">
-                                                            <span className="text-sm font-bold text-slate-800">{item.name}</span>
-                                                            <span className="text-xs text-slate-400 ml-2">₹{item.price}</span>
-                                                        </div>
-                                                        {item.tracked && <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">TRACKED</span>}
-                                                    </label>
-                                                ))}
+                                <div className="flex items-center justify-between flex-wrap gap-4 mb-4 pb-4 border-b border-slate-100">
+                                    <div>
+                                        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Manage Menu Items</h2>
+                                        <p className="text-xs text-slate-400 mt-1">Toggle tracking, edit item details, or remove items permanently from the menu.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowAddModal(true)}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm"
+                                    >
+                                        <Plus size={14} />
+                                        Add Item
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2.5">
+                                    {menuItems.map(item => (
+                                        <div
+                                            key={item.id}
+                                            className={`flex items-center gap-4 p-3.5 rounded-xl border transition-all ${
+                                                item.tracked ? "bg-purple-50/50 border-purple-200" : "bg-slate-50 border-slate-200 hover:bg-slate-100/80"
+                                            }`}
+                                        >
+                                            {/* Track Checkbox */}
+                                            <input
+                                                type="checkbox"
+                                                checked={!!item.tracked}
+                                                onChange={() => {
+                                                    const updated = menuItems.map(m => m.id === item.id ? { ...m, tracked: !m.tracked } : m);
+                                                    setMenuItems(updated);
+                                                    // Auto-save
+                                                    api.put("/hospitality/menu", { menuItems: updated }).catch(() => {});
+                                                }}
+                                                className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shrink-0"
+                                                title={item.tracked ? "Untrack item" : "Track item"}
+                                            />
+
+                                            {/* Name (editable) */}
+                                            <div className="flex-1 min-w-0">
+                                                <input
+                                                    type="text"
+                                                    value={editNames[item.id] || item.name}
+                                                    onChange={e => setEditNames(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                    className="text-sm font-extrabold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-purple-500 focus:outline-none w-full transition-colors pb-0.5"
+                                                    placeholder="Item Name"
+                                                />
+                                            </div>
+
+                                            {/* Price (editable) */}
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <span className="text-xs font-bold text-slate-400">₹</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={editPrices[item.id] || String(item.price)}
+                                                    onChange={e => setEditPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                    className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                />
+                                            </div>
+
+                                            {/* Right side badges & actions */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {item.tracked && (
+                                                    <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                                                        TRACKED
+                                                    </span>
+                                                )}
+                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
+                                                    item.category === "Normal"
+                                                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                                                        : item.category === "High Tea"
+                                                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                        : "bg-teal-50 text-teal-700 border-teal-200"
+                                                }`}>
+                                                    {item.category}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleDeleteItem(item.id)}
+                                                    className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
+                                                    title={`Delete ${item.name}`}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                    ))}
+                                    {menuItems.length === 0 && (
+                                        <p className="text-xs text-slate-400 text-center py-8">No menu items found.</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
