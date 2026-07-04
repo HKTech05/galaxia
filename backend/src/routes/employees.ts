@@ -45,8 +45,16 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
         const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
         if (!employee) return res.status(404).json({ error: "Employee not found" });
 
-        const { amount: requestedAmount } = req.body;
+        const { amount: requestedAmount, category } = req.body;
         const total = employee.cashCollected;
+
+        const istNow = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+        let noteCategoryTag = "";
+        if (category === "security_deposit") {
+            noteCategoryTag = " (Security Deposit)";
+        } else if (category === "rent") {
+            noteCategoryTag = " (Rent)";
+        }
 
         // Support partial cashout if amount is provided
         const cashoutAmount = (requestedAmount && requestedAmount > 0 && requestedAmount <= total)
@@ -54,13 +62,12 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
             : total;
 
         if (cashoutAmount > 0) {
-            const istNow = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
             await prisma.cashTransaction.create({
                 data: {
                     employeeId,
                     amount: cashoutAmount,
                     transactionType: "owner_pickup",
-                    note: `Collected by owner${cashoutAmount < total ? ' (partial)' : ''} at ${istNow}`,
+                    note: `Collected by owner${noteCategoryTag}${cashoutAmount < total ? ' (partial)' : ''} at ${istNow}`,
                 },
             });
         }

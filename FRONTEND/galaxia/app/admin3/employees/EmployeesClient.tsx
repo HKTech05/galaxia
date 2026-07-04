@@ -25,17 +25,110 @@ interface CashLog {
     bookingRef: string;
 }
 
+interface DisplayCard {
+    key: string;
+    employeeId: number;
+    title: string;
+    empName: string;
+    role: string;
+    location: string;
+    pendingCash: number;
+    lastCollectedAt: string;
+    cardType: 'security_deposit' | 'rent' | 'general';
+    category?: 'security_deposit' | 'rent';
+    canCustomCashout: boolean;
+}
+
+// Log categorization helper functions
+const isSecDepositTx = (log: CashLog) => {
+    const note = (log.note || '').toLowerCase();
+    const type = (log.transactionType || '').toLowerCase();
+    return note.includes('security deposit') || note.includes('deposit refund') || type === 'refund' || note.includes('(security deposit)');
+};
+
+const isRentTx = (log: CashLog) => {
+    const note = (log.note || '').toLowerCase();
+    const type = (log.transactionType || '').toLowerCase();
+    return note.includes('balance') || note.includes('food bill') || note.includes('extra guest') || note.includes('pet') || type === 'food_collection' || type === 'expense' || note.includes('satkar') || note.includes('expense') || note.includes('(rent)');
+};
+
+const isExplicitSecOwnerPickup = (log: CashLog) => {
+    const note = (log.note || '').toLowerCase();
+    const type = (log.transactionType || '').toLowerCase();
+    return (type === 'owner_pickup' || note.includes('owner')) && (note.includes('security deposit') || note.includes('deposit'));
+};
+
+const isExplicitRentOwnerPickup = (log: CashLog) => {
+    const note = (log.note || '').toLowerCase();
+    const type = (log.transactionType || '').toLowerCase();
+    return (type === 'owner_pickup' || note.includes('owner')) && note.includes('rent');
+};
+
+const isGenericOwnerPickup = (log: CashLog) => {
+    const note = (log.note || '').toLowerCase();
+    const type = (log.transactionType || '').toLowerCase();
+    return (type === 'owner_pickup' || note.includes('owner')) && !note.includes('security deposit') && !note.includes('rent');
+};
+
+// Calculate split balances for Security Deposit vs Rent
+function calculateSplitBalances(logs: CashLog[]) {
+    let secIn = 0;
+    let secOut = 0;
+    let secExplicitPickup = 0;
+
+    let rentIn = 0;
+    let rentOut = 0;
+    let rentExplicitPickup = 0;
+
+    let genericPickupTotal = 0;
+
+    for (const log of logs) {
+        const note = (log.note || '').toLowerCase();
+        const type = (log.transactionType || '').toLowerCase();
+        const amt = log.amount;
+
+        if (isExplicitSecOwnerPickup(log)) {
+            secExplicitPickup += Math.abs(amt);
+        } else if (isExplicitRentOwnerPickup(log)) {
+            rentExplicitPickup += Math.abs(amt);
+        } else if (isGenericOwnerPickup(log)) {
+            genericPickupTotal += Math.abs(amt);
+        } else if (isSecDepositTx(log)) {
+            if (amt > 0 && type !== 'refund') {
+                secIn += amt;
+            } else {
+                secOut += Math.abs(amt);
+            }
+        } else if (isRentTx(log)) {
+            if (amt > 0 && type !== 'expense') {
+                rentIn += amt;
+            } else {
+                rentOut += Math.abs(amt);
+            }
+        }
+    }
+
+    const rentGrossPending = Math.max(0, rentIn - rentOut - rentExplicitPickup);
+    const genericAppliedToRent = Math.min(genericPickupTotal, rentGrossPending);
+    const rentNetPending = Math.max(0, rentGrossPending - genericAppliedToRent);
+
+    const secGrossPending = Math.max(0, secIn - secOut - secExplicitPickup);
+    const genericAppliedToSec = Math.max(0, genericPickupTotal - genericAppliedToRent);
+    const secNetPending = Math.max(0, secGrossPending - genericAppliedToSec);
+
+    return { secNetPending, rentNetPending };
+}
+
 export default function EmployeesClient() {
     const [employees, setEmployees] = useState<Employee[]>([]);
-    const [cashLogs, setCashLogs] = useState<CashLog[]>([]);
+    const [allCashLogsMap, setAllCashLogsMap] = useState<Record<number, CashLog[]>>({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch employees from API
+    // Fetch employees and transaction logs from API
     const fetchEmployees = useCallback(async () => {
         try {
             const data = await api.get("/employees");
-            // Map API response to match Employee interface
-            const mapped = (Array.isArray(data) ? data : []).map((emp: any) => ({
+            const mapped: Employee[] = (Array.isArray(data) ? data : []).map((emp: any) => ({
                 id: emp.id,
                 name: emp.name,
                 role: emp.role,
@@ -44,6 +137,18 @@ export default function EmployeesClient() {
                 lastCollectedAt: emp.lastCollectedAt ? new Date(emp.lastCollectedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Never",
             }));
             setEmployees(mapped);
+
+            // Fetch transaction logs for each employee to calculate split balances
+            const logsMap: Record<number, CashLog[]> = {};
+            await Promise.all(mapped.map(async (emp) => {
+                try {
+                    const logs = await api.get(`/employees/${emp.id}/transactions`);
+                    logsMap[emp.id] = logs || [];
+                } catch (err) {
+                    logsMap[emp.id] = [];
+                }
+            }));
+            setAllCashLogsMap(logsMap);
         } catch (err) {
             console.error("Failed to fetch employees:", err);
         } finally {
@@ -53,20 +158,21 @@ export default function EmployeesClient() {
 
     useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
 
-    // 2. Filters
+    // Filters
     const ALL_PROPERTIES = ["Digital Diaries", "Ambrose", "Amstel Nest", "La Paraiso", "Mount View", "Hill View", "Heavenly Villa"];
     const [selectedProperties, setSelectedProperties] = useState<string[]>(ALL_PROPERTIES);
 
-    // 3. UI State
+    // UI State
     const [editingEmployee, setEditingEmployee] = useState<number | null>(null);
     const [editName, setEditName] = useState("");
-    const [viewEmployeeId, setViewEmployeeId] = useState<number | null>(null);
+    const [activeCard, setActiveCard] = useState<DisplayCard | null>(null);
+    const [activeCardLogs, setActiveCardLogs] = useState<CashLog[]>([]);
     const [cashDateFrom, setCashDateFrom] = useState("");
     const [cashDateTo, setCashDateTo] = useState("");
 
-    // Cashout modal state (for DD, Ambrose, and Amstel Nest employees)
+    // Cashout modal state
     const [showCashoutModal, setShowCashoutModal] = useState(false);
-    const [cashoutEmployeeId, setCashoutEmployeeId] = useState<number | null>(null);
+    const [cashoutCard, setCashoutCard] = useState<DisplayCard | null>(null);
     const [cashoutMode, setCashoutMode] = useState<'full' | 'custom'>('full');
     const [cashoutCustomAmount, setCashoutCustomAmount] = useState('');
 
@@ -86,44 +192,46 @@ export default function EmployeesClient() {
         }
     };
 
-    const handleCollectCash = async (e: React.MouseEvent, employeeId: number, amount?: number) => {
+    const handleCollectCash = async (e: React.MouseEvent, employeeId: number, amount?: number, category?: 'security_deposit' | 'rent') => {
         e.stopPropagation();
         try {
-            await api.post(`/employees/${employeeId}/collect`, amount ? { amount } : {});
+            await api.post(`/employees/${employeeId}/collect`, {
+                ...(amount ? { amount } : {}),
+                ...(category ? { category } : {})
+            });
             await fetchEmployees();
-            // Refresh transaction logs if viewing this employee
-            if (viewEmployeeId === employeeId) {
+            // Refresh logs if viewing card for this employee
+            if (activeCard && activeCard.employeeId === employeeId) {
                 const logs = await api.get(`/employees/${employeeId}/transactions`);
-                setCashLogs(logs);
+                setAllCashLogsMap(prev => ({ ...prev, [employeeId]: logs || [] }));
+                filterLogsForCard(activeCard, logs || []);
             }
         } catch (err) {
             console.error("Failed to collect cash:", err);
         }
     };
 
-    const openCashoutModal = (e: React.MouseEvent, empId: number) => {
+    const openCashoutModal = (e: React.MouseEvent, card: DisplayCard) => {
         e.stopPropagation();
-        setCashoutEmployeeId(empId);
+        setCashoutCard(card);
         setCashoutMode('full');
         setCashoutCustomAmount('');
         setShowCashoutModal(true);
     };
 
     const confirmCashout = async () => {
-        if (!cashoutEmployeeId) return;
-        const emp = employees.find(e => e.id === cashoutEmployeeId);
-        if (!emp) return;
+        if (!cashoutCard) return;
         const amount = cashoutMode === 'custom' ? parseFloat(cashoutCustomAmount) : undefined;
-        if (cashoutMode === 'custom' && (!amount || amount <= 0 || amount > emp.cashCollected)) {
-            alert(`Please enter a valid amount between 1 and ₹${emp.cashCollected.toLocaleString('en-IN')}`);
+        if (cashoutMode === 'custom' && (!amount || amount <= 0 || amount > cashoutCard.pendingCash)) {
+            alert(`Please enter a valid amount between 1 and ₹${cashoutCard.pendingCash.toLocaleString('en-IN')}`);
             return;
         }
-        // Create a synthetic mouse event for the handler
         const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
-        await handleCollectCash(syntheticEvent, cashoutEmployeeId, amount);
+        await handleCollectCash(syntheticEvent, cashoutCard.employeeId, amount, cashoutCard.category);
         setShowCashoutModal(false);
         setCashoutCustomAmount('');
         setCashoutMode('full');
+        setCashoutCard(null);
     };
 
     const handleSaveName = async (e: React.MouseEvent | React.KeyboardEvent, id: number) => {
@@ -137,20 +245,32 @@ export default function EmployeesClient() {
         }
     };
 
-    const startEditing = (e: React.MouseEvent, emp: Employee) => {
+    const startEditing = (e: React.MouseEvent, id: number, currentName: string) => {
         e.stopPropagation();
-        setEditingEmployee(emp.id);
-        setEditName(emp.name);
+        setEditingEmployee(id);
+        setEditName(currentName);
     };
 
-    const openDetails = async (id: number) => {
+    const filterLogsForCard = (card: DisplayCard, logs: CashLog[]) => {
+        let cardLogs = logs;
+        if (card.cardType === 'security_deposit') {
+            cardLogs = logs.filter(l => isSecDepositTx(l) || isExplicitSecOwnerPickup(l));
+        } else if (card.cardType === 'rent') {
+            cardLogs = logs.filter(l => isRentTx(l) || isExplicitRentOwnerPickup(l));
+        }
+        setActiveCardLogs(cardLogs);
+    };
+
+    const openDetails = async (card: DisplayCard) => {
         if (editingEmployee === null) {
-            setViewEmployeeId(id);
+            setActiveCard(card);
             try {
-                const logs = await api.get(`/employees/${id}/transactions`);
-                setCashLogs(logs);
+                const logs = await api.get(`/employees/${card.employeeId}/transactions`);
+                setAllCashLogsMap(prev => ({ ...prev, [card.employeeId]: logs || [] }));
+                filterLogsForCard(card, logs || []);
             } catch (err) {
                 console.error("Failed to fetch transaction logs:", err);
+                filterLogsForCard(card, allCashLogsMap[card.employeeId] || []);
             }
         }
     };
@@ -160,22 +280,22 @@ export default function EmployeesClient() {
         try {
             await api.delete(`/employees/${empId}/transactions/${txId}`);
             await fetchEmployees();
-            const logs = await api.get(`/employees/${empId}/transactions`);
-            setCashLogs(logs);
+            if (activeCard) {
+                const logs = await api.get(`/employees/${empId}/transactions`);
+                setAllCashLogsMap(prev => ({ ...prev, [empId]: logs || [] }));
+                filterLogsForCard(activeCard, logs || []);
+            }
         } catch (err) {
             console.error('Failed to delete cash transaction:', err);
             alert('Failed to delete transaction');
         }
     };
 
-    // 4. Dedicated PDF Download
+    // Dedicated PDF Download
     const downloadEmployeePDF = async (filterByRange = false) => {
-        if (!viewEmployeeId) return;
+        if (!activeCard) return;
 
-        const emp = employees.find(e => e.id === viewEmployeeId);
-        if (!emp) return;
-
-        let empLogs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+        let empLogs = [...activeCardLogs];
         if (filterByRange && (cashDateFrom || cashDateTo)) {
             empLogs = empLogs.filter(log => {
                 const d = new Date(log.createdAt);
@@ -190,12 +310,12 @@ export default function EmployeesClient() {
         const doc = new jsPDF();
 
         doc.setFontSize(18);
-        doc.text(`Transaction History: ${emp.location} — ${emp.name}`, 14, 22);
+        doc.text(`Transaction History: ${activeCard.title}`, 14, 22);
 
         doc.setFontSize(11);
         doc.setTextColor(100);
         doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
-        doc.text(`Current Pending Cash: Rs. ${emp.cashCollected.toLocaleString('en-IN')}`, 14, 36);
+        doc.text(`Current Pending Cash: Rs. ${activeCard.pendingCash.toLocaleString('en-IN')}`, 14, 36);
 
         const tableColumn = ["Date & Time", "Guest", "Booking Ref", "Amount", "Type"];
         const tableRows = empLogs.map(log => [
@@ -229,7 +349,7 @@ export default function EmployeesClient() {
         const url = URL.createObjectURL(pdfBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${emp.location.replace(/\s+/g, '_')}_${emp.name.replace(/\s+/g, '_')}_transactions.pdf`;
+        a.download = `${activeCard.title.replace(/\s+/g, '_')}_transactions.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -238,9 +358,61 @@ export default function EmployeesClient() {
 
     // Filter employees based on selected properties
     const filteredEmployees = employees.filter(emp => selectedProperties.includes(emp.location));
-    const activeEmployee = employees.find(e => e.id === viewEmployeeId);
-    const activeEmployeeLogs = (() => {
-        let logs = cashLogs.filter(log => log.employeeId === viewEmployeeId);
+
+    // Build list of DisplayCards
+    const displayCards: DisplayCard[] = [];
+    filteredEmployees.forEach(emp => {
+        const isSplitProp = ['ambrose', 'amstel nest'].some(loc => emp.location?.toLowerCase().includes(loc));
+        if (isSplitProp) {
+            const logs = allCashLogsMap[emp.id] || [];
+            const { secNetPending, rentNetPending } = calculateSplitBalances(logs);
+            const propClean = emp.location.replace(/\s+/g, '');
+
+            displayCards.push({
+                key: `${emp.id}-sec`,
+                employeeId: emp.id,
+                title: `${propClean} Security Deposit`,
+                empName: emp.name,
+                role: 'Security Deposit Cash',
+                location: emp.location,
+                pendingCash: secNetPending,
+                lastCollectedAt: emp.lastCollectedAt,
+                cardType: 'security_deposit',
+                category: 'security_deposit',
+                canCustomCashout: true
+            });
+
+            displayCards.push({
+                key: `${emp.id}-rent`,
+                employeeId: emp.id,
+                title: `${propClean} Rent`,
+                empName: emp.name,
+                role: 'Rent & Other Cash',
+                location: emp.location,
+                pendingCash: rentNetPending,
+                lastCollectedAt: emp.lastCollectedAt,
+                cardType: 'rent',
+                category: 'rent',
+                canCustomCashout: true
+            });
+        } else {
+            displayCards.push({
+                key: `${emp.id}-gen`,
+                employeeId: emp.id,
+                title: `${emp.location} — ${emp.name}`,
+                empName: emp.name,
+                role: emp.role,
+                location: emp.location,
+                pendingCash: emp.cashCollected,
+                lastCollectedAt: emp.lastCollectedAt,
+                cardType: 'general',
+                canCustomCashout: emp.location?.toLowerCase().includes('digital diaries')
+            });
+        }
+    });
+
+    const activeFilteredLogs = (() => {
+        let logs = [...activeCardLogs];
         if (cashDateFrom || cashDateTo) {
             logs = logs.filter(log => {
                 const d = new Date(log.createdAt);
@@ -262,7 +434,7 @@ export default function EmployeesClient() {
                 </div>
                 <div className="bg-purple-50 text-purple-700 px-4 py-2 rounded-xl flex items-center gap-2 border border-purple-100">
                     <IndianRupee size={18} />
-                    <span className="font-bold">Total Collection: ₹{filteredEmployees.reduce((sum, emp) => sum + emp.cashCollected, 0).toLocaleString('en-IN')}</span>
+                    <span className="font-bold">Total Collection: ₹{displayCards.reduce((sum, c) => sum + c.pendingCash, 0).toLocaleString('en-IN')}</span>
                 </div>
             </div>
 
@@ -294,16 +466,16 @@ export default function EmployeesClient() {
 
             {/* Employee Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredEmployees.map(emp => (
+                {displayCards.map(card => (
                     <div
-                        key={emp.id}
-                        onClick={() => openDetails(emp.id)}
+                        key={card.key}
+                        onClick={() => openDetails(card)}
                         className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md cursor-pointer transition-all relative group hover:border-purple-200"
                     >
                         <div>
                             <div className="flex items-start justify-between mb-4">
                                 <div>
-                                    {editingEmployee === emp.id ? (
+                                    {editingEmployee === card.employeeId ? (
                                         <div className="flex items-center gap-2 mb-1" onClick={e => e.stopPropagation()}>
                                             <input
                                                 type="text"
@@ -311,20 +483,20 @@ export default function EmployeesClient() {
                                                 onChange={e => setEditName(e.target.value)}
                                                 className="border border-purple-300 rounded px-2 py-1 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-purple-500 w-full max-w-[150px]"
                                                 autoFocus
-                                                onKeyDown={e => e.key === 'Enter' && handleSaveName(e, emp.id)}
+                                                onKeyDown={e => e.key === 'Enter' && handleSaveName(e, card.employeeId)}
                                             />
-                                            <button onClick={(e) => handleSaveName(e, emp.id)} className="text-emerald-600 hover:text-emerald-700 p-1 w-7 h-7 bg-emerald-50 rounded flex items-center justify-center">
+                                            <button onClick={(e) => handleSaveName(e, card.employeeId)} className="text-emerald-600 hover:text-emerald-700 p-1 w-7 h-7 bg-emerald-50 rounded flex items-center justify-center">
                                                 <CheckCircle size={14} />
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2 group/edit" onClick={(e) => startEditing(e, emp)}>
-                                            <p className="text-lg font-bold text-slate-800">{emp.location} — {emp.name}</p>
+                                        <div className="flex items-center gap-2 group/edit" onClick={(e) => startEditing(e, card.employeeId, card.empName)}>
+                                            <p className="text-lg font-bold text-slate-800">{card.title}</p>
                                             <Pencil size={12} className="text-slate-300 group-hover/edit:text-purple-600 transition-colors" />
                                         </div>
                                     )}
 
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">{emp.role}</p>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">{card.role}</p>
                                 </div>
                                 <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
                                     <Users size={16} />
@@ -334,48 +506,49 @@ export default function EmployeesClient() {
                             <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-5 relative overflow-hidden group-hover:bg-purple-50/50 transition-colors">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-50 opacity-50 rounded-bl-full pointer-events-none" />
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider relative z-10">Cash to Collect</p>
-                                <p className={`text-3xl font-black mt-1 relative z-10 ${emp.cashCollected > 0 ? 'text-emerald-600' : 'text-slate-300'}`}>
-                                    ₹{emp.cashCollected.toLocaleString('en-IN')}
+                                <p className={`text-3xl font-black mt-1 relative z-10 ${card.pendingCash > 0 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                    ₹{card.pendingCash.toLocaleString('en-IN')}
                                 </p>
                                 <p className="text-[11px] text-slate-500 font-medium mt-2 flex items-center gap-1.5 bg-white w-fit px-2 py-1 rounded shadow-sm border border-slate-100 relative z-10">
-                                    <CalendarDays size={12} className="text-slate-400" /> Last Collected: {emp.lastCollectedAt}
+                                    <CalendarDays size={12} className="text-slate-400" /> Last Collected: {card.lastCollectedAt}
                                 </p>
                             </div>
 
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                    <p className="text-xs font-semibold text-slate-600">Location: <span className="text-purple-700 font-bold">{emp.location}</span></p>
+                                    <p className="text-xs font-semibold text-slate-600">Location: <span className="text-purple-700 font-bold">{card.location}</span></p>
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase group-hover:text-purple-600 transition-colors">Click to view log</span>
                             </div>
                         </div>
-                        {['digital diaries', 'ambrose', 'amstel nest'].some(loc => emp.location?.toLowerCase().includes(loc)) ? (
+
+                        {card.canCustomCashout ? (
                             <button
-                                onClick={(e) => openCashoutModal(e, emp.id)}
-                                disabled={emp.cashCollected === 0}
-                                className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${emp.cashCollected > 0
+                                onClick={(e) => openCashoutModal(e, card)}
+                                disabled={card.pendingCash === 0}
+                                className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${card.pendingCash > 0
                                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]'
                                     : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                                     }`}
                             >
-                                {emp.cashCollected > 0 ? 'Collect Cash' : 'No Cash Pending'}
+                                {card.pendingCash > 0 ? 'Collect Cash' : 'No Cash Pending'}
                             </button>
                         ) : (
                             <button
-                                onClick={(e) => handleCollectCash(e, emp.id)}
-                                disabled={emp.cashCollected === 0}
-                                className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${emp.cashCollected > 0
+                                onClick={(e) => handleCollectCash(e, card.employeeId)}
+                                disabled={card.pendingCash === 0}
+                                className={`w-full py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${card.pendingCash > 0
                                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]'
                                     : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                                     }`}
                             >
-                                {emp.cashCollected > 0 ? 'Collect Cash (Zero Out)' : 'No Cash Pending'}
+                                {card.pendingCash > 0 ? 'Collect Cash (Zero Out)' : 'No Cash Pending'}
                             </button>
                         )}
                     </div>
                 ))}
-                {filteredEmployees.length === 0 && (
+                {displayCards.length === 0 && (
                     <div className="col-span-full py-12 text-center text-slate-400 font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                         No employees found for the selected properties.
                     </div>
@@ -383,14 +556,14 @@ export default function EmployeesClient() {
             </div>
 
             {/* Detailed View Modal */}
-            {viewEmployeeId && activeEmployee && (
+            {activeCard && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                             <div>
                                 <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
-                                    {activeEmployee.location} — {activeEmployee.name}
+                                    {activeCard.title}
                                 </h2>
                                 <p className="text-sm text-slate-500 font-medium mt-1">Cash collection history & transaction logs</p>
                             </div>
@@ -410,7 +583,7 @@ export default function EmployeesClient() {
                                 </button>
                                 )}
                                 <button
-                                    onClick={() => { setViewEmployeeId(null); setCashDateFrom(''); setCashDateTo(''); }}
+                                    onClick={() => { setActiveCard(null); setCashDateFrom(''); setCashDateTo(''); }}
                                     className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors"
                                 >
                                     <X size={20} />
@@ -423,11 +596,11 @@ export default function EmployeesClient() {
                             <div className="mb-6 flex gap-4">
                                 <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex-1">
                                     <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1">Current Pending Cash</p>
-                                    <p className="text-2xl font-black text-emerald-800">₹{activeEmployee.cashCollected.toLocaleString('en-IN')}</p>
+                                    <p className="text-2xl font-black text-emerald-800">₹{activeCard.pendingCash.toLocaleString('en-IN')}</p>
                                 </div>
                                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex-1">
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Last Owner Collection</p>
-                                    <p className="text-lg font-bold text-slate-700">{activeEmployee.lastCollectedAt}</p>
+                                    <p className="text-lg font-bold text-slate-700">{activeCard.lastCollectedAt}</p>
                                 </div>
                             </div>
 
@@ -455,8 +628,8 @@ export default function EmployeesClient() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {activeEmployeeLogs.length > 0 ? (
-                                            activeEmployeeLogs.map(log => {
+                                        {activeFilteredLogs.length > 0 ? (
+                                            activeFilteredLogs.map(log => {
                                                 const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
                                                 const isRefund = log.transactionType === 'refund' || log.amount < 0;
                                                 const isRedLog = log.note?.toLowerCase().includes('satkar') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
@@ -486,14 +659,14 @@ export default function EmployeesClient() {
                                                             )}
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center">
-                                                            <button onClick={() => handleDeleteCashTx(viewEmployeeId!, log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
+                                                            <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
                                                         </td>
                                                     </tr>
                                                 );
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan={5} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this employee.</td>
+                                                <td colSpan={5} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this card.</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -502,8 +675,8 @@ export default function EmployeesClient() {
 
                             {/* Mobile card layout */}
                             <div className="sm:hidden space-y-3">
-                                {activeEmployeeLogs.length > 0 ? (
-                                    activeEmployeeLogs.map(log => {
+                                {activeFilteredLogs.length > 0 ? (
+                                    activeFilteredLogs.map(log => {
                                         const isOwnerPickup = log.transactionType === 'owner_pickup' || log.note?.toLowerCase().includes('owner');
                                         const isRefund = log.transactionType === 'refund' || log.amount < 0;
                                         const isRedLog = log.note?.toLowerCase().includes('satkar') || log.transactionType === 'expense' || log.note?.toLowerCase().includes('expense');
@@ -534,12 +707,12 @@ export default function EmployeesClient() {
                                                         <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
                                                     )}
                                                 </div>
-                                                <button onClick={() => handleDeleteCashTx(viewEmployeeId!, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>
+                                                <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>
                                             </div>
                                         );
                                     })
                                 ) : (
-                                    <div className="py-8 text-center text-slate-400 font-medium">No transactions recorded.</div>
+                                    <div className="py-8 text-center text-slate-400 font-medium">No transactions recorded for this card.</div>
                                 )}
                             </div>
                         </div>
@@ -547,80 +720,76 @@ export default function EmployeesClient() {
                 </div>
             )}
 
-            {/* Cashout Modal for DD, Ambrose & Amstel Nest */}
-            {showCashoutModal && cashoutEmployeeId && (() => {
-                const emp = employees.find(e => e.id === cashoutEmployeeId);
-                if (!emp) return null;
-                return (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-black text-slate-800">Cash Out</h3>
-                                <button onClick={() => setShowCashoutModal(false)} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors">
-                                    <X size={18} />
-                                </button>
-                            </div>
-                            <p className="text-sm text-slate-500 mb-4">Current cash balance: <span className="font-bold text-emerald-700">₹{emp.cashCollected.toLocaleString('en-IN')}</span></p>
+            {/* Cashout Modal */}
+            {showCashoutModal && cashoutCard && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-black text-slate-800">Cash Out — {cashoutCard.title}</h3>
+                            <button onClick={() => setShowCashoutModal(false)} className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-lg transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-4">Current card balance: <span className="font-bold text-emerald-700">₹{cashoutCard.pendingCash.toLocaleString('en-IN')}</span></p>
 
-                            <div className="space-y-3 mb-6">
-                                <button
-                                    onClick={() => setCashoutMode('full')}
-                                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                                        cashoutMode === 'full'
-                                            ? 'border-emerald-500 bg-emerald-50'
-                                            : 'border-slate-200 hover:border-slate-300'
-                                    }`}
-                                >
-                                    <p className="font-bold text-slate-800 text-sm">Full Amount Cashout</p>
-                                    <p className="text-xs text-slate-500 mt-1">Collect the entire cash balance (₹{emp.cashCollected.toLocaleString('en-IN')})</p>
-                                </button>
-                                <button
-                                    onClick={() => setCashoutMode('custom')}
-                                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                                        cashoutMode === 'custom'
-                                            ? 'border-emerald-500 bg-emerald-50'
-                                            : 'border-slate-200 hover:border-slate-300'
-                                    }`}
-                                >
-                                    <p className="font-bold text-slate-800 text-sm">Custom Amount</p>
-                                    <p className="text-xs text-slate-500 mt-1">Enter a specific amount to cash out</p>
-                                </button>
-                            </div>
+                        <div className="space-y-3 mb-6">
+                            <button
+                                onClick={() => setCashoutMode('full')}
+                                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                    cashoutMode === 'full'
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-slate-200 hover:border-slate-300'
+                                }`}
+                            >
+                                <p className="font-bold text-slate-800 text-sm">Full Amount Cashout</p>
+                                <p className="text-xs text-slate-500 mt-1">Collect the entire card balance (₹{cashoutCard.pendingCash.toLocaleString('en-IN')})</p>
+                            </button>
+                            <button
+                                onClick={() => setCashoutMode('custom')}
+                                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                                    cashoutMode === 'custom'
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-slate-200 hover:border-slate-300'
+                                }`}
+                            >
+                                <p className="font-bold text-slate-800 text-sm">Custom Amount</p>
+                                <p className="text-xs text-slate-500 mt-1">Enter a specific amount to cash out</p>
+                            </button>
+                        </div>
 
-                            {cashoutMode === 'custom' && (
-                                <div className="mb-6">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Amount to Cash Out (₹)</label>
-                                    <input
-                                        type="number"
-                                        inputMode="numeric"
-                                        value={cashoutCustomAmount}
-                                        onChange={e => setCashoutCustomAmount(e.target.value)}
-                                        placeholder="Enter amount"
-                                        max={emp.cashCollected}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 outline-none"
-                                        autoFocus
-                                    />
-                                </div>
-                            )}
-
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowCashoutModal(false)}
-                                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={confirmCashout}
-                                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <IndianRupee size={16} /> Confirm
-                                </button>
+                        {cashoutMode === 'custom' && (
+                            <div className="mb-6">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Amount to Cash Out (₹)</label>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={cashoutCustomAmount}
+                                    onChange={e => setCashoutCustomAmount(e.target.value)}
+                                    placeholder="Enter amount"
+                                    max={cashoutCard.pendingCash}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                    autoFocus
+                                />
                             </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCashoutModal(false)}
+                                className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmCashout}
+                                className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+                            >
+                                <IndianRupee size={16} /> Confirm
+                            </button>
                         </div>
                     </div>
-                );
-            })()}
+                </div>
+            )}
         </div>
     );
 }
