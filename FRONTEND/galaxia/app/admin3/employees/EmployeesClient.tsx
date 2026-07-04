@@ -72,27 +72,42 @@ const isGenericOwnerPickup = (log: CashLog) => {
 
 // Calculate split balances for Security Deposit vs Rent
 function calculateSplitBalances(logs: CashLog[]) {
+    // Sort logs chronologically ascending
+    const sortedLogs = [...logs].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
     let secIn = 0;
     let secOut = 0;
     let secExplicitPickup = 0;
+    let lastSecPickupTime: string | null = null;
 
     let rentIn = 0;
     let rentOut = 0;
     let rentExplicitPickup = 0;
+    let lastRentPickupTime: string | null = null;
 
-    let genericPickupTotal = 0;
+    let genericPickups: { amount: number; date: string }[] = [];
 
-    for (const log of logs) {
+    for (const log of sortedLogs) {
         const note = (log.note || '').toLowerCase();
         const type = (log.transactionType || '').toLowerCase();
         const amt = log.amount;
+        const formattedDate = new Date(log.createdAt).toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
         if (isExplicitSecOwnerPickup(log)) {
             secExplicitPickup += Math.abs(amt);
+            lastSecPickupTime = formattedDate;
         } else if (isExplicitRentOwnerPickup(log)) {
             rentExplicitPickup += Math.abs(amt);
+            lastRentPickupTime = formattedDate;
         } else if (isGenericOwnerPickup(log)) {
-            genericPickupTotal += Math.abs(amt);
+            genericPickups.push({ amount: Math.abs(amt), date: formattedDate });
         } else if (isSecDepositTx(log)) {
             if (amt > 0 && type !== 'refund') {
                 secIn += amt;
@@ -108,15 +123,30 @@ function calculateSplitBalances(logs: CashLog[]) {
         }
     }
 
-    const rentGrossPending = Math.max(0, rentIn - rentOut - rentExplicitPickup);
-    const genericAppliedToRent = Math.min(genericPickupTotal, rentGrossPending);
-    const rentNetPending = Math.max(0, rentGrossPending - genericAppliedToRent);
+    let rentGrossPending = Math.max(0, rentIn - rentOut - rentExplicitPickup);
+    let secGrossPending = Math.max(0, secIn - secOut - secExplicitPickup);
 
-    const secGrossPending = Math.max(0, secIn - secOut - secExplicitPickup);
-    const genericAppliedToSec = Math.max(0, genericPickupTotal - genericAppliedToRent);
-    const secNetPending = Math.max(0, secGrossPending - genericAppliedToSec);
+    // Apply generic pickups to Rent first, then Security Deposit
+    for (const gp of genericPickups) {
+        let pAmt = gp.amount;
+        if (rentGrossPending > 0) {
+            const tookRent = Math.min(rentGrossPending, pAmt);
+            rentGrossPending -= tookRent;
+            pAmt -= tookRent;
+            lastRentPickupTime = gp.date;
+        }
+        if (pAmt > 0) {
+            secGrossPending = Math.max(0, secGrossPending - pAmt);
+            lastSecPickupTime = gp.date;
+        }
+    }
 
-    return { secNetPending, rentNetPending };
+    return {
+        secNetPending: secGrossPending,
+        rentNetPending: rentGrossPending,
+        lastSecCollectedAt: lastSecPickupTime || "Never",
+        lastRentCollectedAt: lastRentPickupTime || "Never"
+    };
 }
 
 export default function EmployeesClient() {
@@ -365,7 +395,7 @@ export default function EmployeesClient() {
         const isSplitProp = ['ambrose', 'amstel nest'].some(loc => emp.location?.toLowerCase().includes(loc));
         if (isSplitProp) {
             const logs = allCashLogsMap[emp.id] || [];
-            const { secNetPending, rentNetPending } = calculateSplitBalances(logs);
+            const { secNetPending, rentNetPending, lastSecCollectedAt, lastRentCollectedAt } = calculateSplitBalances(logs);
             const propClean = emp.location.replace(/\s+/g, '');
 
             displayCards.push({
@@ -376,7 +406,7 @@ export default function EmployeesClient() {
                 role: 'Security Deposit Cash',
                 location: emp.location,
                 pendingCash: secNetPending,
-                lastCollectedAt: emp.lastCollectedAt,
+                lastCollectedAt: lastSecCollectedAt,
                 cardType: 'security_deposit',
                 category: 'security_deposit',
                 canCustomCashout: true
@@ -390,7 +420,7 @@ export default function EmployeesClient() {
                 role: 'Rent & Other Cash',
                 location: emp.location,
                 pendingCash: rentNetPending,
-                lastCollectedAt: emp.lastCollectedAt,
+                lastCollectedAt: lastRentCollectedAt,
                 cardType: 'rent',
                 category: 'rent',
                 canCustomCashout: true
