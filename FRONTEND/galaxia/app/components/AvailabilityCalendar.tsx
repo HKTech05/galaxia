@@ -49,9 +49,20 @@ const getDayPrice = (date: Date, weekdayPrice: string, weekendPrice: string, sat
     }
 
     // Check for date-specific override
-    if (dateOverrides && dateOverrides[dateStr]) {
-        const overridePrice = dateOverrides[dateStr];
-        return { price: formatPrice(overridePrice), numPrice: overridePrice, type: "prime" as "weekday" | "weekend" | "prime" | "booked" };
+    if (dateOverrides) {
+        let overridePrice = dateOverrides[dateStr];
+        if (!overridePrice) {
+            const shortKey = dateStr.slice(5); // e.g. "08-14"
+            for (const [k, v] of Object.entries(dateOverrides)) {
+                if (k === dateStr || k.endsWith(shortKey)) {
+                    overridePrice = v;
+                    break;
+                }
+            }
+        }
+        if (overridePrice) {
+            return { price: formatPrice(overridePrice), numPrice: overridePrice, type: "prime" as "weekday" | "weekend" | "prime" | "booked" };
+        }
     }
 
     const day = date.getDay();

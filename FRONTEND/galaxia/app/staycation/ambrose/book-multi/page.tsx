@@ -18,6 +18,7 @@ interface CartItem {
     weekdayPrice: string;
     weekendPrice: string;
     saturdayPrice?: string;
+    dateOverrides?: Record<string, number>;
     personsLabel?: string;
     maxPersons: number;
     maxAdults?: number;
@@ -259,7 +260,7 @@ export default function BookMultiPage() {
 
         (async () => {
             try {
-                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; personsLabel: string }> = {};
+                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; personsLabel: string }> = {};
 
                 // Fetch Ambrose availability
                 if (ambId) {
@@ -296,18 +297,21 @@ export default function BookMultiPage() {
                         const anParentWd = anData.pricing?.weekday?.price || "4950";
                         const anParentWe = anData.pricing?.weekend?.price || "5950";
                         const anParentSa = anData.pricing?.saturday?.price || "6950";
+                        const anParentOverrides = anData.pricing?.dateOverrides || { "2026-08-14": 7950, "2026-08-15": 8500 };
                         const anParentPersons = anData.pricing?.weekday?.personsLabel || "2 persons with meals";
 
                         if (anData.subPropertyPricing && anData.subProperties) {
                             for (const sp of anData.subProperties) {
                                 const spPricing = anData.subPropertyPricing[sp.id];
                                 const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
+                                const isFam = key.includes("family");
                                 // Use sub-property pricing if it has actual values, otherwise fall back to parent
                                 const hasSubPricing = spPricing && (spPricing.weekday?.price || spPricing.weekend?.price);
                                 pricingMap[key] = {
-                                    weekday: (hasSubPricing && spPricing.weekday?.price) || anParentWd,
-                                    weekend: (hasSubPricing && spPricing.weekend?.price) || anParentWe,
-                                    saturday: (hasSubPricing && spPricing.saturday?.price) || (hasSubPricing && spPricing.weekend?.price) || anParentSa,
+                                    weekday: (hasSubPricing && spPricing.weekday?.price) || (isFam ? "9000" : anParentWd),
+                                    weekend: (hasSubPricing && spPricing.weekend?.price) || (isFam ? "10000" : anParentWe),
+                                    saturday: (hasSubPricing && spPricing.saturday?.price) || (isFam ? "12000" : anParentSa),
+                                    dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (isFam ? { "2026-08-14": 11000, "2026-08-15": 13500 } : anParentOverrides),
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || anParentPersons,
                                 };
                             }
@@ -326,6 +330,7 @@ export default function BookMultiPage() {
                                     weekdayPrice: live.weekday,
                                     weekendPrice: live.weekend,
                                     saturdayPrice: live.saturday,
+                                    dateOverrides: live.dateOverrides || item.dateOverrides,
                                     personsLabel: live.personsLabel,
                                 };
                             }
@@ -1039,9 +1044,9 @@ export default function BookMultiPage() {
                             <AvailabilityCalendar
                                 propertyId={hasAmstelOnly ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"]}
                                 weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : (ambroseItems[0]?.weekdayPrice || ambrose.pricing.weekday.price)}
-                                weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "6,950") : (ambroseItems[0]?.weekendPrice || ambrose.pricing.weekend.price)}
-                                saturdayPrice={hasAmstelOnly ? undefined : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
-                                dateOverrides={{}}
+                                weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "5,950") : (ambroseItems[0]?.weekendPrice || ambrose.pricing.weekend.price)}
+                                saturdayPrice={hasAmstelOnly ? (amstelItems[0]?.saturdayPrice || "6,950") : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
+                                dateOverrides={hasAmstelOnly ? (amstelItems[0]?.dateOverrides || { "2026-08-14": 7950, "2026-08-15": 8500 }) : (ambroseItems[0]?.dateOverrides || ambrose.pricing.dateOverrides || {})}
                                 hidePrice={hasMixedPrices}
                                 totalUnits={hasAmstelOnly ? 14 : undefined}
                                 initialCheckIn={checkInDate}
@@ -1246,6 +1251,8 @@ export default function BookMultiPage() {
                                                                         propertyId={dbPropertyMap["amstel-nest"]}
                                                                         weekdayPrice={item.weekdayPrice}
                                                                         weekendPrice={item.weekendPrice}
+                                                                        saturdayPrice={item.saturdayPrice || (item.villaId === 'family-cottage' ? "12,000" : "6,950")}
+                                                                        dateOverrides={item.dateOverrides || (item.villaId === 'family-cottage' ? { "2026-08-14": 11000, "2026-08-15": 13500 } : { "2026-08-14": 7950, "2026-08-15": 8500 })}
                                                                         totalUnits={item.villaId === 'standard-cottage' ? 14 : undefined}
                                                                         compact
                                                                     />

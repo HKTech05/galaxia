@@ -35,6 +35,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         weekendPrice: string;
         saturdayPrice: string;
         primeDatePrice: string;
+        dateOverrides?: Record<string, number>;
         personsLabel?: string;
     } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -636,6 +637,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             weekendPrice: currentWeekendPrice,
             saturdayPrice: currentSaturdayPrice,
             primeDatePrice: room.primeDatePrice,
+            dateOverrides: room.dateOverrides,
             personsLabel: currentPersonsLabel,
         });
         setNightlyRate(initialPrice);
@@ -1032,8 +1034,9 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                 subPropertyId={property.id.includes('/') ? (dbSubPropertyMap[property.id.split('/').pop() || ''] || null) : null}
                                                 weekdayPrice={room.weekdayPrice || property.pricing.weekday.price}
                                                 weekendPrice={room.weekendPrice || property.pricing.weekend.price}
-                                                saturdayPrice={room.saturdayPrice}
+                                                saturdayPrice={room.saturdayPrice || property.pricing.saturday?.price}
                                                 primeDatePrice={room.primeDatePrice || property.pricing.primeDates || ""}
+                                                dateOverrides={room.dateOverrides || property.pricing.dateOverrides || {}}
                                                 initialCheckIn={checkInDate}
                                                 initialCheckOut={checkOutDate}
                                                 isDisabled={isMaintenance}
@@ -1553,8 +1556,9 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     subPropertyId={property.id.includes('/') ? (dbSubPropertyMap[property.id.split('/').pop() || ''] || null) : null}
                                     weekdayPrice={selectedRoom?.weekdayPrice || roomOptions[0]?.weekdayPrice || property.pricing.weekday.price}
                                     weekendPrice={selectedRoom?.weekendPrice || roomOptions[0]?.weekendPrice || property.pricing.weekend.price}
-                                    saturdayPrice={selectedRoom?.saturdayPrice || roomOptions[0]?.saturdayPrice}
+                                    saturdayPrice={selectedRoom?.saturdayPrice || roomOptions[0]?.saturdayPrice || property.pricing.saturday?.price}
                                     primeDatePrice={selectedRoom?.primeDatePrice || roomOptions[0]?.primeDatePrice || property.pricing.primeDates || ""}
+                                    dateOverrides={selectedRoom?.dateOverrides || roomOptions[0]?.dateOverrides || property.pricing.dateOverrides || {}}
                                     initialCheckIn={checkInDate}
                                     initialCheckOut={checkOutDate}
                                     isDisabled={isMaintenance}

@@ -109,12 +109,15 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
             if (cart.some((item: any) => item.villaId === cottage.id && item.property === "amstel-nest")) {
                 setCartMessage("Already in cart!"); setTimeout(() => setCartMessage(""), 2000); return;
             }
+            const defaultOverrides = cottage.id === 'family-cottage' ? { "2026-08-14": 11000, "2026-08-15": 13500 } : { "2026-08-14": 7950, "2026-08-15": 8500 };
             cart.push({
                 villaId: cottage.id,
                 villaName: cottage.name,
                 theme: cottage.theme,
-                weekdayPrice: liveWeekday || cottage.pricing?.weekday.price || "4,950",
-                weekendPrice: liveWeekend || cottage.pricing?.weekend.price || "6,950",
+                weekdayPrice: liveWeekday || cottage.pricing?.weekday.price || (cottage.id === 'family-cottage' ? "9,000" : "4,950"),
+                weekendPrice: liveWeekend || cottage.pricing?.weekend.price || (cottage.id === 'family-cottage' ? "10,000" : "5,950"),
+                saturdayPrice: cottage.pricing?.saturday?.price || parent.pricing.saturday?.price || (cottage.id === 'family-cottage' ? "12,000" : "6,950"),
+                dateOverrides: dateOverrides && Object.keys(dateOverrides).length > 0 ? dateOverrides : defaultOverrides,
                 maxPersons: cottage.maxPersons || 4,
                 maxAdults: (cottage as any).maxAdults || parent.maxAdults || 3,
                 maxKids: (cottage as any).maxKids ?? parent.maxKids ?? 1,
