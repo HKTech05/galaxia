@@ -217,13 +217,14 @@ async function main() {
                 { dayType: "prime", basePrice: 8500, personsLabel: "Up to 4 persons", extraAdultPrice: 1200, kidsPrice: 800 },
                 { dayType: "special", basePrice: 6500, specialLabel: "Mon-Thu (4 persons)" },
             ],
-        },
         {
             slug: "amstel-nest",
             entries: [
                 { dayType: "weekday", basePrice: 4950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
                 { dayType: "weekend", basePrice: 5950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
                 { dayType: "saturday", basePrice: 6950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                { dayType: "prime", basePrice: 7950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, overrideDate: new Date("2026-08-14T00:00:00.000Z") },
+                { dayType: "prime", basePrice: 8500, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, overrideDate: new Date("2026-08-15T00:00:00.000Z") },
             ],
         },
         {
@@ -242,6 +243,31 @@ async function main() {
             await prisma.propertyPricing.create({
                 data: { propertyId: prop.id, ...entry },
             });
+        }
+        if (prop.slug === "amstel-nest") {
+            const subs = await prisma.subProperty.findMany({ where: { propertyId: prop.id } });
+            const stdSub = subs.find(sp => sp.slug === "standard-cottage");
+            const famSub = subs.find(sp => sp.slug === "family-cottage");
+            if (stdSub) {
+                const stdEntries = [
+                    { propertyId: prop.id, subPropertyId: stdSub.id, dayType: "weekday", basePrice: 4950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                    { propertyId: prop.id, subPropertyId: stdSub.id, dayType: "weekend", basePrice: 5950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                    { propertyId: prop.id, subPropertyId: stdSub.id, dayType: "saturday", basePrice: 6950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                    { propertyId: prop.id, subPropertyId: stdSub.id, dayType: "prime", basePrice: 7950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, overrideDate: new Date("2026-08-14T00:00:00.000Z") },
+                    { propertyId: prop.id, subPropertyId: stdSub.id, dayType: "prime", basePrice: 8500, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, overrideDate: new Date("2026-08-15T00:00:00.000Z") },
+                ];
+                for (const e of stdEntries) await prisma.propertyPricing.create({ data: e });
+            }
+            if (famSub) {
+                const famEntries = [
+                    { propertyId: prop.id, subPropertyId: famSub.id, dayType: "weekday", basePrice: 9000, personsLabel: "upto 4 with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                    { propertyId: prop.id, subPropertyId: famSub.id, dayType: "weekend", basePrice: 10000, personsLabel: "upto 4 with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                    { propertyId: prop.id, subPropertyId: famSub.id, dayType: "saturday", basePrice: 12000, personsLabel: "upto 4 with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                    { propertyId: prop.id, subPropertyId: famSub.id, dayType: "prime", basePrice: 11000, personsLabel: "upto 4 with meals", extraAdultPrice: 2000, kidsPrice: 1000, overrideDate: new Date("2026-08-14T00:00:00.000Z") },
+                    { propertyId: prop.id, subPropertyId: famSub.id, dayType: "prime", basePrice: 13500, personsLabel: "upto 4 with meals", extraAdultPrice: 2000, kidsPrice: 1000, overrideDate: new Date("2026-08-15T00:00:00.000Z") },
+                ];
+                for (const e of famEntries) await prisma.propertyPricing.create({ data: e });
+            }
         }
     }
     console.log("  ✅ Property pricing");

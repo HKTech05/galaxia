@@ -76,9 +76,9 @@ export default function BulkBookingsTab() {
                         if (avail.pricing) {
                             const wd = avail.pricing.weekday; const we = avail.pricing.weekend; const sa = avail.pricing.saturday;
                             pm["standard"] = {
-                                weekday: wd ? parseInt(wd.price) : 4950, weekend: we ? parseInt(we.price) : 6950,
+                                weekday: wd ? parseInt(wd.price) : 4950, weekend: we ? parseInt(we.price) : 5950,
                                 saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : 6950),
-                                extraAdult: wd?.extraAdult || 1000, kidsCharge: 1000, baseGuests: 2,
+                                extraAdult: wd?.extraAdult || 2000, kidsCharge: 1000, baseGuests: 2,
                             };
                         }
                         for (const sp of avail.subProperties) {
@@ -87,12 +87,13 @@ export default function BulkBookingsTab() {
                                 const spWd = spP.weekday; const spWe = spP.weekend; const spSa = spP.saturday;
                                 const key = sp.name.toLowerCase().includes("family") ? "family" : "standard";
                                 const fallbackWd = key === "family" ? 9000 : 4950;
-                                const fallbackWe = key === "family" ? 9000 : 6950;
+                                const fallbackWe = key === "family" ? 10000 : 5950;
+                                const fallbackSa = key === "family" ? 12000 : 6950;
                                 const fallbackGuests = key === "family" ? 4 : 2;
                                 pm[key] = {
                                     weekday: spWd ? parseInt(spWd.price) : fallbackWd, weekend: spWe ? parseInt(spWe.price) : fallbackWe,
-                                    saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : fallbackWe),
-                                    extraAdult: spWd?.extraAdult || (key === "family" ? 2000 : 1000), kidsCharge: 1000,
+                                    saturday: spSa ? parseInt(spSa.price) : fallbackSa,
+                                    extraAdult: spWd?.extraAdult || 2000, kidsCharge: 1000,
                                     baseGuests: spWd?.personsLabel ? parseInt(spWd.personsLabel) || fallbackGuests : fallbackGuests,
                                 };
                             }

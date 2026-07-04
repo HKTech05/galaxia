@@ -294,8 +294,8 @@ export default function BookMultiPage() {
                         const anData = await api.get(`/properties/amstel-nest/availability`);
                         // Get parent-level pricing as fallback
                         const anParentWd = anData.pricing?.weekday?.price || "4950";
-                        const anParentWe = anData.pricing?.weekend?.price || "6950";
-                        const anParentSa = anData.pricing?.saturday?.price || anParentWe;
+                        const anParentWe = anData.pricing?.weekend?.price || "5950";
+                        const anParentSa = anData.pricing?.saturday?.price || "6950";
                         const anParentPersons = anData.pricing?.weekday?.personsLabel || "2 persons with meals";
 
                         if (anData.subPropertyPricing && anData.subProperties) {
