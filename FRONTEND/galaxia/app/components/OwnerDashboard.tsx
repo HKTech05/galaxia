@@ -794,6 +794,46 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         }
     };
 
+    // Batch unblock for multi-selected cells (removes blocks & Owner Reservations / OR)
+    const handleBatchUnblockSubmit = async () => {
+        if (selectedCells.size === 0) return;
+
+        // Collect all unique block IDs from selected cells that are currently blocked / OR
+        const blockIds = new Set<number>();
+        for (const key of selectedCells) {
+            const parts = key.split('|');
+            const [y, m, d] = parts[0].split('-').map(Number);
+            const colType = parts[1] as "all" | "amstelnest";
+            const colName = parts[2];
+            const date = new Date(y, m, d);
+            const unitIdx = parts[3] ? parseInt(parts[3]) : undefined;
+            const cellStatus = getCellStatus(date, colType, colName, unitIdx);
+            if (cellStatus.status === "blocked" && cellStatus.block?.id) {
+                blockIds.add(cellStatus.block.id);
+            }
+        }
+
+        if (blockIds.size === 0) {
+            alert("None of the selected cells have blocked dates or Owner Reservations (OR).");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to unblock / remove OR for ${blockIds.size} block record(s)?`)) return;
+
+        setBlockActionLoading(true);
+        try {
+            for (const bId of blockIds) {
+                await api.delete(`/blocked-dates/${bId}`);
+            }
+            fetchCalendar2Data();
+            clearMultiSelect();
+        } catch (err: any) {
+            alert(err?.message || "Failed to remove blocks");
+        } finally {
+            setBlockActionLoading(false);
+        }
+    };
+
     const handleUnblockCellSubmit = async (blockId: number) => {
         if (!confirm("Are you sure you want to remove this block?")) return;
         setBlockActionLoading(true);
@@ -2685,15 +2725,24 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         onChange={e => setBlockCustomNote(e.target.value)}
                                     />
                                 </div>
-                                <button
-                                    onClick={handleBatchBlockSubmit}
-                                    disabled={blockActionLoading}
-                                    className={`w-full py-2.5 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all ${
-                                        blockReasonType === "owner" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"
-                                    }`}
-                                >
-                                    {blockActionLoading ? "Blocking..." : `Block ${selectedCells.size} Cell${selectedCells.size > 1 ? 's' : ''}`}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleBatchBlockSubmit}
+                                        disabled={blockActionLoading}
+                                        className={`flex-1 py-2.5 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl transition-all ${
+                                            blockReasonType === "owner" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"
+                                        }`}
+                                    >
+                                        {blockActionLoading ? "Blocking..." : `Block ${selectedCells.size} Cell${selectedCells.size > 1 ? 's' : ''}`}
+                                    </button>
+                                    <button
+                                        onClick={handleBatchUnblockSubmit}
+                                        disabled={blockActionLoading}
+                                        className="flex-1 py-2.5 disabled:opacity-50 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm"
+                                    >
+                                        {blockActionLoading ? "Unblocking..." : "Unblock / Remove OR"}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

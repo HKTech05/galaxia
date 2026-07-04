@@ -299,18 +299,24 @@ router.get("/requests", async (req: AuthRequest, res) => {
             return { ...req, items: parsedItems };
         });
 
-        // Additional Chef vs Housekeeping item filtering
+        // Additional Chef vs Housekeeping item filtering & segregation
         if (category === "Normal") {
             if (chefOnly === "true") {
-                // Chef portal Normal tab: include only requests that contain Chef items (Fresh Lime Water/Soda)
-                parsedRequests = parsedRequests.filter(r => 
-                    Array.isArray(r.items) && r.items.some((i: any) => isChefPreparedItem(i))
-                );
+                // Chef portal Normal tab: filter items array to ONLY contain Chef items (Fresh Lime Water/Soda)
+                parsedRequests = parsedRequests
+                    .map(r => ({
+                        ...r,
+                        items: Array.isArray(r.items) ? r.items.filter((i: any) => isChefPreparedItem(i)) : []
+                    }))
+                    .filter(r => r.items.length > 0);
             } else if (excludeChefItems === "true") {
-                // Housekeeping pending items: exclude requests that are ONLY Chef items
-                parsedRequests = parsedRequests.filter(r => 
-                    Array.isArray(r.items) && r.items.some((i: any) => !isChefPreparedItem(i))
-                );
+                // Housekeeping pending items: filter items array to ONLY contain non-Chef items (Water, Sprite, etc.)
+                parsedRequests = parsedRequests
+                    .map(r => ({
+                        ...r,
+                        items: Array.isArray(r.items) ? r.items.filter((i: any) => !isChefPreparedItem(i)) : []
+                    }))
+                    .filter(r => r.items.length > 0);
             }
         }
 
