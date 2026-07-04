@@ -873,7 +873,7 @@ export async function generateMenuPDF(menuItems: any[]): Promise<Buffer> {
             // Category Header Box
             doc.rect(margin, y, pageWidth - (margin * 2), 26).fill(GOLD);
             doc.fontSize(11).fill(NAVY).font("Helvetica-Bold");
-            doc.text(`  ❖  ${catInfo.label}`, margin + 10, y + 7, { characterSpacing: 1.5 });
+            doc.text(`${catInfo.label}`, margin + 15, y + 7, { characterSpacing: 1.5 });
             y += 34;
 
             for (const item of items) {
