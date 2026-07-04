@@ -743,17 +743,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         }
     };
 
-    // Batch block for multi-selected cells
+    // Single batch handler for multi-selected cells (handles both blocking vacant cells AND unblocking existing blocked/OR cells)
     const handleBatchBlockSubmit = async () => {
         if (selectedCells.size === 0) return;
         setBlockActionLoading(true);
+
         const reasonText = blockReasonType === "owner"
             ? `Owner Reservation: ${blockCustomNote}`
             : `Maintenance: ${blockCustomNote}`;
 
         try {
-            // Group cells by property+subProperty to batch dates
-            const groups = new Map<string, { propertyId: number; subPropertyId: number | null; dates: string[] }>();
+            const vacantGroups = new Map<string, { propertyId: number; subPropertyId: number | null; dates: string[] }>();
+            const blockIdsToUnblock = new Set<number>();
+
             for (const key of selectedCells) {
                 const parts = key.split('|');
                 const [y, m, d] = parts[0].split('-').map(Number);
@@ -761,20 +763,29 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                 const colName = parts[2];
                 const date = new Date(y, m, d);
                 const dateStr = getLocalDateString(date);
-                // Check the cell is vacant before blocking
                 const unitIdx = parts[3] ? parseInt(parts[3]) : undefined;
                 const cellStatus = getCellStatus(date, colType, colName, unitIdx);
-                if (cellStatus.status !== "vacant") continue;
-                const info = getColumnInfo(colType, colName);
-                if (!info.propertyId) continue;
-                const gKey = `${info.propertyId}|${info.subPropertyId || 'null'}`;
-                if (!groups.has(gKey)) {
-                    groups.set(gKey, { propertyId: info.propertyId, subPropertyId: info.subPropertyId, dates: [] });
+
+                if (cellStatus.status === "vacant") {
+                    const info = getColumnInfo(colType, colName);
+                    if (!info.propertyId) continue;
+                    const gKey = `${info.propertyId}|${info.subPropertyId || 'null'}`;
+                    if (!vacantGroups.has(gKey)) {
+                        vacantGroups.set(gKey, { propertyId: info.propertyId, subPropertyId: info.subPropertyId, dates: [] });
+                    }
+                    vacantGroups.get(gKey)!.dates.push(dateStr);
+                } else if (cellStatus.status === "blocked" && cellStatus.block?.id) {
+                    blockIdsToUnblock.add(cellStatus.block.id);
                 }
-                groups.get(gKey)!.dates.push(dateStr);
             }
 
-            for (const group of groups.values()) {
+            // 1. Unblock existing blocked / OR cells if any were selected
+            for (const bId of blockIdsToUnblock) {
+                await api.delete(`/blocked-dates/${bId}`);
+            }
+
+            // 2. Block vacant cells if any were selected
+            for (const group of vacantGroups.values()) {
                 await api.post("/blocked-dates", {
                     propertyId: group.propertyId,
                     subPropertyId: group.subPropertyId,
@@ -788,47 +799,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             clearMultiSelect();
             setBlockCustomNote("");
         } catch (err: any) {
-            alert(err?.message || "Failed to block cells");
-        } finally {
-            setBlockActionLoading(false);
-        }
-    };
-
-    // Batch unblock for multi-selected cells (removes blocks & Owner Reservations / OR)
-    const handleBatchUnblockSubmit = async () => {
-        if (selectedCells.size === 0) return;
-
-        // Collect all unique block IDs from selected cells that are currently blocked / OR
-        const blockIds = new Set<number>();
-        for (const key of selectedCells) {
-            const parts = key.split('|');
-            const [y, m, d] = parts[0].split('-').map(Number);
-            const colType = parts[1] as "all" | "amstelnest";
-            const colName = parts[2];
-            const date = new Date(y, m, d);
-            const unitIdx = parts[3] ? parseInt(parts[3]) : undefined;
-            const cellStatus = getCellStatus(date, colType, colName, unitIdx);
-            if (cellStatus.status === "blocked" && cellStatus.block?.id) {
-                blockIds.add(cellStatus.block.id);
-            }
-        }
-
-        if (blockIds.size === 0) {
-            alert("None of the selected cells have blocked dates or Owner Reservations (OR).");
-            return;
-        }
-
-        if (!confirm(`Are you sure you want to unblock / remove OR for ${blockIds.size} block record(s)?`)) return;
-
-        setBlockActionLoading(true);
-        try {
-            for (const bId of blockIds) {
-                await api.delete(`/blocked-dates/${bId}`);
-            }
-            fetchCalendar2Data();
-            clearMultiSelect();
-        } catch (err: any) {
-            alert(err?.message || "Failed to remove blocks");
+            alert(err?.message || "Failed to update selected cells");
         } finally {
             setBlockActionLoading(false);
         }
@@ -2553,12 +2524,18 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                             key={col}
                                                                             onClick={() => {
                                                                                 if (multiSelectMode) {
-                                                                                    if (res.status === "vacant") toggleCellSelection(cellKey);
+                                                                                    if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                                 } else {
                                                                                     setSelectedCell({ date, colType: "all", colName: col, ...res });
                                                                                 }
                                                                             }}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${isMultiSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400/50 ring-inset' : cellClass}`}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                                isMultiSelected
+                                                                                    ? res.status === "blocked"
+                                                                                        ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
+                                                                                        : 'bg-indigo-100 border-indigo-400 text-indigo-900 font-bold ring-2 ring-indigo-400/50 ring-inset'
+                                                                                    : cellClass
+                                                                            }`}
                                                                         >
                                                                             {isMultiSelected ? '✓' : content}
                                                                         </td>
@@ -2624,12 +2601,18 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                             key={unitIndex}
                                                                             onClick={() => {
                                                                                 if (multiSelectMode) {
-                                                                                    if (res.status === "vacant") toggleCellSelection(cellKey);
+                                                                                    if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                                 } else {
                                                                                     setSelectedCell({ date, colType: "amstelnest", colName: "Standard", unitIndex, ...res });
                                                                                 }
                                                                             }}
-                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${isMultiSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400/50 ring-inset' : cellClass}`}
+                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                                isMultiSelected
+                                                                                    ? res.status === "blocked"
+                                                                                        ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
+                                                                                        : 'bg-indigo-100 border-indigo-400 text-indigo-900 font-bold ring-2 ring-indigo-400/50 ring-inset'
+                                                                                    : cellClass
+                                                                            }`}
                                                                         >
                                                                             {isMultiSelected ? '✓' : content}
                                                                         </td>
@@ -2657,12 +2640,18 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             onClick={() => {
                                                                                 if (multiSelectMode) {
-                                                                                    if (res.status === "vacant") toggleCellSelection(cellKey);
+                                                                                    if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                                 } else {
                                                                                     setSelectedCell({ date, colType: "amstelnest", colName: "FAMILY UNIT", ...res });
                                                                                 }
                                                                             }}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${isMultiSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400/50 ring-inset' : cellClass}`}
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                                isMultiSelected
+                                                                                    ? res.status === "blocked"
+                                                                                        ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
+                                                                                        : 'bg-indigo-100 border-indigo-400 text-indigo-900 font-bold ring-2 ring-indigo-400/50 ring-inset'
+                                                                                    : cellClass
+                                                                            }`}
                                                                         >
                                                                             {isMultiSelected ? '✓' : content}
                                                                         </td>
@@ -2680,71 +2669,93 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
 
                         {/* Floating Batch Action Bar for Multi-Select */}
-                        {multiSelectMode && selectedCells.size > 0 && (
-                            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95vw] max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full">
-                                            {selectedCells.size} cells
-                                        </span>
-                                        <span className="text-xs font-bold text-slate-700">selected for blocking</span>
-                                    </div>
-                                    <button
-                                        onClick={() => { clearMultiSelect(); setMultiSelectMode(false); }}
-                                        className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="bg-slate-50 rounded-xl p-1 flex border border-slate-200/60 flex-1">
+                        {multiSelectMode && selectedCells.size > 0 && (() => {
+                            let vacantCount = 0;
+                            let blockedCount = 0;
+                            for (const key of selectedCells) {
+                                const parts = key.split('|');
+                                const [y, m, d] = parts[0].split('-').map(Number);
+                                const colType = parts[1] as "all" | "amstelnest";
+                                const colName = parts[2];
+                                const date = new Date(y, m, d);
+                                const unitIdx = parts[3] ? parseInt(parts[3]) : undefined;
+                                const cellStatus = getCellStatus(date, colType, colName, unitIdx);
+                                if (cellStatus.status === "vacant") vacantCount++;
+                                else if (cellStatus.status === "blocked") blockedCount++;
+                            }
+
+                            return (
+                                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95vw] max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full">
+                                                {selectedCells.size} cells
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-700">
+                                                {blockedCount > 0 && vacantCount === 0 ? "selected for unblocking / removing OR" : "selected for blocking / OR"}
+                                            </span>
+                                        </div>
                                         <button
-                                            type="button"
-                                            onClick={() => setBlockReasonType("maintenance")}
-                                            className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                                                blockReasonType === 'maintenance' ? 'bg-red-600 text-white shadow-sm font-black' : 'text-slate-500'
-                                            }`}
+                                            onClick={() => { clearMultiSelect(); setMultiSelectMode(false); }}
+                                            className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors"
                                         >
-                                            Maintenance
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setBlockReasonType("owner")}
-                                            className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                                                blockReasonType === 'owner' ? 'bg-blue-600 text-white shadow-sm font-black' : 'text-slate-500'
-                                            }`}
-                                        >
-                                            Owner
+                                            Cancel
                                         </button>
                                     </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Reason / Note"
-                                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                        value={blockCustomNote}
-                                        onChange={e => setBlockCustomNote(e.target.value)}
-                                    />
-                                </div>
-                                <div className="flex gap-2">
+                                    {vacantCount > 0 && (
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="bg-slate-50 rounded-xl p-1 flex border border-slate-200/60 flex-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBlockReasonType("maintenance")}
+                                                    className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                                                        blockReasonType === 'maintenance' ? 'bg-red-600 text-white shadow-sm font-black' : 'text-slate-500'
+                                                    }`}
+                                                >
+                                                    Maintenance
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBlockReasonType("owner")}
+                                                    className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                                                        blockReasonType === 'owner' ? 'bg-blue-600 text-white shadow-sm font-black' : 'text-slate-500'
+                                                    }`}
+                                                >
+                                                    Owner
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Reason / Note"
+                                                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                                value={blockCustomNote}
+                                                onChange={e => setBlockCustomNote(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
                                     <button
                                         onClick={handleBatchBlockSubmit}
                                         disabled={blockActionLoading}
-                                        className={`flex-1 py-2.5 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                                            blockReasonType === "owner" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"
+                                        className={`w-full py-2.5 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all shadow-sm ${
+                                            blockedCount > 0 && vacantCount === 0
+                                                ? "bg-emerald-600 hover:bg-emerald-700"
+                                                : blockReasonType === "owner"
+                                                ? "bg-blue-600 hover:bg-blue-700"
+                                                : "bg-red-600 hover:bg-red-700"
                                         }`}
                                     >
-                                        {blockActionLoading ? "Blocking..." : `Block ${selectedCells.size} Cell${selectedCells.size > 1 ? 's' : ''}`}
-                                    </button>
-                                    <button
-                                        onClick={handleBatchUnblockSubmit}
-                                        disabled={blockActionLoading}
-                                        className="flex-1 py-2.5 disabled:opacity-50 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm"
-                                    >
-                                        {blockActionLoading ? "Unblocking..." : "Unblock / Remove OR"}
+                                        {blockActionLoading
+                                            ? "Processing..."
+                                            : blockedCount > 0 && vacantCount === 0
+                                            ? `Unblock / Remove OR (${selectedCells.size})`
+                                            : vacantCount > 0 && blockedCount > 0
+                                            ? `Apply Changes (${vacantCount} Block, ${blockedCount} Unblock)`
+                                            : `Block ${selectedCells.size} Cell${selectedCells.size > 1 ? 's' : ''}`
+                                        }
                                     </button>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 )}
 
