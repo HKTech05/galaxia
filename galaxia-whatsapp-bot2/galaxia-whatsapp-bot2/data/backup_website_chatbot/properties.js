@@ -99,7 +99,7 @@ const properties = [
     location: "Karjat, Maharashtra",
     checkIn: "1:00 PM",
     checkOut: "10:00 AM",
-    pricing: { weekday: 4950, weekend: 6950, prime: null, specialDates: {} },
+    pricing: { weekday: 4950, weekend: 5950, prime: 6950, specialDates: {} },
     extraPerson: 2000,
     kidsCharges: 1000,
     foodPolicy: "Meals Included (Veg Only). Jain available on prior notice.",

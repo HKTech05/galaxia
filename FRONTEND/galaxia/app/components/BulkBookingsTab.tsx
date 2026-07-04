@@ -218,13 +218,22 @@ export default function BulkBookingsTab() {
             const isSaturday = day === 6;
             const cottageType = bulkForm.cottageType || "standard";
             const lp = liveAmstelPricing[cottageType] || liveAmstelPricing["standard"];
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const is14Aug = dateStr.endsWith("08-14");
+            const is15Aug = dateStr.endsWith("08-15");
             let basePrice: number;
-            if (lp) {
+            if (is14Aug) {
+                basePrice = cottageType === "family" ? 11000 : 7950;
+            } else if (is15Aug) {
+                basePrice = cottageType === "family" ? 13500 : 8500;
+            } else if (lp) {
                 basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             } else {
-                basePrice = cottageType === "family" ? 9000 : (isWeekend ? 6950 : 4950);
+                basePrice = cottageType === "family"
+                    ? (isSaturday ? 12000 : (day === 0 || day === 5) ? 10000 : 9000)
+                    : (isSaturday ? 6950 : (day === 0 || day === 5) ? 5950 : 4950);
             }
-            const baseGuestsPerUnit = lp?.baseGuests || 2;
+            const baseGuestsPerUnit = lp?.baseGuests || (cottageType === "family" ? 4 : 2);
             const extraAdults = Math.max(0, adults - baseGuestsPerUnit * (bulkForm.numCottages || 1));
             const extraAdultRate = lp?.extraAdult || 2000;
             const kidsRate = lp?.kidsCharge || 1000;

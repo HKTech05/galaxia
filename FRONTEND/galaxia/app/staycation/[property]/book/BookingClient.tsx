@@ -413,6 +413,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 weekendPrice: liveWe || sub.pricing?.weekend.price || property.pricing.weekend.price,
                 saturdayPrice: liveSa || sub.pricing?.saturday?.price || sub.pricing?.weekend?.price || property.pricing.weekend.price,
                 primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
+                dateOverrides: sub.pricing?.dateOverrides || property.pricing.dateOverrides || {},
                 details: sub.configuration?.slice(0, 3) || [],
                 persons: livePersons || sub.pricing?.weekday.persons || "2 guests",
                 maxPersons: sub.maxPersons || property.maxPersons || 4,
@@ -450,6 +451,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 weekendPrice: dbWe || property.pricing.weekend.price,
                 saturdayPrice: dbSa || property.pricing.saturday?.price || property.pricing.weekend.price,
                 primeDatePrice: property.pricing.primeDates || "",
+                dateOverrides: property.pricing.dateOverrides || {},
                 details: property.configuration.slice(0, 3),
                 persons: dbPersons || property.pricing.weekday.persons,
                 maxPersons: property.maxPersons || 4,
@@ -486,11 +488,17 @@ export default function BookingClient({ property }: BookingClientProps) {
         const wdP = parseInt((priceSource.weekdayPrice || '0').toString().replace(/,/g, ''));
         const weP = parseInt((priceSource.weekendPrice || '0').toString().replace(/,/g, ''));
         const saP = parseInt((priceSource.saturdayPrice || priceSource.weekendPrice || '0').toString().replace(/,/g, ''));
+        const dateOverrides = (priceSource as any)?.dateOverrides || (property as any)?.pricing?.dateOverrides || {};
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
-            const day = d.getDay();
-            total += day === 6 ? saP : (day === 0 || day === 5) ? weP : wdP;
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (dateOverrides && dateOverrides[dateStr]) {
+                total += dateOverrides[dateStr];
+            } else {
+                const day = d.getDay();
+                total += day === 6 ? saP : (day === 0 || day === 5) ? weP : wdP;
+            }
         }
         return total * (isAmstelNest ? unitCount : 1);
     })();

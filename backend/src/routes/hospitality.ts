@@ -456,7 +456,7 @@ router.put("/requests/bill/:bookingId", async (req: AuthRequest, res) => {
     }
 });
 
-// 5. GET /api/hospitality/allocations — Fetch active bookings/allocations for a given date
+// 5. GET /api/hospitality/allocations — Fetch active allocations (checked in with allotted villa) for a given date
 router.get("/allocations", async (req: AuthRequest, res) => {
     try {
         const dateStr = req.query.date as string;
@@ -464,30 +464,33 @@ router.get("/allocations", async (req: AuthRequest, res) => {
         const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
         const endOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999);
 
-        // Only show allocations for Ambrose and Amstel Nest
+        // Only show allocations for Ambrose and Amstel Nest where checkin is complete and villa is allotted
         const bookings = await prisma.staycationBooking.findMany({
             where: {
-                status: { in: ["confirmed", "checked_in"] },
+                status: "checked_in",
                 checkInDate: { lte: endOfDay },
                 checkOutDate: { gte: startOfDay },
                 property: {
                     slug: { in: ["ambrose", "amstel-nest"] }
-                }
+                },
+                assignedUnit: { not: null }
             },
             include: {
                 subProperty: true
             }
         });
 
-        const result = bookings.map(b => ({
-            bookingId: b.id,
-            bookingRef: b.bookingRef,
-            guestName: b.customerName,
-            villaName: b.assignedUnit || b.subProperty?.name || "Unassigned",
-            checkInDate: b.checkInDate,
-            checkOutDate: b.checkOutDate,
-            status: b.status
-        }));
+        const result = bookings
+            .filter(b => b.assignedUnit && b.assignedUnit.trim() !== "" && b.assignedUnit !== "Standard Cottage")
+            .map(b => ({
+                bookingId: b.id,
+                bookingRef: b.bookingRef,
+                guestName: b.customerName,
+                villaName: b.assignedUnit!,
+                checkInDate: b.checkInDate,
+                checkOutDate: b.checkOutDate,
+                status: b.status
+            }));
 
         return res.json(result);
     } catch (error) {

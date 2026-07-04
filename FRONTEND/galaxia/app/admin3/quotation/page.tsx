@@ -147,13 +147,24 @@ export default function QuotationPage() {
                 let lp = livePricing[liveKey];
                 if (!lp) { for (const [k, v] of Object.entries(livePricing)) { if (k.toUpperCase() === liveKey.toUpperCase()) { lp = v; break; } } }
                 if (!lp && (propName.includes("Amstel") || propName.includes("Ambrose"))) lp = livePricing[propName.includes("Amstel") ? "Amstel Nest" : "Ambrose"];
-                if (lp) { basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday; extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests; }
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const is14Aug = dateStr.endsWith("08-14");
+                const is15Aug = dateStr.endsWith("08-15");
+                const isFamily = (villaName || "").toLowerCase().includes("family");
+                if (propName.includes("Amstel") && (is14Aug || is15Aug)) {
+                    basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
+                } else if (lp) { basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday; extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests; }
                 else {
                     if (propName.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
                     else if (propName.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
                     else if (propName.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
                     else if (propName.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4960; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
-                    else if (propName.includes("Amstel")) { basePrice = isWe ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; }
+                    else if (propName.includes("Amstel")) {
+                        if (isFamily) { basePrice = isSat ? 12000 : (day === 0 || day === 5) ? 10000 : 9000; baseGuests = 4; }
+                        else { basePrice = isSat ? 6950 : (day === 0 || day === 5) ? 5950 : 4950; baseGuests = 2; }
+                        extraAdultPrice = 2000; kidsPrice = 1000;
+                    }
                     else if (propName.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
                 }
                 unitRoom += basePrice;

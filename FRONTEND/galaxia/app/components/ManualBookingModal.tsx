@@ -153,7 +153,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         return null;
     };
 
-    const getUnitRates = (propName: string, villaName: string, day: number, isWeekend: boolean, isSaturday: boolean) => {
+    const getUnitRates = (propName: string, villaName: string, day: number, isWeekend: boolean, isSaturday: boolean, currentDate?: Date) => {
         let basePrice = 0;
         let extraAdultPrice = 0;
         let kidsPrice = 0;
@@ -193,8 +193,16 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             else if (propName.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
             else if (propName.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
             else if (propName.includes("Amstel")) {
-                if (villaName === "Family Cottage") { basePrice = 9000; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
-                else { basePrice = isWeekend ? 6950 : 4950; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
+                const dateStr = currentDate ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}` : "";
+                const is14Aug = dateStr.endsWith("08-14");
+                const is15Aug = dateStr.endsWith("08-15");
+                if (villaName === "Family Cottage") {
+                    basePrice = is14Aug ? 11000 : is15Aug ? 13500 : isSaturday ? 12000 : (day === 0 || day === 5) ? 10000 : 9000;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
+                } else {
+                    basePrice = is14Aug ? 7950 : is15Aug ? 8500 : isSaturday ? 6950 : (day === 0 || day === 5) ? 5950 : 4950;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                }
             }
             else if (propName.includes("Ambrose")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
         }
@@ -250,7 +258,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
 
             if (isAmstel) {
                 if (amstelStandardCount > 0) {
-                    const stdRates = getUnitRates(manualForm.property, "Standard Cottage", day, isWeekend, isSaturday);
+                    const stdRates = getUnitRates(manualForm.property, "Standard Cottage", day, isWeekend, isSaturday, currentDate);
                     roomTotal += stdRates.basePrice * amstelStandardCount;
                     if (i === 0) {
                         totalBaseGuests += stdRates.baseGuests * amstelStandardCount;
@@ -259,7 +267,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     }
                 }
                 if (amstelFamilySelected) {
-                    const famRates = getUnitRates(manualForm.property, "Family Cottage", day, isWeekend, isSaturday);
+                    const famRates = getUnitRates(manualForm.property, "Family Cottage", day, isWeekend, isSaturday, currentDate);
                     roomTotal += famRates.basePrice;
                     if (i === 0) {
                         totalBaseGuests += famRates.baseGuests;
@@ -269,7 +277,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 }
             } else if (manualForm.property.includes("Ambrose")) {
                 for (const villa of selectedAmbroseVillas) {
-                    const rates = getUnitRates(manualForm.property, villa, day, isWeekend, isSaturday);
+                    const rates = getUnitRates(manualForm.property, villa, day, isWeekend, isSaturday, currentDate);
                     roomTotal += rates.basePrice;
                     if (i === 0) {
                         totalBaseGuests += rates.baseGuests;
@@ -278,7 +286,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     }
                 }
             } else {
-                const rates = getUnitRates(manualForm.property, manualForm.villa, day, isWeekend, isSaturday);
+                const rates = getUnitRates(manualForm.property, manualForm.villa, day, isWeekend, isSaturday, currentDate);
                 roomTotal += rates.basePrice;
                 if (i === 0) {
                     totalBaseGuests = rates.baseGuests;
@@ -550,10 +558,14 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         const isWeekend = day === 0 || day === 5 || day === 6;
                         const isSaturday = day === 6;
 
-                        let stdBase = isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 6950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950);
+                        const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+                        const is14Aug = dateStr.endsWith("08-14");
+                        const is15Aug = dateStr.endsWith("08-15");
+
+                        let stdBase = is14Aug ? 7950 : is15Aug ? 8500 : isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 5950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950);
                         stdRoomTotal += stdBase * amstelStandardCount;
 
-                        let famBase = livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000;
+                        let famBase = is14Aug ? 11000 : is15Aug ? 13500 : isSaturday ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.saturday || 12000) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekend || 10000) : (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000);
                         famRoomTotal += famBase;
                     }
 

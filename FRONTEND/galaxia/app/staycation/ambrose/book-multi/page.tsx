@@ -488,15 +488,26 @@ export default function BookMultiPage() {
         if (!checkInDate || nights <= 0) return 0;
         let total = 0;
         const units = item.unitCount || 1;
+        const isAmstel = item.property === "amstel-nest";
+        const isFamily = item.villaId === "family-cottage" || (item.villaName || "").toLowerCase().includes("family");
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
-            const day = d.getDay();
-            const isSat = day === 6;
-            const isWe = day === 0 || day === 5;
-            const priceStr = isSat ? (item.saturdayPrice || item.weekendPrice) : isWe ? item.weekendPrice : item.weekdayPrice;
-            const price = parseInt(priceStr.replace(/,/g, ""));
-            total += price;
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (isAmstel && (dateStr.endsWith("08-14") || dateStr.endsWith("08-15"))) {
+                if (dateStr.endsWith("08-14")) {
+                    total += isFamily ? 11000 : 7950;
+                } else {
+                    total += isFamily ? 13500 : 8500;
+                }
+            } else {
+                const day = d.getDay();
+                const isSat = day === 6;
+                const isWe = day === 0 || day === 5;
+                const priceStr = isSat ? (item.saturdayPrice || item.weekendPrice) : isWe ? item.weekendPrice : item.weekdayPrice;
+                const price = parseInt((priceStr || '0').replace(/,/g, ""));
+                total += price;
+            }
         }
         return total * units;
     };

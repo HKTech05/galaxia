@@ -9,6 +9,30 @@ import ManualBookingModal from "./ManualBookingModal";
 import { compressImage } from "../../lib/imageCompressor";
 
 
+const isUnitOccupiedOnDates = (opt: string, selectedBooking: any, bookings: any[]) => {
+    if (!selectedBooking) return false;
+    return bookings.some(b => {
+        if (b.rawId === selectedBooking.rawId) return false;
+        const st = (b.status || "").toLowerCase();
+        if (st !== "checked in" && st !== "checked_in") return false;
+        if (!b.assignedUnit) return false;
+        const units = b.assignedUnit.split(", ").map((u: string) => u.trim());
+        if (!units.includes(opt)) return false;
+
+        // Date overlap check
+        if (b.rawCheckInDate && b.rawCheckOutDate && selectedBooking.rawCheckInDate && selectedBooking.rawCheckOutDate) {
+            const bStart = new Date(b.rawCheckInDate).getTime();
+            const bEnd = new Date(b.rawCheckOutDate).getTime();
+            const sStart = new Date(selectedBooking.rawCheckInDate).getTime();
+            const sEnd = new Date(selectedBooking.rawCheckOutDate).getTime();
+            if (bStart >= sEnd || bEnd <= sStart) {
+                return false; // No date overlap
+            }
+        }
+        return true;
+    });
+};
+
 const getUnitOptions = (booking: any) => {
     if (!booking) return [];
     const parent = (booking.parentProperty || "").toLowerCase();
@@ -18,7 +42,11 @@ const getUnitOptions = (booking: any) => {
         if (sub.includes("family")) {
             return ["Family Cottage"];
         } else {
-            return Array.from({ length: 14 }, (_, i) => `Cottage ${i + 1}`);
+            return [
+                "Cottage 1", "Cottage 2", "Cottage 3", "Cottage 4", "Cottage 5",
+                "Cottage 6", "Cottage 7", "Cottage 8", "Cottage 9", "Cottage 11",
+                "Cottage 12", "Cottage 13", "Cottage 14", "Cottage 15"
+            ];
         }
     } else if (parent.includes("ambrose") || sub.includes("ambrose")) {
         return ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
@@ -159,14 +187,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 setMultiAssignedUnits([selectedBooking.property || ""]);
             } else {
                 const allOpts = getUnitOptions(selectedBooking);
-                const opts = allOpts.filter(opt => {
-                    const isOccupied = bookings.some(b => 
-                        b.rawId !== selectedBooking.rawId &&
-                        b.status === "Checked In" &&
-                        b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
-                    );
-                    return !isOccupied;
-                });
+                const opts = allOpts.filter(opt => !isUnitOccupiedOnDates(opt, selectedBooking, bookings));
 
                 const numCottages = selectedBooking.numCottages || 1;
                 if (numCottages > 1) {
@@ -927,14 +948,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 mt-1"
                                                 >
                                                     {getUnitOptions(selectedBooking)
-                                                        .filter(opt => {
-                                                            const isOccupied = bookings.some(b => 
-                                                                b.rawId !== selectedBooking.rawId &&
-                                                                b.status === "Checked In" &&
-                                                                b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
-                                                            );
-                                                            return !isOccupied;
-                                                        })
+                                                        .filter(opt => !isUnitOccupiedOnDates(opt, selectedBooking, bookings))
                                                         .map((opt) => (
                                                             <option key={opt} value={opt}>
                                                                 {opt}
@@ -955,11 +969,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 <div className="space-y-3 mt-2">
                                                     {Array.from({ length: selectedBooking.numCottages }).map((_, idx) => {
                                                         const availableOpts = getUnitOptions(selectedBooking).filter(opt => {
-                                                            const isOccupiedByOther = bookings.some(b => 
-                                                                b.rawId !== selectedBooking.rawId &&
-                                                                b.status === "Checked In" &&
-                                                                b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
-                                                            );
+                                                            const isOccupiedByOther = isUnitOccupiedOnDates(opt, selectedBooking, bookings);
                                                             const isSelectedInOtherDropdown = multiAssignedUnits.some((val, valIdx) => valIdx !== idx && val === opt);
                                                             return !isOccupiedByOther && !isSelectedInOtherDropdown;
                                                         });
@@ -1001,14 +1011,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                                 >
                                                     {getUnitOptions(selectedBooking)
-                                                        .filter(opt => {
-                                                            const isOccupied = bookings.some(b => 
-                                                                b.rawId !== selectedBooking.rawId &&
-                                                                b.status === "Checked In" &&
-                                                                b.assignedUnit && b.assignedUnit.split(", ").map((u: string) => u.trim()).includes(opt)
-                                                            );
-                                                            return !isOccupied;
-                                                        })
+                                                        .filter(opt => !isUnitOccupiedOnDates(opt, selectedBooking, bookings))
                                                         .map((opt) => (
                                                             <option key={opt} value={opt}>
                                                                 {opt}

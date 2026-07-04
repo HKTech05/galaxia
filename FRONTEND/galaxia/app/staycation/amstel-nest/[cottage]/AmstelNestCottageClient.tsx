@@ -198,6 +198,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
     const cottageThumb = dynamicThumbnail || cottage.image;
     const weekdayPrice = liveWeekday || cottage.pricing?.weekday.price || parent.pricing.weekday.price;
     const weekendPrice = liveWeekend || cottage.pricing?.weekend.price || parent.pricing.weekend.price;
+    const saturdayPrice = cottage.pricing?.saturday?.price || parent.pricing.saturday?.price || weekendPrice;
 
     const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const bookNowUrl = `/staycation/amstel-nest/${cottage.id}/book${calCheckIn ? `?checkIn=${fmtDate(calCheckIn)}` : ''}${calCheckOut ? `&checkOut=${fmtDate(calCheckOut)}` : ''}`;
@@ -307,6 +308,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                                 subPropertyId={dbSubPropertyId}
                                 weekdayPrice={weekdayPrice}
                                 weekendPrice={weekendPrice}
+                                saturdayPrice={saturdayPrice}
                                 dateOverrides={dateOverrides}
                                 initialCheckIn={calCheckIn}
                                 initialCheckOut={calCheckOut}

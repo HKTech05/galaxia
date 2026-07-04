@@ -62,11 +62,11 @@ const VILLAS_LIST = [
     { name: "Amstel Nest — Cottage 7", value: "Cottage 7" },
     { name: "Amstel Nest — Cottage 8", value: "Cottage 8" },
     { name: "Amstel Nest — Cottage 9", value: "Cottage 9" },
-    { name: "Amstel Nest — Cottage 10", value: "Cottage 10" },
     { name: "Amstel Nest — Cottage 11", value: "Cottage 11" },
     { name: "Amstel Nest — Cottage 12", value: "Cottage 12" },
     { name: "Amstel Nest — Cottage 13", value: "Cottage 13" },
     { name: "Amstel Nest — Cottage 14", value: "Cottage 14" },
+    { name: "Amstel Nest — Cottage 15", value: "Cottage 15" },
     { name: "Amstel Nest — Family Cottage", value: "Family Cottage" },
 ];
 

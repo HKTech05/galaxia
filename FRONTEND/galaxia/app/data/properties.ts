@@ -13,6 +13,7 @@ export interface PropertyData {
         weekend: { price: string; persons: string };
         saturday?: { price: string; persons: string };
         primeDates?: string;
+        dateOverrides?: Record<string, number>;
         extraAdult: string;
         kidsCharge: string;
         special?: { label: string; price: string }[];
@@ -61,6 +62,7 @@ export interface PropertyData {
             weekend4Ppl?: { price: string; persons: string };
             saturday?: { price: string; persons: string };
             primeDates?: string;
+            dateOverrides?: Record<string, number>;
         };
     }[];
 }
@@ -263,7 +265,8 @@ export const properties: Record<string, PropertyData> = {
         checkOut: "10:00 AM",
         pricing: {
             weekday: { price: "4,950", persons: "2 persons with meals" },
-            weekend: { price: "6,950", persons: "2 persons with meals" },
+            weekend: { price: "5,950", persons: "2 persons with meals" },
+            saturday: { price: "6,950", persons: "2 persons with meals" },
             extraAdult: "2,000",
             kidsCharge: "1,000 (5–12 yrs)",
         },
@@ -353,7 +356,9 @@ export const properties: Record<string, PropertyData> = {
                 maxKids: 3,
                 pricing: {
                     weekday: { price: "4,950", persons: "2 persons with meals" },
-                    weekend: { price: "6,950", persons: "2 persons with meals" },
+                    weekend: { price: "5,950", persons: "2 persons with meals" },
+                    saturday: { price: "6,950", persons: "2 persons with meals" },
+                    dateOverrides: { "2026-08-14": 7950, "2026-08-15": 8500 }
                 },
             },
             {
@@ -368,7 +373,9 @@ export const properties: Record<string, PropertyData> = {
                 maxKids: 4,
                 pricing: {
                     weekday: { price: "9,000", persons: "upto 4 with meals" },
-                    weekend: { price: "9,000", persons: "upto 4 with meals" },
+                    weekend: { price: "10,000", persons: "upto 4 with meals" },
+                    saturday: { price: "12,000", persons: "upto 4 with meals" },
+                    dateOverrides: { "2026-08-14": 11000, "2026-08-15": 13500 }
                 },
             },
         ],

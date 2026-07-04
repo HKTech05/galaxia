@@ -222,7 +222,8 @@ async function main() {
             slug: "amstel-nest",
             entries: [
                 { dayType: "weekday", basePrice: 4950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
-                { dayType: "weekend", basePrice: 6950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                { dayType: "weekend", basePrice: 5950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
+                { dayType: "saturday", basePrice: 6950, personsLabel: "2 persons with meals", extraAdultPrice: 2000, kidsPrice: 1000, kidsAgeRange: "5-12 yrs" },
             ],
         },
         {
