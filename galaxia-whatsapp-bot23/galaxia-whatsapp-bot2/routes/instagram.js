@@ -20,6 +20,29 @@ const axios = require("axios");
 // Socket.IO instance — injected by server.js via module.exports function
 let io = null;
 
+// Rate limiting & sliding window map for IG bot loop protection
+const messageTimestampsMap = new Map();
+const MAX_MSG_IN_WINDOW = 2;
+const WINDOW_MS = 15000;
+
+function isRateLimited(sessionId) {
+  const now = Date.now();
+  let timestamps = messageTimestampsMap.get(sessionId) || [];
+  timestamps = timestamps.filter(t => now - t < WINDOW_MS);
+  timestamps.push(now);
+  messageTimestampsMap.set(sessionId, timestamps);
+
+  if (messageTimestampsMap.size > 5000) {
+    for (const [key, times] of messageTimestampsMap.entries()) {
+      if (times.every(t => now - t >= WINDOW_MS)) {
+        messageTimestampsMap.delete(key);
+      }
+    }
+  }
+
+  return timestamps.length > MAX_MSG_IN_WINDOW;
+}
+
 /* ── IG Page → Bot Type Mapping ──────────────────────────
    Each Instagram page has a unique Page ID. The webhook payload
    contains the recipient page ID so we can route to the right bot.
@@ -193,7 +216,46 @@ router.post("/webhook", async (req, res) => {
       });
     }
 
-    // 4. Check if human mode is active — if so, don't auto-reply
+    // 4. Check if sender or recipient is an internal account or self
+    const internalKeywords = ["digitaldiaries", "amstelnest", "ambrose", "laparaiso", "mountview", "heavenlyvilla", "hillview", "galaxia"];
+    const isInternalSender = internalKeywords.some(k => session.display_name?.toLowerCase().includes(k));
+    const isSelfMessaging = senderId === recipientId;
+
+    if (isSelfMessaging || isInternalSender) {
+      console.log(`[Instagram Loop Guard] Internal/Self message detected (sender: ${senderId}, display: ${session.display_name}) — enabling human mode & skipping bot reply.`);
+      if (!session.is_human_active) {
+        await db.setHumanMode(sessionId, true);
+        if (io) io.emit("session_updated", await db.getSession(sessionId));
+      }
+      return;
+    }
+
+    // 4b. Check for automated bot response text signatures
+    const isAutomatedBotText = 
+      userText.includes("Please select one of the options below") ||
+      userText.includes("Welcome to Digital Diaries") ||
+      userText.includes("Welcome to Amstelnest") ||
+      (userText.includes("1.") && userText.includes("2.") && userText.includes("3.")) ||
+      (userText.includes("🔗") && userText.includes("http"));
+
+    if (isAutomatedBotText) {
+      console.log(`[Instagram Loop Guard] Detected automated bot payload from ${senderId} — enabling human mode & skipping reply.`);
+      if (!session.is_human_active) {
+        await db.setHumanMode(sessionId, true);
+        if (io) io.emit("session_updated", await db.getSession(sessionId));
+      }
+      return;
+    }
+
+    // 4c. Sliding window rate limit check (max 2 incoming messages in 15 seconds)
+    if (isRateLimited(sessionId)) {
+      console.warn(`[Instagram Loop Guard] High message frequency for ${sessionId}. Suppressing auto-reply & activating human mode.`);
+      await db.setHumanMode(sessionId, true);
+      if (io) io.emit("session_updated", await db.getSession(sessionId));
+      return;
+    }
+
+    // 4d. Check if human mode is active — if so, don't auto-reply
     if (session.is_human_active) {
       console.log(`[Instagram] Human mode active for ${sessionId} — skipping bot reply.`);
       return;
