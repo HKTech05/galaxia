@@ -20,6 +20,31 @@ const SLUG_MAP: Record<string, string> = {
     "Amstel Nest": "amstel-nest", "Ambrose": "ambrose",
 };
 
+const resolvePropertySlug = (propName: string, quantities?: Record<string, number>) => {
+    const activeVillas = Object.keys(quantities || {}).filter(k => (quantities || {})[k] > 0);
+    const firstName = activeVillas[0] || propName || "";
+    const combined = `${propName} ${firstName}`.toLowerCase();
+
+    if (combined.includes("amstel") || combined.includes("standard cottage") || combined.includes("family cottage")) {
+        const isFam = combined.includes("family");
+        return {
+            slug: "amstel-nest",
+            subSlug: isFam ? "family-cottage" : "standard-cottage",
+            isFamily: isFam,
+        };
+    }
+    if (combined.includes("ambrose") || ["take-1", "alta", "santorini", "bamboosa", "cypress"].some(v => combined.includes(v))) {
+        const sub = ["take-1", "alta", "santorini", "bamboosa", "cypress"].find(v => combined.includes(v));
+        return { slug: "ambrose", subSlug: sub };
+    }
+    if (combined.includes("hill view") || combined.includes("hill-view")) return { slug: "hill-view" };
+    if (combined.includes("mount view") || combined.includes("mount-view")) return { slug: "mount-view" };
+    if (combined.includes("heavenly")) return { slug: "heavenly-villa" };
+    if (combined.includes("la paraiso") || combined.includes("paraiso")) return { slug: "la-paraiso" };
+
+    return { slug: SLUG_MAP[propName] || "amstel-nest" };
+};
+
 const toLocalDateStr = (d: Date | null) => {
     if (!d) return "";
     const y = d.getFullYear();
@@ -146,7 +171,7 @@ function CustomerQuoteInner() {
     // ── Fetch availability (used for metadata/pricing) ──
     useEffect(() => {
         if (!propertyName) return;
-        const slug = SLUG_MAP[propertyName];
+        const { slug } = resolvePropertySlug(propertyName, villaQuantities);
         if (slug) {
             (async () => {
                 try {
@@ -155,7 +180,7 @@ function CustomerQuoteInner() {
                 } catch { }
             })();
         }
-    }, [propertyName]);
+    }, [propertyName, villaQuantities]);
 
     // ── Fetch live pricing ──
     useEffect(() => {
@@ -203,7 +228,7 @@ function CustomerQuoteInner() {
         (async () => {
             try {
                 const props = await api.get("/properties");
-                const slug = SLUG_MAP[propertyName];
+                const { slug } = resolvePropertySlug(propertyName, villaQuantities);
                 const dbProp = props.find((p: any) => p.slug === slug);
                 if (dbProp) {
                     setDbPropertyId(dbProp.id);
@@ -223,7 +248,7 @@ function CustomerQuoteInner() {
                 console.error("Failed to fetch property data:", err);
             }
         })();
-    }, [propertyName]);
+    }, [propertyName, villaQuantities]);
 
     // Fetch booked dates for the current property/sub-property (shared with DateSelectionBar)
     const bookedDatesForPicker = useBookedDates(dbPropertyId, subPropertyId);
@@ -690,19 +715,53 @@ function CustomerQuoteInner() {
                                     setCheckOut(null);
                                 }}
                             />
-                            <AvailabilityCalendar
-                                propertyId={dbPropertyId}
-                                propertySlug={SLUG_MAP[propertyName]}
-                                subPropertyId={subPropertyId}
-                                weekdayPrice={availData?.pricing?.weekday?.price || "0"}
-                                weekendPrice={availData?.pricing?.weekend?.price || "0"}
-                                saturdayPrice={availData?.pricing?.saturday?.price}
-                                primeDatePrice={availData?.pricing?.primeDates || ""}
-                                initialCheckIn={checkIn}
-                                initialCheckOut={checkOut}
-                                compact
-                                totalUnits={activeSubPropertyUnits}
-                            />
+                            {(() => {
+                                const { slug, isFamily } = resolvePropertySlug(propertyName, villaQuantities);
+                                const isAmstel = slug === "amstel-nest";
+
+                                const spPricing = (subPropertyId && availData?.subPropertyPricing) ? availData.subPropertyPricing[subPropertyId] : null;
+
+                                let wdPrice = spPricing?.weekday?.price || availData?.pricing?.weekday?.price;
+                                let wePrice = spPricing?.weekend?.price || availData?.pricing?.weekend?.price;
+                                let saPrice = spPricing?.saturday?.price || availData?.pricing?.saturday?.price;
+                                let dateOverrides = (spPricing?.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (availData?.pricing?.dateOverrides || {});
+
+                                if (isAmstel) {
+                                    if (!wdPrice) wdPrice = isFamily ? "9,000" : "4,950";
+                                    if (!wePrice) wePrice = isFamily ? "10,000" : "5,950";
+                                    if (!saPrice) saPrice = isFamily ? "12,000" : "6,950";
+                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) {
+                                        dateOverrides = isFamily ? { "2026-08-14": 11000, "2026-08-15": 13500 } : { "2026-08-14": 7950, "2026-08-15": 8500 };
+                                    }
+                                } else if (slug === "hill-view") {
+                                    if (!wdPrice) wdPrice = "2,500"; if (!wePrice) wePrice = "3,950";
+                                } else if (slug === "mount-view") {
+                                    if (!wdPrice) wdPrice = "3,500"; if (!wePrice) wePrice = "4,950";
+                                } else if (slug === "heavenly-villa") {
+                                    if (!wdPrice) wdPrice = "3,950"; if (!wePrice) wePrice = "4,950";
+                                } else if (slug === "la-paraiso") {
+                                    if (!wdPrice) wdPrice = "4,960"; if (!wePrice) wePrice = "7,500"; if (!saPrice) saPrice = "8,500";
+                                } else if (slug === "ambrose") {
+                                    if (!wdPrice) wdPrice = "5,500"; if (!wePrice) wePrice = "6,500";
+                                }
+
+                                return (
+                                    <AvailabilityCalendar
+                                        propertyId={dbPropertyId}
+                                        propertySlug={slug}
+                                        subPropertyId={subPropertyId}
+                                        weekdayPrice={wdPrice}
+                                        weekendPrice={wePrice}
+                                        saturdayPrice={saPrice}
+                                        dateOverrides={dateOverrides}
+                                        primeDatePrice={availData?.pricing?.primeDates || ""}
+                                        initialCheckIn={checkIn}
+                                        initialCheckOut={checkOut}
+                                        compact
+                                        totalUnits={activeSubPropertyUnits}
+                                    />
+                                );
+                            })()}
                             {checkIn && checkOut && (
                                 <div className="flex items-center justify-between bg-white border border-[#e8e5dd] rounded-xl px-4 py-3 shadow-sm">
                                     <div className="text-xs"><span className="text-[#555]">Check-in:</span> <strong className="text-[#1a1a2e]">{fmtDateStr(checkIn)}</strong></div>
