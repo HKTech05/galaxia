@@ -4,6 +4,7 @@ import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
 import { decrypt } from "../lib/encryption";
 import { sendOrderDeletionNotification } from "../lib/emailService";
+import { generateMenuPDF } from "../lib/pdfService";
 import fs from "fs";
 import path from "path";
 
@@ -98,6 +99,26 @@ router.get("/menu", (req, res) => {
     }
 });
 
+// Download Menu PDF route
+router.get("/menu/download-pdf", async (req, res) => {
+    try {
+        const menuItems = getMenuItems();
+        const pdfBuffer = await generateMenuPDF(menuItems);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", 'attachment; filename="Galaxia_Resorts_Menu.pdf"');
+        return res.send(pdfBuffer);
+    } catch (err: any) {
+        console.error("Error generating menu PDF:", err);
+        return res.status(500).json({ error: "Failed to generate menu PDF" });
+    }
+});
+
+// Helper: Check if an item is a Chef prepared item (e.g. Fresh Lime Water, Fresh Lime Soda)
+const isChefPreparedItem = (item: any) => {
+    const name = (item?.name || item?.id || "").toLowerCase();
+    return name.includes("lime");
+};
+
 // 1. Public Route: POST /api/hospitality/requests — Submit request from a guest villa e-menu
 router.post("/requests", async (req, res) => {
     try {
@@ -161,7 +182,7 @@ router.post("/requests", async (req, res) => {
             }
         });
 
-        // Send WhatsApp notification to hospitality staff
+        // Send WhatsApp notification to hospitality staff & managers
         try {
             // Build items summary string joined by commas (Meta templates reject newlines)
             const itemsSummary = items.map((i: any) => {
@@ -178,13 +199,17 @@ router.post("/requests", async (req, res) => {
 
             const isHighTea = itemCategory === "High Tea";
             const isTimepass = itemCategory === "Timepass";
-            const templateName = (isHighTea || isTimepass)
+            const hasChefItem = items.some((i: any) => isChefPreparedItem(i));
+            const isChefOrder = isHighTea || isTimepass || hasChefItem;
+
+            const templateName = isChefOrder
                 ? "hospitality_hightea_order"
                 : "hospitality_housekeeping_order";
 
-            const recipientPhones = (isHighTea || isTimepass)
-                ? ["7355630009", "9867677811"]
-                : ["7355630009"];
+            // Manager 1 (Ranjit): 7355630009, Manager 2 (Devidas): 9923500208, Chef: 9867677811
+            const recipientPhones = isChefOrder
+                ? ["7355630009", "9923500208", "9867677811"]
+                : ["7355630009", "9923500208"];
 
             for (const recipientPhone of recipientPhones) {
                 try {
@@ -219,18 +244,24 @@ router.post("/requests", async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 router.use(authMiddleware);
 
-// 2. GET /api/hospitality/requests — Fetch hospitality requests (Normal or High Tea)
+// 2. GET /api/hospitality/requests — Fetch hospitality requests (Normal, High Tea, Timepass, or Prepared Food Deliveries)
 router.get("/requests", async (req: AuthRequest, res) => {
     try {
-        const { category, status, bookingId, isBilled, date } = req.query;
+        const { category, status, bookingId, isBilled, date, chefOnly, excludeChefItems, foodDeliveries } = req.query;
         const where: any = {};
 
-        if (category) {
-            where.itemCategory = String(category);
+        if (foodDeliveries === "true") {
+            // Housekeeping food delivery section fetches requests marked as "prepared" by chef
+            where.status = "prepared";
+        } else {
+            if (category) {
+                where.itemCategory = String(category);
+            }
+            if (status) {
+                where.status = String(status);
+            }
         }
-        if (status) {
-            where.status = String(status);
-        }
+
         if (bookingId) {
             const parsed = parseInt(String(bookingId));
             if (!isNaN(parsed)) where.bookingId = parsed;
@@ -260,13 +291,28 @@ router.get("/requests", async (req: AuthRequest, res) => {
         });
 
         // Parse items — handle both old stringified and new array format
-        const parsedRequests = requests.map(req => {
+        let parsedRequests = requests.map(req => {
             let parsedItems = req.items;
             if (typeof parsedItems === "string") {
                 try { parsedItems = JSON.parse(parsedItems); } catch { parsedItems = []; }
             }
             return { ...req, items: parsedItems };
         });
+
+        // Additional Chef vs Housekeeping item filtering
+        if (category === "Normal") {
+            if (chefOnly === "true") {
+                // Chef portal Normal tab: include only requests that contain Chef items (Fresh Lime Water/Soda)
+                parsedRequests = parsedRequests.filter(r => 
+                    Array.isArray(r.items) && r.items.some((i: any) => isChefPreparedItem(i))
+                );
+            } else if (excludeChefItems === "true") {
+                // Housekeeping pending items: exclude requests that are ONLY Chef items
+                parsedRequests = parsedRequests.filter(r => 
+                    Array.isArray(r.items) && r.items.some((i: any) => !isChefPreparedItem(i))
+                );
+            }
+        }
 
         return res.json(parsedRequests);
     } catch (error) {

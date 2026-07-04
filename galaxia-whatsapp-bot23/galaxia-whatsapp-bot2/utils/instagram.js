@@ -2,12 +2,21 @@
  * Instagram DM message sender helpers
  * Uses Instagram Graph API to send text messages with optional quick replies.
  * 
- * This is a SEPARATE utility from whatsapp.js — WhatsApp code is untouched.
+ * Supports both:
+ * 1. EAA... tokens (Facebook Page Access Tokens) via graph.facebook.com
+ * 2. IGAA... tokens (Instagram User Access Tokens) via graph.instagram.com
  */
 
 const axios = require("axios");
 
 const IG_API_VERSION = "v21.0";
+
+function getApiHost(token) {
+  if (token && token.startsWith("EAA")) {
+    return "https://graph.facebook.com";
+  }
+  return "https://graph.instagram.com";
+}
 
 /**
  * Send an Instagram DM reply based on the menu engine response.
@@ -15,6 +24,7 @@ const IG_API_VERSION = "v21.0";
  * @param {string} recipientId  – Instagram-scoped user ID (IGSID)
  * @param {object} response     – Menu engine response { message, options, link?, image? }
  * @param {string} botType      – "celebration" or "staycation"
+ * @param {string} customToken  – Property-specific token override
  */
 async function sendInstagramReply(recipientId, response, botType = "celebration", customToken = null) {
   const token = customToken || process.env.INSTAGRAM_TOKEN;
@@ -23,6 +33,7 @@ async function sendInstagramReply(recipientId, response, botType = "celebration"
     return;
   }
 
+  const host = getApiHost(token);
   const opts = response.options || [];
 
   // Build message text
@@ -49,7 +60,7 @@ async function sendInstagramReply(recipientId, response, botType = "celebration"
 
   try {
     await axios.post(
-      `https://graph.instagram.com/${IG_API_VERSION}/me/messages`,
+      `${host}/${IG_API_VERSION}/me/messages`,
       {
         recipient: { id: recipientId },
         message: messagePayload
@@ -61,10 +72,10 @@ async function sendInstagramReply(recipientId, response, botType = "celebration"
         }
       }
     );
-    console.log(`[Instagram] ✅ Reply sent to ${recipientId}`);
+    console.log(`[Instagram] ✅ Reply sent to ${recipientId} via ${host}`);
   } catch (err) {
     console.error(
-      `[Instagram] ❌ Failed to send reply to ${recipientId}:`,
+      `[Instagram] ❌ Failed to send reply to ${recipientId} via ${host}:`,
       err.response?.status,
       err.response?.data || err.message
     );
@@ -76,6 +87,7 @@ async function sendInstagramReply(recipientId, response, botType = "celebration"
  *
  * @param {string} recipientId  – Instagram-scoped user ID (IGSID)
  * @param {string} text         – Plain text message
+ * @param {string} customToken  – Property-specific token override
  */
 async function sendInstagramText(recipientId, text, customToken = null) {
   const token = customToken || process.env.INSTAGRAM_TOKEN;
@@ -84,9 +96,11 @@ async function sendInstagramText(recipientId, text, customToken = null) {
     return;
   }
 
+  const host = getApiHost(token);
+
   try {
     await axios.post(
-      `https://graph.instagram.com/${IG_API_VERSION}/me/messages`,
+      `${host}/${IG_API_VERSION}/me/messages`,
       {
         recipient: { id: recipientId },
         message: { text }
@@ -98,10 +112,10 @@ async function sendInstagramText(recipientId, text, customToken = null) {
         }
       }
     );
-    console.log(`[Instagram] ✅ Text sent to ${recipientId}`);
+    console.log(`[Instagram] ✅ Text sent to ${recipientId} via ${host}`);
   } catch (err) {
     console.error(
-      `[Instagram] ❌ Failed to send text to ${recipientId}:`,
+      `[Instagram] ❌ Failed to send text to ${recipientId} via ${host}:`,
       err.response?.status,
       err.response?.data || err.message
     );

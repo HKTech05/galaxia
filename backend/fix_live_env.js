@@ -10,7 +10,7 @@ if (!fs.existsSync(envPath)) {
 let content = fs.readFileSync(envPath, "utf8");
 // Remove any existing CHEF_ variables or malformed lines we just added
 content = content.replace(/CHEF_[A-Z_]+="?[^\n]*"?\n?/g, "");
-content = content.trim() + "\n\n# Chef Supplier WhatsApp Configurations\nCHEF_DAIRY_PHONE=\"8237309564\"\nCHEF_KIRAYANA_PHONE=\"8237309564\"\nCHEF_SHAK_SHABJI_PHONE=\"8237309564\"\n";
+content = content.trim() + "\n\n# Chef Supplier WhatsApp Configurations\nCHEF_DAIRY_PHONE=\"8983173033\"\nCHEF_KIRAYANA_PHONE=\"8983173033\"\nCHEF_SHAK_SHABJI_PHONE=\"9511636741\"\n";
 
 fs.writeFileSync(envPath, content, "utf8");
 console.log("Successfully fixed .env file");

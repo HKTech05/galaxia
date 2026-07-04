@@ -15,7 +15,9 @@ import {
     Plus,
     Trash2,
     Edit,
-    Save
+    Save,
+    CheckCircle,
+    ShoppingBag
 } from "lucide-react";
 import { api } from "../../../lib/api";
 
@@ -98,6 +100,10 @@ export default function HousekeepingPortalPage() {
     const [error, setError] = useState("");
     const [userRole, setUserRole] = useState("");
     const [userName, setUserName] = useState("");
+
+    // Food Deliveries (Prepared food ready for delivery)
+    const [foodDeliveries, setFoodDeliveries] = useState<HospitalityRequest[]>([]);
+    const [loadingFoodDeliveries, setLoadingFoodDeliveries] = useState(false);
 
     // Dynamic menu state
     const [menuItems, setMenuItems] = useState<any[]>(DEFAULT_MENU_ITEMS);
@@ -344,7 +350,7 @@ export default function HousekeepingPortalPage() {
         setError("");
         try {
             const data = await api.get<HospitalityRequest[]>(
-                `/hospitality/requests?category=Normal&date=${selectedDate}`
+                `/hospitality/requests?category=Normal&excludeChefItems=true&date=${selectedDate}`
             );
             if (Array.isArray(data)) {
                 setRequests(data);
@@ -353,6 +359,34 @@ export default function HousekeepingPortalPage() {
             setError(err.message || "Failed to fetch housekeeping requests.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchFoodDeliveries = async () => {
+        setLoadingFoodDeliveries(true);
+        try {
+            const data = await api.get<HospitalityRequest[]>("/hospitality/requests?foodDeliveries=true");
+            if (Array.isArray(data)) {
+                setFoodDeliveries(data);
+            }
+        } catch (err: any) {
+            console.error("Failed to fetch food deliveries:", err);
+        } finally {
+            setLoadingFoodDeliveries(false);
+        }
+    };
+
+    const handleMarkDelivered = async (id: number) => {
+        try {
+            const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
+                status: "fulfilled"
+            });
+            if (res.success) {
+                setFoodDeliveries(prev => prev.filter(r => r.id !== id));
+                fetchRequests();
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to mark order as delivered.");
         }
     };
 
@@ -420,6 +454,7 @@ export default function HousekeepingPortalPage() {
         if (userRole) {
             fetchRequests();
             fetchAllocations();
+            fetchFoodDeliveries();
         }
     }, [selectedDate, userRole]);
 
@@ -503,6 +538,85 @@ export default function HousekeepingPortalPage() {
             </div>
 
 
+
+            {/* Food Deliveries Section (Prepared food ready to serve from chef) */}
+            <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-300 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-amber-200/60 pb-3">
+                    <h2 className="text-lg font-extrabold text-amber-900 flex items-center gap-2">
+                        <ShoppingBag size={22} className="text-amber-600" />
+                        Food Deliveries (Prepared & Ready to Serve)
+                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={fetchFoodDeliveries}
+                            disabled={loadingFoodDeliveries}
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors border border-amber-300"
+                        >
+                            <RefreshCw size={12} className={loadingFoodDeliveries ? "animate-spin" : ""} />
+                            Refresh Deliveries
+                        </button>
+                        <span className="bg-amber-600 text-white text-xs font-extrabold px-2.5 py-1 rounded-full shadow-sm">
+                            {foodDeliveries.length} Ready to Deliver
+                        </span>
+                    </div>
+                </div>
+
+                {loadingFoodDeliveries ? (
+                    <div className="flex items-center justify-center py-6 text-amber-700 gap-2">
+                        <RefreshCw size={18} className="animate-spin" />
+                        <span className="text-xs font-semibold">Checking for ready food orders...</span>
+                    </div>
+                ) : foodDeliveries.length === 0 ? (
+                    <p className="text-center py-6 text-slate-500 text-xs font-medium italic">
+                        No food orders waiting for delivery right now.
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {foodDeliveries.map((req) => (
+                            <div key={req.id} className="bg-white border border-amber-200 rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                        <div>
+                                            <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
+                                                <span>🏡 {req.villaName}</span>
+                                            </h3>
+                                            {req.booking && (
+                                                <p className="text-[11px] text-slate-500 font-medium">{req.booking.customerName}</p>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                                            {new Date(req.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1 bg-amber-50/50 p-2 rounded-lg border border-amber-100">
+                                        <p className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider">Order Items:</p>
+                                        {Array.isArray(req.items) && req.items.map((item: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between text-xs text-slate-800 font-semibold">
+                                                <span>
+                                                    {item.name}
+                                                    {item.comment && (
+                                                        <span className="text-amber-700 italic text-[10px] ml-1">({item.comment})</span>
+                                                    )}
+                                                </span>
+                                                <span className="font-mono font-bold text-amber-900 bg-white px-1.5 rounded border border-amber-200">×{item.quantity}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => handleMarkDelivered(req.id)}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                                >
+                                    <Check size={14} className="stroke-[3px]" />
+                                    Mark Delivered
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* Main view grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

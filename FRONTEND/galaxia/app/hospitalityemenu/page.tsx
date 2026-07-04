@@ -326,22 +326,39 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                 };
             });
 
-            const normalPayload = selectedItems.filter(i => i.category === "Normal");
+            const isLimeItem = (i: any) => (i.name || "").toLowerCase().includes("lime") || i.id === "fresh_lime_soda" || i.id === "fresh_lime_water";
+
+            const chefNormalPayload = selectedItems.filter(i => i.category === "Normal" && isLimeItem(i));
+            const housekeepingNormalPayload = selectedItems.filter(i => i.category === "Normal" && !isLimeItem(i));
             const highTeaPayload = selectedItems.filter(i => i.category === "High Tea");
             const timepassPayload = selectedItems.filter(i => i.category === "Timepass");
 
-            // Post Normal request
-            if (normalPayload.length > 0) {
+            // Post Housekeeping Normal request
+            if (housekeepingNormalPayload.length > 0) {
                 const res = await fetch("/api/hospitality/requests", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         villaName: selectedVilla,
                         itemCategory: "Normal",
-                        items: normalPayload
+                        items: housekeepingNormalPayload
                     })
                 });
-                if (!res.ok) throw new Error("Failed to submit normal requests");
+                if (!res.ok) throw new Error("Failed to submit normal housekeeping requests");
+            }
+
+            // Post Chef Normal request (Fresh Lime Water / Soda)
+            if (chefNormalPayload.length > 0) {
+                const res = await fetch("/api/hospitality/requests", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        villaName: selectedVilla,
+                        itemCategory: "Normal",
+                        items: chefNormalPayload
+                    })
+                });
+                if (!res.ok) throw new Error("Failed to submit normal chef requests");
             }
 
             // Post High Tea request

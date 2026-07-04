@@ -804,4 +804,119 @@ export function generateChefIngredientsPDF(
     });
 }
 
+/**
+ * Generate a luxury resort Menu PDF grouped by category with prices.
+ */
+export async function generateMenuPDF(menuItems: any[]): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 40, size: "A4" });
+        const buffers: Buffer[] = [];
+
+        doc.on("data", (chunk) => buffers.push(chunk));
+        doc.on("end", () => resolve(Buffer.concat(buffers)));
+        doc.on("error", (err) => reject(err));
+
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
+        const margin = 40;
+
+        // Background / Decorative Border
+        doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+        doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+
+        // Header Section
+        doc.rect(18, 18, pageWidth - 36, 110).fill(NAVY);
+
+        doc.fontSize(24).fill(GOLD).font("Helvetica-Bold");
+        doc.text("GALAXIA RESORTS", 0, 38, { align: "center", width: pageWidth, characterSpacing: 3 });
+
+        doc.fontSize(12).fill("#FFFFFF").font("Helvetica");
+        doc.text("EXECUTIVE ROOM SERVICE & DINING MENU", 0, 70, { align: "center", width: pageWidth, characterSpacing: 2 });
+
+        doc.moveTo(margin + 60, 94).lineTo(pageWidth - margin - 60, 94).lineWidth(1).stroke(GOLD);
+
+        let y = 145;
+
+        // Group menu items by category
+        const categories: Record<string, any[]> = {
+            "High Tea": [],
+            "Timepass": [],
+            "Normal": []
+        };
+
+        for (const item of menuItems) {
+            const cat = item.category || "Normal";
+            if (!categories[cat]) categories[cat] = [];
+            categories[cat].push(item);
+        }
+
+        const categoryTitles: Record<string, { label: string; icon: string }> = {
+            "High Tea": { label: "HIGH TEA & SNACKS", icon: "HIGH TEA" },
+            "Timepass": { label: "TIMEPASS & QUICK BITES", icon: "TIMEPASS" },
+            "Normal": { label: "BEVERAGES & REFRESHMENTS", icon: "BEVERAGES" }
+        };
+
+        const categoryKeys = Object.keys(categories).filter(c => categories[c].length > 0);
+
+        for (const catKey of categoryKeys) {
+            const catInfo = categoryTitles[catKey] || { label: catKey.toUpperCase(), icon: "MENU" };
+            const items = categories[catKey];
+
+            // Check if room for category header + at least 2 items
+            if (y > pageHeight - 120) {
+                doc.addPage();
+                doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+                doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+                y = 45;
+            }
+
+            // Category Header Box
+            doc.rect(margin, y, pageWidth - (margin * 2), 26).fill(GOLD);
+            doc.fontSize(11).fill(NAVY).font("Helvetica-Bold");
+            doc.text(`  ❖  ${catInfo.label}`, margin + 10, y + 7, { characterSpacing: 1.5 });
+            y += 34;
+
+            for (const item of items) {
+                if (y > pageHeight - 65) {
+                    doc.addPage();
+                    doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+                    doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+                    y = 45;
+                }
+
+                const itemName = item.name || "Item";
+                const itemPrice = `Rs. ${item.price ?? 0}`;
+
+                doc.fontSize(10).fill(TEXT_DARK).font("Helvetica-Bold");
+                doc.text(itemName, margin + 15, y);
+
+                doc.fontSize(10).fill(GOLD).font("Helvetica-Bold");
+                doc.text(itemPrice, pageWidth - margin - 120, y, { width: 105, align: "right" });
+
+                y += 18;
+                doc.moveTo(margin + 15, y - 4).lineTo(pageWidth - margin - 15, y - 4).lineWidth(0.3).stroke(BORDER);
+                y += 4;
+            }
+
+            y += 12;
+        }
+
+        // Footer
+        if (y > pageHeight - 45) {
+            doc.addPage();
+            doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+            doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+            y = pageHeight - 45;
+        } else {
+            y = Math.max(y, pageHeight - 45);
+        }
+
+        doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
+        doc.text("Galaxia Resorts • Premium Villa & Resort Hospitality • www.galaxiaresorts.com", 0, y, { align: "center", width: pageWidth });
+
+        doc.end();
+    });
+}
+
+
 

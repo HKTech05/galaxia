@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, RefreshCw, Save, Coffee, Sparkles, AlertCircle, ShoppingBag, Plus, Trash2, Pencil, X, TrendingUp, BarChart3, DollarSign, Award, ArrowDown, ArrowUp, PieChart } from "lucide-react";
+import { Package, RefreshCw, Save, Coffee, Sparkles, AlertCircle, ShoppingBag, Plus, Trash2, Pencil, X, TrendingUp, BarChart3, DollarSign, Award, ArrowDown, ArrowUp, PieChart, Download } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface MenuItem {
@@ -40,7 +40,29 @@ export default function InventoryPage() {
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [editStocks, setEditStocks] = useState<Record<string, string>>({});
+
+    const handleDownloadPdf = async () => {
+        try {
+            setDownloadingPdf(true);
+            const res = await fetch("/api/hospitality/menu/download-pdf");
+            if (!res.ok) throw new Error("Failed to download menu PDF");
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Galaxia_Resorts_Menu.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            alert(err.message || "Failed to download menu PDF.");
+        } finally {
+            setDownloadingPdf(false);
+        }
+    };
     const [editNames, setEditNames] = useState<Record<string, string>>({});
     const [editPrices, setEditPrices] = useState<Record<string, string>>({});
     const [editCostPrices, setEditCostPrices] = useState<Record<string, string>>({});
@@ -220,6 +242,14 @@ export default function InventoryPage() {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleDownloadPdf}
+                                disabled={downloadingPdf}
+                                className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                <Download size={14} className={downloadingPdf ? "animate-bounce" : ""} />
+                                {downloadingPdf ? "Generating..." : "Download Menu PDF"}
+                            </button>
                             {(currentTab === "stock" || currentTab === "manage") && (
                                 <>
                                     <button

@@ -241,17 +241,19 @@ router.post("/submit", async (req: AuthRequest, res) => {
             year: "numeric"
         });
 
-        // Supplier map (loads from env variables or falls back to "8237309564")
-        const defaultSupplierPhone = process.env.CHEF_SUPPLIER_PHONE || process.env.CHEF_PHONE || "8237309564";
+        // Supplier map (loads from env variables or falls back to supplier phone numbers)
+        const defaultSupplierPhone = process.env.CHEF_SUPPLIER_PHONE || process.env.CHEF_PHONE || "8983173033";
         const CATEGORY_SUPPLIER_MAP: Record<string, string> = {
-            "Dairy": process.env.CHEF_DAIRY_PHONE || defaultSupplierPhone,
-            "Kirayana": process.env.CHEF_KIRAYANA_PHONE || defaultSupplierPhone,
-            "Shak Shabji": process.env.CHEF_SHAK_SHABJI_PHONE || process.env.CHEF_VEG_PHONE || defaultSupplierPhone
+            "Dairy": process.env.CHEF_DAIRY_PHONE || "8983173033",
+            "Kirayana": process.env.CHEF_KIRAYANA_PHONE || "8983173033",
+            "Kiryana": process.env.CHEF_KIRAYANA_PHONE || "8983173033",
+            "Shak Shabji": process.env.CHEF_SHAK_SHABJI_PHONE || process.env.CHEF_VEG_PHONE || "9511636741",
+            "Shaak Sabj": process.env.CHEF_SHAK_SHABJI_PHONE || process.env.CHEF_VEG_PHONE || "9511636741"
         };
 
         const results = [];
 
-        // For each category, create separate logs, PDFs, and route to specific WhatsApp supplier
+        // For each category, create separate logs, PDFs, and route to specific WhatsApp supplier & managers
         for (const [categoryName, categoryIngredients] of Object.entries(groups)) {
             // Write SUBMIT_ORDER log to database
             const log = await prisma.chefLog.create({
@@ -275,14 +277,25 @@ router.post("/submit", async (req: AuthRequest, res) => {
                 })
                 .join("\n");
 
-            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || "8237309564";
+            const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || defaultSupplierPhone;
             const dateAndCategory = `${dateStr} (${categoryName})`;
-            const waSuccess = await sendWhatsAppTemplateMessage(
-                "otp",
-                recipientPhone,
-                "kitchen_checklist_ready_v2",
-                [dateAndCategory, itemsList]
-            );
+            
+            // Send template to supplier and managers (Ranjit: 7355630009, Devidas: 9923500208)
+            const recipients = Array.from(new Set([recipientPhone, "7355630009", "9923500208"]));
+            let waSuccess = false;
+            for (const phone of recipients) {
+                try {
+                    const ok = await sendWhatsAppTemplateMessage(
+                        "otp",
+                        phone,
+                        "kitchen_checklist_ready_v2",
+                        [dateAndCategory, itemsList]
+                    );
+                    if (phone === recipientPhone) waSuccess = ok;
+                } catch (err: any) {
+                    console.error(`WhatsApp ingredient checklist failed for ${phone}:`, err.message);
+                }
+            }
 
             results.push({
                 category: categoryName,

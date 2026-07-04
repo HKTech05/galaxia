@@ -89,6 +89,11 @@ export default function ChefPortalPage() {
     const [loadingTimepass, setLoadingTimepass] = useState(false);
     const [timepassTab, setTimepassTab] = useState<"active" | "fulfilled">("active");
 
+    // Normal Requests (Fresh Lime Water & Soda)
+    const [normalRequests, setNormalRequests] = useState<any[]>([]);
+    const [loadingNormal, setLoadingNormal] = useState(false);
+    const [normalTab, setNormalTab] = useState<"active" | "fulfilled">("active");
+
     // Chef New Request Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -323,21 +328,36 @@ export default function ChefPortalPage() {
         }
     };
 
+    const fetchNormalRequests = async () => {
+        setLoadingNormal(true);
+        try {
+            const data = await api.get<any[]>("/hospitality/requests?category=Normal&chefOnly=true");
+            if (Array.isArray(data)) {
+                setNormalRequests(data);
+            }
+        } catch (err) {
+            console.error("Error fetching normal chef requests:", err);
+        } finally {
+            setLoadingNormal(false);
+        }
+    };
+
     useEffect(() => {
         if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
             fetchHighTeaRequests();
             fetchTimepassRequests();
+            fetchNormalRequests();
         }
     }, [userRole]);
 
-    const handleFulfilHighTea = async (id: number) => {
+    const handleFulfilHighTea = async (id: number, targetStatus: string = "prepared") => {
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
-                status: "fulfilled"
+                status: targetStatus
             });
             if (res.success) {
                 setHighTeaRequests(prev => 
-                    prev.map(r => r.id === id ? { ...r, status: "fulfilled" } : r)
+                    prev.map(r => r.id === id ? { ...r, status: targetStatus } : r)
                 );
             }
         } catch (err: any) {
@@ -345,18 +365,33 @@ export default function ChefPortalPage() {
         }
     };
 
-    const handleFulfilTimepass = async (id: number) => {
+    const handleFulfilTimepass = async (id: number, targetStatus: string = "prepared") => {
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
-                status: "fulfilled"
+                status: targetStatus
             });
             if (res.success) {
                 setTimepassRequests(prev => 
-                    prev.map(r => r.id === id ? { ...r, status: "fulfilled" } : r)
+                    prev.map(r => r.id === id ? { ...r, status: targetStatus } : r)
                 );
             }
         } catch (err: any) {
             alert(err.message || "Failed to update timepass request.");
+        }
+    };
+
+    const handleFulfilNormal = async (id: number, targetStatus: string = "prepared") => {
+        try {
+            const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
+                status: targetStatus
+            });
+            if (res.success) {
+                setNormalRequests(prev => 
+                    prev.map(r => r.id === id ? { ...r, status: targetStatus } : r)
+                );
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to update normal chef request.");
         }
     };
 
@@ -640,9 +675,9 @@ export default function ChefPortalPage() {
                 </div>
             </div>
 
-            {/* High Tea & Timepass Requests Dashboard (only for chef/owner/dev) */}
+            {/* High Tea, Timepass & Normal Requests Dashboard (only for chef/owner/dev) */}
             {(userRole === "chef" || userRole === "owner" || userRole === "developer") && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* High Tea Card */}
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1022,6 +1057,175 @@ export default function ChefPortalPage() {
                                                         <Trash2 size={12} />
                                                     </button>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        )}
+                    </div>
+
+                    {/* Normal Requests Card (Fresh Lime Soda / Water) */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Coffee size={20} className="text-emerald-600" />
+                                Normal Menu Orders
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => { setModalMode("create"); setFormCategory("Normal"); setFormVilla(""); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
+                                >
+                                    <Plus size={14} className="stroke-[3px]" />
+                                    New Request
+                                </button>
+                                <button
+                                    onClick={fetchNormalRequests}
+                                    disabled={loadingNormal}
+                                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
+                                >
+                                    <RefreshCw size={12} className={loadingNormal ? "animate-spin" : ""} />
+                                    Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs for Active / Fulfilled */}
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                            <button
+                                onClick={() => setNormalTab("active")}
+                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                                    normalTab === "active" 
+                                        ? "bg-white text-emerald-700 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Active ({normalRequests.filter(r => r.status === "pending" || r.status === "prepared").length})
+                            </button>
+                            <button
+                                onClick={() => setNormalTab("fulfilled")}
+                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                                    normalTab === "fulfilled" 
+                                        ? "bg-white text-emerald-700 shadow-sm" 
+                                        : "text-slate-500 hover:text-slate-800"
+                                }`}
+                            >
+                                Fulfilled ({normalRequests.filter(r => r.status === "fulfilled").length})
+                            </button>
+                        </div>
+
+                        {loadingNormal ? (
+                            <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
+                                <RefreshCw size={18} className="animate-spin text-emerald-600" />
+                                <span className="text-xs font-semibold">Loading orders...</span>
+                            </div>
+                        ) : normalTab === "active" ? (
+                            normalRequests.filter(r => r.status === "pending" || r.status === "prepared").length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">No pending Normal orders.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                                    {normalRequests.filter(r => r.status === "pending" || r.status === "prepared").map((req) => (
+                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                                                    <div>
+                                                        <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
+                                                        {req.booking ? (
+                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
+                                                        ) : (
+                                                            <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
+                                                        {new Date(req.createdAt).toLocaleTimeString("en-IN", {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit"
+                                                        })}
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    {req.items.map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
+                                                            <span>
+                                                                {item.name}
+                                                                {item.comment && (
+                                                                    <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
+                                                                        ({item.comment})
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-mono text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100/50">× {item.quantity}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="pt-2 flex justify-between items-center border-t border-slate-200/40 mt-1">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(req)}
+                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                        title="Edit Order"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteRequest(req.id)}
+                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                        title="Delete Order"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                                {req.status === "prepared" ? (
+                                                    <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                                                        <Check size={12} /> Prepared (Ready to serve)
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleFulfilNormal(req.id, "prepared")}
+                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
+                                                    >
+                                                        <Check size={12} className="stroke-[3px]" />
+                                                        Mark Prepared
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        ) : (
+                            normalRequests.filter(r => r.status === "fulfilled").length === 0 ? (
+                                <p className="text-center py-8 text-slate-400 text-sm">No past Normal orders.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                                    {normalRequests.filter(r => r.status === "fulfilled").map((req) => (
+                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5 hover:shadow-sm transition-shadow">
+                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
+                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
+                                                <span className="font-mono">
+                                                    {new Date(req.createdAt).toLocaleTimeString("en-IN", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit"
+                                                    })}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {req.items.map((item: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
+                                                        <span>
+                                                            {item.name}
+                                                            {item.comment && (
+                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
+                                                                    ({item.comment})
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     ))}

@@ -24,7 +24,7 @@ let io = null;
    Each Instagram page has a unique Page ID. The webhook payload
    contains the recipient page ID so we can route to the right bot.
    
-   Env vars: IG_PAGE_ID_AMBROSE, IG_PAGE_ID_AMSTELNEST, etc.
+   Env vars: IG_ACCOUNT_ID_AMBROSE, IG_ACCOUNT_ID_AMSTELNEST, etc.
    Until these are configured, we fall back to "celebration" (DD).
    ────────────────────────────────────────────────────────── */
 function getBotTypeForPage(recipientPageId) {
@@ -82,8 +82,9 @@ async function fetchIgUsername(igsid, token) {
   try {
     const accessToken = token || process.env.INSTAGRAM_TOKEN;
     if (!accessToken) return null;
+    const host = accessToken.startsWith("EAA") ? "https://graph.facebook.com" : "https://graph.instagram.com";
     const res = await axios.get(
-      `https://graph.instagram.com/v21.0/${igsid}`,
+      `${host}/v21.0/${igsid}`,
       { params: { fields: "name,username", access_token: accessToken } }
     );
     if (res.data?.username) return `@${res.data.username}`;
