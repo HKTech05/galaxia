@@ -774,7 +774,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         vacantGroups.set(gKey, { propertyId: info.propertyId, subPropertyId: info.subPropertyId, dates: [] });
                     }
                     vacantGroups.get(gKey)!.dates.push(dateStr);
-                } else if (cellStatus.status === "blocked" && cellStatus.block?.id) {
+                } else if ((cellStatus.status === "owner_reserved" || cellStatus.status === "maintenance") && cellStatus.block?.id) {
                     blockIdsToUnblock.add(cellStatus.block.id);
                 }
             }
@@ -2531,7 +2531,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                             }}
                                                                             className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
                                                                                 isMultiSelected
-                                                                                    ? res.status === "blocked"
+                                                                                    ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                                         ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
                                                                                         : 'bg-indigo-100 border-indigo-400 text-indigo-900 font-bold ring-2 ring-indigo-400/50 ring-inset'
                                                                                     : cellClass
@@ -2608,7 +2608,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                             }}
                                                                             className={`px-1 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
                                                                                 isMultiSelected
-                                                                                    ? res.status === "blocked"
+                                                                                    ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                                         ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
                                                                                         : 'bg-indigo-100 border-indigo-400 text-indigo-900 font-bold ring-2 ring-indigo-400/50 ring-inset'
                                                                                     : cellClass
@@ -2647,7 +2647,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                             }}
                                                                             className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
                                                                                 isMultiSelected
-                                                                                    ? res.status === "blocked"
+                                                                                    ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                                         ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
                                                                                         : 'bg-indigo-100 border-indigo-400 text-indigo-900 font-bold ring-2 ring-indigo-400/50 ring-inset'
                                                                                     : cellClass
@@ -2681,7 +2681,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 const unitIdx = parts[3] ? parseInt(parts[3]) : undefined;
                                 const cellStatus = getCellStatus(date, colType, colName, unitIdx);
                                 if (cellStatus.status === "vacant") vacantCount++;
-                                else if (cellStatus.status === "blocked") blockedCount++;
+                                else if (cellStatus.status === "owner_reserved" || cellStatus.status === "maintenance") blockedCount++;
                             }
 
                             return (
