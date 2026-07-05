@@ -467,15 +467,53 @@ export default function BookMultiPage() {
         if (newCart.length === 0) router.push("/staycation");
     };
 
+    const getMaxAvailableUnits = useCallback((item: CartItem): number => {
+        if (item.villaId === 'family-cottage') return 1;
+        if (item.villaId !== 'standard-cottage') return 99;
+
+        if (!checkInDate || !checkOutDate) return 14;
+
+        const n = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (n <= 0) return 14;
+
+        let minAvail = 14;
+        for (let i = 0; i < n; i++) {
+            const d = new Date(checkInDate);
+            d.setDate(d.getDate() + i);
+            const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const booked = amstelBookingCounts[ds] || 0;
+            const avail = Math.max(0, 14 - booked);
+            if (avail < minAvail) minAvail = avail;
+        }
+        return Math.max(1, minAvail);
+    }, [checkInDate, checkOutDate, amstelBookingCounts]);
+
     const updateUnitCount = (villaId: string, count: number) => {
-        // Standard cottage max 14, family cottage max 1
         const item = cart.find(c => c.villaId === villaId);
-        const maxUnits = villaId === 'standard-cottage' ? 14 : (villaId === 'family-cottage' ? 1 : 99);
+        const maxUnits = item ? getMaxAvailableUnits(item) : (villaId === 'standard-cottage' ? 14 : (villaId === 'family-cottage' ? 1 : 99));
         const clamped = Math.max(1, Math.min(maxUnits, count));
         const newCart = cart.map(c => c.villaId === villaId ? { ...c, unitCount: clamped } : c);
         localStorage.setItem("ambrose_cart", JSON.stringify(newCart));
         setCart(newCart);
     };
+
+    // Auto-clamp cart items if unitCount exceeds available count on newly selected dates
+    useEffect(() => {
+        if (!checkInDate || !checkOutDate || cart.length === 0) return;
+        let cartModified = false;
+        const updatedCart = cart.map(item => {
+            const maxAvail = getMaxAvailableUnits(item);
+            if (item.unitCount && item.unitCount > maxAvail) {
+                cartModified = true;
+                return { ...item, unitCount: maxAvail };
+            }
+            return item;
+        });
+        if (cartModified) {
+            setCart(updatedCart);
+            localStorage.setItem("ambrose_cart", JSON.stringify(updatedCart));
+        }
+    }, [checkInDate, checkOutDate, amstelBookingCounts, getMaxAvailableUnits, cart]);
 
     const handleDatesChange = (ci: Date | null, co: Date | null) => {
         setCheckInDate(ci);
@@ -1220,11 +1258,19 @@ export default function BookMultiPage() {
                                                     {/* Unit count selector */}
                                                     <div className="mb-4">
                                                         <div className="bg-emerald-50/50 rounded-lg border border-emerald-200/50 p-4">
-                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">Number of Cottages {item.villaId === 'standard-cottage' ? '(max 14)' : ''}</label>
+                                                            <label className="text-text-muted text-[10px] font-inter uppercase tracking-wider font-semibold block mb-2">
+                                                                Number of Cottages {item.villaId === 'standard-cottage' ? `(max ${getMaxAvailableUnits(item)} available)` : ''}
+                                                            </label>
                                                             <div className="flex items-center gap-3">
                                                                 <button onClick={() => updateUnitCount(item.villaId, units - 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">-</button>
                                                                 <span className="font-inter text-xl font-bold text-text-primary w-6 text-center">{units}</span>
-                                                                <button onClick={() => updateUnitCount(item.villaId, units + 1)} className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors">+</button>
+                                                                <button
+                                                                    onClick={() => updateUnitCount(item.villaId, units + 1)}
+                                                                    disabled={units >= getMaxAvailableUnits(item)}
+                                                                    className="w-8 h-8 rounded-full border border-border-medium flex items-center justify-center text-text-primary hover:border-antique-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                                >
+                                                                    +
+                                                                </button>
                                                                 <span className="font-inter text-xs text-text-muted">× {item.villaName}</span>
                                                             </div>
                                                         </div>

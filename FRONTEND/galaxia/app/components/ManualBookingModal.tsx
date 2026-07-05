@@ -47,6 +47,10 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
     const [customPrepaid, setCustomPrepaid] = useState("");
     const [customBalance, setCustomBalance] = useState("");
 
+    // Custom Base Price Override (Owner option)
+    const [customPriceEnabled, setCustomPriceEnabled] = useState(false);
+    const [customBasePriceInput, setCustomBasePriceInput] = useState("");
+
     // Decoration states
     const [manualDecoration, setManualDecoration] = useState(false);
     const [manualCakeMsg, setManualCakeMsg] = useState("");
@@ -256,6 +260,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         let sampleExtraAdultPrice = 2000;
         let sampleKidsPrice = 1000;
 
+        const customRate = parseFloat(customBasePriceInput) || 0;
+        const hasCustomRate = customPriceEnabled && customBasePriceInput.trim() !== "" && !isNaN(customRate);
+
         for (let i = 0; i < nights; i++) {
             const currentDate = new Date(start);
             currentDate.setDate(start.getDate() + i);
@@ -266,7 +273,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             if (isAmstel) {
                 if (amstelStandardCount > 0) {
                     const stdRates = getUnitRates(manualForm.property, "Standard Cottage", day, isWeekend, isSaturday, currentDate);
-                    roomTotal += stdRates.basePrice * amstelStandardCount;
+                    roomTotal += (hasCustomRate ? customRate : stdRates.basePrice) * amstelStandardCount;
                     if (i === 0) {
                         totalBaseGuests += stdRates.baseGuests * amstelStandardCount;
                         sampleExtraAdultPrice = stdRates.extraAdultPrice;
@@ -275,7 +282,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 }
                 if (amstelFamilySelected) {
                     const famRates = getUnitRates(manualForm.property, "Family Cottage", day, isWeekend, isSaturday, currentDate);
-                    roomTotal += famRates.basePrice;
+                    roomTotal += (hasCustomRate ? customRate : famRates.basePrice);
                     if (i === 0) {
                         totalBaseGuests += famRates.baseGuests;
                         sampleExtraAdultPrice = famRates.extraAdultPrice;
@@ -285,7 +292,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             } else if (manualForm.property.includes("Ambrose")) {
                 for (const villa of selectedAmbroseVillas) {
                     const rates = getUnitRates(manualForm.property, villa, day, isWeekend, isSaturday, currentDate);
-                    roomTotal += rates.basePrice;
+                    roomTotal += (hasCustomRate ? customRate : rates.basePrice);
                     if (i === 0) {
                         totalBaseGuests += rates.baseGuests;
                         sampleExtraAdultPrice = rates.extraAdultPrice;
@@ -294,7 +301,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 }
             } else {
                 const rates = getUnitRates(manualForm.property, manualForm.villa, day, isWeekend, isSaturday, currentDate);
-                roomTotal += rates.basePrice;
+                roomTotal += (hasCustomRate ? customRate : rates.basePrice);
                 if (i === 0) {
                     totalBaseGuests = rates.baseGuests;
                     sampleExtraAdultPrice = rates.extraAdultPrice;
@@ -569,10 +576,13 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         const is14Aug = dateStr.endsWith("08-14");
                         const is15Aug = dateStr.endsWith("08-15");
 
-                        let stdBase = is14Aug ? 7950 : is15Aug ? 8500 : isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 5950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950);
+                        const customRateSubmit = parseFloat(customBasePriceInput) || 0;
+                        const hasCustomSubmit = customPriceEnabled && customBasePriceInput.trim() !== "" && !isNaN(customRateSubmit);
+
+                        let stdBase = hasCustomSubmit ? customRateSubmit : (is14Aug ? 7950 : is15Aug ? 8500 : isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 5950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950));
                         stdRoomTotal += stdBase * amstelStandardCount;
 
-                        let famBase = is14Aug ? 11000 : is15Aug ? 13500 : isSaturday ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.saturday || 12000) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekend || 10000) : (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000);
+                        let famBase = hasCustomSubmit ? customRateSubmit : (is14Aug ? 11000 : is15Aug ? 13500 : isSaturday ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.saturday || 12000) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekend || 10000) : (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000));
                         famRoomTotal += famBase;
                     }
 
@@ -1283,6 +1293,46 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                     />
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Custom Base Price Override (Owner Option) */}
+                    {!isCollab && (
+                        <div className="p-4 border border-purple-200 rounded-xl bg-purple-50/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <label htmlFor="customPriceToggle" className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5 cursor-pointer">
+                                        <span>Custom Base Price Override (Owner)</span>
+                                    </label>
+                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">Override standard property base rate with an unrestricted custom price</p>
+                                </div>
+                                <input
+                                    id="customPriceToggle"
+                                    type="checkbox"
+                                    checked={customPriceEnabled}
+                                    onChange={(e) => {
+                                        setCustomPriceEnabled(e.target.checked);
+                                        if (!e.target.checked) setCustomBasePriceInput("");
+                                    }}
+                                    className="w-4 h-4 accent-purple-600 cursor-pointer"
+                                />
+                            </div>
+                            {customPriceEnabled && (
+                                <div className="pt-2 border-t border-purple-100 space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Custom Base Rate Per Night (₹)</label>
+                                    <div className="relative">
+                                        <IndianRupee size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={customBasePriceInput}
+                                            onChange={(e) => setCustomBasePriceInput(e.target.value)}
+                                            placeholder="Enter custom rate (e.g. 3500)"
+                                            className="w-full bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
