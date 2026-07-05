@@ -50,6 +50,18 @@ export default function SecurityPage() {
 
     const canManageStaff = adminUsername !== "ranjit";
 
+    const formatDateStr = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
+
+    const dateStr = formatDateStr(selectedDate);
+    const todayStr = formatDateStr(new Date());
+    const isToday = dateStr === todayStr;
+    const canMarkAttendance = adminUsername !== "ranjit" || isToday;
+
     // Add Staff Modal
     const [showAddModal, setShowAddModal] = useState(false);
     const [newStaffName, setNewStaffName] = useState("");
@@ -70,15 +82,6 @@ export default function SecurityPage() {
 
     // Lightbox Modal for Thumbnail
     const [activeLightboxImg, setActiveLightboxImg] = useState<{ url: string; name: string } | null>(null);
-
-    const formatDateStr = (d: Date) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        return `${year}-${month}-${day}`;
-    };
-
-    const dateStr = formatDateStr(selectedDate);
 
     const fetchAttendanceData = useCallback(async () => {
         setLoading(true);
@@ -136,6 +139,10 @@ export default function SecurityPage() {
 
     // Open Camera Modal & Start Stream
     const openCameraModal = async (staff: SecurityStaff) => {
+        if (!canMarkAttendance) {
+            alert("Ranjit profile is only permitted to mark attendance for today's date.");
+            return;
+        }
         setCameraTargetStaff(staff);
         setCapturedPhoto(null);
         setCameraError("");
@@ -185,6 +192,10 @@ export default function SecurityPage() {
 
     // Mark Attendance (Present / Absent)
     const markAttendance = async (staff: SecurityStaff, status: "present" | "absent", photoBase64?: string | null) => {
+        if (!canMarkAttendance) {
+            alert("Ranjit profile is only permitted to mark attendance for today's date.");
+            return;
+        }
         setSubmittingId(staff.id);
         try {
             await api.post("/security/attendance", {
@@ -309,6 +320,13 @@ export default function SecurityPage() {
                     </span>
                 </div>
 
+                {!canMarkAttendance && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs font-bold text-amber-800 flex items-center gap-2">
+                        <Clock size={16} className="text-amber-600 shrink-0" />
+                        <span>Attendance History Mode: You are viewing records for {selectedDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}. Ranjit profile is restricted to marking attendance for today only.</span>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
                         <RefreshCw size={32} className="animate-spin text-purple-600" />
@@ -382,8 +400,13 @@ export default function SecurityPage() {
                                             ) : (
                                                 <button
                                                     onClick={() => openCameraModal(staff)}
-                                                    className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 flex flex-col items-center justify-center text-slate-400 hover:text-purple-600 transition-colors"
-                                                    title="Capture Photo via Phone Camera"
+                                                    disabled={!canMarkAttendance}
+                                                    className={`w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
+                                                        canMarkAttendance
+                                                            ? "border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 text-slate-400 hover:text-purple-600"
+                                                            : "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
+                                                    }`}
+                                                    title={canMarkAttendance ? "Capture Photo via Phone Camera" : "Attendance can only be marked for today"}
                                                 >
                                                     <Camera size={20} />
                                                     <span className="text-[9px] font-bold mt-0.5">Camera</span>
@@ -438,11 +461,14 @@ export default function SecurityPage() {
                                     <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
                                         <button
                                             onClick={() => markAttendance(staff, "present")}
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || !canMarkAttendance}
+                                            title={canMarkAttendance ? "Mark Present" : "Attendance can only be marked for today"}
                                             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                att?.status === "present"
-                                                    ? "bg-emerald-600 text-white shadow-sm shadow-emerald-200"
-                                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                                !canMarkAttendance
+                                                    ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
+                                                    : att?.status === "present"
+                                                        ? "bg-emerald-600 text-white shadow-sm shadow-emerald-200"
+                                                        : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
                                             }`}
                                         >
                                             <CheckCircle2 size={15} />
@@ -451,11 +477,14 @@ export default function SecurityPage() {
 
                                         <button
                                             onClick={() => markAttendance(staff, "absent")}
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || !canMarkAttendance}
+                                            title={canMarkAttendance ? "Mark Absent" : "Attendance can only be marked for today"}
                                             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                att?.status === "absent"
-                                                    ? "bg-red-600 text-white shadow-sm shadow-red-200"
-                                                    : "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+                                                !canMarkAttendance
+                                                    ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
+                                                    : att?.status === "absent"
+                                                        ? "bg-red-600 text-white shadow-sm shadow-red-200"
+                                                        : "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
                                             }`}
                                         >
                                             <XCircle size={15} />
@@ -464,8 +493,13 @@ export default function SecurityPage() {
 
                                         <button
                                             onClick={() => openCameraModal(staff)}
-                                            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors shrink-0"
-                                            title="Retake Photo via Camera"
+                                            disabled={!canMarkAttendance}
+                                            className={`p-2.5 rounded-xl transition-colors shrink-0 ${
+                                                canMarkAttendance
+                                                    ? "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed opacity-60"
+                                            }`}
+                                            title={canMarkAttendance ? "Retake Photo via Camera" : "Attendance can only be marked for today"}
                                         >
                                             <Camera size={15} />
                                         </button>

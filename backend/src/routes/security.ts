@@ -135,6 +135,14 @@ router.post("/attendance", authMiddleware, async (req: AuthRequest, res) => {
         const sId = parseInt(staffId);
         const dateStr = date || getLocalDateStr();
 
+        // Ranjit profile restricted to today's date only
+        if (req.admin?.username === "ranjit") {
+            const todayStr = getLocalDateStr();
+            if (dateStr !== todayStr) {
+                return res.status(403).json({ error: "Ranjit profile is only permitted to mark attendance for today's date." });
+            }
+        }
+
         if (isNaN(sId)) {
             return res.status(400).json({ error: "Invalid staff ID" });
         }
