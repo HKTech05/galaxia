@@ -341,7 +341,8 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                     body: JSON.stringify({
                         villaName: selectedVilla,
                         itemCategory: "Normal",
-                        items: housekeepingNormalPayload
+                        items: housekeepingNormalPayload,
+                        isOwnerMode: !!isOwnerMode
                     })
                 });
                 if (!res.ok) throw new Error("Failed to submit normal housekeeping requests");
@@ -355,7 +356,8 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                     body: JSON.stringify({
                         villaName: selectedVilla,
                         itemCategory: "Normal",
-                        items: chefNormalPayload
+                        items: chefNormalPayload,
+                        isOwnerMode: !!isOwnerMode
                     })
                 });
                 if (!res.ok) throw new Error("Failed to submit normal chef requests");
@@ -369,7 +371,8 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                     body: JSON.stringify({
                         villaName: selectedVilla,
                         itemCategory: "High Tea",
-                        items: highTeaPayload
+                        items: highTeaPayload,
+                        isOwnerMode: !!isOwnerMode
                     })
                 });
                 if (!res.ok) throw new Error("Failed to submit high tea requests");
@@ -383,7 +386,8 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                     body: JSON.stringify({
                         villaName: selectedVilla,
                         itemCategory: "Timepass",
-                        items: timepassPayload
+                        items: timepassPayload,
+                        isOwnerMode: !!isOwnerMode
                     })
                 });
                 if (!res.ok) throw new Error("Failed to submit timepass requests");

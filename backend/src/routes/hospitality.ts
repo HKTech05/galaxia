@@ -157,7 +157,7 @@ const isChefPreparedItem = (item: any) => {
 // 1. Public Route: POST /api/hospitality/requests — Submit request from a guest villa e-menu
 router.post("/requests", async (req, res) => {
     try {
-        const { villaName, itemCategory, items } = req.body;
+        const { villaName, itemCategory, items, isOwnerMode } = req.body;
 
         if (!villaName || !itemCategory || !items || !Array.isArray(items)) {
             return res.status(400).json({ error: "villaName, itemCategory, and items array are required" });
@@ -166,20 +166,6 @@ router.post("/requests", async (req, res) => {
         const now = new Date();
         // Set date to local midnight to match date comparison
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        // Find active booking for this villa today
-        // A booking is active if today falls within [checkInDate, checkOutDate] and status is not cancelled
-        const activeBooking = await prisma.staycationBooking.findFirst({
-            where: {
-                status: { in: ["confirmed", "checked_in"] },
-                checkInDate: { lte: todayStart },
-                checkOutDate: { gte: todayStart },
-                OR: [
-                    { assignedUnit: villaName },
-                    { subProperty: { name: { equals: villaName, mode: "insensitive" } } }
-                ]
-            }
-        });
 
         // Auto-decrement stock for each ordered item
         try {
@@ -205,6 +191,28 @@ router.post("/requests", async (req, res) => {
         } catch (stockErr) {
             console.error("Failed to auto-decrement stock:", stockErr);
         }
+
+        // If this is an Owner Mode order, return early so no request record is created in DB and no WhatsApp messages are sent
+        if (isOwnerMode) {
+            return res.status(201).json({
+                success: true,
+                isOwnerOrder: true,
+                message: "Owner order processed — stock updated without routing to staff."
+            });
+        }
+
+        // Find active booking for this villa today
+        const activeBooking = await prisma.staycationBooking.findFirst({
+            where: {
+                status: { in: ["confirmed", "checked_in"] },
+                checkInDate: { lte: todayStart },
+                checkOutDate: { gte: todayStart },
+                OR: [
+                    { assignedUnit: villaName },
+                    { subProperty: { name: { equals: villaName, mode: "insensitive" } } }
+                ]
+            }
+        });
 
         const request = await prisma.hospitalityRequest.create({
             data: {
