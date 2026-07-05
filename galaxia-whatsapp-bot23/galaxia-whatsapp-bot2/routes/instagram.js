@@ -216,9 +216,20 @@ router.post("/webhook", async (req, res) => {
       });
     }
 
-    // 4. Check if sender or recipient is an internal account or self
-    const internalKeywords = ["digitaldiaries", "amstelnest", "ambrose", "laparaiso", "mountview", "heavenlyvilla", "hillview", "galaxia"];
-    const isInternalSender = internalKeywords.some(k => session.display_name?.toLowerCase().includes(k));
+    // 4. Check if sender is an official internal account or self
+    const officialHandles = ["@digitaldiaries_wadala", "@amstelnest", "@ambrose_villas", "@la_paraiso001", "@heavenly_villa01", "@hill_view101"];
+    const knownPageIds = new Set([
+      process.env.IG_ACCOUNT_ID_AMBROSE,
+      process.env.IG_ACCOUNT_ID_AMSTELNEST,
+      process.env.IG_ACCOUNT_ID_LAPARAISO,
+      process.env.IG_ACCOUNT_ID_MOUNTVIEW,
+      process.env.IG_ACCOUNT_ID_HEAVENLYVILLA,
+      process.env.IG_ACCOUNT_ID_HILLVIEW,
+      "1807245377112389",
+      "1944954476164358"
+    ].filter(Boolean));
+
+    const isInternalSender = knownPageIds.has(senderId?.toString()) || officialHandles.includes(session.display_name?.toLowerCase().trim());
     const isSelfMessaging = senderId === recipientId;
 
     if (isSelfMessaging || isInternalSender) {
@@ -230,13 +241,11 @@ router.post("/webhook", async (req, res) => {
       return;
     }
 
-    // 4b. Check for automated bot response text signatures
+    // 4b. Check for exact automated bot response text signatures (sent by bot to user)
     const isAutomatedBotText = 
-      userText.includes("Please select one of the options below") ||
-      userText.includes("Welcome to Digital Diaries") ||
-      userText.includes("Welcome to Amstelnest") ||
-      (userText.includes("1.") && userText.includes("2.") && userText.includes("3.")) ||
-      (userText.includes("🔗") && userText.includes("http"));
+      userText.includes("Please select one of the options below to proceed:") ||
+      userText.startsWith("🎬 *Welcome to Digital Diaries*") ||
+      userText.startsWith("👋 *Welcome to");
 
     if (isAutomatedBotText) {
       console.log(`[Instagram Loop Guard] Detected automated bot payload from ${senderId} — enabling human mode & skipping reply.`);
