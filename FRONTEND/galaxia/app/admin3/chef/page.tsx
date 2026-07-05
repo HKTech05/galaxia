@@ -813,8 +813,8 @@ export default function ChefPortalPage() {
                             <div className="flex items-center gap-2 self-end sm:self-auto">
                                 <span className="text-xs font-bold text-slate-500">Select Date:</span>
                                 <CustomDatePicker
-                                    selected={chefFulfilledDate}
-                                    onChange={(d) => d && setChefFulfilledDate(d)}
+                                    date={chefFulfilledDate}
+                                    onDateChange={(d) => setChefFulfilledDate(d)}
                                 />
                             </div>
                         )}
