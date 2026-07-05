@@ -84,6 +84,7 @@ type Event = {
     rawBasePrice?: number;
     rawExtraPersonCharge?: number;
     rawBookingDate?: string;
+    comments?: string;
 };
 
 const events: Event[] = [
