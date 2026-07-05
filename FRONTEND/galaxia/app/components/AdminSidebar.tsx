@@ -26,7 +26,8 @@ import {
     ScrollText,
     ChefHat,
     UtensilsCrossed,
-    Package
+    Package,
+    ShieldCheck
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -272,7 +273,8 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                         </>
                                     )}
 
-                                    {/* Owner/Dev only: Chef & Housekeeping Portal Links */}
+                                    {/* Owner/Dev only: Security, Chef & Housekeeping Portal Links */}
+                                    {hasFullAccess && renderNavItem({ name: "Security", href: "/admin3/security", icon: ShieldCheck })}
                                     {hasFullAccess && renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
                                     {hasFullAccess && renderNavItem({ name: "Inventory Management", href: "/admin3/inventory", icon: Package })}
                                     {hasFullAccess && renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}

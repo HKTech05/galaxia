@@ -778,3 +778,33 @@ model BookingMealRecord {
   @@unique([date, bookingId])
   @@map("booking_meal_records")
 }
+
+model SecurityStaff {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  role        String?  @db.VarChar(100)
+  phone       String?  @db.VarChar(20)
+  photoUrl    String?  @map("photo_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  attendances StaffAttendance[]
+
+  @@map("security_staff")
+}
+
+model StaffAttendance {
+  id        Int           @id @default(autoincrement())
+  date      String        @db.VarChar(10)
+  staffId   Int           @map("staff_id")
+  status    String        @db.VarChar(20)
+  photoUrl  String?       @map("photo_url")
+  markedAt  DateTime      @default(now()) @map("marked_at")
+  markedBy  String?       @map("marked_by")
+
+  staff     SecurityStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([date, staffId])
+  @@map("staff_attendances")
+}
