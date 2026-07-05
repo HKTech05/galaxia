@@ -221,6 +221,20 @@ export default function SecurityPage() {
     const absentCount = staffList.filter(s => s.attendance?.status === "absent").length;
     const pendingCount = staffList.filter(s => !s.attendance).length;
 
+    if (adminUsername === "ranjit") {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-6 space-y-4">
+                <div className="p-4 bg-slate-100 text-slate-400 rounded-3xl">
+                    <ShieldCheck size={48} />
+                </div>
+                <h2 className="text-xl font-bold text-slate-700">Security Module Unavailable</h2>
+                <p className="text-sm font-semibold text-slate-500 max-w-md">
+                    You do not currently have permission to access the Security and Staff Attendance page.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 max-w-6xl mx-auto pb-16">
             {/* Header Card */}
