@@ -318,6 +318,29 @@ router.post("/", async (req, res) => {
                 });
             }
 
+            // Track cash collection for employee if advance is paid in cash
+            if (advancePaid && advanceMethod?.toLowerCase() === "cash" && (advanceAmount || 0) > 0) {
+                const employee = await tx.employee.findFirst({
+                    where: { propertyId: parsedPropertyId, isActive: true },
+                });
+                if (employee) {
+                    await tx.employee.update({
+                        where: { id: employee.id },
+                        data: { cashCollected: { increment: advanceAmount } },
+                    });
+                    await tx.cashTransaction.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef,
+                            guestName: customerName,
+                            amount: advanceAmount,
+                            transactionType: "collection",
+                            note: `Advance payment (cash) — ${created.property?.name || "Property"}`,
+                        },
+                    });
+                }
+            }
+
             return created;
         }, { isolationLevel: "Serializable" });
 
