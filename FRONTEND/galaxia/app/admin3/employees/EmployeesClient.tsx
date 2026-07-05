@@ -71,21 +71,15 @@ const isGenericOwnerPickup = (log: CashLog) => {
 };
 
 // Calculate split balances for Security Deposit vs Rent
-function calculateSplitBalances(logs: CashLog[]) {
-    // Sort logs chronologically ascending
+function calculateSplitBalances(logs: CashLog[], dbCashCollected: number) {
+    // Sort logs chronologically ascending (oldest first)
     const sortedLogs = [...logs].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    let secIn = 0;
-    let secOut = 0;
-    let secExplicitPickup = 0;
+    let rentPending = 0;
+    let secPending = 0;
+
     let lastSecPickupTime: string | null = null;
-
-    let rentIn = 0;
-    let rentOut = 0;
-    let rentExplicitPickup = 0;
     let lastRentPickupTime: string | null = null;
-
-    let genericPickups: { amount: number; date: string }[] = [];
 
     for (const log of sortedLogs) {
         const note = (log.note || '').toLowerCase();
@@ -101,49 +95,71 @@ function calculateSplitBalances(logs: CashLog[]) {
         });
 
         if (isExplicitSecOwnerPickup(log)) {
-            secExplicitPickup += Math.abs(amt);
+            secPending -= Math.abs(amt);
             lastSecPickupTime = formattedDate;
         } else if (isExplicitRentOwnerPickup(log)) {
-            rentExplicitPickup += Math.abs(amt);
+            rentPending -= Math.abs(amt);
             lastRentPickupTime = formattedDate;
         } else if (isGenericOwnerPickup(log)) {
-            genericPickups.push({ amount: Math.abs(amt), date: formattedDate });
+            let pAmt = Math.abs(amt);
+            if (rentPending > 0) {
+                const tookRent = Math.min(rentPending, pAmt);
+                rentPending -= tookRent;
+                pAmt -= tookRent;
+                lastRentPickupTime = formattedDate;
+            }
+            if (pAmt > 0) {
+                secPending -= pAmt;
+                lastSecPickupTime = formattedDate;
+            }
         } else if (isSecDepositTx(log)) {
             if (amt > 0 && type !== 'refund') {
-                secIn += amt;
+                secPending += amt;
             } else {
-                secOut += Math.abs(amt);
+                secPending -= Math.abs(amt);
             }
         } else if (isRentTx(log)) {
             if (amt > 0 && type !== 'expense') {
-                rentIn += amt;
+                rentPending += amt;
             } else {
-                rentOut += Math.abs(amt);
+                rentPending -= Math.abs(amt);
             }
+        }
+
+        // Adjust for negative balances (borrowing from the other pot in real-time)
+        if (secPending < 0) {
+            rentPending += secPending;
+            secPending = 0;
+        }
+        if (rentPending < 0) {
+            secPending += rentPending;
+            rentPending = 0;
         }
     }
 
-    let rentGrossPending = Math.max(0, rentIn - rentOut - rentExplicitPickup);
-    let secGrossPending = Math.max(0, secIn - secOut - secExplicitPickup);
+    // Ensure the sum of card balances equals the DB cashCollected field
+    let secNetPending = Math.max(0, secPending);
+    let rentNetPending = Math.max(0, rentPending);
+    let diff = dbCashCollected - (secNetPending + rentNetPending);
 
-    // Apply generic pickups to Rent first, then Security Deposit
-    for (const gp of genericPickups) {
-        let pAmt = gp.amount;
-        if (rentGrossPending > 0) {
-            const tookRent = Math.min(rentGrossPending, pAmt);
-            rentGrossPending -= tookRent;
-            pAmt -= tookRent;
-            lastRentPickupTime = gp.date;
-        }
-        if (pAmt > 0) {
-            secGrossPending = Math.max(0, secGrossPending - pAmt);
-            lastSecPickupTime = gp.date;
+    if (diff > 0) {
+        // Add all positive difference to Rent
+        rentNetPending += diff;
+    } else if (diff < 0) {
+        // Subtract negative difference from Rent first, then Security Deposit
+        let remainingDiff = Math.abs(diff);
+        if (rentNetPending >= remainingDiff) {
+            rentNetPending -= remainingDiff;
+        } else {
+            remainingDiff -= rentNetPending;
+            rentNetPending = 0;
+            secNetPending = Math.max(0, secNetPending - remainingDiff);
         }
     }
 
     return {
-        secNetPending: secGrossPending,
-        rentNetPending: rentGrossPending,
+        secNetPending,
+        rentNetPending,
         lastSecCollectedAt: lastSecPickupTime || "Never",
         lastRentCollectedAt: lastRentPickupTime || "Never"
     };
@@ -395,7 +411,7 @@ export default function EmployeesClient() {
         const isSplitProp = ['ambrose', 'amstel nest'].some(loc => emp.location?.toLowerCase().includes(loc));
         if (isSplitProp) {
             const logs = allCashLogsMap[emp.id] || [];
-            const { secNetPending, rentNetPending, lastSecCollectedAt, lastRentCollectedAt } = calculateSplitBalances(logs);
+            const { secNetPending, rentNetPending, lastSecCollectedAt, lastRentCollectedAt } = calculateSplitBalances(logs, emp.cashCollected);
             const propClean = emp.location.replace(/\s+/g, '');
 
             displayCards.push({
