@@ -401,14 +401,19 @@ export default function BookMultiPage() {
                 const endDate = new Date();
                 endDate.setMonth(endDate.getMonth() + 3);
                 const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                const res = await fetch(`/api/bookings/staycation/booked-dates?propertyId=${anId}&startDate=${fmt(startDate)}&endDate=${fmt(endDate)}`);
+                const stdSubId = dbSubPropertyMap["standard-cottage"];
+                let url = `/api/bookings/staycation/booked-dates?propertyId=${anId}&startDate=${fmt(startDate)}&endDate=${fmt(endDate)}`;
+                if (stdSubId) {
+                    url += `&subPropertyId=${stdSubId}`;
+                }
+                const res = await fetch(url);
                 if (res.ok) {
                     const data = await res.json();
-                    setAmstelBookingCounts(data.bookingCounts || {});
+                    setAmstelBookingCounts(data.dateCounts || data.bookingCounts || {});
                 }
             } catch {}
         })();
-    }, [dbPropertyMap, amstelItems.length]);
+    }, [dbPropertyMap, dbSubPropertyMap, amstelItems.length]);
 
     // Check Amstel Nest conflicts: unitCount vs available
     useEffect(() => {
