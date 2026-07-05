@@ -912,7 +912,9 @@ export default function HousekeepingPortalPage() {
                         </div>
                     </div>
                 </div>
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                         <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <Coffee size={20} className="text-amber-600" />
@@ -1024,7 +1026,6 @@ export default function HousekeepingPortalPage() {
                             </div>
                         )}
                     </div>
-                </div>
 
             {/* Villa Allotments Table */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
