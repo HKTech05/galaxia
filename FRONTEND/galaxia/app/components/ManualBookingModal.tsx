@@ -182,7 +182,17 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             lp = livePricing[parentKey];
         }
 
-        if (lp) {
+        const dateStr = currentDate ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}` : "";
+        const is14Aug = dateStr.endsWith("08-14");
+        const is15Aug = dateStr.endsWith("08-15");
+
+        if (propName.includes("Amstel") && (is14Aug || is15Aug)) {
+            const isFamily = villaName === "Family Cottage";
+            basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
+            extraAdultPrice = 2000;
+            kidsPrice = 1000;
+            baseGuests = isFamily ? 4 : 2;
+        } else if (lp) {
             basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             extraAdultPrice = lp.extraAdult;
             kidsPrice = lp.kidsCharge;
@@ -193,14 +203,11 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             else if (propName.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
             else if (propName.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
             else if (propName.includes("Amstel")) {
-                const dateStr = currentDate ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}` : "";
-                const is14Aug = dateStr.endsWith("08-14");
-                const is15Aug = dateStr.endsWith("08-15");
                 if (villaName === "Family Cottage") {
-                    basePrice = is14Aug ? 11000 : is15Aug ? 13500 : isSaturday ? 12000 : (day === 0 || day === 5) ? 10000 : 9000;
+                    basePrice = isSaturday ? 12000 : (day === 0 || day === 5) ? 10000 : 9000;
                     extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
                 } else {
-                    basePrice = is14Aug ? 7950 : is15Aug ? 8500 : isSaturday ? 6950 : (day === 0 || day === 5) ? 5950 : 4950;
+                    basePrice = isSaturday ? 6950 : (day === 0 || day === 5) ? 5950 : 4950;
                     extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                 }
             }
@@ -798,7 +805,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         const day = currentDate.getDay();
                         const isWeekend = day === 0 || day === 5 || day === 6;
                         const isSaturday = day === 6;
-                        const rates = getUnitRates(manualForm.property, v, day, isWeekend, isSaturday);
+                        const rates = getUnitRates(manualForm.property, v, day, isWeekend, isSaturday, currentDate);
                         roomTotalV += rates.basePrice;
                     }
                     roomTotals[v] = roomTotalV;
@@ -850,7 +857,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 const villaRawBases: Record<string, number> = {};
                 selectedAmbroseVillas.forEach((v, idx) => {
                     const guestsV = villaGuests[v];
-                    const rates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6);
+                    const rates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6, start);
                     const baseGuestsV = rates.baseGuests;
                     const extraAdultPriceV = rates.extraAdultPrice;
                     const kidsPriceV = rates.kidsPrice;
@@ -951,7 +958,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     }
 
                     const basePrice = villaBasePrices[v];
-                    const payloadRates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6);
+                    const payloadRates = getUnitRates(manualForm.property, v, start.getDay(), start.getDay() === 0 || start.getDay() === 5 || start.getDay() === 6, start.getDay() === 6, start);
                     const extraAdultsV = Math.max(0, villaGuests[v] - payloadRates.baseGuests);
                     const freeKidsSlotsV = Math.max(0, payloadRates.baseGuests - villaGuests[v]);
                     const extraKidsV = Math.max(0, villaKids[v] - freeKidsSlotsV);
