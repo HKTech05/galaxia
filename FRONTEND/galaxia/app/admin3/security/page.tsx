@@ -10,8 +10,6 @@ import {
     Trash2,
     RefreshCw,
     User,
-    Calendar,
-    Phone,
     X,
     Clock,
     UserCheck,
@@ -26,7 +24,6 @@ interface SecurityStaff {
     id: number;
     name: string;
     role: string | null;
-    phone: string | null;
     photoUrl: string | null;
     isActive: boolean;
     attendance?: {
@@ -43,12 +40,20 @@ export default function SecurityPage() {
     const [staffList, setStaffList] = useState<SecurityStaff[]>([]);
     const [loading, setLoading] = useState(true);
     const [submittingId, setSubmittingId] = useState<number | null>(null);
+    const [adminUsername, setAdminUsername] = useState<string>("");
+
+    useEffect(() => {
+        api.get("/auth/me").then(data => {
+            setAdminUsername(data?.username || "");
+        }).catch(() => {});
+    }, []);
+
+    const canManageStaff = adminUsername !== "ranjit";
 
     // Add Staff Modal
     const [showAddModal, setShowAddModal] = useState(false);
     const [newStaffName, setNewStaffName] = useState("");
     const [newStaffRole, setNewStaffRole] = useState("");
-    const [newStaffPhone, setNewStaffPhone] = useState("");
     const [addingStaff, setAddingStaff] = useState(false);
 
     // Delete Modal
@@ -101,13 +106,11 @@ export default function SecurityPage() {
         try {
             await api.post("/security/staff", {
                 name: newStaffName.trim(),
-                role: newStaffRole.trim() || null,
-                phone: newStaffPhone.trim() || null
+                role: newStaffRole.trim() || null
             });
             setShowAddModal(false);
             setNewStaffName("");
             setNewStaffRole("");
-            setNewStaffPhone("");
             fetchAttendanceData();
         } catch (err: any) {
             alert(err.message || "Failed to add staff member.");
@@ -146,7 +149,7 @@ export default function SecurityPage() {
             }
         } catch (err: any) {
             console.error("Camera access error:", err);
-            setCameraError("Camera access denied or unavailable. You can also upload a photo directly.");
+            setCameraError("Camera access denied or unavailable. Please ensure camera permissions are allowed.");
         }
     };
 
@@ -177,20 +180,6 @@ export default function SecurityPage() {
             const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
             setCapturedPhoto(dataUrl);
             stopCamera();
-        }
-    };
-
-    // Handle Direct File Upload (Fallback for Camera Input)
-    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const result = event.target?.result as string;
-                setCapturedPhoto(result);
-                stopCamera();
-            };
-            reader.readAsDataURL(file);
         }
     };
 
@@ -238,13 +227,11 @@ export default function SecurityPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-2xl">
-                        <Calendar size={16} className="text-slate-400" />
-                        <CustomDatePicker
-                            date={selectedDate}
-                            onDateChange={(d) => setSelectedDate(d)}
-                        />
-                    </div>
+                    {/* Cleaned up date picker without duplicate border/icon */}
+                    <CustomDatePicker
+                        date={selectedDate}
+                        onDateChange={(d) => setSelectedDate(d)}
+                    />
 
                     <button
                         onClick={fetchAttendanceData}
@@ -255,13 +242,15 @@ export default function SecurityPage() {
                         <RefreshCw size={18} className={loading ? "animate-spin text-purple-600" : ""} />
                     </button>
 
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-2xl shadow-sm transition-colors text-sm"
-                    >
-                        <Plus size={18} />
-                        <span>Add Staff</span>
-                    </button>
+                    {canManageStaff && (
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-2xl shadow-sm transition-colors text-sm"
+                        >
+                            <Plus size={18} />
+                            <span>Add Staff</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -359,21 +348,17 @@ export default function SecurityPage() {
                                                     {staff.role}
                                                 </span>
                                             )}
-                                            {staff.phone && (
-                                                <p className="text-xs font-semibold text-slate-400 flex items-center gap-1 mt-1">
-                                                    <Phone size={12} />
-                                                    {staff.phone}
-                                                </p>
-                                            )}
                                         </div>
 
-                                        <button
-                                            onClick={() => setDeletingStaff(staff)}
-                                            className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
-                                            title="Delete Staff"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        {canManageStaff && (
+                                            <button
+                                                onClick={() => setDeletingStaff(staff)}
+                                                className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
+                                                title="Delete Staff"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* Captured Thumbnail & Timestamp */}
@@ -398,10 +383,10 @@ export default function SecurityPage() {
                                                 <button
                                                     onClick={() => openCameraModal(staff)}
                                                     className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 flex flex-col items-center justify-center text-slate-400 hover:text-purple-600 transition-colors"
-                                                    title="Capture Photo"
+                                                    title="Capture Photo via Phone Camera"
                                                 >
                                                     <Camera size={20} />
-                                                    <span className="text-[9px] font-bold mt-0.5">Photo</span>
+                                                    <span className="text-[9px] font-bold mt-0.5">Camera</span>
                                                 </button>
                                             )}
                                         </div>
@@ -480,7 +465,7 @@ export default function SecurityPage() {
                                         <button
                                             onClick={() => openCameraModal(staff)}
                                             className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors shrink-0"
-                                            title="Retake Photo"
+                                            title="Retake Photo via Camera"
                                         >
                                             <Camera size={15} />
                                         </button>
@@ -492,7 +477,7 @@ export default function SecurityPage() {
                 )}
             </div>
 
-            {/* Camera Capture Modal */}
+            {/* Camera Capture Modal (Strictly Camera Only) */}
             {cameraTargetStaff && (
                 <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden space-y-4">
@@ -502,7 +487,7 @@ export default function SecurityPage() {
                                     <Camera size={20} className="text-purple-600" />
                                     Capture Photo — {cameraTargetStaff.name}
                                 </h3>
-                                <p className="text-xs font-medium text-slate-400 mt-0.5">Take photo using device camera or file browser</p>
+                                <p className="text-xs font-medium text-slate-400 mt-0.5">Capture live photo using phone camera</p>
                             </div>
                             <button
                                 onClick={closeCameraModal}
@@ -537,29 +522,16 @@ export default function SecurityPage() {
                                 </p>
                             )}
 
-                            {/* Camera Action Controls */}
+                            {/* Camera Action Controls (No direct file upload option) */}
                             <div className="flex flex-col gap-3">
                                 {!capturedPhoto ? (
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={takeSnapshot}
-                                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-sm text-sm"
-                                        >
-                                            <Camera size={18} />
-                                            <span>Take Snapshot</span>
-                                        </button>
-
-                                        <label className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-3 rounded-2xl cursor-pointer text-xs flex items-center justify-center">
-                                            <span>Upload File</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                capture="environment"
-                                                onChange={handleFileInput}
-                                                className="hidden"
-                                            />
-                                        </label>
-                                    </div>
+                                    <button
+                                        onClick={takeSnapshot}
+                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-sm text-sm"
+                                    >
+                                        <Camera size={18} />
+                                        <span>Take Photo via Camera</span>
+                                    </button>
                                 ) : (
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-3">
@@ -597,7 +569,7 @@ export default function SecurityPage() {
                 </div>
             )}
 
-            {/* Add Staff Modal */}
+            {/* Add Staff Modal (Phone field removed) */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden">
@@ -637,19 +609,6 @@ export default function SecurityPage() {
                                     value={newStaffRole}
                                     onChange={(e) => setNewStaffRole(e.target.value)}
                                     placeholder="e.g. Security Guard, Supervisor, Housekeeper"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                                    Phone Number
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newStaffPhone}
-                                    onChange={(e) => setNewStaffPhone(e.target.value)}
-                                    placeholder="e.g. 9876543210"
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
                                 />
                             </div>

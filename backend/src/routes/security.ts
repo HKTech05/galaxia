@@ -10,6 +10,24 @@ function getLocalDateStr(date: Date = new Date()) {
     return local.toISOString().split("T")[0];
 }
 
+// Auto cleanup attendance photos older than 15 days to save storage/database space
+async function cleanupOldPhotos() {
+    try {
+        const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+        await prisma.staffAttendance.updateMany({
+            where: {
+                markedAt: { lt: fifteenDaysAgo },
+                photoUrl: { not: null }
+            },
+            data: {
+                photoUrl: null
+            }
+        });
+    } catch (err) {
+        console.error("Error cleaning up old attendance photos:", err);
+    }
+}
+
 // GET /api/security/staff — Get all active staff members
 router.get("/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
@@ -27,7 +45,7 @@ router.get("/staff", authMiddleware, async (req: AuthRequest, res) => {
 // POST /api/security/staff — Create new staff member
 router.post("/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { name, role, phone } = req.body;
+        const { name, role } = req.body;
         if (!name || typeof name !== "string" || !name.trim()) {
             return res.status(400).json({ error: "Staff name is required" });
         }
@@ -36,7 +54,6 @@ router.post("/staff", authMiddleware, async (req: AuthRequest, res) => {
             data: {
                 name: name.trim(),
                 role: role ? String(role).trim() : null,
-                phone: phone ? String(phone).trim() : null,
                 isActive: true
             }
         });
@@ -73,6 +90,9 @@ router.delete("/staff/:id", authMiddleware, async (req: AuthRequest, res) => {
 // GET /api/security/attendance — Get attendance records for a specific date
 router.get("/attendance", authMiddleware, async (req: AuthRequest, res) => {
     try {
+        // Trigger auto-deletion of photos older than 15 days
+        cleanupOldPhotos();
+
         const dateStr = (req.query.date as string) || getLocalDateStr();
 
         const allStaff = await prisma.securityStaff.findMany({
