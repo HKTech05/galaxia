@@ -763,9 +763,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         Comments / Notes
                                     </h4>
                                     {(["H&H", "devi", "ranjit", "M&L"].includes(username) || userRole === "receptionist") ? (
-                                        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
-                                            {booking.comments || "No comments added by owner."}
-                                        </div>
+                                        booking.comments ? (
+                                            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm font-bold text-red-700 leading-relaxed whitespace-pre-wrap">
+                                                {booking.comments}
+                                            </div>
+                                        ) : null
                                     ) : (
                                         <div className="flex gap-2">
                                             <input

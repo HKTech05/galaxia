@@ -912,9 +912,6 @@ export default function HousekeepingPortalPage() {
                         </div>
                     </div>
                 </div>
-
-                {/* Meal Counter Column (Right side) */}
-                <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                         <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -969,7 +966,7 @@ export default function HousekeepingPortalPage() {
                                     {!mealCounter?.bookings || mealCounter.bookings.length === 0 ? (
                                         <p className="text-xs font-semibold text-slate-400 text-center py-4">No active checked-in guests today.</p>
                                     ) : (
-                                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[450px] overflow-y-auto pr-1">
                                             {mealCounter.bookings.map((booking) => (
                                                 <div key={booking.bookingId} className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 space-y-3">
                                                     {/* Booking info header */}
@@ -1028,7 +1025,6 @@ export default function HousekeepingPortalPage() {
                         )}
                     </div>
                 </div>
-            </div>
 
             {/* Villa Allotments Table */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
