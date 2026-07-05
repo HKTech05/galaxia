@@ -771,8 +771,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <input
                                                 type="text"
                                                 defaultValue={booking.comments || ""}
-                                                onBlur={(e) => handleUpdateComments(booking.id, e.target.value)}
-                                                onKeyDown={(e) => { if (e.key === "Enter") { handleUpdateComments(booking.id, (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur(); } }}
+                                                onBlur={(e) => handleUpdateComments(booking.rawId, e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === "Enter") { handleUpdateComments(booking.rawId, (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur(); } }}
                                                 placeholder="Add a comment for receptionist (press Enter or click outside to save)..."
                                                 className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all"
                                             />

@@ -16,49 +16,116 @@ router.get("/", authMiddleware, async (req, res) => {
     try {
         const dateStr = (req.query.date as string) || getLocalDateStr();
         
-        let counter = await prisma.mealCounter.findUnique({
+        const filterDate = new Date(dateStr);
+        const startOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+        const endOfDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate(), 23, 59, 59, 999);
+
+        // Fetch active bookings for the day
+        const activeBookings = await prisma.staycationBooking.findMany({
+            where: {
+                status: "checked_in",
+                checkInDate: { lte: endOfDay },
+                checkOutDate: { gte: startOfDay },
+                property: {
+                    slug: { in: ["ambrose", "amstel-nest"] }
+                },
+                assignedUnit: { not: null }
+            },
+            select: {
+                id: true,
+                bookingRef: true,
+                customerName: true,
+                assignedUnit: true,
+                numGuests: true
+            }
+        });
+
+        // Filter out placeholders
+        const filteredBookings = activeBookings.filter(b => b.assignedUnit && b.assignedUnit.trim() !== "" && b.assignedUnit !== "Standard Cottage");
+
+        // Fetch existing meal records for this date
+        const mealRecords = await prisma.bookingMealRecord.findMany({
             where: { date: dateStr }
         });
-        
-        if (!counter) {
-            counter = await prisma.mealCounter.create({
-                data: {
-                    date: dateStr,
-                    breakfast: 0,
-                    lunch: 0,
-                    dinner: 0
-                }
-            });
-        }
-        
-        return res.json(counter);
+
+        // Map them together
+        const bookingsWithMeals = filteredBookings.map(b => {
+            const record = mealRecords.find(r => r.bookingId === b.id);
+            return {
+                bookingId: b.id,
+                bookingRef: b.bookingRef,
+                guestName: b.customerName,
+                villaName: b.assignedUnit!,
+                numGuests: b.numGuests || 0,
+                breakfast: record ? record.breakfast : 0,
+                lunch: record ? record.lunch : 0,
+                dinner: record ? record.dinner : 0
+            };
+        });
+
+        // Compute aggregates
+        const totalGuests = bookingsWithMeals.reduce((sum, b) => sum + b.numGuests, 0);
+        const breakfastEaten = bookingsWithMeals.reduce((sum, b) => sum + b.breakfast, 0);
+        const lunchEaten = bookingsWithMeals.reduce((sum, b) => sum + b.lunch, 0);
+        const dinnerEaten = bookingsWithMeals.reduce((sum, b) => sum + b.dinner, 0);
+
+        return res.json({
+            date: dateStr,
+            totalGuests,
+            breakfastEaten,
+            lunchEaten,
+            dinnerEaten,
+            bookings: bookingsWithMeals
+        });
     } catch (err: any) {
         console.error("Error in GET /meal-counters:", err);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
 
-// POST /api/meal-counters/update — Update meal counts
+// POST /api/meal-counters/update — Update meal counts for a specific booking
 router.post("/update", authMiddleware, async (req, res) => {
     try {
-        const { date, breakfast, lunch, dinner } = req.body;
+        const { date, bookingId, breakfast, lunch, dinner } = req.body;
         const dateStr = date || getLocalDateStr();
-        
-        const counter = await prisma.mealCounter.upsert({
-            where: { date: dateStr },
+        const bId = parseInt(bookingId);
+
+        if (isNaN(bId)) {
+            return res.status(400).json({ error: "bookingId is required and must be an integer" });
+        }
+
+        // Verify booking exists
+        const booking = await prisma.staycationBooking.findUnique({
+            where: { id: bId }
+        });
+        if (!booking) {
+            return res.status(404).json({ error: "Booking not found" });
+        }
+
+        const maxGuests = booking.numGuests || 0;
+
+        // Upsert record
+        const counter = await prisma.bookingMealRecord.upsert({
+            where: {
+                date_bookingId: {
+                    date: dateStr,
+                    bookingId: bId
+                }
+            },
             update: {
-                breakfast: breakfast !== undefined ? parseInt(breakfast) : undefined,
-                lunch: lunch !== undefined ? parseInt(lunch) : undefined,
-                dinner: dinner !== undefined ? parseInt(dinner) : undefined
+                breakfast: breakfast !== undefined ? Math.min(maxGuests, Math.max(0, parseInt(breakfast))) : undefined,
+                lunch: lunch !== undefined ? Math.min(maxGuests, Math.max(0, parseInt(lunch))) : undefined,
+                dinner: dinner !== undefined ? Math.min(maxGuests, Math.max(0, parseInt(dinner))) : undefined
             },
             create: {
                 date: dateStr,
-                breakfast: breakfast !== undefined ? parseInt(breakfast) : 0,
-                lunch: lunch !== undefined ? parseInt(lunch) : 0,
-                dinner: dinner !== undefined ? parseInt(dinner) : 0
+                bookingId: bId,
+                breakfast: breakfast !== undefined ? Math.min(maxGuests, Math.max(0, parseInt(breakfast))) : 0,
+                lunch: lunch !== undefined ? Math.min(maxGuests, Math.max(0, parseInt(lunch))) : 0,
+                dinner: dinner !== undefined ? Math.min(maxGuests, Math.max(0, parseInt(dinner))) : 0
             }
         });
-        
+
         return res.json({ success: true, counter });
     } catch (err: any) {
         console.error("Error in POST /meal-counters/update:", err);

@@ -17,7 +17,9 @@ import {
     Edit,
     Save,
     CheckCircle,
-    ShoppingBag
+    ShoppingBag,
+    Sun,
+    Moon
 } from "lucide-react";
 import { api } from "../../../lib/api";
 
@@ -325,7 +327,23 @@ export default function HousekeepingPortalPage() {
     const [editAllocationSubmitting, setEditAllocationSubmitting] = useState(false);
     
     // Meal Counter States
-    const [mealCounter, setMealCounter] = useState<{ breakfast: number; lunch: number; dinner: number } | null>(null);
+    const [mealCounter, setMealCounter] = useState<{
+        date: string;
+        totalGuests: number;
+        breakfastEaten: number;
+        lunchEaten: number;
+        dinnerEaten: number;
+        bookings: Array<{
+            bookingId: number;
+            bookingRef: string;
+            guestName: string;
+            villaName: string;
+            numGuests: number;
+            breakfast: number;
+            lunch: number;
+            dinner: number;
+        }>;
+    } | null>(null);
     const [loadingMealCounter, setLoadingMealCounter] = useState(false);
     
     // Date filter: defaults to today (YYYY-MM-DD)
@@ -466,24 +484,48 @@ export default function HousekeepingPortalPage() {
         }
     }, [selectedDate]);
 
-    const handleUpdateMealCount = async (meal: "breakfast" | "lunch" | "dinner", change: number) => {
+    const handleUpdateMealCount = async (bookingId: number, meal: "breakfast" | "lunch" | "dinner", change: number) => {
         if (!mealCounter) return;
-        const currentCount = (mealCounter as any)[meal] || 0;
-        const newCount = Math.max(0, currentCount + change);
         
+        const booking = mealCounter.bookings.find(b => b.bookingId === bookingId);
+        if (!booking) return;
+        
+        const currentCount = booking[meal] || 0;
+        const newCount = Math.max(0, Math.min(booking.numGuests, currentCount + change));
+        
+        if (currentCount === newCount) return;
+
         // Optimistic UI update
-        setMealCounter(prev => prev ? { ...prev, [meal]: newCount } : null);
-        
+        setMealCounter(prev => {
+            if (!prev) return null;
+            const updatedBookings = prev.bookings.map(b => 
+                b.bookingId === bookingId ? { ...b, [meal]: newCount } : b
+            );
+            
+            // Recompute aggregates
+            const breakfastEaten = updatedBookings.reduce((sum, b) => sum + b.breakfast, 0);
+            const lunchEaten = updatedBookings.reduce((sum, b) => sum + b.lunch, 0);
+            const dinnerEaten = updatedBookings.reduce((sum, b) => sum + b.dinner, 0);
+            
+            return {
+                ...prev,
+                breakfastEaten,
+                lunchEaten,
+                dinnerEaten,
+                bookings: updatedBookings
+            };
+        });
+
         try {
             await api.post(`/meal-counters/update`, {
                 date: selectedDate,
+                bookingId,
                 [meal]: newCount
             });
         } catch (err) {
             console.error("Failed to update meal count:", err);
             alert("Failed to update meal count.");
-            // Revert state
-            setMealCounter(prev => prev ? { ...prev, [meal]: currentCount } : null);
+            fetchMealCounter();
         }
     };
 
@@ -895,34 +937,93 @@ export default function HousekeepingPortalPage() {
                                 <p className="text-xs font-semibold">Loading counts...</p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {[
-                                    { key: "breakfast", label: "🍳 Breakfast", color: "from-amber-50 to-orange-50/30 text-amber-800 border-amber-100" },
-                                    { key: "lunch", label: "☀️ Lunch", color: "from-emerald-50 to-teal-50/30 text-emerald-800 border-emerald-100" },
-                                    { key: "dinner", label: "🌙 Dinner", color: "from-indigo-50 to-blue-50/30 text-indigo-800 border-indigo-100" }
-                                ].map((meal) => {
-                                    const count = mealCounter ? (mealCounter as any)[meal.key] || 0 : 0;
-                                    return (
-                                        <div key={meal.key} className={`bg-gradient-to-r ${meal.color} border rounded-2xl p-4 flex items-center justify-between`}>
-                                            <span className="font-bold text-sm">{meal.label}</span>
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => handleUpdateMealCount(meal.key as any, -1)}
-                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 font-bold flex items-center justify-center transition-colors shadow-xs"
-                                                >
-                                                    -
-                                                </button>
-                                                <span className="font-black text-lg min-w-[24px] text-center">{count}</span>
-                                                <button
-                                                    onClick={() => handleUpdateMealCount(meal.key as any, 1)}
-                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 font-bold flex items-center justify-center transition-colors shadow-xs"
-                                                >
-                                                    +
-                                                </button>
+                            <div className="space-y-6">
+                                {/* Aggregates Summary */}
+                                <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200/60 p-3 rounded-2xl">
+                                    {[
+                                        { key: "breakfast", label: "Breakfast", icon: Coffee, val: mealCounter?.breakfastEaten || 0, color: "text-amber-600 bg-amber-50 border-amber-100" },
+                                        { key: "lunch", label: "Lunch", icon: Sun, val: mealCounter?.lunchEaten || 0, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
+                                        { key: "dinner", label: "Dinner", icon: Moon, val: mealCounter?.dinnerEaten || 0, color: "text-indigo-600 bg-indigo-50 border-indigo-100" }
+                                    ].map((meal) => {
+                                        const Icon = meal.icon;
+                                        return (
+                                            <div key={meal.key} className="flex flex-col items-center justify-center p-2 rounded-xl text-center">
+                                                <div className={`p-1.5 rounded-lg border ${meal.color} mb-1`}>
+                                                    <Icon size={16} />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{meal.label}</span>
+                                                <span className="text-sm font-black text-slate-800 mt-0.5">
+                                                    {meal.val} / {mealCounter?.totalGuests || 0}
+                                                </span>
                                             </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Booking-wise list */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cottage Wise Status</h3>
+                                    </div>
+
+                                    {!mealCounter?.bookings || mealCounter.bookings.length === 0 ? (
+                                        <p className="text-xs font-semibold text-slate-400 text-center py-4">No active checked-in guests today.</p>
+                                    ) : (
+                                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                                            {mealCounter.bookings.map((booking) => (
+                                                <div key={booking.bookingId} className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 space-y-3">
+                                                    {/* Booking info header */}
+                                                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                                        <span className="font-extrabold text-xs text-slate-700 truncate max-w-[120px]">{booking.villaName}</span>
+                                                        <span className="font-bold text-[10px] text-slate-500 truncate max-w-[80px]">{booking.guestName}</span>
+                                                        <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                                            {booking.numGuests} Pax
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Meal control row */}
+                                                    <div className="space-y-2">
+                                                        {[
+                                                            { key: "breakfast", label: "Breakfast", icon: Coffee, color: "text-amber-600 bg-amber-50 border-amber-100/50" },
+                                                            { key: "lunch", label: "Lunch", icon: Sun, color: "text-emerald-600 bg-emerald-50 border-emerald-100/50" },
+                                                            { key: "dinner", label: "Dinner", icon: Moon, color: "text-indigo-600 bg-indigo-50 border-indigo-100/50" }
+                                                        ].map((meal) => {
+                                                            const Icon = meal.icon;
+                                                            const count = (booking as any)[meal.key] || 0;
+                                                            return (
+                                                                <div key={meal.key} className="flex items-center justify-between text-xs">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <div className={`p-1 rounded-md border ${meal.color}`}>
+                                                                            <Icon size={10} />
+                                                                        </div>
+                                                                        <span className="font-bold text-slate-600">{meal.label}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => handleUpdateMealCount(booking.bookingId, meal.key as any, -1)}
+                                                                            className="w-6 h-6 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors"
+                                                                        >
+                                                                            -
+                                                                        </button>
+                                                                        <span className="font-black text-xs min-w-[16px] text-center">
+                                                                            {count} / {booking.numGuests}
+                                                                        </span>
+                                                                        <button
+                                                                            onClick={() => handleUpdateMealCount(booking.bookingId, meal.key as any, 1)}
+                                                                            className="w-6 h-6 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors"
+                                                                        >
+                                                                            +
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    );
-                                })}
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

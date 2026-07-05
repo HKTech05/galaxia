@@ -86,6 +86,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     const [assignedProperties, setAssignedProperties] = useState<string[] | null>(null);
     const [adminRole, setAdminRole] = useState<string>("");
     const [adminDisplayName, setAdminDisplayName] = useState<string>("");
+    const [adminUsername, setAdminUsername] = useState<string>("");
     const [profileLoaded, setProfileLoaded] = useState(false);
 
     useEffect(() => {
@@ -93,6 +94,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
         api.get("/auth/me").then(data => {
             setAdminRole(data?.role || "");
             setAdminDisplayName(data?.displayName || "");
+            setAdminUsername(data?.username || "");
             setAssignedProperties(data?.assignedProperties || null);
             setProfileLoaded(true);
         }).catch(() => { setProfileLoaded(true); });
@@ -266,6 +268,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                             {visibleReceptionistItems.map(item => renderNavItem(item))}
                                             {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
                                             {renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
+                                            {["ranjit", "devi"].includes(adminUsername) && renderNavItem({ name: "Inventory", href: "/admin3/read-only-inventory", icon: Package })}
                                         </>
                                     )}
 

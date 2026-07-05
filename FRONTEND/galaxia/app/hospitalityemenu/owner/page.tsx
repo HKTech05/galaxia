@@ -13,7 +13,7 @@ export default function HospitalityEMenuOwnerPage() {
                     <p className="text-sm font-semibold tracking-wide">Loading menu...</p>
                 </div>
             }>
-                <EMenuContent disableTimers={true} />
+                <EMenuContent disableTimers={true} isOwnerMode={true} />
             </Suspense>
         </div>
     );

@@ -19,7 +19,9 @@ import {
     RefreshCw,
     Package,
     Save,
-    ShoppingBag
+    ShoppingBag,
+    Sun,
+    Moon
 } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
@@ -344,7 +346,14 @@ export default function ChefPortalPage() {
             setLoadingNormal(false);
         }
     };
-    const [mealCounter, setMealCounter] = useState<{ breakfast: number; lunch: number; dinner: number } | null>(null);
+    const [mealCounter, setMealCounter] = useState<{
+        date: string;
+        totalGuests: number;
+        breakfastEaten: number;
+        lunchEaten: number;
+        dinnerEaten: number;
+        bookings: any[];
+    } | null>(null);
     const [loadingMealCounter, setLoadingMealCounter] = useState(false);
 
     const fetchMealCounter = useCallback(async () => {
@@ -740,15 +749,25 @@ export default function ChefPortalPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {[
-                                { key: "breakfast", label: "🍳 Breakfast", count: mealCounter?.breakfast || 0, color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70" },
-                                { key: "lunch", label: "☀️ Lunch", count: mealCounter?.lunch || 0, color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70" },
-                                { key: "dinner", label: "🌙 Dinner", count: mealCounter?.dinner || 0, color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70" }
-                            ].map((meal) => (
-                                <div key={meal.key} className={`bg-gradient-to-r ${meal.color} border rounded-2xl p-5 flex items-center justify-between`}>
-                                    <span className="font-bold text-sm">{meal.label}</span>
-                                    <span className="font-black text-2xl tracking-tight">{meal.count}</span>
-                                </div>
-                            ))}
+                                { key: "breakfast", label: "Breakfast", icon: Coffee, count: mealCounter?.breakfastEaten || 0, color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70", iconColor: "text-amber-600" },
+                                { key: "lunch", label: "Lunch", icon: Sun, count: mealCounter?.lunchEaten || 0, color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70", iconColor: "text-emerald-600" },
+                                { key: "dinner", label: "Dinner", icon: Moon, count: mealCounter?.dinnerEaten || 0, color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70", iconColor: "text-indigo-600" }
+                            ].map((meal) => {
+                                const Icon = meal.icon;
+                                return (
+                                    <div key={meal.key} className={`bg-gradient-to-r ${meal.color} border rounded-2xl p-5 flex items-center justify-between`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-xl bg-white border border-slate-200/50 ${meal.iconColor}`}>
+                                                <Icon size={20} />
+                                            </div>
+                                            <span className="font-extrabold text-sm">{meal.label}</span>
+                                        </div>
+                                        <span className="font-black text-2xl tracking-tight">
+                                            {meal.count} / {mealCounter?.totalGuests || 0}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

@@ -689,10 +689,10 @@ export default function InventoryPage() {
                     )}
 
                     {currentTab === "customer" && (
-                        <div className="space-y-6">
+                        <div className="max-w-2xl mx-auto space-y-6">
                             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-base font-bold text-slate-800">Owner Mode Placement</h3>
+                                    <h3 className="text-base font-bold text-slate-800">Owner Mode</h3>
                                     <p className="text-xs text-slate-500 mt-0.5 font-medium">Toggle to place orders for free and without time constraints.</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
@@ -711,7 +711,7 @@ export default function InventoryPage() {
                                     <p className="text-sm font-semibold tracking-wide">Loading customer menu...</p>
                                 </div>
                             }>
-                                <EMenuContent isOwnerMode={ownerMode} disableTimers={ownerMode} />
+                                <EMenuContent isOwnerMode={ownerMode} disableTimers={true} />
                             </Suspense>
                         </div>
                     )}

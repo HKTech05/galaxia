@@ -767,5 +767,14 @@ model MealCounter {
   @@map("meal_counters")
 }
 
+model BookingMealRecord {
+  id         Int    @id @default(autoincrement())
+  date       String
+  bookingId  Int
+  breakfast  Int    @default(0)
+  lunch      Int    @default(0)
+  dinner     Int    @default(0)
 
-
+  @@unique([date, bookingId])
+  @@map("booking_meal_records")
+}
