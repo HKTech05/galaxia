@@ -157,7 +157,8 @@ export default function BookMultiPage() {
     // Fetch booked dates for the date picker (must be before any early returns)
     const hasAmstelOnly = ambroseItems.length === 0 && amstelItems.length > 0;
     const bookedDatesForPicker = useBookedDates(
-        hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null)
+        hasAmstelOnly ? (dbPropertyMap["amstel-nest"] || null) : (dbPropertyMap["ambrose"] || null),
+        hasAmstelOnly ? dbSubPropertyMap["standard-cottage"] : undefined
     );
 
     // Should we hide prices? Multi Ambrose, or mix of standard + family
@@ -1086,6 +1087,7 @@ export default function BookMultiPage() {
                             </div>
                             <AvailabilityCalendar
                                 propertyId={hasAmstelOnly ? dbPropertyMap["amstel-nest"] : dbPropertyMap["ambrose"]}
+                                subPropertyId={hasAmstelOnly ? dbSubPropertyMap["standard-cottage"] : undefined}
                                 weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : (ambroseItems[0]?.weekdayPrice || ambrose.pricing.weekday.price)}
                                 weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "5,950") : (ambroseItems[0]?.weekendPrice || ambrose.pricing.weekend.price)}
                                 saturdayPrice={hasAmstelOnly ? (amstelItems[0]?.saturdayPrice || "6,950") : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
@@ -1300,6 +1302,7 @@ export default function BookMultiPage() {
                                                                 <div className="mt-3 border border-red-100 rounded-lg p-3">
                                                                     <AvailabilityCalendar
                                                                         propertyId={dbPropertyMap["amstel-nest"]}
+                                                                        subPropertyId={dbSubPropertyMap[item.villaId]}
                                                                         weekdayPrice={item.weekdayPrice}
                                                                         weekendPrice={item.weekendPrice}
                                                                         saturdayPrice={item.saturdayPrice || (item.villaId === 'family-cottage' ? "12,000" : "6,950")}
