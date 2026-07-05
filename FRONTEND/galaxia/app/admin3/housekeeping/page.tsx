@@ -324,6 +324,10 @@ export default function HousekeepingPortalPage() {
     const [editAllocationUnit, setEditAllocationUnit] = useState("");
     const [editAllocationSubmitting, setEditAllocationSubmitting] = useState(false);
     
+    // Meal Counter States
+    const [mealCounter, setMealCounter] = useState<{ breakfast: number; lunch: number; dinner: number } | null>(null);
+    const [loadingMealCounter, setLoadingMealCounter] = useState(false);
+    
     // Date filter: defaults to today (YYYY-MM-DD)
     const [selectedDate, setSelectedDate] = useState(() => {
         const today = new Date();
@@ -450,13 +454,47 @@ export default function HousekeepingPortalPage() {
         }
     };
 
+    const fetchMealCounter = useCallback(async () => {
+        setLoadingMealCounter(true);
+        try {
+            const data = await api.get(`/meal-counters?date=${selectedDate}`);
+            setMealCounter(data);
+        } catch (err) {
+            console.error("Failed to fetch meal counter:", err);
+        } finally {
+            setLoadingMealCounter(false);
+        }
+    }, [selectedDate]);
+
+    const handleUpdateMealCount = async (meal: "breakfast" | "lunch" | "dinner", change: number) => {
+        if (!mealCounter) return;
+        const currentCount = (mealCounter as any)[meal] || 0;
+        const newCount = Math.max(0, currentCount + change);
+        
+        // Optimistic UI update
+        setMealCounter(prev => prev ? { ...prev, [meal]: newCount } : null);
+        
+        try {
+            await api.post(`/meal-counters/update`, {
+                date: selectedDate,
+                [meal]: newCount
+            });
+        } catch (err) {
+            console.error("Failed to update meal count:", err);
+            alert("Failed to update meal count.");
+            // Revert state
+            setMealCounter(prev => prev ? { ...prev, [meal]: currentCount } : null);
+        }
+    };
+
     useEffect(() => {
         if (userRole) {
             fetchRequests();
             fetchAllocations();
             fetchFoodDeliveries();
+            fetchMealCounter();
         }
-    }, [selectedDate, userRole]);
+    }, [selectedDate, userRole, fetchMealCounter]);
 
     const handleFulfilRequest = async (id: number) => {
         try {
@@ -832,6 +870,63 @@ export default function HousekeepingPortalPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Meal Counter Column (Right side) */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                        <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Coffee size={20} className="text-amber-600" />
+                                Meal Counters
+                            </h2>
+                            <button
+                                onClick={fetchMealCounter}
+                                disabled={loadingMealCounter}
+                                className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+                                title="Refresh meal counts"
+                            >
+                                <RefreshCw size={14} className={loadingMealCounter ? "animate-spin" : ""} />
+                            </button>
+                        </div>
+
+                        {loadingMealCounter && !mealCounter ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                                <RefreshCw size={24} className="animate-spin text-amber-600" />
+                                <p className="text-xs font-semibold">Loading counts...</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {[
+                                    { key: "breakfast", label: "🍳 Breakfast", color: "from-amber-50 to-orange-50/30 text-amber-800 border-amber-100" },
+                                    { key: "lunch", label: "☀️ Lunch", color: "from-emerald-50 to-teal-50/30 text-emerald-800 border-emerald-100" },
+                                    { key: "dinner", label: "🌙 Dinner", color: "from-indigo-50 to-blue-50/30 text-indigo-800 border-indigo-100" }
+                                ].map((meal) => {
+                                    const count = mealCounter ? (mealCounter as any)[meal.key] || 0 : 0;
+                                    return (
+                                        <div key={meal.key} className={`bg-gradient-to-r ${meal.color} border rounded-2xl p-4 flex items-center justify-between`}>
+                                            <span className="font-bold text-sm">{meal.label}</span>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => handleUpdateMealCount(meal.key as any, -1)}
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 font-bold flex items-center justify-center transition-colors shadow-xs"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="font-black text-lg min-w-[24px] text-center">{count}</span>
+                                                <button
+                                                    onClick={() => handleUpdateMealCount(meal.key as any, 1)}
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 font-bold flex items-center justify-center transition-colors shadow-xs"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Villa Allotments Table */}
@@ -1152,52 +1247,7 @@ export default function HousekeepingPortalPage() {
                                 )}
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Menu Management Controls (Only for Owner / Developer) */}
-            {(userRole === "owner" || userRole === "developer") && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 mt-8">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <Coffee size={20} className="text-amber-600" />
-                            Menu Items Management
-                        </h2>
-                        <span className="text-xs text-slate-400 font-medium">Configure menu items, prices and availability</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <button
-                            onClick={handleOpenHousekeepingMenu}
-                            className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
-                        >
-                            <div>
-                                <p className="text-sm font-bold text-slate-800">Housekeeping Menu</p>
-                                <p className="text-xs text-slate-500 mt-1">Edit items, custom rates, and Normal category menu.</p>
-                            </div>
-                            <span className="text-blue-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
-                        </button>
-                        <button
-                            onClick={handleOpenHighTeaMenu}
-                            className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
-                        >
-                            <div>
-                                <p className="text-sm font-bold text-slate-800">High Tea Menu</p>
-                                <p className="text-xs text-slate-500 mt-1">Edit evening tea menu, rates, and High Tea category items.</p>
-                            </div>
-                            <span className="text-indigo-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
-                        </button>
-                        <button
-                            onClick={handleOpenTimepassMenu}
-                            className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl transition-all text-left group"
-                        >
-                            <div>
-                                <p className="text-sm font-bold text-slate-800">Timepass Menu</p>
-                                <p className="text-xs text-slate-500 mt-1">Edit snacks/papad menu, rates, and Timepass category items.</p>
-                            </div>
-                            <span className="text-emerald-600 font-semibold text-xs group-hover:translate-x-1 transition-transform">Manage →</span>
-                        </button>
-                    </div>
+                           </div>
                 </div>
             )}
 

@@ -45,6 +45,10 @@ interface Booking {
     refundUpiId?: number | null;
     depositRefunded: boolean;
     depositRefundMethod: string | null;
+    totalAmount?: number;
+    advanceAmount?: number;
+    advanceMethod?: string | null;
+    advancePaid?: boolean;
     upiPayments?: Array<{
         id: number;
         paymentType: string;
@@ -483,6 +487,8 @@ export default function PropertiesView2Page() {
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Checkin - Checkout</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Guest Name</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">People</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Total</th>
+                                <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Advance Paid</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Balance</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Deposit</th>
                                 <th className="px-5 py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Deposit Refunded</th>
@@ -493,14 +499,14 @@ export default function PropertiesView2Page() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={10} className="px-6 py-12 text-center">
+                                    <td colSpan={12} className="px-6 py-12 text-center">
                                         <Loader2 className="animate-spin mx-auto text-indigo-500" size={28} />
                                         <p className="text-sm text-slate-500 mt-2">Loading check-in data...</p>
                                     </td>
                                 </tr>
                             ) : displayRows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={10} className="px-6 py-12 text-center text-slate-500 font-medium">
+                                    <td colSpan={12} className="px-6 py-12 text-center text-slate-500 font-medium">
                                         No checkin records matching criteria.
                                     </td>
                                 </tr>
@@ -509,10 +515,12 @@ export default function PropertiesView2Page() {
                                     const b = row.booking;
                                     
                                     // Robust UPI lookups
+                                    const advanceUpi = b?.upiPayments?.find(u => u.paymentType === "advance") || b?.upiPayments?.find(u => u.amount === b?.advanceAmount);
                                     const balanceUpi = b?.upiPayments?.find(u => u.paymentType === "balance") || b?.upiPayments?.find(u => u.amount === b.balanceAmount);
                                     const depositUpi = b?.upiPayments?.find(u => u.paymentType === "deposit") || b?.upiPayments?.find(u => u.amount === b.securityDeposit);
                                     const refundUpi = b?.upiPayments?.find(u => u.paymentType === "deposit_refund") || b?.upiPayments?.find(u => u.amount === -b.securityDeposit || Math.abs(u.amount) === Math.abs(b.securityDeposit));
 
+                                    const advanceUpiId = advanceUpi?.id || null;
                                     const balanceUpiId = balanceUpi?.id || b?.balanceUpiId || null;
                                     const depositUpiId = depositUpi?.id || b?.depositUpiId || null;
                                     const refundUpiId = refundUpi?.id || b?.refundUpiId || null;
@@ -565,6 +573,42 @@ export default function PropertiesView2Page() {
                                                     <span className="text-xs font-bold text-slate-800">
                                                         {b.numGuests + b.numKids}
                                                     </span>
+                                                ) : (
+                                                    <span className="text-slate-300 font-semibold text-xs">—</span>
+                                                )}
+                                            </td>
+
+                                            {/* Total Amount */}
+                                            <td className="px-5 py-4 align-middle text-right">
+                                                {b ? (
+                                                    <span className="text-xs font-black text-slate-800">₹{(b.totalAmount || 0).toLocaleString("en-IN")}</span>
+                                                ) : (
+                                                    <span className="text-slate-300 font-semibold text-xs">—</span>
+                                                )}
+                                            </td>
+
+                                            {/* Advance Paid with Payment Method details */}
+                                            <td className="px-5 py-4 align-middle text-right">
+                                                {b ? (
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-xs font-black text-slate-800">₹{(b.advanceAmount || 0).toLocaleString("en-IN")}</span>
+                                                        {b.advancePaid && b.advanceMethod && (
+                                                            <div className="mt-1">
+                                                                {b.advanceMethod.toLowerCase().includes("upi") ? (
+                                                                    <button
+                                                                        onClick={() => advanceUpiId ? handleViewProof(advanceUpiId) : alert("No proof image uploaded for this advance payment")}
+                                                                        className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                    >
+                                                                        UPI
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                        CASH
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-slate-300 font-semibold text-xs">—</span>
                                                 )}

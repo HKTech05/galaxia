@@ -10,7 +10,10 @@ import path from "path";
 
 const router = Router();
 
-const MENU_FILE_PATH = path.join(__dirname, "../../../menu_items.json");
+const isProduction = process.env.NODE_ENV === "production" || fs.existsSync("/home/ec2-user");
+const MENU_FILE_PATH = isProduction
+    ? "/home/ec2-user/menu_items.json"
+    : path.join(__dirname, "../../../menu_items.json");
 
 const DEFAULT_MENU_ITEMS = [
     { id: "water", name: "Water", price: 30, category: "Normal", stock: 90, tracked: true, costPrice: 10 },
@@ -18,6 +21,7 @@ const DEFAULT_MENU_ITEMS = [
     { id: "fresh_lime_water", name: "Fresh Lime Water", price: 120, category: "Normal", stock: 99, tracked: false, costPrice: 25 },
     { id: "lemon_ice_tea", name: "Lemon Ice tea", price: 100, category: "Normal", stock: 100, tracked: false, costPrice: 25 },
     { id: "sprite", name: "Sprite", price: 70, category: "Normal", stock: 100, tracked: true, costPrice: 30 },
+    { id: "sprite_tin", name: "Sprite Tin", price: 150, category: "Normal", stock: 100, tracked: true, costPrice: 40 },
     { id: "thums_up", name: "Thums Up", price: 70, category: "Normal", stock: 99, tracked: true, costPrice: 30 },
     { id: "special_mocktail", name: "Special Mocktail", price: 1500, category: "Normal", stock: 100, tracked: true, costPrice: 400 },
     { id: "redbull", name: "Red Bull", price: 220, category: "Normal", stock: 100, tracked: true, costPrice: 100 },
@@ -52,25 +56,56 @@ const DEFAULT_MENU_ITEMS = [
     { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass", stock: 99, tracked: false, costPrice: 40 },
     { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass", stock: 100, tracked: false, costPrice: 35 },
     { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass", stock: 100, tracked: false, costPrice: 80 },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass", stock: 99, tracked: false, costPrice: 90 }
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass", stock: 99, tracked: false, costPrice: 90 },
+    { id: "chinese_bhel", name: "Chinese bhel", price: 210, category: "Timepass", stock: 100, costPrice: 60, tracked: true },
+    { id: "coca_cola_tin", name: "Coca Cola tin", price: 150, category: "Timepass", stock: 100, costPrice: 40, tracked: true },
+    { id: "nimboos_masala_soda", name: "NIMBOOS MASALA SODA", price: 120, category: "Timepass", stock: 100, costPrice: 30, tracked: true },
+    { id: "makkai_butta", name: "Makkai butta", price: 100, category: "Timepass", stock: 100, costPrice: 25, tracked: true }
 ];
 
 export function getMenuItems() {
+    let items: any[] = [];
     try {
         if (fs.existsSync(MENU_FILE_PATH)) {
             const content = fs.readFileSync(MENU_FILE_PATH, "utf8");
-            return JSON.parse(content);
+            items = JSON.parse(content);
+        } else {
+            // Check if local repo copy exists to copy it over
+            const localRepoPath = path.join(__dirname, "../../../menu_items.json");
+            if (fs.existsSync(localRepoPath)) {
+                const content = fs.readFileSync(localRepoPath, "utf8");
+                items = JSON.parse(content);
+                fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
+            } else {
+                items = JSON.parse(JSON.stringify(DEFAULT_MENU_ITEMS));
+                fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
+            }
         }
     } catch (err) {
         console.error("Error reading menu file:", err);
+        items = JSON.parse(JSON.stringify(DEFAULT_MENU_ITEMS));
     }
-    // Write default if it doesn't exist
-    try {
-        fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(DEFAULT_MENU_ITEMS, null, 2), "utf8");
-    } catch (err) {
-        console.error("Error writing default menu file:", err);
+
+    // Self-healing merge to guarantee the 5 restored items are always present
+    let modified = false;
+    for (const defaultItem of DEFAULT_MENU_ITEMS) {
+        const exists = items.some((item: any) => item.id === defaultItem.id);
+        if (!exists) {
+            items.push(defaultItem);
+            modified = true;
+        }
     }
-    return DEFAULT_MENU_ITEMS;
+
+    if (modified) {
+        try {
+            fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
+            console.log("[Self-Healing] Merged missing default items into menu_items.json");
+        } catch (err) {
+            console.error("Failed to write merged menu items:", err);
+        }
+    }
+
+    return items;
 }
 
 export function deductItemStock(itemId: string, quantity: number): number {

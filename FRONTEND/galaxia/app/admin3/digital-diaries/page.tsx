@@ -98,6 +98,15 @@ export default function Admin1Dashboard() {
     const [eventsList, setEventsList] = useState<Event[]>([]);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+
+    useEffect(() => {
+        api.get<any>("/auth/me").then(data => {
+            setUserRole(data?.role || "");
+            setUsername(data?.username || "");
+        }).catch(() => {});
+    }, []);
 
     // Dynamic Calendar State
     const [startDate, setStartDate] = useState(new Date());
@@ -170,6 +179,7 @@ export default function Admin1Dashboard() {
                     rawBasePrice: b.basePrice,
                     rawExtraPersonCharge: b.extraPersonCharge,
                     rawBookingDate: b.bookingDate?.split('T')[0] || '',
+                    comments: b.comments || '',
                 }));
                 setEventsList(mapped.filter(ev => (ev as any).status !== 'cancelled' && (ev as any).status !== 'no_show' && (ev as any).status !== 'transferred'));
             }
@@ -801,6 +811,18 @@ export default function Admin1Dashboard() {
         }
     };
 
+    const handleUpdateComments = async (bookingId: number | string, newComments: string) => {
+        try {
+            await api.patch(`/bookings/dd/${bookingId}`, {
+                comments: newComments
+            });
+            setEventsList(prev => prev.map(ev => ev.id === bookingId ? { ...ev, comments: newComments } : ev));
+        } catch (err) {
+            console.error("Failed to update comments:", err);
+            alert("Failed to update comments.");
+        }
+    };
+
     // Auto-calculate DD pricing when guests, package, duration, or date change
     useEffect(() => {
         if (!showEditModal) return;
@@ -964,6 +986,30 @@ export default function Admin1Dashboard() {
                                                 </>
                                             );
                                         })()}
+
+                                        {/* Booking Comments Section */}
+                                        <div className="pt-4 border-t-2 border-indigo-100 mt-4">
+                                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                <FileText size={14} className="text-slate-400" />
+                                                Comments / Notes
+                                            </p>
+                                            {(["H&H", "devi", "ranjit", "M&L"].includes(username) || userRole === "receptionist") ? (
+                                                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                                    {activeEvent.comments || "No comments added by owner."}
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        defaultValue={activeEvent.comments || ""}
+                                                        onBlur={(e) => handleUpdateComments(activeEvent.id, e.target.value)}
+                                                        onKeyDown={(e) => { if (e.key === "Enter") { handleUpdateComments(activeEvent.id, (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur(); } }}
+                                                        placeholder="Add a comment for receptionist (press Enter or click outside to save)..."
+                                                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
 
                                         {/* Add-Ons Section — Separate from Financials */}
                                         {!activeEvent.isMaintenance && (

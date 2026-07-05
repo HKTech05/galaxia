@@ -70,7 +70,7 @@ const VILLAS_LIST = [
     { name: "Amstel Nest — Family Cottage", value: "Family Cottage" },
 ];
 
-function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
+export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { overrideVilla?: string; disableTimers?: boolean; isOwnerMode?: boolean }) {
     const searchParams = useSearchParams();
     
     // Resolve initial villa from query param or overrideVilla prop
@@ -149,7 +149,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
             // Check if timer should be temporarily bypassed for testing
             const TEMPORARILY_DISABLE_TIMER = false; // Set to false to enable actual timer logic
 
-            if (TEMPORARILY_DISABLE_TIMER) {
+            if (TEMPORARILY_DISABLE_TIMER || disableTimers || isOwnerMode) {
                 setHighTeaUnlocked(true);
                 setTimeRemaining("");
                 setNormalUnlocked(true);
@@ -320,7 +320,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                 return {
                     name: item?.name || "",
                     quantity: qty,
-                    price: item?.price || 0,
+                    price: isOwnerMode ? 0 : (item?.price || 0),
                     category: item?.category || "Normal",
                     comment: comments[itemId] || ""
                 };
@@ -512,7 +512,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                                     <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
                                                 )}
                                             </p>
-                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
+                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${item.price}`}</p>
                                         </div>
                                     </div>
 
@@ -612,7 +612,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                                     <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
                                                 )}
                                             </p>
-                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
+                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${item.price}`}</p>
                                         </div>
                                     </div>
 
@@ -712,7 +712,7 @@ function EMenuContent({ overrideVilla }: { overrideVilla?: string }) {
                                                     <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
                                                 )}
                                             </p>
-                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">₹{item.price}</p>
+                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${item.price}`}</p>
                                         </div>
                                     </div>
 

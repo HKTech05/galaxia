@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Package, RefreshCw, Save, Coffee, Sparkles, AlertCircle, ShoppingBag, Plus, Trash2, Pencil, X, TrendingUp, BarChart3, DollarSign, Award, ArrowDown, ArrowUp, PieChart, Download } from "lucide-react";
 import { api } from "../../../lib/api";
+import { EMenuContent } from "../../hospitalityemenu/page";
 
 interface MenuItem {
     id: string;
@@ -68,7 +69,8 @@ export default function InventoryPage() {
     const [editCostPrices, setEditCostPrices] = useState<Record<string, string>>({});
     const [error, setError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
-    const [currentTab, setCurrentTab] = useState<"stock" | "manage" | "insights">("stock");
+    const [currentTab, setCurrentTab] = useState<"stock" | "manage" | "insights" | "customer">("stock");
+    const [ownerMode, setOwnerMode] = useState(false);
 
     // Add Item Modal
     const [showAddModal, setShowAddModal] = useState(false);
@@ -300,6 +302,12 @@ export default function InventoryPage() {
                         >
                             <span className="flex items-center gap-1.5"><BarChart3 size={14} /> Insights</span>
                         </button>
+                        <button
+                            onClick={() => setCurrentTab("customer")}
+                            className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${currentTab === "customer" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                        >
+                            <span className="flex items-center gap-1.5"><ShoppingBag size={14} /> Customer Menu</span>
+                        </button>
                     </div>
 
                     {error && (
@@ -328,7 +336,7 @@ export default function InventoryPage() {
                         ) : (
                             <div className="space-y-8">
                                 {categories.map(cat => {
-                                    const catItems = menuItems.filter(item => item.category === cat && item.tracked);
+                                    const catItems = menuItems.filter(item => item.category === cat);
                                     if (catItems.length === 0) return null;
                                     return (
                                         <div key={cat} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
@@ -678,6 +686,34 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                         )
+                    )}
+
+                    {currentTab === "customer" && (
+                        <div className="space-y-6">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-800">Owner Mode Placement</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Toggle to place orders for free and without time constraints.</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={ownerMode} 
+                                        onChange={(e) => setOwnerMode(e.target.checked)} 
+                                        className="sr-only peer" 
+                                    />
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                            <Suspense fallback={
+                                <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+                                    <RefreshCw size={36} className="animate-spin text-purple-600" />
+                                    <p className="text-sm font-semibold tracking-wide">Loading customer menu...</p>
+                                </div>
+                            }>
+                                <EMenuContent isOwnerMode={ownerMode} disableTimers={ownerMode} />
+                            </Suspense>
+                        </div>
                     )}
 
 

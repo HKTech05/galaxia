@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2 } from "lucide-react";
+import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
 import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
@@ -58,10 +58,12 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
 
     useEffect(() => {
-        api.get("/auth/me").then(data => {
+        api.get<any>("/auth/me").then(data => {
             setUserRole(data?.role || "");
+            setUsername(data?.username || "");
         }).catch(() => {});
     }, []);
 
@@ -118,6 +120,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     extraGuestPayment: (b.extraGuests || []).map((eg: any) => eg.paymentMethod).filter(Boolean).join(", ") || "UPI",
                     extraGuests: b.extraGuests || [],
                     assignedUnit: b.assignedUnit || null,
+                    comments: b.comments || null,
                 }));
                 setBookings(mapped);
             }
@@ -555,6 +558,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         }
     };
 
+    const handleUpdateComments = async (bookingId: number | string, newComments: string) => {
+        try {
+            await api.patch(`/bookings/staycation/${bookingId}`, {
+                comments: newComments
+            });
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, comments: newComments } : b));
+        } catch (err) {
+            console.error("Failed to update comments:", err);
+            alert("Failed to update comments.");
+        }
+    };
+
     return (
         <>
         <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -740,6 +755,30 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Booking Comments Section */}
+                                <div className="mt-6 border-t border-slate-100 pt-6">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <MessageSquare size={14} className="text-slate-400" />
+                                        Comments / Notes
+                                    </h4>
+                                    {(["H&H", "devi", "ranjit", "M&L"].includes(username) || userRole === "receptionist") ? (
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                            {booking.comments || "No comments added by owner."}
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                defaultValue={booking.comments || ""}
+                                                onBlur={(e) => handleUpdateComments(booking.id, e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === "Enter") { handleUpdateComments(booking.id, (e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur(); } }}
+                                                placeholder="Add a comment for receptionist (press Enter or click outside to save)..."
+                                                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="mt-6 pt-6 border-t border-slate-100">
                                     <div className="flex items-center justify-between mb-3">

@@ -571,7 +571,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             status, source, addons, discountAmount,
-            subPropertyId,
+            subPropertyId, comments,
         } = req.body;
 
         // Build update data — only include fields that were actually sent
@@ -598,6 +598,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (status !== undefined) updateData.status = status;
         if (source !== undefined) updateData.source = source;
         if (addons !== undefined) updateData.addons = addons;
+        if (comments !== undefined) updateData.comments = comments;
         if (subPropertyId !== undefined) {
             updateData.subPropertyId = subPropertyId ? parseInt(subPropertyId) : null;
         }

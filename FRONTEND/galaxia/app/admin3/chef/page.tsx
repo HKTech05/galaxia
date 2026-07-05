@@ -78,6 +78,8 @@ export default function ChefPortalPage() {
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
+    const [chefActiveTab, setChefActiveTab] = useState<"active" | "fulfilled">("active");
+    const [chefFulfilledDate, setChefFulfilledDate] = useState<Date>(new Date());
 
     // High Tea Requests
     const [highTeaRequests, setHighTeaRequests] = useState<any[]>([]);
@@ -341,6 +343,27 @@ export default function ChefPortalPage() {
             setLoadingNormal(false);
         }
     };
+    const [mealCounter, setMealCounter] = useState<{ breakfast: number; lunch: number; dinner: number } | null>(null);
+    const [loadingMealCounter, setLoadingMealCounter] = useState(false);
+
+    const fetchMealCounter = useCallback(async () => {
+        setLoadingMealCounter(true);
+        try {
+            const dateStr = `${chefFulfilledDate.getFullYear()}-${String(chefFulfilledDate.getMonth() + 1).padStart(2, '0')}-${String(chefFulfilledDate.getDate()).padStart(2, '0')}`;
+            const data = await api.get(`/meal-counters?date=${dateStr}`);
+            setMealCounter(data);
+        } catch (err) {
+            console.error("Failed to fetch meal counter:", err);
+        } finally {
+            setLoadingMealCounter(false);
+        }
+    }, [chefFulfilledDate]);
+
+    useEffect(() => {
+        if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
+            fetchMealCounter();
+        }
+    }, [userRole, chefFulfilledDate, fetchMealCounter]);
 
     useEffect(() => {
         if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
@@ -349,6 +372,24 @@ export default function ChefPortalPage() {
             fetchNormalRequests();
         }
     }, [userRole]);
+
+    const combinedRequests = useMemo(() => {
+        return [...highTeaRequests, ...timepassRequests, ...normalRequests];
+    }, [highTeaRequests, timepassRequests, normalRequests]);
+
+    const matchDate = (dateStr: string, selectedDate: Date) => {
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        return d.getFullYear() === selectedDate.getFullYear() &&
+               d.getMonth() === selectedDate.getMonth() &&
+               d.getDate() === selectedDate.getDate();
+    };
+
+    const fetchAllRequests = () => {
+        fetchHighTeaRequests();
+        fetchTimepassRequests();
+        fetchNormalRequests();
+    };
 
     const handleFulfilHighTea = async (id: number, targetStatus: string = "prepared") => {
         try {
@@ -675,564 +716,284 @@ export default function ChefPortalPage() {
                 </div>
             </div>
 
+            {/* Meal Counters Section */}
+            {(userRole === "chef" || userRole === "owner" || userRole === "developer") && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Coffee className="text-amber-500" size={20} />
+                                Daily Meal Counts
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-0.5 font-medium">Counts updated by housekeeping staff for the selected date.</p>
+                        </div>
+                        <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+                            Date: {chefFulfilledDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                    </div>
+                    {loadingMealCounter && !mealCounter ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-slate-400 gap-2">
+                            <RefreshCw size={24} className="animate-spin text-purple-600" />
+                            <p className="text-xs font-semibold">Loading counts...</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {[
+                                { key: "breakfast", label: "🍳 Breakfast", count: mealCounter?.breakfast || 0, color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70" },
+                                { key: "lunch", label: "☀️ Lunch", count: mealCounter?.lunch || 0, color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70" },
+                                { key: "dinner", label: "🌙 Dinner", count: mealCounter?.dinner || 0, color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70" }
+                            ].map((meal) => (
+                                <div key={meal.key} className={`bg-gradient-to-r ${meal.color} border rounded-2xl p-5 flex items-center justify-between`}>
+                                    <span className="font-bold text-sm">{meal.label}</span>
+                                    <span className="font-black text-2xl tracking-tight">{meal.count}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* High Tea, Timepass & Normal Requests Dashboard (only for chef/owner/dev) */}
             {(userRole === "chef" || userRole === "owner" || userRole === "developer") && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* High Tea Card */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Coffee size={20} className="text-purple-600" />
-                                High Tea Requests
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <ChefHat className="text-purple-600" size={22} />
+                                Hospitality Orders Dashboard
                             </h2>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => { setFormCategory("High Tea"); setIsCreateModalOpen(true); }}
-                                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                                >
-                                    <Plus size={14} />
-                                    New Request
-                                </button>
-                                <button
-                                    onClick={fetchHighTeaRequests}
-                                    disabled={loadingHighTea}
-                                    className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
-                                >
-                                    <RefreshCw size={12} className={loadingHighTea ? "animate-spin" : ""} />
-                                    Refresh Orders
-                                </button>
-                            </div>
+                            <p className="text-xs text-slate-400 mt-1 font-medium">View and manage all guest requests for High Tea, Timepass, and Normal menu items.</p>
                         </div>
-
-                        {/* Tabs for Active / Fulfilled */}
-                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                        <div className="flex flex-wrap items-center gap-3">
                             <button
-                                onClick={() => setHighTeaTab("active")}
-                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                                    highTeaTab === "active" 
+                                onClick={() => { setModalMode("create"); setFormCategory("Normal"); setFormVilla(""); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-purple-100 hover:shadow"
+                            >
+                                <Plus size={14} className="stroke-[3px]" />
+                                New Request
+                            </button>
+                            <button
+                                onClick={fetchAllRequests}
+                                disabled={loadingHighTea || loadingTimepass || loadingNormal}
+                                className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors text-slate-700 disabled:opacity-50"
+                            >
+                                <RefreshCw size={12} className={loadingHighTea || loadingTimepass || loadingNormal ? "animate-spin" : ""} />
+                                Refresh Orders
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Tabs for Active / Fulfilled & Date Picker */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl w-full sm:w-auto">
+                            <button
+                                onClick={() => setChefActiveTab("active")}
+                                className={`flex-1 sm:flex-none px-6 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                                    chefActiveTab === "active" 
                                         ? "bg-white text-purple-700 shadow-sm" 
                                         : "text-slate-500 hover:text-slate-800"
                                 }`}
                             >
-                                Active ({highTeaRequests.filter(r => r.status === "pending").length})
+                                Active Orders ({combinedRequests.filter(r => r.status === "pending").length})
                             </button>
                             <button
-                                onClick={() => setHighTeaTab("fulfilled")}
-                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                                    highTeaTab === "fulfilled" 
+                                onClick={() => setChefActiveTab("fulfilled")}
+                                className={`flex-1 sm:flex-none px-6 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                                    chefActiveTab === "fulfilled" 
                                         ? "bg-white text-purple-700 shadow-sm" 
                                         : "text-slate-500 hover:text-slate-800"
                                 }`}
                             >
-                                Fulfilled ({highTeaRequests.filter(r => r.status === "fulfilled").length})
+                                Fulfilled Orders ({combinedRequests.filter(r => r.status === "prepared" || r.status === "fulfilled").length})
                             </button>
                         </div>
 
-                        {loadingHighTea ? (
-                            <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
-                                <RefreshCw size={18} className="animate-spin text-purple-600" />
-                                <span className="text-xs font-semibold">Loading orders...</span>
+                        {chefActiveTab === "fulfilled" && (
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                <span className="text-xs font-bold text-slate-500">Select Date:</span>
+                                <CustomDatePicker
+                                    selected={chefFulfilledDate}
+                                    onChange={(d) => d && setChefFulfilledDate(d)}
+                                />
                             </div>
-                        ) : highTeaTab === "active" ? (
-                            highTeaRequests.filter(r => r.status === "pending").length === 0 ? (
-                                <p className="text-center py-8 text-slate-400 text-sm">No pending High Tea orders.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {highTeaRequests.filter(r => r.status === "pending").map((req) => (
-                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
-                                                    <div>
-                                                        <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
-                                                        {req.booking ? (
-                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
-                                                        ) : (
-                                                            <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
-                                                        {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit"
-                                                        })}
-                                                    </span>
-                                                </div>
+                        )}
+                    </div>
 
-                                                <div className="space-y-1">
-                                                    {req.items.map((item: any, idx: number) => (
-                                                        <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
-                                                            <span>
-                                                                {item.name}
-                                                                {item.comment && (
-                                                                    <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
-                                                                        ({item.comment})
-                                                                    </span>
-                                                                )}
-                                                            </span>
-                                                            <span className="font-mono text-purple-700 font-bold bg-purple-50 px-1.5 py-0.2 rounded border border-purple-100/50">× {item.quantity}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="pt-2 flex justify-between items-center border-t border-slate-200/40 mt-1">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Order"
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Order"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleFulfilHighTea(req.id)}
-                                                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
-                                                >
-                                                    <Check size={12} className="stroke-[3px]" />
-                                                    Done
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )
+                    {/* Orders List */}
+                    {loadingHighTea || loadingTimepass || loadingNormal ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
+                            <RefreshCw size={32} className="animate-spin text-purple-600" />
+                            <p className="text-sm font-semibold">Loading hospitality orders...</p>
+                        </div>
+                    ) : chefActiveTab === "active" ? (
+                        combinedRequests.filter(r => r.status === "pending").length === 0 ? (
+                            <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-2xl">
+                                <p className="text-slate-400 text-sm font-semibold">No active orders right now.</p>
+                            </div>
                         ) : (
-                            highTeaRequests.filter(r => r.status === "fulfilled").length === 0 ? (
-                                <p className="text-center py-8 text-slate-400 text-sm">No past High Tea orders.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {highTeaRequests.filter(r => r.status === "fulfilled").map((req) => (
-                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5 hover:shadow-sm transition-shadow">
-                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
-                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
-                                                <span className="font-mono">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {combinedRequests.filter(r => r.status === "pending").map((req) => (
+                                    <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4 flex flex-col justify-between hover:shadow-sm transition-shadow">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
+                                                <div>
+                                                    <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                                                        {req.villaName}
+                                                        {req.itemCategory === "High Tea" ? (
+                                                            <span className="text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded uppercase">High Tea</span>
+                                                        ) : req.itemCategory === "Timepass" ? (
+                                                            <span className="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.5 rounded uppercase">Timepass</span>
+                                                        ) : (
+                                                            <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded uppercase">Normal</span>
+                                                        )}
+                                                    </h3>
+                                                    {req.booking ? (
+                                                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
+                                                    ) : (
+                                                        <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
                                                     {new Date(req.createdAt).toLocaleTimeString("en-IN", {
                                                         hour: "2-digit",
                                                         minute: "2-digit"
                                                     })}
                                                 </span>
                                             </div>
-                                            <div className="space-y-1">
+
+                                            <div className="space-y-1.5">
                                                 {req.items.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
+                                                    <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
                                                         <span>
                                                             {item.name}
                                                             {item.comment && (
-                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
+                                                                <span className="text-amber-700 bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded ml-1.5 text-[9px] font-bold">
                                                                     ({item.comment})
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
+                                                        <span className="font-mono text-purple-700 font-bold bg-purple-50 px-1.5 py-0.2 rounded border border-purple-100/50">× {item.quantity}</span>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="flex items-center justify-between gap-2 border-t border-slate-200/40 pt-2 mt-1">
-                                                <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-1">
-                                                    <span className="font-bold flex items-center gap-1">
-                                                        <Check size={10} className="stroke-[3px]" />
-                                                        Fulfilled
-                                                    </span>
-                                                    <span className="text-slate-300">|</span>
-                                                    {req.isBilled ? (
-                                                        <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
-                                                    ) : (
-                                                        <span className="text-slate-400 font-semibold">Unbilled</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Order"
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Order"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )
-                        )}
-                    </div>
 
-                    {/* Timepass Card */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Coffee size={20} className="text-indigo-600" />
-                                Timepass Specials
-                            </h2>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => { setModalMode("create"); setFormCategory("Timepass"); setFormVilla(""); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-indigo-100 hover:shadow animate-in fade-in duration-200"
-                                >
-                                    <Plus size={14} className="stroke-[3px]" />
-                                    New Request
-                                </button>
-                                <button
-                                    onClick={fetchTimepassRequests}
-                                    disabled={loadingTimepass}
-                                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
-                                >
-                                    <RefreshCw size={12} className={loadingTimepass ? "animate-spin" : ""} />
-                                    Refresh Orders
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Tabs for Active / Fulfilled */}
-                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                            <button
-                                onClick={() => setTimepassTab("active")}
-                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                                    timepassTab === "active" 
-                                        ? "bg-white text-indigo-700 shadow-sm" 
-                                        : "text-slate-500 hover:text-slate-800"
-                                }`}
-                            >
-                                Active ({timepassRequests.filter(r => r.status === "pending").length})
-                            </button>
-                            <button
-                                onClick={() => setTimepassTab("fulfilled")}
-                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                                    timepassTab === "fulfilled" 
-                                        ? "bg-white text-indigo-700 shadow-sm" 
-                                        : "text-slate-500 hover:text-slate-800"
-                                }`}
-                            >
-                                Fulfilled ({timepassRequests.filter(r => r.status === "fulfilled").length})
-                            </button>
-                        </div>
-
-                        {loadingTimepass ? (
-                            <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
-                                <RefreshCw size={18} className="animate-spin text-indigo-600" />
-                                <span className="text-xs font-semibold">Loading orders...</span>
-                            </div>
-                        ) : timepassTab === "active" ? (
-                            timepassRequests.filter(r => r.status === "pending").length === 0 ? (
-                                <p className="text-center py-8 text-slate-400 text-sm">No pending Timepass orders.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {timepassRequests.filter(r => r.status === "pending").map((req) => (
-                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
-                                                    <div>
-                                                        <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
-                                                        {req.booking ? (
-                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
-                                                        ) : (
-                                                            <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
-                                                        {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit"
-                                                        })}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    {req.items.map((item: any, idx: number) => (
-                                                        <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
-                                                            <span>
-                                                                {item.name}
-                                                                {item.comment && (
-                                                                    <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
-                                                                        ({item.comment})
-                                                                    </span>
-                                                                )}
-                                                            </span>
-                                                            <span className="font-mono text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100/50">× {item.quantity}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-2 flex justify-between items-center border-t border-slate-200/40 mt-1">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Order"
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Order"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
+                                        <div className="pt-3 flex justify-between items-center border-t border-slate-200/40 mt-1">
+                                            <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => handleFulfilTimepass(req.id)}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
+                                                    onClick={() => handleOpenEditModal(req)}
+                                                    className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                    title="Edit Order"
                                                 >
-                                                    <Check size={12} className="stroke-[3px]" />
-                                                    Done
+                                                    <Edit size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteRequest(req.id)}
+                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                    title="Delete Order"
+                                                >
+                                                    <Trash2 size={12} />
                                                 </button>
                                             </div>
+                                            <button
+                                                onClick={() => {
+                                                    if (req.itemCategory === "High Tea") {
+                                                        handleFulfilHighTea(req.id);
+                                                    } else if (req.itemCategory === "Timepass") {
+                                                        handleFulfilTimepass(req.id);
+                                                    } else {
+                                                        handleFulfilNormal(req.id, "prepared");
+                                                    }
+                                                }}
+                                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
+                                            >
+                                                <Check size={12} className="stroke-[3px]" />
+                                                Mark Prepared
+                                            </button>
                                         </div>
-                                    ))}
-                                </div>
-                            )
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ) : (
+                        combinedRequests.filter(r => (r.status === "prepared" || r.status === "fulfilled") && matchDate(r.updatedAt || r.createdAt, chefFulfilledDate)).length === 0 ? (
+                            <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-2xl">
+                                <p className="text-slate-400 text-sm font-semibold">No fulfilled orders for this date.</p>
+                            </div>
                         ) : (
-                            timepassRequests.filter(r => r.status === "fulfilled").length === 0 ? (
-                                <p className="text-center py-8 text-slate-400 text-sm">No past Timepass orders.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {timepassRequests.filter(r => r.status === "fulfilled").map((req) => (
-                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5 hover:shadow-sm transition-shadow">
-                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
-                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
-                                                <span className="font-mono">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {combinedRequests.filter(r => (r.status === "prepared" || r.status === "fulfilled") && matchDate(r.updatedAt || r.createdAt, chefFulfilledDate)).map((req) => (
+                                    <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3.5 hover:shadow-sm transition-shadow flex flex-col justify-between">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/60 pb-2.5">
+                                                <span className="text-slate-800 font-extrabold text-sm flex items-center gap-2">
+                                                    {req.villaName}
+                                                    {req.itemCategory === "High Tea" ? (
+                                                        <span className="text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded uppercase">High Tea</span>
+                                                    ) : req.itemCategory === "Timepass" ? (
+                                                        <span className="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.5 rounded uppercase">Timepass</span>
+                                                    ) : (
+                                                        <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded uppercase">Normal</span>
+                                                    )}
+                                                </span>
+                                                <span className="font-mono text-xs">
                                                     {new Date(req.createdAt).toLocaleTimeString("en-IN", {
                                                         hour: "2-digit",
                                                         minute: "2-digit"
                                                     })}
                                                 </span>
                                             </div>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1.5">
                                                 {req.items.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
+                                                    <div key={idx} className="flex justify-between text-xs text-slate-600 font-medium">
                                                         <span>
                                                             {item.name}
                                                             {item.comment && (
-                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
+                                                                <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded ml-1.5 font-bold">
                                                                     ({item.comment})
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
+                                                        <span className="font-mono text-slate-400 font-bold">× {item.quantity}</span>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="flex items-center justify-between gap-2 border-t border-slate-200/40 pt-2 mt-1">
-                                                <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-1">
-                                                    <span className="font-bold flex items-center gap-1">
-                                                        <Check size={10} className="stroke-[3px]" />
-                                                        Fulfilled
-                                                    </span>
-                                                    <span className="text-slate-300">|</span>
-                                                    {req.isBilled ? (
-                                                        <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
-                                                    ) : (
-                                                        <span className="text-slate-400 font-semibold">Unbilled</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Order"
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Order"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )
-                        )}
-                    </div>
-
-                    {/* Normal Requests Card (Fresh Lime Soda / Water) */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Coffee size={20} className="text-emerald-600" />
-                                Normal Menu Orders
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => { setModalMode("create"); setFormCategory("Normal"); setFormVilla(""); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
-                                >
-                                    <Plus size={14} className="stroke-[3px]" />
-                                    New Request
-                                </button>
-                                <button
-                                    onClick={fetchNormalRequests}
-                                    disabled={loadingNormal}
-                                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 uppercase tracking-wider disabled:opacity-50"
-                                >
-                                    <RefreshCw size={12} className={loadingNormal ? "animate-spin" : ""} />
-                                    Refresh
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Tabs for Active / Fulfilled */}
-                        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                            <button
-                                onClick={() => setNormalTab("active")}
-                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                                    normalTab === "active" 
-                                        ? "bg-white text-emerald-700 shadow-sm" 
-                                        : "text-slate-500 hover:text-slate-800"
-                                }`}
-                            >
-                                Active ({normalRequests.filter(r => r.status === "pending" || r.status === "prepared").length})
-                            </button>
-                            <button
-                                onClick={() => setNormalTab("fulfilled")}
-                                className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
-                                    normalTab === "fulfilled" 
-                                        ? "bg-white text-emerald-700 shadow-sm" 
-                                        : "text-slate-500 hover:text-slate-800"
-                                }`}
-                            >
-                                Fulfilled ({normalRequests.filter(r => r.status === "fulfilled").length})
-                            </button>
-                        </div>
-
-                        {loadingNormal ? (
-                            <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
-                                <RefreshCw size={18} className="animate-spin text-emerald-600" />
-                                <span className="text-xs font-semibold">Loading orders...</span>
-                            </div>
-                        ) : normalTab === "active" ? (
-                            normalRequests.filter(r => r.status === "pending" || r.status === "prepared").length === 0 ? (
-                                <p className="text-center py-8 text-slate-400 text-sm">No pending Normal orders.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {normalRequests.filter(r => r.status === "pending" || r.status === "prepared").map((req) => (
-                                        <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3 flex flex-col justify-between hover:shadow-sm transition-shadow">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
-                                                    <div>
-                                                        <h3 className="font-extrabold text-slate-800 text-sm">{req.villaName}</h3>
-                                                        {req.booking ? (
-                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
-                                                        ) : (
-                                                            <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
-                                                        {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit"
-                                                        })}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    {req.items.map((item: any, idx: number) => (
-                                                        <div key={idx} className="flex justify-between text-xs text-slate-700 font-medium">
-                                                            <span>
-                                                                {item.name}
-                                                                {item.comment && (
-                                                                    <span className="text-slate-500 font-normal italic ml-1.5 text-[10px]">
-                                                                        ({item.comment})
-                                                                    </span>
-                                                                )}
-                                                            </span>
-                                                            <span className="font-mono text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100/50">× {item.quantity}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="pt-2 flex justify-between items-center border-t border-slate-200/40 mt-1">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(req)}
-                                                        className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                        title="Edit Order"
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(req.id)}
-                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                        title="Delete Order"
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                                {req.status === "prepared" ? (
-                                                    <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg flex items-center gap-1">
-                                                        <Check size={12} /> Prepared (Ready to serve)
-                                                    </span>
+                                        <div className="flex items-center justify-between gap-2 border-t border-slate-200/50 pt-3 mt-1">
+                                            <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-1">
+                                                <span className="font-bold flex items-center gap-1">
+                                                    <Check size={10} className="stroke-[3px]" />
+                                                    {req.status === "prepared" ? "Prepared" : "Delivered"}
+                                                </span>
+                                                <span className="text-slate-300">|</span>
+                                                {req.isBilled ? (
+                                                    <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">Billed</span>
                                                 ) : (
-                                                    <button
-                                                        onClick={() => handleFulfilNormal(req.id, "prepared")}
-                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
-                                                    >
-                                                        <Check size={12} className="stroke-[3px]" />
-                                                        Mark Prepared
-                                                    </button>
+                                                    <span className="text-slate-400 font-semibold">Unbilled</span>
                                                 )}
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )
-                        ) : (
-                            normalRequests.filter(r => r.status === "fulfilled").length === 0 ? (
-                                <p className="text-center py-8 text-slate-400 text-sm">No past Normal orders.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {normalRequests.filter(r => r.status === "fulfilled").map((req) => (
-                                        <div key={req.id} className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5 hover:shadow-sm transition-shadow">
-                                            <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/50 pb-1.5">
-                                                <span className="text-slate-700 font-bold text-xs">{req.villaName}</span>
-                                                <span className="font-mono">
-                                                    {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    })}
-                                                </span>
-                                            </div>
-                                            <div className="space-y-1">
-                                                {req.items.map((item: any, idx: number) => (
-                                                    <div key={idx} className="flex justify-between text-[11px] text-slate-600 font-medium">
-                                                        <span>
-                                                            {item.name}
-                                                            {item.comment && (
-                                                                <span className="text-[9px] text-amber-600 bg-amber-50 border border-amber-100/50 px-1 py-0.2 rounded ml-1 font-semibold">
-                                                                    ({item.comment})
-                                                                </span>
-                                                            )}
-                                                        </span>
-                                                        <span className="font-mono text-slate-400 font-bold">×{item.quantity}</span>
-                                                    </div>
-                                                ))}
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleOpenEditModal(req)}
+                                                    className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                    title="Edit Order"
+                                                >
+                                                    <Edit size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteRequest(req.id)}
+                                                    className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
+                                                    title="Delete Order"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )
-                        )}
-                    </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    )}
                 </div>
             )}
 

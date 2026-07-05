@@ -276,6 +276,7 @@ model DdBooking {
   updatedAt         DateTime         @updatedAt @map("updated_at")
   payments          BookingPayment[]
   addons            DdBookingAddon[]
+  comments          String?
   coupon            Coupon?          @relation(fields: [couponId], references: [id])
   creator           AdminAccount?    @relation("DdBookingCreator", fields: [createdBy], references: [id])
   package           DdPackage        @relation(fields: [packageId], references: [id])
@@ -354,6 +355,7 @@ model StaycationBooking {
   updatedAt          DateTime         @updatedAt @map("updated_at")
   addons             Json?            @map("addons")
   assignedUnit       String?          @map("assigned_unit") @db.VarChar(50)
+  comments           String?
   payments           BookingPayment[]
   extraGuests        ExtraGuest[]
   guestIds           GuestId[]
@@ -754,5 +756,16 @@ model HospitalityRequest {
 
   @@map("hospitality_requests")
 }
+
+model MealCounter {
+  id        Int    @id @default(autoincrement())
+  date      String @unique
+  breakfast Int    @default(0)
+  lunch     Int    @default(0)
+  dinner    Int    @default(0)
+
+  @@map("meal_counters")
+}
+
 
 

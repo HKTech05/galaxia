@@ -446,6 +446,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
             gstAmount, status, source,
             screenId, packageId, bookingDate, startHour, durationHours,
             occasion, cakeMessage, specialRequests, basePrice, extraPersonCharge,
+            comments,
         } = req.body;
 
         const updateData: any = {};
@@ -469,6 +470,7 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         if (specialRequests !== undefined) updateData.specialRequests = specialRequests || null;
         if (basePrice !== undefined) updateData.basePrice = parseFloat(basePrice) || 0;
         if (extraPersonCharge !== undefined) updateData.extraPersonCharge = parseFloat(extraPersonCharge) || 0;
+        if (comments !== undefined) updateData.comments = comments;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: "No fields to update" });
