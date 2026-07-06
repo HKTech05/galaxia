@@ -115,6 +115,39 @@ export default function ChefPortalPage() {
     const [savingStock, setSavingStock] = useState(false);
     const [editStocks, setEditStocks] = useState<Record<string, string>>({});
 
+    // Jain / Regular Counter states
+    const [counterDate, setCounterDate] = useState<Date>(new Date());
+    const [mealCounts, setMealCounts] = useState<{ jain: number; regular: number }>({ jain: 0, regular: 0 });
+    const [loadingCounts, setLoadingCounts] = useState(false);
+
+    const fetchMealCounts = useCallback(async (targetDate: Date) => {
+        setLoadingCounts(true);
+        try {
+            const year = targetDate.getFullYear();
+            const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+            const day = String(targetDate.getDate()).padStart(2, "0");
+            const dateStr = `${year}-${month}-${day}`;
+            const res = await api.get<any>(`/bookings/staycation/daily-report?date=${dateStr}&property=both`);
+            if (res && res.summary && res.summary.foodPreference) {
+                setMealCounts({
+                    jain: res.summary.foodPreference.jain || 0,
+                    regular: res.summary.foodPreference.regular || 0
+                });
+            } else {
+                setMealCounts({ jain: 0, regular: 0 });
+            }
+        } catch (err) {
+            console.error("Error fetching meal counts for chef portal:", err);
+            setMealCounts({ jain: 0, regular: 0 });
+        } finally {
+            setLoadingCounts(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchMealCounts(counterDate);
+    }, [counterDate, fetchMealCounts]);
+
     useEffect(() => {
         api.get<any[]>("/hospitality/menu").then(data => {
             if (Array.isArray(data)) {
@@ -724,6 +757,46 @@ export default function ChefPortalPage() {
                         </span>
                     </div>
                 </div>
+            </div>
+
+            {/* Jain / Regular Veg Counter Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                            <ChefHat size={18} className="text-purple-600" />
+                            Guest Food Preference Summary
+                        </h2>
+                        <p className="text-xs font-semibold text-slate-400 mt-0.5">Daily Jain & Regular Veg counts based on active bookings</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 mr-1">Select Date:</span>
+                        <CustomDatePicker
+                            date={counterDate}
+                            onDateChange={(d: Date) => { if (d) setCounterDate(d); }}
+                        />
+                    </div>
+                </div>
+
+                {loadingCounts ? (
+                    <div className="flex items-center justify-center py-6 text-slate-400 gap-2">
+                        <RefreshCw size={16} className="animate-spin text-purple-600" />
+                        <span className="text-xs font-bold">Fetching food preference counts...</span>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 text-center">
+                            <span className="text-xs font-bold text-orange-600 uppercase tracking-wider block">Jain Veg</span>
+                            <span className="text-3xl font-black text-orange-700 mt-1 block">{mealCounts.jain}</span>
+                            <span className="text-[10px] text-orange-500 font-semibold mt-0.5 block">Guests</span>
+                        </div>
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider block">Regular Veg</span>
+                            <span className="text-3xl font-black text-emerald-700 mt-1 block">{mealCounts.regular}</span>
+                            <span className="text-[10px] text-emerald-500 font-semibold mt-0.5 block">Guests</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Meal Counters Section */}

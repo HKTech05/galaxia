@@ -4,7 +4,7 @@ import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { sendWhatsAppTemplateMessage } from "../lib/whatsappService";
 import { decrypt } from "../lib/encryption";
 import { sendOrderDeletionNotification } from "../lib/emailService";
-import { generateMenuPDF } from "../lib/pdfService";
+import { generateMenuPDF, generateStockPDF } from "../lib/pdfService";
 import fs from "fs";
 import path from "path";
 
@@ -145,6 +145,20 @@ router.get("/menu/download-pdf", async (req, res) => {
     } catch (err: any) {
         console.error("Error generating menu PDF:", err);
         return res.status(500).json({ error: "Failed to generate menu PDF" });
+    }
+});
+
+// Download Stock PDF route
+router.get("/menu/download-stock-pdf", authMiddleware, async (req, res) => {
+    try {
+        const menuItems = getMenuItems();
+        const pdfBuffer = await generateStockPDF(menuItems);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", 'attachment; filename="Galaxia_Resorts_Stock.pdf"');
+        return res.send(pdfBuffer);
+    } catch (err: any) {
+        console.error("Error generating stock PDF:", err);
+        return res.status(500).json({ error: "Failed to generate stock PDF" });
     }
 });
 

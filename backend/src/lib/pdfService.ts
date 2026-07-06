@@ -918,5 +918,274 @@ export async function generateMenuPDF(menuItems: any[]): Promise<Buffer> {
     });
 }
 
+export async function generateStockPDF(menuItems: any[]): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 40, size: "A4" });
+        const buffers: Buffer[] = [];
+
+        doc.on("data", (chunk) => buffers.push(chunk));
+        doc.on("end", () => resolve(Buffer.concat(buffers)));
+        doc.on("error", (err) => reject(err));
+
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
+        const margin = 40;
+
+        // Border
+        doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+        doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+
+        // Header
+        doc.rect(18, 18, pageWidth - 36, 95).fill(NAVY);
+        doc.fontSize(22).fill(GOLD).font("Helvetica-Bold");
+        doc.text("GALAXIA RESORTS", 0, 32, { align: "center", width: pageWidth, characterSpacing: 2 });
+        doc.fontSize(11).fill("#FFFFFF").font("Helvetica-Bold");
+        doc.text("INVENTORY STOCK LEVEL REPORT", 0, 60, { align: "center", width: pageWidth, characterSpacing: 1.5 });
+        
+        const timestamp = new Date().toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+        doc.fontSize(8).fill("#D0CFCF").font("Helvetica");
+        doc.text(`Generated on: ${timestamp} IST`, 0, 80, { align: "center", width: pageWidth });
+
+        let y = 130;
+
+        // Table Header
+        doc.rect(margin, y, pageWidth - (margin * 2), 24).fill(GOLD);
+        doc.fontSize(9).fill(NAVY).font("Helvetica-Bold");
+        doc.text("ITEM NAME", margin + 15, y + 7);
+        doc.text("CATEGORY", margin + 220, y + 7);
+        doc.text("STOCK LEVEL", pageWidth - margin - 150, y + 7, { width: 130, align: "right" });
+        y += 30;
+
+        // Rows
+        for (const item of menuItems) {
+            if (y > pageHeight - 65) {
+                doc.addPage();
+                doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+                doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+                y = 45;
+            }
+
+            const itemName = item.name || "Unknown Item";
+            const category = item.category || "Normal";
+            const stock = item.stock ?? 0;
+            const stockStr = `${stock} Units`;
+
+            // Draw text
+            doc.fontSize(9).fill(TEXT_DARK).font("Helvetica-Bold");
+            doc.text(itemName, margin + 15, y);
+
+            doc.fontSize(9).fill(TEXT_MED).font("Helvetica");
+            doc.text(category, margin + 220, y);
+
+            // Color-code stock
+            let stockColor = "#0f766e"; // Teal (In Stock)
+            if (stock <= 5) {
+                stockColor = "#be123c"; // Red (Out of Stock)
+            } else if (stock <= 15) {
+                stockColor = "#b45309"; // Amber (Low Stock)
+            }
+
+            doc.fontSize(9).fill(stockColor).font("Helvetica-Bold");
+            doc.text(stockStr, pageWidth - margin - 150, y, { width: 130, align: "right" });
+
+            y += 18;
+            doc.moveTo(margin + 15, y - 4).lineTo(pageWidth - margin - 15, y - 4).lineWidth(0.3).stroke(BORDER);
+            y += 4;
+        }
+
+        doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
+        doc.text("Galaxia Resorts • Inventory Tracking System", 0, y, { align: "center", width: pageWidth });
+
+        doc.end();
+    });
+}
+
+export async function generateAttendanceReportPDF(startDateStr: string, endDateStr: string, staffData: any[]): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 40, size: "A4" });
+        const buffers: Buffer[] = [];
+
+        doc.on("data", (chunk) => buffers.push(chunk));
+        doc.on("end", () => resolve(Buffer.concat(buffers)));
+        doc.on("error", (err) => reject(err));
+
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
+        const margin = 40;
+
+        const isLate = (inTimeVal: Date | string | null, dutyTimeStr: string | null) => {
+            if (!inTimeVal || !dutyTimeStr) return false;
+            const inTime = new Date(inTimeVal);
+            const [dHours, dMinutes] = dutyTimeStr.split(":").map(Number);
+            const local = new Date(inTime.getTime() + (5.5 * 60 * 60 * 1000));
+            const inHours = local.getUTCHours();
+            const inMinutes = local.getUTCMinutes();
+            if (inHours > dHours) return true;
+            if (inHours === dHours && inMinutes > dMinutes) return true;
+            return false;
+        };
+
+        const formatTime = (timeVal: Date | string | null) => {
+            if (!timeVal) return "—";
+            const d = new Date(timeVal);
+            const local = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+            let hours = local.getUTCHours();
+            const minutes = String(local.getUTCMinutes()).padStart(2, "0");
+            const period = hours >= 12 ? "PM" : "AM";
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${hours}:${minutes} ${period}`;
+        };
+
+        const formatShortDate = (dStr: string) => {
+            const parts = dStr.split("-");
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dStr;
+        };
+
+        staffData.forEach((staff, staffIdx) => {
+            if (staffIdx > 0) {
+                doc.addPage();
+            }
+
+            // Border
+            doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+            doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+
+            // Header
+            doc.rect(18, 18, pageWidth - 36, 85).fill(NAVY);
+            doc.fontSize(20).fill(GOLD).font("Helvetica-Bold");
+            doc.text("GALAXIA RESORTS", 0, 32, { align: "center", width: pageWidth, characterSpacing: 2 });
+            doc.fontSize(10).fill("#FFFFFF").font("Helvetica-Bold");
+            doc.text(`STAFF ATTENDANCE & SALARY REPORT`, 0, 56, { align: "center", width: pageWidth, characterSpacing: 1.5 });
+            doc.fontSize(8).fill("#D0CFCF").font("Helvetica");
+            doc.text(`Period: ${formatShortDate(startDateStr)} to ${formatShortDate(endDateStr)}`, 0, 72, { align: "center", width: pageWidth });
+
+            let y = 120;
+
+            // Profile info block
+            doc.fontSize(12).fill(NAVY).font("Helvetica-Bold");
+            doc.text(staff.name.toUpperCase(), margin + 10, y);
+            if (staff.role) {
+                doc.fontSize(9).fill(TEXT_MED).font("Helvetica-Bold");
+                doc.text(staff.role, margin + 10, y + 15);
+            }
+            
+            // Draw configuration details at right
+            doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
+            doc.text(`Monthly Salary: Rs.${(staff.monthlySalary || 0).toLocaleString("en-IN")}`, pageWidth - margin - 220, y, { align: "right", width: 210 });
+            doc.text(`Duty Time: ${staff.dutyTime || "—"}`, pageWidth - margin - 220, y + 10, { align: "right", width: 210 });
+            doc.text(`Allowed Holidays: ${staff.allowedHolidays || 0} days`, pageWidth - margin - 220, y + 20, { align: "right", width: 210 });
+            doc.text(`Absent Reduction: Rs.${(staff.salaryReduction || 0).toLocaleString("en-IN")}/day`, pageWidth - margin - 220, y + 30, { align: "right", width: 210 });
+
+            y += 48;
+
+            // Calculate metrics
+            const attendances = staff.attendances || [];
+            const presentCount = attendances.filter((a: any) => a.status === "present").length;
+            const absentCount = attendances.filter((a: any) => a.status === "absent").length;
+            const lateCount = attendances.filter((a: any) => a.status === "present" && isLate(a.inTime, staff.dutyTime)).length;
+
+            const allowed = staff.allowedHolidays || 0;
+            const excessAbsents = Math.max(0, absentCount - allowed);
+            const reductionAmt = excessAbsents * (staff.salaryReduction || 0);
+            const baseSalary = staff.monthlySalary || 0;
+            const finalSalary = Math.max(0, baseSalary - reductionAmt);
+
+            // Metrics Cards row
+            const cardW = (pageWidth - margin * 2 - 20) / 4;
+            const cardH = 38;
+
+            const drawMetricCard = (x: number, label: string, val: string, color: string, labelColor = TEXT_MED) => {
+                doc.roundedRect(x, y, cardW, cardH, 4).fill("#F8FAFC");
+                doc.roundedRect(x, y, cardW, cardH, 4).lineWidth(0.5).stroke(BORDER);
+                doc.fontSize(7).fillColor(labelColor).font("Helvetica-Bold");
+                doc.text(label.toUpperCase(), x, y + 10, { align: "center", width: cardW });
+                doc.fontSize(12).fillColor(color).font("Helvetica-Bold");
+                doc.text(val, x, y + 22, { align: "center", width: cardW });
+            };
+
+            drawMetricCard(margin, "Days Present", String(presentCount), "#0f766e");
+            drawMetricCard(margin + cardW + 6, "Days Absent", String(absentCount), absentCount > allowed ? "#be123c" : "#b45309");
+            drawMetricCard(margin + (cardW + 6) * 2, "Times Late", String(lateCount), lateCount > 0 ? "#b45309" : "#0f766e");
+            drawMetricCard(margin + (cardW + 6) * 3, "Final Salary", `Rs.${finalSalary.toLocaleString("en-IN")}`, NAVY);
+
+            y += cardH + 20;
+
+            // Attendance list table
+            doc.rect(margin, y, pageWidth - (margin * 2), 20).fill(GOLD);
+            doc.fontSize(8).fill(NAVY).font("Helvetica-Bold");
+            doc.text("DATE", margin + 15, y + 6);
+            doc.text("STATUS", margin + 120, y + 6);
+            doc.text("IN TIME", margin + 220, y + 6);
+            doc.text("OUT TIME", margin + 320, y + 6);
+            doc.text("REMARKS / LATE?", pageWidth - margin - 150, y + 6, { width: 135, align: "right" });
+            y += 24;
+
+            attendances.forEach((att: any) => {
+                if (y > pageHeight - 50) {
+                    doc.addPage();
+                    doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+                    doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+                    y = 45;
+                }
+
+                const dateText = formatShortDate(att.date);
+                const statusText = att.status.toUpperCase();
+                const inTimeText = formatTime(att.inTime);
+                const outTimeText = formatTime(att.outTime);
+                
+                const late = isLate(att.inTime, staff.dutyTime);
+                let remark = "—";
+                if (att.status === "present") {
+                    remark = late ? "Late Checked-In" : "On Time";
+                }
+
+                doc.fontSize(8).fill(TEXT_DARK).font("Helvetica-Bold");
+                doc.text(dateText, margin + 15, y);
+
+                const statusColor = att.status === "present" ? "#0f766e" : "#be123c";
+                doc.fontSize(8).fill(statusColor).font("Helvetica-Bold");
+                doc.text(statusText, margin + 120, y);
+
+                doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
+                doc.text(inTimeText, margin + 220, y);
+                doc.text(outTimeText, margin + 320, y);
+
+                const remarkColor = late ? "#be123c" : TEXT_MED;
+                doc.fontSize(8).fill(remarkColor).font(late ? "Helvetica-Bold" : "Helvetica");
+                doc.text(remark, pageWidth - margin - 150, y, { width: 135, align: "right" });
+
+                y += 16;
+                doc.moveTo(margin + 15, y - 3).lineTo(pageWidth - margin - 15, y - 3).lineWidth(0.2).stroke(BORDER);
+                y += 3;
+            });
+
+            // Footer / Bottom details
+            if (y > pageHeight - 50) {
+                doc.addPage();
+                doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);
+                doc.rect(18, 18, pageWidth - 36, pageHeight - 36).lineWidth(0.5).stroke(NAVY);
+                y = pageHeight - 50;
+            } else {
+                y = Math.max(y, pageHeight - 50);
+            }
+
+            doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
+            doc.text(`Page ${staffIdx + 1} of ${staffData.length} • Galaxia Resorts Attendance System`, 0, y, { align: "center", width: pageWidth });
+        });
+
+        doc.end();
+    });
+}
+
+
+
 
 

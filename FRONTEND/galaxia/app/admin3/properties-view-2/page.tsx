@@ -594,18 +594,37 @@ export default function PropertiesView2Page() {
                                                         <span className="text-xs font-black text-slate-800">₹{(b.advanceAmount || 0).toLocaleString("en-IN")}</span>
                                                         {b.advancePaid && b.advanceMethod && (
                                                             <div className="mt-1">
-                                                                {b.advanceMethod.toLowerCase().includes("upi") ? (
-                                                                    <button
-                                                                        onClick={() => advanceUpiId ? handleViewProof(advanceUpiId) : alert("No proof image uploaded for this advance payment")}
-                                                                        className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                    >
-                                                                        UPI
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
-                                                                        CASH
-                                                                    </span>
-                                                                )}
+                                                                {(() => {
+                                                                    const m = b.advanceMethod.toLowerCase();
+                                                                    if (m.includes("upi")) {
+                                                                        return (
+                                                                            <button
+                                                                                onClick={() => advanceUpiId ? handleViewProof(advanceUpiId) : alert("No proof image uploaded for this advance payment")}
+                                                                                className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                            >
+                                                                                UPI
+                                                                            </button>
+                                                                        );
+                                                                    } else if (m.includes("razorpay") || m.includes("online")) {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                                                                                ONLINE
+                                                                            </span>
+                                                                        );
+                                                                    } else if (m.includes("cash")) {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                                CASH
+                                                                            </span>
+                                                                        );
+                                                                    } else {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                                                                                {b.advanceMethod}
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                })()}
                                                             </div>
                                                         )}
                                                     </div>
@@ -621,18 +640,37 @@ export default function PropertiesView2Page() {
                                                         <span className="text-xs font-black text-slate-800">₹{(b.balanceAmount || 0).toLocaleString("en-IN")}</span>
                                                         {b.balanceCollected && b.balanceMethod && (
                                                             <div className="mt-1">
-                                                                {b.balanceMethod.toLowerCase().includes("upi") || b.balanceMethod.toLowerCase().includes("online") ? (
-                                                                    <button
-                                                                        onClick={() => balanceUpiId ? handleViewProof(balanceUpiId) : alert("No proof image uploaded for this balance payment")}
-                                                                        className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                    >
-                                                                        UPI
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
-                                                                        CASH
-                                                                    </span>
-                                                                )}
+                                                                {(() => {
+                                                                    const m = b.balanceMethod.toLowerCase();
+                                                                    if (m.includes("upi")) {
+                                                                        return (
+                                                                            <button
+                                                                                onClick={() => balanceUpiId ? handleViewProof(balanceUpiId) : alert("No proof image uploaded for this balance payment")}
+                                                                                className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                            >
+                                                                                UPI
+                                                                            </button>
+                                                                        );
+                                                                    } else if (m.includes("razorpay") || m.includes("online")) {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                                                                                ONLINE
+                                                                            </span>
+                                                                        );
+                                                                    } else if (m.includes("cash")) {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                                CASH
+                                                                            </span>
+                                                                        );
+                                                                    } else {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                                                                                {b.balanceMethod}
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                })()}
                                                             </div>
                                                         )}
                                                     </div>
@@ -648,18 +686,37 @@ export default function PropertiesView2Page() {
                                                         <span className="text-xs font-black text-slate-800">₹{(b.securityDeposit || 0).toLocaleString("en-IN")}</span>
                                                         {b.depositCollected && b.depositMethod && (
                                                             <div className="mt-1">
-                                                                {b.depositMethod.toLowerCase().includes("upi") ? (
-                                                                     <button
-                                                                         onClick={() => depositUpiId ? handleViewProof(depositUpiId) : alert("No proof image uploaded for this deposit payment")}
-                                                                         className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                     >
-                                                                         UPI
-                                                                     </button>
-                                                                ) : (
-                                                                    <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
-                                                                        CASH
-                                                                    </span>
-                                                                )}
+                                                                {(() => {
+                                                                    const m = b.depositMethod.toLowerCase();
+                                                                    if (m.includes("upi")) {
+                                                                        return (
+                                                                            <button
+                                                                                onClick={() => depositUpiId ? handleViewProof(depositUpiId) : alert("No proof image uploaded for this deposit payment")}
+                                                                                className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                            >
+                                                                                UPI
+                                                                            </button>
+                                                                        );
+                                                                    } else if (m.includes("razorpay") || m.includes("online")) {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                                                                                ONLINE
+                                                                            </span>
+                                                                        );
+                                                                    } else if (m.includes("cash")) {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                                CASH
+                                                                            </span>
+                                                                        );
+                                                                    } else {
+                                                                        return (
+                                                                            <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                                                                                {b.depositMethod}
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                })()}
                                                             </div>
                                                         )}
                                                     </div>
@@ -676,18 +733,37 @@ export default function PropertiesView2Page() {
                                                             <span className="text-xs font-black text-slate-800">₹{(b.securityDeposit || 0).toLocaleString("en-IN")}</span>
                                                             {b.depositRefundMethod && (
                                                                 <div className="mt-1">
-                                                                    {b.depositRefundMethod.toLowerCase().includes("upi") ? (
-                                                                        <button
-                                                                            onClick={() => refundUpiId ? handleViewProof(refundUpiId) : alert("No proof image uploaded for this refund")}
-                                                                            className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
-                                                                        >
-                                                                            UPI
-                                                                        </button>
-                                                                    ) : (
-                                                                        <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
-                                                                            CASH
-                                                                        </span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const m = b.depositRefundMethod.toLowerCase();
+                                                                        if (m.includes("upi")) {
+                                                                            return (
+                                                                                <button
+                                                                                    onClick={() => refundUpiId ? handleViewProof(refundUpiId) : alert("No proof image uploaded for this refund")}
+                                                                                    className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors uppercase cursor-pointer"
+                                                                                >
+                                                                                    UPI
+                                                                                </button>
+                                                                            );
+                                                                        } else if (m.includes("razorpay") || m.includes("online")) {
+                                                                            return (
+                                                                                <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                                                                                    ONLINE
+                                                                                </span>
+                                                                            );
+                                                                        } else if (m.includes("cash")) {
+                                                                            return (
+                                                                                <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase">
+                                                                                    CASH
+                                                                                </span>
+                                                                            );
+                                                                        } else {
+                                                                            return (
+                                                                                <span className="font-extrabold text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                                                                                    {b.depositRefundMethod}
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                    })()}
                                                                 </div>
                                                             )}
                                                         </div>

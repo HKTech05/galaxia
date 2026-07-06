@@ -26,10 +26,16 @@ interface SecurityStaff {
     role: string | null;
     photoUrl: string | null;
     isActive: boolean;
+    dutyTime: string | null;
+    monthlySalary: number | null;
+    salaryReduction: number | null;
+    allowedHolidays: number | null;
     attendance?: {
         id: number;
         status: "present" | "absent";
         photoUrl: string | null;
+        inTime: string | null;
+        outTime: string | null;
         markedAt: string;
         markedBy: string | null;
     } | null;
@@ -41,10 +47,23 @@ export default function SecurityPage() {
     const [loading, setLoading] = useState(true);
     const [submittingId, setSubmittingId] = useState<number | null>(null);
     const [adminUsername, setAdminUsername] = useState<string>("");
+    const [adminRole, setAdminRole] = useState<string>("");
+
+    // Date pickers for attendance PDF report
+    const [pdfStartDate, setPdfStartDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d.toISOString().split("T")[0];
+    });
+    const [pdfEndDate, setPdfEndDate] = useState(() => {
+        return new Date().toISOString().split("T")[0];
+    });
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
 
     useEffect(() => {
         api.get("/auth/me").then(data => {
             setAdminUsername(data?.username || "");
+            setAdminRole(data?.role || "");
         }).catch(() => {});
     }, []);
 
@@ -66,6 +85,10 @@ export default function SecurityPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newStaffName, setNewStaffName] = useState("");
     const [newStaffRole, setNewStaffRole] = useState("");
+    const [newStaffDutyTime, setNewStaffDutyTime] = useState("09:00");
+    const [newStaffMonthlySalary, setNewStaffMonthlySalary] = useState("");
+    const [newStaffSalaryReduction, setNewStaffSalaryReduction] = useState("");
+    const [newStaffAllowedHolidays, setNewStaffAllowedHolidays] = useState("");
     const [addingStaff, setAddingStaff] = useState(false);
 
     // Delete Modal
@@ -109,11 +132,19 @@ export default function SecurityPage() {
         try {
             await api.post("/security/staff", {
                 name: newStaffName.trim(),
-                role: newStaffRole.trim() || null
+                role: newStaffRole.trim() || null,
+                dutyTime: newStaffDutyTime || null,
+                monthlySalary: newStaffMonthlySalary ? parseInt(newStaffMonthlySalary) : null,
+                salaryReduction: newStaffSalaryReduction ? parseInt(newStaffSalaryReduction) : null,
+                allowedHolidays: newStaffAllowedHolidays ? parseInt(newStaffAllowedHolidays) : null
             });
             setShowAddModal(false);
             setNewStaffName("");
             setNewStaffRole("");
+            setNewStaffDutyTime("09:00");
+            setNewStaffMonthlySalary("");
+            setNewStaffSalaryReduction("");
+            setNewStaffAllowedHolidays("");
             fetchAttendanceData();
         } catch (err: any) {
             alert(err.message || "Failed to add staff member.");
@@ -134,6 +165,58 @@ export default function SecurityPage() {
             alert(err.message || "Failed to delete staff member.");
         } finally {
             setDeleting(false);
+        }
+    };
+
+    const isLateCheckIn = (inTimeStr: string | null | undefined, dutyTimeStr: string | null | undefined) => {
+        if (!inTimeStr || !dutyTimeStr) return false;
+        const inTime = new Date(inTimeStr);
+        const [dHours, dMinutes] = dutyTimeStr.split(":").map(Number);
+        const local = new Date(inTime.getTime() + (5.5 * 60 * 60 * 1000));
+        const inHours = local.getUTCHours();
+        const inMinutes = local.getUTCMinutes();
+        if (inHours > dHours) return true;
+        if (inHours === dHours && inMinutes > dMinutes) return true;
+        return false;
+    };
+
+    const checkoutStaff = async (staff: SecurityStaff) => {
+        setSubmittingId(staff.id);
+        try {
+            await api.post("/security/attendance", {
+                staffId: staff.id,
+                date: dateStr,
+                action: "checkout"
+            });
+            fetchAttendanceData();
+        } catch (err: any) {
+            alert(err.message || "Failed to checkout staff member.");
+        } finally {
+            setSubmittingId(null);
+        }
+    };
+
+    const handleDownloadAttendancePdf = async () => {
+        try {
+            setDownloadingPdf(true);
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/security/attendance/download-pdf?startDate=${pdfStartDate}&endDate=${pdfEndDate}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("Failed to download attendance PDF");
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Staff_Attendance_Report_${pdfStartDate}_to_${pdfEndDate}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            alert(err.message || "Failed to download attendance PDF.");
+        } finally {
+            setDownloadingPdf(false);
         }
     };
 
@@ -278,6 +361,44 @@ export default function SecurityPage() {
                     )}
                 </div>
             </div>
+
+            {/* Owner PDF Export Section */}
+            {(adminRole === "owner" || adminRole === "developer") && (
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-base font-extrabold text-slate-800">Export Attendance &amp; Salary Report</h2>
+                        <p className="text-xs font-semibold text-slate-400 mt-0.5">Select a date range to generate a payroll PDF with calculated holiday reductions.</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-500">From:</span>
+                            <input
+                                type="date"
+                                value={pdfStartDate}
+                                onChange={(e) => setPdfStartDate(e.target.value)}
+                                className="border border-slate-200 bg-slate-50 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-500"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-500">To:</span>
+                            <input
+                                type="date"
+                                value={pdfEndDate}
+                                onChange={(e) => setPdfEndDate(e.target.value)}
+                                className="border border-slate-200 bg-slate-50 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-500"
+                            />
+                        </div>
+                        <button
+                            onClick={handleDownloadAttendancePdf}
+                            disabled={downloadingPdf}
+                            className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                        >
+                            {downloadingPdf && <RefreshCw size={12} className="animate-spin mr-1" />}
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Attendance Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -456,18 +577,35 @@ export default function SecurityPage() {
                                                 </span>
                                             )}
 
-                                            {/* Timestamp */}
-                                            {att?.markedAt ? (
-                                                <p className="text-[10px] font-mono text-slate-400 font-bold flex items-center gap-1 mt-0.5">
-                                                    <Clock size={10} />
-                                                    {new Date(att.markedAt).toLocaleTimeString("en-IN", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    })}
-                                                </p>
-                                            ) : (
-                                                <p className="text-[10px] text-slate-400 font-semibold italic">No record today</p>
-                                            )}
+                                            {/* Duty & Timestamps */}
+                                            <div className="space-y-1 mt-1 text-[10px]">
+                                                {staff.dutyTime && (
+                                                    <p className="text-slate-400 font-bold">Duty: {staff.dutyTime}</p>
+                                                )}
+                                                {att?.inTime && (
+                                                    <div className="flex items-center gap-1 text-slate-500 font-bold">
+                                                        <span>In: {new Date(att.inTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                        {isLateCheckIn(att.inTime, staff.dutyTime) && (
+                                                            <span className="bg-red-50 text-red-600 px-1 py-0.2 rounded text-[8px] font-black border border-red-100 uppercase ml-1">LATE</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {att?.outTime && (
+                                                    <p className="text-slate-500 font-bold">
+                                                        Out: {new Date(att.outTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                                    </p>
+                                                )}
+                                                {att?.status === "present" && !att.outTime && isToday && (
+                                                    <button
+                                                        onClick={() => checkoutStaff(staff)}
+                                                        disabled={isSubmitting}
+                                                        className="mt-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[9px] font-extrabold shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                        {isSubmitting ? <RefreshCw size={9} className="animate-spin" /> : <Clock size={10} />}
+                                                        <span>Out / Checkout</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -657,6 +795,58 @@ export default function SecurityPage() {
                                     value={newStaffRole}
                                     onChange={(e) => setNewStaffRole(e.target.value)}
                                     placeholder="e.g. Security Guard, Supervisor, Housekeeper"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                                    Duty Start Time
+                                </label>
+                                <input
+                                    type="time"
+                                    value={newStaffDutyTime}
+                                    onChange={(e) => setNewStaffDutyTime(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                        Monthly Salary
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={newStaffMonthlySalary}
+                                        onChange={(e) => setNewStaffMonthlySalary(e.target.value)}
+                                        placeholder="e.g. 15000"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                        Allowed Holidays
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={newStaffAllowedHolidays}
+                                        onChange={(e) => setNewStaffAllowedHolidays(e.target.value)}
+                                        placeholder="e.g. 2"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                                    Absent Salary Reduction Per Day
+                                </label>
+                                <input
+                                    type="number"
+                                    value={newStaffSalaryReduction}
+                                    onChange={(e) => setNewStaffSalaryReduction(e.target.value)}
+                                    placeholder="e.g. 500"
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
                                 />
                             </div>

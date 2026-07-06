@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
-import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
+import { generateAttendanceReportPDF } from "../lib/pdfService";
 
 const router = Router();
 
@@ -45,7 +46,7 @@ router.get("/staff", authMiddleware, async (req: AuthRequest, res) => {
 // POST /api/security/staff — Create new staff member
 router.post("/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { name, role } = req.body;
+        const { name, role, dutyTime, monthlySalary, salaryReduction, allowedHolidays } = req.body;
         if (!name || typeof name !== "string" || !name.trim()) {
             return res.status(400).json({ error: "Staff name is required" });
         }
@@ -54,6 +55,10 @@ router.post("/staff", authMiddleware, async (req: AuthRequest, res) => {
             data: {
                 name: name.trim(),
                 role: role ? String(role).trim() : null,
+                dutyTime: dutyTime ? String(dutyTime).trim() : null,
+                monthlySalary: monthlySalary ? parseInt(monthlySalary) : null,
+                salaryReduction: salaryReduction ? parseInt(salaryReduction) : null,
+                allowedHolidays: allowedHolidays ? parseInt(allowedHolidays) : null,
                 isActive: true
             }
         });
@@ -112,6 +117,10 @@ router.get("/attendance", authMiddleware, async (req: AuthRequest, res) => {
                     id: att.id,
                     status: att.status,
                     photoUrl: att.photoUrl,
+                    inTime: att.inTime,
+                    outTime: att.outTime,
+                    inTimeMarkedBy: att.inTimeMarkedBy,
+                    outTimeMarkedBy: att.outTimeMarkedBy,
                     markedAt: att.markedAt,
                     markedBy: att.markedBy
                 } : null
@@ -131,7 +140,7 @@ router.get("/attendance", authMiddleware, async (req: AuthRequest, res) => {
 // POST /api/security/attendance — Mark or overwrite attendance for a staff member
 router.post("/attendance", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { staffId, date, status, photoUrl } = req.body;
+        const { staffId, date, status, photoUrl, action } = req.body;
         const sId = parseInt(staffId);
         const dateStr = date || getLocalDateStr();
 
@@ -147,10 +156,6 @@ router.post("/attendance", authMiddleware, async (req: AuthRequest, res) => {
             return res.status(400).json({ error: "Invalid staff ID" });
         }
 
-        if (!status || !["present", "absent"].includes(status)) {
-            return res.status(400).json({ error: "Status must be 'present' or 'absent'" });
-        }
-
         const staffMember = await prisma.securityStaff.findUnique({
             where: { id: sId }
         });
@@ -160,33 +165,129 @@ router.post("/attendance", authMiddleware, async (req: AuthRequest, res) => {
 
         const markedBy = req.admin?.username || req.admin?.role || "supervisor";
 
-        const record = await prisma.staffAttendance.upsert({
-            where: {
-                date_staffId: {
-                    date: dateStr,
-                    staffId: sId
+        let record;
+        if (action === "checkout") {
+            const existing = await prisma.staffAttendance.findUnique({
+                where: {
+                    date_staffId: {
+                        date: dateStr,
+                        staffId: sId
+                    }
                 }
-            },
-            update: {
-                status,
-                photoUrl: photoUrl !== undefined ? photoUrl : undefined,
-                markedAt: new Date(),
-                markedBy
-            },
-            create: {
-                date: dateStr,
-                staffId: sId,
-                status,
-                photoUrl: photoUrl || null,
-                markedAt: new Date(),
-                markedBy
+            });
+            if (!existing || existing.status !== "present") {
+                return res.status(400).json({ error: "Staff member must be marked present before checking out." });
             }
-        });
+            record = await prisma.staffAttendance.update({
+                where: {
+                    date_staffId: {
+                        date: dateStr,
+                        staffId: sId
+                    }
+                },
+                data: {
+                    outTime: new Date(),
+                    outTimeMarkedBy: markedBy
+                }
+            });
+        } else {
+            if (!status || !["present", "absent"].includes(status)) {
+                return res.status(400).json({ error: "Status must be 'present' or 'absent'" });
+            }
+
+            const existing = await prisma.staffAttendance.findUnique({
+                where: {
+                    date_staffId: {
+                        date: dateStr,
+                        staffId: sId
+                    }
+                }
+            });
+
+            const inTimeVal = status === "present" ? (existing?.inTime || new Date()) : null;
+            const inTimeMarkedByVal = status === "present" ? (existing?.inTimeMarkedBy || markedBy) : null;
+            const outTimeVal = status === "present" ? existing?.outTime : null;
+            const outTimeMarkedByVal = status === "present" ? existing?.outTimeMarkedBy : null;
+
+            record = await prisma.staffAttendance.upsert({
+                where: {
+                    date_staffId: {
+                        date: dateStr,
+                        staffId: sId
+                    }
+                },
+                update: {
+                    status,
+                    photoUrl: photoUrl !== undefined ? photoUrl : undefined,
+                    inTime: inTimeVal,
+                    inTimeMarkedBy: inTimeMarkedByVal,
+                    outTime: outTimeVal,
+                    outTimeMarkedBy: outTimeMarkedByVal,
+                    markedAt: new Date(),
+                    markedBy
+                },
+                create: {
+                    date: dateStr,
+                    staffId: sId,
+                    status,
+                    photoUrl: photoUrl || null,
+                    inTime: inTimeVal,
+                    inTimeMarkedBy: inTimeMarkedByVal,
+                    markedAt: new Date(),
+                    markedBy
+                }
+            });
+        }
 
         return res.json({ success: true, attendance: record });
     } catch (err: any) {
         console.error("Error in POST /api/security/attendance:", err);
         return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// GET /api/security/attendance/download-pdf — Owner/Dev only: download PDF attendance report
+router.get("/attendance/download-pdf", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        const staffList = await prisma.securityStaff.findMany({
+            where: { isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+
+        const staffIds = staffList.map(s => s.id);
+
+        const attendances = await prisma.staffAttendance.findMany({
+            where: {
+                staffId: { in: staffIds },
+                date: {
+                    gte: String(startDate),
+                    lte: String(endDate)
+                }
+            },
+            orderBy: { date: "asc" }
+        });
+
+        const staffData = staffList.map(s => {
+            const atts = attendances.filter(a => a.staffId === s.id);
+            return {
+                ...s,
+                attendances: atts
+            };
+        });
+
+        const pdfBuffer = await generateAttendanceReportPDF(String(startDate), String(endDate), staffData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="Staff_Attendance_Report_${startDate}_to_${endDate}.pdf"`);
+        return res.send(pdfBuffer);
+    } catch (err: any) {
+        console.error("Error generating attendance PDF:", err);
+        return res.status(500).json({ error: "Failed to generate attendance report PDF" });
     }
 });
 

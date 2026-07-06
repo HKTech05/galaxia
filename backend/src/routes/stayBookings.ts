@@ -453,19 +453,36 @@ router.get("/", authMiddleware, async (req: AuthRequest, res) => {
             orderBy: { checkInDate: "desc" },
         });
 
+        // Fetch upi payments for these bookings
+        const refs = bookings.map(b => b.bookingRef).filter(Boolean);
+        const upiPayments = await prisma.upiPayment.findMany({
+            where: { bookingRef: { in: refs } }
+        });
+
         // Decrypt sensitive fields for admin view
-        const decrypted = bookings.map(b => ({
-            ...b,
-            customerPhone: decrypt(b.customerPhone),
-            customerEmail: b.customerEmail ? decrypt(b.customerEmail) : null,
-            guestIds: (b.guestIds || []).map((g: any) => ({
-                id: g.id,
-                fileName: g.fileName ? decrypt(g.fileName) : null,
-                fileType: g.fileType,
-                bookingId: g.bookingId,
-                createdAt: g.createdAt,
-            })),
-        }));
+        const decrypted = bookings.map(b => {
+            const bookingUpiPayments = upiPayments.filter(upi => upi.bookingRef === b.bookingRef);
+            return {
+                ...b,
+                customerPhone: decrypt(b.customerPhone),
+                customerEmail: b.customerEmail ? decrypt(b.customerEmail) : null,
+                guestIds: (b.guestIds || []).map((g: any) => ({
+                    id: g.id,
+                    fileName: g.fileName ? decrypt(g.fileName) : null,
+                    fileType: g.fileType,
+                    bookingId: g.bookingId,
+                    createdAt: g.createdAt,
+                })),
+                upiPayments: bookingUpiPayments.map(upi => ({
+                    id: upi.id,
+                    paymentType: upi.paymentType,
+                    proofImageUrl: upi.proofImageUrl,
+                    proofImageKey: upi.proofImageKey,
+                    amount: upi.amount,
+                    createdAt: upi.createdAt
+                }))
+            };
+        });
 
         return res.json(decrypted);
     } catch (error: any) {

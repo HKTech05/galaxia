@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare } from "lucide-react";
+import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare, Image as ImageIcon, FileText } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
 import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
@@ -115,6 +115,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     depositRefunded: b.depositRefunded || false,
                     depositRefundMethod: b.depositRefundMethod || null,
                     depositRefundedAt: b.depositRefundedAt || null,
+                    depositMethod: b.depositMethod || null,
+                    balanceMethod: b.balanceMethod || null,
+                    depositCollected: b.depositCollected || false,
+                    balanceCollected: b.balanceCollected || false,
+                    upiPayments: b.upiPayments || [],
                     foodBills: b.foodBills || [],
                     extraGuestCharge: (b.extraGuests || []).reduce((sum: number, eg: any) => sum + (eg.chargeAmount || 0), 0),
                     extraGuestPayment: (b.extraGuests || []).map((eg: any) => eg.paymentMethod).filter(Boolean).join(", ") || "UPI",
@@ -137,6 +142,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [modalType, setModalType] = useState<"checkin" | "checkout">("checkin");
     const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
+    const [previewPaymentProof, setPreviewPaymentProof] = useState<any | null>(null);
 
     // Payment collection states
     const [collected20, setCollected20] = useState<string | null>(null);
@@ -782,55 +788,79 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     )}
                                 </div>
 
-                                <div className="mt-6 pt-6 border-t border-slate-100">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Camera size={14} /> ID Proofs</h4>
-                                        <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors">
-                                            <Upload size={12} /> Upload
-                                            <input
-                                                type="file"
-                                                accept="image/*,.pdf"
-                                                className="hidden"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-                                                    try {
-                                                        const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
-                                                        const formData = new FormData();
-                                                        formData.append("file", file);
-                                                        formData.append("bookingId", String(booking.rawId));
-                                                        const res = await fetch("/api/uploads/guest-id", {
-                                                            method: "POST",
-                                                            headers: { Authorization: `Bearer ${token}` },
-                                                            body: formData,
-                                                        });
-                                                        if (res.ok) {
-                                                            alert("ID uploaded!");
-                                                            fetchBookings();
-                                                        } else {
-                                                            alert("Upload failed");
-                                                        }
-                                                    } catch { alert("Upload failed"); }
-                                                    e.target.value = "";
-                                                }}
-                                            />
-                                        </label>
+                                <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><Camera size={14} /> ID Proofs</h4>
+                                            <label className="cursor-pointer text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md flex items-center gap-1 transition-colors">
+                                                <Upload size={10} /> Upload
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+                                                        try {
+                                                            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                                                            const formData = new FormData();
+                                                            formData.append("file", file);
+                                                            formData.append("bookingId", String(booking.rawId));
+                                                            const res = await fetch("/api/uploads/guest-id", {
+                                                                method: "POST",
+                                                                headers: { Authorization: `Bearer ${token}` },
+                                                                body: formData,
+                                                            });
+                                                            if (res.ok) {
+                                                                alert("ID uploaded!");
+                                                                fetchBookings();
+                                                            } else {
+                                                                alert("Upload failed");
+                                                            }
+                                                        } catch { alert("Upload failed"); }
+                                                        e.target.value = "";
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {booking.guestIds && booking.guestIds.length > 0 ? (
+                                                booking.guestIds.map((gid: any) => (
+                                                    <button
+                                                        key={gid.id}
+                                                        onClick={() => setPreviewGuestId(gid)}
+                                                        className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                                                    >
+                                                        <CheckCircle2 size={14} />
+                                                        <span className="truncate max-w-[120px]">{gid.fileName || `ID-${gid.id}`}</span>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-slate-400 font-medium py-2">No IDs uploaded yet</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {booking.guestIds && booking.guestIds.length > 0 ? (
-                                            booking.guestIds.map((gid: any) => (
-                                                <button
-                                                    key={gid.id}
-                                                    onClick={() => setPreviewGuestId(gid)}
-                                                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
-                                                >
-                                                    <CheckCircle2 size={14} />
-                                                    <span className="truncate max-w-[120px]">{gid.fileName || `ID-${gid.id}`}</span>
-                                                </button>
-                                            ))
-                                        ) : (
-                                            <span className="text-xs text-slate-400 font-medium py-2">No IDs uploaded yet</span>
-                                        )}
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><ImageIcon size={14} className="text-indigo-600" /> UPI Proofs</h4>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {booking.upiPayments && booking.upiPayments.length > 0 ? (
+                                                booking.upiPayments.map((upi: any) => (
+                                                    <button
+                                                        key={upi.id}
+                                                        onClick={() => setPreviewPaymentProof(upi)}
+                                                        className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 text-xs font-bold transition-colors cursor-pointer"
+                                                    >
+                                                        <ImageIcon size={14} />
+                                                        <span className="truncate max-w-[150px]">{upi.paymentType.toUpperCase()} - ₹{upi.amount}</span>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-slate-400 font-medium py-2">No UPI proofs found</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1313,6 +1343,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <span className="text-sm font-bold text-indigo-800">Refund Security Deposit</span>
                                             <span className="text-lg font-black text-indigo-700">{selectedBooking.depositAmt}</span>
                                         </div>
+                                        {selectedBooking.depositMethod && (
+                                            <div className="mt-2 text-[10px] text-indigo-900 font-bold flex items-center gap-1.5 uppercase border-t border-indigo-200/40 pt-1.5">
+                                                <span>Collected in:</span>
+                                                <span className={`px-1.5 py-0.5 rounded font-extrabold ${
+                                                    selectedBooking.depositMethod.toLowerCase().includes("cash")
+                                                        ? "bg-emerald-100 text-emerald-800"
+                                                        : "bg-indigo-100 text-indigo-800"
+                                                }`}>
+                                                    {selectedBooking.depositMethod}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-3">
@@ -1577,6 +1619,55 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         fetchBookings();
                     }}
                 />
+            )}
+
+            {previewPaymentProof && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
+                            <div>
+                                <h3 className="font-extrabold text-slate-800 text-base uppercase tracking-wide">
+                                    UPI Payment Proof Preview
+                                </h3>
+                                <p className="text-[11px] font-bold text-indigo-600 mt-0.5 uppercase">
+                                    {previewPaymentProof.paymentType} Payment • ₹{previewPaymentProof.amount}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setPreviewPaymentProof(null)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 flex flex-col items-center justify-center bg-slate-50 min-h-[300px]">
+                            {previewPaymentProof.proofImageUrl ? (
+                                <img
+                                    src={`/api/upi-payments/image/${previewPaymentProof.id}`}
+                                    alt="UPI Payment Proof"
+                                    className="max-h-[450px] max-w-full rounded-2xl shadow-md border border-slate-200 object-contain"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "";
+                                        alert("Failed to load payment proof image.");
+                                    }}
+                                />
+                            ) : (
+                                <div className="text-center text-slate-400 font-bold space-y-2">
+                                    <FileText size={48} className="mx-auto text-slate-300 animate-pulse" />
+                                    <p className="text-xs">No preview available for this payment</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-white flex justify-end gap-2">
+                            <button
+                                onClick={() => setPreviewPaymentProof(null)}
+                                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                            >
+                                Close Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Food Bill Modal */}

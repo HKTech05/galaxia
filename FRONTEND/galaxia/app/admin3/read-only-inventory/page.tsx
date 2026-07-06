@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, RefreshCw, Eye } from "lucide-react";
+import { Package, RefreshCw, Eye, Download } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface MenuItem {
@@ -17,6 +17,7 @@ interface MenuItem {
 export default function ReadOnlyInventoryPage() {
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [error, setError] = useState("");
 
     const fetchMenu = async () => {
@@ -33,11 +34,34 @@ export default function ReadOnlyInventoryPage() {
         }
     };
 
+    const handleDownloadPdf = async () => {
+        try {
+            setDownloadingPdf(true);
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch("/api/hospitality/menu/download-stock-pdf", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("Failed to download stock PDF");
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Galaxia_Resorts_Stock.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            alert(err.message || "Failed to download stock PDF.");
+        } finally {
+            setDownloadingPdf(false);
+        }
+    };
+
     useEffect(() => {
         fetchMenu();
     }, []);
 
-    // Filter categories
     const categories: MenuItem["category"][] = ["Normal", "High Tea", "Timepass"];
 
     return (
@@ -56,14 +80,24 @@ export default function ReadOnlyInventoryPage() {
                         </p>
                     </div>
                 </div>
-                <button
-                    onClick={fetchMenu}
-                    disabled={loading}
-                    className="flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold px-5 py-3 rounded-2xl border border-slate-200 transition-all duration-200 text-sm disabled:opacity-50"
-                >
-                    <RefreshCw size={16} className={loading ? "animate-spin text-purple-600" : ""} />
-                    Refresh Stock
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleDownloadPdf}
+                        disabled={downloadingPdf}
+                        className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-2xl transition-all duration-200 text-sm disabled:opacity-50 shadow-xs cursor-pointer"
+                    >
+                        <Download size={16} className={downloadingPdf ? "animate-bounce" : ""} />
+                        Download PDF
+                    </button>
+                    <button
+                        onClick={fetchMenu}
+                        disabled={loading}
+                        className="flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold px-5 py-3 rounded-2xl border border-slate-200 transition-all duration-200 text-sm disabled:opacity-50 cursor-pointer"
+                    >
+                        <RefreshCw size={16} className={loading ? "animate-spin text-purple-600" : ""} />
+                        Refresh Stock
+                    </button>
+                </div>
             </div>
 
             {error && (

@@ -336,7 +336,7 @@ export default function InventoryPage() {
                         ) : (
                             <div className="space-y-8">
                                 {categories.map(cat => {
-                                    const catItems = menuItems.filter(item => item.category === cat);
+                                    const catItems = menuItems.filter(item => item.category === cat && item.tracked);
                                     if (catItems.length === 0) return null;
                                     return (
                                         <div key={cat} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
