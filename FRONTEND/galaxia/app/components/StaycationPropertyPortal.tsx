@@ -143,6 +143,41 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [modalType, setModalType] = useState<"checkin" | "checkout">("checkin");
     const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
     const [previewPaymentProof, setPreviewPaymentProof] = useState<any | null>(null);
+    const [previewPaymentProofUrl, setPreviewPaymentProofUrl] = useState<string | null>(null);
+    const [previewPaymentProofLoading, setPreviewPaymentProofLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (!previewPaymentProof) {
+            setPreviewPaymentProofUrl(null);
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            setPreviewPaymentProofLoading(true);
+            try {
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                const res = await fetch(`/api/upi-payments/image/${previewPaymentProof.id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (cancelled) return;
+                if (!res.ok) {
+                    throw new Error("Failed to load");
+                }
+                const blob = await res.blob();
+                if (cancelled) return;
+                setPreviewPaymentProofUrl(URL.createObjectURL(blob));
+            } catch (err) {
+                console.error("Error loading payment proof:", err);
+            } finally {
+                if (!cancelled) setPreviewPaymentProofLoading(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [previewPaymentProof]);
 
     // Payment collection states
     const [collected20, setCollected20] = useState<string | null>(null);
@@ -1641,9 +1676,14 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             </button>
                         </div>
                         <div className="p-6 flex flex-col items-center justify-center bg-slate-50 min-h-[300px]">
-                            {previewPaymentProof.proofImageUrl ? (
+                            {previewPaymentProofLoading ? (
+                                <div className="text-center text-slate-400 font-bold space-y-2 flex flex-col items-center">
+                                    <Loader2 size={36} className="text-indigo-600 animate-spin" />
+                                    <p className="text-xs">Loading image securely...</p>
+                                </div>
+                            ) : previewPaymentProofUrl ? (
                                 <img
-                                    src={`/api/upi-payments/image/${previewPaymentProof.id}`}
+                                    src={previewPaymentProofUrl}
                                     alt="UPI Payment Proof"
                                     className="max-h-[450px] max-w-full rounded-2xl shadow-md border border-slate-200 object-contain"
                                     onError={(e) => {
