@@ -97,32 +97,36 @@ function calculateSplitBalances(logs: CashLog[], dbCashCollected: number) {
         if (isExplicitSecOwnerPickup(log)) {
             secPending -= Math.abs(amt);
             lastSecPickupTime = formattedDate;
-        } else if (isExplicitRentOwnerPickup(log)) {
-            rentPending -= Math.abs(amt);
-            lastRentPickupTime = formattedDate;
-        } else if (isGenericOwnerPickup(log)) {
-            let pAmt = Math.abs(amt);
-            if (rentPending > 0) {
-                const tookRent = Math.min(rentPending, pAmt);
-                rentPending -= tookRent;
-                pAmt -= tookRent;
-                lastRentPickupTime = formattedDate;
-            }
-            if (pAmt > 0) {
-                secPending -= pAmt;
-                lastSecPickupTime = formattedDate;
-            }
         } else if (isSecDepositTx(log)) {
             if (amt > 0 && type !== 'refund') {
                 secPending += amt;
             } else {
                 secPending -= Math.abs(amt);
             }
-        } else if (isRentTx(log)) {
-            if (amt > 0 && type !== 'expense') {
-                rentPending += amt;
-            } else {
+        } else {
+            // All non-deposit transactions belong to Rent / Other category
+            if (isExplicitRentOwnerPickup(log)) {
                 rentPending -= Math.abs(amt);
+                lastRentPickupTime = formattedDate;
+            } else if (isGenericOwnerPickup(log)) {
+                let pAmt = Math.abs(amt);
+                if (rentPending > 0) {
+                    const tookRent = Math.min(rentPending, pAmt);
+                    rentPending -= tookRent;
+                    pAmt -= tookRent;
+                    lastRentPickupTime = formattedDate;
+                }
+                if (pAmt > 0) {
+                    secPending -= pAmt;
+                    lastSecPickupTime = formattedDate;
+                }
+            } else {
+                // Rent/general collection or expense
+                if (amt > 0 && type !== 'expense') {
+                    rentPending += amt;
+                } else {
+                    rentPending -= Math.abs(amt);
+                }
             }
         }
 
@@ -302,7 +306,8 @@ export default function EmployeesClient() {
         if (card.cardType === 'security_deposit') {
             cardLogs = logs.filter(l => isSecDepositTx(l) || isExplicitSecOwnerPickup(l));
         } else if (card.cardType === 'rent') {
-            cardLogs = logs.filter(l => isRentTx(l) || isExplicitRentOwnerPickup(l));
+            // Rent card shows every single transaction that is NOT a security deposit transaction
+            cardLogs = logs.filter(l => !isSecDepositTx(l) && !isExplicitSecOwnerPickup(l));
         }
         setActiveCardLogs(cardLogs);
     };
