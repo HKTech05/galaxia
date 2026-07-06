@@ -472,6 +472,7 @@ export default function InventoryPage() {
                                                     onChange={e => setEditNames(prev => ({ ...prev, [item.id]: e.target.value }))}
                                                     className="text-sm font-extrabold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-purple-500 focus:outline-none w-full transition-colors pb-0.5"
                                                     placeholder="Item Name"
+                                                    onBlur={handleSave}
                                                 />
                                             </div>
 
@@ -483,6 +484,7 @@ export default function InventoryPage() {
                                                     min="0"
                                                     value={editPrices[item.id] || String(item.price)}
                                                     onChange={e => setEditPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                    onBlur={handleSave}
                                                     className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
                                                 />
                                             </div>

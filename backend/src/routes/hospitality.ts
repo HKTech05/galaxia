@@ -86,25 +86,6 @@ export function getMenuItems() {
         items = JSON.parse(JSON.stringify(DEFAULT_MENU_ITEMS));
     }
 
-    // Self-healing merge to guarantee the 5 restored items are always present
-    let modified = false;
-    for (const defaultItem of DEFAULT_MENU_ITEMS) {
-        const exists = items.some((item: any) => item.id === defaultItem.id);
-        if (!exists) {
-            items.push(defaultItem);
-            modified = true;
-        }
-    }
-
-    if (modified) {
-        try {
-            fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
-            console.log("[Self-Healing] Merged missing default items into menu_items.json");
-        } catch (err) {
-            console.error("Failed to write merged menu items:", err);
-        }
-    }
-
     return items;
 }
 

@@ -318,8 +318,9 @@ router.post("/", async (req, res) => {
                 });
             }
 
+            const isManual = source === "admin" || source === "collab" || req.body.isAdminBooking === true || created.isAdminBooking === true;
             // Track cash collection for employee if advance is paid in cash (reception/portal bookings only)
-            if (advancePaid && advanceMethod?.toLowerCase() === "cash" && (advanceAmount || 0) > 0 && source === "reception") {
+            if (advancePaid && advanceMethod?.toLowerCase() === "cash" && (advanceAmount || 0) > 0 && source === "reception" && !isManual) {
                 const employee = await tx.employee.findFirst({
                     where: { propertyId: parsedPropertyId, isActive: true },
                 });

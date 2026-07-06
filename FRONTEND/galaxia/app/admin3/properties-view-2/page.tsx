@@ -638,11 +638,11 @@ export default function PropertiesView2Page() {
                                                 {b ? (
                                                     <div className="flex flex-col items-end">
                                                         <span className="text-xs font-black text-slate-800">₹{(b.balanceAmount || 0).toLocaleString("en-IN")}</span>
-                                                        {b.balanceCollected && b.balanceMethod && (
+                                                        {((b.balanceCollected && b.balanceMethod) || balanceUpiId) && (
                                                             <div className="mt-1">
                                                                 {(() => {
-                                                                    const m = b.balanceMethod.toLowerCase();
-                                                                    if (m.includes("upi")) {
+                                                                    const m = b.balanceMethod ? b.balanceMethod.toLowerCase() : "";
+                                                                    if (m.includes("upi") || balanceUpiId) {
                                                                         return (
                                                                             <button
                                                                                 onClick={() => balanceUpiId ? handleViewProof(balanceUpiId) : alert("No proof image uploaded for this balance payment")}
@@ -684,11 +684,11 @@ export default function PropertiesView2Page() {
                                                 {b ? (
                                                     <div className="flex flex-col items-end">
                                                         <span className="text-xs font-black text-slate-800">₹{(b.securityDeposit || 0).toLocaleString("en-IN")}</span>
-                                                        {b.depositCollected && b.depositMethod && (
+                                                        {((b.depositCollected && b.depositMethod) || depositUpiId) && (
                                                             <div className="mt-1">
                                                                 {(() => {
-                                                                    const m = b.depositMethod.toLowerCase();
-                                                                    if (m.includes("upi")) {
+                                                                    const m = b.depositMethod ? b.depositMethod.toLowerCase() : "";
+                                                                    if (m.includes("upi") || depositUpiId) {
                                                                         return (
                                                                             <button
                                                                                 onClick={() => depositUpiId ? handleViewProof(depositUpiId) : alert("No proof image uploaded for this deposit payment")}
