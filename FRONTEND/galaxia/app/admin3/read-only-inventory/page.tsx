@@ -19,6 +19,7 @@ export default function ReadOnlyInventoryPage() {
     const [loading, setLoading] = useState(true);
     const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [error, setError] = useState("");
+    const [adminUsername, setAdminUsername] = useState<string>("");
 
     const fetchMenu = async () => {
         setLoading(true);
@@ -60,6 +61,9 @@ export default function ReadOnlyInventoryPage() {
 
     useEffect(() => {
         fetchMenu();
+        api.get("/auth/me").then(data => {
+            setAdminUsername(data?.username || "");
+        }).catch(() => {});
     }, []);
 
     const categories: MenuItem["category"][] = ["Normal", "High Tea", "Timepass"];
@@ -89,14 +93,16 @@ export default function ReadOnlyInventoryPage() {
                         <Download size={16} className={downloadingPdf ? "animate-bounce" : ""} />
                         Download PDF
                     </button>
-                    <button
-                        onClick={fetchMenu}
-                        disabled={loading}
-                        className="flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold px-5 py-3 rounded-2xl border border-slate-200 transition-all duration-200 text-sm disabled:opacity-50 cursor-pointer"
-                    >
-                        <RefreshCw size={16} className={loading ? "animate-spin text-purple-600" : ""} />
-                        Refresh Stock
-                    </button>
+                    {adminUsername !== "ranjit" && adminUsername !== "devidas" && (
+                        <button
+                            onClick={fetchMenu}
+                            disabled={loading}
+                            className="flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold px-5 py-3 rounded-2xl border border-slate-200 transition-all duration-200 text-sm disabled:opacity-50 cursor-pointer"
+                        >
+                            <RefreshCw size={16} className={loading ? "animate-spin text-purple-600" : ""} />
+                            Refresh Stock
+                        </button>
+                    )}
                 </div>
             </div>
 
