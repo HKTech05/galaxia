@@ -989,60 +989,187 @@ export default function HousekeepingPortalPage() {
                         No guest allotments for this day.
                     </p>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <th className="py-2.5 px-3">Villa / Cottage</th>
-                                    <th className="py-2.5 px-3">Guest Name & Ref</th>
-                                    <th className="py-2.5 px-3">Stay Dates</th>
-                                    <th className="py-2.5 px-3 text-center">Breakfast</th>
-                                    <th className="py-2.5 px-3 text-center">Lunch</th>
-                                    <th className="py-2.5 px-3 text-center">Dinner</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 text-xs">
-                                {allocations.map((alloc) => {
-                                    const unitName = alloc.villaName || alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
-                                    const isEditing = editingAllocationId === alloc.bookingId;
+                    <>
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <th className="py-2.5 px-3">Villa / Cottage</th>
+                                        <th className="py-2.5 px-3">Guest Name & Ref</th>
+                                        <th className="py-2.5 px-3">Stay Dates</th>
+                                        <th className="py-2.5 px-3 text-center">Breakfast</th>
+                                        <th className="py-2.5 px-3 text-center">Lunch</th>
+                                        <th className="py-2.5 px-3 text-center">Dinner</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 text-xs">
+                                    {allocations.map((alloc) => {
+                                        const unitName = alloc.villaName || alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
+                                        const isEditing = editingAllocationId === alloc.bookingId;
 
-                                    const renderMealCounterCell = (mealKey: "breakfast" | "lunch" | "dinner") => {
-                                        const mealBooking = mealCounter?.bookings?.find(mb => mb.bookingId === alloc.bookingId);
-                                        if (!mealBooking) {
-                                            return <span className="text-[10px] text-slate-400 font-semibold italic">Not Checked-In</span>;
-                                        }
-                                        const count = (mealBooking as any)[mealKey] || 0;
-                                        const maxGuests = mealBooking.numGuests || alloc.numGuests || 2;
+                                        const renderMealCounterCell = (mealKey: "breakfast" | "lunch" | "dinner") => {
+                                            const mealBooking = mealCounter?.bookings?.find(mb => mb.bookingId === alloc.bookingId);
+                                            if (!mealBooking) {
+                                                return <span className="text-[10px] text-slate-400 font-semibold italic">Not Checked-In</span>;
+                                            }
+                                            const count = (mealBooking as any)[mealKey] || 0;
+                                            const maxGuests = mealBooking.numGuests || alloc.numGuests || 2;
+                                            return (
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <button
+                                                        onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, -1)}
+                                                        className="w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] cursor-pointer"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="font-black text-[11px] min-w-[28px] text-center">
+                                                        {count} / {maxGuests}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, 1)}
+                                                        className="w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] cursor-pointer"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            );
+                                        };
+
                                         return (
-                                            <div className="flex items-center justify-center gap-1.5">
+                                            <tr key={alloc.bookingId} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="py-3 px-3 font-bold text-slate-800">
+                                                    {isEditing ? (
+                                                        <div className="flex items-center gap-1.5 w-full min-w-[160px]">
+                                                            <select
+                                                                value={editAllocationUnit}
+                                                                onChange={(e) => setEditAllocationUnit(e.target.value)}
+                                                                className="bg-white border border-blue-300 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 flex-1"
+                                                            >
+                                                                {VILLAS_LIST.map((villa) => (
+                                                                    <option key={villa.value} value={villa.value}>
+                                                                        {villa.name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <button
+                                                                onClick={() => handleEditAllocation(alloc.bookingId)}
+                                                                disabled={editAllocationSubmitting}
+                                                                className="p-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded transition-colors shrink-0 cursor-pointer"
+                                                                title="Save & Notify"
+                                                            >
+                                                                {editAllocationSubmitting ? (
+                                                                    <RefreshCw size={12} className="animate-spin" />
+                                                                ) : (
+                                                                    <Check size={12} />
+                                                                )}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setEditingAllocationId(null); setEditAllocationUnit(""); }}
+                                                                className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors border border-slate-200 shrink-0 cursor-pointer"
+                                                                title="Cancel"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span>{unitName}</span>
+                                                            {(userRole === "owner" || userRole === "developer") && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingAllocationId(alloc.bookingId);
+                                                                        setEditAllocationUnit(unitName);
+                                                                    }}
+                                                                    className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                                                                    title="Edit Allotment"
+                                                                >
+                                                                    <Edit size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-3">
+                                                    <div className="font-semibold text-slate-700">{alloc.guestName || alloc.customerName}</div>
+                                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">{alloc.bookingRef}</div>
+                                                </td>
+                                                <td className="py-3 px-3 text-slate-500 font-medium">
+                                                    {new Date(alloc.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} - {new Date(alloc.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                                </td>
+                                                <td className="py-3 px-3 text-center">{renderMealCounterCell("breakfast")}</td>
+                                                <td className="py-3 px-3 text-center">{renderMealCounterCell("lunch")}</td>
+                                                <td className="py-3 px-3 text-center">{renderMealCounterCell("dinner")}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile view vertical cards */}
+                        <div className="grid grid-cols-1 gap-4 md:hidden">
+                            {allocations.map((alloc) => {
+                                const unitName = alloc.villaName || alloc.assignedUnit || alloc.subPropertyName || alloc.propertyName || "Not Assigned";
+                                const isEditing = editingAllocationId === alloc.bookingId;
+
+                                const renderMobileMealCounter = (mealKey: "breakfast" | "lunch" | "dinner", label: string) => {
+                                    const mealBooking = mealCounter?.bookings?.find(mb => mb.bookingId === alloc.bookingId);
+                                    if (!mealBooking) {
+                                        return (
+                                            <div className="flex justify-between items-center text-xs py-2 border-b border-slate-100/50">
+                                                <span className="font-bold text-slate-500">{label}</span>
+                                                <span className="text-[10px] text-slate-400 font-semibold italic">Not Checked-In</span>
+                                            </div>
+                                        );
+                                    }
+                                    const count = (mealBooking as any)[mealKey] || 0;
+                                    const maxGuests = mealBooking.numGuests || alloc.numGuests || 2;
+                                    return (
+                                        <div className="flex justify-between items-center text-xs py-2 border-b border-slate-100/50">
+                                            <span className="font-bold text-slate-600">{label}</span>
+                                            <div className="flex items-center gap-1.5">
                                                 <button
                                                     onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, -1)}
-                                                    className="w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] cursor-pointer"
+                                                    className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold flex items-center justify-center transition-colors text-xs cursor-pointer"
                                                 >
                                                     -
                                                 </button>
-                                                <span className="font-black text-[11px] min-w-[28px] text-center">
+                                                <span className="font-black text-xs min-w-[32px] text-center text-slate-800">
                                                     {count} / {maxGuests}
                                                 </span>
                                                 <button
                                                     onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, 1)}
-                                                    className="w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] cursor-pointer"
+                                                    className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold flex items-center justify-center transition-colors text-xs cursor-pointer"
                                                 >
                                                     +
                                                 </button>
                                             </div>
-                                        );
-                                    };
+                                        </div>
+                                    );
+                                };
 
-                                    return (
-                                        <tr key={alloc.bookingId} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="py-3 px-3 font-bold text-slate-800">
+                                return (
+                                    <div key={alloc.bookingId} className="bg-slate-50/50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                                        <div className="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                                            <div>
+                                                <span className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                                                    {unitName}
+                                                </span>
+                                                <div className="text-xs text-slate-600 font-bold mt-0.5">
+                                                    {alloc.guestName || alloc.customerName}
+                                                </div>
+                                                <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                                    {alloc.bookingRef}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right shrink-0">
                                                 {isEditing ? (
-                                                    <div className="flex items-center gap-1.5 w-full min-w-[160px]">
+                                                    <div className="flex items-center gap-1">
                                                         <select
                                                             value={editAllocationUnit}
                                                             onChange={(e) => setEditAllocationUnit(e.target.value)}
-                                                            className="bg-white border border-blue-300 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 flex-1"
+                                                            className="bg-white border border-blue-300 rounded-lg px-1.5 py-1 text-[11px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                                                         >
                                                             {VILLAS_LIST.map((villa) => (
                                                                 <option key={villa.value} value={villa.value}>
@@ -1053,57 +1180,51 @@ export default function HousekeepingPortalPage() {
                                                         <button
                                                             onClick={() => handleEditAllocation(alloc.bookingId)}
                                                             disabled={editAllocationSubmitting}
-                                                            className="p-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded transition-colors shrink-0 cursor-pointer"
-                                                            title="Save & Notify"
+                                                            className="p-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded transition-colors cursor-pointer"
                                                         >
                                                             {editAllocationSubmitting ? (
-                                                                <RefreshCw size={12} className="animate-spin" />
+                                                                <RefreshCw size={10} className="animate-spin" />
                                                             ) : (
-                                                                <Check size={12} />
+                                                                <Check size={10} />
                                                             )}
                                                         </button>
                                                         <button
                                                             onClick={() => { setEditingAllocationId(null); setEditAllocationUnit(""); }}
-                                                            className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors border border-slate-200 shrink-0 cursor-pointer"
-                                                            title="Cancel"
+                                                            className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded border border-slate-200 cursor-pointer"
                                                         >
-                                                            <X size={12} />
+                                                            <X size={10} />
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span>{unitName}</span>
-                                                        {(userRole === "owner" || userRole === "developer") && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setEditingAllocationId(alloc.bookingId);
-                                                                    setEditAllocationUnit(unitName);
-                                                                }}
-                                                                className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                                                                title="Edit Allotment"
-                                                            >
-                                                                <Edit size={12} />
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    (userRole === "owner" || userRole === "developer") && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingAllocationId(alloc.bookingId);
+                                                                setEditAllocationUnit(unitName);
+                                                            }}
+                                                            className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
+                                                            title="Edit Allotment"
+                                                        >
+                                                            <Edit size={12} />
+                                                        </button>
+                                                    )
                                                 )}
-                                            </td>
-                                            <td className="py-3 px-3">
-                                                <div className="font-semibold text-slate-700">{alloc.guestName || alloc.customerName}</div>
-                                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{alloc.bookingRef}</div>
-                                            </td>
-                                            <td className="py-3 px-3 text-slate-500 font-medium">
-                                                {new Date(alloc.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} - {new Date(alloc.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                                            </td>
-                                            <td className="py-3 px-3 text-center">{renderMealCounterCell("breakfast")}</td>
-                                            <td className="py-3 px-3 text-center">{renderMealCounterCell("lunch")}</td>
-                                            <td className="py-3 px-3 text-center">{renderMealCounterCell("dinner")}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                <div className="text-[10px] text-slate-500 font-semibold mt-1">
+                                                    {new Date(alloc.checkInDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} - {new Date(alloc.checkOutDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            {renderMobileMealCounter("breakfast", "Breakfast")}
+                                            {renderMobileMealCounter("lunch", "Lunch")}
+                                            {renderMobileMealCounter("dinner", "Dinner")}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </div>
 
