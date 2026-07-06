@@ -18,10 +18,14 @@ async function cleanupOldPhotos() {
         await prisma.staffAttendance.updateMany({
             where: {
                 markedAt: { lt: fifteenDaysAgo },
-                photoUrl: { not: null }
+                OR: [
+                    { photoUrl: { not: null } },
+                    { checkoutPhotoUrl: { not: null } }
+                ]
             },
             data: {
-                photoUrl: null
+                photoUrl: null,
+                checkoutPhotoUrl: null
             }
         });
     } catch (err) {
@@ -46,7 +50,7 @@ router.get("/staff", authMiddleware, async (req: AuthRequest, res) => {
 // POST /api/security/staff — Create new staff member
 router.post("/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { name, role, dutyTime, monthlySalary, salaryReduction, allowedHolidays } = req.body;
+        const { name, role, dutyTime, dutyEndTime, monthlySalary, salaryReduction, allowedHolidays } = req.body;
         if (!name || typeof name !== "string" || !name.trim()) {
             return res.status(400).json({ error: "Staff name is required" });
         }
@@ -56,6 +60,7 @@ router.post("/staff", authMiddleware, async (req: AuthRequest, res) => {
                 name: name.trim(),
                 role: role ? String(role).trim() : null,
                 dutyTime: dutyTime ? String(dutyTime).trim() : null,
+                dutyEndTime: dutyEndTime ? String(dutyEndTime).trim() : null,
                 monthlySalary: monthlySalary ? parseInt(monthlySalary) : null,
                 salaryReduction: salaryReduction ? parseInt(salaryReduction) : null,
                 allowedHolidays: allowedHolidays ? parseInt(allowedHolidays) : null,
@@ -117,6 +122,7 @@ router.get("/attendance", authMiddleware, async (req: AuthRequest, res) => {
                     id: att.id,
                     status: att.status,
                     photoUrl: att.photoUrl,
+                    checkoutPhotoUrl: att.checkoutPhotoUrl,
                     inTime: att.inTime,
                     outTime: att.outTime,
                     inTimeMarkedBy: att.inTimeMarkedBy,
@@ -187,7 +193,8 @@ router.post("/attendance", authMiddleware, async (req: AuthRequest, res) => {
                 },
                 data: {
                     outTime: new Date(),
-                    outTimeMarkedBy: markedBy
+                    outTimeMarkedBy: markedBy,
+                    checkoutPhotoUrl: photoUrl || null
                 }
             });
         } else {

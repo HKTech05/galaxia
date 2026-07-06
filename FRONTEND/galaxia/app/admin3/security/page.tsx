@@ -27,6 +27,7 @@ interface SecurityStaff {
     photoUrl: string | null;
     isActive: boolean;
     dutyTime: string | null;
+    dutyEndTime: string | null;
     monthlySalary: number | null;
     salaryReduction: number | null;
     allowedHolidays: number | null;
@@ -34,6 +35,7 @@ interface SecurityStaff {
         id: number;
         status: "present" | "absent";
         photoUrl: string | null;
+        checkoutPhotoUrl: string | null;
         inTime: string | null;
         outTime: string | null;
         markedAt: string;
@@ -86,6 +88,7 @@ export default function SecurityPage() {
     const [newStaffName, setNewStaffName] = useState("");
     const [newStaffRole, setNewStaffRole] = useState("");
     const [newStaffDutyTime, setNewStaffDutyTime] = useState("09:00");
+    const [newStaffDutyEndTime, setNewStaffDutyEndTime] = useState("18:00");
     const [newStaffMonthlySalary, setNewStaffMonthlySalary] = useState("");
     const [newStaffSalaryReduction, setNewStaffSalaryReduction] = useState("");
     const [newStaffAllowedHolidays, setNewStaffAllowedHolidays] = useState("");
@@ -98,6 +101,7 @@ export default function SecurityPage() {
     // Camera Capture State
     const [cameraTargetStaff, setCameraTargetStaff] = useState<SecurityStaff | null>(null);
     const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+    const [cameraAction, setCameraAction] = useState<"checkin" | "checkout">("checkin");
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
     const [cameraError, setCameraError] = useState("");
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -134,6 +138,7 @@ export default function SecurityPage() {
                 name: newStaffName.trim(),
                 role: newStaffRole.trim() || null,
                 dutyTime: newStaffDutyTime || null,
+                dutyEndTime: newStaffDutyEndTime || null,
                 monthlySalary: newStaffMonthlySalary ? parseInt(newStaffMonthlySalary) : null,
                 salaryReduction: newStaffSalaryReduction ? parseInt(newStaffSalaryReduction) : null,
                 allowedHolidays: newStaffAllowedHolidays ? parseInt(newStaffAllowedHolidays) : null
@@ -142,6 +147,7 @@ export default function SecurityPage() {
             setNewStaffName("");
             setNewStaffRole("");
             setNewStaffDutyTime("09:00");
+            setNewStaffDutyEndTime("18:00");
             setNewStaffMonthlySalary("");
             setNewStaffSalaryReduction("");
             setNewStaffAllowedHolidays("");
@@ -180,14 +186,18 @@ export default function SecurityPage() {
         return false;
     };
 
-    const checkoutStaff = async (staff: SecurityStaff) => {
+    const checkoutStaff = async (staff: SecurityStaff, photoBase64?: string | null) => {
         setSubmittingId(staff.id);
         try {
             await api.post("/security/attendance", {
                 staffId: staff.id,
                 date: dateStr,
-                action: "checkout"
+                action: "checkout",
+                photoUrl: photoBase64 || null
             });
+            if (cameraTargetStaff?.id === staff.id) {
+                closeCameraModal();
+            }
             fetchAttendanceData();
         } catch (err: any) {
             alert(err.message || "Failed to checkout staff member.");
@@ -221,11 +231,12 @@ export default function SecurityPage() {
     };
 
     // Open Camera Modal & Start Stream
-    const openCameraModal = async (staff: SecurityStaff) => {
+    const openCameraModal = async (staff: SecurityStaff, action: "checkin" | "checkout" = "checkin") => {
         if (!canMarkAttendance) {
             alert("Ranjit profile is only permitted to mark attendance for today's date.");
             return;
         }
+        setCameraAction(action);
         setCameraTargetStaff(staff);
         setCapturedPhoto(null);
         setCameraError("");
@@ -474,191 +485,334 @@ export default function SecurityPage() {
                         <p className="text-xs text-slate-400">Click the "+ Add Staff" button above to register your first staff member.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {staffList.map((staff) => {
-                            const att = staff.attendance;
-                            const isSubmitting = submittingId === staff.id;
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* COLUMN 1: MORNING CHECK-IN */}
+                        <div className="space-y-4">
+                            <div className="bg-emerald-50/50 border border-emerald-100/80 px-4 py-3 rounded-2xl flex items-center justify-between">
+                                <h2 className="text-sm font-extrabold text-emerald-800 tracking-wider uppercase flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Morning Check-In (YES / NO)
+                                </h2>
+                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
+                                    STEP 1
+                                </span>
+                            </div>
 
-                            return (
-                                <div
-                                    key={staff.id}
-                                    className={`border rounded-2xl p-4.5 space-y-4 transition-all duration-200 ${
-                                        att?.status === "present"
-                                            ? "bg-emerald-50/30 border-emerald-200"
-                                            : att?.status === "absent"
-                                                ? "bg-red-50/30 border-red-200"
-                                                : "bg-slate-50/50 border-slate-200"
-                                    }`}
-                                >
-                                    {/* Staff Header Info & Delete */}
-                                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
-                                        <div>
-                                            <h3 className="font-extrabold text-base text-slate-800 leading-snug">
-                                                {staff.name}
-                                            </h3>
-                                            {staff.role && (
-                                                <span className="inline-block text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md mt-1">
-                                                    {staff.role}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {canManageStaff && (
-                                            <button
-                                                onClick={() => setDeletingStaff(staff)}
-                                                className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
-                                                title="Delete Staff"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Captured Thumbnail & Timestamp */}
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative shrink-0">
-                                            {att?.photoUrl ? (
-                                                <button
-                                                    onClick={() => setActiveLightboxImg({ url: att.photoUrl!, name: staff.name })}
-                                                    className="group relative block w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity"
-                                                    title="Click to view full size"
-                                                >
-                                                    <img
-                                                        src={att.photoUrl}
-                                                        alt={staff.name}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                                                        <Eye size={16} />
-                                                    </div>
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => openCameraModal(staff)}
-                                                    disabled={!canMarkAttendance}
-                                                    className={`w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
-                                                        canMarkAttendance
-                                                            ? "border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 text-slate-400 hover:text-purple-600"
-                                                            : "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
-                                                    }`}
-                                                    title={canMarkAttendance ? "Capture Photo via Phone Camera" : "Attendance can only be marked for today"}
-                                                >
-                                                    <Camera size={20} />
-                                                    <span className="text-[9px] font-bold mt-0.5">Camera</span>
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 space-y-1">
-                                            {/* Status Badge */}
-                                            {att ? (
-                                                <span
-                                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold border ${
-                                                        att.status === "present"
-                                                            ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                                                            : "bg-red-100 text-red-800 border-red-200"
-                                                    }`}
-                                                >
-                                                    {att.status === "present" ? (
-                                                        <>
-                                                            <CheckCircle2 size={13} />
-                                                            <span>PRESENT</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <XCircle size={13} />
-                                                            <span>ABSENT</span>
-                                                        </>
-                                                    )}
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                                                    NOT MARKED
-                                                </span>
-                                            )}
-
-                                            {/* Duty & Timestamps */}
-                                            <div className="space-y-1 mt-1 text-[10px]">
-                                                {staff.dutyTime && (
-                                                    <p className="text-slate-400 font-bold">Duty: {staff.dutyTime}</p>
-                                                )}
-                                                {att?.inTime && (
-                                                    <div className="flex items-center gap-1 text-slate-500 font-bold">
-                                                        <span>In: {new Date(att.inTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
-                                                        {isLateCheckIn(att.inTime, staff.dutyTime) && (
-                                                            <span className="bg-red-50 text-red-600 px-1 py-0.2 rounded text-[8px] font-black border border-red-100 uppercase ml-1">LATE</span>
+                            <div className="space-y-4">
+                                {staffList.map((staff) => {
+                                    const att = staff.attendance;
+                                    const isSubmitting = submittingId === staff.id;
+                                    
+                                    return (
+                                        <div
+                                            key={`checkin-${staff.id}`}
+                                            className={`border rounded-2xl p-4.5 space-y-4 transition-all duration-200 ${
+                                                att?.status === "present"
+                                                    ? "bg-emerald-50/20 border-emerald-200/60"
+                                                    : att?.status === "absent"
+                                                        ? "bg-red-50/20 border-red-200/60"
+                                                        : "bg-slate-50/50 border-slate-200"
+                                            }`}
+                                        >
+                                            {/* Staff Name, Role & Delete */}
+                                            <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                                <div>
+                                                    <h3 className="font-extrabold text-base text-slate-800 leading-snug">
+                                                        {staff.name}
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        {staff.role && (
+                                                            <span className="inline-block text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md">
+                                                                {staff.role}
+                                                            </span>
                                                         )}
+                                                        <span className="text-[10px] font-bold text-slate-400">
+                                                            Duty: {staff.dutyTime || "09:00"} - {staff.dutyEndTime || "18:00"}
+                                                        </span>
                                                     </div>
-                                                )}
-                                                {att?.outTime && (
-                                                    <p className="text-slate-500 font-bold">
-                                                        Out: {new Date(att.outTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                                                    </p>
-                                                )}
-                                                {att?.status === "present" && !att.outTime && isToday && (
+                                                </div>
+
+                                                {canManageStaff && (
                                                     <button
-                                                        onClick={() => checkoutStaff(staff)}
-                                                        disabled={isSubmitting}
-                                                        className="mt-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[9px] font-extrabold shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                                                        onClick={() => setDeletingStaff(staff)}
+                                                        className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
+                                                        title="Delete Staff"
                                                     >
-                                                        {isSubmitting ? <RefreshCw size={9} className="animate-spin" /> : <Clock size={10} />}
-                                                        <span>Out / Checkout</span>
+                                                        <Trash2 size={15} />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Camera Photo capture & Details */}
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative shrink-0">
+                                                    {att?.photoUrl ? (
+                                                        <button
+                                                            onClick={() => setActiveLightboxImg({ url: att.photoUrl!, name: `${staff.name} (Check-In)` })}
+                                                            className="group relative block w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity"
+                                                            title="Click to view check-in photo"
+                                                        >
+                                                            <img
+                                                                src={att.photoUrl}
+                                                                alt={staff.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                                                <Eye size={16} />
+                                                            </div>
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => openCameraModal(staff, "checkin")}
+                                                            disabled={!canMarkAttendance}
+                                                            className={`w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
+                                                                canMarkAttendance
+                                                                    ? "border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 text-slate-400 hover:text-purple-600"
+                                                                    : "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
+                                                            }`}
+                                                            title={canMarkAttendance ? "Capture Photo via Phone Camera" : "Attendance can only be marked for today"}
+                                                        >
+                                                            <Camera size={20} />
+                                                            <span className="text-[9px] font-bold mt-0.5">Camera</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 space-y-1">
+                                                    {/* Status Badge */}
+                                                    {att ? (
+                                                        <span
+                                                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
+                                                                att.status === "present"
+                                                                    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                                                    : "bg-red-100 text-red-800 border-red-200"
+                                                            }`}
+                                                        >
+                                                            {att.status === "present" ? (
+                                                                <>
+                                                                    <CheckCircle2 size={12} />
+                                                                    <span>PRESENT</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <XCircle size={12} />
+                                                                    <span>ABSENT</span>
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                                            NOT MARKED
+                                                        </span>
+                                                    )}
+
+                                                    {/* In-Time & Late indication */}
+                                                    {att?.inTime && (
+                                                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold mt-1">
+                                                            <span>In: {new Date(att.inTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                            {isLateCheckIn(att.inTime, staff.dutyTime) && (
+                                                                <span className="bg-red-50 text-red-600 px-1 py-0.2 rounded text-[8px] font-black border border-red-100 uppercase">LATE</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons: Green YES / Red NO & Re-take Camera */}
+                                            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                                <button
+                                                    onClick={() => markAttendance(staff, "present")}
+                                                    disabled={isSubmitting || !canMarkAttendance}
+                                                    title={canMarkAttendance ? "Mark Present" : "Attendance can only be marked for today"}
+                                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-extrabold text-xs transition-all ${
+                                                        !canMarkAttendance
+                                                            ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
+                                                            : att?.status === "present"
+                                                                ? "bg-emerald-600 text-white shadow-sm shadow-emerald-200"
+                                                                : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                                    }`}
+                                                >
+                                                    <CheckCircle2 size={14} />
+                                                    <span>YES (Present)</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => markAttendance(staff, "absent")}
+                                                    disabled={isSubmitting || !canMarkAttendance}
+                                                    title={canMarkAttendance ? "Mark Absent" : "Attendance can only be marked for today"}
+                                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-extrabold text-xs transition-all ${
+                                                        !canMarkAttendance
+                                                            ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
+                                                            : att?.status === "absent"
+                                                                ? "bg-red-600 text-white shadow-sm shadow-red-200"
+                                                                : "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+                                                    }`}
+                                                >
+                                                    <XCircle size={14} />
+                                                    <span>NO (Absent)</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => openCameraModal(staff, "checkin")}
+                                                    disabled={!canMarkAttendance}
+                                                    className={`p-2 rounded-xl transition-colors shrink-0 ${
+                                                        canMarkAttendance
+                                                            ? "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                                                            : "bg-slate-100 text-slate-300 cursor-not-allowed opacity-60"
+                                                    }`}
+                                                    title={canMarkAttendance ? "Retake Photo via Camera" : "Attendance can only be marked for today"}
+                                                >
+                                                    <Camera size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* COLUMN 2: EVENING CHECK-OUT */}
+                        <div className="space-y-4">
+                            <div className="bg-purple-50/50 border border-purple-100/80 px-4 py-3 rounded-2xl flex items-center justify-between">
+                                <h2 className="text-sm font-extrabold text-purple-800 tracking-wider uppercase flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse"></span>
+                                    Evening Check-Out (OUT)
+                                </h2>
+                                <span className="text-[10px] font-black bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full">
+                                    STEP 2
+                                </span>
+                            </div>
+
+                            <div className="space-y-4">
+                                {staffList.map((staff) => {
+                                    const att = staff.attendance;
+                                    const isSubmitting = submittingId === staff.id;
+                                    const isPresentToday = att?.status === "present";
+                                    const isCheckedOut = !!att?.outTime;
+
+                                    return (
+                                        <div
+                                            key={`checkout-${staff.id}`}
+                                            className={`border rounded-2xl p-4.5 space-y-4 transition-all duration-200 ${
+                                                isCheckedOut
+                                                    ? "bg-purple-50/20 border-purple-200/60"
+                                                    : isPresentToday
+                                                        ? "bg-amber-50/10 border-amber-200/50"
+                                                        : "bg-slate-50/30 border-slate-200/40 opacity-75"
+                                            }`}
+                                        >
+                                            {/* Staff Name, Role */}
+                                            <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                                <div>
+                                                    <h3 className="font-extrabold text-base text-slate-800 leading-snug">
+                                                        {staff.name}
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        {staff.role && (
+                                                            <span className="inline-block text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md">
+                                                                {staff.role}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] font-bold text-slate-400">
+                                                            Duty: {staff.dutyTime || "09:00"} - {staff.dutyEndTime || "18:00"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Camera Photo capture & Details */}
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative shrink-0">
+                                                    {att?.checkoutPhotoUrl ? (
+                                                        <button
+                                                            onClick={() => setActiveLightboxImg({ url: att.checkoutPhotoUrl!, name: `${staff.name} (Check-Out)` })}
+                                                            className="group relative block w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity"
+                                                            title="Click to view check-out photo"
+                                                        >
+                                                            <img
+                                                                src={att.checkoutPhotoUrl}
+                                                                alt={staff.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                                                <Eye size={16} />
+                                                            </div>
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => openCameraModal(staff, "checkout")}
+                                                            disabled={!canMarkAttendance || !isPresentToday || isCheckedOut}
+                                                            className={`w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
+                                                                canMarkAttendance && isPresentToday && !isCheckedOut
+                                                                    ? "border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 text-slate-400 hover:text-purple-600"
+                                                                    : "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
+                                                            }`}
+                                                            title={
+                                                                !isPresentToday
+                                                                    ? "Must be marked Present first"
+                                                                    : isCheckedOut
+                                                                        ? "Already Checked Out"
+                                                                        : "Capture Checkout Photo"
+                                                            }
+                                                        >
+                                                            <Camera size={20} />
+                                                            <span className="text-[9px] font-bold mt-0.5">Camera</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 space-y-1">
+                                                    {/* Status Badge */}
+                                                    {isCheckedOut ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold border bg-purple-100 text-purple-800 border-purple-200">
+                                                            <CheckCircle2 size={12} />
+                                                            <span>CHECKED OUT</span>
+                                                        </span>
+                                                    ) : isPresentToday ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                            <span>ON DUTY</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200/50">
+                                                            NOT AVAILABLE
+                                                        </span>
+                                                    )}
+
+                                                    {/* Out-Time display */}
+                                                    {att?.outTime && (
+                                                        <p className="text-[10px] text-slate-500 font-bold mt-1">
+                                                            Out: {new Date(att.outTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Action Button: OUT (Checkout) */}
+                                            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                                {isCheckedOut ? (
+                                                    <div className="w-full text-center py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs font-extrabold">
+                                                        Checked Out Successfully
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => openCameraModal(staff, "checkout")}
+                                                        disabled={isSubmitting || !canMarkAttendance || !isPresentToday}
+                                                        className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-extrabold text-xs transition-all ${
+                                                            !canMarkAttendance || !isPresentToday
+                                                                ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
+                                                                : "bg-purple-600 hover:bg-purple-700 text-white shadow-sm shadow-purple-200"
+                                                        }`}
+                                                    >
+                                                        <Clock size={14} />
+                                                        <span>OUT (Checkout)</span>
                                                     </button>
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Action Buttons: Green YES / Red NO & Re-take Camera */}
-                                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                                        <button
-                                            onClick={() => markAttendance(staff, "present")}
-                                            disabled={isSubmitting || !canMarkAttendance}
-                                            title={canMarkAttendance ? "Mark Present" : "Attendance can only be marked for today"}
-                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                !canMarkAttendance
-                                                    ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
-                                                    : att?.status === "present"
-                                                        ? "bg-emerald-600 text-white shadow-sm shadow-emerald-200"
-                                                        : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
-                                            }`}
-                                        >
-                                            <CheckCircle2 size={15} />
-                                            <span>YES (Present)</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => markAttendance(staff, "absent")}
-                                            disabled={isSubmitting || !canMarkAttendance}
-                                            title={canMarkAttendance ? "Mark Absent" : "Attendance can only be marked for today"}
-                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                !canMarkAttendance
-                                                    ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
-                                                    : att?.status === "absent"
-                                                        ? "bg-red-600 text-white shadow-sm shadow-red-200"
-                                                        : "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
-                                            }`}
-                                        >
-                                            <XCircle size={15} />
-                                            <span>NO (Absent)</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => openCameraModal(staff)}
-                                            disabled={!canMarkAttendance}
-                                            className={`p-2.5 rounded-xl transition-colors shrink-0 ${
-                                                canMarkAttendance
-                                                    ? "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                                                    : "bg-slate-100 text-slate-300 cursor-not-allowed opacity-60"
-                                            }`}
-                                            title={canMarkAttendance ? "Retake Photo via Camera" : "Attendance can only be marked for today"}
-                                        >
-                                            <Camera size={15} />
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -721,21 +875,33 @@ export default function SecurityPage() {
                                 ) : (
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={() => markAttendance(cameraTargetStaff, "present", capturedPhoto)}
-                                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-2xl flex items-center justify-center gap-2 text-sm shadow-sm"
-                                            >
-                                                <CheckCircle2 size={18} />
-                                                <span>Save & Mark YES (Present)</span>
-                                            </button>
+                                            {cameraAction === "checkout" ? (
+                                                <button
+                                                    onClick={() => checkoutStaff(cameraTargetStaff, capturedPhoto)}
+                                                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-black py-3 rounded-2xl flex items-center justify-center gap-2 text-sm shadow-sm"
+                                                >
+                                                    <CheckCircle2 size={18} />
+                                                    <span>Save &amp; Confirm Checkout</span>
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => markAttendance(cameraTargetStaff, "present", capturedPhoto)}
+                                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-2xl flex items-center justify-center gap-2 text-sm shadow-sm"
+                                                    >
+                                                        <CheckCircle2 size={18} />
+                                                        <span>Save &amp; Mark YES (Present)</span>
+                                                    </button>
 
-                                            <button
-                                                onClick={() => markAttendance(cameraTargetStaff, "absent", capturedPhoto)}
-                                                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-2xl flex items-center justify-center gap-2 text-sm shadow-sm"
-                                            >
-                                                <XCircle size={18} />
-                                                <span>Save & Mark NO (Absent)</span>
-                                            </button>
+                                                    <button
+                                                        onClick={() => markAttendance(cameraTargetStaff, "absent", capturedPhoto)}
+                                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-2xl flex items-center justify-center gap-2 text-sm shadow-sm"
+                                                    >
+                                                        <XCircle size={18} />
+                                                        <span>Save &amp; Mark NO (Absent)</span>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
 
                                         <button
@@ -799,16 +965,29 @@ export default function SecurityPage() {
                                 />
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                                    Duty Start Time
-                                </label>
-                                <input
-                                    type="time"
-                                    value={newStaffDutyTime}
-                                    onChange={(e) => setNewStaffDutyTime(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                                        Duty Start Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={newStaffDutyTime}
+                                        onChange={(e) => setNewStaffDutyTime(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                                        Duty End Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={newStaffDutyEndTime}
+                                        onChange={(e) => setNewStaffDutyEndTime(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:bg-white focus:border-purple-600 focus:outline-none"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

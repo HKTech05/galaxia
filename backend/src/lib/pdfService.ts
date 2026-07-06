@@ -1081,7 +1081,7 @@ export async function generateAttendanceReportPDF(startDateStr: string, endDateS
             // Draw configuration details at right
             doc.fontSize(8).fill(TEXT_MED).font("Helvetica");
             doc.text(`Monthly Salary: Rs.${(staff.monthlySalary || 0).toLocaleString("en-IN")}`, pageWidth - margin - 220, y, { align: "right", width: 210 });
-            doc.text(`Duty Time: ${staff.dutyTime || "—"}`, pageWidth - margin - 220, y + 10, { align: "right", width: 210 });
+            doc.text(`Duty: ${staff.dutyTime || "—"} to ${staff.dutyEndTime || "—"}`, pageWidth - margin - 220, y + 10, { align: "right", width: 210 });
             doc.text(`Allowed Holidays: ${staff.allowedHolidays || 0} days`, pageWidth - margin - 220, y + 20, { align: "right", width: 210 });
             doc.text(`Absent Reduction: Rs.${(staff.salaryReduction || 0).toLocaleString("en-IN")}/day`, pageWidth - margin - 220, y + 30, { align: "right", width: 210 });
 
