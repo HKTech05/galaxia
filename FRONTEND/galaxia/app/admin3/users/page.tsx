@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Ban, KeyRound, Mail, Phone, CalendarDays, ChevronDown, MapPin, IndianRupee, Moon, Clock, Download } from "lucide-react";
+import { Search, Ban, KeyRound, Mail, Phone, CalendarDays, ChevronDown, MapPin, IndianRupee, Moon, Clock, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "../../../lib/api";
 
 interface UserItem {
@@ -26,25 +26,52 @@ interface UserBooking {
 }
 
 export default function UsersPage() {
-    const [allUsers, setAllUsers] = useState<UserItem[]>([]);
+    const [users, setUsers] = useState<UserItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [exporting, setExporting] = useState(false);
+
     const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
     const [userBookings, setUserBookings] = useState<Record<string, UserBooking[]>>({});
     const [bookingsLoading, setBookingsLoading] = useState<string | null>(null);
 
+    // Debounce search term changes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setPage(1); // Reset to page 1 on new search
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     const fetchUsers = useCallback(async () => {
+        setLoading(true);
         try {
-            const data = await api.get("/users");
-            setAllUsers(data);
+            const query = new URLSearchParams({
+                page: String(page),
+                limit: "20",
+                search: debouncedSearch,
+            });
+            const data = await api.get<{ users: UserItem[]; pagination: { total: number; page: number; limit: number; totalPages: number } }>(
+                `/users?${query.toString()}`
+            );
+            setUsers(data.users);
+            setTotalPages(data.pagination.totalPages || 1);
+            setTotalUsers(data.pagination.total || 0);
         } catch (err) {
             console.error("Failed to fetch users:", err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [page, debouncedSearch]);
 
-    useEffect(() => { fetchUsers(); }, [fetchUsers]);
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
     const handleSuspend = async (user: UserItem) => {
         const newStatus = user.status === "Active" ? false : true;
@@ -76,12 +103,6 @@ export default function UsersPage() {
         }
     };
 
-    const filteredUsers = allUsers.filter(u =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.phone.includes(searchTerm)
-    );
-
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
@@ -91,23 +112,36 @@ export default function UsersPage() {
                     <p className="text-sm font-medium text-slate-500 mt-1">View registered customers and manage their account access.</p>
                 </div>
                 <button
-                    onClick={() => {
-                        const headers = ["Name", "Email", "Phone", "Bookings", "Status", "Joined"];
-                        const rows = filteredUsers.map(u => [
-                            u.name, u.email, u.phone, u.totalBookings, u.status, u.joined
-                        ]);
-                        const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-                        const blob = new Blob([csv], { type: "text/csv" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `galaxia_users_${new Date().toISOString().slice(0,10)}.csv`;
-                        a.click();
-                        URL.revokeObjectURL(url);
+                    disabled={exporting}
+                    onClick={async () => {
+                        setExporting(true);
+                        try {
+                            const query = new URLSearchParams({
+                                export: "true",
+                                search: debouncedSearch
+                            });
+                            const allFilteredUsers = await api.get<UserItem[]>(`/users?${query.toString()}`);
+                            const headers = ["Name", "Email", "Phone", "Bookings", "Status", "Joined"];
+                            const rows = allFilteredUsers.map(u => [
+                                u.name, u.email, u.phone, u.totalBookings, u.status, u.joined
+                            ]);
+                            const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+                            const blob = new Blob([csv], { type: "text/csv" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `galaxia_users_${new Date().toISOString().slice(0,10)}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        } catch (err) {
+                            console.error("Failed to export CSV:", err);
+                        } finally {
+                            setExporting(false);
+                        }
                     }}
-                    className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors w-full sm:w-auto flex items-center gap-2"
+                    className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-colors w-full sm:w-auto flex items-center justify-center gap-2"
                 >
-                    <Download size={15} /> Export CSV
+                    <Download size={15} /> {exporting ? "Exporting..." : "Export CSV"}
                 </button>
             </div>
 
@@ -132,122 +166,199 @@ export default function UsersPage() {
                         <div className="w-6 h-6 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin mx-auto mb-3" />
                         <p className="text-sm text-slate-500 font-medium">Loading users...</p>
                     </div>
-                ) : filteredUsers.length === 0 ? (
+                ) : users.length === 0 ? (
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-12 text-center">
                         <p className="text-sm text-slate-500 font-medium">No users found matching your search.</p>
                     </div>
                 ) : (
-                    filteredUsers.map((user) => {
-                        const isExpanded = expandedUserId === user.id;
-                        const bookings = userBookings[user.id] || [];
-                        const isLoadingBookings = bookingsLoading === user.id;
+                    <>
+                        {users.map((user) => {
+                            const isExpanded = expandedUserId === user.id;
+                            const bookings = userBookings[user.id] || [];
+                            const isLoadingBookings = bookingsLoading === user.id;
 
-                        return (
-                            <div key={user.id} className={`bg-white border rounded-xl shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-purple-200 ring-1 ring-purple-100' : 'border-slate-200'}`}>
-                                {/* Main Row */}
-                                <div
-                                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 sm:p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
-                                    onClick={() => handleExpand(user)}
-                                >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shadow-sm border border-indigo-100 shrink-0 text-sm">
-                                            {user.name.charAt(0)}
+                            return (
+                                <div key={user.id} className={`bg-white border rounded-xl shadow-sm overflow-hidden transition-all ${isExpanded ? 'border-purple-200 ring-1 ring-purple-100' : 'border-slate-200'}`}>
+                                    {/* Main Row */}
+                                    <div
+                                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 sm:p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                                        onClick={() => handleExpand(user)}
+                                    >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shadow-sm border border-indigo-100 shrink-0 text-sm">
+                                                {user.name.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
+                                                <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                                                    <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500"><Mail size={11} /> {user.email}</span>
+                                                    <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500"><Phone size={11} /> {user.phone}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
-                                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                                                <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500"><Mail size={11} /> {user.email}</span>
-                                                <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500"><Phone size={11} /> {user.phone}</span>
+
+                                        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+                                            <div className="text-center">
+                                                <p className="text-sm font-bold text-slate-800">{user.totalBookings}</p>
+                                                <p className="text-[10px] text-slate-400 font-medium">Bookings</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                                                    <CalendarDays size={13} className="text-slate-400" /> {user.joined}
+                                                </span>
+                                            </div>
+                                            <span className={`inline-flex px-2.5 py-1 rounded text-[10px] font-bold tracking-wide uppercase ${user.status === 'Verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                {user.status}
+                                            </span>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-                                        <div className="text-center">
-                                            <p className="text-sm font-bold text-slate-800">{user.totalBookings}</p>
-                                            <p className="text-[10px] text-slate-400 font-medium">Bookings</p>
-                                        </div>
-                                        <div className="text-center">
-                                            <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                                                <CalendarDays size={13} className="text-slate-400" /> {user.joined}
-                                            </span>
-                                        </div>
-                                        <span className={`inline-flex px-2.5 py-1 rounded text-[10px] font-bold tracking-wide uppercase ${user.status === 'Verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                            }`}>
-                                            {user.status}
-                                        </span>
+                                    {/* Expanded Detail Panel */}
+                                    {isExpanded && (
+                                        <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5 animate-in slide-in-from-top-2 duration-200">
+                                            {/* User Details */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                                                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Full Name</p>
+                                                    <p className="text-sm font-bold text-slate-800">{user.name}</p>
+                                                </div>
+                                                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Email</p>
+                                                    <p className="text-sm font-medium text-slate-700 truncate">{user.email}</p>
+                                                </div>
+                                                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Phone</p>
+                                                    <p className="text-sm font-medium text-slate-700">{user.phone}</p>
+                                                </div>
+                                                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Member Since</p>
+                                                    <p className="text-sm font-medium text-slate-700">{user.joined}</p>
+                                                </div>
+                                            </div>
 
-                                        <div className="flex items-center gap-1.5">
-                                            <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                            {/* Booking History */}
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Booking History</h4>
+                                            {isLoadingBookings ? (
+                                                <div className="flex items-center gap-2 py-4 justify-center">
+                                                    <div className="w-4 h-4 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin" />
+                                                    <span className="text-xs text-slate-500 font-medium">Loading bookings...</span>
+                                                </div>
+                                            ) : bookings.length === 0 ? (
+                                                <div className="text-center py-6 border border-dashed border-slate-200 rounded-lg bg-white">
+                                                    <p className="text-xs text-slate-400 font-medium">No booking history found.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {bookings.map((b) => (
+                                                        <div key={b.id} className="bg-white rounded-lg border border-slate-200 p-3 flex items-center gap-4">
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${b.type === 'staycation' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                                {b.type === 'staycation' ? <Moon size={14} /> : <Clock size={14} />}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-xs font-bold text-slate-800 truncate">{b.location}</span>
+                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${b.status === 'confirmed' || b.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : b.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                                        {b.status}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-3 mt-0.5">
+                                                                    <span className="text-[10px] text-slate-400 font-medium">{new Date(b.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                                                                    {b.nights > 0 && <span className="text-[10px] text-slate-400 font-medium">{b.nights} night{b.nights > 1 ? 's' : ''}</span>}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-sm font-bold text-slate-800 shrink-0">
+                                                                ₹{b.amount.toLocaleString("en-IN")}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-between border border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-xl shadow-sm mt-4 select-none">
+                                <div className="flex flex-1 justify-between sm:hidden">
+                                    <button
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                        className="relative inline-flex items-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-all"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={page === totalPages}
+                                        className="relative ml-3 inline-flex items-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-all"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold text-slate-500">
+                                            Showing page <span className="font-bold text-slate-800">{page}</span> of{" "}
+                                            <span className="font-bold text-slate-800">{totalPages}</span> (
+                                            <span className="font-bold text-slate-800">{totalUsers}</span> total users)
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs gap-1.5" aria-label="Pagination">
+                                            <button
+                                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                                disabled={page === 1}
+                                                className="relative inline-flex items-center rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-all hover:border-slate-300 flex items-center gap-1.5 text-xs font-semibold"
+                                            >
+                                                <ChevronLeft size={14} /> Previous
+                                            </button>
+                                            
+                                            {/* Generate pagination page numbers */}
+                                            {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
+                                                let targetPage = page - 2 + idx;
+                                                if (page <= 2) {
+                                                    targetPage = idx + 1;
+                                                } else if (page >= totalPages - 1) {
+                                                    targetPage = totalPages - 4 + idx;
+                                                }
+                                                if (targetPage < 1 || targetPage > totalPages) return null;
+                                                
+                                                return (
+                                                    <button
+                                                        key={targetPage}
+                                                        onClick={() => setPage(targetPage)}
+                                                        className={`relative inline-flex items-center justify-center min-w-[36px] h-9 rounded-lg border text-sm font-semibold transition-all ${
+                                                            page === targetPage
+                                                                ? "z-10 bg-purple-600 border-purple-600 text-white shadow-sm"
+                                                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                                                        }`}
+                                                    >
+                                                        {targetPage}
+                                                    </button>
+                                                );
+                                            })}
+
+                                            <button
+                                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={page === totalPages}
+                                                className="relative inline-flex items-center rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-all hover:border-slate-300 flex items-center gap-1.5 text-xs font-semibold"
+                                            >
+                                                Next <ChevronRight size={14} />
+                                            </button>
+                                        </nav>
                                     </div>
                                 </div>
-
-                                {/* Expanded Detail Panel */}
-                                {isExpanded && (
-                                    <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5 animate-in slide-in-from-top-2 duration-200">
-                                        {/* User Details */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Full Name</p>
-                                                <p className="text-sm font-bold text-slate-800">{user.name}</p>
-                                            </div>
-                                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Email</p>
-                                                <p className="text-sm font-medium text-slate-700 truncate">{user.email}</p>
-                                            </div>
-                                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Phone</p>
-                                                <p className="text-sm font-medium text-slate-700">{user.phone}</p>
-                                            </div>
-                                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Member Since</p>
-                                                <p className="text-sm font-medium text-slate-700">{user.joined}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Booking History */}
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Booking History</h4>
-                                        {isLoadingBookings ? (
-                                            <div className="flex items-center gap-2 py-4 justify-center">
-                                                <div className="w-4 h-4 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin" />
-                                                <span className="text-xs text-slate-500 font-medium">Loading bookings...</span>
-                                            </div>
-                                        ) : bookings.length === 0 ? (
-                                            <div className="text-center py-6 border border-dashed border-slate-200 rounded-lg bg-white">
-                                                <p className="text-xs text-slate-400 font-medium">No booking history found.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {bookings.map((b) => (
-                                                    <div key={b.id} className="bg-white rounded-lg border border-slate-200 p-3 flex items-center gap-4">
-                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${b.type === 'staycation' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>
-                                                            {b.type === 'staycation' ? <Moon size={14} /> : <Clock size={14} />}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="text-xs font-bold text-slate-800 truncate">{b.location}</span>
-                                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${b.status === 'confirmed' || b.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : b.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                                                                    {b.status}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-3 mt-0.5">
-                                                                <span className="text-[10px] text-slate-400 font-medium">{new Date(b.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                                                                {b.nights > 0 && <span className="text-[10px] text-slate-400 font-medium">{b.nights} night{b.nights > 1 ? 's' : ''}</span>}
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-bold text-slate-800 shrink-0">
-                                                            ₹{b.amount.toLocaleString("en-IN")}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
                             </div>
-                        );
-                    })
+                        )}
+                    </>
                 )}
             </div>
         </div>

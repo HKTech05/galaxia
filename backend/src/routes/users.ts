@@ -104,15 +104,49 @@ router.patch("/me", customerAuthMiddleware, async (req: CustomerAuthRequest, res
 router.use(authMiddleware);
 router.use(requireRole("owner", "developer", "manager"));
 
-// GET /api/users — List all registered guest users
-router.get("/", async (_req, res) => {
+// GET /api/users — List all registered guest users with pagination & search
+router.get("/", async (req, res) => {
     try {
-        const users = await prisma.user.findMany({
-            orderBy: { createdAt: "desc" },
-            include: {
-                _count: { select: { stayBookings: true, ddBookings: true } },
-            },
-        });
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 50;
+        const search = (req.query.search as string || "").trim();
+        const exportAll = req.query.export === "true";
+
+        const where: any = {};
+        if (search) {
+            where.OR = [
+                { fullName: { contains: search, mode: "insensitive" } },
+                { email: { contains: search, mode: "insensitive" } },
+                { phone: { contains: search } },
+            ];
+        }
+
+        let users;
+        let totalCount = 0;
+
+        if (exportAll) {
+            users = await prisma.user.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    _count: { select: { stayBookings: true, ddBookings: true } },
+                },
+            });
+        } else {
+            const skip = (page - 1) * limit;
+            [users, totalCount] = await prisma.$transaction([
+                prisma.user.findMany({
+                    where,
+                    orderBy: { createdAt: "desc" },
+                    skip,
+                    take: limit,
+                    include: {
+                        _count: { select: { stayBookings: true, ddBookings: true } },
+                    },
+                }),
+                prisma.user.count({ where }),
+            ]);
+        }
 
         const formatted = users.map(u => ({
             id: `U-${u.id}`,
@@ -125,7 +159,19 @@ router.get("/", async (_req, res) => {
             joined: u.createdAt.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
         }));
 
-        return res.json(formatted);
+        if (exportAll) {
+            return res.json(formatted);
+        } else {
+            return res.json({
+                users: formatted,
+                pagination: {
+                    total: totalCount,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(totalCount / limit),
+                }
+            });
+        }
     } catch (error: any) {
         console.error("Users list error:", error?.message);
         return res.status(500).json({ error: "Internal server error" });
