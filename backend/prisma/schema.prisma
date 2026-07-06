@@ -463,6 +463,8 @@ model Employee {
   propertyId      Int               @map("property_id")
   phone           String?           @db.VarChar(20)
   cashCollected   Int               @default(0) @map("cash_collected")
+  rentCollected   Int               @default(0) @map("rent_collected")
+  depositCollected Int              @default(0) @map("deposit_collected")
   lastCollectedAt DateTime?         @map("last_collected_at")
   isActive        Boolean           @default(true) @map("is_active")
   createdAt       DateTime          @default(now()) @map("created_at")

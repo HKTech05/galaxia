@@ -327,7 +327,10 @@ router.post("/", async (req, res) => {
                 if (employee) {
                     await tx.employee.update({
                         where: { id: employee.id },
-                        data: { cashCollected: { increment: advanceAmount } },
+                        data: { 
+                            cashCollected: { increment: advanceAmount },
+                            rentCollected: { increment: advanceAmount }
+                        },
                     });
                     await tx.cashTransaction.create({
                         data: {
@@ -763,9 +766,13 @@ router.post("/:id/payment", authMiddleware, async (req: AuthRequest, res) => {
                     where: { propertyId: booking.propertyId, isActive: true },
                 });
                 if (employee) {
+                    const isDeposit = paymentType === "deposit";
                     await prisma.employee.update({
                         where: { id: employee.id },
-                        data: { cashCollected: { increment: amount } },
+                        data: { 
+                            cashCollected: { increment: amount },
+                            [isDeposit ? 'depositCollected' : 'rentCollected']: { increment: amount }
+                        },
                     });
                     await prisma.cashTransaction.create({
                         data: {
@@ -825,7 +832,10 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
             if (employee) {
                 await prisma.employee.update({
                     where: { id: employee.id },
-                    data: { cashCollected: { decrement: depositAmount } },
+                    data: { 
+                        cashCollected: { decrement: depositAmount },
+                        depositCollected: { decrement: depositAmount }
+                    },
                 });
                 await prisma.cashTransaction.create({
                     data: {
@@ -1388,7 +1398,10 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
             // Deduct from employee cash collected
             await prisma.employee.update({
                 where: { id: employee.id },
-                data: { cashCollected: { decrement: depositAmt } },
+                data: { 
+                    cashCollected: { decrement: depositAmt },
+                    depositCollected: { decrement: depositAmt }
+                },
             });
             await prisma.cashTransaction.create({
                 data: {
@@ -1430,16 +1443,25 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
         // 1. Reverse cash tracking: find all cash transactions for this booking
         const cashTxns = await prisma.cashTransaction.findMany({ where: { bookingRef } });
         for (const tx of cashTxns) {
+            const note = (tx.note || "").toLowerCase();
+            const isDeposit = note.includes("security deposit") || note.includes("deposit refund") || tx.transactionType === "refund" || note.includes("(security deposit)");
+
             if (tx.transactionType === "collection" || tx.transactionType === "food_collection") {
                 await prisma.employee.update({
                     where: { id: tx.employeeId },
-                    data: { cashCollected: { decrement: tx.amount } },
+                    data: { 
+                        cashCollected: { decrement: tx.amount },
+                        [isDeposit ? 'depositCollected' : 'rentCollected']: { decrement: tx.amount }
+                    },
                 });
             } else if (tx.transactionType === "refund") {
                 // Undo refund decrement (re-add)
                 await prisma.employee.update({
                     where: { id: tx.employeeId },
-                    data: { cashCollected: { increment: Math.abs(tx.amount) } },
+                    data: { 
+                        cashCollected: { increment: Math.abs(tx.amount) },
+                        depositCollected: { increment: Math.abs(tx.amount) }
+                    },
                 });
             }
         }

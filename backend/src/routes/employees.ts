@@ -46,7 +46,13 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
         if (!employee) return res.status(404).json({ error: "Employee not found" });
 
         const { amount: requestedAmount, category } = req.body;
-        const total = employee.cashCollected;
+        
+        let total = employee.cashCollected;
+        if (category === "security_deposit") {
+            total = employee.depositCollected;
+        } else if (category === "rent") {
+            total = employee.rentCollected;
+        }
 
         const istNow = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
         let noteCategoryTag = "";
@@ -73,10 +79,26 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
         }
 
         // Update the balance
-        const newBalance = Math.max(0, total - cashoutAmount);
+        const updateData: any = {
+            lastCollectedAt: new Date()
+        };
+
+        if (category === "security_deposit") {
+            updateData.depositCollected = Math.max(0, employee.depositCollected - cashoutAmount);
+            updateData.cashCollected = Math.max(0, employee.cashCollected - cashoutAmount);
+        } else if (category === "rent") {
+            updateData.rentCollected = Math.max(0, employee.rentCollected - cashoutAmount);
+            updateData.cashCollected = Math.max(0, employee.cashCollected - cashoutAmount);
+        } else {
+            // General cashout
+            updateData.cashCollected = Math.max(0, employee.cashCollected - cashoutAmount);
+            updateData.rentCollected = Math.max(0, employee.rentCollected - cashoutAmount);
+            updateData.depositCollected = 0;
+        }
+
         const updated = await prisma.employee.update({
             where: { id: employeeId },
-            data: { cashCollected: newBalance, lastCollectedAt: new Date() },
+            data: updateData,
         });
 
         return res.json(updated);
