@@ -963,7 +963,8 @@ export async function generateStockPDF(menuItems: any[]): Promise<Buffer> {
         y += 30;
 
         // Rows
-        for (const item of menuItems) {
+        const trackedItems = menuItems.filter((i: any) => i.tracked === true);
+        for (const item of trackedItems) {
             if (y > pageHeight - 65) {
                 doc.addPage();
                 doc.rect(15, 15, pageWidth - 30, pageHeight - 30).lineWidth(1.5).stroke(GOLD);

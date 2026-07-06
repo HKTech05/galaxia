@@ -115,7 +115,7 @@ export default function ReadOnlyInventoryPage() {
             ) : (
                 <div className="space-y-8">
                     {categories.map((category) => {
-                        const items = menuItems.filter(i => i.category === category);
+                        const items = menuItems.filter(i => i.category === category && i.tracked === true);
                         if (items.length === 0) return null;
 
                         return (
