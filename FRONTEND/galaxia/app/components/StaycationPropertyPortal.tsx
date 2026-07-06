@@ -1397,7 +1397,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
 
                                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-xs font-bold text-slate-600">UPI Refund Proof (Optional)</label>
+                                                <label className="text-xs font-bold text-slate-600">UPI Refund Proof (Required for UPI)</label>
                                                 {upiProofRefund && (
                                                     <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded uppercase">
                                                         Selected
@@ -1436,7 +1436,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             </button>
                                             
                                             <button
-                                                disabled={uploadingRefund}
+                                                disabled={uploadingRefund || !upiProofRefund}
                                                 onClick={async () => {
                                                     try {
                                                         setUploadingRefund(true);
@@ -1464,9 +1464,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                         setUploadingRefund(false);
                                                     }
                                                 }}
-                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors border border-indigo-200 col-span-1 disabled:opacity-50"
+                                                className="flex flex-col items-center justify-center gap-1.5 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors border border-indigo-200 col-span-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200"
+                                                title={!upiProofRefund ? "Please select a proof file first" : ""}
                                             >
-                                                {uploadingRefund ? <Loader2 size={16} className="animate-spin text-indigo-600" /> : <span className="font-bold text-[10px] bg-indigo-200 text-indigo-800 px-1 py-0.5 rounded-sm leading-none">UPI</span>}
+                                                {uploadingRefund ? <Loader2 size={16} className="animate-spin text-indigo-600" /> : <span className={`font-bold text-[10px] px-1 py-0.5 rounded-sm leading-none ${!upiProofRefund ? 'bg-slate-200 text-slate-500' : 'bg-indigo-200 text-indigo-800'}`}>UPI</span>}
                                                 <span className="text-xs">UPI</span>
                                             </button>
 
