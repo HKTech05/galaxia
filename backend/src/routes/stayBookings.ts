@@ -1593,6 +1593,36 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
             },
         });
 
+        // Fetch newBooking with populated properties
+        const populatedNewBooking = await prisma.staycationBooking.findUnique({
+            where: { id: newBooking.id },
+            include: { property: true, subProperty: true }
+        });
+
+        if (populatedNewBooking) {
+            const plainPhone = populatedNewBooking.customerPhone ? decrypt(populatedNewBooking.customerPhone) : null;
+            const plainEmail = populatedNewBooking.customerEmail ? decrypt(populatedNewBooking.customerEmail) : null;
+            
+            // Send confirmation email (fire-and-forget)
+            sendBookingConfirmation({ ...populatedNewBooking, customerPhone: plainPhone, customerEmail: plainEmail }).catch(() => {});
+            
+            // Generate and send PDF (fire-and-forget)
+            const prop = populatedNewBooking.property || {};
+            const sub = populatedNewBooking.subProperty;
+            const ownerPropertyName = sub ? `${sub.name} — ${prop.name}` : (prop.name || "Galaxia Property");
+            generateStaycationBookingPDF({ ...populatedNewBooking, customerPhone: plainPhone, customerEmail: plainEmail })
+                .then((pdfBuffer) =>
+                    sendOwnerBookingNotification({
+                        bookingRef: populatedNewBooking.bookingRef,
+                        customerName: populatedNewBooking.customerName,
+                        module: "staycation",
+                        propertyName: ownerPropertyName,
+                        pdfBuffer,
+                    })
+                )
+                .catch((err) => console.error("[Owner Notify] Transfer PDF/email failed:", err));
+        }
+
         return res.json({ original: { id: bookingId, status: "transferred" }, newBooking });
     } catch (error) {
         console.error("Transfer staycation booking error:", error);
