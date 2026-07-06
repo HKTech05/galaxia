@@ -134,33 +134,40 @@ export default function InventoryPage() {
         }
     }, [currentTab]);
 
+    const getUpdatedMenuItems = (currentList: MenuItem[]) => {
+        return currentList.map(item => {
+            const stockVal = editStocks[item.id] !== undefined ? editStocks[item.id] : String(item.stock ?? 100);
+            const stockNum = stockVal === "" ? 0 : parseInt(stockVal);
+            const priceVal = editPrices[item.id] !== undefined ? editPrices[item.id] : String(item.price ?? 0);
+            const priceNum = priceVal === "" ? 0 : parseInt(priceVal);
+            const costPriceVal = editCostPrices[item.id] !== undefined ? editCostPrices[item.id] : String(item.costPrice ?? 0);
+            const costPriceNum = costPriceVal === "" ? 0 : parseInt(costPriceVal);
+            return {
+                ...item,
+                name: editNames[item.id] !== undefined ? editNames[item.id] : item.name,
+                price: isNaN(priceNum) ? item.price : priceNum,
+                stock: isNaN(stockNum) ? (item.stock ?? 100) : stockNum,
+                costPrice: isNaN(costPriceNum) ? (item.costPrice ?? 0) : costPriceNum
+            };
+        });
+    };
+
     const handleSave = async () => {
         setSaving(true);
         setError("");
         setSuccessMsg("");
         try {
-            const updatedMenu = menuItems.map(item => {
-                const stockVal = editStocks[item.id];
-                const stockNum = stockVal === "" ? 0 : parseInt(stockVal);
-                if (isNaN(stockNum) || stockNum < 0) {
+            const updatedMenu = getUpdatedMenuItems(menuItems);
+            for (const item of updatedMenu) {
+                const stock = item.stock ?? 0;
+                if (isNaN(stock) || stock < 0) {
                     throw new Error(`Invalid stock value for ${item.name}`);
                 }
-                const priceVal = editPrices[item.id];
-                const priceNum = priceVal === "" ? 0 : parseInt(priceVal);
-                if (isNaN(priceNum) || priceNum < 0) {
+                const price = item.price ?? 0;
+                if (isNaN(price) || price < 0) {
                     throw new Error(`Invalid price for ${item.name}`);
                 }
-                const costPriceVal = editCostPrices[item.id];
-                const costPriceNum = costPriceVal === "" ? 0 : parseInt(costPriceVal);
-                return {
-                    ...item,
-                    name: editNames[item.id] || item.name,
-                    price: priceNum,
-                    stock: stockNum,
-                    costPrice: isNaN(costPriceNum) ? 0 : costPriceNum
-                };
-            });
-
+            }
             await api.put("/hospitality/menu", { menuItems: updatedMenu });
             setMenuItems(updatedMenu);
             setSuccessMsg("Inventory updated successfully!");
@@ -188,7 +195,8 @@ export default function InventoryPage() {
             costPrice: parseInt(newItemCostPrice) || 0
         };
 
-        const updatedMenu = [...menuItems, newItem];
+        const currentUpdated = getUpdatedMenuItems(menuItems);
+        const updatedMenu = [...currentUpdated, newItem];
         try {
             setSaving(true);
             await api.put("/hospitality/menu", { menuItems: updatedMenu });
@@ -213,7 +221,8 @@ export default function InventoryPage() {
         const item = menuItems.find(i => i.id === itemId);
         if (!item || !confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
 
-        const updatedMenu = menuItems.filter(i => i.id !== itemId);
+        const currentUpdated = getUpdatedMenuItems(menuItems);
+        const updatedMenu = currentUpdated.filter(i => i.id !== itemId);
         try {
             setSaving(true);
             await api.put("/hospitality/menu", { menuItems: updatedMenu });
@@ -441,11 +450,15 @@ export default function InventoryPage() {
                                             <input
                                                 type="checkbox"
                                                 checked={!!item.tracked}
-                                                onChange={() => {
-                                                    const updated = menuItems.map(m => m.id === item.id ? { ...m, tracked: !m.tracked } : m);
+                                                onChange={async () => {
+                                                    const currentUpdated = getUpdatedMenuItems(menuItems);
+                                                    const updated = currentUpdated.map(m => m.id === item.id ? { ...m, tracked: !m.tracked } : m);
                                                     setMenuItems(updated);
-                                                    // Auto-save
-                                                    api.put("/hospitality/menu", { menuItems: updated }).catch(() => {});
+                                                    try {
+                                                        await api.put("/hospitality/menu", { menuItems: updated });
+                                                    } catch (err) {
+                                                        console.error("Failed to auto-save tracking toggle:", err);
+                                                    }
                                                 }}
                                                 className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shrink-0"
                                                 title={item.tracked ? "Untrack item" : "Track item"}
