@@ -11,14 +11,12 @@ const TARGET_EMAILS = [
 ];
 
 async function check() {
-    console.log("Checking DB records for target users...");
+    console.log("Checking DB records for target users with review creation dates...");
     for (const email of TARGET_EMAILS) {
         const user = await prisma.user.findUnique({
             where: { email },
             include: {
-                stayBookings: {
-                    include: { property: true }
-                },
+                stayBookings: true,
                 reviews: {
                     include: { property: true }
                 }
@@ -31,14 +29,10 @@ async function check() {
         }
 
         console.log(`\n👤 User: ${user.fullName} (${email})`);
-        console.log(`  Stay Bookings count: ${user.stayBookings.length}`);
-        user.stayBookings.forEach(b => {
-            console.log(`    Ref: ${b.bookingRef}, Property: ${b.property.name}, Dates: ${b.checkInDate.toISOString().split('T')[0]} to ${b.checkOutDate.toISOString().split('T')[0]}, Amount: ₹${b.totalAmount}`);
-        });
-
-        console.log(`  Reviews count: ${user.reviews.length}`);
         user.reviews.forEach(r => {
-            console.log(`    Rating: ${r.rating} stars, Property: ${r.property?.name}, Text: "${r.reviewText}"`);
+            console.log(`  Review Date: ${r.createdAt.toISOString()}`);
+            console.log(`  Rating: ${r.rating} stars, Property: ${r.property?.name}`);
+            console.log(`  Text: "${r.reviewText}"`);
         });
     }
 }
