@@ -397,11 +397,14 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         const petCharges = (booking.numPets || 0) * 600;
 
         let addonsTotal = 0;
+        let transferFee = 0;
         const displayAddons: { label: string; price: number }[] = [];
         if (booking.addons && typeof booking.addons === "object") {
             const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
             for (const a of addonsData) {
-                if (a && a.name !== 'Food Preference' && a.price) {
+                if (a && a.transferInfo && a.transferInfo.fee) {
+                    transferFee = Number(a.transferInfo.fee) || 0;
+                } else if (a && a.name !== 'Food Preference' && a.price) {
                     const price = Number(a.price) || 0;
                     addonsTotal += price;
                     displayAddons.push({
@@ -444,6 +447,9 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         }
 
         y = drawPaymentRow(doc, "Taxes", fmtCurrency(taxes), y);
+        if (transferFee > 0) {
+            y = drawPaymentRow(doc, "Transfer Fee", fmtCurrency(transferFee), y);
+        }
 
         doc.moveTo(250, y).lineTo(doc.page.width - 50, y).strokeColor(GOLD).lineWidth(1.5).stroke();
         y += 6;

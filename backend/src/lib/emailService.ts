@@ -107,11 +107,14 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
 
     let displayAddons: { label: string; price: number }[] = [];
     let foodPreference = "";
+    let transferFee = 0;
     if (booking.addons && typeof booking.addons === "object") {
         const addonsData = Array.isArray(booking.addons) ? booking.addons : [booking.addons];
         const foodPrefs: string[] = [];
         for (const a of addonsData) {
-            if (a && a.name === 'Food Preference' && a.foodType) {
+            if (a && a.transferInfo && a.transferInfo.fee) {
+                transferFee = Number(a.transferInfo.fee) || 0;
+            } else if (a && a.name === 'Food Preference' && a.foodType) {
                 if (a.count !== undefined && a.count !== null && a.count > 0) {
                     foodPrefs.push(`${a.foodType} Veg: ${a.count}`);
                 } else {
@@ -162,6 +165,9 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
     }
 
     pricingRowsHtml += paymentRow("Taxes", fmtCurrency(taxes));
+    if (transferFee > 0) {
+        pricingRowsHtml += paymentRow("Transfer Fee", fmtCurrency(transferFee));
+    }
     pricingRowsHtml += paymentRow("Total Amount", fmtCurrency(displayTotalAmount), { bold: true, color: GOLD, borderTop: true });
     pricingRowsHtml += divider();
 
@@ -349,13 +355,17 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
 </html>`;
 
     try {
+        const subject = transferFee > 0
+            ? `Booking Transferred & Confirmed | ${booking.bookingRef} — ${propertyName}`
+            : (booking.source === "collab"
+                ? `Collab Booking Confirmed | ${booking.bookingRef} — ${propertyName}`
+                : `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`);
+
         await getResend()?.emails.send({
             from: FROM_EMAIL,
             to: email,
             replyTo: REPLY_TO,
-            subject: booking.source === "collab"
-                ? `Collab Booking Confirmed | ${booking.bookingRef} — ${propertyName}`
-                : `Booking Confirmed | ${booking.bookingRef} — ${propertyName}`,
+            subject,
             html,
         });
         console.log(`[Email] Staycation confirmation sent to ${email}`);

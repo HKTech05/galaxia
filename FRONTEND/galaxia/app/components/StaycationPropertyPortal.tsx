@@ -439,7 +439,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const todaysBookings = bookings.map(b => {
         const matchesProperty = properties.some(p => b.property.includes(p) || (b.parentProperty && b.parentProperty === p));
         if (!matchesProperty) return null;
-        if (b.status === "Cancelled") return null;
+        
+        // Normalize status check to lowercase to handle both backend and frontend casings
+        const normStatus = (b.status || "").toLowerCase();
+        if (normStatus === "cancelled" || normStatus === "transferred" || normStatus === "no_show" || normStatus === "no-show") return null;
 
         const fmtLocalDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         const selectedDateStr = fmtLocalDateStr(startDate);
