@@ -1641,6 +1641,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 onClose={() => setIsManualBookingOpen(false)}
                 onSuccess={fetchBookings}
                 properties={properties}
+                isPropertyPortal={true}
             />
         </div >
 

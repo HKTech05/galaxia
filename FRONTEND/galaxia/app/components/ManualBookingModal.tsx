@@ -11,12 +11,13 @@ interface ManualBookingModalProps {
     onSuccess: () => void;
     properties: string[];
     isCollab?: boolean;
+    isPropertyPortal?: boolean;
 }
 
 const DECORATION_PRICE = 1200;
 const AMBROSE_VILLAS = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
 
-export default function ManualBookingModal({ isOpen, onClose, onSuccess, properties, isCollab = false }: ManualBookingModalProps) {
+export default function ManualBookingModal({ isOpen, onClose, onSuccess, properties, isCollab = false, isPropertyPortal = false }: ManualBookingModalProps) {
     const [manualForm, setManualForm] = useState({
         name: "",
         guests: 2,
@@ -672,7 +673,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         securityDeposit: isCollab ? 0 : (manualForm.property.includes("Amstel") || manualForm.property.includes("Hill View") ? 2000 : 3000),
                         advancePaid: true,
                         advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
-                        source: isCollab ? "collab" : "reception",
+                        source: isCollab ? "collab" : (isPropertyPortal ? "reception" : "admin"),
                         couponCode: manualAppliedCoupon?.code || null,
                     };
 
@@ -734,7 +735,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         securityDeposit: isCollab ? 0 : (manualForm.property.includes("Amstel") || manualForm.property.includes("Hill View") ? 2000 : 3000),
                         advancePaid: true,
                         advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
-                        source: isCollab ? "collab" : "reception",
+                        source: isCollab ? "collab" : (isPropertyPortal ? "reception" : "admin"),
                         couponCode: manualAppliedCoupon?.code || null,
                     };
 
@@ -777,7 +778,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         securityDeposit: isCollab ? 0 : (manualForm.property.includes("Amstel") || manualForm.property.includes("Hill View") ? 2000 : 3000),
                         advancePaid: true,
                         advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
-                        source: isCollab ? "collab" : "reception",
+                        source: isCollab ? "collab" : (isPropertyPortal ? "reception" : "admin"),
                         couponCode: manualAppliedCoupon?.code || null,
                     };
 
@@ -948,7 +949,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     securityDeposit: isCollab ? 0 : (manualForm.property.includes("Amstel") || manualForm.property.includes("Hill View") ? 2000 : 3000),
                     advancePaid: true,
                     advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
-                    source: isCollab ? "collab" : "reception",
+                    source: isCollab ? "collab" : (isPropertyPortal ? "reception" : "admin"),
                     couponCode: manualAppliedCoupon?.code || null,
                 };
 
@@ -1024,7 +1025,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     gstAmount: isCollab ? 0 : calculated.gstAmount,
                     advancePaid: true,
                     advanceMethod: isCollab ? "Collab" : manualForm.paymentMethod,
-                    source: isCollab ? "collab" : "reception",
+                    source: isCollab ? "collab" : (isPropertyPortal ? "reception" : "admin"),
                     couponCode: manualAppliedCoupon?.code || null,
                     discountAmount: isCollab ? 0 : manualDiscountAmount,
                     addons: bookingAddons.length > 0 ? bookingAddons : null,
