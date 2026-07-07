@@ -392,10 +392,10 @@ export default function ChefPortalPage() {
     } | null>(null);
     const [loadingMealCounter, setLoadingMealCounter] = useState(false);
 
-    const fetchMealCounter = useCallback(async () => {
+    const fetchMealCounter = useCallback(async (targetDate: Date) => {
         setLoadingMealCounter(true);
         try {
-            const dateStr = `${chefFulfilledDate.getFullYear()}-${String(chefFulfilledDate.getMonth() + 1).padStart(2, '0')}-${String(chefFulfilledDate.getDate()).padStart(2, '0')}`;
+            const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
             const data = await api.get(`/meal-counters?date=${dateStr}`);
             setMealCounter(data);
         } catch (err) {
@@ -403,13 +403,13 @@ export default function ChefPortalPage() {
         } finally {
             setLoadingMealCounter(false);
         }
-    }, [chefFulfilledDate]);
+    }, []);
 
     useEffect(() => {
         if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
-            fetchMealCounter();
+            fetchMealCounter(counterDate);
         }
-    }, [userRole, chefFulfilledDate, fetchMealCounter]);
+    }, [userRole, counterDate, fetchMealCounter]);
 
     useEffect(() => {
         if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
@@ -814,7 +814,7 @@ export default function ChefPortalPage() {
                             <p className="text-xs text-slate-400 mt-0.5 font-medium">Counts updated by housekeeping staff for the selected date.</p>
                         </div>
                         <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
-                            Date: {chefFulfilledDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            Date: {counterDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                     </div>
                     {loadingMealCounter && !mealCounter ? (
