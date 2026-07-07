@@ -298,7 +298,7 @@ export default function ReportsPage() {
                 doc.text(`Total Bookings: ${gstStats.count} (${totalVillasCount} Villas)`, 20, startY + 13);
                 doc.text(`Total Taxable Amount: ${rawPdfFmt(gstStats.totalBase)}`, 160, startY + 13);
                 // Row 2
-                doc.text(`Total GST (18%): ${rawPdfFmt(gstStats.totalGst)}`, 20, startY + 20);
+                doc.text(`Total GST (5%): ${rawPdfFmt(gstStats.totalGst)}`, 20, startY + 20);
                 doc.text(`Total Gross: ${rawPdfFmt(gstStats.totalAmount)}`, 160, startY + 20);
             } else {
                 // Row 1
@@ -672,7 +672,7 @@ export default function ReportsPage() {
                     {reportType === "gst" ? (
                         [
                             { label: "Total Gross Amount", value: fmt(gstStats.totalAmount), icon: IndianRupee, color: "text-emerald-600", bg: "bg-emerald-50" },
-                            { label: "Total GST (18%)", value: fmt(gstStats.totalGst), icon: FileText, color: "text-purple-600", bg: "bg-purple-50" },
+                            { label: "Total GST (5%)", value: fmt(gstStats.totalGst), icon: FileText, color: "text-purple-600", bg: "bg-purple-50" },
                             { label: "Total Taxable Amount", value: fmt(gstStats.totalBase), icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
                             { label: "Total Records", value: gstStats.count.toString(), icon: Calendar, color: "text-amber-600", bg: "bg-amber-50" },
                         ].map(card => (
