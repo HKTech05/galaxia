@@ -58,7 +58,10 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                 });
                 await prisma.employee.update({
                     where: { id: employee.id },
-                    data: { cashCollected: { increment: parsedAmount } },
+                    data: { 
+                        cashCollected: { increment: parsedAmount },
+                        rentCollected: { increment: parsedAmount }
+                    },
                 });
             }
 
@@ -158,7 +161,10 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
                 });
                 await prisma.employee.update({
                     where: { id: employee.id },
-                    data: { cashCollected: { decrement: bill.amount } },
+                    data: { 
+                        cashCollected: { decrement: bill.amount },
+                        rentCollected: { decrement: bill.amount }
+                    },
                 });
             }
 

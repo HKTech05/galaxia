@@ -925,7 +925,10 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
                 if (employee) {
                     await prisma.employee.update({
                         where: { id: employee.id },
-                        data: { cashCollected: { increment: chargeAmount } },
+                        data: { 
+                            cashCollected: { increment: chargeAmount },
+                            rentCollected: { increment: chargeAmount }
+                        },
                     });
                     await prisma.cashTransaction.create({
                         data: {
