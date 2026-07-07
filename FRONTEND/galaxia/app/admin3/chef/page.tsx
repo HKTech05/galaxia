@@ -385,6 +385,9 @@ export default function ChefPortalPage() {
         breakfastEaten: number;
         lunchEaten: number;
         dinnerEaten: number;
+        breakfastTotal?: number;
+        lunchTotal?: number;
+        dinnerTotal?: number;
         bookings: any[];
     } | null>(null);
     const [loadingMealCounter, setLoadingMealCounter] = useState(false);
@@ -822,9 +825,9 @@ export default function ChefPortalPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {[
-                                { key: "breakfast", label: "Breakfast", icon: Coffee, count: mealCounter?.breakfastEaten || 0, color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70", iconColor: "text-amber-600" },
-                                { key: "lunch", label: "Lunch", icon: Sun, count: mealCounter?.lunchEaten || 0, color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70", iconColor: "text-emerald-600" },
-                                { key: "dinner", label: "Dinner", icon: Moon, count: mealCounter?.dinnerEaten || 0, color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70", iconColor: "text-indigo-600" }
+                                { key: "breakfast", label: "Breakfast", icon: Coffee, count: mealCounter?.breakfastEaten || 0, total: mealCounter?.breakfastTotal !== undefined ? mealCounter.breakfastTotal : (mealCounter?.totalGuests || 0), color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70", iconColor: "text-amber-600" },
+                                { key: "lunch", label: "Lunch", icon: Sun, count: mealCounter?.lunchEaten || 0, total: mealCounter?.lunchTotal !== undefined ? mealCounter.lunchTotal : (mealCounter?.totalGuests || 0), color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70", iconColor: "text-emerald-600" },
+                                { key: "dinner", label: "Dinner", icon: Moon, count: mealCounter?.dinnerEaten || 0, total: mealCounter?.dinnerTotal !== undefined ? mealCounter.dinnerTotal : (mealCounter?.totalGuests || 0), color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70", iconColor: "text-indigo-600" }
                             ].map((meal) => {
                                 const Icon = meal.icon;
                                 return (
@@ -836,7 +839,7 @@ export default function ChefPortalPage() {
                                             <span className="font-extrabold text-sm">{meal.label}</span>
                                         </div>
                                         <span className="font-black text-2xl tracking-tight">
-                                            {meal.count} / {mealCounter?.totalGuests || 0}
+                                            {meal.count} / {meal.total}
                                         </span>
                                     </div>
                                 );

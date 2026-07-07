@@ -36,7 +36,9 @@ router.get("/", authMiddleware, async (req, res) => {
                 bookingRef: true,
                 customerName: true,
                 assignedUnit: true,
-                numGuests: true
+                numGuests: true,
+                checkInDate: true,
+                checkOutDate: true
             }
         });
 
@@ -51,15 +53,32 @@ router.get("/", authMiddleware, async (req, res) => {
         // Map them together
         const bookingsWithMeals = filteredBookings.map(b => {
             const record = mealRecords.find(r => r.bookingId === b.id);
+
+            // Local date formatted string YYYY-MM-DD
+            const checkInStr = b.checkInDate.toISOString().split("T")[0];
+            const checkOutStr = b.checkOutDate.toISOString().split("T")[0];
+
+            const isCheckInDay = (checkInStr === dateStr);
+            const isCheckOutDay = (checkOutStr === dateStr);
+
+            const guestsCount = b.numGuests || 0;
+
+            const breakfastEligible = isCheckOutDay || (!isCheckInDay && !isCheckOutDay);
+            const lunchEligible = isCheckInDay || (!isCheckInDay && !isCheckOutDay);
+            const dinnerEligible = isCheckInDay || (!isCheckInDay && !isCheckOutDay);
+
             return {
                 bookingId: b.id,
                 bookingRef: b.bookingRef,
                 guestName: b.customerName,
                 villaName: b.assignedUnit!,
-                numGuests: b.numGuests || 0,
+                numGuests: guestsCount,
                 breakfast: record ? record.breakfast : 0,
                 lunch: record ? record.lunch : 0,
-                dinner: record ? record.dinner : 0
+                dinner: record ? record.dinner : 0,
+                breakfastEligible: breakfastEligible ? guestsCount : 0,
+                lunchEligible: lunchEligible ? guestsCount : 0,
+                dinnerEligible: dinnerEligible ? guestsCount : 0
             };
         });
 
@@ -69,12 +88,19 @@ router.get("/", authMiddleware, async (req, res) => {
         const lunchEaten = bookingsWithMeals.reduce((sum, b) => sum + b.lunch, 0);
         const dinnerEaten = bookingsWithMeals.reduce((sum, b) => sum + b.dinner, 0);
 
+        const breakfastTotal = bookingsWithMeals.reduce((sum, b) => sum + b.breakfastEligible, 0);
+        const lunchTotal = bookingsWithMeals.reduce((sum, b) => sum + b.lunchEligible, 0);
+        const dinnerTotal = bookingsWithMeals.reduce((sum, b) => sum + b.dinnerEligible, 0);
+
         return res.json({
             date: dateStr,
             totalGuests,
             breakfastEaten,
             lunchEaten,
             dinnerEaten,
+            breakfastTotal,
+            lunchTotal,
+            dinnerTotal,
             bookings: bookingsWithMeals
         });
     } catch (err: any) {
