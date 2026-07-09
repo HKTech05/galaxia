@@ -199,6 +199,10 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                 <>
                                     {renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
                                 </>
+                            ) : adminRole === "accountant" ? (
+                                <>
+                                    {renderNavItem({ name: "Reports", href: "/admin3/reports", icon: FileText })}
+                                </>
                             ) : (
                                 <>
                                     {/* Owner/Dev only: Dashboard, Bookings, Quotation */}

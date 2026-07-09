@@ -34,7 +34,9 @@ export default function AdminLoginPage() {
                 const role = res.admin?.role;
                 const hasFullAccess = !ap || role === "owner" || role === "developer";
                 
-                if (role === "chef") {
+                if (role === "accountant") {
+                    router.push("/admin3/reports");
+                } else if (role === "chef") {
                     router.push("/admin3/chef");
                 } else if (role === "housekeeping") {
                     router.push("/admin3/housekeeping");

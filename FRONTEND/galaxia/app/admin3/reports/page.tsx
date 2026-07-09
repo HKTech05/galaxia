@@ -96,6 +96,7 @@ export default function ReportsPage() {
     const [dateRange, setDateRange] = useState({ from: "", to: "" });
     const [selectedProps, setSelectedProps] = useState<string[]>(["all"]);
     const [paymentFilter, setPaymentFilter] = useState("all");
+    const [sourceFilter, setSourceFilter] = useState<"all" | "website" | "manual">("all");
 
     useEffect(() => {
         (async () => {
@@ -176,9 +177,18 @@ export default function ReportsPage() {
                 if (!hasC && !hasU) return false;
             }
 
+            // Source Filter
+            const bSource = b.source || "website";
+            const isWebsite = bSource === "website";
+            if (sourceFilter === "website") {
+                if (!isWebsite) return false;
+            } else if (sourceFilter === "manual") {
+                if (isWebsite) return false;
+            }
+
             return true;
         });
-    }, [combinedBookings, dateRange, selectedProps, paymentFilter]);
+    }, [combinedBookings, dateRange, selectedProps, paymentFilter, sourceFilter]);
 
     const staycationProperties = useMemo(() => {
         const names = new Set<string>();
@@ -276,7 +286,8 @@ export default function ReportsPage() {
             const propText = selectedProps.includes("all")
                 ? "All Properties"
                 : selectedProps.join(", ");
-            doc.text(`Period: ${dateRange.from} to ${dateRange.to}  |  Property: ${propText}  |  Payment: ${paymentFilter}`, pageWidth / 2, 21, { align: "center" });
+            const sourceText = sourceFilter === "all" ? "All Sources" : sourceFilter === "website" ? "Website" : "Manual";
+            doc.text(`Period: ${dateRange.from} to ${dateRange.to}  |  Property: ${propText}  |  Payment: ${paymentFilter}  |  Source: ${sourceText}`, pageWidth / 2, 21, { align: "center" });
 
             doc.setFontSize(8);
             doc.text(`Generated on: ${new Date().toLocaleString("en-IN")}`, pageWidth / 2, 26, { align: "center" });
@@ -541,7 +552,7 @@ export default function ReportsPage() {
             {/* Filters */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-sm font-bold text-slate-600 uppercase tracking-wider"><Filter size={14} className="text-indigo-600" /> Filters</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div>
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Report Type</label>
                         <select value={reportType} onChange={e => setReportType(e.target.value as ReportType)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none">
@@ -660,6 +671,14 @@ export default function ReportsPage() {
                             <option value="cash">Cash Only</option>
                             <option value="upi">UPI Only</option>
                             <option value="cash_upi">Cash + UPI</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Booking Source</label>
+                        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value as "all" | "website" | "manual")} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:outline-none">
+                            <option value="all">All Sources</option>
+                            <option value="website">Website</option>
+                            <option value="manual">Manual</option>
                         </select>
                     </div>
                 </div>

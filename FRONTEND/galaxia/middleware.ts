@@ -41,6 +41,29 @@ export function middleware(request: NextRequest) {
             // No token found, redirect strictly to the admin login portal
             return NextResponse.redirect(new URL('/login', request.url));
         }
+
+        // Accountant Role check: restrict access to /admin3/reports only
+        try {
+            const parts = adminToken.value.split('.');
+            if (parts.length === 3) {
+                const base64Url = parts[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                        .split('')
+                        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                        .join('')
+                );
+                const payload = JSON.parse(jsonPayload);
+                if (payload.role === 'accountant') {
+                    if (!pathname.startsWith('/admin3/reports')) {
+                        return NextResponse.redirect(new URL('/admin3/reports', request.url));
+                    }
+                }
+            }
+        } catch (err) {
+            // Let normal validation proceed if decode fails
+        }
     }
 
     return NextResponse.next();
