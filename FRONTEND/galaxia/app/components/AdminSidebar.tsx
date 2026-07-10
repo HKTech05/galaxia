@@ -101,6 +101,26 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
         }).catch(() => { setProfileLoaded(true); });
     }, [isAdmin3]);
 
+    useEffect(() => {
+        if (!isAdmin3 || !adminUsername) return;
+        
+        const isRestrictedPath = pathname.startsWith("/admin3/housekeeping") || pathname.startsWith("/admin3/food-bill-history");
+        
+        if (adminUsername === "ddadmin") {
+            if (isRestrictedPath || pathname === "/admin3" || pathname === "/admin3/") {
+                router.push("/admin3/digital-diaries");
+            }
+        } else if (adminUsername === "srd") {
+            if (isRestrictedPath || pathname === "/admin3" || pathname === "/admin3/") {
+                router.push("/admin3/heavenly-villa");
+            }
+        } else if (adminUsername === "M&L") {
+            if (isRestrictedPath || pathname === "/admin3" || pathname === "/admin3/") {
+                router.push("/admin3/views-paraiso");
+            }
+        }
+    }, [isAdmin3, adminUsername, pathname, router]);
+
     // Full access = owner, developer, or null assignedProperties
     const hasFullAccess = !assignedProperties || adminRole === "owner" || adminRole === "developer";
 
@@ -271,8 +291,8 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                         /* Sub-admins (e.g., Amb profile): show assigned receptionist items, Housekeeping, and Food Bill History */
                                         <>
                                             {visibleReceptionistItems.map(item => renderNavItem(item))}
-                                            {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
-                                            {renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
+                                            {!["ddadmin", "srd", "M&L"].includes(adminUsername) && renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
+                                            {!["ddadmin", "srd", "M&L"].includes(adminUsername) && renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
                                             {["ranjit", "devi"].includes(adminUsername) && renderNavItem({ name: "Inventory", href: "/admin3/read-only-inventory", icon: Package })}
                                             {/* Security hidden for ranjit for now */}
                                         </>

@@ -32,9 +32,16 @@ export default function AdminLoginPage() {
                 // Redirect based on role: sub-admins go to their first visible page
                 const ap = res.admin?.assignedProperties;
                 const role = res.admin?.role;
+                const username = res.admin?.username;
                 const hasFullAccess = !ap || role === "owner" || role === "developer";
                 
-                if (role === "accountant") {
+                if (username === "ddadmin") {
+                    router.push("/admin3/digital-diaries");
+                } else if (username === "srd") {
+                    router.push("/admin3/heavenly-villa");
+                } else if (username === "M&L") {
+                    router.push("/admin3/views-paraiso");
+                } else if (role === "accountant") {
                     router.push("/admin3/reports");
                 } else if (role === "chef") {
                     router.push("/admin3/chef");

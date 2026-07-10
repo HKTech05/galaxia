@@ -90,10 +90,18 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
             updateData.rentCollected = Math.max(0, employee.rentCollected - cashoutAmount);
             updateData.cashCollected = Math.max(0, employee.cashCollected - cashoutAmount);
         } else {
-            // General cashout
+            // General cashout — distribute proportionally between rent and deposit
             updateData.cashCollected = Math.max(0, employee.cashCollected - cashoutAmount);
-            updateData.rentCollected = Math.max(0, employee.rentCollected - cashoutAmount);
-            updateData.depositCollected = 0;
+            const totalSplit = employee.rentCollected + employee.depositCollected;
+            if (totalSplit > 0) {
+                const rentShare = Math.round((employee.rentCollected / totalSplit) * cashoutAmount);
+                const depShare = cashoutAmount - rentShare;
+                updateData.rentCollected = Math.max(0, employee.rentCollected - rentShare);
+                updateData.depositCollected = Math.max(0, employee.depositCollected - depShare);
+            } else {
+                updateData.rentCollected = 0;
+                updateData.depositCollected = 0;
+            }
         }
 
         const updated = await prisma.employee.update({
