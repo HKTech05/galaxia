@@ -133,16 +133,48 @@ router.delete("/:empId/transactions/:txId", authMiddleware, requireRole("owner",
         });
         if (!tx) return res.status(404).json({ error: "Transaction not found" });
 
-        // Reverse the cash impact
-        if (tx.transactionType === "collection") {
+        const note = (tx.note || "").toLowerCase();
+        const type = (tx.transactionType || "").toLowerCase();
+        const amt = tx.amount;
+
+        const isDeposit = note.includes("security deposit") || 
+                          note.includes("deposit refund") || 
+                          type === "refund" || 
+                          note.includes("(security deposit)");
+
+        const updateData: any = {};
+
+        if (type === "collection" || type === "food_collection") {
+            // Revert cash collection (subtract)
+            updateData.cashCollected = { decrement: amt };
+            if (isDeposit) {
+                updateData.depositCollected = { decrement: amt };
+            } else {
+                updateData.rentCollected = { decrement: amt };
+            }
+        } else if (type === "refund") {
+            // Revert cash refund (add it back)
+            const absAmt = Math.abs(amt);
+            updateData.cashCollected = { increment: absAmt };
+            updateData.depositCollected = { increment: absAmt };
+        } else if (type === "owner_pickup") {
+            // Revert owner pickup (add it back)
+            updateData.cashCollected = { increment: amt };
+            if (isDeposit) {
+                updateData.depositCollected = { increment: amt };
+            } else {
+                updateData.rentCollected = { increment: amt };
+            }
+        } else if (type === "expense" || type === "food_expense") {
+            // Revert expense payout (add it back)
+            updateData.cashCollected = { increment: amt };
+            updateData.rentCollected = { increment: amt };
+        }
+
+        if (Object.keys(updateData).length > 0) {
             await prisma.employee.update({
                 where: { id: empId },
-                data: { cashCollected: { decrement: tx.amount } },
-            });
-        } else if (tx.transactionType === "owner_pickup") {
-            await prisma.employee.update({
-                where: { id: empId },
-                data: { cashCollected: { increment: tx.amount } },
+                data: updateData,
             });
         }
 
