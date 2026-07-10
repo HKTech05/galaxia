@@ -275,15 +275,21 @@ export default function ChefPortalPage() {
     const isOwnerOrDev = userRole === "owner" || userRole === "developer";
 
     // Generate dynamic quantity options based on unit
-    const getQuantityOptions = (unit: string) => {
+    const getQuantityOptions = (unit: string, nameEn?: string) => {
         const arr = [];
         if (unit === "kg" || unit === "L") {
             for (let i = 0.5; i <= 20; i += 0.5) {
                 arr.push(`${i.toFixed(1).replace(".0", "")}${unit}`);
             }
         } else if (unit === "packet") {
-            for (let i = 1; i <= 10; i++) {
-                arr.push(`${i} packet${i > 1 ? "s" : ""}`);
+            if (nameEn?.toLowerCase() === "bread") {
+                for (let i = 1; i <= 10; i++) {
+                    arr.push(`${i} laadi`);
+                }
+            } else {
+                for (let i = 1; i <= 10; i++) {
+                    arr.push(`${i} packet${i > 1 ? "s" : ""}`);
+                }
             }
         } else if (unit === "piece") {
             for (let i = 1; i <= 15; i++) {
@@ -535,15 +541,22 @@ export default function ChefPortalPage() {
             const currentVal = selectedQuantities[ingredient.id] || "";
             
             if (ingredient.unit === "cold_drink") {
-                // Parse existing selections
+                // Parse existing selections (e.g. "Pepsi 1L x 2, Sprite 2L x 1")
                 const initialTemp: Record<string, string> = {};
                 if (currentVal) {
                     const parts = currentVal.split(", ");
                     for (const part of parts) {
                         const matchedBrand = BRANDS.find(brand => part.startsWith(brand));
                         if (matchedBrand) {
-                            const vol = part.substring(matchedBrand.length).trim();
-                            initialTemp[matchedBrand] = vol;
+                            const remaining = part.substring(matchedBrand.length).trim(); // e.g. "1L x 3" or "1L"
+                            const xIndex = remaining.indexOf(" x ");
+                            let vol = remaining;
+                            let qty = "1";
+                            if (xIndex !== -1) {
+                                vol = remaining.substring(0, xIndex).trim();
+                                qty = remaining.substring(xIndex + 3).trim();
+                            }
+                            initialTemp[matchedBrand] = `${vol}_${qty}`;
                         }
                     }
                 }
@@ -558,7 +571,11 @@ export default function ChefPortalPage() {
                     } else if (ingredient.unit === "piece") {
                         setTempQuantity("1 piece");
                     } else if (ingredient.unit === "packet") {
-                        setTempQuantity("1 packet");
+                        if (ingredient.nameEn.toLowerCase() === "bread") {
+                            setTempQuantity("1 laadi");
+                        } else {
+                            setTempQuantity("1 packet");
+                        }
                     } else if (ingredient.unit === "L") {
                         setTempQuantity("0.5L");
                     } else {
@@ -577,8 +594,11 @@ export default function ChefPortalPage() {
         let finalQty = tempQuantity;
         if (activeIngredient.unit === "cold_drink") {
             const selections = Object.entries(tempColdDrinks)
-                .filter(([_, vol]) => vol && vol !== "None")
-                .map(([brand, vol]) => `${brand} ${vol}`);
+                .filter(([_, volQty]) => volQty && !volQty.startsWith("None"))
+                .map(([brand, volQty]) => {
+                    const [vol, qty] = volQty.split("_");
+                    return `${brand} ${vol} x ${qty || 1}`;
+                });
             
             if (selections.length === 0) {
                 // If nothing selected, uncheck it
@@ -1453,28 +1473,49 @@ export default function ChefPortalPage() {
                                         Brands & Volumes
                                     </p>
                                     {BRANDS.map(brand => {
-                                        const currentVol = tempColdDrinks[brand] || "None";
+                                        const currentVal = tempColdDrinks[brand] || "None_1";
+                                        const [currentVol, currentQty] = currentVal.split("_");
+                                        const volValue = currentVol || "None";
+                                        const qtyValue = parseInt(currentQty || "1") || 1;
                                         return (
-                                            <div key={brand} className="flex items-center justify-between py-1.5 border-b border-slate-100/50 last:border-b-0">
-                                                <span className="font-semibold text-slate-700 text-xs sm:text-sm">
+                                            <div key={brand} className="flex items-center justify-between py-1.5 border-b border-slate-100/50 last:border-b-0 gap-2">
+                                                <span className="font-semibold text-slate-700 text-xs sm:text-sm flex-1 truncate">
                                                     {brand}
                                                 </span>
-                                                <select
-                                                    value={currentVol}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        setTempColdDrinks(prev => ({
-                                                            ...prev,
-                                                            [brand]: val
-                                                        }));
-                                                    }}
-                                                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors w-24"
-                                                >
-                                                    <option value="None">None</option>
-                                                    {volumes.map(vol => (
-                                                        <option key={vol} value={vol}>{vol}</option>
-                                                    ))}
-                                                </select>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <select
+                                                        value={volValue}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setTempColdDrinks(prev => ({
+                                                                ...prev,
+                                                                [brand]: val === "None" ? "None_1" : `${val}_${qtyValue}`
+                                                            }));
+                                                        }}
+                                                        className="bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors w-20"
+                                                    >
+                                                        <option value="None">None</option>
+                                                        {volumes.map(vol => (
+                                                            <option key={vol} value={vol}>{vol}</option>
+                                                        ))}
+                                                    </select>
+                                                    <select
+                                                        value={qtyValue}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setTempColdDrinks(prev => ({
+                                                                ...prev,
+                                                                [brand]: `${volValue}_${val}`
+                                                            }));
+                                                        }}
+                                                        disabled={volValue === "None"}
+                                                        className="bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors w-14 disabled:opacity-50"
+                                                    >
+                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 24, 30].map(q => (
+                                                            <option key={q} value={q}>{q}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -1489,7 +1530,7 @@ export default function ChefPortalPage() {
                                         onChange={(e) => setTempQuantity(e.target.value)}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-semibold text-slate-800 transition-colors"
                                     >
-                                        {getQuantityOptions(activeIngredient.unit).map(qty => (
+                                        {getQuantityOptions(activeIngredient.unit, activeIngredient.nameEn).map(qty => (
                                             <option key={qty} value={qty}>{qty}</option>
                                         ))}
                                     </select>

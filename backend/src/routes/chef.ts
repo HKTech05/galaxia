@@ -271,11 +271,11 @@ router.post("/submit", async (req: AuthRequest, res) => {
             const itemsList = categoryIngredients
                 .map((ing: any) => {
                     if (ing.unit === "cold_drink") {
-                        return ing.quantity.split(", ").join("\n");
+                        return ing.quantity;
                     }
                     return `${ing.nameEn} (${ing.nameHi}) - ${ing.quantity}`;
                 })
-                .join("\n");
+                .join(", ");
 
             const recipientPhone = CATEGORY_SUPPLIER_MAP[categoryName] || defaultSupplierPhone;
             const dateAndCategory = `${dateStr} (${categoryName})`;

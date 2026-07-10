@@ -360,7 +360,7 @@ export default function InventoryPage() {
                                                     const stockVal = editStocks[item.id] || "0";
                                                     const isOut = stockVal === "0";
                                                     return (
-                                                        <div key={item.id} className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-sm transition-shadow">
+                                                        <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200 hover:shadow-sm transition-shadow">
                                                             {/* Name (editable) */}
                                                             <div className="flex-1 min-w-0">
                                                                 <input
@@ -371,53 +371,56 @@ export default function InventoryPage() {
                                                                 />
                                                             </div>
 
-                                                            {/* Price (editable) */}
-                                                            <div className="flex items-center gap-1 shrink-0">
-                                                                <span className="text-xs font-bold text-slate-400">₹</span>
-                                                                <input
-                                                                    type="number"
-                                                                    min="0"
-                                                                    value={editPrices[item.id] || String(item.price)}
-                                                                    onChange={e => setEditPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                                                    className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
-                                                                />
-                                                            </div>
+                                                            {/* Numerical details wrap container */}
+                                                            <div className="flex items-center flex-wrap sm:flex-nowrap gap-3 sm:gap-4 justify-between sm:justify-end">
+                                                                {/* Price (editable) */}
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <span className="text-xs font-bold text-slate-400">₹</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={editPrices[item.id] || String(item.price)}
+                                                                        onChange={e => setEditPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                        className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                                    />
+                                                                </div>
 
-                                                            {/* Stock */}
-                                                            <div className="flex items-center gap-2 shrink-0">
-                                                                {isOut && (
-                                                                    <span className="text-[10px] font-black px-2 py-1 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
-                                                                )}
-                                                                <span className="text-xs font-bold text-slate-500">Stock:</span>
-                                                                <input
-                                                                    type="number"
-                                                                    min="0"
-                                                                    value={stockVal}
-                                                                    onChange={e => setEditStocks(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                                                    className="w-20 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
-                                                                />
-                                                            </div>
+                                                                {/* Stock */}
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    {isOut && (
+                                                                        <span className="text-[10px] font-black px-2 py-1 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                                    )}
+                                                                    <span className="text-xs font-bold text-slate-500">Stock:</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={stockVal}
+                                                                        onChange={e => setEditStocks(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                        className="w-16 sm:w-20 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                                    />
+                                                                </div>
 
-                                                            {/* Cost Price */}
-                                                            <div className="flex items-center gap-1 shrink-0">
-                                                                <span className="text-xs font-bold text-slate-400">Cost:</span>
-                                                                <input
-                                                                    type="number"
-                                                                    min="0"
-                                                                    value={editCostPrices[item.id] || "0"}
-                                                                    onChange={e => setEditCostPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                                                    className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
-                                                                />
-                                                            </div>
+                                                                {/* Cost Price */}
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <span className="text-xs font-bold text-slate-500">Cost:</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={editCostPrices[item.id] || "0"}
+                                                                        onChange={e => setEditCostPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                        className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                                    />
+                                                                </div>
 
-                                                            {/* Delete */}
-                                                            <button
-                                                                onClick={() => handleDeleteItem(item.id)}
-                                                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
-                                                                title="Delete item"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
+                                                                {/* Delete */}
+                                                                <button
+                                                                    onClick={() => handleDeleteItem(item.id)}
+                                                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+                                                                    title="Delete item"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
