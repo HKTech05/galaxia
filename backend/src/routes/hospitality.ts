@@ -197,16 +197,24 @@ router.post("/requests", async (req, res) => {
         }
 
         // Find active booking for this villa today
-        const activeBooking = await prisma.staycationBooking.findFirst({
+        const activeBookings = await prisma.staycationBooking.findMany({
             where: {
                 status: { in: ["confirmed", "checked_in"] },
                 checkInDate: { lte: todayStart },
-                checkOutDate: { gte: todayStart },
-                OR: [
-                    { assignedUnit: villaName },
-                    { subProperty: { name: { equals: villaName, mode: "insensitive" } } }
-                ]
+                checkOutDate: { gte: todayStart }
+            },
+            include: {
+                subProperty: true
             }
+        });
+
+        const activeBooking = activeBookings.find(booking => {
+            if (booking.assignedUnit) {
+                const units = booking.assignedUnit.split(",").map(u => u.trim().toLowerCase());
+                if (units.includes(villaName.toLowerCase())) return true;
+            }
+            if (booking.subProperty?.name.toLowerCase() === villaName.toLowerCase()) return true;
+            return false;
         });
 
         const request = await prisma.hospitalityRequest.create({
@@ -448,16 +456,24 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-            const activeBooking = await prisma.staycationBooking.findFirst({
+            const activeBookings = await prisma.staycationBooking.findMany({
                 where: {
                     status: { in: ["confirmed", "checked_in"] },
                     checkInDate: { lte: todayStart },
-                    checkOutDate: { gte: todayStart },
-                    OR: [
-                        { assignedUnit: targetVilla },
-                        { subProperty: { name: { equals: targetVilla, mode: "insensitive" } } }
-                    ]
+                    checkOutDate: { gte: todayStart }
+                },
+                include: {
+                    subProperty: true
                 }
+            });
+
+            const activeBooking = activeBookings.find(booking => {
+                if (booking.assignedUnit) {
+                    const units = booking.assignedUnit.split(",").map(u => u.trim().toLowerCase());
+                    if (units.includes(targetVilla.toLowerCase())) return true;
+                }
+                if (booking.subProperty?.name.toLowerCase() === targetVilla.toLowerCase()) return true;
+                return false;
             });
             data.bookingId = activeBooking ? activeBooking.id : null;
         }
