@@ -333,6 +333,9 @@ export default function HousekeepingPortalPage() {
         breakfastEaten: number;
         lunchEaten: number;
         dinnerEaten: number;
+        breakfastTotal?: number;
+        lunchTotal?: number;
+        dinnerTotal?: number;
         bookings: Array<{
             bookingId: number;
             bookingRef: string;
@@ -914,52 +917,67 @@ export default function HousekeepingPortalPage() {
                 </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                        <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Coffee size={20} className="text-amber-600" />
-                                Meal Counters
-                            </h2>
-                            <button
-                                onClick={fetchMealCounter}
-                                disabled={loadingMealCounter}
-                                className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
-                                title="Refresh meal counts"
-                            >
-                                <RefreshCw size={14} className={loadingMealCounter ? "animate-spin" : ""} />
-                            </button>
-                        </div>
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <Coffee className="text-amber-500" size={20} />
+                            Daily Meal Counts
+                        </h2>
+                        <p className="text-xs text-slate-400 mt-0.5 font-medium">Counts updated by housekeeping staff for the selected date.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+                            Date: {(() => {
+                                try {
+                                    const parts = selectedDate.split("-");
+                                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                                    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+                                } catch (e) {
+                                    return selectedDate;
+                                }
+                            })()}
+                        </span>
+                        <button
+                            onClick={fetchMealCounter}
+                            disabled={loadingMealCounter}
+                            className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-colors border border-slate-200 cursor-pointer"
+                            title="Refresh meal counts"
+                        >
+                            <RefreshCw size={14} className={loadingMealCounter ? "animate-spin" : ""} />
+                        </button>
+                    </div>
+                </div>
 
-                        {loadingMealCounter && !mealCounter ? (
-                            <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
-                                <RefreshCw size={24} className="animate-spin text-amber-600" />
-                                <p className="text-xs font-semibold">Loading counts...</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                {/* Aggregates Summary */}
-                                <div className="grid grid-cols-3 gap-2 bg-slate-50 border border-slate-200/60 p-3 rounded-2xl">
-                                    {[
-                                        { key: "breakfast", label: "Breakfast", icon: Coffee, val: mealCounter?.breakfastEaten || 0, color: "text-amber-600 bg-amber-50 border-amber-100" },
-                                        { key: "lunch", label: "Lunch", icon: Sun, val: mealCounter?.lunchEaten || 0, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-                                        { key: "dinner", label: "Dinner", icon: Moon, val: mealCounter?.dinnerEaten || 0, color: "text-indigo-600 bg-indigo-50 border-indigo-100" }
-                                    ].map((meal) => {
-                                        const Icon = meal.icon;
-                                        return (
-                                            <div key={meal.key} className="flex flex-col items-center justify-center p-2 rounded-xl text-center">
-                                                <div className={`p-1.5 rounded-lg border ${meal.color} mb-1`}>
-                                                    <Icon size={16} />
-                                                </div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{meal.label}</span>
-                                                <span className="text-sm font-black text-slate-800 mt-0.5">
-                                                    {meal.val} / {mealCounter?.totalGuests || 0}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
+                {loadingMealCounter && !mealCounter ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-slate-400 gap-2">
+                        <RefreshCw size={24} className="animate-spin text-purple-600" />
+                        <p className="text-xs font-semibold">Loading counts...</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {[
+                            { key: "breakfast", label: "Breakfast", icon: Coffee, count: mealCounter?.breakfastEaten || 0, total: mealCounter?.breakfastTotal !== undefined ? mealCounter.breakfastTotal : (mealCounter?.totalGuests || 0), color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70", iconColor: "text-amber-600" },
+                            { key: "lunch", label: "Lunch", icon: Sun, count: mealCounter?.lunchEaten || 0, total: mealCounter?.lunchTotal !== undefined ? mealCounter.lunchTotal : (mealCounter?.totalGuests || 0), color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70", iconColor: "text-emerald-600" },
+                            { key: "dinner", label: "Dinner", icon: Moon, count: mealCounter?.dinnerEaten || 0, total: mealCounter?.dinnerTotal !== undefined ? mealCounter.dinnerTotal : (mealCounter?.totalGuests || 0), color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70", iconColor: "text-indigo-600" }
+                        ].map((meal) => {
+                            const Icon = meal.icon;
+                            return (
+                                <div key={meal.key} className={`bg-gradient-to-r ${meal.color} border rounded-2xl p-5 flex items-center justify-between`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-xl bg-white border border-slate-200/50 ${meal.iconColor}`}>
+                                            <Icon size={20} />
+                                        </div>
+                                        <span className="font-extrabold text-sm">{meal.label}</span>
+                                    </div>
+                                    <span className="font-black text-2xl tracking-tight">
+                                        {meal.count} / {meal.total}
+                                    </span>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Villa Allotments Table */}
