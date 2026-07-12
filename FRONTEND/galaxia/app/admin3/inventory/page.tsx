@@ -170,6 +170,7 @@ export default function InventoryPage() {
             }
             await api.put("/hospitality/menu", { menuItems: updatedMenu });
             setMenuItems(updatedMenu);
+            fetchInsights();
             setSuccessMsg("Inventory updated successfully!");
         } catch (err: any) {
             setError(err.message || "Failed to update inventory.");
@@ -201,6 +202,7 @@ export default function InventoryPage() {
             setSaving(true);
             await api.put("/hospitality/menu", { menuItems: updatedMenu });
             setMenuItems(updatedMenu);
+            fetchInsights();
             setEditStocks(prev => ({ ...prev, [id]: String(newItem.stock) }));
             setEditNames(prev => ({ ...prev, [id]: newItem.name }));
             setEditPrices(prev => ({ ...prev, [id]: String(newItem.price) }));
@@ -558,8 +560,8 @@ export default function InventoryPage() {
                                     {[
                                         { label: "Total Orders", value: insights.totalOrders.toString(), icon: ShoppingBag, color: "text-blue-600", bg: "bg-blue-50 border-blue-100" },
                                         { label: "Total Revenue", value: fmt(insights.totalRevenue), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
-                                        { label: "Est. Cost", value: fmt(insights.totalEstimatedCost), icon: DollarSign, color: "text-amber-600", bg: "bg-amber-50 border-amber-100" },
-                                        { label: "Est. Profit", value: fmt(insights.totalProfit), icon: TrendingUp, color: insights.totalProfit > 0 ? "text-emerald-600" : "text-red-600", bg: insights.totalProfit > 0 ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100" },
+                                        { label: "Cost", value: fmt(insights.totalEstimatedCost), icon: DollarSign, color: "text-amber-600", bg: "bg-amber-50 border-amber-100" },
+                                        { label: "Profit", value: fmt(insights.totalProfit), icon: TrendingUp, color: insights.totalProfit > 0 ? "text-emerald-600" : "text-red-600", bg: insights.totalProfit > 0 ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100" },
                                     ].map((kpi, i) => (
                                         <div key={i} className={`p-4 rounded-2xl border ${kpi.bg} flex flex-col gap-2`}>
                                             <div className="flex items-center gap-2">
@@ -593,7 +595,7 @@ export default function InventoryPage() {
                                                             <p className="text-sm font-black text-emerald-600">{fmt(stats.revenue)}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Est. Cost</p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Cost</p>
                                                             <p className="text-sm font-black text-amber-600">{fmt(stats.cost)}</p>
                                                         </div>
                                                         <div>
@@ -678,10 +680,10 @@ export default function InventoryPage() {
                                                         <th className="py-2.5 px-3">Item</th>
                                                         <th className="py-2.5 px-3">Category</th>
                                                         <th className="py-2.5 px-3 text-right">Sell Price</th>
-                                                        <th className="py-2.5 px-3 text-right">Est. Cost</th>
+                                                        <th className="py-2.5 px-3 text-right">Cost</th>
                                                         <th className="py-2.5 px-3 text-right">Qty Sold</th>
                                                         <th className="py-2.5 px-3 text-right">Revenue</th>
-                                                        <th className="py-2.5 px-3 text-right">Est. Profit</th>
+                                                        <th className="py-2.5 px-3 text-right">Profit</th>
                                                         <th className="py-2.5 px-3 text-right">Margin</th>
                                                         <th className="py-2.5 px-3 text-right">Days Active</th>
                                                     </tr>

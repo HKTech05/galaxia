@@ -692,9 +692,8 @@ router.get("/insights", async (req: AuthRequest, res) => {
                 const itemId = item.id || item.name?.toLowerCase().replace(/\s+/g, "_");
                 const price = item.price || 0;
                 const revenue = price * qty;
-                // Use costPrice from menu item if available, otherwise fallback
                 const menuCostPrice = itemStats[itemId]?.costPrice || 0;
-                const cost = menuCostPrice > 0 ? menuCostPrice * qty : Math.round(price * 0.45) * qty;
+                const cost = menuCostPrice * qty;
 
                 if (!itemStats[itemId]) {
                     itemStats[itemId] = {
