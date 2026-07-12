@@ -273,53 +273,81 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         <div style="margin-top: 28px; padding: 22px; background: white; border-radius: 10px; border: 1px solid ${BORDER};">
             <p style="margin: 0 0 16px; font-size: 11px; font-weight: 700; color: ${GOLD}; letter-spacing: 2px; text-transform: uppercase;">Resort Booking Terms & Conditions</p>
             ${(() => {
-                const propSlug = (prop.slug || "").toLowerCase();
-                const isAmbroseOrAmstel = propSlug === "ambrose" || propSlug === "amstel-nest";
                 const sections = [
                     {
-                        title: "Cancellation Policy",
+                        title: "Check-in & Check-out",
                         items: [
-                            "21+ days before check-in: 10% deduction from the booking amount.",
-                            "11-20 days before check-in: 50% of the booking amount will be retained.",
-                            "Cancellation within 10 days of check-in: No refund applicable.",
-                            "Festival dates, long weekends, and peak season bookings are strictly non-refundable.",
+                            "Standard check-in and check-out timings apply.",
+                            "Early check-in and late check-out are subject to availability and will be chargeable.",
                         ],
                     },
                     {
-                        title: "Check-in / Check-out Policy",
+                        title: "Parking",
                         items: [
-                            "Standard check-in and check-out timings must be followed.",
-                            "Early check-in and late check-out are subject to availability and will be chargeable extra.",
+                            "Complimentary parking is available for all in-house guests.",
                         ],
                     },
                     {
-                        title: "Property Rules",
+                        title: "Meals & Dining",
                         items: [
-                            "Free parking is available for in-house guests.",
-                            ...(isAmbroseOrAmstel ? [] : ["Food and restaurant bills must be paid directly to the respective restaurant/vendor."]),
-                            "Shifting or moving any furniture, appliances, or property items is strictly prohibited.",
-                            "Guests are requested to maintain cleanliness and proper decorum within the premises.",
-                            "Any damage caused to the property, furniture, appliances, or amenities will be chargeable to the guest.",
+                            "Freshly prepared meals will be served during your stay.",
+                            "On the final day of your stay, the menu will be decided by our chef based on the availability of fresh ingredients.",
+                        ],
+                    },
+                    {
+                        title: "Driver Accommodation",
+                        items: [
+                            "Driver accommodation will be provided in the reception/common area.",
+                            "Charges: Rs. 1,500 per driver, which includes: Mattress, Meals, Basic accommodation.",
+                        ],
+                    },
+                    {
+                        title: "Swimming Pool Guidelines",
+                        items: [
+                            "Please use the indoor swimming pool responsibly and follow all safety instructions.",
+                            "Children must always be accompanied and supervised by an adult.",
+                            "As this is an indoor swimming pool, your safety is in your own hands. Please exercise caution while using the pool.",
+                            "Management will not be responsible for any accident, injury, or loss resulting from negligence or failure to follow safety guidelines.",
+                        ],
+                    },
+                    {
+                        title: "Comfort & Safety",
+                        items: [
+                            "To avoid insects entering the villa, guests are requested to keep all doors and windows closed between 5:00 PM and 7:00 PM.",
                         ],
                     },
                     {
                         title: "Electricity & Utilities",
                         items: [
-                            "Due to local area conditions, unpredictable power cuts may occur occasionally.",
+                            "Due to local area conditions, occasional and unpredictable power interruptions may occur.",
                         ],
                     },
                     {
-                        title: "Swimming Pool Rules",
+                        title: "Property Care",
                         items: [
-                            "Guests using the swimming pool must strictly follow all safety rules and instructions.",
-                            "Children using the swimming pool must be accompanied by adults.",
-                            "Management will not be responsible for any accident, injury, or loss caused due to negligence or violation of safety rules.",
+                            "Guests are requested to maintain cleanliness and proper decorum throughout their stay.",
+                            "Shifting or moving any furniture, appliances, or property items without prior permission is strictly prohibited.",
+                        ],
+                    },
+                    {
+                        title: "Damages",
+                        items: [
+                            "Any damage caused to the property, furniture, appliances, fixtures, or amenities during the stay will be chargeable to the guest.",
+                        ],
+                    },
+                    {
+                        title: "Cancellation Policy",
+                        items: [
+                            "21 days or more before check-in: 10% deduction from the booking amount.",
+                            "11–20 days before check-in: 50% of the booking amount will be retained.",
+                            "Within 10 days of check-in: No refund will be applicable.",
+                            "Bookings made for festival dates, long weekends, and peak season periods are strictly non-refundable.",
                         ],
                     },
                     {
                         title: "Management Rights",
                         items: [
-                            "The management reserves the right to refuse admission or cancel bookings in case of misconduct, nuisance, illegal activities, or violation of property rules.",
+                            "The management reserves the right to refuse admission or cancel bookings in cases involving: Misconduct, Public nuisance, Illegal activities, Violation of resort rules, Damage to property.",
                         ],
                     },
                 ];
