@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, IndianRupee, Loader2, X, UtensilsCrossed, AlertTriangle, RefreshCw } from "lucide-react";
+import { Search, IndianRupee, Loader2, X, UtensilsCrossed, AlertTriangle, RefreshCw, Plus, CheckCircle, Camera, Upload } from "lucide-react";
 import { api } from "../../../lib/api";
+import { compressImage } from "../../../lib/imageCompressor";
 
 interface FoodBill {
     id: number;
@@ -53,6 +54,79 @@ export default function FoodHistoryPage() {
     const [reportStatus, setReportStatus] = useState<"all" | "paid" | "unpaid">("all");
     const [reportRequests, setReportRequests] = useState<any[]>([]);
     const [loadingReportRequests, setLoadingReportRequests] = useState(false);
+
+    // Mark unpaid as paid states
+    const [selectedUnpaidBill, setSelectedUnpaidBill] = useState<{
+        bookingId: number;
+        guestName: string;
+        bookingRef: string;
+        amount: number;
+        description: string;
+    } | null>(null);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<"cash" | "upi">("cash");
+    const [paymentUpiProof, setPaymentUpiProof] = useState<File | null>(null);
+    const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+
+    const handleCollectPayment = async () => {
+        if (!selectedUnpaidBill) return;
+        setPaymentSubmitting(true);
+        try {
+            let upiProofUrl = null;
+            let upiProofKey = null;
+            if (paymentMethod === "upi" && paymentUpiProof) {
+                const compressed = await compressImage(paymentUpiProof);
+                const formData = new FormData();
+                formData.append("file", compressed);
+                formData.append("category", "food-bill-proofs");
+                const uploadData = await api.upload<{ url: string }>("/uploads/general", formData);
+                upiProofUrl = uploadData.url;
+                try {
+                    const urlObj = new URL(uploadData.url);
+                    upiProofKey = urlObj.pathname.slice(1);
+                } catch {
+                    upiProofKey = uploadData.url;
+                }
+            }
+
+            await api.post("/stay-food-bills", {
+                bookingId: selectedUnpaidBill.bookingId,
+                description: selectedUnpaidBill.description,
+                amount: selectedUnpaidBill.amount,
+                paymentMethod: paymentMethod,
+                upiProofUrl,
+                upiProofKey,
+            });
+
+            // Mark e-menu requests as billed
+            try {
+                const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+                await fetch(`/api/hospitality/requests/bill/${selectedUnpaidBill.bookingId}`, {
+                    method: "PUT",
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+            } catch (err) {
+                console.error("Failed to mark hospitality requests as billed:", err);
+            }
+
+            setIsPaymentModalOpen(false);
+            setSelectedUnpaidBill(null);
+            setPaymentUpiProof(null);
+            setPaymentMethod("cash");
+            
+            fetchData();
+            fetchReportRequests(reportDate);
+            alert("Payment collected and bill marked as paid successfully!");
+        } catch (err) {
+            console.error("Failed to collect payment:", err);
+            alert("Failed to collect payment. Please try again.");
+        } finally {
+            setPaymentSubmitting(false);
+        }
+    };
 
     const fetchReportRequests = async (dateStr: string) => {
         try {
@@ -190,12 +264,14 @@ export default function FoodHistoryPage() {
                     <p className="text-sm font-medium text-slate-500 mt-1">Logs and breakdowns of staycation hospitality food orders.</p>
                 </div>
                 <div className="self-start sm:self-auto flex items-center gap-3">
-                    <button
-                        onClick={() => setIsDailyReportOpen(true)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all uppercase tracking-wider"
-                    >
-                        Daily Food Reports
-                    </button>
+                    {(userRole === "owner" || userRole === "developer") && (
+                        <button
+                            onClick={() => setIsDailyReportOpen(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all uppercase tracking-wider"
+                        >
+                            Daily Food Reports
+                        </button>
+                    )}
                     <button
                         onClick={fetchData}
                         className="flex items-center gap-1.5 px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-800 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-100 transition-all uppercase tracking-wider"
@@ -538,7 +614,7 @@ export default function FoodHistoryPage() {
                                 const price = item.price || 0;
                                 const qty = item.quantity || 1;
                                 totalAmount += price * qty;
-                                descriptionList.push(`${item.name} x${qty} (₹${price})`);
+                                descriptionList.push(`${item.name} x${qty} (Rs. ${price})`);
                             });
                         }
                     });
@@ -570,7 +646,7 @@ export default function FoodHistoryPage() {
                         guestName: b.booking?.customerName || "Walk-In",
                         bookingRef: b.booking?.bookingRef || "-",
                         propertyLabel,
-                        description: b.description,
+                        description: b.description ? b.description.replaceAll("₹", "Rs. ") : "",
                         amount: b.amount,
                         status: "Paid"
                     };
@@ -740,19 +816,20 @@ export default function FoodHistoryPage() {
                                                     <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Contents</th>
                                                     <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
                                                     <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Price</th>
+                                                    <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {loadingReportRequests ? (
                                                     <tr>
-                                                        <td colSpan={5} className="px-6 py-12 text-center">
+                                                        <td colSpan={6} className="px-6 py-12 text-center">
                                                             <Loader2 className="animate-spin mx-auto text-indigo-500" size={24} />
                                                             <p className="text-xs text-slate-500 mt-2">Loading unpaid food requests...</p>
                                                         </td>
                                                     </tr>
                                                 ) : filteredReportBills.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium text-xs">
+                                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium text-xs">
                                                             No food bills found matching current selection.
                                                         </td>
                                                     </tr>
@@ -768,7 +845,7 @@ export default function FoodHistoryPage() {
                                                                     {b.propertyLabel}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-4 py-3 text-xs text-slate-600 font-medium max-w-xs truncate" title={b.description}>
+                                                            <td className="px-4 py-3 text-xs text-slate-600 font-medium max-w-sm whitespace-pre-wrap" title={b.description}>
                                                                 {b.description}
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
@@ -784,6 +861,29 @@ export default function FoodHistoryPage() {
                                                             </td>
                                                             <td className="px-4 py-3 text-right font-black text-slate-800 text-xs">
                                                                 ₹{b.amount.toLocaleString("en-IN")}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                {b.status === "Unpaid" ? (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedUnpaidBill({
+                                                                                bookingId: b.bookingId,
+                                                                                guestName: b.guestName,
+                                                                                bookingRef: b.bookingRef,
+                                                                                amount: b.amount,
+                                                                                description: b.description
+                                                                            });
+                                                                            setPaymentMethod("cash");
+                                                                            setPaymentUpiProof(null);
+                                                                            setIsPaymentModalOpen(true);
+                                                                        }}
+                                                                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-lg shadow-sm transition-colors cursor-pointer uppercase tracking-wider"
+                                                                    >
+                                                                        Mark Paid
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="text-[10px] text-slate-400 font-bold">—</span>
+                                                                )}
                                                             </td>
                                                         </tr>
                                                     ))
@@ -812,6 +912,112 @@ export default function FoodHistoryPage() {
                     </div>
                 );
             })()}
+
+            {isPaymentModalOpen && selectedUnpaidBill && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setIsPaymentModalOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50 shrink-0">
+                            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                                <UtensilsCrossed size={18} className="text-amber-600" /> Collect Food Bill
+                            </h3>
+                            <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                <p className="font-bold text-slate-500 uppercase tracking-wider">Guest</p>
+                                <p className="text-sm font-bold text-slate-800 mt-0.5">
+                                    {selectedUnpaidBill.guestName} ({selectedUnpaidBill.bookingRef})
+                                </p>
+                            </div>
+                            
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                <p className="font-bold text-slate-500 uppercase tracking-wider">Bill Description</p>
+                                <p className="text-slate-700 mt-0.5 font-medium whitespace-pre-wrap">
+                                    {selectedUnpaidBill.description}
+                                </p>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                <p className="font-bold text-slate-500 uppercase tracking-wider">Amount to Collect</p>
+                                <p className="text-lg font-black text-slate-800 mt-0.5">
+                                    ₹{selectedUnpaidBill.amount.toLocaleString("en-IN")}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Paid via</label>
+                                <div className="bg-slate-50 rounded-lg p-1 flex">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setPaymentMethod('cash')} 
+                                        className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${paymentMethod === 'cash' ? 'bg-white shadow text-emerald-700' : 'text-slate-500'}`}
+                                    >
+                                        Cash
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setPaymentMethod('upi')} 
+                                        className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${paymentMethod === 'upi' ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}
+                                    >
+                                        UPI
+                                    </button>
+                                </div>
+                            </div>
+                            {paymentMethod === 'upi' && (
+                                <div className="space-y-2">
+                                    <label className="font-bold text-slate-500 uppercase tracking-wider mb-1 block">UPI Proof</label>
+                                    {paymentUpiProof ? (
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                            <CheckCircle size={14} className="text-emerald-600" />
+                                            <span className="font-bold text-emerald-700 truncate max-w-[200px]">{paymentUpiProof.name}</span>
+                                            <button type="button" onClick={() => setPaymentUpiProof(null)} className="text-red-500 font-bold ml-auto hover:underline">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <label className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { if (e.target.files?.[0]) setPaymentUpiProof(e.target.files[0]); e.target.value = ''; }} />
+                                                <Camera size={14} className="text-indigo-600" />
+                                                <span className="font-bold text-indigo-700">Camera</span>
+                                            </label>
+                                            <label className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors">
+                                                <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) setPaymentUpiProof(e.target.files[0]); e.target.value = ''; }} />
+                                                <Upload size={14} className="text-indigo-600" />
+                                                <span className="font-bold text-indigo-700">Gallery</span>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-5 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsPaymentModalOpen(false)}
+                                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCollectPayment}
+                                disabled={paymentSubmitting || (paymentMethod === "upi" && !paymentUpiProof)}
+                                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-100"
+                            >
+                                {paymentSubmitting ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" /> Collecting...
+                                    </>
+                                ) : (
+                                    "Confirm Payment"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
