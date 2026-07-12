@@ -7,7 +7,7 @@ const router = Router();
 // POST /api/stay-food-bills — Create a staycation food bill
 router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { bookingId, description, amount, paymentMethod, upiProofUrl, upiProofKey } = req.body;
+        const { bookingId, description, amount, paymentMethod, upiProofUrl, upiProofKey, splitCash, splitUpi } = req.body;
 
         if (!bookingId || !description || !amount || !paymentMethod) {
             return res.status(400).json({ error: "bookingId, description, amount, paymentMethod required" });
@@ -78,6 +78,46 @@ router.post("/", authMiddleware, async (req: AuthRequest, res) => {
                         note: `Food bill: ${description} — ${booking.property?.name || "Property"}`,
                     },
                 });
+            }
+
+            if (paymentMethod === "split") {
+                const parsedSplitCash = parseInt(String(splitCash)) || 0;
+                const parsedSplitUpi = parseInt(String(splitUpi)) || 0;
+
+                if (parsedSplitCash > 0) {
+                    await prisma.cashTransaction.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef: booking.bookingRef,
+                            guestName: booking.customerName,
+                            amount: parsedSplitCash,
+                            transactionType: "food_collection",
+                            note: `Food bill: ${description} (Split Cash) — ${booking.property?.name || "Property"}`,
+                        },
+                    });
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: { 
+                            cashCollected: { increment: parsedSplitCash },
+                            rentCollected: { increment: parsedSplitCash }
+                        },
+                    });
+                }
+
+                if (parsedSplitUpi > 0) {
+                    await prisma.upiPayment.create({
+                        data: {
+                            employeeId: employee.id,
+                            bookingRef: booking.bookingRef,
+                            guestName: booking.customerName,
+                            amount: parsedSplitUpi,
+                            paymentType: "food_collection",
+                            proofImageUrl: upiProofUrl || null,
+                            proofImageKey: upiProofKey || null,
+                            note: `Food bill: ${description} (Split UPI) — ${booking.property?.name || "Property"}`,
+                        },
+                    });
+                }
             }
         }
 
@@ -176,6 +216,37 @@ router.delete("/:id", authMiddleware, async (req: AuthRequest, res) => {
                         paymentType: "food_collection",
                         amount: bill.amount,
                     },
+                });
+            }
+
+            if (bill.paymentMethod === "split") {
+                // Find cash transactions to get the cash amount
+                const cashTx = await prisma.cashTransaction.findFirst({
+                    where: {
+                        employeeId: employee.id,
+                        bookingRef: bill.booking.bookingRef,
+                        transactionType: "food_collection",
+                        note: { contains: "(Split Cash)" }
+                    }
+                });
+                if (cashTx) {
+                    await prisma.cashTransaction.delete({ where: { id: cashTx.id } });
+                    await prisma.employee.update({
+                        where: { id: employee.id },
+                        data: {
+                            cashCollected: { decrement: cashTx.amount },
+                            rentCollected: { decrement: cashTx.amount }
+                        }
+                    });
+                }
+                // Delete UPI payment
+                await prisma.upiPayment.deleteMany({
+                    where: {
+                        employeeId: employee.id,
+                        bookingRef: bill.booking.bookingRef,
+                        paymentType: "food_collection",
+                        note: { contains: "(Split UPI)" }
+                    }
                 });
             }
         }

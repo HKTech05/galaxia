@@ -64,7 +64,9 @@ export default function FoodHistoryPage() {
         description: string;
     } | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<"cash" | "upi">("cash");
+    const [paymentMethod, setPaymentMethod] = useState<"cash" | "upi" | "split">("cash");
+    const [splitCash, setSplitCash] = useState<number>(0);
+    const [splitUpi, setSplitUpi] = useState<number>(0);
     const [paymentUpiProof, setPaymentUpiProof] = useState<File | null>(null);
     const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
@@ -74,7 +76,7 @@ export default function FoodHistoryPage() {
         try {
             let upiProofUrl = null;
             let upiProofKey = null;
-            if (paymentMethod === "upi" && paymentUpiProof) {
+            if ((paymentMethod === "upi" || (paymentMethod === "split" && splitUpi > 0)) && paymentUpiProof) {
                 const compressed = await compressImage(paymentUpiProof);
                 const formData = new FormData();
                 formData.append("file", compressed);
@@ -94,6 +96,8 @@ export default function FoodHistoryPage() {
                 description: selectedUnpaidBill.description,
                 amount: selectedUnpaidBill.amount,
                 paymentMethod: paymentMethod,
+                splitCash: paymentMethod === "split" ? splitCash : undefined,
+                splitUpi: paymentMethod === "split" ? splitUpi : undefined,
                 upiProofUrl,
                 upiProofKey,
             });
@@ -952,20 +956,62 @@ export default function FoodHistoryPage() {
                                     <button 
                                         type="button" 
                                         onClick={() => setPaymentMethod('cash')} 
-                                        className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${paymentMethod === 'cash' ? 'bg-white shadow text-emerald-700' : 'text-slate-500'}`}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${paymentMethod === 'cash' ? 'bg-white shadow text-emerald-700' : 'text-slate-500'}`}
                                     >
                                         Cash
                                     </button>
                                     <button 
                                         type="button" 
                                         onClick={() => setPaymentMethod('upi')} 
-                                        className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all ${paymentMethod === 'upi' ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${paymentMethod === 'upi' ? 'bg-white shadow text-indigo-700' : 'text-slate-500'}`}
                                     >
                                         UPI
                                     </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { setPaymentMethod('split'); setSplitCash(selectedUnpaidBill.amount); setSplitUpi(0); }} 
+                                        className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${paymentMethod === 'split' ? 'bg-white shadow text-purple-700' : 'text-slate-500'}`}
+                                    >
+                                        Split
+                                    </button>
                                 </div>
                             </div>
-                            {paymentMethod === 'upi' && (
+
+                            {paymentMethod === 'split' && (
+                                <div className="grid grid-cols-2 gap-4 border border-slate-100 bg-slate-50/50 rounded-xl p-3.5 shrink-0">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Cash Amount</label>
+                                        <input
+                                            type="number"
+                                            value={splitCash || ''}
+                                            onChange={e => {
+                                                const val = parseInt(e.target.value) || 0;
+                                                setSplitCash(val);
+                                                setSplitUpi(Math.max(0, selectedUnpaidBill.amount - val));
+                                            }}
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">UPI Amount</label>
+                                        <input
+                                            type="number"
+                                            value={splitUpi || ''}
+                                            onChange={e => {
+                                                const val = parseInt(e.target.value) || 0;
+                                                setSplitUpi(val);
+                                                setSplitCash(Math.max(0, selectedUnpaidBill.amount - val));
+                                            }}
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 text-[10px] font-bold text-slate-400 text-center">
+                                        Total: ₹{splitCash + splitUpi} (Required: ₹{selectedUnpaidBill.amount})
+                                    </div>
+                                </div>
+                            )}
+
+                            {(paymentMethod === 'upi' || (paymentMethod === 'split' && splitUpi > 0)) && (
                                 <div className="space-y-2">
                                     <label className="font-bold text-slate-500 uppercase tracking-wider mb-1 block">UPI Proof</label>
                                     {paymentUpiProof ? (
@@ -1003,7 +1049,7 @@ export default function FoodHistoryPage() {
                             <button
                                 type="button"
                                 onClick={handleCollectPayment}
-                                disabled={paymentSubmitting || (paymentMethod === "upi" && !paymentUpiProof)}
+                                disabled={paymentSubmitting || (paymentMethod === "upi" && !paymentUpiProof) || (paymentMethod === "split" && splitUpi > 0 && !paymentUpiProof) || (paymentMethod === "split" && splitCash + splitUpi !== selectedUnpaidBill.amount)}
                                 className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-100"
                             >
                                 {paymentSubmitting ? (
