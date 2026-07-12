@@ -78,7 +78,8 @@ router.get("/", authMiddleware, async (req, res) => {
                 dinner: record ? record.dinner : 0,
                 breakfastEligible: breakfastEligible ? guestsCount : 0,
                 lunchEligible: lunchEligible ? guestsCount : 0,
-                dinnerEligible: dinnerEligible ? guestsCount : 0
+                dinnerEligible: dinnerEligible ? guestsCount : 0,
+                isNewGuest: isCheckInDay
             };
         });
 
@@ -92,6 +93,39 @@ router.get("/", authMiddleware, async (req, res) => {
         const lunchTotal = bookingsWithMeals.reduce((sum, b) => sum + b.lunchEligible, 0);
         const dinnerTotal = bookingsWithMeals.reduce((sum, b) => sum + b.dinnerEligible, 0);
 
+        let breakfastEatenNew = 0;
+        let breakfastEatenCont = 0;
+        let breakfastTotalNew = 0;
+        let breakfastTotalCont = 0;
+
+        let lunchEatenNew = 0;
+        let lunchEatenCont = 0;
+        let lunchTotalNew = 0;
+        let lunchTotalCont = 0;
+
+        let dinnerEatenNew = 0;
+        let dinnerEatenCont = 0;
+        let dinnerTotalNew = 0;
+        let dinnerTotalCont = 0;
+
+        bookingsWithMeals.forEach(b => {
+            if (b.isNewGuest) {
+                breakfastEatenNew += b.breakfast;
+                breakfastTotalNew += b.breakfastEligible;
+                lunchEatenNew += b.lunch;
+                lunchTotalNew += b.lunchEligible;
+                dinnerEatenNew += b.dinner;
+                dinnerTotalNew += b.dinnerEligible;
+            } else {
+                breakfastEatenCont += b.breakfast;
+                breakfastTotalCont += b.breakfastEligible;
+                lunchEatenCont += b.lunch;
+                lunchTotalCont += b.lunchEligible;
+                dinnerEatenCont += b.dinner;
+                dinnerTotalCont += b.dinnerEligible;
+            }
+        });
+
         return res.json({
             date: dateStr,
             totalGuests,
@@ -101,6 +135,11 @@ router.get("/", authMiddleware, async (req, res) => {
             breakfastTotal,
             lunchTotal,
             dinnerTotal,
+            breakdown: {
+                breakfast: { eatenNew: breakfastEatenNew, totalNew: breakfastTotalNew, eatenCont: breakfastEatenCont, totalCont: breakfastTotalCont },
+                lunch: { eatenNew: lunchEatenNew, totalNew: lunchTotalNew, eatenCont: lunchEatenCont, totalCont: lunchTotalCont },
+                dinner: { eatenNew: dinnerEatenNew, totalNew: dinnerTotalNew, eatenCont: dinnerEatenCont, totalCont: dinnerTotalCont }
+            },
             bookings: bookingsWithMeals
         });
     } catch (err: any) {

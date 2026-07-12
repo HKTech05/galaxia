@@ -1076,6 +1076,11 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
         // Food preference counts — count actual people, not bookings
         let jainCount = 0;
         let regularCount = 0;
+        let newJainCount = 0;
+        let newRegularCount = 0;
+        let continueJainCount = 0;
+        let continueRegularCount = 0;
+
         for (const b of bookings) {
             let hasExplicitCount = false;
             let bJain = 0;
@@ -1094,11 +1099,14 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
                     }
                 }
             }
+            
+            let currentJain = 0;
+            let currentRegular = 0;
+
             if (hasExplicitCount) {
-                jainCount += bJain;
-                regularCount += bRegular;
+                currentJain = bJain;
+                currentRegular = bRegular;
             } else {
-                // Fallback: count total guests (adults + children) as either Jain or Regular depending on foodPreference
                 let foodPref = "Regular";
                 if (b.addons && Array.isArray(b.addons)) {
                     const foodAddon = (b.addons as any[]).find((a: any) => a.name === "Food Preference");
@@ -1108,10 +1116,24 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
                 }
                 const totalGuests = (b.numGuests || 0) + (b.numKids || 0);
                 if (foodPref.toLowerCase() === "jain") {
-                    jainCount += totalGuests;
+                    currentJain = totalGuests;
                 } else {
-                    regularCount += totalGuests;
+                    currentRegular = totalGuests;
                 }
+            }
+
+            jainCount += currentJain;
+            regularCount += currentRegular;
+
+            const checkInDateStr = b.checkInDate.toISOString().split("T")[0];
+            const isCheckInToday = checkInDateStr === targetDateStr;
+
+            if (isCheckInToday) {
+                newJainCount += currentJain;
+                newRegularCount += currentRegular;
+            } else {
+                continueJainCount += currentJain;
+                continueRegularCount += currentRegular;
             }
         }
 
@@ -1125,7 +1147,14 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
                 ambrose: { adults: ambroseAdults, children: ambroseChildren, total: ambroseTotal, bookings: ambroseBookings.length },
                 amstelNest: { adults: amstelAdults, children: amstelChildren, total: amstelTotal, bookings: amstelBookings.length },
                 grandTotal: { adults: grandTotalAdults, children: grandTotalChildren, total: grandTotal },
-                foodPreference: { jain: jainCount, regular: regularCount },
+                foodPreference: { 
+                    jain: jainCount, 
+                    regular: regularCount,
+                    newJain: newJainCount,
+                    newRegular: newRegularCount,
+                    continueJain: continueJainCount,
+                    continueRegular: continueRegularCount
+                },
             },
         });
     } catch (error) {

@@ -759,9 +759,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                  }
                                  setShowReportModal(true);
                              }}
-                             className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                          >
-                             <FileText size={14} /> Daily Guest Report
+                             <FileText size={16} /> Daily Report
                          </button>
                      </div>
                 </div>

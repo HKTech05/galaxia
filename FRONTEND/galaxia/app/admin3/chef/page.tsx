@@ -117,7 +117,14 @@ export default function ChefPortalPage() {
 
     // Jain / Regular Counter states
     const [counterDate, setCounterDate] = useState<Date>(new Date());
-    const [mealCounts, setMealCounts] = useState<{ jain: number; regular: number }>({ jain: 0, regular: 0 });
+    const [mealCounts, setMealCounts] = useState<{
+        jain: number;
+        regular: number;
+        newJain: number;
+        newRegular: number;
+        continueJain: number;
+        continueRegular: number;
+    }>({ jain: 0, regular: 0, newJain: 0, newRegular: 0, continueJain: 0, continueRegular: 0 });
     const [loadingCounts, setLoadingCounts] = useState(false);
 
     const fetchMealCounts = useCallback(async (targetDate: Date) => {
@@ -131,14 +138,18 @@ export default function ChefPortalPage() {
             if (res && res.summary && res.summary.foodPreference) {
                 setMealCounts({
                     jain: res.summary.foodPreference.jain || 0,
-                    regular: res.summary.foodPreference.regular || 0
+                    regular: res.summary.foodPreference.regular || 0,
+                    newJain: res.summary.foodPreference.newJain || 0,
+                    newRegular: res.summary.foodPreference.newRegular || 0,
+                    continueJain: res.summary.foodPreference.continueJain || 0,
+                    continueRegular: res.summary.foodPreference.continueRegular || 0
                 });
             } else {
-                setMealCounts({ jain: 0, regular: 0 });
+                setMealCounts({ jain: 0, regular: 0, newJain: 0, newRegular: 0, continueJain: 0, continueRegular: 0 });
             }
         } catch (err) {
             console.error("Error fetching meal counts for chef portal:", err);
-            setMealCounts({ jain: 0, regular: 0 });
+            setMealCounts({ jain: 0, regular: 0, newJain: 0, newRegular: 0, continueJain: 0, continueRegular: 0 });
         } finally {
             setLoadingCounts(false);
         }
@@ -394,6 +405,11 @@ export default function ChefPortalPage() {
         breakfastTotal?: number;
         lunchTotal?: number;
         dinnerTotal?: number;
+        breakdown?: {
+            breakfast: { eatenNew: number; totalNew: number; eatenCont: number; totalCont: number };
+            lunch: { eatenNew: number; totalNew: number; eatenCont: number; totalCont: number };
+            dinner: { eatenNew: number; totalNew: number; eatenCont: number; totalCont: number };
+        };
         bookings: any[];
     } | null>(null);
     const [loadingMealCounter, setLoadingMealCounter] = useState(false);
@@ -807,16 +823,43 @@ export default function ChefPortalPage() {
                         <span className="text-xs font-bold">Fetching food preference counts...</span>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 text-center">
-                            <span className="text-xs font-bold text-orange-600 uppercase tracking-wider block">Jain Veg</span>
-                            <span className="text-3xl font-black text-orange-700 mt-1 block">{mealCounts.jain}</span>
-                            <span className="text-[10px] text-orange-500 font-semibold mt-0.5 block">Guests</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* New Guests Preference */}
+                        <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 text-center border-b border-slate-200/60 pb-1.5">
+                                New Guests (Arriving Today)
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 text-center">
+                                    <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block">Jain Veg</span>
+                                    <span className="text-2xl font-black text-orange-700 mt-1 block">{mealCounts.newJain || 0}</span>
+                                    <span className="text-[9px] text-orange-500 font-semibold mt-0.5 block">Guests</span>
+                                </div>
+                                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Regular Veg</span>
+                                    <span className="text-2xl font-black text-emerald-700 mt-1 block">{mealCounts.newRegular || 0}</span>
+                                    <span className="text-[9px] text-emerald-500 font-semibold mt-0.5 block">Guests</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
-                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider block">Regular Veg</span>
-                            <span className="text-3xl font-black text-emerald-700 mt-1 block">{mealCounts.regular}</span>
-                            <span className="text-[10px] text-emerald-500 font-semibold mt-0.5 block">Guests</span>
+
+                        {/* Continue Guests Preference */}
+                        <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 text-center border-b border-slate-200/60 pb-1.5">
+                                Continue Guests (Staying)
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Jain Veg</span>
+                                    <span className="text-2xl font-black text-amber-700 mt-1 block">{mealCounts.continueJain || 0}</span>
+                                    <span className="text-[9px] text-amber-500 font-semibold mt-0.5 block">Guests</span>
+                                </div>
+                                <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 text-center">
+                                    <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider block">Regular Veg</span>
+                                    <span className="text-2xl font-black text-teal-700 mt-1 block">{mealCounts.continueRegular || 0}</span>
+                                    <span className="text-[9px] text-teal-500 font-semibold mt-0.5 block">Guests</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -845,9 +888,45 @@ export default function ChefPortalPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {[
-                                { key: "breakfast", label: "Breakfast", icon: Coffee, count: mealCounter?.breakfastEaten || 0, total: mealCounter?.breakfastTotal !== undefined ? mealCounter.breakfastTotal : (mealCounter?.totalGuests || 0), color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70", iconColor: "text-amber-600" },
-                                { key: "lunch", label: "Lunch", icon: Sun, count: mealCounter?.lunchEaten || 0, total: mealCounter?.lunchTotal !== undefined ? mealCounter.lunchTotal : (mealCounter?.totalGuests || 0), color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70", iconColor: "text-emerald-600" },
-                                { key: "dinner", label: "Dinner", icon: Moon, count: mealCounter?.dinnerEaten || 0, total: mealCounter?.dinnerTotal !== undefined ? mealCounter.dinnerTotal : (mealCounter?.totalGuests || 0), color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70", iconColor: "text-indigo-600" }
+                                { 
+                                    key: "breakfast", 
+                                    label: "Breakfast", 
+                                    icon: Coffee, 
+                                    count: mealCounter?.breakfastEaten || 0, 
+                                    total: mealCounter?.breakfastTotal !== undefined ? mealCounter.breakfastTotal : (mealCounter?.totalGuests || 0), 
+                                    eatenNew: mealCounter?.breakdown?.breakfast?.eatenNew || 0,
+                                    totalNew: mealCounter?.breakdown?.breakfast?.totalNew || 0,
+                                    eatenCont: mealCounter?.breakdown?.breakfast?.eatenCont || 0,
+                                    totalCont: mealCounter?.breakdown?.breakfast?.totalCont || 0,
+                                    color: "from-amber-50 to-orange-50/20 text-amber-800 border-amber-100/70", 
+                                    iconColor: "text-amber-600" 
+                                },
+                                { 
+                                    key: "lunch", 
+                                    label: "Lunch", 
+                                    icon: Sun, 
+                                    count: mealCounter?.lunchEaten || 0, 
+                                    total: mealCounter?.lunchTotal !== undefined ? mealCounter.lunchTotal : (mealCounter?.totalGuests || 0), 
+                                    eatenNew: mealCounter?.breakdown?.lunch?.eatenNew || 0,
+                                    totalNew: mealCounter?.breakdown?.lunch?.totalNew || 0,
+                                    eatenCont: mealCounter?.breakdown?.lunch?.eatenCont || 0,
+                                    totalCont: mealCounter?.breakdown?.lunch?.totalCont || 0,
+                                    color: "from-emerald-50 to-teal-50/20 text-emerald-800 border-emerald-100/70", 
+                                    iconColor: "text-emerald-600" 
+                                },
+                                { 
+                                    key: "dinner", 
+                                    label: "Dinner", 
+                                    icon: Moon, 
+                                    count: mealCounter?.dinnerEaten || 0, 
+                                    total: mealCounter?.dinnerTotal !== undefined ? mealCounter.dinnerTotal : (mealCounter?.totalGuests || 0), 
+                                    eatenNew: mealCounter?.breakdown?.dinner?.eatenNew || 0,
+                                    totalNew: mealCounter?.breakdown?.dinner?.totalNew || 0,
+                                    eatenCont: mealCounter?.breakdown?.dinner?.eatenCont || 0,
+                                    totalCont: mealCounter?.breakdown?.dinner?.totalCont || 0,
+                                    color: "from-indigo-50 to-blue-50/20 text-indigo-800 border-indigo-100/70", 
+                                    iconColor: "text-indigo-600" 
+                                }
                             ].map((meal) => {
                                 const Icon = meal.icon;
                                 return (
@@ -856,7 +935,12 @@ export default function ChefPortalPage() {
                                             <div className={`p-2 rounded-xl bg-white border border-slate-200/50 ${meal.iconColor}`}>
                                                 <Icon size={20} />
                                             </div>
-                                            <span className="font-extrabold text-sm">{meal.label}</span>
+                                            <div className="flex flex-col">
+                                                <span className="font-extrabold text-sm">{meal.label}</span>
+                                                <span className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wider">
+                                                    New: {meal.eatenNew}/{meal.totalNew} · Cont: {meal.eatenCont}/{meal.totalCont}
+                                                </span>
+                                            </div>
                                         </div>
                                         <span className="font-black text-2xl tracking-tight">
                                             {meal.count} / {meal.total}
