@@ -152,7 +152,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         if (!reportDate) { alert("Please select a date"); return; }
         setReportLoading(true);
         try {
-            const data = await api.get<{ bookings: any[] }>(`/bookings/staycation/daily-report?date=${reportDate}&property=${reportProperty}`);
+            const data = await api.get<{ bookings: any[]; summary: any }>(`/bookings/staycation/daily-report?date=${reportDate}&property=${reportProperty}`);
             if (!data || !data.bookings) { alert("No data returned"); setReportLoading(false); return; }
 
             const { default: jsPDF } = await import("jspdf");
@@ -220,6 +220,106 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                     11: { cellWidth: 35 }
                 }
             });
+
+            // ─── Summary section — rounded colored cards ───
+            const finalY = (doc as any).lastAutoTable?.finalY || 180;
+            let yPos = finalY + 12;
+
+            // Check if we need a new page for summary
+            if (yPos > doc.internal.pageSize.getHeight() - 65) {
+                doc.addPage();
+                yPos = 15;
+            }
+
+            const s = data.summary;
+
+            doc.setFontSize(13);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 30, 60);
+            doc.text("Summary", 14, yPos);
+            yPos += 8;
+
+            // Helper: draw a rounded card (valueFontSize defaults to 16)
+            const drawCard = (x: number, y: number, w: number, h: number, bgColor: number[], borderColor: number[], label: string, value: string, labelColor: number[], valueColor: number[], valueFontSize = 16) => {
+                doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+                doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+                doc.setLineWidth(0.4);
+                doc.roundedRect(x, y, w, h, 3, 3, "FD");
+                doc.setFontSize(7);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
+                doc.text(label, x + w / 2, y + 7, { align: "center" });
+                doc.setFontSize(valueFontSize);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
+                doc.text(value, x + w / 2, y + (valueFontSize >= 14 ? 17 : 16), { align: "center" });
+            };
+
+            const cardH = 24;
+            const gap = 5;
+            const usableWidth = pageWidth - 2 * margin;
+
+            // --- Row 1: Ambrose Adults, Ambrose Kids, Amstel Adults, Amstel Kids, Total Guests ---
+            const row1CardW = 48;
+            const row1TotalW = row1CardW * 5 + gap * 4;
+            const row1StartX = margin + (usableWidth - row1TotalW) / 2;
+
+            // Ambrose Adults — green tint
+            drawCard(row1StartX, yPos, row1CardW, cardH,
+                [230, 250, 235], [160, 210, 170],
+                "AMBROSE ADULTS", String(s.ambrose?.adults || 0),
+                [40, 120, 60], [20, 100, 40]
+            );
+            // Ambrose Kids — lighter green
+            drawCard(row1StartX + (row1CardW + gap), yPos, row1CardW, cardH,
+                [240, 255, 240], [180, 220, 180],
+                "AMBROSE KIDS", String(s.ambrose?.children || 0),
+                [60, 130, 70], [30, 110, 40]
+            );
+            // Amstel Adults — blue tint
+            drawCard(row1StartX + (row1CardW + gap) * 2, yPos, row1CardW, cardH,
+                [230, 240, 255], [150, 180, 230],
+                "AMSTEL ADULTS", String(s.amstelNest?.adults || 0),
+                [40, 70, 150], [20, 50, 140]
+            );
+            // Amstel Kids — lighter blue
+            drawCard(row1StartX + (row1CardW + gap) * 3, yPos, row1CardW, cardH,
+                [238, 245, 255], [170, 195, 240],
+                "AMSTEL KIDS", String(s.amstelNest?.children || 0),
+                [60, 90, 160], [30, 60, 150]
+            );
+            // Total Guests — dark card
+            drawCard(row1StartX + (row1CardW + gap) * 4, yPos, row1CardW, cardH,
+                [35, 40, 65], [35, 40, 65],
+                "TOTAL GUESTS", String(s.grandTotal?.total || 0),
+                [180, 190, 220], [255, 255, 255]
+            );
+
+            yPos += cardH + 8;
+
+            // --- Row 2: Check-ins Today, Jain, Regular ---
+            const row2CardW = 60;
+            const row2TotalW = row2CardW * 3 + gap * 2;
+            const row2StartX = margin + (usableWidth - row2TotalW) / 2;
+
+            // Check-ins today — orange tint
+            drawCard(row2StartX, yPos, row2CardW, cardH,
+                [255, 243, 230], [245, 200, 150],
+                "CHECK-INS TODAY", String(s.totalCheckIns || 0),
+                [180, 100, 20], [200, 80, 0]
+            );
+            // Jain — warm yellow
+            drawCard(row2StartX + row2CardW + gap, yPos, row2CardW, cardH,
+                [255, 248, 230], [230, 200, 140],
+                "JAIN", String(s.foodPreference?.jain || 0),
+                [160, 120, 30], [180, 100, 0]
+            );
+            // Regular — light teal
+            drawCard(row2StartX + (row2CardW + gap) * 2, yPos, row2CardW, cardH,
+                [230, 248, 245], [160, 210, 200],
+                "REGULAR (VEG)", String(s.foodPreference?.regular || 0),
+                [40, 120, 110], [20, 100, 90]
+            );
 
             doc.save(`daily_guest_report_${reportDate}.pdf`);
         } catch (err) {
