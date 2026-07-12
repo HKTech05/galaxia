@@ -1048,6 +1048,8 @@ router.get("/daily-report", authMiddleware, async (req: AuthRequest, res) => {
                 numChildren: b.numKids || 0,
                 foodPreference,
                 isCheckInToday,
+                balanceAmount: b.balanceAmount || 0,
+                comments: b.comments || "",
             };
         });
 

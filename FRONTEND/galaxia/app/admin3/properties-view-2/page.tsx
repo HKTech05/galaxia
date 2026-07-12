@@ -254,8 +254,12 @@ export default function PropertiesView2Page() {
             booking: Booking | null;
         }> = [];
 
+        // Track already assigned booking IDs to avoid double assignment of unassigned/pending bookings
+        const assignedBookingIds = new Set<number>();
+
         // Helper to match bookings for a specific unit
         const getUnitBooking = (unitName: string, propName: string) => {
+            // Find all bookings matching this property
             const matches = bookings.filter(b => {
                 const bPropName = b.property?.name?.toLowerCase() || "";
                 const isMatchingProp = propName.toLowerCase().includes("ambrose")
@@ -263,37 +267,77 @@ export default function PropertiesView2Page() {
                     : propName.toLowerCase().includes("amstel")
                         ? bPropName.includes("amstel")
                         : bPropName.includes(propName.toLowerCase()) || propName.toLowerCase().includes(bPropName);
-
-                if (!isMatchingProp) return false;
-                
-                // For Amstel/Ambrose, match unit name
-                if (!b.assignedUnit) return false;
-                const units = b.assignedUnit.split(", ").map(u => u.trim());
-                if (!units.includes(unitName)) return false;
-
-                return true;
+                return isMatchingProp;
             });
 
-            if (matches.length === 0) return null;
-
-            if (modeFilter === "checkin") {
-                // Find booking staying today (not checkout-only)
-                // checkout-only means checkOutDate is today and checkInDate is before today
-                const active = matches.find(b => {
+            // Filter active bookings based on date filters and modeFilter
+            const activeMatches = matches.filter(b => {
+                if (modeFilter === "checkin") {
                     const checkInStr = b.checkInDate ? b.checkInDate.slice(0, 10) : "";
                     const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
                     const isCheckoutOnly = checkOutStr === selectedDateStr && checkInStr !== selectedDateStr;
                     return !isCheckoutOnly;
-                });
-                return active || null;
-            } else {
-                // Find booking checking out today
-                const checkout = matches.find(b => {
+                } else {
                     const checkOutStr = b.checkOutDate ? b.checkOutDate.slice(0, 10) : "";
                     return checkOutStr === selectedDateStr;
-                });
-                return checkout || null;
+                }
+            });
+
+            // 1. First Pass: Try to match by explicit assignedUnit
+            const explicitMatch = activeMatches.find(b => {
+                if (!b.assignedUnit) return false;
+                const units = b.assignedUnit.split(", ").map(u => u.trim().toLowerCase());
+                return units.includes(unitName.toLowerCase());
+            });
+            if (explicitMatch) {
+                assignedBookingIds.add(explicitMatch.id);
+                return explicitMatch;
             }
+
+            // 2. Second Pass: If no explicit match, try to match unassigned bookings
+            // For Ambrose:
+            if (propName.toLowerCase().includes("ambrose")) {
+                const fallbackMatch = activeMatches.find(b => {
+                    if (b.assignedUnit) return false; // Only match unassigned
+                    if (assignedBookingIds.has(b.id)) return false;
+                    const subName = b.subProperty?.name?.toLowerCase() || "";
+                    return subName === unitName.toLowerCase();
+                });
+                if (fallbackMatch) {
+                    assignedBookingIds.add(fallbackMatch.id);
+                    return fallbackMatch;
+                }
+            }
+
+            // For Amstel Nest:
+            if (propName.toLowerCase().includes("amstel")) {
+                if (unitName === "Family Cottage") {
+                    const fallbackMatch = activeMatches.find(b => {
+                        if (b.assignedUnit) return false;
+                        if (assignedBookingIds.has(b.id)) return false;
+                        const subName = b.subProperty?.name?.toLowerCase() || "";
+                        return subName.includes("family");
+                    });
+                    if (fallbackMatch) {
+                        assignedBookingIds.add(fallbackMatch.id);
+                        return fallbackMatch;
+                    }
+                } else {
+                    // Standard Cottage (Cottage 1 to 14)
+                    const fallbackMatch = activeMatches.find(b => {
+                        if (b.assignedUnit) return false;
+                        if (assignedBookingIds.has(b.id)) return false;
+                        const subName = b.subProperty?.name?.toLowerCase() || "";
+                        return subName.includes("standard");
+                    });
+                    if (fallbackMatch) {
+                        assignedBookingIds.add(fallbackMatch.id);
+                        return fallbackMatch;
+                    }
+                }
+            }
+
+            return null;
         };
 
         // Helper to match bookings for a standalone property

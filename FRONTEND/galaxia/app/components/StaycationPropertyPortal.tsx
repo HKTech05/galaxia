@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare, Image as ImageIcon, FileText } from "lucide-react";
+import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare, Image as ImageIcon, FileText, ChevronRight } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
 import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
@@ -142,6 +142,93 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [modalType, setModalType] = useState<"checkin" | "checkout">("checkin");
     const [previewGuestId, setPreviewGuestId] = useState<{ id: number; fileName: string | null; fileType: string | null } | null>(null);
+
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportDate, setReportDate] = useState<string>(new Date().toISOString().split("T")[0]);
+    const [reportProperty, setReportProperty] = useState<"ambrose" | "amstel-nest" | "both">("both");
+    const [reportLoading, setReportLoading] = useState(false);
+
+    const generateDailyReportPDF = async () => {
+        if (!reportDate) { alert("Please select a date"); return; }
+        setReportLoading(true);
+        try {
+            const data = await api.get<{ bookings: any[] }>(`/bookings/staycation/daily-report?date=${reportDate}&property=${reportProperty}`);
+            if (!data || !data.bookings) { alert("No data returned"); setReportLoading(false); return; }
+
+            const { default: jsPDF } = await import("jspdf");
+            const autoTable = (await import("jspdf-autotable")).default;
+
+            const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Title
+            const propLabel = reportProperty === "ambrose" ? "Ambrose" : reportProperty === "amstel-nest" ? "Amstel Nest" : "Ambrose + Amstel Nest";
+            const dateFormatted = new Date(reportDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text("Galaxia Resorts — Daily Guest Report", pageWidth / 2, 15, { align: "center" });
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Date: ${dateFormatted}  |  Property: ${propLabel}`, pageWidth / 2, 23, { align: "center" });
+
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`, pageWidth / 2, 28, { align: "center" });
+            doc.setTextColor(0);
+
+            // Table rows
+            const tableRows = data.bookings.map((b: any, idx: number) => [
+                idx + 1,
+                b.customerName,
+                b.propertyName + (b.subPropertyName ? ` (${b.subPropertyName})` : ""),
+                b.numCottages,
+                new Date(b.checkInDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                new Date(b.checkOutDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+                b.numNights,
+                b.numAdults,
+                b.numChildren,
+                b.foodPreference,
+                `Rs. ${b.balanceAmount.toLocaleString("en-IN")}`,
+                b.comments || ""
+            ]);
+
+            const margin = 14;
+            autoTable(doc, {
+                startY: 33,
+                margin: { left: margin, right: margin },
+                head: [[
+                    "#", "Guest Name", "Property", "Villas", "Check-in", "Check-out", "Nights", "Adults", "Children", "Food Pref", "Balance", "Comments"
+                ]],
+                body: tableRows,
+                theme: "grid",
+                headStyles: { fillColor: [55, 48, 107], textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold", halign: "center" },
+                bodyStyles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: {
+                    0: { halign: "center", cellWidth: 8 },
+                    1: { cellWidth: 42 },
+                    2: { cellWidth: 45 },
+                    3: { halign: "center", cellWidth: 12 },
+                    4: { halign: "center", cellWidth: 22 },
+                    5: { halign: "center", cellWidth: 22 },
+                    6: { halign: "center", cellWidth: 12 },
+                    7: { halign: "center", cellWidth: 12 },
+                    8: { halign: "center", cellWidth: 12 },
+                    9: { cellWidth: 25 },
+                    10: { halign: "right", cellWidth: 20 },
+                    11: { cellWidth: 35 }
+                }
+            });
+
+            doc.save(`daily_guest_report_${reportDate}.pdf`);
+        } catch (err) {
+            console.error("Failed to generate daily report PDF:", err);
+            alert("Failed to generate Daily Guest Report PDF");
+        } finally {
+            setReportLoading(false);
+        }
+    };
     const [previewPaymentProof, setPreviewPaymentProof] = useState<any | null>(null);
     const [previewPaymentProofUrl, setPreviewPaymentProofUrl] = useState<string | null>(null);
     const [previewPaymentProofLoading, setPreviewPaymentProofLoading] = useState<boolean>(false);
@@ -655,11 +742,28 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                 Checkouts
                             </button>
                         </div>
-                        <CustomDatePicker date={startDate} onDateChange={(d) => {
-                            setStartDate(d);
-                            setEndDate(d);
-                        }} />
-                    </div>
+                         <CustomDatePicker date={startDate} onDateChange={(d) => {
+                             setStartDate(d);
+                             setEndDate(d);
+                         }} />
+                         <button
+                             onClick={() => {
+                                 setReportDate(startDate.toISOString().split('T')[0]);
+                                 const lowerPortal = portalName.toLowerCase();
+                                 if (lowerPortal.includes("ambrose")) {
+                                     setReportProperty("ambrose");
+                                 } else if (lowerPortal.includes("amstel")) {
+                                     setReportProperty("amstel-nest");
+                                 } else {
+                                     setReportProperty("both");
+                                 }
+                                 setShowReportModal(true);
+                             }}
+                             className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                         >
+                             <FileText size={14} /> Daily Guest Report
+                         </button>
+                     </div>
                 </div>
             </div>
 
@@ -1746,15 +1850,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             className="flex-1 min-w-0 bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-medium focus:outline-none focus:border-amber-500"
                                         />
                                         <input
-                                            type="number"
-                                            value={item.amount || ''}
-                                            onChange={(e) => {
-                                                const updated = [...foodBillItems];
-                                                updated[index].amount = parseInt(e.target.value) || 0;
-                                                setFoodBillItems(updated);
-                                            }}
-                                            placeholder="Price"
-                                            className="w-20 bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-amber-500"
+                                             type="number"
+                                             value={item.amount || ''}
+                                             onChange={(e) => {
+                                                 const updated = [...foodBillItems];
+                                                 updated[index].amount = parseInt(e.target.value) || 0;
+                                                 setFoodBillItems(updated);
+                                             }}
+                                             disabled={["ranjit", "devi", "devidas"].includes(username)}
+                                             placeholder="Price"
+                                             className="w-20 bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-amber-500 disabled:opacity-75 disabled:cursor-not-allowed"
                                         />
                                         {(userRole === "owner" || userRole === "developer" || userRole === "chef") && (
                                             <button
@@ -1816,7 +1921,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Final Amount (₹) *</label>
-                                    {customTotalAmount !== null && (
+                                    {!["ranjit", "devi", "devidas"].includes(username) && customTotalAmount !== null && (
                                         <button
                                             type="button"
                                             onClick={() => setCustomTotalAmount(null)}
@@ -1830,8 +1935,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     type="number"
                                     value={customTotalAmount !== null ? customTotalAmount : foodBillItems.reduce((sum, item) => sum + (parseInt(item.amount as any) || 0), 0)}
                                     onChange={(e) => setCustomTotalAmount(parseInt(e.target.value) || 0)}
+                                    disabled={["ranjit", "devi", "devidas"].includes(username)}
                                     placeholder="Final total amount"
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-75 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -1883,6 +1989,82 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     </button>
                                 );
                             })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Daily Guest Report Modal */}
+            {showReportModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !reportLoading && setShowReportModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Daily Guest Report</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Download a PDF of all guests staying on a specific date</p>
+                            </div>
+                            <button onClick={() => setShowReportModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors" disabled={reportLoading}>
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-5">
+                            {/* Instructions */}
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                                <p className="text-xs text-indigo-700 font-medium leading-relaxed">
+                                    Select a date and property to generate a PDF report of all guests <strong>staying</strong> on that date.
+                                    Check-outs on the selected date are <strong>not included</strong> — only guests currently checked in or checking in.
+                                </p>
+                            </div>
+
+                            {/* Date Picker */}
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Report Date</label>
+                                <CustomDatePicker
+                                    date={reportDate ? new Date(reportDate + 'T00:00:00') : new Date()}
+                                    onDateChange={(d) => {
+                                        const y = d.getFullYear();
+                                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                                        const day = String(d.getDate()).padStart(2, '0');
+                                        setReportDate(`${y}-${m}-${day}`);
+                                    }}
+                                    className="w-full"
+                                />
+                            </div>
+
+                            {/* Property Dropdown */}
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Property</label>
+                                <div className="relative">
+                                    <select
+                                        value={reportProperty}
+                                        onChange={(e) => setReportProperty(e.target.value as any)}
+                                        className="w-full py-2.5 px-3 pr-8 appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="both">Ambrose + Amstel Nest</option>
+                                        <option value="ambrose">Ambrose</option>
+                                        <option value="amstel-nest">Amstel Nest</option>
+                                    </select>
+                                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
+                                </div>
+                            </div>
+
+                            {/* Download Button */}
+                            <button
+                                onClick={generateDailyReportPDF}
+                                disabled={reportLoading}
+                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {reportLoading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        <span>Generating Report...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileText size={16} />
+                                        <span>Download Daily Report PDF</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

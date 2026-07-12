@@ -597,7 +597,7 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                                         <svg className="w-4 h-4 text-antique-gold transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </summary>
                                     <div className="px-4 pb-4 text-text-secondary font-inter text-sm">
-                                        Local taxis and auto-rickshaws available. Contact Ashok at <a href="tel:+918983736999" className="text-antique-gold hover:text-dark-gold transition-colors font-medium">+91 8983736999</a> for pre-booking an auto rickshaw.
+                                         Local taxis and auto-rickshaws available. Contact Mahesh : <a href="tel:+919284796472" className="text-antique-gold hover:text-dark-gold transition-colors font-medium">+91 92847 96472</a> for pre-booking an auto rickshaw.
                                     </div>
                                 </details>
                             </div>

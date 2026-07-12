@@ -330,7 +330,10 @@ router.get("/requests", async (req: AuthRequest, res) => {
                     select: {
                         id: true,
                         customerName: true,
-                        bookingRef: true
+                        bookingRef: true,
+                        propertyId: true,
+                        property: { select: { name: true } },
+                        subProperty: { select: { name: true } }
                     }
                 }
             }

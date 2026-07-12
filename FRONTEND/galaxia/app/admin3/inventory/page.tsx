@@ -208,6 +208,7 @@ export default function InventoryPage() {
             setShowAddModal(false);
             setNewItemName("");
             setNewItemPrice("");
+            setNewItemCostPrice("");
             setNewItemStock("100");
             setSuccessMsg(`"${newItem.name}" added successfully!`);
         } catch (err: any) {
@@ -487,6 +488,19 @@ export default function InventoryPage() {
                                                     min="0"
                                                     value={editPrices[item.id] || String(item.price)}
                                                     onChange={e => setEditPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                    onBlur={handleSave}
+                                                    className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
+                                                />
+                                            </div>
+
+                                            {/* Cost Price (editable) */}
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <span className="text-xs font-bold text-slate-500">Cost:</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={editCostPrices[item.id] !== undefined ? editCostPrices[item.id] : String(item.costPrice ?? 0)}
+                                                    onChange={e => setEditCostPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
                                                     onBlur={handleSave}
                                                     className="w-16 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-center text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-purple-500"
                                                 />
@@ -781,6 +795,17 @@ export default function InventoryPage() {
                                         className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:border-purple-500 focus:outline-none"
                                     />
                                 </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cost Price (₹)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={newItemCostPrice}
+                                    onChange={e => setNewItemCostPrice(e.target.value)}
+                                    placeholder="e.g. 30"
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:border-purple-500 focus:outline-none"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Category</label>

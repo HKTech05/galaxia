@@ -19,6 +19,7 @@ interface FoodBill {
         customerName: string;
         assignedUnit: string | null;
         bookingRef: string;
+        property?: { name: string } | null;
         subProperty?: { name: string } | null;
     } | null;
 }
@@ -45,6 +46,32 @@ export default function FoodHistoryPage() {
     const [dateFrom, setDateFrom] = useState<string>("");
     const [dateTo, setDateTo] = useState<string>("");
     const [selectedBill, setSelectedBill] = useState<FoodBill | null>(null);
+
+    const [isDailyReportOpen, setIsDailyReportOpen] = useState(false);
+    const [reportDate, setReportDate] = useState<string>(new Date().toISOString().split("T")[0]);
+    const [reportProperty, setReportProperty] = useState<"ambrose" | "amstel" | "both">("both");
+    const [reportStatus, setReportStatus] = useState<"all" | "paid" | "unpaid">("all");
+    const [reportRequests, setReportRequests] = useState<any[]>([]);
+    const [loadingReportRequests, setLoadingReportRequests] = useState(false);
+
+    const fetchReportRequests = async (dateStr: string) => {
+        try {
+            setLoadingReportRequests(true);
+            const data = await api.get<any[]>(`/hospitality/requests?status=fulfilled&isBilled=false&date=${dateStr}`);
+            setReportRequests(data || []);
+        } catch (err) {
+            console.error("Failed to fetch report requests:", err);
+            setReportRequests([]);
+        } finally {
+            setLoadingReportRequests(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isDailyReportOpen) {
+            fetchReportRequests(reportDate);
+        }
+    }, [isDailyReportOpen, reportDate]);
 
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [loadingProof, setLoadingProof] = useState<boolean>(false);
@@ -162,13 +189,21 @@ export default function FoodHistoryPage() {
                     </h1>
                     <p className="text-sm font-medium text-slate-500 mt-1">Logs and breakdowns of staycation hospitality food orders.</p>
                 </div>
-                <button
-                    onClick={fetchData}
-                    className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-800 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-100 transition-all uppercase tracking-wider"
-                >
-                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                    Refresh
-                </button>
+                <div className="self-start sm:self-auto flex items-center gap-3">
+                    <button
+                        onClick={() => setIsDailyReportOpen(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all uppercase tracking-wider"
+                    >
+                        Daily Food Reports
+                    </button>
+                    <button
+                        onClick={fetchData}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-800 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-100 transition-all uppercase tracking-wider"
+                    >
+                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             {/* Summary Cards — only visible to owner/developer */}
@@ -452,6 +487,331 @@ export default function FoodHistoryPage() {
                     </div>
                 </div>
             )}
+
+            {/* Daily Food Report Modal */}
+            {isDailyReportOpen && (() => {
+                // Filter Paid staycation food bills by selected reportDate and reportProperty
+                const matchedPaidBills = bills.filter(b => {
+                    const dateStr = b.createdAt ? b.createdAt.split("T")[0] : "";
+                    if (dateStr !== reportDate) return false;
+                    
+                    const propName = b.booking?.property?.name?.toLowerCase() || "";
+                    if (reportProperty === "ambrose") {
+                        return propName.includes("ambrose");
+                    } else if (reportProperty === "amstel") {
+                        return propName.includes("amstel");
+                    }
+                    return propName.includes("ambrose") || propName.includes("amstel");
+                });
+
+                // Group unbilled hospitality requests by bookingId
+                const unbilledGroups: Record<number, any[]> = {};
+                reportRequests.forEach(req => {
+                    if (!req.bookingId) return;
+                    
+                    const propName = req.booking?.property?.name?.toLowerCase() || "";
+                    const isMatchedProp = reportProperty === "ambrose"
+                        ? propName.includes("ambrose")
+                        : reportProperty === "amstel"
+                            ? propName.includes("amstel")
+                            : propName.includes("ambrose") || propName.includes("amstel");
+                            
+                    if (!isMatchedProp) return;
+                    
+                    if (!unbilledGroups[req.bookingId]) {
+                        unbilledGroups[req.bookingId] = [];
+                    }
+                    unbilledGroups[req.bookingId].push(req);
+                });
+
+                // Map grouped unbilled requests to Unpaid bills
+                const matchedUnpaidBills = Object.entries(unbilledGroups).map(([bookingId, reqs]) => {
+                    const firstReq = reqs[0];
+                    const booking = firstReq.booking;
+                    
+                    let totalAmount = 0;
+                    const descriptionList: string[] = [];
+                    
+                    reqs.forEach(req => {
+                        if (Array.isArray(req.items)) {
+                            req.items.forEach((item: any) => {
+                                const price = item.price || 0;
+                                const qty = item.quantity || 1;
+                                totalAmount += price * qty;
+                                descriptionList.push(`${item.name} x${qty} (₹${price})`);
+                            });
+                        }
+                    });
+                    
+                    const propertyLabel = booking?.property?.name 
+                        ? `${booking.property.name}${booking.subProperty?.name ? ` (${booking.subProperty.name})` : ""}`
+                        : firstReq.villaName || "Unassigned";
+                    
+                    return {
+                        id: `unpaid-${bookingId}`,
+                        bookingId: parseInt(bookingId),
+                        guestName: booking?.customerName || "Walk-In",
+                        bookingRef: booking?.bookingRef || "-",
+                        propertyLabel,
+                        description: descriptionList.join(", "),
+                        amount: totalAmount,
+                        status: "Unpaid"
+                    };
+                });
+
+                // Map Paid bills to unified format
+                const formattedPaidBills = matchedPaidBills.map(b => {
+                    const propertyLabel = b.booking?.property?.name 
+                        ? `${b.booking.property.name}${b.booking.subProperty?.name ? ` (${b.booking.subProperty.name})` : ""}`
+                        : b.booking?.assignedUnit || "Unassigned";
+                    return {
+                        id: `paid-${b.id}`,
+                        bookingId: b.bookingId,
+                        guestName: b.booking?.customerName || "Walk-In",
+                        bookingRef: b.booking?.bookingRef || "-",
+                        propertyLabel,
+                        description: b.description,
+                        amount: b.amount,
+                        status: "Paid"
+                    };
+                });
+
+                // Combine all
+                const combinedReportBills = [...formattedPaidBills, ...matchedUnpaidBills];
+                
+                // Filter by status filter
+                const filteredReportBills = combinedReportBills.filter(b => {
+                    if (reportStatus === "paid") return b.status === "Paid";
+                    if (reportStatus === "unpaid") return b.status === "Unpaid";
+                    return true;
+                });
+
+                // Calculate summary totals
+                const totalPaid = formattedPaidBills.reduce((sum, b) => sum + b.amount, 0);
+                const totalUnpaid = matchedUnpaidBills.reduce((sum, b) => sum + b.amount, 0);
+                const totalToCollect = totalPaid + totalUnpaid;
+
+                const handleDownloadReportPDF = async () => {
+                    try {
+                        const { default: jsPDF } = await import("jspdf");
+                        const { default: autoTable } = await import("jspdf-autotable");
+                        
+                        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+                        const pageWidth = doc.internal.pageSize.getWidth();
+                        
+                        doc.setFontSize(16);
+                        doc.setFont("helvetica", "bold");
+                        doc.text("Galaxia Resorts — Daily Food Bill Report", pageWidth / 2, 15, { align: "center" });
+                        
+                        doc.setFontSize(10);
+                        doc.setFont("helvetica", "normal");
+                        doc.setTextColor(100);
+                        
+                        const propLabel = reportProperty === "ambrose" ? "Ambrose" : reportProperty === "amstel" ? "Amstel Nest" : "Ambrose + Amstel Nest";
+                        doc.text(`Date: ${reportDate}  |  Property: ${propLabel}  |  Status: ${reportStatus.toUpperCase()}`, pageWidth / 2, 21, { align: "center" });
+                        
+                        doc.setFontSize(8);
+                        doc.text(`Generated on: ${new Date().toLocaleString("en-IN")}`, pageWidth / 2, 26, { align: "center" });
+                        doc.setTextColor(0);
+                        
+                        // Summary Stats box
+                        let startY = 32;
+                        doc.setFillColor(245, 247, 250);
+                        doc.rect(14, startY, pageWidth - 28, 20, "F");
+                        
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(9);
+                        doc.text(`Total Paid: Rs. ${totalPaid.toLocaleString("en-IN")}`, 20, startY + 8);
+                        doc.text(`Total Unpaid: Rs. ${totalUnpaid.toLocaleString("en-IN")}`, 20, startY + 14);
+                        
+                        doc.setFontSize(10);
+                        doc.text(`Total to Collect: Rs. ${totalToCollect.toLocaleString("en-IN")}`, pageWidth - 80, startY + 11);
+                        
+                        const headers = [["Guest", "Villa/Property", "Contents", "Status", "Amount"]];
+                        const pdfData = filteredReportBills.map(b => [
+                            `${b.guestName}\n(${b.bookingRef})`,
+                            b.propertyLabel,
+                            b.description,
+                            b.status,
+                            `Rs. ${b.amount.toLocaleString("en-IN")}`
+                        ]);
+                        
+                        autoTable(doc, {
+                            startY: 57,
+                            head: headers,
+                            body: pdfData,
+                            theme: "striped",
+                            headStyles: { fillColor: [79, 70, 229] },
+                            styles: { fontSize: 8, cellPadding: 3 },
+                            columnStyles: {
+                                0: { cellWidth: 35 },
+                                1: { cellWidth: 35 },
+                                2: { cellWidth: 75 },
+                                3: { cellWidth: 17, halign: "center" },
+                                4: { cellWidth: 20, halign: "right" }
+                            }
+                        });
+                        
+                        doc.save(`daily_food_report_${reportDate}.pdf`);
+                    } catch (err: any) {
+                        console.error("Failed to generate PDF:", err);
+                        alert("Failed to generate PDF. Please try again.");
+                    }
+                };
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setIsDailyReportOpen(false)}>
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50 shrink-0">
+                                <div>
+                                    <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                                        <UtensilsCrossed className="text-amber-600" size={18} />
+                                        Daily Food Reports
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-0.5">Summary of food collections and pending bills</p>
+                                </div>
+                                <button onClick={() => setIsDailyReportOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                                {/* Filters Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/50">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Date</label>
+                                        <input
+                                            type="date"
+                                            value={reportDate}
+                                            onChange={e => setReportDate(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Property</label>
+                                        <select
+                                            value={reportProperty}
+                                            onChange={e => setReportProperty(e.target.value as any)}
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                                        >
+                                            <option value="both">Ambrose + Amstel Nest</option>
+                                            <option value="ambrose">Ambrose</option>
+                                            <option value="amstel">Amstel Nest</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Status</label>
+                                        <select
+                                            value={reportStatus}
+                                            onChange={e => setReportStatus(e.target.value as any)}
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                                        >
+                                            <option value="all">All</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="unpaid">Unpaid</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Summary Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Total Paid</span>
+                                        <p className="text-xl font-black text-emerald-800 mt-1">₹{totalPaid.toLocaleString("en-IN")}</p>
+                                    </div>
+                                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Total Unpaid</span>
+                                        <p className="text-xl font-black text-red-800 mt-1">₹{totalUnpaid.toLocaleString("en-IN")}</p>
+                                    </div>
+                                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Total amount to collect</span>
+                                        <p className="text-xl font-black text-indigo-800 mt-1">₹{totalToCollect.toLocaleString("en-IN")}</p>
+                                    </div>
+                                </div>
+
+                                {/* Report Table */}
+                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                    <div className="overflow-x-auto max-h-[40vh]">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-slate-50 border-b border-slate-200">
+                                                    <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Guest Name / Booking Ref</th>
+                                                    <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Villa / Property</th>
+                                                    <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Contents</th>
+                                                    <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                                                    <th className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {loadingReportRequests ? (
+                                                    <tr>
+                                                        <td colSpan={5} className="px-6 py-12 text-center">
+                                                            <Loader2 className="animate-spin mx-auto text-indigo-500" size={24} />
+                                                            <p className="text-xs text-slate-500 mt-2">Loading unpaid food requests...</p>
+                                                        </td>
+                                                    </tr>
+                                                ) : filteredReportBills.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium text-xs">
+                                                            No food bills found matching current selection.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredReportBills.map(b => (
+                                                        <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-4 py-3">
+                                                                <p className="text-xs font-bold text-slate-800">{b.guestName}</p>
+                                                                <p className="text-[10px] text-slate-400 font-bold">{b.bookingRef}</p>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="inline-flex px-2 py-0.5 bg-slate-100 text-slate-700 font-semibold text-[10px] rounded uppercase">
+                                                                    {b.propertyLabel}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-xs text-slate-600 font-medium max-w-xs truncate" title={b.description}>
+                                                                {b.description}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                {b.status === "Paid" ? (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                                        PAID
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
+                                                                        UNPAID
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-black text-slate-800 text-xs">
+                                                                ₹{b.amount.toLocaleString("en-IN")}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                                <button
+                                    onClick={handleDownloadReportPDF}
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer"
+                                >
+                                    Download PDF
+                                </button>
+                                <button
+                                    onClick={() => setIsDailyReportOpen(false)}
+                                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }
