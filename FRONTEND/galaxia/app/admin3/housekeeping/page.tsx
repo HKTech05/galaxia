@@ -791,7 +791,7 @@ export default function HousekeepingPortalPage() {
                                             </div>
 
                                             <div className="pt-2 flex justify-between items-center gap-2 border-t border-slate-200/40 mt-1">
-                                                {userRole !== "housekeeping" && (
+                                                {userRole !== "housekeeping" && !["ranjit", "devi"].includes(userName.toLowerCase()) && (
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => handleOpenEditModal(req)}
@@ -889,7 +889,7 @@ export default function HousekeepingPortalPage() {
                                                         <span className="text-slate-400 font-semibold">Unbilled</span>
                                                     )}
                                                 </div>
-                                                {userRole !== "housekeeping" && (
+                                                {userRole !== "housekeeping" && !["ranjit", "devi"].includes(userName.toLowerCase()) && (
                                                     <div className="flex items-center gap-1">
                                                         <button
                                                             onClick={() => handleOpenEditModal(req)}

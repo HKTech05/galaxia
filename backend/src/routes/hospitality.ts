@@ -396,6 +396,14 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
 
         const userRole = req.admin?.role || "";
         const cat = itemCategory || existing.itemCategory;
+        const username = req.admin?.username || "";
+        
+        // Restriction: Ranjit and Devi cannot edit housekeeping (Normal) orders (except status updates)
+        if (["ranjit", "devi"].includes(username.toLowerCase()) && (existing.itemCategory === "Normal" || cat === "Normal")) {
+            if (villaName !== undefined || itemCategory !== undefined || items !== undefined) {
+                return res.status(403).json({ error: "Ranjit and Devi profiles are not permitted to edit housekeeping orders." });
+            }
+        }
         
         // Restriction: Only chef/owner/dev can edit/modify items in active High Tea or Timepass requests
         if ((cat === "High Tea" || cat === "Timepass") && status !== "fulfilled") {
@@ -579,6 +587,13 @@ router.delete("/requests/:id", async (req: AuthRequest, res) => {
         }
 
         const userRole = req.admin?.role || "";
+        const username = req.admin?.username || "";
+        
+        // Restriction: Ranjit and Devi cannot delete housekeeping (Normal) orders
+        if (existing.itemCategory === "Normal" && ["ranjit", "devi"].includes(username.toLowerCase())) {
+            return res.status(403).json({ error: "Ranjit and Devi profiles are not permitted to delete housekeeping orders." });
+        }
+        
         if ((existing.itemCategory === "High Tea" || existing.itemCategory === "Timepass") && existing.status !== "fulfilled") {
             if (userRole !== "chef" && userRole !== "owner" && userRole !== "developer") {
                 return res.status(403).json({ error: "Only chef profile can cancel/delete active High Tea / Timepass requests." });

@@ -53,6 +53,7 @@ export default function ChefPortalPage() {
     const [logs, setLogs] = useState<ChefLog[]>([]);
     const [userRole, setUserRole] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
+    const [adminUsername, setAdminUsername] = useState<string>("");
     const [loadingIngredients, setLoadingIngredients] = useState(true);
     const [loadingLogs, setLoadingLogs] = useState(false);
     
@@ -339,6 +340,7 @@ export default function ChefPortalPage() {
             .then(data => {
                 setUserRole(data?.role || "");
                 setUserName(data?.displayName || data?.username || "Staff");
+                setAdminUsername(data?.username || "");
             })
             .catch(err => {
                 console.error("Error fetching auth details:", err);
@@ -1079,22 +1081,26 @@ export default function ChefPortalPage() {
                                         </div>
 
                                         <div className="pt-3 flex justify-between items-center border-t border-slate-200/40 mt-1">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleOpenEditModal(req)}
-                                                    className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                    title="Edit Order"
-                                                >
-                                                    <Edit size={12} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteRequest(req.id)}
-                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                    title="Delete Order"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            </div>
+                                             <div className="flex gap-2">
+                                                 {(!["ranjit", "devi"].includes(adminUsername.toLowerCase()) || req.itemCategory !== "Normal") && (
+                                                     <>
+                                                         <button
+                                                             onClick={() => handleOpenEditModal(req)}
+                                                             className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
+                                                             title="Edit Order"
+                                                         >
+                                                             <Edit size={12} />
+                                                         </button>
+                                                         <button
+                                                             onClick={() => handleDeleteRequest(req.id)}
+                                                             className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
+                                                             title="Delete Order"
+                                                         >
+                                                             <Trash2 size={12} />
+                                                         </button>
+                                                     </>
+                                                 )}
+                                             </div>
                                             <button
                                                 onClick={() => {
                                                     if (req.itemCategory === "High Tea") {
@@ -1173,20 +1179,24 @@ export default function ChefPortalPage() {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => handleOpenEditModal(req)}
-                                                    className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
-                                                    title="Edit Order"
-                                                >
-                                                    <Edit size={12} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteRequest(req.id)}
-                                                    className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
-                                                    title="Delete Order"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
+                                                {(!["ranjit", "devi"].includes(adminUsername.toLowerCase()) || req.itemCategory !== "Normal") && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(req)}
+                                                            className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
+                                                            title="Edit Order"
+                                                        >
+                                                            <Edit size={12} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteRequest(req.id)}
+                                                            className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
+                                                            title="Delete Order"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
