@@ -35,6 +35,137 @@ async function generateStayRef(tx: any): Promise<string> {
     return `ST-${dateStr}-${String(count + 1).padStart(3, "0")}${suffix}`;
 }
 
+// Reusable capacity-aware and blocked-date availability check helper
+async function checkAvailability(
+    tx: any,
+    propertyId: number,
+    subPropertyId: number | null,
+    checkIn: Date,
+    checkOut: Date,
+    numCottages: number,
+    excludeBookingId?: number
+): Promise<number | null> {
+    // 1. Get all active sub-properties for this property (determines capacity)
+    const subProperties = await tx.subProperty.findMany({
+        where: { propertyId, isActive: true },
+        select: { id: true, unitCount: true },
+    });
+
+    // Total capacity = sum of unitCount across all sub-properties (e.g. 14 standard + 1 family = 15)
+    const totalCapacity = subProperties.length > 0
+        ? subProperties.reduce((sum: number, sp: any) => sum + (sp.unitCount || 1), 0)
+        : 1;
+    const isMultiUnit = totalCapacity > 1;
+
+    // 2. Find ALL overlapping active bookings for this property (excluding the transferred one if specified)
+    const overlappingBookings = await tx.staycationBooking.findMany({
+        where: {
+            propertyId,
+            status: { notIn: ["cancelled", "no_show", "transferred"] },
+            ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+            checkInDate: { lt: checkOut },
+            checkOutDate: { gt: checkIn },
+        },
+        select: { id: true, subPropertyId: true, checkInDate: true, checkOutDate: true, numCottages: true },
+    });
+
+    // 2b. Get blocked dates in the range for this property
+    const blockedInRange = await tx.blockedDate.findMany({
+        where: {
+            propertyId,
+            blockedDate: { gte: checkIn, lt: checkOut },
+        },
+        select: { blockedDate: true, subPropertyId: true },
+    });
+
+    let assignedSubPropertyId: number | null = subPropertyId;
+
+    if (isMultiUnit) {
+        // ── Multi-unit property (e.g. Amstel Nest: 14 standard + 1 family = 15) ──
+        if (assignedSubPropertyId) {
+            // Specific sub-property type requested (e.g. standard-cottage)
+            const targetSp = subProperties.find((sp: any) => sp.id === assignedSubPropertyId);
+            const targetCapacity = targetSp?.unitCount || 1;
+
+            // Check each day: count bookings + blocks for THIS sub-property type
+            for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                const dayStart = new Date(d);
+                const dayEnd = new Date(d);
+                dayEnd.setDate(dayEnd.getDate() + 1);
+                const dateStr = d.toISOString().split('T')[0];
+
+                // Count bookings for this sub-property on this day
+                const dayBookingsForSub = overlappingBookings.filter((b: any) => {
+                    if (b.subPropertyId !== assignedSubPropertyId) return false;
+                    const bIn = new Date(b.checkInDate);
+                    const bOut = new Date(b.checkOutDate);
+                    return bIn < dayEnd && bOut > dayStart;
+                }).reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0);
+
+                // Count blocks for this sub-property on this day
+                const dayBlocksForSub = blockedInRange.filter((bl: any) => {
+                    const blDate = bl.blockedDate.toISOString().split('T')[0];
+                    return blDate === dateStr && (bl.subPropertyId === assignedSubPropertyId || bl.subPropertyId === null);
+                }).length;
+
+                const newCottages = numCottages || 1;
+                if (dayBookingsForSub + dayBlocksForSub + newCottages > targetCapacity) {
+                    throw new Error("DATE_CONFLICT");
+                }
+            }
+        } else {
+            // No specific sub-property — find which type still has capacity
+            // Try each sub-property type, pick the first with remaining capacity for ALL days
+            let foundFree = false;
+            for (const sp of subProperties) {
+                const spCapacity = sp.unitCount || 1;
+                let spFreeAllDays = true;
+
+                for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                    const dayStart = new Date(d);
+                    const dayEnd = new Date(d);
+                    dayEnd.setDate(dayEnd.getDate() + 1);
+                    const dateStr = d.toISOString().split('T')[0];
+
+                    const dayBookings = overlappingBookings.filter((b: any) => {
+                        if (b.subPropertyId !== sp.id) return false;
+                        const bIn = new Date(b.checkInDate);
+                        const bOut = new Date(b.checkOutDate);
+                        return bIn < dayEnd && bOut > dayStart;
+                    }).reduce((sum: number, b: any) => sum + (b.numCottages || 1), 0);
+
+                    const dayBlocks = blockedInRange.filter((bl: any) => {
+                        const blDate = bl.blockedDate.toISOString().split('T')[0];
+                        return blDate === dateStr && (bl.subPropertyId === sp.id || bl.subPropertyId === null);
+                    }).length;
+
+                    if (dayBookings + dayBlocks + (numCottages || 1) > spCapacity) {
+                        spFreeAllDays = false;
+                        break;
+                    }
+                }
+
+                if (spFreeAllDays) {
+                    assignedSubPropertyId = sp.id;
+                    foundFree = true;
+                    break;
+                }
+            }
+
+            if (!foundFree) {
+                throw new Error("DATE_CONFLICT");
+            }
+        }
+    } else {
+        // ── Single-unit property — only 1 booking allowed per date ──
+        if (overlappingBookings.length > 0) {
+            throw new Error("DATE_CONFLICT");
+        }
+    }
+
+    return assignedSubPropertyId;
+}
+
 // POST /api/bookings/staycation — Create booking (transaction-locked, capacity-aware)
 router.post("/", async (req, res) => {
     try {
@@ -87,125 +218,14 @@ router.post("/", async (req, res) => {
             }
 
             // ── Capacity-aware conflict check ──────────────────────────
-            // 1. Get all sub-properties for this property (determines capacity)
-            const subProperties = await tx.subProperty.findMany({
-                where: { propertyId: parsedPropertyId, isActive: true },
-                select: { id: true, unitCount: true },
-            });
-            // Total capacity = sum of unitCount across all sub-properties (e.g. 14 standard + 1 family = 15)
-            const totalCapacity = subProperties.length > 0
-                ? subProperties.reduce((sum, sp) => sum + (sp.unitCount || 1), 0)
-                : 1;
-            const isMultiUnit = totalCapacity > 1;
-
-            // 2. Find ALL overlapping active bookings for this property
-            const overlappingBookings = await tx.staycationBooking.findMany({
-                where: {
-                    propertyId: parsedPropertyId,
-                    status: { notIn: ["cancelled", "no_show", "transferred"] },
-                    checkInDate: { lt: checkOut },
-                    checkOutDate: { gt: checkIn },
-                },
-                select: { id: true, subPropertyId: true, checkInDate: true, checkOutDate: true, numCottages: true },
-            });
-
-            // 2b. Get blocked dates in the range for this property
-            const blockedInRange = await tx.blockedDate.findMany({
-                where: {
-                    propertyId: parsedPropertyId,
-                    blockedDate: { gte: checkIn, lt: checkOut },
-                },
-                select: { blockedDate: true, subPropertyId: true },
-            });
-
-            let assignedSubPropertyId: number | null = null;
-            if (subPropertyId) {
-                const parsed = parseInt(subPropertyId);
-                if (!isNaN(parsed)) assignedSubPropertyId = parsed;
-            }
-
-            if (isMultiUnit) {
-                // ── Multi-unit property (e.g. Amstel Nest: 14 standard + 1 family = 15) ──
-                if (assignedSubPropertyId) {
-                    // Specific sub-property type requested (e.g. standard-cottage)
-                    const targetSp = subProperties.find(sp => sp.id === assignedSubPropertyId);
-                    const targetCapacity = targetSp?.unitCount || 1;
-
-                    // Check each day: count bookings + blocks for THIS sub-property type
-                    for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
-                        const dayStart = new Date(d);
-                        const dayEnd = new Date(d);
-                        dayEnd.setDate(dayEnd.getDate() + 1);
-                        const dateStr = d.toISOString().split('T')[0];
-
-                        // Count bookings for this sub-property on this day
-                        const dayBookingsForSub = overlappingBookings.filter(b => {
-                            if (b.subPropertyId !== assignedSubPropertyId) return false;
-                            const bIn = new Date(b.checkInDate);
-                            const bOut = new Date(b.checkOutDate);
-                            return bIn < dayEnd && bOut > dayStart;
-                        }).reduce((sum, b) => sum + (b.numCottages || 1), 0);
-
-                        // Count blocks for this sub-property on this day
-                        const dayBlocksForSub = blockedInRange.filter(bl => {
-                            const blDate = bl.blockedDate.toISOString().split('T')[0];
-                            return blDate === dateStr && (bl.subPropertyId === assignedSubPropertyId || bl.subPropertyId === null);
-                        }).length;
-
-                        const newCottages = numCottages || 1;
-                        if (dayBookingsForSub + dayBlocksForSub + newCottages > targetCapacity) {
-                            throw new Error("DATE_CONFLICT");
-                        }
-                    }
-                } else {
-                    // No specific sub-property — find which type still has capacity
-                    // Try each sub-property type, pick the first with remaining capacity for ALL days
-                    let foundFree = false;
-                    for (const sp of subProperties) {
-                        const spCapacity = sp.unitCount || 1;
-                        let spFreeAllDays = true;
-
-                        for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
-                            const dayStart = new Date(d);
-                            const dayEnd = new Date(d);
-                            dayEnd.setDate(dayEnd.getDate() + 1);
-                            const dateStr = d.toISOString().split('T')[0];
-
-                            const dayBookings = overlappingBookings.filter(b => {
-                                if (b.subPropertyId !== sp.id) return false;
-                                const bIn = new Date(b.checkInDate);
-                                const bOut = new Date(b.checkOutDate);
-                                return bIn < dayEnd && bOut > dayStart;
-                            }).reduce((sum, b) => sum + (b.numCottages || 1), 0);
-
-                            const dayBlocks = blockedInRange.filter(bl => {
-                                const blDate = bl.blockedDate.toISOString().split('T')[0];
-                                return blDate === dateStr && (bl.subPropertyId === sp.id || bl.subPropertyId === null);
-                            }).length;
-
-                            if (dayBookings + dayBlocks + (numCottages || 1) > spCapacity) {
-                                spFreeAllDays = false;
-                                break;
-                            }
-                        }
-
-                        if (spFreeAllDays) {
-                            assignedSubPropertyId = sp.id;
-                            foundFree = true;
-                            break;
-                        }
-                    }
-
-                    if (!foundFree) {
-                        throw new Error("DATE_CONFLICT");
-                    }
-                }
-            } else {
-                // ── Single-unit property — only 1 booking allowed per date ──
-                if (overlappingBookings.length > 0) {
-                    throw new Error("DATE_CONFLICT");
-                }
-            }
+            const assignedSubPropertyId = await checkAvailability(
+                tx,
+                parsedPropertyId,
+                subPropertyId ? parseInt(subPropertyId) : null,
+                checkIn,
+                checkOut,
+                numCottages || 1
+            );
 
             // Handle coupon
             let couponId = null;
@@ -1583,12 +1603,23 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
             : original.subPropertyId;
 
         const { newBooking } = await prisma.$transaction(async (tx) => {
+            // Check availability for the new transfer details, excluding this booking ID
+            const assignedSubPropertyId = await checkAvailability(
+                tx,
+                targetPropertyId,
+                targetSubPropertyId,
+                ciDate,
+                coDate,
+                original.numCottages || 1,
+                bookingId
+            );
+
             // Create new booking with same details + ₹1000 transfer fee
             const created = await tx.staycationBooking.create({
                 data: {
                     bookingRef: newRef,
                     propertyId: targetPropertyId,
-                    subPropertyId: targetSubPropertyId,
+                    subPropertyId: assignedSubPropertyId,
                     customerName: original.customerName,
                     customerPhone: original.customerPhone,
                     customerEmail: original.customerEmail,
@@ -1689,7 +1720,10 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
         }
 
         return res.json({ original: { id: bookingId, status: "transferred" }, newBooking });
-    } catch (error) {
+    } catch (error: any) {
+        if (error?.message === "DATE_CONFLICT") {
+            return res.status(409).json({ error: "Property is already booked for these dates. Please choose different dates." });
+        }
         console.error("Transfer staycation booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
