@@ -217,7 +217,7 @@ router.post("/webhook", async (req, res) => {
     }
 
     // 4. Check if sender is an official internal account or self
-    const officialHandles = ["@digitaldiaries_wadala", "@amstelnest", "@ambrose_villas", "@la_paraiso001", "@heavenly_villa01", "@hill_view101"];
+    const officialHandles = ["@digitaldiaries_wadala", "@amstelnest", "@ambrose_villas", "@la_paraiso001", "@heavenly_villa01", "@hill_view101", "@mount_viewkarjat"];
     const knownPageIds = new Set([
       process.env.IG_ACCOUNT_ID_AMBROSE,
       process.env.IG_ACCOUNT_ID_AMSTELNEST,
@@ -241,30 +241,7 @@ router.post("/webhook", async (req, res) => {
       return;
     }
 
-    // 4b. Check for exact automated bot response text signatures (sent by bot to user)
-    const isAutomatedBotText = 
-      userText.includes("Please select one of the options below to proceed:") ||
-      userText.startsWith("🎬 *Welcome to Digital Diaries*") ||
-      userText.startsWith("👋 *Welcome to");
-
-    if (isAutomatedBotText) {
-      console.log(`[Instagram Loop Guard] Detected automated bot payload from ${senderId} — enabling human mode & skipping reply.`);
-      if (!session.is_human_active) {
-        await db.setHumanMode(sessionId, true);
-        if (io) io.emit("session_updated", await db.getSession(sessionId));
-      }
-      return;
-    }
-
-    // 4c. Sliding window rate limit check (max 2 incoming messages in 15 seconds)
-    if (isRateLimited(sessionId)) {
-      console.warn(`[Instagram Loop Guard] High message frequency for ${sessionId}. Suppressing auto-reply & activating human mode.`);
-      await db.setHumanMode(sessionId, true);
-      if (io) io.emit("session_updated", await db.getSession(sessionId));
-      return;
-    }
-
-    // 4d. Check if human mode is active — if so, don't auto-reply
+    // 4b. Check if human mode is active — if so, don't auto-reply
     if (session.is_human_active) {
       console.log(`[Instagram] Human mode active for ${sessionId} — skipping bot reply.`);
       return;
