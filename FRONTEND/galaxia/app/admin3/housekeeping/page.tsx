@@ -84,16 +84,16 @@ const DEFAULT_MENU_ITEMS = [
     { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
     { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
     // Timepass Items
-    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass" },
-    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass" },
-    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass" },
-    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass" },
-    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass" },
-    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass" },
-    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass" },
-    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass" },
-    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass" },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass" }
+    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "High Tea" },
+    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "High Tea" },
+    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "High Tea" },
+    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "High Tea" },
+    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "High Tea" },
+    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "High Tea" },
+    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "High Tea" },
+    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "High Tea" },
+    { id: "chakna_special", name: "Chakna Special", price: 260, category: "High Tea" },
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "High Tea" }
 ];
 
 export default function HousekeepingPortalPage() {

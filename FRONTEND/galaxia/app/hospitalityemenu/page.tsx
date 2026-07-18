@@ -33,16 +33,16 @@ const DEFAULT_MENU_ITEMS: MenuItem[] = [
     { id: "black_coffee", name: "Black Coffee", price: 35, category: "High Tea" },
     { id: "cold_coffee", name: "Cold Coffee", price: 90, category: "High Tea" },
     // Timepass Items
-    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "Timepass" },
-    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "Timepass" },
-    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "Timepass" },
-    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "Timepass" },
-    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "Timepass" },
-    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "Timepass" },
-    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "Timepass" },
-    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "Timepass" },
-    { id: "chakna_special", name: "Chakna Special", price: 260, category: "Timepass" },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "Timepass" }
+    { id: "khichiya_papad", name: "Khichiya papad", price: 100, category: "High Tea" },
+    { id: "khichiya_fried", name: "Khichiya fried papad", price: 120, category: "High Tea" },
+    { id: "khichiya_masala_jain", name: "Khichiya masala papad jain", price: 160, category: "High Tea" },
+    { id: "khichiya_masala_regular", name: "Khichiya masala papad regular", price: 160, category: "High Tea" },
+    { id: "khichiya_cheese_masala", name: "Khichiya cheese masala papad", price: 180, category: "High Tea" },
+    { id: "channa_masala_jain", name: "Channa masala ( jain )", price: 160, category: "High Tea" },
+    { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "High Tea" },
+    { id: "peanut_masala", name: "Peanut masala", price: 150, category: "High Tea" },
+    { id: "chakna_special", name: "Chakna Special", price: 260, category: "High Tea" },
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "High Tea" }
 ];
 
 const VILLAS_LIST = [
@@ -646,104 +646,106 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
             </div>
 
             {/* Timepass Specials Menu */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
-                <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                            <Coffee size={18} className="text-amber-600" />
-                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Timepass</h2>
+            {timepassItems.length > 0 && (
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
+                    <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                                <Coffee size={18} className="text-amber-600" />
+                                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Timepass</h2>
+                            </div>
+                            {timepassUnlocked && (
+                                <p className="text-[11px] text-slate-400 font-medium ml-6">
+                                    Orders can be served from 4:00 PM to 10:00 PM
+                                </p>
+                            )}
                         </div>
-                        {timepassUnlocked && (
-                            <p className="text-[11px] text-slate-400 font-medium ml-6">
-                                Orders can be served from 4:00 PM to 10:00 PM
-                            </p>
+
+                        {!timepassUnlocked && timepassTimeRemaining && (
+                            <div className="bg-red-50 text-red-700 text-xs font-extrabold px-3 py-1 rounded-full border border-red-100 flex items-center gap-1.5 font-mono">
+                                <Clock size={12} className="animate-pulse" />
+                                {timepassTimeRemaining}
+                            </div>
                         )}
                     </div>
 
-                    {!timepassUnlocked && timepassTimeRemaining && (
-                        <div className="bg-red-50 text-red-700 text-xs font-extrabold px-3 py-1 rounded-full border border-red-100 flex items-center gap-1.5 font-mono">
-                            <Clock size={12} className="animate-pulse" />
-                            {timepassTimeRemaining}
-                        </div>
-                    )}
-                </div>
-
-                {!timepassUnlocked && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 animate-in fade-in duration-200">
-                        <div className="space-y-1">
-                            <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-slate-800 uppercase tracking-wider">
-                                <Clock size={14} className="text-amber-600 animate-pulse" />
-                                Locked Until 4:00 PM
-                            </h3>
-                            <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
-                                Timepass menu unlocks automatically between 4:00 PM and 10:00 PM every day.
-                            </p>
-                        </div>
-                        <div className="shrink-0 flex items-center gap-2">
-                            <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500">Remaining:</span>
-                            <div className="font-mono font-black text-xs bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-sm min-w-[80px] text-center">
-                                {timepassTimeRemaining || "00:00:00"}
+                    {!timepassUnlocked && (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 animate-in fade-in duration-200">
+                            <div className="space-y-1">
+                                <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-slate-800 uppercase tracking-wider">
+                                    <Clock size={14} className="text-amber-600 animate-pulse" />
+                                    Locked Until 4:00 PM
+                                </h3>
+                                <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                                    Timepass menu unlocks automatically between 4:00 PM and 10:00 PM every day.
+                                </p>
+                            </div>
+                            <div className="shrink-0 flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500">Remaining:</span>
+                                <div className="font-mono font-black text-xs bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-sm min-w-[80px] text-center">
+                                    {timepassTimeRemaining || "00:00:00"}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                <div className="divide-y divide-slate-100">
-                    {timepassItems.map(item => {
-                        const isChecked = !!quantities[item.id];
-                        const qty = quantities[item.id] || 0;
-                        const isSoldOut = typeof item.stock === "number" && item.stock <= 0;
-                        return (
-                            <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!timepassUnlocked || isSoldOut) ? "opacity-50 select-none" : ""}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3.5 flex-1">
-                                        <label className="flex items-center cursor-pointer relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => handleCheckboxToggle(item.id)}
-                                                className="sr-only peer"
-                                                disabled={!timepassUnlocked || isSoldOut}
-                                            />
-                                            <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
-                                                <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
+                    <div className="divide-y divide-slate-100">
+                        {timepassItems.map(item => {
+                            const isChecked = !!quantities[item.id];
+                            const qty = quantities[item.id] || 0;
+                            const isSoldOut = typeof item.stock === "number" && item.stock <= 0;
+                            return (
+                                <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!timepassUnlocked || isSoldOut) ? "opacity-50 select-none" : ""}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3.5 flex-1">
+                                            <label className="flex items-center cursor-pointer relative">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => handleCheckboxToggle(item.id)}
+                                                    className="sr-only peer"
+                                                    disabled={!timepassUnlocked || isSoldOut}
+                                                />
+                                                <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
+                                                    <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
+                                                </div>
+                                            </label>
+                                            <div className="cursor-pointer" onClick={() => timepassUnlocked && !isSoldOut && handleCheckboxToggle(item.id)}>
+                                                <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                    {item.name}
+                                                    {isSoldOut && (
+                                                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                    )}
+                                                </p>
+                                                <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${item.price}`}</p>
                                             </div>
-                                        </label>
-                                        <div className="cursor-pointer" onClick={() => timepassUnlocked && !isSoldOut && handleCheckboxToggle(item.id)}>
-                                            <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
-                                                {item.name}
-                                                {isSoldOut && (
-                                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
-                                                )}
-                                            </p>
-                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${item.price}`}</p>
                                         </div>
-                                    </div>
 
-                                    {isChecked && !isSoldOut && (
-                                        <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1">
-                                            <button onClick={() => handleDecrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm">-</button>
-                                            <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{qty}</span>
-                                            <button onClick={() => handleIncrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm">+</button>
+                                        {isChecked && !isSoldOut && (
+                                            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1">
+                                                <button onClick={() => handleDecrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm">-</button>
+                                                <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{qty}</span>
+                                                <button onClick={() => handleIncrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm">+</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isChecked && (
+                                        <div className="mt-2.5 pl-9 animate-in slide-in-from-top-1 duration-100">
+                                            <input
+                                                type="text"
+                                                placeholder="Add notes / item comments (e.g. No Sugar, Extra Spicy)..."
+                                                value={comments[item.id] || ""}
+                                                onChange={(e) => handleCommentChange(item.id, e.target.value)}
+                                                className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 bg-slate-50/50 focus:bg-white transition-all placeholder:text-slate-400"
+                                            />
                                         </div>
                                     )}
                                 </div>
-                                {isChecked && (
-                                    <div className="mt-2.5 pl-9 animate-in slide-in-from-top-1 duration-100">
-                                        <input
-                                            type="text"
-                                            placeholder="Add notes / item comments (e.g. No Sugar, Extra Spicy)..."
-                                            value={comments[item.id] || ""}
-                                            onChange={(e) => handleCommentChange(item.id, e.target.value)}
-                                            className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 bg-slate-50/50 focus:bg-white transition-all placeholder:text-slate-400"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {submitError && (
                 <div className="bg-red-50 border border-red-100 text-red-700 text-xs font-semibold p-3.5 rounded-xl flex items-center gap-2">

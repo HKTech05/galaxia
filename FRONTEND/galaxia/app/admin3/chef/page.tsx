@@ -104,7 +104,7 @@ export default function ChefPortalPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<"create" | "edit">("create");
     const [editingRequestId, setEditingRequestId] = useState<number | null>(null);
-    const [formVilla, setFormVilla] = useState("");
+    const [formVilla, setFormVilla] = useState(VILLAS_LIST[0].value);
     const [formCategory, setFormCategory] = useState<"High Tea" | "Timepass" | "Normal">("High Tea");
     const [formQuantities, setFormQuantities] = useState<Record<string, number>>({});
     const [formComments, setFormComments] = useState<Record<string, string>>({});
@@ -237,7 +237,7 @@ export default function ChefPortalPage() {
                 alert("Request created successfully!");
             }
             setIsCreateModalOpen(false);
-            setFormVilla("");
+            setFormVilla(VILLAS_LIST[0].value);
             setFormQuantities({});
             setFormComments({});
             fetchHighTeaRequests();
@@ -968,7 +968,7 @@ export default function ChefPortalPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                             <button
-                                onClick={() => { setModalMode("create"); setFormCategory("Normal"); setFormVilla(""); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
+                                onClick={() => { setModalMode("create"); setFormCategory("Normal"); setFormVilla(VILLAS_LIST[0].value); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
                                 className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-purple-100 hover:shadow"
                             >
                                 <Plus size={14} className="stroke-[3px]" />
@@ -1723,13 +1723,17 @@ export default function ChefPortalPage() {
                         <div className="p-6 space-y-4 overflow-y-auto flex-1">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Villa / Screen Name</label>
-                                <input
-                                    type="text"
+                                <select
                                     value={formVilla}
                                     onChange={e => setFormVilla(e.target.value)}
-                                    placeholder="e.g. V1, V2, Amstel C1..."
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-purple-600"
-                                />
+                                >
+                                    {VILLAS_LIST.map((villa) => (
+                                        <option key={villa.value} value={villa.value}>
+                                            {villa.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div>
