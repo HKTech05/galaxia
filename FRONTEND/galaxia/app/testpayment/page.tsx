@@ -10,8 +10,43 @@ interface SystemLog {
     type: "info" | "success" | "warning" | "error";
 }
 
+interface PropertyOption {
+    id: number;
+    name: string;
+    slug: string;
+}
+
+interface ScreenOption {
+    id: number;
+    name: string;
+    slug: string;
+}
+
 export default function TestPaymentPage() {
-    // Form state
+    // Selection options from backend
+    const [properties, setProperties] = useState<PropertyOption[]>([]);
+    const [screens, setScreens] = useState<ScreenOption[]>([]);
+    const [loadingOptions, setLoadingOptions] = useState(true);
+
+    // Form selection state
+    const [moduleType, setModuleType] = useState<"staycation" | "dd">("staycation");
+    const [selectedPropertyId, setSelectedPropertyId] = useState<number>(1);
+    const [selectedScreenId, setSelectedScreenId] = useState<number>(1);
+    
+    // Dates & details
+    const [checkInDate, setCheckInDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 3);
+        return d.toISOString().split("T")[0];
+    });
+    const [checkOutDate, setCheckOutDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 4);
+        return d.toISOString().split("T")[0];
+    });
+    const [numGuests, setNumGuests] = useState(2);
+
+    // Customer details
     const [name, setName] = useState("Galaxia Tester");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -21,6 +56,7 @@ export default function TestPaymentPage() {
     const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
     const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<string>("idle");
+    const [createdBookingRef, setCreatedBookingRef] = useState<string | null>(null);
     const [logs, setLogs] = useState<SystemLog[]>([]);
     const [razorpayPaymentId, setRazorpayPaymentId] = useState<string | null>(null);
 
@@ -30,6 +66,31 @@ export default function TestPaymentPage() {
         const time = new Date().toLocaleTimeString();
         setLogs((prev) => [...prev, { time, message, type }]);
     };
+
+    // Load available properties & screens from backend
+    useEffect(() => {
+        async function fetchOptions() {
+            try {
+                const res = await fetch("/api/payments/test-options");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.properties?.length > 0) {
+                        setProperties(data.properties);
+                        setSelectedPropertyId(data.properties[0].id);
+                    }
+                    if (data.screens?.length > 0) {
+                        setScreens(data.screens);
+                        setSelectedScreenId(data.screens[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load test options:", err);
+            } finally {
+                setLoadingOptions(false);
+            }
+        }
+        fetchOptions();
+    }, []);
 
     // Cleanup polling timer on unmount
     useEffect(() => {
@@ -57,9 +118,16 @@ export default function TestPaymentPage() {
                     setRazorpayPaymentId(data.razorpayPaymentId);
                 }
 
+                if (data.createdBookingRef) {
+                    setCreatedBookingRef(data.createdBookingRef);
+                }
+
                 if (data.verified && data.status === "success") {
-                    addLog(`🎉 BACKEND CONFIRMED! System status turned TRUE! (Razorpay Pay ID: ${data.razorpayPaymentId || "Captured"})`, "success");
-                    addLog(`Email confirmation automatically triggered by backend to ${data.customerEmail}`, "success");
+                    addLog(`🎉 BACKEND CONFIRMED! System status turned TRUE! (Pay ID: ${data.razorpayPaymentId || "Captured"})`, "success");
+                    if (data.createdBookingRef) {
+                        addLog(`🏆 REAL BOOKING CREATED IN DB: ${data.createdBookingRef}`, "success");
+                        addLog(`Confirmation voucher & email sent to ${data.customerEmail}`, "success");
+                    }
                     if (pollingRef.current) clearInterval(pollingRef.current);
                     setIsSubmitting(false);
                 } else if (data.status === "failed") {
@@ -87,12 +155,29 @@ export default function TestPaymentPage() {
         setPaymentStatus("initiating");
         setActivePaymentId(null);
         setRazorpayPaymentId(null);
+        setCreatedBookingRef(null);
 
-        addLog("1. Initializing 1 INR Test Payment Intent on backend...", "info");
+        const selectedVillaObj = properties.find((p) => p.id === selectedPropertyId);
+        const selectedScreenObj = screens.find((s) => s.id === selectedScreenId);
+        const selectedName = moduleType === "staycation" 
+            ? (selectedVillaObj?.name || "Staycation Villa") 
+            : (selectedScreenObj?.name || "DD Screen");
+
+        addLog(`1. Initializing 1 INR Test Payment for [${selectedName}] on backend...`, "info");
 
         try {
-            // Load Razorpay Checkout Script
             await loadRazorpayScript();
+
+            const bookingDetails = {
+                moduleType,
+                propertyId: selectedPropertyId,
+                screenId: selectedScreenId,
+                checkInDate,
+                checkOutDate,
+                bookingDate: checkInDate,
+                numGuests,
+                price: moduleType === "staycation" ? 5000 : 2500,
+            };
 
             // 1. Create order & track payment intent on backend
             const orderRes = await fetch("/api/payments/test-create-order", {
@@ -102,6 +187,7 @@ export default function TestPaymentPage() {
                     customerName: name,
                     customerEmail: email,
                     customerPhone: phone,
+                    bookingDetails,
                 }),
             });
 
@@ -127,8 +213,8 @@ export default function TestPaymentPage() {
                 order_id: orderId,
                 amount: 100, // 1 INR in paise
                 currency: "INR",
-                name: "Digital Diaries (Test Payment)",
-                description: "1 INR System Resiliency Test Transaction",
+                name: `Test Booking — ${selectedName}`,
+                description: `1 INR Booking Test (${moduleType.toUpperCase()})`,
                 image: "/logo.png",
                 prefill: {
                     name,
@@ -136,13 +222,12 @@ export default function TestPaymentPage() {
                     contact: phone,
                 },
                 theme: {
-                    color: "#4F46E5",
+                    color: moduleType === "staycation" ? "#C4A265" : "#4F46E5",
                 },
                 handler: async function (response: any) {
                     addLog(`5. Razorpay Modal completed on client side! Payment ID: ${response.razorpay_payment_id}`, "info");
                     addLog("6. Client signature verification in progress...", "info");
 
-                    // Send verification to backend
                     try {
                         const verifyRes = await fetch("/api/payments/verify", {
                             method: "POST",
@@ -156,10 +241,10 @@ export default function TestPaymentPage() {
                         });
                         const verifyData = await verifyRes.json();
                         if (verifyData.verified) {
-                            addLog("Client-side signature verified. Waiting for backend status to switch to TRUE...", "info");
+                            addLog("Client signature verified. Backend Webhook is finalizing booking creation in DB...", "info");
                         }
                     } catch (err) {
-                        addLog("Client signature check failed, but backend Webhook will still process payment!", "warning");
+                        addLog("Client signature check failed, but backend Webhook will still process & create booking!", "warning");
                     }
                 },
                 modal: {
@@ -189,7 +274,7 @@ export default function TestPaymentPage() {
                 <div className="flex items-center gap-3">
                     <span className="text-xl md:text-2xl font-bold tracking-widest text-[#BA9731] font-serif">GALAXIA</span>
                     <span className="text-xs bg-[#4F46E5]/20 text-[#818CF8] px-2.5 py-0.5 rounded-full border border-[#4F46E5]/40 font-mono">
-                        System Test Mode
+                        Booking Verification Test
                     </span>
                 </div>
                 <Link
@@ -203,36 +288,128 @@ export default function TestPaymentPage() {
             {/* Main Content */}
             <main className="max-w-5xl mx-auto w-full py-8 md:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                {/* Left Column: Information & Form */}
+                {/* Left Column: Form & Selections */}
                 <div className="lg:col-span-6 space-y-6">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-                            Backend-Verified Payment Test
+                            Live Villa & Date Booking Test
                         </h1>
                         <p className="text-sm text-gray-400 mt-2 leading-relaxed">
-                            This page tests our resilient payment verification system. 
-                            A <span className="text-[#BA9731] font-semibold">₹1.00 INR transaction</span> is processed via the <span className="text-[#818CF8] font-semibold">Digital Diaries</span> Razorpay account.
+                            Select any villa or screen, pick check-in dates, and pay <span className="text-[#BA9731] font-semibold">₹1.00 INR</span>. 
+                            Our backend will verify the payment and create an actual test booking in your database!
                         </p>
-                    </div>
-
-                    {/* How It Works Alert Box */}
-                    <div className="bg-[#18181C] border border-[#BA9731]/30 rounded-xl p-4 md:p-5 space-y-3 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-[#BA9731]/10 rounded-full blur-2xl pointer-events-none"></div>
-                        <h2 className="text-sm font-semibold text-[#BA9731] flex items-center gap-2">
-                            🛡️ How Backend Verification Works
-                        </h2>
-                        <ul className="text-xs text-gray-300 space-y-2 leading-normal list-disc list-inside">
-                            <li>Before payment, a unique Payment ID is stored in the DB as <code className="bg-black/50 text-amber-300 px-1 py-0.5 rounded font-mono">verified = false</code>.</li>
-                            <li>When payment completes on Razorpay, our backend Webhook catches the <code className="bg-black/50 text-indigo-300 px-1 py-0.5 rounded font-mono">order.paid</code> event directly.</li>
-                            <li>Even if you **close the browser tab** or lose network right after paying, the backend automatically flips <code className="bg-black/50 text-emerald-300 px-1 py-0.5 rounded font-mono">verified = true</code> and sends your email!</li>
-                        </ul>
                     </div>
 
                     {/* Form */}
                     <form onSubmit={handleInitiatePayment} className="bg-[#18181C] border border-white/10 rounded-xl p-5 space-y-4 shadow-xl">
-                        <h3 className="text-sm font-semibold text-gray-200 border-b border-white/10 pb-3">
-                            Tester Customer Details
-                        </h3>
+                        
+                        {/* Module Type Selector */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-2">Select Module</label>
+                            <div className="grid grid-cols-2 gap-2 p-1 bg-[#0F0F12] border border-white/10 rounded-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => setModuleType("staycation")}
+                                    className={`py-2 text-xs font-semibold rounded-md transition-all ${
+                                        moduleType === "staycation" 
+                                            ? "bg-[#BA9731] text-black shadow-md" 
+                                            : "text-gray-400 hover:text-white"
+                                    }`}
+                                >
+                                    🏡 Staycation Villa
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setModuleType("dd")}
+                                    className={`py-2 text-xs font-semibold rounded-md transition-all ${
+                                        moduleType === "dd" 
+                                            ? "bg-[#4F46E5] text-white shadow-md" 
+                                            : "text-gray-400 hover:text-white"
+                                    }`}
+                                >
+                                    🎬 Digital Diaries
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Villa / Screen Selection */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                {moduleType === "staycation" ? "Choose Villa / Property" : "Choose Digital Diaries Screen"}
+                            </label>
+                            {loadingOptions ? (
+                                <div className="text-xs text-gray-500 py-2">Loading options...</div>
+                            ) : moduleType === "staycation" ? (
+                                <select
+                                    value={selectedPropertyId}
+                                    onChange={(e) => setSelectedPropertyId(Number(e.target.value))}
+                                    className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#BA9731] transition-colors"
+                                >
+                                    {properties.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <select
+                                    value={selectedScreenId}
+                                    onChange={(e) => setSelectedScreenId(Number(e.target.value))}
+                                    className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+                                >
+                                    {screens.map((s) => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+
+                        {/* Date Selectors */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    {moduleType === "staycation" ? "Check-In Date" : "Booking Date"}
+                                </label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={checkInDate}
+                                    onChange={(e) => setCheckInDate(e.target.value)}
+                                    className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#BA9731]"
+                                />
+                            </div>
+                            {moduleType === "staycation" && (
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1">Check-Out Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={checkOutDate}
+                                        onChange={(e) => setCheckOutDate(e.target.value)}
+                                        className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#BA9731]"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Guest Count */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Number of Guests</label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={numGuests}
+                                onChange={(e) => setNumGuests(Number(e.target.value))}
+                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#BA9731]"
+                            />
+                        </div>
+
+                        <hr className="border-white/10" />
+
+                        <h3 className="text-xs font-semibold text-gray-300">Customer Info</h3>
 
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
@@ -242,19 +419,19 @@ export default function TestPaymentPage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Your Name"
-                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#BA9731] transition-colors"
+                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#BA9731]"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Email Address (To Receive Test Voucher)</label>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Email Address (To Receive Voucher)</label>
                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="your.email@example.com"
-                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#BA9731] transition-colors"
+                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#BA9731]"
                             />
                         </div>
 
@@ -266,7 +443,7 @@ export default function TestPaymentPage() {
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 placeholder="9876543210"
-                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#BA9731] transition-colors"
+                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#BA9731]"
                             />
                         </div>
 
@@ -283,7 +460,7 @@ export default function TestPaymentPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <span>Pay ₹1.00 (Digital Diaries Razorpay)</span>
+                                        <span>Pay ₹1.00 & Create Test Booking</span>
                                         <span>→</span>
                                     </>
                                 )}
@@ -292,13 +469,45 @@ export default function TestPaymentPage() {
                     </form>
                 </div>
 
-                {/* Right Column: Real-Time Console Monitor */}
+                {/* Right Column: Console Monitor & Results */}
                 <div className="lg:col-span-6 space-y-6">
+                    
+                    {/* Created Booking Card */}
+                    {createdBookingRef && (
+                        <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-5 space-y-3 relative overflow-hidden animate-fade-in-up">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">🎉 Booking Created in Database!</span>
+                                <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded">
+                                    Confirmed
+                                </span>
+                            </div>
+
+                            <div className="bg-black/40 rounded-lg p-3 border border-emerald-500/30">
+                                <span className="text-xs text-gray-400 block">Booking Reference ID:</span>
+                                <span className="text-lg font-bold font-mono text-emerald-300">{createdBookingRef}</span>
+                            </div>
+
+                            <p className="text-xs text-gray-300 leading-relaxed">
+                                This booking has been created in your backend PostgreSQL database! You can look up <strong className="text-white font-mono">{createdBookingRef}</strong> in your Admin Dashboard or database tables.
+                            </p>
+
+                            <div className="pt-1">
+                                <Link
+                                    href={moduleType === "staycation" ? "/admin22" : "/admin1"}
+                                    target="_blank"
+                                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4"
+                                >
+                                    View in Admin Dashboard →
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Live System Status Card */}
                     <div className="bg-[#18181C] border border-white/10 rounded-xl p-5 space-y-4">
                         <div className="flex items-center justify-between border-b border-white/10 pb-3">
                             <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                                📡 System Status Monitor
+                                📡 Backend Status Monitor
                             </h2>
                             {activePaymentId && (
                                 <span className="flex items-center gap-1.5 text-xs text-amber-400 font-mono">
@@ -364,7 +573,7 @@ export default function TestPaymentPage() {
                         <div className="bg-[#0A0A0C] border border-white/5 rounded-lg p-3 h-64 overflow-y-auto font-mono text-xs space-y-2">
                             {logs.length === 0 ? (
                                 <p className="text-gray-600 italic text-center py-8">
-                                    No activity yet. Click "Pay ₹1.00" to start test.
+                                    Select villa & dates, then click Pay ₹1.00.
                                 </p>
                             ) : (
                                 logs.map((log, index) => (
@@ -387,12 +596,11 @@ export default function TestPaymentPage() {
                         </div>
                     </div>
 
-                    {/* Resiliency Test Instructions Banner */}
+                    {/* Instructions Banner */}
                     <div className="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-4 text-xs text-indigo-200 space-y-1.5">
-                        <span className="font-semibold text-indigo-400 block">🧪 Want to simulate a network crash or browser close?</span>
+                        <span className="font-semibold text-indigo-400 block">🧪 Network Resiliency Test</span>
                         <p className="leading-relaxed text-gray-300">
-                            As soon as you complete the ₹1 payment inside the Razorpay modal, **close this browser tab immediately**. 
-                            Our backend Webhook will receive the event directly from Razorpay, update the DB status to TRUE, and send your confirmation email without needing the browser to stay open!
+                            Close the browser tab right after Razorpay completes. The backend webhook will still process the payment and create the booking reference in the database!
                         </p>
                     </div>
                 </div>
@@ -401,7 +609,7 @@ export default function TestPaymentPage() {
 
             {/* Footer */}
             <footer className="max-w-5xl mx-auto w-full border-t border-white/10 pt-4 text-center text-xs text-gray-500">
-                Galaxia Resorts — Independent Payment Authentication Test System (Isolated Environment)
+                Galaxia Resorts — Independent Payment Authentication Test System
             </footer>
         </div>
     );

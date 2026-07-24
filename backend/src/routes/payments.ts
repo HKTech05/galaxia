@@ -95,13 +95,134 @@ router.post("/verify", async (req, res) => {
 
 // ── NEW: TEST PAYMENT SYSTEM (SEPARATE & ISOLATED) ───────────────────
 import prisma from "../lib/prisma";
-import { sendTestEmail } from "../lib/emailService";
+import { sendTestEmail, sendBookingConfirmation as sendStayEmail, sendDDBookingConfirmation as sendDDEmail } from "../lib/emailService";
+import { encrypt } from "../lib/encryption";
+
+async function generateStayRefTest(): Promise<string> {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() +
+        String(today.getMonth() + 1).padStart(2, "0") +
+        String(today.getDate()).padStart(2, "0");
+    const prefix = `GLX-${dateStr}-`;
+    const count = await prisma.staycationBooking.count({
+        where: { bookingRef: { startsWith: prefix } },
+    });
+    return `${prefix}${String(count + 1).padStart(3, "0")}`;
+}
+
+async function generateDdRefTest(): Promise<string> {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() +
+        String(today.getMonth() + 1).padStart(2, "0") +
+        String(today.getDate()).padStart(2, "0");
+    const prefix = `DD-${dateStr}-`;
+    const count = await prisma.ddBooking.count({
+        where: { bookingRef: { startsWith: prefix } },
+    });
+    return `${prefix}${String(count + 1).padStart(3, "0")}`;
+}
+
+async function processTestBookingCreation(testRecord: any, razorpayPaymentId: string): Promise<string> {
+    if (testRecord.createdBookingRef) return testRecord.createdBookingRef;
+
+    const details = testRecord.bookingDetails || {};
+    const moduleType = details.moduleType || "staycation";
+
+    if (moduleType === "staycation") {
+        const bookingRef = await generateStayRefTest();
+        const ciDate = details.checkInDate ? new Date(details.checkInDate + 'T00:00:00') : new Date();
+        const coDate = details.checkOutDate ? new Date(details.checkOutDate + 'T00:00:00') : new Date(Date.now() + 86400000);
+        const numNights = Math.max(1, Math.ceil((coDate.getTime() - ciDate.getTime()) / (1000 * 3600 * 24)));
+        const nightlyRate = details.price ? parseInt(details.price) : 5000;
+        const totalAmount = nightlyRate * numNights;
+
+        const created = await prisma.staycationBooking.create({
+            data: {
+                bookingRef,
+                propertyId: parseInt(details.propertyId || "1"),
+                subPropertyId: details.subPropertyId ? parseInt(details.subPropertyId) : null,
+                customerName: testRecord.customerName,
+                customerPhone: testRecord.customerPhone,
+                customerEmail: testRecord.customerEmail,
+                numGuests: parseInt(details.numGuests || "2"),
+                numNights,
+                checkInDate: ciDate,
+                checkOutDate: coDate,
+                nightlyRate,
+                basePrice: totalAmount,
+                totalAmount,
+                advanceAmount: 1, // 1 INR paid via test
+                balanceAmount: Math.max(0, totalAmount - 1),
+                advancePaid: true,
+                advanceMethod: `Razorpay (Test): ${razorpayPaymentId}`,
+                status: "confirmed",
+                source: "website_testpayment",
+            },
+            include: { property: true, subProperty: true },
+        });
+
+        sendStayEmail(created).catch((e) => console.error("Test stay email error:", e));
+        return bookingRef;
+    } else {
+        const bookingRef = await generateDdRefTest();
+        const bDate = details.bookingDate ? new Date(details.bookingDate + 'T12:00:00') : new Date();
+        const price = details.price ? parseInt(details.price) : 2500;
+
+        const created = await prisma.ddBooking.create({
+            data: {
+                bookingRef,
+                screenId: parseInt(details.screenId || "1"),
+                packageId: parseInt(details.packageId || "1"),
+                bookingDate: bDate,
+                startHour: parseInt(details.startHour || "14"),
+                durationHours: parseInt(details.durationHours || "2"),
+                customerName: testRecord.customerName,
+                customerPhone: encrypt(testRecord.customerPhone),
+                customerEmail: testRecord.customerEmail ? encrypt(testRecord.customerEmail) : null,
+                numGuests: parseInt(details.numGuests || "2"),
+                basePrice: price,
+                totalAmount: price,
+                amountPaid: 1, // 1 INR paid via test
+                amountToCollect: Math.max(0, price - 1),
+                paymentMethod: "online",
+                paymentDetails: `Razorpay (Test): ${razorpayPaymentId}`,
+                paymentStatus: "partial",
+                status: "confirmed",
+                source: "website_testpayment",
+            },
+            include: { screen: true, package: true, addons: true },
+        });
+
+        sendDDEmail({ ...created, customerPhone: testRecord.customerPhone, customerEmail: testRecord.customerEmail }).catch((e) => console.error("Test DD email error:", e));
+        return bookingRef;
+    }
+}
+
+// GET /api/payments/test-options
+// Provides active properties & screens for testpayment dropdowns
+router.get("/test-options", async (_req, res) => {
+    try {
+        const properties = await prisma.property.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, slug: true, maxPersons: true },
+            orderBy: { displayOrder: "asc" },
+        });
+        const screens = await prisma.ddScreen.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, slug: true },
+            orderBy: { displayOrder: "asc" },
+        });
+        return res.json({ properties, screens });
+    } catch (e: any) {
+        return res.status(500).json({ error: e.message || "Failed to fetch options" });
+    }
+});
 
 // POST /api/payments/test-create-order
 // Creates a 1 INR test order for Digital Diaries Razorpay account & tracks status
 router.post("/test-create-order", async (req, res) => {
     try {
-        const { customerName, customerEmail, customerPhone } = req.body;
+        const { customerName, customerEmail, customerPhone, bookingDetails } = req.body;
 
         if (!customerName || !customerEmail || !customerPhone) {
             return res.status(400).json({ error: "Name, email, and phone are required for test payment" });
@@ -123,6 +244,7 @@ router.post("/test-create-order", async (req, res) => {
                 customerName,
                 customerEmail,
                 customerPhone,
+                moduleType: bookingDetails?.moduleType || "staycation",
             },
         });
 
@@ -135,6 +257,7 @@ router.post("/test-create-order", async (req, res) => {
                 customerName,
                 customerEmail,
                 customerPhone,
+                bookingDetails: bookingDetails || null,
                 status: "pending",
                 verified: false,
             },
@@ -173,6 +296,7 @@ router.get("/test-status/:paymentId", async (req, res) => {
             customerName: record.customerName,
             customerEmail: record.customerEmail,
             razorpayPaymentId: record.razorpayPaymentId,
+            createdBookingRef: record.createdBookingRef,
             createdAt: record.createdAt,
             updatedAt: record.updatedAt,
         });
@@ -190,7 +314,6 @@ router.post("/webhook/dd", async (req: any, res) => {
         const signature = req.headers["x-razorpay-signature"] as string;
 
         if (webhookSecret && signature) {
-            // Use rawBody buffer if present for strict HMAC SHA256 validation
             const bodyPayload = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body);
             const expectedSignature = crypto
                 .createHmac("sha256", webhookSecret)
@@ -211,15 +334,22 @@ router.post("/webhook/dd", async (req: any, res) => {
         if (event === "order.paid" || event === "payment.captured") {
             const entity = payload?.payment?.entity || payload?.order?.entity;
             const orderId = entity?.order_id || entity?.id;
-            const paymentId = payload?.payment?.entity?.id || entity?.payment_id;
+            const paymentId = payload?.payment?.entity?.id || entity?.payment_id || "pay_webhook";
 
             if (orderId) {
-                // Find matching test payment record
                 const testRecord = await prisma.testPayment.findFirst({
                     where: { razorpayOrderId: orderId },
                 });
 
                 if (testRecord && !testRecord.verified) {
+                    // Create real booking in DB
+                    let createdBookingRef: string | null = null;
+                    try {
+                        createdBookingRef = await processTestBookingCreation(testRecord, paymentId);
+                    } catch (bookingErr) {
+                        console.error("[Webhook DD] Test booking creation error:", bookingErr);
+                    }
+
                     // Turn system status to true!
                     await prisma.testPayment.update({
                         where: { id: testRecord.id },
@@ -227,13 +357,13 @@ router.post("/webhook/dd", async (req: any, res) => {
                             verified: true,
                             status: "success",
                             razorpayPaymentId: paymentId || testRecord.razorpayPaymentId,
+                            createdBookingRef: createdBookingRef || testRecord.createdBookingRef,
                         },
                     });
 
-                    console.log(`✅ [Backend Payment Verification] Payment ${testRecord.paymentId} confirmed & set verified = TRUE!`);
+                    console.log(`✅ [Backend Payment Verification] Payment ${testRecord.paymentId} confirmed & set verified = TRUE! Booking Ref: ${createdBookingRef}`);
 
-                    // Trigger confirmation email
-                    if (testRecord.customerEmail) {
+                    if (testRecord.customerEmail && !createdBookingRef) {
                         sendTestEmail(testRecord.customerEmail).catch((err) => {
                             console.error("[Webhook DD] Failed to send test confirmation email:", err);
                         });
@@ -266,4 +396,5 @@ router.post("/webhook/dd", async (req: any, res) => {
 });
 
 export default router;
+
 
