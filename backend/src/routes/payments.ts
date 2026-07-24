@@ -93,4 +93,177 @@ router.post("/verify", async (req, res) => {
     }
 });
 
+// ── NEW: TEST PAYMENT SYSTEM (SEPARATE & ISOLATED) ───────────────────
+import prisma from "../lib/prisma";
+import { sendTestEmail } from "../lib/emailService";
+
+// POST /api/payments/test-create-order
+// Creates a 1 INR test order for Digital Diaries Razorpay account & tracks status
+router.post("/test-create-order", async (req, res) => {
+    try {
+        const { customerName, customerEmail, customerPhone } = req.body;
+
+        if (!customerName || !customerEmail || !customerPhone) {
+            return res.status(400).json({ error: "Name, email, and phone are required for test payment" });
+        }
+
+        const { instance, keyId } = getRazorpay("dd");
+        const amountPaise = 100; // 1 INR = 100 paise
+
+        const paymentId = `test_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const receipt = `rcpt_${paymentId}`;
+
+        const order = await instance.orders.create({
+            amount: amountPaise,
+            currency: "INR",
+            receipt,
+            notes: {
+                paymentType: "test_payment",
+                paymentId,
+                customerName,
+                customerEmail,
+                customerPhone,
+            },
+        });
+
+        // Store payment attempt in database with verified = false
+        await prisma.testPayment.create({
+            data: {
+                paymentId,
+                razorpayOrderId: order.id,
+                amount: amountPaise,
+                customerName,
+                customerEmail,
+                customerPhone,
+                status: "pending",
+                verified: false,
+            },
+        });
+
+        return res.json({
+            orderId: order.id,
+            paymentId,
+            amount: amountPaise,
+            currency: "INR",
+            keyId,
+        });
+    } catch (error: any) {
+        console.error("Test payment order error:", error);
+        return res.status(500).json({ error: error.message || "Failed to create test payment order" });
+    }
+});
+
+// GET /api/payments/test-status/:paymentId
+// Polls backend status to check if backend verified payment (turns true)
+router.get("/test-status/:paymentId", async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const record = await prisma.testPayment.findUnique({
+            where: { paymentId },
+        });
+
+        if (!record) {
+            return res.status(404).json({ error: "Test payment record not found" });
+        }
+
+        return res.json({
+            paymentId: record.paymentId,
+            verified: record.verified,
+            status: record.status,
+            customerName: record.customerName,
+            customerEmail: record.customerEmail,
+            razorpayPaymentId: record.razorpayPaymentId,
+            createdAt: record.createdAt,
+            updatedAt: record.updatedAt,
+        });
+    } catch (error: any) {
+        console.error("Test status check error:", error);
+        return res.status(500).json({ error: error.message || "Failed to check status" });
+    }
+});
+
+// POST /api/payments/webhook/dd
+// Razorpay Webhook listener for Digital Diaries account
+router.post("/webhook/dd", async (req: any, res) => {
+    try {
+        const webhookSecret = process.env.DD_RAZORPAY_WEBHOOK_SECRET || "galaxia_dd_webhook_secret_TESTING";
+        const signature = req.headers["x-razorpay-signature"] as string;
+
+        if (webhookSecret && signature) {
+            // Use rawBody buffer if present for strict HMAC SHA256 validation
+            const bodyPayload = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body);
+            const expectedSignature = crypto
+                .createHmac("sha256", webhookSecret)
+                .update(bodyPayload)
+                .digest("hex");
+
+            if (expectedSignature !== signature) {
+                console.warn("[Webhook DD] Signature mismatch! Event rejected.");
+                return res.status(400).json({ error: "Invalid webhook signature" });
+            }
+        }
+
+        const event = req.body?.event;
+        const payload = req.body?.payload;
+
+        console.log(`[Webhook DD] Received event: ${event}`);
+
+        if (event === "order.paid" || event === "payment.captured") {
+            const entity = payload?.payment?.entity || payload?.order?.entity;
+            const orderId = entity?.order_id || entity?.id;
+            const paymentId = payload?.payment?.entity?.id || entity?.payment_id;
+
+            if (orderId) {
+                // Find matching test payment record
+                const testRecord = await prisma.testPayment.findFirst({
+                    where: { razorpayOrderId: orderId },
+                });
+
+                if (testRecord && !testRecord.verified) {
+                    // Turn system status to true!
+                    await prisma.testPayment.update({
+                        where: { id: testRecord.id },
+                        data: {
+                            verified: true,
+                            status: "success",
+                            razorpayPaymentId: paymentId || testRecord.razorpayPaymentId,
+                        },
+                    });
+
+                    console.log(`✅ [Backend Payment Verification] Payment ${testRecord.paymentId} confirmed & set verified = TRUE!`);
+
+                    // Trigger confirmation email
+                    if (testRecord.customerEmail) {
+                        sendTestEmail(testRecord.customerEmail).catch((err) => {
+                            console.error("[Webhook DD] Failed to send test confirmation email:", err);
+                        });
+                    }
+                }
+            }
+        } else if (event === "payment.failed") {
+            const entity = payload?.payment?.entity;
+            const orderId = entity?.order_id;
+
+            if (orderId) {
+                const testRecord = await prisma.testPayment.findFirst({
+                    where: { razorpayOrderId: orderId },
+                });
+                if (testRecord) {
+                    await prisma.testPayment.update({
+                        where: { id: testRecord.id },
+                        data: { status: "failed" },
+                    });
+                    console.log(`❌ [Backend Payment Verification] Payment ${testRecord.paymentId} marked FAILED via Webhook.`);
+                }
+            }
+        }
+
+        return res.json({ status: "ok" });
+    } catch (error: any) {
+        console.error("Webhook processing error:", error);
+        return res.status(500).json({ error: error.message || "Webhook handling failed" });
+    }
+});
+
 export default router;
+

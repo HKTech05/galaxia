@@ -508,7 +508,11 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         };
 
         // Resend confirmation email & WhatsApp with updated details (fire-and-forget)
-        if (!existing.isMaintenance) {
+        // Skip notification resends if only comments/notes were updated or if no notification-worthy fields changed
+        const changedKeys = Object.keys(changedFields);
+        const shouldResendNotifications = !existing.isMaintenance && changedKeys.some((key) => key !== "comments");
+
+        if (shouldResendNotifications) {
             const updatedWithIncludes = await prisma.ddBooking.findUnique({
                 where: { id: bookingId },
                 include: { screen: true, package: true, addons: true },

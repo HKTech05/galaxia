@@ -696,24 +696,30 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
         };
 
         // Resend confirmation email & owner notification with updated details (fire-and-forget)
-        const plainPhone = decrypt(updated.customerPhone);
-        const plainEmail = updated.customerEmail ? decrypt(updated.customerEmail) : null;
-        sendBookingConfirmation({ ...updated, customerPhone: plainPhone, customerEmail: plainEmail }).catch(() => {});
+        // Skip notification resends if only comments/notes were updated
+        const changedKeys = Object.keys(changedFields);
+        const shouldResendNotifications = changedKeys.some((key) => key !== "comments");
 
-        const prop = updated.property || {};
-        const sub = updated.subProperty;
-        const ownerPropertyName = sub ? `${sub.name} — ${(prop as any).name}` : ((prop as any).name || "Galaxia Property");
-        generateStaycationBookingPDF({ ...updated, customerPhone: plainPhone, customerEmail: plainEmail })
-            .then((pdfBuffer) =>
-                sendOwnerBookingNotification({
-                    bookingRef: updated.bookingRef,
-                    customerName: updated.customerName,
-                    module: "staycation",
-                    propertyName: ownerPropertyName,
-                    pdfBuffer,
-                })
-            )
-            .catch((err) => console.error("[Owner Notify] Edit resend failed:", err));
+        if (shouldResendNotifications) {
+            const plainPhone = decrypt(updated.customerPhone);
+            const plainEmail = updated.customerEmail ? decrypt(updated.customerEmail) : null;
+            sendBookingConfirmation({ ...updated, customerPhone: plainPhone, customerEmail: plainEmail }).catch(() => {});
+
+            const prop = updated.property || {};
+            const sub = updated.subProperty;
+            const ownerPropertyName = sub ? `${sub.name} — ${(prop as any).name}` : ((prop as any).name || "Galaxia Property");
+            generateStaycationBookingPDF({ ...updated, customerPhone: plainPhone, customerEmail: plainEmail })
+                .then((pdfBuffer) =>
+                    sendOwnerBookingNotification({
+                        bookingRef: updated.bookingRef,
+                        customerName: updated.customerName,
+                        module: "staycation",
+                        propertyName: ownerPropertyName,
+                        pdfBuffer,
+                    })
+                )
+                .catch((err) => console.error("[Owner Notify] Edit resend failed:", err));
+        }
 
         return res.json(decrypted);
     } catch (error) {

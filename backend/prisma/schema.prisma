@@ -820,3 +820,21 @@ model StaffAttendance {
   @@unique([date, staffId])
   @@map("staff_attendances")
 }
+
+model TestPayment {
+  id                Int      @id @default(autoincrement())
+  paymentId         String   @unique @map("payment_id") @db.VarChar(100)
+  razorpayOrderId   String?  @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId String?  @map("razorpay_payment_id") @db.VarChar(100)
+  amount            Int      // in paise (100 = 1 INR)
+  status            String   @default("pending") @db.VarChar(20) // "pending", "success", "failed"
+  customerName      String   @map("customer_name") @db.VarChar(200)
+  customerEmail     String   @map("customer_email") @db.VarChar(255)
+  customerPhone     String   @map("customer_phone") @db.VarChar(30)
+  verified          Boolean  @default(false)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("test_payments")
+}
+
