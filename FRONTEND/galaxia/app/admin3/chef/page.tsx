@@ -48,6 +48,31 @@ interface ChefLog {
     };
 }
 
+const VILLAS_LIST = [
+    // Ambrose
+    { name: "Ambrose — TAKE-1", value: "TAKE-1" },
+    { name: "Ambrose — ALTA", value: "ALTA" },
+    { name: "Ambrose — SANTORINI", value: "SANTORINI" },
+    { name: "Ambrose — BAMBOOSA", value: "BAMBOOSA" },
+    { name: "Ambrose — CYPRESS", value: "CYPRESS" },
+    // Amstel Nest
+    { name: "Amstel Nest — Cottage 1", value: "Cottage 1" },
+    { name: "Amstel Nest — Cottage 2", value: "Cottage 2" },
+    { name: "Amstel Nest — Cottage 3", value: "Cottage 3" },
+    { name: "Amstel Nest — Cottage 4", value: "Cottage 4" },
+    { name: "Amstel Nest — Cottage 5", value: "Cottage 5" },
+    { name: "Amstel Nest — Cottage 6", value: "Cottage 6" },
+    { name: "Amstel Nest — Cottage 7", value: "Cottage 7" },
+    { name: "Amstel Nest — Cottage 8", value: "Cottage 8" },
+    { name: "Amstel Nest — Cottage 9", value: "Cottage 9" },
+    { name: "Amstel Nest — Cottage 11", value: "Cottage 11" },
+    { name: "Amstel Nest — Cottage 12", value: "Cottage 12" },
+    { name: "Amstel Nest — Cottage 13", value: "Cottage 13" },
+    { name: "Amstel Nest — Cottage 14", value: "Cottage 14" },
+    { name: "Amstel Nest — Cottage 15", value: "Cottage 15" },
+    { name: "Amstel Nest — Family Cottage", value: "Family Cottage" },
+];
+
 export default function ChefPortalPage() {
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [logs, setLogs] = useState<ChefLog[]>([]);
