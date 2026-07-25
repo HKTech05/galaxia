@@ -1,10 +1,5 @@
 /**
- * Test Simulation Script for Digital Diaries Vault Updates
- * Tests 4 scenarios:
- *   1. Staycation redirect → must mention /staycation/contact
- *   2. Celebration Package description → must NOT mention ₹400 add-ons
- *   3. Kids policy → must state under-5 free, 5-18 ₹150
- *   4. Movie Time add-ons → should mention ₹400
+ * Test Simulation Script - Outside Food/Cake Ban & Office Hours
  */
 
 const path = require("path");
@@ -15,36 +10,31 @@ async function runTests() {
 
   const testCases = [
     {
-      name: "TEST 1: Staycation Redirect",
-      message: "I wanted to know your vacation stay options",
+      name: "TEST 1: Outside cake NOT allowed",
+      message: "Waise cake laa sakte hai kya venue pe apna?",
       botType: "digital_diaries",
-      user: "test_staycation_" + Date.now(),
-      expectedContains: ["staycation/contact"],
-      expectedNotContains: ["Amstel", "Ambrose"],
-    },
-    {
-      name: "TEST 2: Celebration Package (NO add-on ₹400 mention)",
-      message: "What does the celebration package include for 2 people?",
-      botType: "digital_diaries",
-      user: "test_celebration_" + Date.now(),
-      expectedContains: ["cake"],
-      expectedNotContains: ["₹400"],
-    },
-    {
-      name: "TEST 3: Kids Policy",
-      message: "Can I bring my kid to the screening?",
-      botType: "digital_diaries",
-      user: "test_kids_" + Date.now(),
-      expectedContains: ["150"],
+      user: "test_cake_" + Date.now(),
+      expectedContains: ["not allowed", "nahi"],
       expectedNotContains: [],
+      passIfAny: true,
     },
     {
-      name: "TEST 4: Movie Time add-ons (should mention ₹400)",
-      message: "I want movie time package, can I add balloons?",
+      name: "TEST 2: Outside food NOT allowed",
+      message: "Can we bring outside food?",
       botType: "digital_diaries",
-      user: "test_addon_" + Date.now(),
-      expectedContains: ["400"],
+      user: "test_food_" + Date.now(),
+      expectedContains: ["not allowed", "nahi"],
       expectedNotContains: [],
+      passIfAny: true,
+    },
+    {
+      name: "TEST 3: Office hours",
+      message: "What are your office hours?",
+      botType: "digital_diaries",
+      user: "test_hours_" + Date.now(),
+      expectedContains: ["10", "8"],
+      expectedNotContains: [],
+      passIfAny: false,
     },
   ];
 
@@ -55,31 +45,35 @@ async function runTests() {
     console.log(`User Message: "${tc.message}"`);
 
     try {
-      // processMessage(sessionId, text, customerPhone, phoneNumberId, botType, platform)
       const result = await chatbotService.processMessage(
-        tc.user,            // sessionId
-        tc.message,         // text
-        "test_phone",       // customerPhone
-        "test_phone_id",    // phoneNumberId
-        tc.botType,         // botType
-        "whatsapp"          // platform
+        tc.user, tc.message, "test_phone", "test_phone_id", tc.botType, "whatsapp"
       );
 
       const reply = result.reply || "";
       console.log(`Bot Reply:\n${reply}\n`);
 
-      // Validate expected keywords present
       let pass = true;
-      for (const kw of tc.expectedContains) {
-        if (!reply.toLowerCase().includes(kw.toLowerCase())) {
-          console.log(`  ❌ FAIL: Expected to contain "${kw}" but not found!`);
-          pass = false;
+
+      if (tc.passIfAny) {
+        // At least ONE of the expected keywords must be present
+        const found = tc.expectedContains.some(kw => reply.toLowerCase().includes(kw.toLowerCase()));
+        if (found) {
+          console.log(`  ✅ PASS: Contains at least one of [${tc.expectedContains.join(", ")}]`);
         } else {
-          console.log(`  ✅ PASS: Contains "${kw}"`);
+          console.log(`  ❌ FAIL: Expected at least one of [${tc.expectedContains.join(", ")}] but none found!`);
+          pass = false;
+        }
+      } else {
+        for (const kw of tc.expectedContains) {
+          if (!reply.toLowerCase().includes(kw.toLowerCase())) {
+            console.log(`  ❌ FAIL: Expected to contain "${kw}" but not found!`);
+            pass = false;
+          } else {
+            console.log(`  ✅ PASS: Contains "${kw}"`);
+          }
         }
       }
 
-      // Validate unexpected keywords absent
       for (const kw of tc.expectedNotContains) {
         if (reply.toLowerCase().includes(kw.toLowerCase())) {
           console.log(`  ❌ FAIL: Should NOT contain "${kw}" but found it!`);
@@ -92,7 +86,6 @@ async function runTests() {
       console.log(`  Result: ${pass ? "✅ ALL CHECKS PASSED" : "❌ SOME CHECKS FAILED"}`);
     } catch (err) {
       console.log(`  ❌ ERROR: ${err.message}`);
-      console.log(`  Stack: ${err.stack?.split('\n').slice(0,3).join('\n')}`);
     }
 
     console.log("");
