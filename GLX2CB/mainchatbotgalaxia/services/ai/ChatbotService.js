@@ -199,9 +199,15 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
 
     // Check Verbal Phone Call Request for Digital Diaries ONLY (+91 98922 94042)
     if (cleanType === "digital_diaries" || cleanType === "diaries" || cleanType === "bot1") {
+      // Check if outside office hours (8 PM to 10 AM IST)
+      const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+      const hourIST = nowIST.getHours();
+      const isOutsideOfficeHours = hourIST >= 20 || hourIST < 10;
+      const officeHoursNote = isOutsideOfficeHours ? "\n\nPlease note: Our office hours are 10:00 AM to 8:00 PM. Calls will not be answered after 8 PM until next day morning." : "";
+
       const unansweredCallRegex = /\b(nai\s*utha|nahi\s*utha|not\s*picking|nobody\s*answering|no\s*answer|call\s*nahi|phone\s*nahi|not\s*answering|call\s*not\s*received|busy|call\s*unanswered)\b/i;
       if (unansweredCallRegex.test(textTrimmed)) {
-        const callbackMsg = "Sorry for the inconvenience. Our team will get back to you with a call back shortly as soon as possible.";
+        const callbackMsg = "Sorry for the inconvenience. Our team will get back to you with a call back shortly as soon as possible." + officeHoursNote;
         await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
         const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, callbackMsg);
         return {
@@ -217,7 +223,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
 
       const callRegex = /\b(call|phone|calling|contact\s*number|phone\s*number|call\s*number|call\s*kare|call\s*karu|call\s*par|talk\s*on\s*call|speak\s*on\s*call)\b/i;
       if (callRegex.test(textTrimmed)) {
-        const callMsg = "For verbal inquiries regarding Digital Diaries Wadala, you can call us directly on: +91 98922 94042.";
+        const callMsg = "For verbal inquiries regarding Digital Diaries Wadala, you can call us directly on: +91 98922 94042." + officeHoursNote;
         await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
         const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, callMsg);
         return {
