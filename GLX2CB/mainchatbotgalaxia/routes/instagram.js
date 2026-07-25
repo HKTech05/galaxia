@@ -205,16 +205,19 @@ router.post("/webhook", async (req, res) => {
       }
     }
 
-    // 2. Save user message to DB
-    const savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
+    const isAiBot = botType === "celebration" || botType === "digital_diaries";
 
-    // 3. Emit user message to dashboard via Socket.IO
-    if (io) {
-      io.emit("new_message", {
-        sessionId,
-        message: savedUserMsg,
-        session: await db.getSession(sessionId),
-      });
+    // 2. Save user message to DB (only for non-AI menu bots)
+    let savedUserMsg = null;
+    if (!isAiBot) {
+      savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
+      if (io) {
+        io.emit("new_message", {
+          sessionId,
+          message: savedUserMsg,
+          session: await db.getSession(sessionId),
+        });
+      }
     }
 
     // 4. Check if sender is an official internal account or self
@@ -275,7 +278,7 @@ router.post("/webhook", async (req, res) => {
     let replyText = "";
     let responseObj = null;
 
-    if (botType === "celebration" || botType === "digital_diaries") {
+    if (isAiBot) {
       // Digital Diaries AI Chatbot V2
       console.log(`[Instagram] Routing to AI Chatbot V2 (digital_diaries) for user ${senderId}`);
       const aiResult = await chatbotService.processMessage(
@@ -336,16 +339,18 @@ router.post("/webhook", async (req, res) => {
       }
     }
 
-    // 6. Save bot reply to DB
-    const savedBotMsg = await db.saveMessage(sessionId, "assistant", replyText, false);
-
-    // 7. Emit bot reply to dashboard
-    if (io) {
-      io.emit("new_message", {
-        sessionId,
-        message: savedBotMsg,
-        session: await db.getSession(sessionId),
-      });
+    // 6. Save bot reply to DB (only for non-AI menu bots)
+    if (!isAiBot) {
+      const savedBotMsg = await db.saveMessage(sessionId, "assistant", replyText, false);
+      if (io) {
+        io.emit("new_message", {
+          sessionId,
+          message: savedBotMsg,
+          session: await db.getSession(sessionId),
+        });
+      }
+    } else {
+      if (io) io.emit("session_updated", await db.getSession(sessionId));
     }
 
     // 8. Send via Instagram Graph API (use the correct token for this bot)

@@ -154,15 +154,18 @@ app.post("/webhook", async (req, res) => {
     // 1. Get or create session
     const session = await db.getOrCreateSession(sessionId, from, phoneId, botType, "whatsapp");
 
-    // 2. Save user message to DB
-    const savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
+    const isAiBot = botType === "celebration" || botType === "digital_diaries";
 
-    // 3. Emit user message to dashboard via Socket.IO
-    io.emit("new_message", {
-      sessionId,
-      message: savedUserMsg,
-      session: await db.getSession(sessionId),
-    });
+    // 2. Save user message to DB & emit to dashboard (only for non-AI menu bots, since ChatbotService handles AI bot saves)
+    let savedUserMsg = null;
+    if (!isAiBot) {
+      savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
+      io.emit("new_message", {
+        sessionId,
+        message: savedUserMsg,
+        session: await db.getSession(sessionId),
+      });
+    }
 
     // 4. Check if human mode is active — if so, don't auto-reply
     if (session.is_human_active) {
@@ -174,7 +177,7 @@ app.post("/webhook", async (req, res) => {
     let replyText = "";
     let responseObj = null;
 
-    if (botType === "celebration" || botType === "digital_diaries") {
+    if (isAiBot) {
       // Digital Diaries AI Chatbot V2
       console.log(`[WhatsApp] Routing to AI Chatbot V2 (digital_diaries) for ${from}`);
       const aiResult = await chatbotService.processMessage(
@@ -230,15 +233,18 @@ app.post("/webhook", async (req, res) => {
       io.emit("session_updated", updatedSession);
     }
 
-    // 6. Save bot reply to DB
-    const savedBotMsg = await db.saveMessage(sessionId, "assistant", replyText, false);
-
-    // 7. Emit bot reply to dashboard
-    io.emit("new_message", {
-      sessionId,
-      message: savedBotMsg,
-      session: await db.getSession(sessionId),
-    });
+    // 6. Save bot reply to DB (only for non-AI menu bots)
+    if (!isAiBot) {
+      const savedBotMsg = await db.saveMessage(sessionId, "assistant", replyText, false);
+      io.emit("new_message", {
+        sessionId,
+        message: savedBotMsg,
+        session: await db.getSession(sessionId),
+      });
+    } else {
+      // Emit update so dashboard refreshes for AI bot reply
+      io.emit("session_updated", await db.getSession(sessionId));
+    }
 
     // 8. Send via WhatsApp API (only if live)
     if (WHATSAPP_LIVE) {
