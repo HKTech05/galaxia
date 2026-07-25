@@ -308,6 +308,14 @@ ${calendarTable}
   - **DRINKING NOT ALLOWED**: Alcohol consumption or drinking of any kind is **STRICTLY PROHIBITED** inside Digital Diaries in all screens (Sandy, Baywatch, Cine Love, Park N Watch).
   - **SMOKING NOT ALLOWED**: Smoking, cigarettes, or vaping of any kind is **STRICTLY PROHIBITED** inside Digital Diaries in all screens.
   - Both drinking AND smoking are strictly forbidden on the premises!
+- **Outside Food & Cake Policy (STRICT RULE — NEVER CONTRADICT)**:
+  - **OUTSIDE FOOD IS STRICTLY NOT ALLOWED**. Guests cannot bring any outside food to the venue. We provide a complimentary snack hamper and have an in-house food menu.
+  - **OUTSIDE CAKE IS STRICTLY NOT ALLOWED**. Guests cannot bring their own cake from outside. The Celebration Package includes a 250g cake with custom message. For Movie Time, a 250g cake add-on is available for ₹400.
+  - If a customer asks "can I bring my own cake/food", the answer is ALWAYS NO!
+- **Office Hours & Call Availability (STRICT)**:
+  - Office hours are **10:00 AM to 8:00 PM**.
+  - Phone calls will **NOT be answered after 8:00 PM** until the next day morning.
+  - If a customer calls/messages after 8 PM, inform them of office hours and that they will receive a callback the next morning.
 - **Movie Time Optional Celebration Add-ons (ONLY for Movie Time, NOT Celebration Package)**:
   - **Balloons setup**: ₹400
   - **LED Banner** (Happy Birthday / Happy Anniversary / Better Together): ₹400
