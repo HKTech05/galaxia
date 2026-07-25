@@ -128,6 +128,28 @@ async function processTestBookingCreation(testRecord: any, razorpayPaymentId: st
     const details = testRecord.bookingDetails || {};
     const moduleType = details.moduleType || "staycation";
 
+    // Find or create User record to associate with customer account page
+    let user: any = null;
+    try {
+        if (testRecord.customerEmail) {
+            user = await prisma.user.findFirst({ where: { email: testRecord.customerEmail } });
+        }
+        if (!user && testRecord.customerPhone) {
+            user = await prisma.user.findFirst({ where: { phone: testRecord.customerPhone } });
+        }
+        if (!user && (testRecord.customerEmail || testRecord.customerPhone)) {
+            user = await prisma.user.create({
+                data: {
+                    fullName: testRecord.customerName || "Guest",
+                    phone: testRecord.customerPhone || "",
+                    email: testRecord.customerEmail || null,
+                },
+            });
+        }
+    } catch (userErr) {
+        console.error("Test booking user lookup/creation error:", userErr);
+    }
+
     if (moduleType === "staycation") {
         const bookingRef = await generateStayRefTest();
         const ciDate = details.checkInDate ? new Date(details.checkInDate + 'T00:00:00') : new Date();
@@ -139,6 +161,7 @@ async function processTestBookingCreation(testRecord: any, razorpayPaymentId: st
         const created = await prisma.staycationBooking.create({
             data: {
                 bookingRef,
+                userId: user?.id || null,
                 propertyId: parseInt(details.propertyId || "1"),
                 subPropertyId: details.subPropertyId ? parseInt(details.subPropertyId) : null,
                 customerName: testRecord.customerName,
@@ -171,6 +194,7 @@ async function processTestBookingCreation(testRecord: any, razorpayPaymentId: st
         const created = await prisma.ddBooking.create({
             data: {
                 bookingRef,
+                userId: user?.id || null,
                 screenId: parseInt(details.screenId || "1"),
                 packageId: parseInt(details.packageId || "1"),
                 bookingDate: bDate,
@@ -192,6 +216,7 @@ async function processTestBookingCreation(testRecord: any, razorpayPaymentId: st
             },
             include: { screen: true, package: true, addons: true },
         });
+
 
         sendDDEmail({ ...created, customerPhone: testRecord.customerPhone, customerEmail: testRecord.customerEmail }).catch((e) => console.error("Test DD email error:", e));
         return bookingRef;

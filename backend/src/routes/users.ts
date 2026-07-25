@@ -12,24 +12,53 @@ router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthReque
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: req.user.id },
-            include: {
-                stayBookings: {
-                    include: { property: true, subProperty: true },
-                    orderBy: { checkInDate: "desc" }
-                },
-                ddBookings: {
-                    include: { screen: true, package: true },
-                    orderBy: { bookingDate: "desc" }
-                }
-            }
+            where: { id: req.user.id }
         });
 
         if (!user) {
             return res.json({ stayBookings: [], ddBookings: [] });
         }
 
-        const stayBookings = user.stayBookings.map(b => {
+        // Build matching conditions for staycation bookings
+        const stayWhereConditions: any[] = [{ userId: user.id }];
+        if (user.email) stayWhereConditions.push({ customerEmail: user.email });
+        if (user.phone) stayWhereConditions.push({ customerPhone: user.phone });
+
+        const rawStayBookings = await prisma.staycationBooking.findMany({
+            where: { OR: stayWhereConditions },
+            include: { property: true, subProperty: true },
+            orderBy: { checkInDate: "desc" }
+        });
+
+        // Auto-link any matching staycation bookings that have userId: null
+        const unlinkedStayIds = rawStayBookings.filter(b => !b.userId).map(b => b.id);
+        if (unlinkedStayIds.length > 0) {
+            await prisma.staycationBooking.updateMany({
+                where: { id: { in: unlinkedStayIds } },
+                data: { userId: user.id }
+            }).catch(e => console.error("Auto-link stay bookings error:", e));
+        }
+
+        // Build matching conditions for DD bookings
+        const ddWhereConditions: any[] = [{ userId: user.id }];
+        if (user.email) ddWhereConditions.push({ customerEmail: user.email });
+
+        const rawDdBookings = await prisma.ddBooking.findMany({
+            where: { OR: ddWhereConditions },
+            include: { screen: true, package: true },
+            orderBy: { bookingDate: "desc" }
+        });
+
+        // Auto-link any matching DD bookings that have userId: null
+        const unlinkedDdIds = rawDdBookings.filter(b => !b.userId).map(b => b.id);
+        if (unlinkedDdIds.length > 0) {
+            await prisma.ddBooking.updateMany({
+                where: { id: { in: unlinkedDdIds } },
+                data: { userId: user.id }
+            }).catch(e => console.error("Auto-link DD bookings error:", e));
+        }
+
+        const stayBookings = rawStayBookings.map(b => {
             let standardizedName = b.property?.name || "Staycation Property";
             if (b.subProperty) {
                 standardizedName = `${b.subProperty.name} (${standardizedName})`;
@@ -40,7 +69,7 @@ router.get("/me/bookings", customerAuthMiddleware, async (req: CustomerAuthReque
             };
         });
 
-        const ddBookings = user.ddBookings.map(b => {
+        const ddBookings = rawDdBookings.map(b => {
             let standardizedName = (b.screen?.name || "Digital Diaries").replace(/\s*\([^)]*\)/g, '').trim();
             standardizedName = `${standardizedName} (Digital Diaries)`;
             return {
