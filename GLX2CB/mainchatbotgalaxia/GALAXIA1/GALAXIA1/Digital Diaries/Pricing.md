@@ -12,9 +12,16 @@ Includes private screening space and complimentary snack hamper (dry snacks, jui
 - Extra Hour: *₹1,000* / hour
 - Extra Guest (above 2): *₹300* per head
 - Kids under 5: Complimentary / Free
+- Kids aged 5 to 18: *₹150* per child
+
+**Movie Time Optional Celebration Add-ons** (ONLY for Movie Time package):
+- Balloons setup: *₹400*
+- LED Banner (Happy Birthday / Happy Anniversary / Better Together): *₹400*
+- 250g Cake with custom message: *₹400*
 
 ### Package 2: Celebration Package (Decoration + Movie Time)
-Includes private screening space, snack hamper, 250g Celebration Cake, LED Message Tag, Fog Effect, heart-lit pathway, and candle setup.
+Includes private screening space, snack hamper, **250g Celebration Cake with custom message, LED Message Tag, Fog Effect, heart-lit pathway, candle setup, and balloons**.
+All celebration items (cake, balloons, LED banner, fog effect, pathway, candles) are **already included** in the Celebration Package price. There are NO additional add-on charges for these items in Celebration Package.
 - *1 Hour*: *₹2,200*
 - *2 Hours*: *₹2,950*
 - *3 Hours (Mon-Thu)*: *₹3,450*
@@ -22,6 +29,7 @@ Includes private screening space, snack hamper, 250g Celebration Cake, LED Messa
 - Extra Hour: *₹1,000* / hour
 - Extra Guest (above 2): *₹300* per head
 - Kids under 5: Complimentary / Free
+- Kids aged 5 to 18: *₹150* per child
 
 ---
 ## Related Notes & Navigation
