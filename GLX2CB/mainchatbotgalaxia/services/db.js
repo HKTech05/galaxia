@@ -31,7 +31,16 @@ async function getOrCreateSession(sessionId, customerPhone, phoneNumberId, botTy
   );
 
   if (existing.rows.length > 0) {
-    return existing.rows[0];
+    const row = existing.rows[0];
+    if (row.phone_number_id === "1015208551685641" && phoneNumberId && phoneNumberId !== "1015208551685641") {
+      await pool.query(
+        `UPDATE chat_sessions SET phone_number_id = $2, bot_type = $3 WHERE session_id = $1`,
+        [sessionId, phoneNumberId, botType]
+      );
+      row.phone_number_id = phoneNumberId;
+      row.bot_type = botType;
+    }
+    return row;
   }
 
   // Create new
