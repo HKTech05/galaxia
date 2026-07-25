@@ -95,9 +95,9 @@ class ChatbotService {
     
     // Fast exit for simple greetings or non-date messages (0ms latency optimization)
     const isSimpleMsg = ["hi", "hii", "hello", "hey", "namaste", "start", "menu", "human", "collab", "price", "pricing", "rates"].includes(textLower);
-    const containsDateNumber = /\b(\d{1,2}(st|nd|rd|th)?|today|aaj|tomorrow|kal|monday|tuesday|wednesday|thursday|friday|saturday|sunday|july|august|september)\b/i.test(textLower);
+    const containsDateNumber = /\b(\d{1,2}(st|nd|rd|th)?|today|aaj|ajj|tomorrow|kal|kall|monday|tuesday|wednesday|thursday|friday|saturday|sunday|july|august|september|slot|slots|booking|available|free|khali)\b/i.test(textLower);
 
-    if (isSimpleMsg || (!containsDateNumber && textLower.length < 25)) {
+    if (isSimpleMsg || (!containsDateNumber && textLower.length < 20)) {
       return null;
     }
 
@@ -522,16 +522,28 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         else if (textLowerCheck.includes("baywatch")) effectiveScreenSlug = "baywatch";
 
         const effectiveDDDate = intent.ddBookingDate || intent.checkInDate || updatedState.checkInDate;
+        const isDDBot = cleanType === "digital_diaries" || cleanType === "celebration" || intent.isDiariesQuery;
 
-        if (effectiveScreenSlug && effectiveDDDate) {
-          console.log(`[ChatbotService] Performing Digital Diaries availability check: ${effectiveScreenSlug} on ${effectiveDDDate} (hour: ${intent.ddStartHour})`);
-          const avail = await dynamicDataService.checkDigitalDiariesAvailability(
-            effectiveScreenSlug,
-            effectiveDDDate,
-            intent.ddStartHour,
-            intent.ddDuration || 2
-          );
-          dynamicContext += `### REAL-TIME LIVE DATABASE CALENDAR AVAILABILITY (DIGITAL DIARIES SCREEN):\n${JSON.stringify(avail, null, 2)}\n*CRITICAL INSTRUCTION FOR AI*: You MUST use the above live database availability check to answer screen slot availability. Never state a slot is available if isAvailable is false!\n\n`;
+        if (effectiveDDDate && (effectiveScreenSlug || isDDBot)) {
+          if (effectiveScreenSlug) {
+            console.log(`[ChatbotService] Performing Digital Diaries availability check: ${effectiveScreenSlug} on ${effectiveDDDate} (hour: ${intent.ddStartHour})`);
+            const avail = await dynamicDataService.checkDigitalDiariesAvailability(
+              effectiveScreenSlug,
+              effectiveDDDate,
+              intent.ddStartHour,
+              intent.ddDuration || 2
+            );
+            dynamicContext += `### REAL-TIME LIVE DATABASE CALENDAR AVAILABILITY (DIGITAL DIARIES SCREEN):\n${JSON.stringify(avail, null, 2)}\n*CRITICAL INSTRUCTION FOR AI*: You MUST use the above live database availability check to answer screen slot availability. Never state a slot is available if isAvailable is false!\n\n`;
+          } else {
+            console.log(`[ChatbotService] Performing Digital Diaries availability check for ALL screens on ${effectiveDDDate}`);
+            const screens = ["sandy-screen", "cine-love", "park-n-watch", "baywatch"];
+            const allAvail = [];
+            for (const scr of screens) {
+              const res = await dynamicDataService.checkDigitalDiariesAvailability(scr, effectiveDDDate, intent.ddStartHour, intent.ddDuration || 2);
+              allAvail.push(res);
+            }
+            dynamicContext += `### REAL-TIME LIVE DATABASE CALENDAR AVAILABILITY (ALL DIGITAL DIARIES SCREENS FOR ${effectiveDDDate}):\n${JSON.stringify(allAvail, null, 2)}\n*CRITICAL INSTRUCTION FOR AI*: Use the above live database availability check to answer slot availability for today/date. List exact available slots for the screens!\n\n`;
+          }
         }
       }
     }
