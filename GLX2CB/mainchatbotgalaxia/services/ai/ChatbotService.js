@@ -101,12 +101,13 @@ class ChatbotService {
       return null;
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const calendarTable = promptBuilder.getCalendarTable();
     const systemPrompt = `You are a structured intent extractor for a vacation/screening resort booking platform.
 Analyze the user message (and the recent context summary if provided) and determine if the user is asking about booking availability, dates, or calendar schedule.
 
-Current Date Today: ${today} (Calendar Year is 2026).
-- IMPORTANT: Hinglish slang/typos like "vol", "bol", "bta", "btao", "batana", "vol re", "bol re" mean "TELL ME / EXPLAIN / PROVIDE DETAILS" (e.g. "amstel ka vol re" means "tell me about Amstel Nest prices/details!"). DO NOT set checkInDate to TODAY (${today}) unless the user explicitly wrote "today" or "aaj"!
+${calendarTable}
+
+- IMPORTANT: Hinglish slang/typos like "vol", "bol", "bta", "btao", "batana", "vol re", "bol re" mean "TELL ME / EXPLAIN / PROVIDE DETAILS" (e.g. "amstel ka vol re" means "tell me about Amstel Nest prices/details!"). DO NOT set checkInDate to TODAY unless the user explicitly wrote "today", "aaj", or "ajj"!
 - IMPORTANT: In Hinglish, "free hai kya", "khali hai kya", "available hai kya" means AVAILABILITY/VACANCY QUERY for dates. It does NOT mean zero cost / complimentary!
 - "friday pe free hai kya alta" -> Querying if Alta (Ambrose Villa) is available/vacant on the coming Friday.
 - "uske baad wala friday" -> Querying availability for the Friday of the following week.

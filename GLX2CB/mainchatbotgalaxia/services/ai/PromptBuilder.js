@@ -34,8 +34,44 @@ class PromptBuilder {
     return messages;
   }
 
+  getCalendarTable() {
+    const now = new Date();
+    // Convert to IST (+5:30)
+    const istTimeMs = now.getTime() + (5.5 * 60 * 60 * 1000);
+    const baseDate = new Date(istTimeMs);
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const formatDate = (offsetDays) => {
+      const d = new Date(baseDate.getTime() + (offsetDays * 86400000));
+      const dayName = days[d.getUTCDay()];
+      const dateNum = d.getUTCDate();
+      const monthName = months[d.getUTCMonth()];
+      const year = d.getUTCFullYear();
+      const iso = d.toISOString().split("T")[0];
+      return `${dayName}, ${dateNum} ${monthName} ${year} (${iso})`;
+    };
+
+    return `## AUTHORITATIVE CALENDAR REFERENCE (EXACT DATES & DAYS OF THE WEEK IN IST):
+- **TODAY**: ${formatDate(0)}
+- **TOMORROW / KAL**: ${formatDate(1)}
+- **DAY AFTER TOMORROW / PARSO**: ${formatDate(2)}
+- **+3 DAYS**: ${formatDate(3)}
+- **+4 DAYS**: ${formatDate(4)}
+- **+5 DAYS**: ${formatDate(5)}
+- **+6 DAYS**: ${formatDate(6)}
+- **+7 DAYS / NEXT WEEK**: ${formatDate(7)}
+
+*STRICT CALENDAR RULES*:
+1. "Kal" ALWAYS means TOMORROW (${formatDate(1)}).
+2. "Parso" ALWAYS means DAY AFTER TOMORROW (${formatDate(2)}).
+3. NEVER guess or miscalculate a day of the week! ALWAYS verify against the table above before writing a date or day name in your reply.`;
+  }
+
   getSystemPrompt(botType, ragContext, dynamicContext, entityState = null) {
     const currentTime = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+    const calendarTable = this.getCalendarTable();
     const botRestrictions = this.getBotRestrictions(botType);
     const customPromptAddition = configManager.get("SYSTEM_PROMPT_ADDITION") || "";
 
@@ -61,6 +97,8 @@ class PromptBuilder {
     }
 
     return `${identityHeader}
+
+${calendarTable}
 
 ## CORE OPERATIONAL RULES:
 1. **Conciseness & Directness (CRITICAL)**: Be extremely concise, short, and straight to the point. NO pleasantries, NO fluff intros (NEVER say "Mujhe aapki madad karne mein khushi hogi", "Thank you for reaching out", "I am happy to assist you", etc.). Answer the user's question directly in the very first sentence. Keep responses short and simple. NEVER address the customer as "Bhai", "Bro", "Dude", "Man", "Sir", "Ma'am", "Dear", or use informal slang ("Yo", "Sup", "Kya scene"). Do NOT use emojis under any circumstances.
