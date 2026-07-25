@@ -8,7 +8,7 @@ The Celebration Package includes ALL of the following at no extra charge:
 - Heart-lit pathway
 - Candle setup
 - Balloons setup
-- **Themes:** Birthday, Anniversary, Romantic Date, Proposal.
+- **Themes:** Birthday, Anniversary, Romantic Date.
 
 ## Movie Time Optional Celebration Add-ons (ONLY for Movie Time Package)
 These add-ons are available ONLY for the Movie Time package at ₹400 each:
