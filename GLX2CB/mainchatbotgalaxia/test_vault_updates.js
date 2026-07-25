@@ -10,18 +10,15 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
 async function runTests() {
-  // Initialize services
-  const KnowledgeService = require("./services/ai/KnowledgeService");
-  const knowledgeService = new KnowledgeService();
+  // Services are exported as singletons
+  const knowledgeService = require("./services/ai/KnowledgeService");
+  const chatbotService = require("./services/ai/ChatbotService");
 
   // Re-index vault so new content is picked up
   console.log("=== Re-indexing Obsidian Vault... ===");
   const stats = await knowledgeService.reindexVault();
   console.log("Index stats:", JSON.stringify(stats));
   console.log("");
-
-  const ChatbotService = require("./services/ai/ChatbotService");
-  const chatbotService = new ChatbotService();
 
   const testCases = [
     {

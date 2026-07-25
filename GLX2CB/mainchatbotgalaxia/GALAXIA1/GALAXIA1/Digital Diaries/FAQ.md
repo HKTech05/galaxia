@@ -24,3 +24,11 @@ The Celebration Package includes: private screening space, snack hamper, 250g Ce
 
 ### Are balloons and LED banner available for Movie Time?
 Yes, for the Movie Time package, balloons setup (₹400) and LED Banner (₹400) are available as optional add-ons. These are NOT needed for Celebration Package as they are already included.
+
+---
+## Related Notes & Navigation
+- [[Pricing|Screening Packages & Rates]]
+- [[Decorations|Celebration & Decoration Setups]]
+- [[Policies|Screening & Privacy Policies]]
+- [[Contact & Support|Contact & Human Mode Rules]]
+- [[Digital Diaries Index|Back to Digital Diaries Index]]

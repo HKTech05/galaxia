@@ -46,3 +46,12 @@ This document outlines the strict language, tone, and policy rules that the AI A
   - Kids aged 5 to 18 years: **₹150 per child**
 - **Do NOT proactively mention kids policy or child pricing** unless the customer specifically asks about bringing children, kids, a child, or a minor.
 - When a customer asks if they can bring their kid/child, confirm that kids are allowed and state the age-based pricing above.
+
+---
+## Related Notes & Navigation
+- [[Pricing|Screening Packages & Rates]]
+- [[Policies|Screening & Privacy Policies]]
+- [[Contact & Support|Contact, Human Mode & Escalation Rules]]
+- [[Decorations|Celebration & Decoration Setups]]
+- [[FAQ|Frequently Asked Questions]]
+- [[Digital Diaries Index|Back to Digital Diaries Index]]
