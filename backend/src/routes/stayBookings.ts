@@ -538,7 +538,7 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
             where: { id: bookingId },
             data: {
                 status,
-                ...(assignedUnit !== undefined ? { assignedUnit } : {}),
+                ...(assignedUnit !== undefined ? { assignedUnit: assignedUnit ? String(assignedUnit).slice(0, 250) : null } : {}),
                 ...(status === "checked_in" ? { checkInTime: timeOnly } : {}),
                 ...(status === "checked_out" ? { checkOutTime: timeOnly } : {}),
             },

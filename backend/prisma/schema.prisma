@@ -354,7 +354,7 @@ model StaycationBooking {
   createdBy          Int?             @map("created_by")
   updatedAt          DateTime         @updatedAt @map("updated_at")
   addons             Json?            @map("addons")
-  assignedUnit       String?          @map("assigned_unit") @db.VarChar(50)
+  assignedUnit       String?          @map("assigned_unit") @db.VarChar(255)
   comments           String?
   payments           BookingPayment[]
   extraGuests        ExtraGuest[]
