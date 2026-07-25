@@ -238,6 +238,10 @@ router.get("/sub-admins", authMiddleware, async (req: AuthRequest, res) => {
         }
 
         const admins = await prisma.adminAccount.findMany({
+            where: {
+                username: { notIn: ["developer", "Developer"] },
+                role: { not: "developer" },
+            },
             select: {
                 id: true, username: true, displayName: true,
                 role: true, email: true, isActive: true,
