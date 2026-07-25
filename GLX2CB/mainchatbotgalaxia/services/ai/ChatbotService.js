@@ -233,12 +233,12 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     }
     
     // Strict Regex Scoping with Word Boundaries
-    const staycationRegex = /\b(stay|staycations?|resorts?|hotels?|cottages?|villas?|karjat|amstel|ambrose|paraiso|la\s*paraiso|heavenly|mount\s*view|hill\s*view|santorini|alta|take-?1|bamboosa|cypress)\b/i;
+    const staycationRegex = /\b(stay|vacation|staycations?|resorts?|hotels?|cottages?|villas?|karjat|amstel|ambrose|paraiso|la\s*paraiso|heavenly|mount\s*view|hill\s*view|santorini|alta|take-?1|bamboosa|cypress)\b/i;
     const diariesRegex = /\b(sandy|cine\s*love|park\s*n\s*watch|baywatch|wadala|movie\s*time|celebration|screen|screens|digital\s*diaries)\b/i;
 
     if (cleanType === "digital_diaries" || cleanType === "diaries" || cleanType === "bot1") {
       if (staycationRegex.test(textTrimmed) && !diariesRegex.test(textTrimmed)) {
-        const refusalMsg = "I am the Digital Diaries Assistant and only handle Wadala movie screening bookings. For staycation bookings, please contact our staycation department.";
+        const refusalMsg = "I am the Digital Diaries Assistant and only handle Wadala movie screening bookings. For staycation/resort bookings, please visit our staycation contact page for all details and contact numbers: https://www.galaxiaresorts.com/staycation/contact";
         await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
         const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, refusalMsg);
         return {
