@@ -34,7 +34,9 @@ export type AuditAction =
     | "phone_login"
     | "phone_user_name_update"
     | "booking_master_edit"
-    | "booking_deleted";
+    | "booking_deleted"
+    | "toggle_maintenance_on"
+    | "toggle_maintenance_off";
 
 interface LogOptions {
     adminId?: number;

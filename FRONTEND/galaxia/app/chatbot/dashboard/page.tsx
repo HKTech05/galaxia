@@ -272,7 +272,7 @@ export default function ChatbotDashboard() {
             const data = await res.json();
 
             const nums = session.assignedNumbers || [];
-            const isOwner = session.role === "owner" || (nums.includes("staycation_1") && nums.includes("digital_diaries"));
+            const isOwner = session.role === "owner" || session.role === "developer" || (nums.includes("staycation_1") && nums.includes("digital_diaries"));
             const canSeeCelebration = isOwner || nums.includes("digital_diaries");
             const canSeeStaycation = isOwner || nums.includes("staycation_1") || nums.includes("staycation_2");
 
@@ -350,7 +350,7 @@ export default function ChatbotDashboard() {
     // ─── Auto-scroll messages ───
     useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeChat, messages]);
 
-    const allowed = session?.role === "owner" ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
+    const allowed = (session?.role === "owner" || session?.role === "developer") ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
 
     const getFiltered = useCallback((t: string) => {
         return sessions.filter(s => {
@@ -533,7 +533,7 @@ export default function ChatbotDashboard() {
             <header className="cb-topbar">
                 <div className="cb-topbar-left">
                     <h1>Galaxia</h1>
-                    <span className="cb-role-badge">{session.role === "owner" ? "Owner" : session.displayName}</span>
+                    <span className="cb-role-badge">{session.role === "owner" || session.role === "developer" ? (session.role === "developer" ? "Developer" : "Owner") : session.displayName}</span>
                 </div>
                 <div className="cb-topbar-right">
                     <div className="cb-conn-status">

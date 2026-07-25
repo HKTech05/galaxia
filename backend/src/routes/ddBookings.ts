@@ -29,6 +29,129 @@ async function generateDdRef(client: any = prisma): Promise<string> {
     return `${prefix}${String(maxNum + 1).padStart(3, "0")}`;
 }
 
+// POST /api/bookings/dd/toggle-8-10-maintenance — Toggle 8-10 PM Maintenance mode for next 3 months (owner/developer)
+router.post("/toggle-8-10-maintenance", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+    try {
+        const { startDate, active } = req.body;
+        if (!startDate) {
+            return res.status(400).json({ error: "startDate is required" });
+        }
+
+        const baseDate = new Date(startDate + "T12:00:00");
+        if (isNaN(baseDate.getTime())) {
+            return res.status(400).json({ error: "Invalid startDate format" });
+        }
+
+        const screens = await prisma.subProperty.findMany({
+            where: { property: { slug: "digital-diaries" } },
+            select: { id: true }
+        });
+        const screenIds = screens.map(s => s.id);
+        const fallbackScreenIds = screenIds.length > 0 ? screenIds : [1, 2, 3, 4];
+
+        const DAYS_COUNT = 90; // Next 3 months
+
+        if (active) {
+            let createdCount = 0;
+            const encryptedPhone = encrypt("0000000000");
+
+            for (let dayOffset = 0; dayOffset < DAYS_COUNT; dayOffset++) {
+                const targetDate = new Date(baseDate);
+                targetDate.setDate(targetDate.getDate() + dayOffset);
+
+                for (const sId of fallbackScreenIds) {
+                    const existingBookings = await prisma.ddBooking.findMany({
+                        where: {
+                            screenId: sId,
+                            bookingDate: targetDate,
+                            status: { notIn: ["cancelled", "no_show", "transferred"] },
+                        },
+                    });
+
+                    let isConflict = false;
+                    for (const existing of existingBookings) {
+                        const existStart = existing.startHour;
+                        const existEnd = existStart + existing.durationHours;
+                        if (20 < existEnd && 22 > existStart) {
+                            isConflict = true;
+                            break;
+                        }
+                    }
+
+                    if (!isConflict) {
+                        const ref = `MAINT-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+                        await prisma.ddBooking.create({
+                            data: {
+                                bookingRef: ref,
+                                screenId: sId,
+                                packageId: 1,
+                                bookingDate: targetDate,
+                                startHour: 20,
+                                durationHours: 2,
+                                customerName: "Maintenance Block",
+                                customerPhone: encryptedPhone,
+                                customerEmail: null,
+                                isMaintenance: true,
+                                numGuests: 0,
+                                basePrice: 0,
+                                extraPersonCharge: 0,
+                                gstAmount: 0,
+                                totalAmount: 0,
+                                amountPaid: 0,
+                                amountToCollect: 0,
+                                source: "admin",
+                                status: "confirmed",
+                            },
+                        });
+                        createdCount++;
+                    }
+                }
+            }
+
+            auditLog({
+                action: "toggle_maintenance_on",
+                entityType: "dd_booking",
+                details: { startDate, createdCount, days: DAYS_COUNT },
+                isDeveloper: req.admin?.role === "developer",
+            });
+
+            return res.json({ success: true, message: `Created ${createdCount} maintenance blocks for next 3 months`, active: true, count: createdCount });
+        } else {
+            const endDate = new Date(baseDate);
+            endDate.setDate(endDate.getDate() + DAYS_COUNT);
+
+            const result = await prisma.ddBooking.updateMany({
+                where: {
+                    isMaintenance: true,
+                    customerName: "Maintenance Block",
+                    startHour: 20,
+                    durationHours: 2,
+                    bookingDate: {
+                        gte: baseDate,
+                        lte: endDate,
+                    },
+                    status: { notIn: ["cancelled"] },
+                },
+                data: {
+                    status: "cancelled",
+                },
+            });
+
+            auditLog({
+                action: "toggle_maintenance_off",
+                entityType: "dd_booking",
+                details: { startDate, cancelledCount: result.count, days: DAYS_COUNT },
+                isDeveloper: req.admin?.role === "developer",
+            });
+
+            return res.json({ success: true, message: `Cancelled ${result.count} maintenance blocks for next 3 months`, active: false, count: result.count });
+        }
+    } catch (error: any) {
+        console.error("Toggle 8-10 maintenance error:", error);
+        return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+});
+
 // POST /api/bookings/dd — Create DD booking (transaction-locked)
 router.post("/", async (req, res) => {
     try {

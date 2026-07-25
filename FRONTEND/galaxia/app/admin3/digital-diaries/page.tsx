@@ -227,6 +227,9 @@ export default function Admin1Dashboard() {
     const [maintDuration, setMaintDuration] = useState("1");
     const [maintSubmitting, setMaintSubmitting] = useState(false);
     const [closeOfficeLoading, setCloseOfficeLoading] = useState(false);
+    const [maint3MonthLoading, setMaint3MonthLoading] = useState(false);
+
+    const is8to10BlockedOnCurrentDate = eventsList.some(ev => ev.isMaintenance && ev.startHour === 20 && ev.duration === 2);
 
     const handleSubmitMaintenance = async () => {
         if (!draftSlot) return;
@@ -353,6 +356,33 @@ export default function Admin1Dashboard() {
             alert(err.message || "Failed to open office");
         } finally {
             setCloseOfficeLoading(false);
+        }
+    };
+
+    const handleToggle3MonthMaintenance = async () => {
+        const targetState = !is8to10BlockedOnCurrentDate;
+        const dateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+        
+        if (!confirm(targetState 
+            ? `Are you sure you want to block 8:00 PM – 10:00 PM for ALL SCREENS for 3 MONTHS starting from ${startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}?` 
+            : `Are you sure you want to unblock/remove 8:00 PM – 10:00 PM maintenance for ALL SCREENS for the 3-month window starting from ${startDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}?`
+        )) return;
+
+        setMaint3MonthLoading(true);
+        try {
+            const res: any = await api.post("/bookings/dd/toggle-8-10-maintenance", {
+                startDate: dateStr,
+                active: targetState,
+            });
+            if (res?.message) {
+                alert(res.message);
+            }
+            fetchEvents(startDate);
+        } catch (err: any) {
+            console.error("Toggle 8-10 maintenance error:", err);
+            alert(err.message || "Failed to toggle 3-month maintenance mode");
+        } finally {
+            setMaint3MonthLoading(false);
         }
     };
 
@@ -2240,6 +2270,28 @@ export default function Admin1Dashboard() {
                         <CheckCircle2 size={16} />
                         {closeOfficeLoading ? "Processing..." : "Open Office"}
                     </button>
+                    {(username.toLowerCase() === "developer" || userRole === "developer") && (
+                        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white shadow-md border border-slate-700">
+                            <span className="text-xs font-bold text-slate-200 whitespace-nowrap">
+                                8-10 PM Maintenance (3 Months)
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleToggle3MonthMaintenance}
+                                disabled={maint3MonthLoading}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    is8to10BlockedOnCurrentDate ? "bg-amber-500" : "bg-slate-700"
+                                } ${maint3MonthLoading ? "opacity-50 cursor-wait" : ""}`}
+                                title="Toggle 8-10 PM Maintenance Mode for all screens for next 3 months"
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        is8to10BlockedOnCurrentDate ? "translate-x-5" : "translate-x-0"
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                    )}
                     <CustomDatePicker
                         date={startDate}
                         onDateChange={(d) => {
