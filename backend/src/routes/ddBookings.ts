@@ -79,7 +79,11 @@ router.post("/toggle-8-10-maintenance", authMiddleware, requireRole("owner", "de
                     }
 
                     if (!isConflict) {
-                        const ref = `MAINT-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+                        const y = targetDate.getFullYear().toString().slice(-2);
+                        const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+                        const d = String(targetDate.getDate()).padStart(2, '0');
+                        const rand = Math.floor(100 + Math.random() * 900);
+                        const ref = `MNT-${y}${m}${d}-${sId}-${rand}`;
                         await prisma.ddBooking.create({
                             data: {
                                 bookingRef: ref,
