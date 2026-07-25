@@ -1,24 +1,17 @@
 /**
  * Test Simulation Script for Digital Diaries Vault Updates
- * Tests 3 scenarios:
+ * Tests 4 scenarios:
  *   1. Staycation redirect → must mention /staycation/contact
  *   2. Celebration Package description → must NOT mention ₹400 add-ons
  *   3. Kids policy → must state under-5 free, 5-18 ₹150
+ *   4. Movie Time add-ons → should mention ₹400
  */
 
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
 async function runTests() {
-  // Services are exported as singletons
-  const knowledgeService = require("./services/ai/KnowledgeService");
   const chatbotService = require("./services/ai/ChatbotService");
-
-  // Re-index vault so new content is picked up
-  console.log("=== Re-indexing Obsidian Vault... ===");
-  const stats = await knowledgeService.reindexVault();
-  console.log("Index stats:", JSON.stringify(stats));
-  console.log("");
 
   const testCases = [
     {
