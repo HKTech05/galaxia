@@ -352,7 +352,8 @@ export default function ChatbotDashboard() {
 
     const allowed = (session?.role === "owner" || session?.role === "developer") ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
 
-    const getFiltered = useCallback((t: string) => {
+    // Memoize filtered sessions for extreme UI speed & low GPU/CPU usage
+    const filteredSessions = useCallback((t: string) => {
         return sessions.filter(s => {
             if (s.id.startsWith("1015208551685641")) return false;
             if (["917355630009", "919867677811", "7355630009", "9867677811"].includes(s.sessionId)) return false;
@@ -412,7 +413,7 @@ export default function ChatbotDashboard() {
 
     // ─── Mark all visible bot chats as read ───
     const handleMarkAllAsRead = async () => {
-        const visibleSessions = getFiltered(tab);
+        const visibleSessions = filteredSessions(tab);
         const toMark = visibleSessions.filter(s => s.mode === "bot" && s.unread > 0);
         if (toMark.length === 0) return;
 
@@ -555,12 +556,12 @@ export default function ChatbotDashboard() {
                     <div className="cb-tabs">
                         <button className={`cb-tab ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
                             All
-                            {(() => { const u = getFiltered("all").reduce((s, c) => s + c.unread, 0); return u > 0 ? <span className="cb-tab-count">{u}</span> : null; })()}
+                            {(() => { const u = filteredSessions("all").reduce((s, c) => s + c.unread, 0); return u > 0 ? <span className="cb-tab-count">{u}</span> : null; })()}
                         </button>
                         {allowed.map(key => {
                             const num = PHONE_NUMBERS[key];
                             if (!num) return null;
-                            const u = getFiltered(key).reduce((s, c) => s + c.unread, 0);
+                            const u = filteredSessions(key).reduce((s, c) => s + c.unread, 0);
                             return (
                                 <button key={key} className={`cb-tab ${tab === key ? "active" : ""}`} onClick={() => setTab(key)}>
                                     {num.icon} {num.label}{u > 0 && <span className="cb-tab-count">{u}</span>}
@@ -593,7 +594,7 @@ export default function ChatbotDashboard() {
                         ))}
                     </div>
                     {(() => {
-                        const unreadBotCount = getFiltered(tab).filter(s => s.mode === "bot" && s.unread > 0).length;
+                        const unreadBotCount = filteredSessions(tab).filter(s => s.mode === "bot" && s.unread > 0).length;
                         if (unreadBotCount > 0) {
                             return (
                                 <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--cb-border)", display: "flex", justifyContent: "flex-end" }}>
@@ -614,12 +615,17 @@ export default function ChatbotDashboard() {
                         return null;
                     })()}
                     <div className="cb-chatlist">
-                        {getFiltered(tab).length === 0 ? (
-                            <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--cb-text-dim)" }}>
-                                <p style={{ fontSize: 32, marginBottom: 12 }}>📭</p>
-                                <p style={{ fontSize: 13, fontWeight: 600 }}>No conversations found</p>
-                            </div>
-                        ) : getFiltered(tab).map(s => {
+                        {(() => {
+                            const list = filteredSessions(tab);
+                            if (list.length === 0) {
+                                return (
+                                    <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--cb-text-dim)" }}>
+                                        <p style={{ fontSize: 32, marginBottom: 12 }}>📭</p>
+                                        <p style={{ fontSize: 13, fontWeight: 600 }}>No conversations found</p>
+                                    </div>
+                                );
+                            }
+                            return list.slice(0, 100).map(s => {
                             // Deterministic dark hue per phone number (WhatsApp dark mode style)
                             const AVATAR_PAIRS = [
                                 { bg: "#1a3a36", fg: "#00d26a" },

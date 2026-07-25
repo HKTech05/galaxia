@@ -79,13 +79,17 @@ async function saveMessage(sessionId, role, message, isHuman = false) {
  * Get all chat sessions, sorted by last message time.
  * Optionally filter by phone_number_id.
  */
-async function getChats(phoneNumberId = null) {
+async function getChats(phoneNumberId = null, limit = 250) {
   let query = `
     SELECT * FROM chat_sessions 
     WHERE phone_number_id != '1015208551685641'
       AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
-    ORDER BY last_message_at DESC NULLS LAST`;
-  let params = [];
+      AND session_id NOT LIKE '%_diaries'
+      AND session_id NOT LIKE '%_amstel'
+      AND session_id NOT LIKE '%_staycation'
+    ORDER BY last_message_at DESC NULLS LAST
+    LIMIT $1`;
+  let params = [limit];
 
   if (phoneNumberId) {
     query = `
@@ -93,8 +97,12 @@ async function getChats(phoneNumberId = null) {
       WHERE phone_number_id = $1
         AND phone_number_id != '1015208551685641'
         AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
-      ORDER BY last_message_at DESC NULLS LAST`;
-    params = [phoneNumberId];
+        AND session_id NOT LIKE '%_diaries'
+        AND session_id NOT LIKE '%_amstel'
+        AND session_id NOT LIKE '%_staycation'
+      ORDER BY last_message_at DESC NULLS LAST
+      LIMIT $2`;
+    params = [phoneNumberId, limit];
   }
 
   const result = await pool.query(query, params);

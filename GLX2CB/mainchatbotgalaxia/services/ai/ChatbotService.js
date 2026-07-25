@@ -91,6 +91,16 @@ class ChatbotService {
   }
 
   async extractIntent(text, summary = "") {
+    const textLower = text.toLowerCase().trim();
+    
+    // Fast exit for simple greetings or non-date messages (0ms latency optimization)
+    const isSimpleMsg = ["hi", "hii", "hello", "hey", "namaste", "start", "menu", "human", "collab", "price", "pricing", "rates"].includes(textLower);
+    const containsDateNumber = /\b(\d{1,2}(st|nd|rd|th)?|today|aaj|tomorrow|kal|monday|tuesday|wednesday|thursday|friday|saturday|sunday|july|august|september)\b/i.test(textLower);
+
+    if (isSimpleMsg || (!containsDateNumber && textLower.length < 25)) {
+      return null;
+    }
+
     const today = new Date().toISOString().split("T")[0];
     const systemPrompt = `You are a structured intent extractor for a vacation/screening resort booking platform.
 Analyze the user message (and the recent context summary if provided) and determine if the user is asking about booking availability, dates, or calendar schedule.

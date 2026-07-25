@@ -108,6 +108,9 @@ class ConversationService {
    * Bot 1: _diaries, Bot 2: _amstel, Bot 3: _staycation
    */
   getIsolatedSessionId(rawSessionId, botType) {
+    if (rawSessionId.startsWith("wa_") || rawSessionId.startsWith("ig_")) {
+      return rawSessionId;
+    }
     if (rawSessionId.endsWith("_diaries") || rawSessionId.endsWith("_amstel") || rawSessionId.endsWith("_staycation")) {
       return rawSessionId;
     }
