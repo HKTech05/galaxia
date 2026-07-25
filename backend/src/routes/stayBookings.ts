@@ -531,13 +531,16 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         });
         if (!existing) return res.status(404).json({ error: "Booking not found" });
 
+        const now = new Date();
+        const timeOnly = new Date(`1970-01-01T${now.toISOString().slice(11)}`);
+
         const booking = await prisma.staycationBooking.update({
             where: { id: bookingId },
             data: {
                 status,
                 ...(assignedUnit !== undefined ? { assignedUnit } : {}),
-                ...(status === "checked_in" ? { checkInTime: new Date() } : {}),
-                ...(status === "checked_out" ? { checkOutTime: new Date() } : {}),
+                ...(status === "checked_in" ? { checkInTime: timeOnly } : {}),
+                ...(status === "checked_out" ? { checkOutTime: timeOnly } : {}),
             },
             include: {
                 property: true,
