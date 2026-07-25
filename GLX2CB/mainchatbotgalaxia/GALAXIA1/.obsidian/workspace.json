@@ -1,0 +1,217 @@
+{
+  "main": {
+    "id": "c6d2625d6fd8131f",
+    "type": "split",
+    "children": [
+      {
+        "id": "504dc4465c81063b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4afff43f5e4679bb",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "28e1e08ace40a91b",
+    "type": "split",
+    "children": [
+      {
+        "id": "b5803c682f196d89",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "74719704362871bd",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "6ce0a7d4c12ca869",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "337f8eec435dfa87",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "884a14835da7494c",
+    "type": "split",
+    "children": [
+      {
+        "id": "b6eae7e4088e905b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "726456b5164e63d6",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "c9b99a6744328cb6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "6e17cb5f8a537405",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "c4ca40b286a940cf",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "4f6eaa6bbd3938ea",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "4afff43f5e4679bb",
+  "lastOpenFiles": [
+    "Staycation/Staycation Index.md",
+    "Staycation/Hill View/Pricing.md",
+    "Staycation/General/Pet Policy.md",
+    "Staycation/Amstel Nest/Pricing.md",
+    "Welcome.md",
+    "Digital Diaries/Digital Diaries Index.md",
+    "Digital Diaries/Food.md",
+    "Staycation/Ambrose/Food.md",
+    "Digital Diaries/Pricing.md",
+    "Digital Diaries/Bot Operational Rules.md",
+    "Staycation/General/Bot Operational Rules.md",
+    "Staycation/Heavenly Villa/Policies.md",
+    "Digital Diaries/Activities.md",
+    "Staycation/La Paraiso/Food.md",
+    "Staycation/Mount View/Pricing.md",
+    "Staycation/Mount View/Policies.md",
+    "Staycation/Mount View/Food.md",
+    "Staycation/Mount View/Amenities.md",
+    "Staycation/La Paraiso/Pricing.md",
+    "Staycation/La Paraiso/Policies.md",
+    "Staycation/La Paraiso/Amenities.md",
+    "Staycation/Hill View/Policies.md",
+    "Staycation/Hill View/Food.md",
+    "Staycation/Hill View/Amenities.md",
+    "Staycation/Heavenly Villa/Pricing.md",
+    "Staycation/Heavenly Villa/Food.md",
+    "Staycation/Mount View",
+    "Staycation/La Paraiso",
+    "Staycation/Hill View",
+    "Staycation/Heavenly Villa",
+    "Staycation/General",
+    "Staycation/Amstel Nest",
+    "Staycation/Ambrose",
+    "Staycation",
+    "Digital Diaries"
+  ]
+}
