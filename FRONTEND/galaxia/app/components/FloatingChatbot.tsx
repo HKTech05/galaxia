@@ -249,8 +249,78 @@ export default function FloatingChatbot() {
         }
     };
 
+    const [webSessionId, setWebSessionId] = useState<string>("");
+    const [userInputText, setUserInputText] = useState<string>("");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            let sid = sessionStorage.getItem("dd_web_chat_session");
+            if (!sid) {
+                sid = "web_dd_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+                sessionStorage.setItem("dd_web_chat_session", sid);
+            }
+            setWebSessionId(sid);
+        }
+    }, []);
+
+    const sendAiMessage = async (text: string) => {
+        if (!text.trim() || isTyping) return;
+        const userText = text.trim();
+        setUserInputText("");
+        setMessages(prev => [...prev, { role: "user", text: userText }]);
+        setCurrentOptions([]);
+        setIsTyping(true);
+
+        try {
+            const res = await fetch("/bot/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user: webSessionId || `web_dd_${Date.now()}`,
+                    message: userText,
+                    botType: "digital_diaries"
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setIsTyping(false);
+                setMessages(prev => [...prev, { role: "bot", text: data.message || "Thank you for reaching out!" }]);
+                
+                if (data.message?.includes("Human mode") || data.message?.includes("connect with you shortly")) {
+                    setCurrentOptions([BACK_TO_MENU]);
+                } else {
+                    setCurrentOptions([
+                        { label: "🎥 Movie Time", value: "movie_time" },
+                        { label: "🎉 Celebration Packs", value: "deco_screens" },
+                        { label: "❓ FAQs & Support", value: "faqs_celebration" },
+                    ]);
+                }
+            } else {
+                setIsTyping(false);
+                setMessages(prev => [...prev, { role: "bot", text: "Something went wrong. Please try again." }]);
+            }
+        } catch (err) {
+            console.error("Failed to send AI message:", err);
+            setIsTyping(false);
+            setMessages(prev => [...prev, { role: "bot", text: "Connection error. Please check your internet connection." }]);
+        }
+    };
+
     const handleOptionClick = (opt: { label: string; value: string }) => {
-        // Show user message
+        if (isCelebration) {
+            // Send option click as text query to Digital Diaries AI Chatbot V2
+            if (opt.value === "human") {
+                setWaitingForPhone(true);
+                setMessages(prev => [...prev, { role: "user", text: opt.label }, { role: "bot", text: "👤 Talk to a Human\n\nPlease share your phone number and our team will connect with you shortly." }]);
+                setCurrentOptions([]);
+            } else {
+                sendAiMessage(opt.label);
+            }
+            return;
+        }
+
+        // Staycation Menu Bot logic (Unswitched)
         setMessages(prev => [...prev, { role: "user", text: opt.label }]);
         setCurrentOptions([]);
 
@@ -348,7 +418,7 @@ export default function FloatingChatbot() {
                     </div>
 
                     {/* Options buttons */}
-                    {currentOptions.length > 0 && (
+                    {currentOptions.length > 0 && !waitingForPhone && (
                         <div className="bg-white border-t border-[#eaeaea] px-4 py-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto shrink-0">
                             {currentOptions.map((opt, i) => (
                                 <button
@@ -362,6 +432,28 @@ export default function FloatingChatbot() {
                                     )}
                                 </button>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Text input for AI Chat on Digital Diaries */}
+                    {isCelebration && !waitingForPhone && (
+                        <div className="bg-white border-t border-[#eaeaea] px-3 py-2.5 shrink-0 flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={userInputText}
+                                onChange={e => setUserInputText(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && sendAiMessage(userInputText)}
+                                placeholder="Type a message or question..."
+                                className="flex-1 border border-[#e0e0e0] rounded-xl px-3.5 py-2 text-xs text-[#222] outline-none focus:border-[#d4af37] transition-colors"
+                            />
+                            <button
+                                onClick={() => sendAiMessage(userInputText)}
+                                disabled={!userInputText.trim() || isTyping}
+                                className="bg-[#d4af37] text-white p-2 rounded-xl text-xs font-semibold disabled:opacity-40 hover:bg-[#c29f30] transition-colors shrink-0 flex items-center justify-center"
+                                title="Send Message"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                            </button>
                         </div>
                     )}
 
