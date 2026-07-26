@@ -452,7 +452,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
           stateUpdates.activeProperty = propMap[intent.propertySlug] || intent.propertySlug;
         }
         if (intent.subPropertySlug) stateUpdates.subProperty = intent.subPropertySlug;
-        if (intent.checkInDate) stateUpdates.checkInDate = intent.checkInDate;
+        if (intent.checkInDate || intent.ddBookingDate) stateUpdates.checkInDate = intent.checkInDate || intent.ddBookingDate;
         if (intent.checkOutDate) stateUpdates.checkOutDate = intent.checkOutDate;
         if (intent.customerName) stateUpdates.customerName = intent.customerName;
         if (intent.customerPhone) stateUpdates.customerPhone = intent.customerPhone;
@@ -552,6 +552,32 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
             dynamicContext += `### REAL-TIME LIVE DATABASE CALENDAR AVAILABILITY (ALL DIGITAL DIARIES SCREENS FOR ${effectiveDDDate}):\n${JSON.stringify(allAvail, null, 2)}\n*CRITICAL INSTRUCTION FOR AI*: Use the above live database availability check to answer slot availability for today/date. List exact available slots for the screens!\n\n`;
           }
         }
+      }
+
+    } else {
+      // Intent extraction returned null — still try DD availability from saved entity state
+      const updatedState = await conversationService.getSessionState(cleanSessionId);
+      const isDDBot = cleanType === "digital_diaries" || cleanType === "celebration";
+      const savedDDDate = updatedState.checkInDate;
+
+      if (savedDDDate && isDDBot) {
+        // Try to extract hour from the raw message (e.g. "6pm", "3pm")
+        const hourMatch = textTrimmed.match(/(\d{1,2})\s*(?:pm|am)/i);
+        let ddHour = null;
+        if (hourMatch) {
+          ddHour = parseInt(hourMatch[1]);
+          if (textTrimmed.toLowerCase().includes('pm') && ddHour < 12) ddHour += 12;
+          if (textTrimmed.toLowerCase().includes('am') && ddHour === 12) ddHour = 0;
+        }
+
+        console.log(`[ChatbotService] Intent null — fallback DD availability check from saved state: date=${savedDDDate}, hour=${ddHour}`);
+        const screens = ["sandy-screen", "cine-love", "park-n-watch", "baywatch"];
+        const allAvail = [];
+        for (const scr of screens) {
+          const res = await dynamicDataService.checkDigitalDiariesAvailability(scr, savedDDDate, ddHour, 2);
+          allAvail.push(res);
+        }
+        dynamicContext += `### REAL-TIME LIVE DATABASE CALENDAR AVAILABILITY (ALL DIGITAL DIARIES SCREENS FOR ${savedDDDate}${ddHour ? ` at ${ddHour}:00` : ''}):\n${JSON.stringify(allAvail, null, 2)}\n*CRITICAL INSTRUCTION FOR AI*: Use the above live database availability check to answer slot availability. List exact available slots for the screens!\n\n`;
       }
     }
 
