@@ -165,6 +165,9 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
       const collabMsg = "Thank you for your interest in collaborating with us! Our team will contact you shortly.\n\nPlease stay tuned — we appreciate your patience!";
       await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
       const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, collabMsg);
+      // Auto-switch to human mode so staff can follow up
+      const db = require("../db");
+      await db.setHumanMode(cleanSessionId, true);
       return {
         reply: collabMsg,
         latency: Date.now() - startTime,
@@ -182,6 +185,9 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
       const humanMsg = "This conversation has now been shifted to Human mode. A support staff will contact you via message or call as soon as they are available.";
       await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
       const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, humanMsg);
+      // Auto-switch to human mode in DB
+      const db = require("../db");
+      await db.setHumanMode(cleanSessionId, true);
       return {
         reply: humanMsg,
         latency: Date.now() - startTime,
