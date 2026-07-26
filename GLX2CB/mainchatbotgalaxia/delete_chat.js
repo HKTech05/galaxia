@@ -1,31 +1,43 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
+const { Pool } = require('pg');
+
+const DEFAULT_DB_URL = "postgres://galaxia_admin:Hani9869!@galaxia-db-india.czs40kyowwxy.ap-south-1.rds.amazonaws.com:5432/postgres";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || DEFAULT_DB_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 async function run() {
-  await mongoose.connect(process.env.MONGODB_URI);
-  const db = mongoose.connection.db;
-  
-  // Find conversations for this phone number
-  const convos = await db.collection('conversations').find({ 
-    customerPhone: { $regex: '98200.*79272' } 
-  }).toArray();
-  
-  console.log('Found conversations:', convos.length);
-  convos.forEach(c => console.log(c._id, c.customerPhone, c.sessionId, c.botType, c.createdAt));
+  // Find sessions for this phone number
+  const sessions = await pool.query(
+    `SELECT session_id, customer_phone, display_name, bot_type, created_at 
+     FROM chat_sessions 
+     WHERE customer_phone LIKE '%98200%79272%' OR customer_phone LIKE '%9820079272%'`
+  );
 
-  if (convos.length > 0) {
-    // Get session IDs to delete messages too
-    const sessionIds = convos.map(c => c.sessionId);
-    
-    // Delete messages
-    const msgResult = await db.collection('messages').deleteMany({ sessionId: { $in: sessionIds } });
-    console.log('Deleted messages:', msgResult.deletedCount);
-    
-    // Delete conversations
-    const convoResult = await db.collection('conversations').deleteMany({ customerPhone: { $regex: '98200.*79272' } });
-    console.log('Deleted conversations:', convoResult.deletedCount);
+  console.log('Found sessions:', sessions.rows.length);
+  sessions.rows.forEach(s => console.log(s.session_id, s.customer_phone, s.display_name, s.bot_type, s.created_at));
+
+  if (sessions.rows.length > 0) {
+    const sessionIds = sessions.rows.map(s => s.session_id);
+
+    // Delete messages first
+    const msgResult = await pool.query(
+      `DELETE FROM chat_messages WHERE session_id = ANY($1::text[])`,
+      [sessionIds]
+    );
+    console.log('Deleted messages:', msgResult.rowCount);
+
+    // Delete sessions
+    const sessResult = await pool.query(
+      `DELETE FROM chat_sessions WHERE session_id = ANY($1::text[])`,
+      [sessionIds]
+    );
+    console.log('Deleted sessions:', sessResult.rowCount);
   }
-  
+
+  await pool.end();
   process.exit(0);
 }
 
