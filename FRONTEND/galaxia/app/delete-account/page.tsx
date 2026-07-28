@@ -53,10 +53,10 @@ export default function DeleteAccountPage() {
             <div className="space-y-4 pl-11">
               <p className="font-inter text-text-secondary text-[15px] leading-relaxed">
                 You can request complete deletion of your Galaxia account and associated
-                personal data using any of the following methods:
+                personal data by sending an email request to our support team:
               </p>
 
-              {/* Method 1: Email */}
+              {/* Email Method */}
               <div className="bg-soft-gray rounded-xl p-5 border border-border-light">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-antique-gold/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -66,7 +66,7 @@ export default function DeleteAccountPage() {
                   </div>
                   <div>
                     <h3 className="font-inter font-semibold text-text-primary text-[15px] mb-1">
-                      Option A: Email Request
+                      Email Request Procedure
                     </h3>
                     <p className="font-inter text-text-secondary text-[15px] leading-relaxed">
                       Send an email to{" "}
@@ -75,29 +75,7 @@ export default function DeleteAccountPage() {
                       </a>{" "}
                       with the subject line <strong>&quot;Account Deletion Request&quot;</strong>.
                       Please include the phone number or email address associated with your account
-                      so we can locate and verify your identity.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Method 2: In-App */}
-              <div className="bg-soft-gray rounded-xl p-5 border border-border-light">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-antique-gold/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-4 h-4 text-antique-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-inter font-semibold text-text-primary text-[15px] mb-1">
-                      Option B: Website
-                    </h3>
-                    <p className="font-inter text-text-secondary text-[15px] leading-relaxed">
-                      Log in to your Galaxia account on the app or website, navigate to your
-                      <strong> Dashboard</strong>, and use the chatbot or contact support to
-                      request account deletion. Our team will verify your identity and process
-                      the request.
+                      so we can locate your account and verify your identity.
                     </p>
                   </div>
                 </div>
