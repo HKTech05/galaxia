@@ -91,7 +91,7 @@ export default function DeleteAccountPage() {
                   </div>
                   <div>
                     <h3 className="font-inter font-semibold text-text-primary text-[15px] mb-1">
-                      Option B: In-App / Website
+                      Option B: Website
                     </h3>
                     <p className="font-inter text-text-secondary text-[15px] leading-relaxed">
                       Log in to your Galaxia account on the app or website, navigate to your
