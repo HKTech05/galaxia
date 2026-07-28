@@ -265,6 +265,8 @@ export default function ContactPage() {
                                             { label: "About Galaxia", href: "/staycation/about" },
                                             { label: "Digital Diaries", href: "/celebration" },
                                             { label: "Guest Reviews", href: "/staycation/reviews" },
+                                            { label: "Privacy Policy", href: "/privacy-policy" },
+                                            { label: "Account Deletion", href: "/delete-account" },
                                         ].map((link) => (
                                             <Link key={link.href} href={link.href} className="group flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white hover:shadow-sm transition-all">
                                                 <span className="font-inter text-sm text-text-secondary group-hover:text-antique-gold transition-colors">{link.label}</span>
@@ -274,17 +276,34 @@ export default function ContactPage() {
                                     </div>
                                 </div>
 
-                                {/* Social */}
+                                {/* Social / Instagram Handles */}
                                 <div className="bg-white rounded-2xl border border-border-light p-6">
-                                    <h4 className="font-cinzel text-sm font-bold text-text-primary mb-4 uppercase tracking-wider">Follow Us</h4>
-                                    <div className="flex items-center gap-3">
+                                    <h4 className="font-cinzel text-sm font-bold text-text-primary mb-4 uppercase tracking-wider">Follow Us on Instagram</h4>
+                                    <div className="space-y-2">
                                         {[
-                                            { name: "Instagram", href: "https://instagram.com/galaxia_resorts", icon: <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /> },
+                                            { name: "Digital Diaries", handle: "@digitaldiaries_wadala", href: "https://www.instagram.com/digitaldiaries_wadala" },
+                                            { name: "Mount View", handle: "@mount_viewkarjat", href: "https://www.instagram.com/mount_viewkarjat" },
+                                            { name: "Hill View", handle: "@hill_view101", href: "https://www.instagram.com/hill_view101" },
+                                            { name: "Heavenly Villa", handle: "@heavenly_villa01", href: "https://www.instagram.com/heavenly_villa01" },
+                                            { name: "Ambrose", handle: "@ambrose_villas", href: "https://www.instagram.com/ambrose_villas" },
+                                            { name: "La Paraiso", handle: "@la_paraiso001", href: "https://www.instagram.com/la_paraiso001" },
+                                            { name: "Amstel Nest", handle: "@amstelnest", href: "https://www.instagram.com/amstelnest" },
                                         ].map((s) => (
-                                            <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" title={s.name}
-                                                className="group w-11 h-11 rounded-xl bg-slate-50 border border-border-light flex items-center justify-center text-text-muted hover:bg-antique-gold hover:border-antique-gold hover:text-white transition-all duration-300 hover:shadow-md hover:shadow-antique-gold/20 hover:-translate-y-0.5"
+                                            <a key={s.handle} href={s.href} target="_blank" rel="noopener noreferrer"
+                                                className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-border-light hover:border-antique-gold/40 hover:bg-white hover:shadow-sm transition-all duration-200"
                                             >
-                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">{s.icon}</svg>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-antique-gold/10 text-antique-gold flex items-center justify-center shrink-0 group-hover:bg-antique-gold group-hover:text-white transition-colors">
+                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-inter text-xs font-semibold text-text-primary">{s.name}</p>
+                                                        <p className="font-inter text-[10px] text-text-muted">{s.handle}</p>
+                                                    </div>
+                                                </div>
+                                                <svg className="w-3.5 h-3.5 text-text-muted group-hover:text-antique-gold group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                             </a>
                                         ))}
                                     </div>
