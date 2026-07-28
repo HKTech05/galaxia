@@ -17,6 +17,8 @@ const BYPASS_PREFIXES = [
     '/favicon',
     '/icon',
     '/apple-icon',
+    '/privacy-policy',  // Google Play Store compliance — must always be accessible
+    '/delete-account',  // Google Play Store compliance — must always be accessible
 ];
 
 export function middleware(request: NextRequest) {
