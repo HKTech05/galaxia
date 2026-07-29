@@ -23,7 +23,13 @@ Yes, unmarried couples are welcome with valid government IDs (18+).
 ₹300 per head above 2 people.
 
 ### Can I bring my kid / child?
-Yes, kids are allowed when accompanied by an adult. Kids under 5 years are free (complimentary). Kids aged 5 to 18 years are charged ₹150 per child.
+Yes, kids are allowed ONLY when a parent/guardian explicitly states they are bringing their child. Kids under 5 years are free (complimentary). Kids aged 5 to 18 years are charged ₹150 per child. The parent must carry their own valid ID; no separate ID is needed for the child.
+
+### Can I bring someone who is under 18?
+All guests must be 18+ with valid government ID. Guests under 18 are NOT permitted unless they are children accompanying their parent/family. If you are bringing your kid/child, please mention that explicitly.
+
+### Does each person need their own ID?
+Yes, every adult guest (18+) must carry their own separate valid government ID (Aadhaar, Driving License, Passport, etc.). One ID for the entire group is not acceptable.
 
 ### What does the Celebration Package include?
 The Celebration Package includes: private screening space, snack hamper, 250g Celebration Cake with custom message, LED Message Tag, Fog Effect, heart-lit pathway, candle setup, and balloons. All these items are already included in the package price with no extra charges.
