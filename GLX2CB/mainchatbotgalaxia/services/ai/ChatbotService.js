@@ -95,7 +95,7 @@ class ChatbotService {
     
     // Fast exit for simple greetings or non-date messages (0ms latency optimization)
     const isSimpleMsg = ["hi", "hii", "hello", "hey", "namaste", "start", "menu", "human", "collab", "price", "pricing", "rates"].includes(textLower);
-    const containsDateNumber = /\b(\d{1,2}(st|nd|rd|th)?|today|aaj|ajj|tomorrow|kal|kall|monday|tuesday|wednesday|thursday|friday|saturday|sunday|july|august|september|slot|slots|booking|available|free|khali)\b/i.test(textLower);
+    const containsDateNumber = /\b(\d{1,2}(st|nd|rd|th)?|today|aaj|ajj|tomorrow|kal|kall|monday|tuesday|wednesday|thursday|friday|saturday|sunday|july|august|september|slot|slots|booking|available|free|khali|night|nights|raat|din|days?)\b/i.test(textLower);
 
     if (isSimpleMsg || (!containsDateNumber && textLower.length < 20)) {
       return null;
