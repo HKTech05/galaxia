@@ -106,8 +106,12 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
         
         const isCallManagerRole = adminRole === "staycation_call_manager" || adminUsername === "stay123";
         if (isCallManagerRole) {
+            if (pathname === "/admin3" || pathname === "/admin3/") {
+                router.push("/admin3/live-calendar");
+                return;
+            }
             const allowedPaths = [
-                "/admin3",
+                "/admin3/live-calendar",
                 "/admin3/stay-bookings",
                 "/admin3/properties-view-2",
                 "/admin3/heavenly-villa",
@@ -117,10 +121,10 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 "/admin3/food-bill-history",
                 "/admin3/coupons"
             ];
-            const cleanPath = pathname.replace(/\/$/, "");
+            const cleanPath = pathname.split('?')[0].replace(/\/$/, "");
             const isAllowed = allowedPaths.some(p => cleanPath === p || cleanPath.startsWith(p + "/"));
             if (!isAllowed) {
-                router.push("/admin3");
+                router.push("/admin3/stay-bookings");
             }
             return;
         }
@@ -248,7 +252,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                 </>
                             ) : (adminRole === "staycation_call_manager" || adminUsername === "stay123") ? (
                                 <>
-                                    {renderNavItem({ name: "Live Calendar", href: "/admin3", icon: LayoutDashboard })}
+                                    {renderNavItem({ name: "Live Calendar", href: "/admin3/live-calendar", icon: LayoutDashboard })}
                                     {renderNavItem({ name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList })}
                                     {renderNavItem({ name: "Properties View", href: "/admin3/properties-view-2", icon: Hotel })}
                                     <div className="pt-3 pb-1 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
