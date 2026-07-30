@@ -205,7 +205,7 @@ router.post("/webhook", async (req, res) => {
       }
     }
 
-    const isAiBot = botType === "celebration" || botType === "digital_diaries";
+    const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstelnest_ig";
 
     // 2. Save user message to DB (only for non-AI menu bots)
     let savedUserMsg = null;
@@ -279,14 +279,15 @@ router.post("/webhook", async (req, res) => {
     let responseObj = null;
 
     if (isAiBot) {
-      // Digital Diaries AI Chatbot V2
-      console.log(`[Instagram] Routing to AI Chatbot V2 (digital_diaries) for user ${senderId}`);
+      // AI Chatbot V2 — route to correct bot type
+      const aiBotType = botType === "amstelnest_ig" ? "amstel_nest" : "digital_diaries";
+      console.log(`[Instagram] Routing to AI Chatbot V2 (${aiBotType}) for user ${senderId}`);
       const aiResult = await chatbotService.processMessage(
         sessionId,
         userText,
         senderId,
         phoneNumberId,
-        "digital_diaries",
+        aiBotType,
         "instagram"
       );
       replyText = aiResult.reply || "";
