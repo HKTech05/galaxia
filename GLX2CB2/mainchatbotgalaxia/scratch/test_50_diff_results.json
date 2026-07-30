@@ -1,0 +1,502 @@
+[
+  {
+    "id": 1,
+    "name": "Date only '29'",
+    "bot": "amstel_nest",
+    "input": "29",
+    "reply": "Please confirm your check-out date and total number of guests (adults & children).",
+    "latency": 9148,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 2,
+    "name": "Vague 'kitna padega'",
+    "bot": "amstel_nest",
+    "input": "kitna padega",
+    "reply": "Check-in date, check-out date, aur total guests (adults & children) batao.",
+    "latency": 3996,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 3,
+    "name": "Slang 'bhai room chahiye'",
+    "bot": "amstel_nest",
+    "input": "bhai room chahiye",
+    "reply": "*अम्स्टेल नेस्ट* के लिए कृपया बताएं:\n- कितने लोग (वयस्क / बच्चे)?\n- चेक-इन और चेक-आउट की तारीखें?",
+    "latency": 3496,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 4,
+    "name": "Date only '14th'",
+    "bot": "staycation",
+    "input": "14th",
+    "reply": "14th August 2026 (Friday) noted. Which property are you interested in? Also, please share check-out date and total guests (adults / children) so I can check availability and pricing.",
+    "latency": 17958,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 5,
+    "name": "Vague 'sab full hai kya?'",
+    "bot": "amstel_nest",
+    "input": "sab full hai kya?",
+    "reply": "मैं आपके लिए उपलब्धता जाँच सकता हूँ। कृपया अपनी चेक-इन डेट, चेक-आउट डेट और कुल मेहमानों (एडल्ट/बच्चे) की संख्या बताएँ।",
+    "latency": 3391,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 6,
+    "name": "Slang discount 'disc do na thoda'",
+    "bot": "amstel_nest",
+    "input": "disc do na thoda",
+    "reply": "For groups of 6 or more people booking *Standard Cottages* at *Amstel Nest*, a flat *₹1,500* discount is available. To claim it, call *+91 99877 34458*.\n\nNo discounts apply on other properties or for smaller groups.",
+    "latency": 3465,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 7,
+    "name": "Slang 'khana free hai?'",
+    "bot": "amstel_nest",
+    "input": "khana free hai?",
+    "reply": "Ji, haan. Amstel Nest ke *sabhi packages* mein breakfast, lunch aur dinner (veg) free included hai. Koi extra charge nahi.",
+    "latency": 5364,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 8,
+    "name": "Fragment '2 adults 10th'",
+    "bot": "amstel_nest",
+    "input": "2 adults 10th",
+    "reply": "Check-out date? For 2 adults checking in on July 10 (Friday), 1 Standard Cottage at *Amstel Nest*: *₹5,950* (excl. 5% GST). Please confirm if this is a 1-night stay (",
+    "latency": 17195,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 9,
+    "name": "Slang date 'sunday ko kya scene hai'",
+    "bot": "staycation",
+    "input": "sunday ko kya scene hai",
+    "reply": "Aap kaunsa property dekhna chahte hain? Aur kya aaj hi (*Sunday, 26 July*) ke liye poochh rahe hain?",
+    "latency": 6403,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 10,
+    "name": "Impatient 'batao na'",
+    "bot": "amstel_nest",
+    "input": "batao na",
+    "reply": "Kya aap Amstel Nest ke liye booking chahte hain? Kripya check-in date, check-out date aur kitne log hain (adults/bacche) batayein.",
+    "latency": 2905,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 11,
+    "name": "Hookah slang 'hookah milega kya waha?'",
+    "bot": "amstel_nest",
+    "input": "hookah milega kya waha?",
+    "reply": "Hookah smoking is allowed, but guests must carry their own hookah. It is not provided by the property staff. For any further inquiries, please call *+91 99877 34458*.",
+    "latency": 3450,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 12,
+    "name": "Alcohol slang 'daaru peena hai'",
+    "bot": "staycation",
+    "input": "daaru peena hai",
+    "reply": "Alcohol is allowed. Guests must carry their own drinks.",
+    "latency": 2141,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 13,
+    "name": "Complaint 'review me toh ganda bol rahe log'",
+    "bot": "staycation",
+    "input": "review me toh ganda bol rahe log",
+    "reply": "Kuch log kabhi kabhi chhoti-chhoti wajah se galat ya fake review daal dete hain. Lekin humara property achhe se maintained hai aur humne *10,000+ khush gahak* ki seva ki hai. Aap bharosa rakhein.",
+    "latency": 5277,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 14,
+    "name": "Waterfall vague 'waterfall kitna door hai'",
+    "bot": "amstel_nest",
+    "input": "waterfall kitna door hai",
+    "reply": "Waterfall 5 minutes ki walking doori hai monsoon season mein.",
+    "latency": 3830,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 15,
+    "name": "Checkout slang '12 baje ke baad nikle toh?'",
+    "bot": "amstel_nest",
+    "input": "12 baje ke baad nikle toh?",
+    "reply": "Check-out after 12 PM (noon) incurs a late fee of *₹1,500* (up to 1 PM). After lunch (up to 3 PM) is *₹2,500*, 4–7 PM is *₹4,000*, and after 7 PM is charged full next day rate.",
+    "latency": 10221,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 16,
+    "name": "Power query 'light jaati hai kya karjat me'",
+    "bot": "staycation",
+    "input": "light jaati hai kya karjat me",
+    "reply": "Haan, local area conditions ki wajah se kabhi kabhi light ja sakti hai, lekin property par heavy-duty generator backup available hai. Toh aapko koi problem nahi hogi.",
+    "latency": 4218,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 17,
+    "name": "Cash slang 'cash dunga waha aake'",
+    "bot": "amstel_nest",
+    "input": "cash dunga waha aake",
+    "reply": "Cash payment for the 80% advance is accepted only in person at our Wadala booking office in Mumbai. You cannot pay the advance in cash at the property.\n\nTo confirm a booking, you'll need to pay 80% online (UPI/Card) on our website. The remaining 20% can be paid in cash at check-in.\n\nIf you want to pay full cash in advance, visit our office in Wadala. Call *+91 99877 34458* for office location and timing.",
+    "latency": 5123,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 18,
+    "name": "Advance query 'advance kitna bharna padega'",
+    "bot": "staycation",
+    "input": "advance kitna bharna padega",
+    "reply": "80% advance online payment karni hoti hai. Baaki 20% check-in ke time pay karte hain.",
+    "latency": 1857,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 19,
+    "name": "Cancellation slang 'cancel karna hai'",
+    "bot": "amstel_nest",
+    "input": "cancel karna hai",
+    "reply": "Please provide your Booking Name, Booking ID, and Phone Number so I can check your booking details and cancellation eligibility.",
+    "latency": 2442,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 20,
+    "name": "Transfer slang 'shift kar do date mere'",
+    "bot": "staycation",
+    "input": "shift kar do date mere",
+    "reply": "To check if your booking can be rescheduled, please share your *Booking Name*, *Booking ID*, and *Phone Number*.",
+    "latency": 11914,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 21,
+    "name": "Screenshot slang 'booking kar di maine screenshot dekho'",
+    "bot": "amstel_nest",
+    "input": "booking kar di maine screenshot dekho",
+    "reply": "Main screenshot nahi dekh sakta kyunki main text-based assistant hoon. Agar aapne website se booking ki hai to aapko automated email confirmation mila hoga. Agar mil gaya hai to booking 100% confirmed hai. Booking name aur phone number batao taake main verify kar sakta hoon.",
+    "latency": 11574,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 22,
+    "name": "Caretaker slang 'caretaker ka no de'",
+    "bot": "amstel_nest",
+    "input": "caretaker ka no de",
+    "reply": "Amstel Nest caretaker: *Ranjit* - `+91 73556 30009`",
+    "latency": 2114,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 23,
+    "name": "Arriving slang '15 min me poch rahe hai'",
+    "bot": "staycation",
+    "input": "15 min me poch rahe hai",
+    "reply": "Awesome! We are eagerly awaiting your arrival. Have a safe drive, see you at the property shortly!",
+    "latency": 4851,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 24,
+    "name": "Existing booking slang 'booking h meri baat karni hai'",
+    "bot": "staycation",
+    "input": "booking h meri baat karni hai",
+    "reply": "Aapki booking ke baare mein jaankari dene ke liye mujhe kuch details chahiye. Kripya apna *Booking Naam*, *Booking ID*, aur *Phone Number* bataayein. Main verify kar ke aapki madad karunga.\n\nBooking mein koi badlaav (modification) ke liye booking number par call karna hoga: *+91 81695 19564*.",
+    "latency": 3465,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 25,
+    "name": "Weekday flexi slang '5 baje aayenge sham ko monday'",
+    "bot": "amstel_nest",
+    "input": "5 baje aayenge sham ko monday",
+    "reply": "Monday 5 PM check-in noted. Weekday (Mon-Thu) allows flexible 21-hour stay. Please confirm:\n- Check-out date and time (e.g., Tuesday 2 PM, or default next day 10 AM)\n- Total number of adults / children",
+    "latency": 17210,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 26,
+    "name": "Pool slang 'pool clean hai na?'",
+    "bot": "staycation",
+    "input": "pool clean hai na?",
+    "reply": "Yes, our swimming pools are cleaned and maintained regularly with proper filtration system.",
+    "latency": 2962,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 27,
+    "name": "Toiletries slang 'brush milega kya?'",
+    "bot": "amstel_nest",
+    "input": "brush milega kya?",
+    "reply": "Toothbrush aur toothpaste nahi milte. Aapko khud carry karna hoga.",
+    "latency": 1889,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 28,
+    "name": "Deposit slang 'deposit wapas kab milega'",
+    "bot": "staycation",
+    "input": "deposit wapas kab milega",
+    "reply": "Security deposit refund depends on your payment mode:\n- *Cash*: Refunded immediately at checkout.\n- *UPI*: Refunded within 24 hours after checkout.",
+    "latency": 2257,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 29,
+    "name": "Food slang 'non veg mangwa sakte hai?'",
+    "bot": "amstel_nest",
+    "input": "non veg mangwa sakte hai?",
+    "reply": "*Amstel Nest* is a pure vegetarian property. Non-veg food is strictly not allowed inside the resort. However, a non-veg restaurant is available 5 minutes walking distance from the property.",
+    "latency": 2659,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 30,
+    "name": "Jain food query 'jain khana milega?'",
+    "bot": "amstel_nest",
+    "input": "jain khana milega?",
+    "reply": "Haan, Jain khana available hai Amstel Nest mein, lekin pehle se inform karna hoga. Booking number pe call karke advance mein request karein: *+91 99877 34458*.",
+    "latency": 3252,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 31,
+    "name": "Group count '8 log aa rahe hai'",
+    "bot": "amstel_nest",
+    "input": "8 log aa rahe hai",
+    "reply": "Check-in aur check-out date kya hai? Aur 8 log — sab adult hain ya bache bhi hain?",
+    "latency": 6396,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 32,
+    "name": "Menu change 15+ group '15 log hai khana change karoge?'",
+    "bot": "amstel_nest",
+    "input": "15 log hai khana change karoge?",
+    "reply": "15 guests qualifies for a menu change request. Please call *+91 99877 34458* to discuss the menu with the team before booking.",
+    "latency": 4355,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 33,
+    "name": "Baby food query 'bacche ka khana?'",
+    "bot": "staycation",
+    "input": "bacche ka khana?",
+    "reply": "Chef can prepare special food like milk, khichdi for young kids upon arrival. Just request at the property.",
+    "latency": 3084,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 34,
+    "name": "Late lunch query 'khana late ho gaya toh?'",
+    "bot": "amstel_nest",
+    "input": "khana late ho gaya toh?",
+    "reply": "Agar aap lunch ke liye late ho rahe hain, toh lunch ka time 1:00 PM se 2:45 PM hai (khatam 3:00 PM). Agar late pahunch rahe hain, toh booking number par call karke food alag rakhne ka request kar sakte hain.\n\nDinner ka time 8:30 PM se 9:45 PM hai. Iske baad koi bhi khana serve nahi hota.\n\nBooking number: *+91 99877 34458*",
+    "latency": 6326,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 35,
+    "name": "Greeting single word 'hi'",
+    "bot": "amstel_nest",
+    "input": "hi",
+    "reply": "Hi! 👋 Welcome to Amstel Nest! To check cottage availability and rates for your stay, please let me know:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)",
+    "latency": 96,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 36,
+    "name": "Call request Bot 2 'call karu kispe'",
+    "bot": "amstel_nest",
+    "input": "call karu kispe",
+    "reply": "For verbal inquiries or booking assistance for Amstel Nest Karjat, you can call us directly on: +91 99877 34458 (tel:+919987734458).",
+    "latency": 78,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 37,
+    "name": "Call request Bot 3 'call karu kispe'",
+    "bot": "staycation",
+    "input": "call karu kispe",
+    "reply": "For verbal inquiries or booking assistance for Galaxia Karjat Staycation Villas, you can call us directly on: +91 81695 19564 (tel:+918169519564).",
+    "latency": 74,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 38,
+    "name": "Collab slang 'collab karna hai instagram pe'",
+    "bot": "staycation",
+    "input": "collab karna hai instagram pe",
+    "reply": "Thank you for your interest in collaborating with us! Our team will contact you shortly.\n\nPlease stay tuned — we appreciate your patience!",
+    "latency": 144,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 39,
+    "name": "Human escalation slang 'admin se baat karao'",
+    "bot": "amstel_nest",
+    "input": "admin se baat karao",
+    "reply": "This conversation has now been shifted to Human mode. A support staff will contact you via message or call as soon as they are available.",
+    "latency": 86,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 40,
+    "name": "Date only '25th'",
+    "bot": "staycation",
+    "input": "25th",
+    "reply": "25th of which month and year? Also, which property are you interested in? Please share check-in date, check-out date, and number of adults/children.",
+    "latency": 12616,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 41,
+    "name": "Cheapest query 'sabse sasta wala batao'",
+    "bot": "staycation",
+    "input": "sabse sasta wala batao",
+    "reply": "*Hill View* is our cheapest option: *₹2,000* (Mon-Thu) to *₹3,000* (Fri-Sun) per night for 2 adults with meals. Extra adult *₹600*, child *₹400*.\n\nWould you like to book Hill View or check availability for your dates?",
+    "latency": 3337,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 42,
+    "name": "Family query 'family ke liye konsa accha hai'",
+    "bot": "amstel_nest",
+    "input": "family ke liye konsa accha hai",
+    "reply": "Family ke liye best option depend karta hai aapke group size aur dates par.\n\nKripya bataayein:\n- Check-in date aur check-out date\n- Kitne adults aur kitne children hain?\n\nIsi basis par main aapko Amstel Nest ke Standard Cottage ya Family Cottage ka option suggest karunga.",
+    "latency": 4178,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 43,
+    "name": "Station transport 'station se kaise aaye'",
+    "bot": "staycation",
+    "input": "station se kaise aaye",
+    "reply": "Karjat station ke bahar auto-rickshaw milte hain. Property ka naam bata kar aa sakte hain (30-40 minute ka safar). Rickshaw driver ke number booking confirmation email mein diye gaye hain.",
+    "latency": 6793,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 44,
+    "name": "Decoration query 'cake decoration karoge?'",
+    "bot": "amstel_nest",
+    "input": "cake decoration karoge?",
+    "reply": "*Cake decoration nahi* ki jaati. Koi bhi decoration default nahi hota. Special requests ke liye booking number par call karein: +91 99877 34458.",
+    "latency": 5281,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 45,
+    "name": "High tea query 'high tea me kya milega'",
+    "bot": "amstel_nest",
+    "input": "high tea me kya milega",
+    "reply": "High tea mein aapko property par *a la carte snacks* available hote hain. Ye meal plan mein include nahi hai, alag se order karna hota hai.",
+    "latency": 3264,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 46,
+    "name": "Canal swimming 'boating canal me tair sakte hai?'",
+    "bot": "amstel_nest",
+    "input": "boating canal me tair sakte hai?",
+    "reply": "Haan, boating canal ek filtered aur chlorinated swimming pool hai, isme swimming allowed hai.",
+    "latency": 2389,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 47,
+    "name": "Monsoon query 'monsoon me kaisa hai'",
+    "bot": "staycation",
+    "input": "monsoon me kaisa hai",
+    "reply": "Monsoon mein Galaxia Karjat bahut khoobsurat lagta hai. Chaaron taraf hara bhara, aur 5 minute ki walking distance par waterfall bhi hai. Aap Instagram reel dekh sakte ho: https://www.instagram.com/reel/DaaoIYxz9S6/\n\nPool bhi regularly cleaned hai. Kabhi kabhi local area mein bijli ja sakti hai, lekin generator backup hai. Kya aap kisi specific property ke baare mein jaanna chahte ho?",
+    "latency": 5267,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 48,
+    "name": "Early checkin slang '6 baje subah checkin kar sakte hai?'",
+    "bot": "amstel_nest",
+    "input": "6 baje subah checkin kar sakte hai?",
+    "reply": "Normal check-in time is *1:00 PM*. Early check-in before that (including 6 AM) is subject to availability and may incur extra charges. Please call *+91 99877 34458* to check if it's possible for your date.",
+    "latency": 11037,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 49,
+    "name": "GST query 'gst extra hai kya'",
+    "bot": "staycation",
+    "input": "gst extra hai kya",
+    "reply": "Haan, *5% GST* extra hai, base rates ke upar.",
+    "latency": 2151,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 50,
+    "name": "Fragment '2 adults 1 night fri'",
+    "bot": "amstel_nest",
+    "input": "2 adults 1 night fri",
+    "reply": "*Amstel Nest* - Friday, 31 July 2026 (1 night):  \n1 *Standard Cottage* (2 Adults) = *₹5,950* + 5% GST  \nIncludes meals (breakfast, lunch, dinner).  \n\nShall I proceed with this booking or do you have any questions?",
+    "latency": 11498,
+    "cleanFormatting": true,
+    "status": "PASS"
+  }
+]

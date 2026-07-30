@@ -1,0 +1,502 @@
+[
+  {
+    "id": 1,
+    "name": "DD Simple Greeting",
+    "bot": "digital_diaries",
+    "input": "hi",
+    "reply": "Hi! How can I help you?",
+    "latency": 4968,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 2,
+    "name": "DD Sandy Screen 2-hour slot check",
+    "bot": "digital_diaries",
+    "input": "is sandy screen available tomorrow at 4pm for 2 hours?",
+    "reply": "*Sandy Screen* is available tomorrow (Mon, 27 Jul) at 4 PM for 2 hours.",
+    "latency": 5151,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 3,
+    "name": "DD 3-hour Cine Love slot cap at 10pm",
+    "bot": "digital_diaries",
+    "input": "ajj ke liye konse slots available hai for 3 hours in cinelove",
+    "reply": "Aaj (26 July) Cine Love screen par 3-hour ke liye available slots:\n\n- *10 AM - 1 PM*\n- *11 AM - 2 PM*\n- *12 PM - 3 PM*\n- *1 PM - 4 PM*\n\n6 PM - 8 PM ka slot sirf 2 hours ka hai, isliye 3-hour nahi milega. Booking website par karein.",
+    "latency": 9813,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 4,
+    "name": "DD Alcohol refusal check",
+    "bot": "digital_diaries",
+    "input": "can we bring beer or whiskey to digital diaries?",
+    "reply": "No, drinking alcohol is strictly prohibited inside Digital Diaries. You cannot bring beer, whiskey, or any other alcoholic beverages.",
+    "latency": 4718,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 5,
+    "name": "DD Smoking refusal check",
+    "bot": "digital_diaries",
+    "input": "is smoking cigarettes or vape allowed inside?",
+    "reply": "No, smoking cigarettes or vape is strictly prohibited inside Digital Diaries.",
+    "latency": 2439,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 6,
+    "name": "DD Outside food refusal check",
+    "bot": "digital_diaries",
+    "input": "can I bring outside pizza and cake?",
+    "reply": "No, outside food and cake are strictly not allowed. We have an in-house food menu and a complimentary snack hamper. A cake add-on (*₹400*) is available for Movie Time bookings.",
+    "latency": 2007,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 7,
+    "name": "DD Movie Time add-on pricing",
+    "bot": "digital_diaries",
+    "input": "what are the add-on charges for balloons and cake in movie time?",
+    "reply": "For the Movie Time package, balloons setup is *₹400* and a 250g cake with custom message is *₹400*.",
+    "latency": 2006,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 8,
+    "name": "DD Celebration package inclusions",
+    "bot": "digital_diaries",
+    "input": "what is included in celebration package?",
+    "reply": "Celebration Package (2 Persons) includes a complimentary hamper with dry snacks, popcorn, juice, chocolates, and mineral water.\n\nPricing:\n- 1 hr: *₹2,200*\n- 2 hrs: *₹2,950*\n- 3 hrs Mon-Thu: *₹3,450*\n- 3 hrs Fri-Sun: *₹3,950*\n- Extra guest: *₹300*\n- Extra hour: *₹1,000*",
+    "latency": 78,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 9,
+    "name": "DD Kids age & pricing policy",
+    "bot": "digital_diaries",
+    "input": "can I bring my 6 year old child?",
+    "reply": "Yes, your 6-year-old child is allowed. The charge for kids aged 5 to 18 years is *₹150* per child.",
+    "latency": 3598,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 10,
+    "name": "DD Staycation redirect check",
+    "bot": "digital_diaries",
+    "input": "do you have private pool villas in karjat?",
+    "reply": "I am the Digital Diaries Assistant and only handle Wadala movie screening bookings. For staycation/resort bookings, please visit our staycation contact page for all details and contact numbers: https://www.galaxiaresorts.com/staycation/contact",
+    "latency": 113,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 11,
+    "name": "DD Human mode escalation",
+    "bot": "digital_diaries",
+    "input": "I want to speak with a human support staff",
+    "reply": "This conversation has now been shifted to Human mode. A support staff will contact you via message or call as soon as they are available.",
+    "latency": 142,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 12,
+    "name": "DD Collaboration inquiry",
+    "bot": "digital_diaries",
+    "input": "we want to do an instagram promotion brand collab",
+    "reply": "Thank you for your interest in collaborating with us! Our team will contact you shortly.\n\nPlease stay tuned — we appreciate your patience!",
+    "latency": 90,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 13,
+    "name": "DD Unanswered call response",
+    "bot": "digital_diaries",
+    "input": "nobody is picking up my call",
+    "reply": "Sorry for the inconvenience. Our team will get back to you with a call back shortly as soon as possible.",
+    "latency": 2981,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 14,
+    "name": "DD Phone call request",
+    "bot": "digital_diaries",
+    "input": "give me phone number to call",
+    "reply": "+91 98922 94042 (Office hours 10 AM to 8 PM)",
+    "latency": 4156,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 15,
+    "name": "DD >1 hour UI selection instructions",
+    "bot": "digital_diaries",
+    "input": "how to select 3 hours on website?",
+    "reply": "On the booking page, select the *3 Hours* option from the duration dropdown before adding the package to your cart. If you need a specific slot (e.g., 7 PM - 10 PM), choose the desired start time accordingly.",
+    "latency": 6400,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 16,
+    "name": "Amstel Dot Greeting Flow",
+    "bot": "amstel_nest",
+    "input": ".",
+    "reply": "Hi! 👋 Welcome to Amstel Nest! To check cottage availability and rates for your stay, please let me know:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)",
+    "latency": 78,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 17,
+    "name": "Amstel Hi Greeting Flow",
+    "bot": "amstel_nest",
+    "input": "hii",
+    "reply": "Hi! 👋 Welcome to Amstel Nest! To check cottage availability and rates for your stay, please let me know:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)",
+    "latency": 91,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 18,
+    "name": "Amstel 6+ Group Discount Inquiry",
+    "bot": "amstel_nest",
+    "input": "we are 6 people, is there any discount for amstel nest standard cottage?",
+    "reply": "Yes, a flat *₹1,500* discount applies for groups of 6+ booking Amstel Nest Standard Cottages. To avail it, call *+91 99877 34458* (tel:+919987734458) at the time of booking.",
+    "latency": 4634,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 19,
+    "name": "Amstel 8 Adults Occupancy Calculation",
+    "bot": "amstel_nest",
+    "input": "how much for 8 adults on 10th August in amstel nest?",
+    "reply": "",
+    "latency": 14754,
+    "cleanFormatting": true,
+    "status": "FAIL"
+  },
+  {
+    "id": 20,
+    "name": "Amstel 2 Sharing vs 3 Sharing Breakdown",
+    "bot": "amstel_nest",
+    "input": "what is the price difference between 2 sharing and 3 sharing standard cottage?",
+    "reply": "The 3-sharing option (3 adults) costs *₹2,000* more than the 2-sharing option (2 adults), since an extra adult charge of *₹2,000* is added to the base rate.",
+    "latency": 5910,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 21,
+    "name": "Amstel Single Cottage Tariff Mon-Thu",
+    "bot": "amstel_nest",
+    "input": "what is the rate for 1 standard cottage on Monday?",
+    "reply": "*Standard Cottage* (2 Adults + meals) on Monday (27 July 2026) is *₹4,950* (excl. 5% GST). Extra Adult *₹2,000*, Kids (5–12 yrs) *₹1,000*.",
+    "latency": 7914,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 22,
+    "name": "Amstel Saturday Rate Check",
+    "bot": "amstel_nest",
+    "input": "how much for Saturday night in amstel nest?",
+    "reply": "Which cottage type and how many guests? *Standard Cottage* (max 3 adults) or *Family Cottage* (max 6 adults)? Also, what is your check-out date?",
+    "latency": 8189,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 23,
+    "name": "Amstel Family Cottage Rate",
+    "bot": "amstel_nest",
+    "input": "what is the rate for family cottage?",
+    "reply": "*Family Cottage* (4 Adults + meals): Mon-Thu *₹9,000*, Fri/Sun *₹10,000*, Saturday *₹12,000*.  \nExtra adult *₹2,000*, kids 5–12 yrs *₹1,000*, under 5 free.  \nAll rates exclude 5% GST.",
+    "latency": 2321,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 24,
+    "name": "Amstel Food Timings",
+    "bot": "amstel_nest",
+    "input": "what are the food timings at amstel nest?",
+    "reply": "Breakfast 9:00–10:00 AM, Lunch 1:00–2:45 PM, Dinner 8:30–9:45 PM. No food is served outside these hours.",
+    "latency": 85,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 25,
+    "name": "Amstel Common Pool & Canal Swimming",
+    "bot": "amstel_nest",
+    "input": "is there a common pool or canal for swimming at amstel nest?",
+    "reply": "Yes, Amstel Nest has a common boating canal that is a filtered & chlorinated swimming pool where swimming is permitted. Additionally, each cottage has its own private indoor swimming pool.",
+    "latency": 2570,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 26,
+    "name": "Amstel Food Menu Link",
+    "bot": "amstel_nest",
+    "input": "send me the food menu for amstel nest",
+    "reply": "Meals (lunch, dinner, breakfast) are included in the tariff – pure vegetarian. A la carte snacks are available for high tea. A specific menu is not available with me; for menu inquiries, please call *+91 99877 34458*.",
+    "latency": 3320,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 27,
+    "name": "Amstel Caretaker Number",
+    "bot": "amstel_nest",
+    "input": "what is the caretaker number for amstel nest?",
+    "reply": "Ranjit (+91 73556 30009).",
+    "latency": 1791,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 28,
+    "name": "Amstel Late Checkout Fees",
+    "bot": "amstel_nest",
+    "input": "what are late checkout charges if we checkout at 3pm?",
+    "reply": "Late checkout until 3 PM (includes lunch) is *₹2,500*.",
+    "latency": 3617,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 29,
+    "name": "Amstel Flexi 21-Hour Weekday Checkin",
+    "bot": "amstel_nest",
+    "input": "can we check in at 8pm on Wednesday?",
+    "reply": "Yes, you can check in at 8 PM on Wednesday (29 July 2026) at no extra charge under our Mon-Thu 21-hour flexi rule. Your checkout will then be at 5 PM on Thursday (30 July 2026). Standard rates apply.",
+    "latency": 6751,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 30,
+    "name": "Amstel Alcohol & Hookah Rules",
+    "bot": "amstel_nest",
+    "input": "can we bring liquor and hookah to amstel nest?",
+    "reply": "Yes, you can bring your own liquor and hookah to *Amstel Nest*. Hookah is allowed but must be self-carried as it is not provided by the property.",
+    "latency": 5740,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 31,
+    "name": "Amstel Hookah Provision Check",
+    "bot": "amstel_nest",
+    "input": "do you provide hookah there?",
+    "reply": "Since I am a support bot I don't have access to this information. Please call *+91 99877 34458* to inquire.",
+    "latency": 2200,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 32,
+    "name": "Amstel Nearby Waterfalls",
+    "bot": "amstel_nest",
+    "input": "is there any waterfall near amstel nest?",
+    "reply": "Yes, a waterfall is a 5-minute walking distance from Amstel Nest during the monsoon/rainy season.  \n\nIG Reel: https://www.instagram.com/reel/DaaoIYxz9S6/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==",
+    "latency": 1960,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 33,
+    "name": "Amstel 80-20 Payment Rule",
+    "bot": "amstel_nest",
+    "input": "how much deposit to pay online?",
+    "reply": "80% of the total booking amount is paid online in advance. The remaining 20% is paid on arrival during check-in.",
+    "latency": 3577,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 34,
+    "name": "Amstel Cash Prepayment Rule",
+    "bot": "amstel_nest",
+    "input": "can I pay full amount in cash before booking?",
+    "reply": "For cash prepayment, you can visit our Wadala booking office in Mumbai in person. Please call the booking number (+91 99877 34458) for office guidance and address.",
+    "latency": 1854,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 35,
+    "name": "Amstel Cancellation Policy",
+    "bot": "amstel_nest",
+    "input": "what is the cancellation policy if I cancel 15 days before?",
+    "reply": "Cancellation 15 days before check-in falls under *11–20 days* policy: *50% of the booking amount is retained*, and *50% is refunded*.\n\nIf your booking falls on a festival, long weekend, or peak date, it is strictly non-refundable. Please confirm your check-in date to verify.",
+    "latency": 4545,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 36,
+    "name": "Staycation Generic Price Summary",
+    "bot": "staycation",
+    "input": "price",
+    "reply": "*Hill View*: ₹2,000 to ₹3,000 per night\n*Mount View*: ₹3,000 to ₹5,950 per night\n*Heavenly Villa*: ₹3,950 to ₹4,950 per night\n*Amstel Nest*: ₹4,950 to ₹12,000 per night\n*La Paraiso*: ₹4,960 to ₹8,500 per night\n*Ambrose Villas*: ₹5,500 to ₹13,000 per night\n\nWhich property would you like detailed pricing & inclusions for?",
+    "latency": 3179,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 37,
+    "name": "Staycation Rates Inquiry",
+    "bot": "staycation",
+    "input": "rates",
+    "reply": "- *Hill View*: *₹2,000* to *₹3,000* per night\n- *Mount View*: *₹3,000* to *₹5,950* per night\n- *Heavenly Villa*: *₹3,950* to *₹4,950* per night\n- *Amstel Nest*: *₹4,950* to *₹12,000* per night\n- *La Paraiso*: *₹4,960* to *₹8,500* per night\n- *Ambrose Villas*: *₹5,500* to *₹13,000* per night\n\nWhich property would you like detailed pricing and inclusions for?",
+    "latency": 3877,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 38,
+    "name": "Ambrose Theme Villas List",
+    "bot": "staycation",
+    "input": "tell me about ambrose villas",
+    "reply": "*Ambrose Villas* is a themed private pool resort in Karjat with 5 villas:\n\n- *Take-1* – Bollywood theme\n- *Alta* – (theme)\n- *Santorini* – Greek-inspired white & blue\n- *Cypress* – Machan/treehouse aesthetic\n- *Bamboosa* – (theme)\n\n*Pricing (base rates, 5% GST extra)*:\n- *Take-1 / Alta / Santorini*: Mon-Thu *₹5,500* (2p), *₹9,500* (4p); Fri/Sun *₹6,500* (2p), *₹10,500* (4p); Saturday *₹8,500* (2p), *₹12,000* (4p). Extra adult *₹2,000*, kids 5–12 *₹1,000*.\n- *Cypress*: Mon-Thu *₹5,500* (2p); Fri-Sun *₹6,500* (2p). Extra adult *₹2,000*, kids *₹1,000*.\n- *Bamboosa*: Mon-Thu *₹10,500* (4p); Fri/Sun *₹11,500* (4p); Saturday *₹13,000* (4p). Extra adult *₹2,000*, kids *₹1,000*.\n\n*Key policies*:\n- Pure veg only (Jain available if requested before arrival via phone)\n- Check-in 1 PM, check-out 10 AM\n- Late checkout fees apply\n- All villas have private swimming pools (cleaned regularly)\n- Drinks allowed (carry your own), hookah allowed (carry own)\n- Caretaker: Ranjit (*+91 73556 30009*)\n- Phone for booking: *+91 81695 19564*\n\nWhich villa are you interested in, and for which dates/guest count?",
+    "latency": 4845,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 39,
+    "name": "Ambrose Santorini Theme Villa",
+    "bot": "staycation",
+    "input": "how much for santorini villa on Friday?",
+    "reply": "*Santorini* on Friday (31 July) is *₹6,500* for 2 persons or *₹10,500* for 4 persons (meals included). However, it is fully booked for that date. Would you like to check availability for other Ambrose villas like *Take-1*, *Alta*, *Cypress*, or *Bamboosa*? Or any other Galaxia property?",
+    "latency": 12651,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 40,
+    "name": "Ambrose Bamboosa Villa Capacity",
+    "bot": "staycation",
+    "input": "how many people can stay in bamboosa villa?",
+    "reply": "Bamboosa Villa can accommodate up to *10 adults* maximum. The base rate covers 4 persons (adults) with meals, and extra adults are charged at *₹2,000* per person per night. Children aged 5–12 years are *₹1,000* extra, and under 5 are free.",
+    "latency": 8397,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 41,
+    "name": "La Paraiso Villa Details & Food",
+    "bot": "staycation",
+    "input": "is food included in la paraiso villa?",
+    "reply": "No, meals are *not* included in the base tariff for La Paraiso. A restaurant is located 10 steps away from the villa for dining.",
+    "latency": 1655,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 42,
+    "name": "Mount View Apartment Details",
+    "bot": "staycation",
+    "input": "what are mount view apartment rates?",
+    "reply": "*Mount View* rates per night (excl. 5% GST, incl. meals):\n\n- *Mon-Thu*: ₹3,000 (max 2 adults)\n- *Fri / Sun*: ₹4,000 (max 2 adults)\n- *Prime date*: ₹5,950\n- Extra adult: ₹800 | Kids 5–12 yrs: ₹500 | Under 5: Free\n- Security deposit: ₹3,000 (refundable)\n\nAll properties are pure veg. Let me know your check-in & check-out dates to check availability.",
+    "latency": 2775,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 43,
+    "name": "Hill View Apartment Details",
+    "bot": "staycation",
+    "input": "how to reach hill view from karjat station?",
+    "reply": "Get down at Karjat station, then take a rickshaw directly to the property (~40 mins distance). Rickshaw mobile numbers are provided after booking.",
+    "latency": 3180,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 44,
+    "name": "Heavenly Villa Details",
+    "bot": "staycation",
+    "input": "does heavenly villa have private indoor pool?",
+    "reply": "*Heavenly Villa* has a *private indoor swimming pool* inside the studio villa.",
+    "latency": 1716,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 45,
+    "name": "Staycation Security Deposit Rule",
+    "bot": "staycation",
+    "input": "is security deposit required for villas?",
+    "reply": "Yes, a refundable security deposit is required at check-in for all villas. Amounts vary: *₹2,000* for Amstel Nest and Hill View, *₹3,000* for Ambrose, Mount View, Heavenly Villa, and La Paraiso.",
+    "latency": 3142,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 46,
+    "name": "Staycation Toiletries Included",
+    "bot": "staycation",
+    "input": "do you provide toothbrush and towel?",
+    "reply": "Towel is provided, but toothbrush and toothpaste are not — please carry your own.",
+    "latency": 3442,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 47,
+    "name": "Staycation Google Reviews Inquiry",
+    "bot": "staycation",
+    "input": "why are some google reviews bad for property?",
+    "reply": "Occasionally a few individuals post fake or negative reviews due to minor personal inconveniences, but we assure you our properties are well maintained — we've catered to 10,000+ happy bookings.",
+    "latency": 2593,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 48,
+    "name": "Staycation Power Backup Condition",
+    "bot": "staycation",
+    "input": "is there power backup or generator if light goes?",
+    "reply": "Yes, we have a heavy-duty generator backup on site for any unexpected power interruptions.",
+    "latency": 3300,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 49,
+    "name": "Staycation Booking Transfer Policy",
+    "bot": "staycation",
+    "input": "can I transfer my weekend booking to next week?",
+    "reply": "Weekend bookings (Fri-Sun) cannot be transferred.",
+    "latency": 10111,
+    "cleanFormatting": true,
+    "status": "PASS"
+  },
+  {
+    "id": 50,
+    "name": "Existing Booking Inquiry",
+    "bot": "staycation",
+    "input": "I have a question about my existing booking",
+    "reply": "If you have an existing booking and have questions about it, please reply with your:\n1. *Booking Name*\n2. *Booking ID*\n3. *Phone Number*\n\nI will verify your reservation details for you. Please note that for any booking modifications or date changes, you will need to call our booking team at +91 81695 19564 (tel:+918169519564).",
+    "latency": 80,
+    "cleanFormatting": true,
+    "status": "PASS"
+  }
+]
