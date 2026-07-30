@@ -47,19 +47,22 @@ export default function InventoryPage() {
     const handleDownloadPdf = async () => {
         try {
             setDownloadingPdf(true);
-            const res = await fetch("/api/hospitality/menu/download-pdf");
-            if (!res.ok) throw new Error("Failed to download menu PDF");
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch("/api/hospitality/menu/download-stock-pdf", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("Failed to download stock PDF");
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "Galaxia_Resorts_Menu.pdf";
+            a.download = "Galaxia_Resorts_Stock.pdf";
             document.body.appendChild(a);
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
         } catch (err: any) {
-            alert(err.message || "Failed to download menu PDF.");
+            alert(err.message || "Failed to download stock PDF.");
         } finally {
             setDownloadingPdf(false);
         }
@@ -259,10 +262,10 @@ export default function InventoryPage() {
                             <button
                                 onClick={handleDownloadPdf}
                                 disabled={downloadingPdf}
-                                className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50"
+                                className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-2xl transition-all duration-200 text-sm disabled:opacity-50 shadow-xs cursor-pointer"
                             >
-                                <Download size={14} className={downloadingPdf ? "animate-bounce" : ""} />
-                                {downloadingPdf ? "Generating..." : "Download Menu PDF"}
+                                <Download size={16} className={downloadingPdf ? "animate-bounce" : ""} />
+                                Download PDF
                             </button>
                             {(currentTab === "stock" || currentTab === "manage") && (
                                 <>
