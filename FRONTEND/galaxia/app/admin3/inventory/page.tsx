@@ -41,12 +41,34 @@ export default function InventoryPage() {
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [downloadingPdf, setDownloadingPdf] = useState(false);
+    const [downloadingMenuPdf, setDownloadingMenuPdf] = useState(false);
+    const [downloadingStockPdf, setDownloadingStockPdf] = useState(false);
     const [editStocks, setEditStocks] = useState<Record<string, string>>({});
 
-    const handleDownloadPdf = async () => {
+    const handleDownloadMenuPdf = async () => {
         try {
-            setDownloadingPdf(true);
+            setDownloadingMenuPdf(true);
+            const res = await fetch("/api/hospitality/menu/download-pdf");
+            if (!res.ok) throw new Error("Failed to download menu PDF");
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Galaxia_Resorts_Menu.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            alert(err.message || "Failed to download menu PDF.");
+        } finally {
+            setDownloadingMenuPdf(false);
+        }
+    };
+
+    const handleDownloadStockPdf = async () => {
+        try {
+            setDownloadingStockPdf(true);
             const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
             const res = await fetch("/api/hospitality/menu/download-stock-pdf", {
                 headers: { Authorization: `Bearer ${token}` }
@@ -64,7 +86,7 @@ export default function InventoryPage() {
         } catch (err: any) {
             alert(err.message || "Failed to download stock PDF.");
         } finally {
-            setDownloadingPdf(false);
+            setDownloadingStockPdf(false);
         }
     };
     const [editNames, setEditNames] = useState<Record<string, string>>({});
@@ -260,11 +282,19 @@ export default function InventoryPage() {
                         </div>
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={handleDownloadPdf}
-                                disabled={downloadingPdf}
+                                onClick={handleDownloadMenuPdf}
+                                disabled={downloadingMenuPdf}
+                                className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                            >
+                                <Download size={14} className={downloadingMenuPdf ? "animate-bounce" : ""} />
+                                {downloadingMenuPdf ? "Generating..." : "Download Menu PDF"}
+                            </button>
+                            <button
+                                onClick={handleDownloadStockPdf}
+                                disabled={downloadingStockPdf}
                                 className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-2xl transition-all duration-200 text-sm disabled:opacity-50 shadow-xs cursor-pointer"
                             >
-                                <Download size={16} className={downloadingPdf ? "animate-bounce" : ""} />
+                                <Download size={16} className={downloadingStockPdf ? "animate-bounce" : ""} />
                                 Download PDF
                             </button>
                             {(currentTab === "stock" || currentTab === "manage") && (
