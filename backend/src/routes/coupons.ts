@@ -6,9 +6,14 @@ import { decrypt } from "../lib/encryption";
 const router = Router();
 
 // GET /api/coupons — List all coupons
-router.get("/", authMiddleware, requireRole("owner", "developer"), async (_req, res) => {
+router.get("/", authMiddleware, requireRole("owner", "developer", "staycation_call_manager"), async (_req, res) => {
     try {
         const coupons = await prisma.coupon.findMany({
+            include: {
+                admin: {
+                    select: { displayName: true, username: true }
+                }
+            },
             orderBy: { createdAt: "desc" },
         });
         return res.json(coupons);
@@ -20,7 +25,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer"), async (_req, 
 
 // POST /api/coupons — Create coupon
 // Allows same code if old coupon is exhausted or expired; old coupon stays visible
-router.post("/", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+router.post("/", authMiddleware, requireRole("owner", "developer", "staycation_call_manager"), async (req: AuthRequest, res) => {
     try {
         const { code, discountType, discountValue, maxUses, expiryDate, expiryHours } = req.body;
 
@@ -83,7 +88,7 @@ router.delete("/:id", authMiddleware, requireRole("owner", "developer"), async (
 });
 
 // GET /api/coupons/:id/usage — View usage history with user details
-router.get("/:id/usage", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+router.get("/:id/usage", authMiddleware, requireRole("owner", "developer", "staycation_call_manager"), async (req, res) => {
     try {
         const usages = await prisma.couponUsage.findMany({
             where: { couponId: parseInt(req.params.id as string) },

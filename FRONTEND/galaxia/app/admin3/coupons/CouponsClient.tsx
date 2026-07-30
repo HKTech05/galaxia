@@ -14,6 +14,7 @@ interface Coupon {
     expiryDate: string;
     expiryHours?: number | null;
     createdAt?: string;
+    createdBy?: string;
 }
 
 interface UsageLog {
@@ -44,6 +45,17 @@ export default function CouponsClient() {
     });
     const [expiryType, setExpiryType] = useState<"date" | "hours">("date");
     const [expiryHours, setExpiryHours] = useState("");
+    const [adminRole, setAdminRole] = useState<string>("");
+    const [adminUsername, setAdminUsername] = useState<string>("");
+
+    useEffect(() => {
+        api.get("/auth/me").then(data => {
+            if (data?.role) setAdminRole(data.role);
+            if (data?.username) setAdminUsername(data.username);
+        }).catch(() => {});
+    }, []);
+
+    const isCallManager = adminRole === "staycation_call_manager" || adminUsername === "stay123";
 
     // Fetch coupons from API
     const fetchCoupons = useCallback(async () => {
@@ -59,6 +71,7 @@ export default function CouponsClient() {
                 expiryDate: new Date(c.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
                 expiryHours: c.expiryHours || null,
                 createdAt: c.createdAt,
+                createdBy: c.admin?.displayName || c.admin?.username || "Owner/System",
             }));
             setCoupons(mapped);
         } catch (err) {
@@ -179,6 +192,7 @@ export default function CouponsClient() {
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Coupon Code</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Discount</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Usage / Max</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Created By</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Expiry Date</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                 </tr>
@@ -211,6 +225,9 @@ export default function CouponsClient() {
                                                 </div>
                                             </td>
                                             <td className="p-4">
+                                                <span className="text-sm font-bold text-indigo-700">{coupon.createdBy || "Owner/System"}</span>
+                                            </td>
+                                            <td className="p-4">
                                                 {coupon.expiryHours ? (
                                                     <div>
                                                         <span className="text-sm font-medium text-purple-600">{coupon.expiryHours}h from creation</span>
@@ -234,13 +251,15 @@ export default function CouponsClient() {
                                                     >
                                                         <Eye size={18} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleDelete(coupon.id)}
-                                                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                                                        title="Delete Coupon"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
+                                                    {!isCallManager && (
+                                                        <button
+                                                            onClick={() => handleDelete(coupon.id)}
+                                                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                                            title="Delete Coupon"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

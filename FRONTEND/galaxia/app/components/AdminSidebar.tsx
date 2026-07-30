@@ -104,6 +104,27 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     useEffect(() => {
         if (!isAdmin3 || !adminUsername) return;
         
+        const isCallManagerRole = adminRole === "staycation_call_manager" || adminUsername === "stay123";
+        if (isCallManagerRole) {
+            const allowedPaths = [
+                "/admin3",
+                "/admin3/stay-bookings",
+                "/admin3/properties-view-2",
+                "/admin3/heavenly-villa",
+                "/admin3/views-paraiso",
+                "/admin3/ambrose",
+                "/admin3/amstel",
+                "/admin3/food-bill-history",
+                "/admin3/coupons"
+            ];
+            const cleanPath = pathname.replace(/\/$/, "");
+            const isAllowed = allowedPaths.some(p => cleanPath === p || cleanPath.startsWith(p + "/"));
+            if (!isAllowed) {
+                router.push("/admin3");
+            }
+            return;
+        }
+
         const isRestrictedPath = pathname.startsWith("/admin3/housekeeping") || pathname.startsWith("/admin3/food-bill-history");
         
         if (adminUsername === "ddadmin") {
@@ -119,10 +140,12 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 router.push("/admin3/views-paraiso");
             }
         }
-    }, [isAdmin3, adminUsername, pathname, router]);
+    }, [isAdmin3, adminUsername, adminRole, pathname, router]);
 
-    // Full access = owner, developer, or null assignedProperties
-    const hasFullAccess = !assignedProperties || adminRole === "owner" || adminRole === "developer";
+    const isCallManager = adminRole === "staycation_call_manager" || adminUsername === "stay123";
+
+    // Full access = owner or developer ONLY (not sub-admins or call manager)
+    const hasFullAccess = (adminRole === "owner" || adminRole === "developer") || (!assignedProperties && !isCallManager && !["housekeeping", "chef", "accountant", "ddadmin", "srd", "M&L"].includes(adminUsername));
 
     // Filter receptionist items by assigned property slugs
     const visibleReceptionistItems = hasFullAccess
@@ -222,6 +245,24 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                             ) : adminRole === "accountant" ? (
                                 <>
                                     {renderNavItem({ name: "Reports", href: "/admin3/reports", icon: FileText })}
+                                </>
+                            ) : (adminRole === "staycation_call_manager" || adminUsername === "stay123") ? (
+                                <>
+                                    {renderNavItem({ name: "Live Calendar", href: "/admin3", icon: LayoutDashboard })}
+                                    {renderNavItem({ name: "Bookings", href: "/admin3/stay-bookings", icon: ClipboardList })}
+                                    {renderNavItem({ name: "Properties View", href: "/admin3/properties-view-2", icon: Hotel })}
+                                    <div className="pt-3 pb-1 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                        Receptionist View
+                                    </div>
+                                    {renderNavItem({ name: "Heavenly Villa & Hill View", href: "/admin3/heavenly-villa", icon: Hotel }, true)}
+                                    {renderNavItem({ name: "Mount View & La Paraiso", href: "/admin3/views-paraiso", icon: Hotel }, true)}
+                                    {renderNavItem({ name: "Ambrose", href: "/admin3/ambrose", icon: Hotel }, true)}
+                                    {renderNavItem({ name: "Amstel Nest", href: "/admin3/amstel", icon: Hotel }, true)}
+                                    <div className="pt-3 pb-1 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                        Management
+                                    </div>
+                                    {renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
+                                    {renderNavItem({ name: "Coupons", href: "/admin3/coupons", icon: Ticket })}
                                 </>
                             ) : (
                                 <>

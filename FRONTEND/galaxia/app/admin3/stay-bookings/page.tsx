@@ -101,6 +101,17 @@ export default function StayBookingsPage() {
     const [editBooking, setEditBooking] = useState<StayBooking | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [editSaving, setEditSaving] = useState(false);
+    const [adminRole, setAdminRole] = useState<string>("");
+    const [adminUsername, setAdminUsername] = useState<string>("");
+
+    useEffect(() => {
+        api.get("/auth/me").then(data => {
+            if (data?.role) setAdminRole(data.role);
+            if (data?.username) setAdminUsername(data.username);
+        }).catch(() => {});
+    }, []);
+
+    const isCallManager = adminRole === "staycation_call_manager" || adminUsername === "stay123";
 
     const updateStayFormAndRecalculate = (newPartialFields: any) => {
         const merged = { ...editForm, ...newPartialFields };
@@ -727,21 +738,23 @@ export default function StayBookingsPage() {
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex bg-slate-100 rounded-xl p-1 w-fit">
-                {(["staycation", "dd", "all"] as const).map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => { setViewTab(tab); setStatusFilter('All'); setDdSourceFilter('All'); setBookedOnFrom(''); setBookedOnTo(''); setDatesFrom(''); setDatesTo(''); }}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-                            viewTab === tab
-                                ? 'bg-white shadow text-purple-700'
-                                : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                    >
-                        {tab === 'staycation' ? 'Staycation' : tab === 'dd' ? 'Digital Diaries' : 'All'}
-                    </button>
-                ))}
-            </div>
+            {!isCallManager && (
+                <div className="flex bg-slate-100 rounded-xl p-1 w-fit">
+                    {(["staycation", "dd", "all"] as const).map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => { setViewTab(tab); setStatusFilter('All'); setDdSourceFilter('All'); setBookedOnFrom(''); setBookedOnTo(''); setDatesFrom(''); setDatesTo(''); }}
+                            className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                                viewTab === tab
+                                    ? 'bg-white shadow text-purple-700'
+                                    : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            {tab === 'staycation' ? 'Staycation' : tab === 'dd' ? 'Digital Diaries' : 'All'}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -915,19 +928,21 @@ export default function StayBookingsPage() {
 
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: "Total Bookings", value: filteredBookings.length, color: "text-slate-800" },
-                    { label: "Confirmed", value: filteredBookings.filter(b => b.status === "confirmed").length, color: "text-emerald-600" },
-                    { label: "Total Revenue", value: formatPrice(filteredBookings.reduce((sum, b) => sum + b.totalAmount, 0)), color: "text-indigo-600" },
-                    { label: "Advance Collected", value: formatPrice(filteredBookings.reduce((sum, b) => sum + b.advanceAmount, 0)), color: "text-sky-600" },
-                ].map(stat => (
-                    <div key={stat.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                        <p className={`text-xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
-                    </div>
-                ))}
-            </div>
+            {!isCallManager && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                        { label: "Total Bookings", value: filteredBookings.length, color: "text-slate-800" },
+                        { label: "Confirmed", value: filteredBookings.filter(b => b.status === "confirmed").length, color: "text-emerald-600" },
+                        { label: "Total Revenue", value: formatPrice(filteredBookings.reduce((sum, b) => sum + b.totalAmount, 0)), color: "text-indigo-600" },
+                        { label: "Advance Collected", value: formatPrice(filteredBookings.reduce((sum, b) => sum + b.advanceAmount, 0)), color: "text-sky-600" },
+                    ].map(stat => (
+                        <div key={stat.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                            <p className={`text-xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Table */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -1400,12 +1415,14 @@ export default function StayBookingsPage() {
                                             <ArrowRightLeft size={13} /> Transfer
                                         </button>
                                     )}
-                                    <button
-                                        onClick={() => setDeleteConfirmBooking(selectedBooking)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
-                                    >
-                                        <Trash2 size={13} /> Delete
-                                    </button>
+                                    {!isCallManager && (
+                                        <button
+                                            onClick={() => setDeleteConfirmBooking(selectedBooking)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+                                        >
+                                            <Trash2 size={13} /> Delete
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

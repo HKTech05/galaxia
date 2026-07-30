@@ -43,7 +43,19 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [adminRole, setAdminRole] = useState<string>("");
     const blobRef = useRef<Blob | null>(null);
+
+    useEffect(() => {
+        try {
+            const adminData = localStorage.getItem("galaxia_admin");
+            if (adminData) {
+                const parsed = JSON.parse(adminData);
+                if (parsed?.role) setAdminRole(parsed.role);
+            }
+        } catch {}
+    }, []);
+    const isCallManager = adminRole === "staycation_call_manager";
 
     const rawFileName = guestId.fileName || `ID-${guestId.id}`;
     const fileType = (guestId.fileType || "").toLowerCase();
@@ -170,7 +182,7 @@ export default function IdProofModal({ guestId, onClose, onDelete }: IdProofModa
                                 <Download size={14} /> Save
                             </button>
                         )}
-                        {onDelete && (
+                        {onDelete && !isCallManager && (
                             <button
                                 onClick={handleDelete}
                                 disabled={deleting}

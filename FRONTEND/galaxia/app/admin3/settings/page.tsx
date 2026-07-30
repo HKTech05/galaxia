@@ -86,6 +86,7 @@ export default function SettingsPage() {
     };
 
     const propertiesLabel = (ap: string[] | null, role?: string) => {
+        if (role === "staycation_call_manager") return "Staycation call manager";
         if (role === "housekeeping") return "Amb/Amstel Housekeeping";
         if (!ap) return "All Properties (Full Access)";
         return ap.map(s => {

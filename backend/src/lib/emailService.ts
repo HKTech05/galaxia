@@ -777,3 +777,32 @@ export async function sendOrderDeletionNotification(opts: {
     }
 }
 
+export async function sendBookingEditNotification(opts: {
+    performedBy: string;
+    username: string;
+    bookingRef: string;
+    customerName: string;
+    propertyName: string;
+    changedFields: Record<string, { before: any; after: any }>;
+}): Promise<void> {
+    if (!process.env.RESEND_API_KEY) return;
+    try {
+        const changesText = Object.entries(opts.changedFields)
+            .map(([field, delta]) => `  - ${field}: "${delta.before}" → "${delta.after}"`)
+            .join("\n");
+
+        const textContent = `Staycation Booking Modification Log Alert\n\nUser: ${opts.performedBy} (@${opts.username})\nBooking Reference: ${opts.bookingRef}\nCustomer Name: ${opts.customerName}\nProperty: ${opts.propertyName}\n\nLog of Changes Made:\n${changesText || "  (No field value diffs captured)"}\n\nTimestamp: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n— Galaxia Admin Security & Operations System`;
+
+        await getResend()?.emails.send({
+            from: FROM_EMAIL,
+            to: "admin@galaxiaresorts.com",
+            replyTo: REPLY_TO,
+            subject: `Booking Edit Alert | ${opts.bookingRef} edited by ${opts.performedBy}`,
+            text: textContent,
+        });
+        console.log(`[Email] Booking edit log email sent to admin@galaxiaresorts.com for ${opts.bookingRef}`);
+    } catch (error) {
+        console.error("[Email] Failed to send booking edit notification:", error);
+    }
+}
+

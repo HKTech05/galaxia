@@ -268,7 +268,7 @@ export default function FoodHistoryPage() {
                     <p className="text-sm font-medium text-slate-500 mt-1">Logs and breakdowns of staycation hospitality food orders.</p>
                 </div>
                 <div className="self-start sm:self-auto flex items-center gap-3">
-                    {(userRole === "owner" || userRole === "developer") && (
+                    {(userRole === "owner" || userRole === "developer" || userRole === "staycation_call_manager") && (
                         <button
                             onClick={() => setIsDailyReportOpen(true)}
                             className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all uppercase tracking-wider"

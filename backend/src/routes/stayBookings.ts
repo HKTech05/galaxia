@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
-import { sendBookingConfirmation, sendOwnerBookingNotification } from "../lib/emailService";
+import { sendBookingConfirmation, sendOwnerBookingNotification, sendBookingEditNotification } from "../lib/emailService";
 import { generateStaycationBookingPDF } from "../lib/pdfService";
 import { sendStaycationBookingConfirmation, sendWhatsAppTemplateMessage } from "../lib/whatsappService";
 import { deductItemStock } from "./hospitality";
@@ -588,6 +588,22 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         // Audit log
         auditLog({ adminId: req.admin!.id, action: "booking_status_update", entityType: "staycation_booking", entityId: booking.id, details: { newStatus: status, assignedUnit, waterBottlesDeducted } });
 
+        if (req.admin?.role === "staycation_call_manager" || req.admin?.username === "stay123") {
+            const changedFields: Record<string, { before: any; after: any }> = {};
+            if (existing.status !== status) changedFields.status = { before: existing.status, after: status };
+            if (assignedUnit !== undefined && existing.assignedUnit !== assignedUnit) changedFields.assignedUnit = { before: existing.assignedUnit, after: assignedUnit };
+            if (Object.keys(changedFields).length > 0) {
+                sendBookingEditNotification({
+                    performedBy: req.admin.username,
+                    username: req.admin.username,
+                    bookingRef: existing.bookingRef,
+                    customerName: existing.customerName,
+                    propertyName: booking.property?.name || "Staycation Property",
+                    changedFields,
+                }).catch(err => console.error("Failed to send booking status edit email:", err));
+            }
+        }
+
         return res.json(booking);
     } catch (error) {
         console.error("Update stay booking status error:", error);
@@ -595,8 +611,8 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     }
 });
 
-// PATCH /api/bookings/staycation/:id — Master Edit (owner only)
-router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+// PATCH /api/bookings/staycation/:id — Master Edit (owner, dev, staycation_call_manager)
+router.patch("/:id", authMiddleware, requireRole("owner", "developer", "staycation_call_manager"), async (req: AuthRequest, res) => {
     try {
         const bookingId = parseInt(req.params.id as string);
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
@@ -690,6 +706,20 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
                 changedFields,
             },
         });
+
+        if (req.admin?.role === "staycation_call_manager" || req.admin?.username === "stay123") {
+            const prop = updated.property || {};
+            const sub = updated.subProperty;
+            const propertyName = sub ? `${sub.name} — ${(prop as any).name}` : ((prop as any).name || "Galaxia Property");
+            sendBookingEditNotification({
+                performedBy: req.admin.username,
+                username: req.admin.username,
+                bookingRef: existing.bookingRef,
+                customerName: updated.customerName,
+                propertyName,
+                changedFields,
+            }).catch(err => console.error("Failed to send booking edit notification email:", err));
+        }
 
         // Decrypt for response
         const decrypted = {
