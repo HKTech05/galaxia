@@ -14,10 +14,25 @@ interface Notification {
 }
 
 export default function AdminHeader() {
+    const getInitialAdmin = () => {
+        if (typeof window === "undefined") return { displayName: "Admin User", role: "Super Admin" };
+        try {
+            const stored = localStorage.getItem("galaxia_admin");
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                return {
+                    displayName: parsed.displayName || "Admin User",
+                    role: parsed.role === "staycation_call_manager" ? "Staycation call manager" : (parsed.role || "Super Admin")
+                };
+            }
+        } catch {}
+        return { displayName: "Admin User", role: "Super Admin" };
+    };
+
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [adminName, setAdminName] = useState("Admin User");
-    const [adminRole, setAdminRole] = useState("Super Admin");
+    const [adminName, setAdminName] = useState(() => getInitialAdmin().displayName);
+    const [adminRole, setAdminRole] = useState(() => getInitialAdmin().role);
 
     useEffect(() => {
         // Fetch notifications

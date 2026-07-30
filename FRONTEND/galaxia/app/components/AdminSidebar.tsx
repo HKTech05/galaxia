@@ -84,10 +84,19 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     const [dailyCheckinsOpen, setDailyCheckinsOpen] = useState(false);
 
     // Admin profile for property-scoped access
-    const [assignedProperties, setAssignedProperties] = useState<string[] | null>(null);
-    const [adminRole, setAdminRole] = useState<string>("");
-    const [adminDisplayName, setAdminDisplayName] = useState<string>("");
-    const [adminUsername, setAdminUsername] = useState<string>("");
+    const getInitialAdmin = () => {
+        if (typeof window === "undefined") return { role: "", username: "", displayName: "", assignedProperties: null };
+        try {
+            const stored = localStorage.getItem("galaxia_admin");
+            if (stored) return JSON.parse(stored);
+        } catch {}
+        return { role: "", username: "", displayName: "", assignedProperties: null };
+    };
+
+    const [assignedProperties, setAssignedProperties] = useState<string[] | null>(() => getInitialAdmin().assignedProperties || null);
+    const [adminRole, setAdminRole] = useState<string>(() => getInitialAdmin().role || "");
+    const [adminDisplayName, setAdminDisplayName] = useState<string>(() => getInitialAdmin().displayName || "");
+    const [adminUsername, setAdminUsername] = useState<string>(() => getInitialAdmin().username || "");
     const [profileLoaded, setProfileLoaded] = useState(false);
 
     useEffect(() => {
@@ -107,7 +116,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
         const isCallManagerRole = adminRole === "staycation_call_manager" || adminUsername === "stay123";
         if (isCallManagerRole) {
             if (pathname === "/admin3" || pathname === "/admin3/") {
-                router.push("/admin3/live-calendar");
+                router.push("/admin3/stay-bookings");
                 return;
             }
             const allowedPaths = [
@@ -155,7 +164,9 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     const visibleReceptionistItems = hasFullAccess
         ? admin3ReceptionistItems
         : admin3ReceptionistItems.filter(item =>
-            item.slugs.some(s => assignedProperties!.includes(s)) || (assignedProperties!.includes("ambrose") && item.slugs.includes("amstel-nest"))
+            assignedProperties
+                ? (item.slugs.some(s => assignedProperties.includes(s)) || (assignedProperties.includes("ambrose") && item.slugs.includes("amstel-nest")))
+                : true
         );
 
     const isReceptionistActive = visibleReceptionistItems.some(item => pathname.startsWith(item.href));
