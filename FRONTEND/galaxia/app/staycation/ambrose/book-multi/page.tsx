@@ -274,6 +274,13 @@ export default function BookMultiPage() {
                         const ambParentPersons = ambData.pricing?.weekday?.personsLabel || "2 guests";
 
                         if (ambData.subPropertyPricing && ambData.subProperties) {
+                            const ambOverridesMap: Record<string, Record<string, number>> = {
+                                "take-1": { "2026-08-14": 7500, "2026-08-15": 9500 },
+                                "alta": { "2026-08-14": 7500, "2026-08-15": 9500 },
+                                "santorini": { "2026-08-14": 7500, "2026-08-15": 9500 },
+                                "bamboosa": { "2026-08-14": 12500, "2026-08-15": 14000 },
+                                "cypress": { "2026-08-14": 7500, "2026-08-15": 7500 },
+                            };
                             for (const sp of ambData.subProperties) {
                                 const spPricing = ambData.subPropertyPricing[sp.id];
                                 const key = sp.slug || sp.name.toLowerCase().replace(/\s+/g, "-");
@@ -283,6 +290,7 @@ export default function BookMultiPage() {
                                     weekday: (hasSubPricing && spPricing.weekday?.price) || ambParentWd,
                                     weekend: (hasSubPricing && spPricing.weekend?.price) || ambParentWe,
                                     saturday: (hasSubPricing && spPricing.saturday?.price) || (hasSubPricing && spPricing.weekend?.price) || ambParentSa,
+                                    dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (ambOverridesMap[key] || ambData.pricing?.dateOverrides || {}),
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || ambParentPersons,
                                 };
                             }
@@ -539,15 +547,31 @@ export default function BookMultiPage() {
         const units = item.unitCount || 1;
         const isAmstel = item.property === "amstel-nest";
         const isFamily = item.villaId === "family-cottage" || (item.villaName || "").toLowerCase().includes("family");
+        const vId = (item.villaId || "").toLowerCase();
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            if (isAmstel && (dateStr.endsWith("08-14") || dateStr.endsWith("08-15"))) {
-                if (dateStr.endsWith("08-14")) {
-                    total += isFamily ? 11000 : 7950;
-                } else {
-                    total += isFamily ? 13500 : 8500;
+            if (item.dateOverrides && item.dateOverrides[dateStr]) {
+                total += item.dateOverrides[dateStr];
+            } else if (dateStr.endsWith("08-14")) {
+                if (isAmstel) total += isFamily ? 11000 : 7950;
+                else if (vId === "bamboosa") total += 12500;
+                else if (["take-1", "alta", "santorini", "cypress"].includes(vId)) total += 7500;
+                else {
+                    const day = d.getDay();
+                    const priceStr = day === 6 ? (item.saturdayPrice || item.weekendPrice) : (day === 0 || day === 5) ? item.weekendPrice : item.weekdayPrice;
+                    total += parseInt((priceStr || '0').replace(/,/g, ""));
+                }
+            } else if (dateStr.endsWith("08-15")) {
+                if (isAmstel) total += isFamily ? 13500 : 8500;
+                else if (vId === "bamboosa") total += 14000;
+                else if (["take-1", "alta", "santorini"].includes(vId)) total += 9500;
+                else if (vId === "cypress") total += 7500;
+                else {
+                    const day = d.getDay();
+                    const priceStr = day === 6 ? (item.saturdayPrice || item.weekendPrice) : (day === 0 || day === 5) ? item.weekendPrice : item.weekdayPrice;
+                    total += parseInt((priceStr || '0').replace(/,/g, ""));
                 }
             } else {
                 const day = d.getDay();

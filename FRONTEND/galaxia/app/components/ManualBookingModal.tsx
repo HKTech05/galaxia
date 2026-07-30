@@ -191,12 +191,33 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         const is14Aug = dateStr.endsWith("08-14");
         const is15Aug = dateStr.endsWith("08-15");
 
-        if (propName.includes("Amstel") && (is14Aug || is15Aug)) {
-            const isFamily = villaName === "Family Cottage";
-            basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
-            extraAdultPrice = 2000;
-            kidsPrice = 1000;
-            baseGuests = isFamily ? 4 : 2;
+        if (is14Aug || is15Aug) {
+            const vName = (villaName || "").toUpperCase();
+            if (propName.includes("Amstel")) {
+                const isFamily = villaName === "Family Cottage";
+                basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
+                extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
+            } else if (propName.includes("Ambrose")) {
+                if (vName.includes("BAMBOOSA")) {
+                    basePrice = is14Aug ? 12500 : 14000;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
+                } else if (vName.includes("CYPRESS")) {
+                    basePrice = 7500;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                } else {
+                    // TAKE-1, ALTA, SANTORINI
+                    basePrice = is14Aug ? 7500 : 9500;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                }
+            } else if (propName.includes("Hill View")) {
+                basePrice = 4950; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
+            } else if (propName.includes("Mount View")) {
+                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
+            } else if (propName.includes("Heavenly")) {
+                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
+            } else if (propName.includes("La Paraiso")) {
+                basePrice = is14Aug ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
+            }
         } else if (lp) {
             basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             extraAdultPrice = lp.extraAdult;

@@ -143,9 +143,31 @@ function calculateUnitPrice(
         const is15Aug = dateStr.endsWith("08-15");
         const isFamily = (resolvedVilla || "").toLowerCase().includes("family");
 
-        if (resolvedProperty.includes("Amstel") && (is14Aug || is15Aug)) {
-            basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
-            extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
+        if (is14Aug || is15Aug) {
+            const vName = (resolvedVilla || "").toUpperCase();
+            if (resolvedProperty.includes("Amstel")) {
+                basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
+                extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
+            } else if (resolvedProperty.includes("Ambrose")) {
+                if (vName.includes("BAMBOOSA")) {
+                    basePrice = is14Aug ? 12500 : 14000;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
+                } else if (vName.includes("CYPRESS")) {
+                    basePrice = 7500;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                } else {
+                    basePrice = is14Aug ? 7500 : 9500;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                }
+            } else if (resolvedProperty.includes("Hill View")) {
+                basePrice = 4950; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
+            } else if (resolvedProperty.includes("Mount View")) {
+                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
+            } else if (resolvedProperty.includes("Heavenly")) {
+                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
+            } else if (resolvedProperty.includes("La Paraiso")) {
+                basePrice = is14Aug ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
+            }
         } else if (lp) {
             basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;

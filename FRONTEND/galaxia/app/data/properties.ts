@@ -177,6 +177,7 @@ export const properties: Record<string, PropertyData> = {
                     weekend: { price: "6,500", persons: "2 with meals" },
                     weekend4Ppl: { price: "10,500", persons: "4 with meals" },
                     saturday: { price: "8,500", persons: "2 with meals" },
+                    dateOverrides: { "2026-08-14": 7500, "2026-08-15": 9500 },
                 },
             },
             {
@@ -195,6 +196,7 @@ export const properties: Record<string, PropertyData> = {
                     weekend: { price: "6,500", persons: "2 with meals" },
                     weekend4Ppl: { price: "10,500", persons: "4 with meals" },
                     saturday: { price: "8,500", persons: "2 with meals" },
+                    dateOverrides: { "2026-08-14": 7500, "2026-08-15": 9500 },
                 },
             },
             {
@@ -213,6 +215,7 @@ export const properties: Record<string, PropertyData> = {
                     weekend: { price: "6,500", persons: "2 with meals" },
                     weekend4Ppl: { price: "10,500", persons: "4 with meals" },
                     saturday: { price: "8,500", persons: "2 with meals" },
+                    dateOverrides: { "2026-08-14": 7500, "2026-08-15": 9500 },
                 },
             },
             {
@@ -229,6 +232,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday: { price: "10,500", persons: "4 with meals" },
                     weekend: { price: "11,500", persons: "4 with meals" },
                     saturday: { price: "13,000", persons: "4 with meals" },
+                    dateOverrides: { "2026-08-14": 12500, "2026-08-15": 14000 },
                 },
             },
             {
@@ -245,6 +249,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekend: { price: "6,500", persons: "2 with meals" },
                     saturday: { price: "6,500", persons: "2 with meals" },
+                    dateOverrides: { "2026-08-14": 7500, "2026-08-15": 7500 },
                 },
             },
         ],
@@ -397,6 +402,7 @@ export const properties: Record<string, PropertyData> = {
             weekday: { price: "4,950", persons: "2 persons" },
             weekend: { price: "7,500", persons: "Up to 4 persons" },
             primeDates: "8,500",
+            dateOverrides: { "2026-08-14": 8500, "2026-08-15": 9500 },
             extraAdult: "1,200",
             kidsCharge: "800 (5–12 yrs)",
             special: [
@@ -506,6 +512,7 @@ export const properties: Record<string, PropertyData> = {
         pricing: {
             weekday: { price: "3,950", persons: "2 persons" },
             weekend: { price: "4,950", persons: "2 persons" },
+            dateOverrides: { "2026-08-14": 5950, "2026-08-15": 5950 },
             extraAdult: "800",
             kidsCharge: "500 (5–12 yrs)",
         },
@@ -607,6 +614,7 @@ export const properties: Record<string, PropertyData> = {
             weekday: { price: "3,500", persons: "2 persons" },
             weekend: { price: "4,950", persons: "2 persons" },
             primeDates: "5,950",
+            dateOverrides: { "2026-08-14": 5950, "2026-08-15": 5950 },
             extraAdult: "800",
             kidsCharge: "500 (5–12 yrs)",
             special: [
@@ -715,6 +723,7 @@ export const properties: Record<string, PropertyData> = {
             weekday: { price: "2,500", persons: "2 persons" },
             weekend: { price: "3,950", persons: "2 persons" },
             primeDates: "4,450",
+            dateOverrides: { "2026-08-14": 4950, "2026-08-15": 4950 },
             extraAdult: "600",
             kidsCharge: "400 (5–12 yrs)",
         },
