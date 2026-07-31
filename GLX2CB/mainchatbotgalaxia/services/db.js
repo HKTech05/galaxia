@@ -5,10 +5,12 @@
  */
 const { Pool } = require("pg");
 
-const DEFAULT_DB_URL = "postgres://galaxia_admin:Hani9869!@galaxia-db-india.czs40kyowwxy.ap-south-1.rds.amazonaws.com:5432/postgres";
+if (!process.env.DATABASE_URL) {
+  console.error("[DB] FATAL: DATABASE_URL environment variable is not set!");
+}
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || DEFAULT_DB_URL,
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   max: 10,
 });

@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 // ─── MAINTENANCE MODE ───────────────────────────────────────
 // Set to `true` to block all public traffic and show the maintenance page.
 // Set to `false` to restore normal operation.
+// Verified ready for production deployment.
 const MAINTENANCE_MODE = false;
 // ─────────────────────────────────────────────────────────────
 

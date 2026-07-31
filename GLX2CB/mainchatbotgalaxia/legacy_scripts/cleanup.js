@@ -1,5 +1,6 @@
 const { Pool } = require("pg");
-const p = new Pool({ connectionString: "postgres://galaxia_admin:Hani9869!@galaxia-db-india.czs40kyowwxy.ap-south-1.rds.amazonaws.com:5432/postgres" });
+require("dotenv").config({ path: require("path").resolve(__dirname, "../.env") });
+const p = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 (async () => {
   await p.query("DELETE FROM chat_messages");
   await p.query("DELETE FROM chat_sessions");

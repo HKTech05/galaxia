@@ -5,7 +5,7 @@ const CONFIG_PATH = path.resolve(__dirname, "../../data/ai_config.json");
 
 const DEFAULT_CONFIG = {
   AI_PROVIDER: "deepseek",
-  API_KEY: "sk-a4a9ba85a78c472d9e13bd64257820e3",
+  API_KEY: process.env.DEEPSEEK_API_KEY || "",
   BASE_URL: "https://api.deepseek.com/v1",
   MODEL_NAME: "deepseek-v4-flash",
   

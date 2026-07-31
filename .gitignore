@@ -23,3 +23,19 @@ dist/
 /FRONTEND/galaxia/.next
 
 /Comp 1.mp4
+
+# === Security: Never commit secrets or runtime data ===
+**/ai_config.json
+**/update_tokens*.js
+**/last_request_debug.json
+**/session_summaries.json
+**/faq_cache.json
+**/scratch/
+**/cleanup.js
+migrate_core_data.js
+test_mumbai_rds.js
+
+# === Non-production folders (backups, old bots) ===
+GLX2CB2/
+GLX2CB_BACKUP_*/
+galaxia-whatsapp-bot23/
