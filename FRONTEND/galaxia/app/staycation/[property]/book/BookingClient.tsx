@@ -880,6 +880,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     customerEmail: formData.email || undefined,
                     customerPhone: formData.phone,
                     description: `Staycation - ${property.name}${selectedRoom ? ` (${selectedRoom.name})` : ''}`,
+                    type: "stay",
                     notes: {
                         bookingType: "staycation",
                         property: property.name,

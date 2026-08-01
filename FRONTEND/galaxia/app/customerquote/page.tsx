@@ -609,6 +609,7 @@ function CustomerQuoteInner() {
                     customerEmail: email || undefined,
                     customerPhone: cleanPhone,
                     description: `Staycation - ${propertyName} (Quote: ${quoteId})`,
+                    type: "stay",
                     notes: { bookingType: "staycation", property: propertyName, checkIn: ciStr, checkOut: coStr, quoteRef: quoteId },
                     bookingPayload, // NEW: Stored by backend for webhook safety-net
                 });

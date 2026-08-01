@@ -53,7 +53,7 @@ export async function initiateRazorpayPayment(
             receipt: options.receipt || `rcpt_${Date.now()}`,
             notes: options.notes || {},
             type: options.type || "stay", // default to staycation account
-            bookingPayload: options.bookingPayload, // for webhook safety-net (DD only)
+            bookingPayload: options.bookingPayload, // for webhook safety-net (DD + Stay)
         }),
     });
 
