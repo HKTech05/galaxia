@@ -552,22 +552,6 @@ function CustomerQuoteInner() {
             const ciStr = `${checkIn.getFullYear()}-${String(checkIn.getMonth() + 1).padStart(2, '0')}-${String(checkIn.getDate()).padStart(2, '0')}`;
             const coStr = `${checkOut.getFullYear()}-${String(checkOut.getMonth() + 1).padStart(2, '0')}-${String(checkOut.getDate()).padStart(2, '0')}`;
 
-            // Razorpay payment
-            let paymentResult;
-            try {
-                paymentResult = await initiateRazorpayPayment({
-                    amount: pricing.advanceAmount,
-                    customerName,
-                    customerEmail: email || undefined,
-                    customerPhone: cleanPhone,
-                    description: `Staycation - ${propertyName} (Quote: ${quoteId})`,
-                    notes: { bookingType: "staycation", property: propertyName, checkIn: ciStr, checkOut: coStr, quoteRef: quoteId },
-                });
-            } catch (payErr: any) {
-                if (payErr?.message === "Payment cancelled by user") { setIsSubmitting(false); return; }
-                throw payErr;
-            }
-
             // Find DB property ID
             const slug = SLUG_MAP[propertyName];
             let dbPropertyId: number | null = null;
@@ -594,8 +578,7 @@ function CustomerQuoteInner() {
 
             const totalCottages = Object.values(villaQuantities).reduce((s, q) => s + q, 0) || 1;
 
-            const token = localStorage.getItem("galaxia_token");
-            const payload = {
+            const bookingPayload = {
                 customerName, customerPhone: cleanPhone, customerEmail: email,
                 propertyId: dbPropertyId, subPropertyId: dbSubPropertyId,
                 numGuests: adults, numKids: kids, numPets: pets,
@@ -612,10 +595,32 @@ function CustomerQuoteInner() {
                 balanceAmount: pricing.balanceAmount,
                 securityDeposit: 3000,
                 advancePaid: true,
-                advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 source: "quotation",
                 couponCode: couponData?.code || null,
                 addons: addons.length > 0 ? addons : null,
+            };
+
+            // Razorpay payment
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: pricing.advanceAmount,
+                    customerName,
+                    customerEmail: email || undefined,
+                    customerPhone: cleanPhone,
+                    description: `Staycation - ${propertyName} (Quote: ${quoteId})`,
+                    notes: { bookingType: "staycation", property: propertyName, checkIn: ciStr, checkOut: coStr, quoteRef: quoteId },
+                    bookingPayload, // NEW: Stored by backend for webhook safety-net
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") { setIsSubmitting(false); return; }
+                throw payErr;
+            }
+
+            const token = localStorage.getItem("galaxia_token");
+            const payload = {
+                ...bookingPayload,
+                advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
             };
 
             await fetch("/api/bookings/staycation", {

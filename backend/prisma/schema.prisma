@@ -850,6 +850,7 @@ model PendingDdPayment {
   customerPhone     String   @map("customer_phone") @db.VarChar(30)
   customerEmail     String?  @map("customer_email") @db.VarChar(255)
   status            String   @default("pending") @db.VarChar(30) // "pending", "fulfilled", "webhook_fulfilled", "failed"
+  module            String   @default("dd") @db.VarChar(20) // "dd" or "stay"
   createdBookingRef String?  @map("created_booking_ref") @db.VarChar(50)
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")

@@ -53,8 +53,8 @@ router.post("/create-order", async (req, res) => {
 
         const order = await instance.orders.create(options);
 
-        // Store booking intent for DD payments so webhook can create booking if frontend fails
-        if (type === "dd" && bookingPayload) {
+        // Store booking intent so webhook can create booking if frontend fails
+        if ((type === "dd" || type === "stay") && bookingPayload) {
             try {
                 await prisma.pendingDdPayment.create({
                     data: {
@@ -65,12 +65,13 @@ router.post("/create-order", async (req, res) => {
                         customerPhone: bookingPayload.customerPhone || "",
                         customerEmail: bookingPayload.customerEmail || null,
                         status: "pending",
+                        module: type, // "dd" or "stay"
                     },
                 });
-                console.log(`[PendingDD] Saved booking intent for order ${order.id}`);
+                console.log(`[Pending${type.toUpperCase()}] Saved booking intent for order ${order.id}`);
             } catch (pendingErr) {
                 // Non-fatal: if saving intent fails, the normal flow still works
-                console.error("[PendingDD] Failed to save booking intent (non-fatal):", pendingErr);
+                console.error(`[Pending${type.toUpperCase()}] Failed to save booking intent (non-fatal):`, pendingErr);
             }
         }
 
@@ -105,12 +106,12 @@ router.post("/verify", async (req, res) => {
             .digest("hex");
 
         if (expectedSignature === razorpay_signature) {
-            // Track payment ID on pending DD payment for later correlation
-            if (type === "dd") {
+            // Track payment ID on pending payment for later correlation
+            if (type === "dd" || type === "stay") {
                 prisma.pendingDdPayment.updateMany({
                     where: { razorpayOrderId: razorpay_order_id, status: "pending" },
                     data: { razorpayPaymentId: razorpay_payment_id },
-                }).catch(e => console.error("[PendingDD] Failed to update payment ID (non-fatal):", e));
+                }).catch(e => console.error(`[Pending${(type || '').toUpperCase()}] Failed to update payment ID (non-fatal):`, e));
             }
             return res.json({ verified: true, paymentId: razorpay_payment_id });
         } else {
@@ -126,8 +127,9 @@ router.post("/verify", async (req, res) => {
 import prisma from "../lib/prisma";
 import { sendTestEmail, sendBookingConfirmation as sendStayEmail, sendDDBookingConfirmation as sendDDEmail, sendOwnerBookingNotification } from "../lib/emailService";
 import { encrypt } from "../lib/encryption";
-import { generateDDBookingPDF } from "../lib/pdfService";
+import { generateDDBookingPDF, generateStaycationBookingPDF } from "../lib/pdfService";
 import { sendDDBookingConfirmation as sendDDWhatsApp } from "../lib/whatsappService";
+import { checkAvailability, generateStayRef } from "./stayBookings";
 
 async function generateStayRefTest(): Promise<string> {
     const today = new Date();
@@ -458,6 +460,226 @@ async function processPendingDdBooking(pendingRecord: any, razorpayPaymentId: st
     return booking.bookingRef;
 }
 
+// ── REAL STAYCATION BOOKING CREATION FROM WEBHOOK (safety-net) ──
+async function processPendingStayBooking(pendingRecord: any, razorpayPaymentId: string): Promise<string> {
+    const p = pendingRecord.bookingPayload || {};
+
+    // If this is a multi-villa booking, process each item
+    if (p.isMulti && Array.isArray(p.items)) {
+        return processPendingMultiStayBooking(pendingRecord, razorpayPaymentId);
+    }
+
+    const parsedPropertyId = parseInt(p.propertyId);
+    if (isNaN(parsedPropertyId)) throw new Error("Invalid property ID in pending payload");
+
+    const ciStr = typeof p.checkInDate === 'string' && !p.checkInDate.includes('T') ? p.checkInDate + 'T00:00:00' : p.checkInDate;
+    const coStr = typeof p.checkOutDate === 'string' && !p.checkOutDate.includes('T') ? p.checkOutDate + 'T00:00:00' : p.checkOutDate;
+    const checkIn = new Date(ciStr);
+    const checkOut = new Date(coStr);
+    const numNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24)));
+
+    // Find or create User record
+    let user: any = null;
+    try {
+        if (p.customerEmail) {
+            user = await prisma.user.findFirst({ where: { email: p.customerEmail } });
+        }
+        if (!user && p.customerPhone) {
+            user = await prisma.user.findFirst({ where: { phone: p.customerPhone } });
+        }
+        if (!user && (p.customerEmail || p.customerPhone)) {
+            user = await prisma.user.create({
+                data: {
+                    fullName: p.customerName || "Guest",
+                    phone: p.customerPhone || "",
+                    email: p.customerEmail || null,
+                },
+            });
+        } else if (user && (!user.phone || user.phone === "") && p.customerPhone) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { phone: p.customerPhone, fullName: user.fullName === "Guest" ? (p.customerName || user.fullName) : user.fullName },
+            });
+        }
+    } catch (userErr) {
+        console.error("[Webhook Stay] User lookup/creation error (non-fatal):", userErr);
+    }
+
+    const encryptedPhone = encrypt(p.customerPhone || "");
+    const encryptedEmail = p.customerEmail ? encrypt(p.customerEmail) : null;
+
+    // Handle coupon
+    let couponId: number | null = null;
+    let discountAmount = parseInt(p.discountAmount) || 0;
+
+    const booking = await prisma.$transaction(async (tx: any) => {
+        const property = await tx.property.findUnique({ where: { id: parsedPropertyId } });
+        if (!property || !property.isActive) {
+            throw new Error("PROPERTY_INACTIVE");
+        }
+
+        const assignedSubPropertyId = await checkAvailability(
+            tx,
+            parsedPropertyId,
+            p.subPropertyId ? parseInt(p.subPropertyId) : null,
+            checkIn,
+            checkOut,
+            p.numCottages || 1
+        );
+
+        // Coupon handling
+        if (p.couponCode) {
+            const coupon = await tx.coupon.findFirst({ where: { code: p.couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
+            if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
+                couponId = coupon.id;
+                if (coupon.discountType === "percentage") {
+                    const petCharges = (p.numPets || 0) * 600;
+                    let addonsTotal = 0;
+                    if (p.addons) {
+                        const addonsArr = Array.isArray(p.addons) ? p.addons : [p.addons];
+                        for (const addon of addonsArr) {
+                            if (addon && addon.price) addonsTotal += Number(addon.price) || 0;
+                        }
+                    }
+                    const subtotal = (p.basePrice || 0) + (p.extraPersonCharge || 0) + (p.extraAdultCharge || 0) + (p.extraKidsCharge || 0) + petCharges + addonsTotal;
+                    const preDiscountTotal = subtotal + (p.gstAmount || 0);
+                    discountAmount = Math.round((preDiscountTotal * Number(coupon.discountValue)) / 100);
+                } else {
+                    discountAmount = Number(coupon.discountValue);
+                }
+                await tx.coupon.update({
+                    where: { id: coupon.id },
+                    data: { currentUses: { increment: 1 } },
+                });
+            }
+        }
+
+        const bookingRef = await generateStayRef(tx);
+
+        const created = await tx.staycationBooking.create({
+            data: {
+                bookingRef,
+                userId: user?.id || null,
+                propertyId: parsedPropertyId,
+                subPropertyId: assignedSubPropertyId,
+                customerName: p.customerName || "Guest",
+                customerPhone: encryptedPhone,
+                customerEmail: encryptedEmail,
+                numGuests: p.numGuests || 2,
+                numKids: p.numKids || 0,
+                numPets: p.numPets || 0,
+                numCottages: p.numCottages || 1,
+                checkInDate: checkIn,
+                checkOutDate: checkOut,
+                numNights,
+                nightlyRate: p.nightlyRate || 0,
+                basePrice: p.basePrice || 0,
+                extraPersonCharge: p.extraPersonCharge || 0,
+                extraAdultCharge: p.extraAdultCharge || 0,
+                extraKidsCharge: p.extraKidsCharge || 0,
+                gstAmount: p.gstAmount || 0,
+                totalAmount: p.totalAmount || 0,
+                advanceAmount: p.advanceAmount || 0,
+                balanceAmount: p.balanceAmount || 0,
+                securityDeposit: p.securityDeposit || 3000,
+                advancePaid: true,
+                advanceMethod: `Razorpay: ${razorpayPaymentId}`,
+                advancePaidAt: new Date(),
+                source: p.source || "website",
+                couponId,
+                discountAmount,
+                addons: p.addons || null,
+            },
+            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
+        });
+
+        if (couponId) {
+            await tx.couponUsage.create({
+                data: {
+                    couponId,
+                    bookingRef,
+                    customerName: p.customerName || "Guest",
+                    discountSaved: discountAmount,
+                },
+            });
+        }
+
+        return created;
+    }, { isolationLevel: "Serializable" });
+
+    // Fire-and-forget notifications
+    sendStayEmail({ ...booking, customerPhone: p.customerPhone, customerEmail: p.customerEmail }).catch(() => {});
+
+    const prop = booking.property || {} as any;
+    const sub = booking.subProperty;
+    const ownerPropertyName = sub ? `${sub.name} — ${prop.name}` : (prop.name || "Galaxia Property");
+    generateStaycationBookingPDF({ ...booking, customerPhone: p.customerPhone, customerEmail: p.customerEmail })
+        .then((pdfBuffer: Buffer) =>
+            sendOwnerBookingNotification({
+                bookingRef: booking.bookingRef,
+                customerName: booking.customerName,
+                module: "staycation",
+                propertyName: ownerPropertyName,
+                pdfBuffer,
+            })
+        )
+        .catch((err: any) => console.error("[Webhook Stay] Owner PDF/email failed:", err));
+
+    return booking.bookingRef;
+}
+
+async function processPendingMultiStayBooking(pendingRecord: any, razorpayPaymentId: string): Promise<string> {
+    const p = pendingRecord.bookingPayload || {};
+    const items = p.items || [];
+    const bookingRefs: string[] = [];
+
+    // For multi-villa, we create each booking individually
+    // The items array contains villa metadata; full payloads are constructed from shared data
+    for (const item of items) {
+        try {
+            // Build a single-booking payload from the multi data
+            const singlePayload: any = {
+                ...pendingRecord,
+                bookingPayload: {
+                    customerName: p.customerName,
+                    customerPhone: p.customerPhone,
+                    customerEmail: p.customerEmail,
+                    checkInDate: p.checkInDate,
+                    checkOutDate: p.checkOutDate,
+                    propertyId: item.propertyId || p.propertyId,
+                    subPropertyId: item.subPropertyId || null,
+                    numGuests: item.numGuests || p.numGuests || 2,
+                    numKids: item.numKids || p.numKids || 0,
+                    numPets: item.numPets || 0,
+                    numCottages: item.unitCount || 1,
+                    nightlyRate: item.nightlyRate || 0,
+                    basePrice: item.basePrice || 0,
+                    extraPersonCharge: item.extraPersonCharge || 0,
+                    extraAdultCharge: item.extraAdultCharge || 0,
+                    extraKidsCharge: item.extraKidsCharge || 0,
+                    gstAmount: item.gstAmount || 0,
+                    totalAmount: item.totalAmount || 0,
+                    advanceAmount: item.advanceAmount || 0,
+                    balanceAmount: item.balanceAmount || 0,
+                    securityDeposit: item.securityDeposit || 3000,
+                    source: "website",
+                    addons: item.addons || null,
+                },
+            };
+            const ref = await processPendingStayBooking(singlePayload, razorpayPaymentId);
+            bookingRefs.push(ref);
+        } catch (itemErr: any) {
+            if (itemErr?.message === "DATE_CONFLICT") {
+                console.log(`[Webhook Stay Multi] Date conflict for item ${item.villaId || 'unknown'} — likely already booked`);
+            } else {
+                console.error(`[Webhook Stay Multi] Error creating booking for item:`, itemErr);
+            }
+        }
+    }
+
+    return bookingRefs.join(", ") || "multi-webhook-no-bookings";
+}
+
 router.get("/test-options", async (_req, res) => {
     try {
         const properties = await prisma.property.findMany({
@@ -692,6 +914,92 @@ router.post("/webhook/dd", async (req: any, res) => {
         return res.json({ status: "ok" });
     } catch (error: any) {
         console.error("Webhook processing error:", error);
+        return res.status(500).json({ error: error.message || "Webhook handling failed" });
+    }
+});
+
+// POST /api/payments/webhook/stay
+// Razorpay Webhook listener for Staycation account
+router.post("/webhook/stay", async (req: any, res) => {
+    try {
+        const webhookSecret = process.env.STAY_RAZORPAY_WEBHOOK_SECRET || "";
+        const signature = req.headers["x-razorpay-signature"] as string;
+
+        if (webhookSecret && signature) {
+            const bodyPayload = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body);
+            const expectedSignature = crypto
+                .createHmac("sha256", webhookSecret)
+                .update(bodyPayload)
+                .digest("hex");
+
+            if (expectedSignature !== signature) {
+                console.warn("[Webhook Stay] Signature mismatch! Event rejected.");
+                return res.status(400).json({ error: "Invalid webhook signature" });
+            }
+        }
+
+        const event = req.body?.event;
+        const payload = req.body?.payload;
+
+        console.log(`[Webhook Stay] Received event: ${event}`);
+
+        if (event === "order.paid" || event === "payment.captured") {
+            const entity = payload?.payment?.entity || payload?.order?.entity;
+            const orderId = entity?.order_id || entity?.id;
+            const paymentId = payload?.payment?.entity?.id || entity?.payment_id || "pay_webhook";
+
+            if (orderId) {
+                // Check pending staycation payments
+                try {
+                    const pendingRecord = await prisma.pendingDdPayment.findFirst({
+                        where: { razorpayOrderId: orderId, module: "stay" },
+                    });
+
+                    if (pendingRecord && pendingRecord.status === "pending") {
+                        console.log(`[Webhook Stay] Found pending Stay payment for order ${orderId}, creating booking...`);
+                        try {
+                            const bookingRef = await processPendingStayBooking(pendingRecord, paymentId);
+                            await prisma.pendingDdPayment.update({
+                                where: { id: pendingRecord.id },
+                                data: {
+                                    status: "webhook_fulfilled",
+                                    razorpayPaymentId: paymentId,
+                                    createdBookingRef: bookingRef,
+                                },
+                            });
+                            console.log(`✅ [Webhook Stay] Staycation booking created via webhook! Ref: ${bookingRef}`);
+                        } catch (bookingErr: any) {
+                            if (bookingErr?.message === "DATE_CONFLICT") {
+                                console.log(`[Webhook Stay] Date conflict for order ${orderId} — booking likely already created by frontend.`);
+                                await prisma.pendingDdPayment.update({
+                                    where: { id: pendingRecord.id },
+                                    data: { status: "fulfilled", razorpayPaymentId: paymentId },
+                                }).catch(() => {});
+                            } else {
+                                console.error("[Webhook Stay] Staycation booking creation error:", bookingErr);
+                            }
+                        }
+                    }
+                } catch (pendingErr) {
+                    console.error("[Webhook Stay] Pending payment lookup error (non-fatal):", pendingErr);
+                }
+            }
+        } else if (event === "payment.failed") {
+            const entity = payload?.payment?.entity;
+            const orderId = entity?.order_id;
+
+            if (orderId) {
+                // Mark pending staycation payment as failed
+                prisma.pendingDdPayment.updateMany({
+                    where: { razorpayOrderId: orderId, status: "pending", module: "stay" },
+                    data: { status: "failed" },
+                }).catch(e => console.error("[Webhook Stay] Failed to mark pending payment as failed:", e));
+            }
+        }
+
+        return res.json({ status: "ok" });
+    } catch (error: any) {
+        console.error("Webhook Stay processing error:", error);
         return res.status(500).json({ error: error.message || "Webhook handling failed" });
     }
 });

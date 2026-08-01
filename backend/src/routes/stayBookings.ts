@@ -12,7 +12,7 @@ import { deductItemStock } from "./hospitality";
 const router = Router();
 
 // Generate booking ref: ST-YYYYMMDD-NNN (transaction-safe)
-async function generateStayRef(tx: any): Promise<string> {
+export async function generateStayRef(tx: any): Promise<string> {
     // Use IST date to match Indian business day (UTC+5:30)
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -36,7 +36,7 @@ async function generateStayRef(tx: any): Promise<string> {
 }
 
 // Reusable capacity-aware and blocked-date availability check helper
-async function checkAvailability(
+export async function checkAvailability(
     tx: any,
     propertyId: number,
     subPropertyId: number | null,
@@ -397,9 +397,45 @@ router.post("/", async (req, res) => {
             )
             .catch((err) => console.error("[Owner Notify] Staycation PDF/email failed:", err));
 
+        // Mark the corresponding PendingDdPayment as fulfilled (safety-net)
+        const advMethod = req.body?.advanceMethod;
+        if (advMethod && typeof advMethod === "string" && advMethod.includes("Razorpay:")) {
+            const payIdMatch = advMethod.match(/pay_\\w+/);
+            if (payIdMatch) {
+                prisma.pendingDdPayment.updateMany({
+                    where: { razorpayPaymentId: payIdMatch[0], status: "pending", module: "stay" },
+                    data: { status: "fulfilled", createdBookingRef: booking.bookingRef },
+                }).catch(e => console.error("[PendingStay] Mark fulfilled error (non-fatal):", e));
+            }
+        }
+
         return res.status(201).json(booking);
     } catch (error: any) {
         if (error?.message === "DATE_CONFLICT") {
+            // Check if webhook already created the booking (race condition)
+            try {
+                const advMethod = req.body?.advanceMethod;
+                if (advMethod && typeof advMethod === "string") {
+                    const payIdMatch = advMethod.match(/pay_\\w+/);
+                    if (payIdMatch) {
+                        const pendingRecord = await prisma.pendingDdPayment.findFirst({
+                            where: { razorpayPaymentId: payIdMatch[0], status: "webhook_fulfilled", module: "stay" },
+                        });
+                        if (pendingRecord && pendingRecord.createdBookingRef) {
+                            const existingBooking = await prisma.staycationBooking.findFirst({
+                                where: { bookingRef: pendingRecord.createdBookingRef },
+                                include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
+                            });
+                            if (existingBooking) {
+                                console.log(`[Stay Booking] Returning webhook-created booking ${pendingRecord.createdBookingRef} instead of 409`);
+                                return res.status(201).json(existingBooking);
+                            }
+                        }
+                    }
+                }
+            } catch (raceErr) {
+                console.error("[Stay Booking] Race condition check error (non-fatal):", raceErr);
+            }
             return res.status(409).json({ error: "Property is already booked for these dates. Please choose different dates." });
         }
         if (error?.message === "PROPERTY_INACTIVE") {

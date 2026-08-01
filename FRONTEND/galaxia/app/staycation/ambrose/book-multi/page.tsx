@@ -840,6 +840,23 @@ export default function BookMultiPage() {
         try {
             const customerName = `${formData.firstName} ${formData.lastName}`.trim();
 
+            const bookingPayload = {
+                isMulti: true,
+                customerName,
+                customerPhone: formData.phone,
+                customerEmail: formData.email,
+                checkInDate: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : undefined,
+                checkOutDate: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : undefined,
+                items: cart.map(item => ({
+                    villaId: item.villaId,
+                    villaName: item.villaName,
+                    property: item.property,
+                    unitCount: item.unitCount,
+                })),
+                totalAmount: payNow,
+                source: "website",
+            };
+
             // Initiate single Razorpay payment for total advance
             let paymentResult;
             try {
@@ -855,6 +872,7 @@ export default function BookMultiPage() {
                         checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
                         checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
                     },
+                    bookingPayload,
                 });
             } catch (payErr: any) {
                 if (payErr?.message === "Payment cancelled by user") {

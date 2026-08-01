@@ -837,37 +837,13 @@ export default function BookingClient({ property }: BookingClientProps) {
                 }
             }
 
-            // Initiate Razorpay payment for the advance amount
-            let paymentResult;
-            try {
-                paymentResult = await initiateRazorpayPayment({
-                    amount: payNow,
-                    customerName,
-                    customerEmail: formData.email || undefined,
-                    customerPhone: formData.phone,
-                    description: `Staycation - ${property.name}${selectedRoom ? ` (${selectedRoom.name})` : ''}`,
-                    notes: {
-                        bookingType: "staycation",
-                        property: property.name,
-                        checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
-                        checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
-                    },
-                });
-            } catch (payErr: any) {
-                if (payErr?.message === "Payment cancelled by user") {
-                    setBookingError("");
-                    setIsSubmitting(false);
-                    return;
-                }
-                throw payErr;
-            }
-
             // Build addons
             const bookingAddons: any[] = [];
             if (celebrationAddon) bookingAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
             if (isAmbrose || isAmstelNest) bookingAddons.push({ name: 'Food Preference', foodType });
 
-            const payload = {
+            // Build booking payload BEFORE payment so it can be stored for webhook safety-net
+            const bookingPayload = {
                 customerName,
                 customerPhone: formData.phone,
                 customerEmail: formData.email,
@@ -890,10 +866,40 @@ export default function BookingClient({ property }: BookingClientProps) {
                 balanceAmount: payAtVenue,
                 securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
                 advancePaid: true,
-                advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
                 addons: bookingAddons.length > 0 ? bookingAddons : null,
+            };
+
+            // Initiate Razorpay payment for the advance amount
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: formData.email || undefined,
+                    customerPhone: formData.phone,
+                    description: `Staycation - ${property.name}${selectedRoom ? ` (${selectedRoom.name})` : ''}`,
+                    notes: {
+                        bookingType: "staycation",
+                        property: property.name,
+                        checkIn: checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth()+1).padStart(2,'0')}-${String(checkInDate.getDate()).padStart(2,'0')}` : '',
+                        checkOut: checkOutDate ? `${checkOutDate.getFullYear()}-${String(checkOutDate.getMonth()+1).padStart(2,'0')}-${String(checkOutDate.getDate()).padStart(2,'0')}` : '',
+                    },
+                    bookingPayload, // NEW: Stored by backend for webhook safety-net
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
+            const payload = {
+                ...bookingPayload,
+                advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
             };
 
             const firstResult = await api.post("/bookings/staycation", payload);

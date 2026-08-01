@@ -27,6 +27,18 @@ async function main() {
     `);
 
     console.log("✅ pending_dd_payments table ready.");
+
+    // Add module column (safe: IF NOT EXISTS via DO block)
+    console.log("Adding module column (IF NOT EXISTS)...");
+    await prisma.$executeRawUnsafe(`
+        DO $$ BEGIN
+            ALTER TABLE public.pending_dd_payments ADD COLUMN module VARCHAR(20) NOT NULL DEFAULT 'dd';
+        EXCEPTION WHEN duplicate_column THEN
+            NULL;
+        END $$;
+    `);
+
+    console.log("✅ module column ready.");
 }
 
 main()
