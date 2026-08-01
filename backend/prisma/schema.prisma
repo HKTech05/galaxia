@@ -840,4 +840,19 @@ model TestPayment {
   @@map("test_payments")
 }
 
+model PendingDdPayment {
+  id                Int      @id @default(autoincrement())
+  razorpayOrderId   String   @unique @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId String?  @map("razorpay_payment_id") @db.VarChar(100)
+  amount            Int      // in paise
+  bookingPayload    Json     @map("booking_payload")
+  customerName      String   @map("customer_name") @db.VarChar(200)
+  customerPhone     String   @map("customer_phone") @db.VarChar(30)
+  customerEmail     String?  @map("customer_email") @db.VarChar(255)
+  status            String   @default("pending") @db.VarChar(30) // "pending", "fulfilled", "webhook_fulfilled", "failed"
+  createdBookingRef String?  @map("created_booking_ref") @db.VarChar(50)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
+  @@map("pending_dd_payments")
+}

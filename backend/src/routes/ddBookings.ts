@@ -430,9 +430,44 @@ router.post("/", async (req, res) => {
                 .catch((err) => console.error("[Owner Notify] DD PDF/email failed:", err));
         }
 
+        // Mark the corresponding PendingDdPayment as fulfilled (safety-net)
+        if (paymentDetails && typeof paymentDetails === "string" && paymentDetails.includes("Razorpay:")) {
+            const payIdMatch = paymentDetails.match(/pay_\w+/);
+            if (payIdMatch) {
+                prisma.pendingDdPayment.updateMany({
+                    where: { razorpayPaymentId: payIdMatch[0], status: "pending" },
+                    data: { status: "fulfilled", createdBookingRef: booking.bookingRef },
+                }).catch(e => console.error("[PendingDD] Mark fulfilled error (non-fatal):", e));
+            }
+        }
+
         return res.status(201).json(booking);
     } catch (error: any) {
         if (error?.message === "SLOT_CONFLICT") {
+            // Check if webhook already created the booking (race condition)
+            try {
+                const pd = req.body?.paymentDetails;
+                if (pd && typeof pd === "string") {
+                    const payIdMatch = pd.match(/pay_\w+/);
+                    if (payIdMatch) {
+                        const pendingRecord = await prisma.pendingDdPayment.findFirst({
+                            where: { razorpayPaymentId: payIdMatch[0], status: "webhook_fulfilled" },
+                        });
+                        if (pendingRecord && pendingRecord.createdBookingRef) {
+                            const existingBooking = await prisma.ddBooking.findFirst({
+                                where: { bookingRef: pendingRecord.createdBookingRef },
+                                include: { screen: true, package: true, addons: true },
+                            });
+                            if (existingBooking) {
+                                console.log(`[DD Booking] Returning webhook-created booking ${pendingRecord.createdBookingRef} instead of 409`);
+                                return res.status(201).json(existingBooking);
+                            }
+                        }
+                    }
+                }
+            } catch (raceErr) {
+                console.error("[DD Booking] Race condition check error (non-fatal):", raceErr);
+            }
             return res.status(409).json({ error: "Time slot overlaps with existing booking" });
         }
         if (error?.message === "PROPERTY_INACTIVE") {

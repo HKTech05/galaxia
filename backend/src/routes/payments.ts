@@ -36,7 +36,7 @@ function getRazorpay(type?: string) {
 // Creates a Razorpay order for the given amount (in INR)
 router.post("/create-order", async (req, res) => {
     try {
-        const { amount, currency = "INR", receipt, notes, type } = req.body;
+        const { amount, currency = "INR", receipt, notes, type, bookingPayload } = req.body;
 
         if (!amount || amount <= 0) {
             return res.status(400).json({ error: "Valid amount is required" });
@@ -52,6 +52,28 @@ router.post("/create-order", async (req, res) => {
         };
 
         const order = await instance.orders.create(options);
+
+        // Store booking intent for DD payments so webhook can create booking if frontend fails
+        if (type === "dd" && bookingPayload) {
+            try {
+                await prisma.pendingDdPayment.create({
+                    data: {
+                        razorpayOrderId: order.id,
+                        amount: Math.round(amount * 100),
+                        bookingPayload,
+                        customerName: bookingPayload.customerName || "",
+                        customerPhone: bookingPayload.customerPhone || "",
+                        customerEmail: bookingPayload.customerEmail || null,
+                        status: "pending",
+                    },
+                });
+                console.log(`[PendingDD] Saved booking intent for order ${order.id}`);
+            } catch (pendingErr) {
+                // Non-fatal: if saving intent fails, the normal flow still works
+                console.error("[PendingDD] Failed to save booking intent (non-fatal):", pendingErr);
+            }
+        }
+
         return res.json({
             orderId: order.id,
             amount: order.amount,
@@ -83,6 +105,13 @@ router.post("/verify", async (req, res) => {
             .digest("hex");
 
         if (expectedSignature === razorpay_signature) {
+            // Track payment ID on pending DD payment for later correlation
+            if (type === "dd") {
+                prisma.pendingDdPayment.updateMany({
+                    where: { razorpayOrderId: razorpay_order_id, status: "pending" },
+                    data: { razorpayPaymentId: razorpay_payment_id },
+                }).catch(e => console.error("[PendingDD] Failed to update payment ID (non-fatal):", e));
+            }
             return res.json({ verified: true, paymentId: razorpay_payment_id });
         } else {
             return res.status(400).json({ verified: false, error: "Invalid payment signature" });
@@ -95,8 +124,10 @@ router.post("/verify", async (req, res) => {
 
 // ── NEW: TEST PAYMENT SYSTEM (SEPARATE & ISOLATED) ───────────────────
 import prisma from "../lib/prisma";
-import { sendTestEmail, sendBookingConfirmation as sendStayEmail, sendDDBookingConfirmation as sendDDEmail } from "../lib/emailService";
+import { sendTestEmail, sendBookingConfirmation as sendStayEmail, sendDDBookingConfirmation as sendDDEmail, sendOwnerBookingNotification } from "../lib/emailService";
 import { encrypt } from "../lib/encryption";
+import { generateDDBookingPDF } from "../lib/pdfService";
+import { sendDDBookingConfirmation as sendDDWhatsApp } from "../lib/whatsappService";
 
 async function generateStayRefTest(): Promise<string> {
     const today = new Date();
@@ -225,6 +256,208 @@ async function processTestBookingCreation(testRecord: any, razorpayPaymentId: st
 
 // GET /api/payments/test-options
 // Provides active properties & screens for testpayment dropdowns
+
+// ── REAL DD BOOKING CREATION FROM WEBHOOK (safety-net) ──
+async function generateDdRefWebhook(): Promise<string> {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+    const prefix = `DD-${dateStr}-`;
+    const todayRefs = await prisma.ddBooking.findMany({
+        where: { bookingRef: { startsWith: prefix } },
+        select: { bookingRef: true },
+    });
+    let maxNum = 0;
+    for (const r of todayRefs) {
+        const suffix = r.bookingRef.slice(prefix.length);
+        const num = parseInt(suffix);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+    return `${prefix}${String(maxNum + 1).padStart(3, "0")}`;
+}
+
+async function processPendingDdBooking(pendingRecord: any, razorpayPaymentId: string): Promise<string> {
+    const p = pendingRecord.bookingPayload || {};
+
+    // Find or create User record
+    let user: any = null;
+    try {
+        if (p.customerEmail) {
+            user = await prisma.user.findFirst({ where: { email: p.customerEmail } });
+        }
+        if (!user && p.customerPhone) {
+            user = await prisma.user.findFirst({ where: { phone: p.customerPhone } });
+        }
+        if (!user && (p.customerEmail || p.customerPhone)) {
+            user = await prisma.user.create({
+                data: {
+                    fullName: p.customerName || "Guest",
+                    phone: p.customerPhone || "",
+                    email: p.customerEmail || null,
+                },
+            });
+        } else if (user && (!user.phone || user.phone === "") && p.customerPhone) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: { phone: p.customerPhone, fullName: user.fullName === "Guest" ? (p.customerName || user.fullName) : user.fullName },
+            });
+        }
+    } catch (userErr) {
+        console.error("[Webhook DD] User lookup/creation error (non-fatal):", userErr);
+    }
+
+    const encryptedPhone = encrypt(p.customerPhone || "");
+    const encryptedEmail = p.customerEmail ? encrypt(p.customerEmail) : null;
+
+    // Use serializable transaction for slot-conflict safety
+    const booking = await prisma.$transaction(async (tx: any) => {
+        // Check screen is active
+        const screen = await tx.subProperty.findUnique({
+            where: { id: parseInt(p.screenId) },
+            include: { property: true },
+        });
+        if (!screen || !screen.isActive || (screen.property && !screen.property.isActive)) {
+            throw new Error("PROPERTY_INACTIVE");
+        }
+
+        // Slot conflict check
+        const existingBookings = await tx.ddBooking.findMany({
+            where: {
+                screenId: parseInt(p.screenId),
+                bookingDate: new Date(p.bookingDate + 'T12:00:00'),
+                status: { notIn: ["cancelled", "no_show", "transferred"] },
+            },
+        });
+
+        const newStart = parseInt(p.startHour);
+        const newEnd = newStart + parseInt(p.durationHours || 1);
+
+        for (const existing of existingBookings) {
+            const existStart = existing.startHour;
+            const existEnd = existStart + existing.durationHours;
+            if (newStart < existEnd && newEnd > existStart) {
+                throw new Error("SLOT_CONFLICT");
+            }
+        }
+
+        // Handle coupon
+        let couponId = null;
+        let discountAmount = 0;
+        if (p.couponCode) {
+            const coupon = await tx.coupon.findFirst({ where: { code: p.couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
+            if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
+                couponId = coupon.id;
+                if (coupon.discountType === "percentage") {
+                    discountAmount = Math.round(((p.totalAmount || 0) * Number(coupon.discountValue)) / 100);
+                } else {
+                    discountAmount = Number(coupon.discountValue);
+                }
+                await tx.coupon.update({
+                    where: { id: coupon.id },
+                    data: { currentUses: { increment: 1 } },
+                });
+            }
+        }
+
+        const bookingRef = await generateDdRefWebhook();
+
+        const created = await tx.ddBooking.create({
+            data: {
+                bookingRef,
+                userId: user?.id || null,
+                screenId: parseInt(p.screenId),
+                packageId: parseInt(p.packageId || "1"),
+                bookingDate: new Date(p.bookingDate + 'T12:00:00'),
+                startHour: newStart,
+                durationHours: parseInt(p.durationHours || "1"),
+                customerName: p.customerName || "Guest",
+                customerPhone: encryptedPhone,
+                customerEmail: encryptedEmail,
+                occasion: p.occasion || null,
+                cakeMessage: p.cakeMessage || null,
+                specialRequests: p.specialRequests || null,
+                numGuests: p.numGuests || 2,
+                basePrice: p.basePrice || 0,
+                extraPersonCharge: p.extraPersonCharge || 0,
+                gstAmount: p.gstAmount || 0,
+                totalAmount: (p.totalAmount || 0) - discountAmount,
+                amountPaid: p.amountPaid || 0,
+                amountToCollect: p.amountToCollect !== undefined
+                    ? p.amountToCollect
+                    : Math.max(0, ((p.totalAmount || 0) - discountAmount) - (p.amountPaid || 0)),
+                paymentMethod: p.paymentMethod || "online",
+                paymentDetails: `Razorpay: ${razorpayPaymentId}`,
+                paymentStatus: "partial",
+                status: "confirmed",
+                source: p.source || "website",
+                couponId,
+                discountAmount,
+            },
+            include: { screen: true, package: true, addons: true },
+        });
+
+        // Create add-ons
+        if (p.addons && Array.isArray(p.addons)) {
+            for (const addon of p.addons) {
+                await tx.ddBookingAddon.create({
+                    data: {
+                        bookingId: created.id,
+                        addonType: addon.type,
+                        addonValue: addon.value || null,
+                        price: addon.price || 0,
+                        isPaid: true,
+                    },
+                });
+            }
+        }
+
+        // Record coupon usage
+        if (couponId) {
+            await tx.couponUsage.create({
+                data: {
+                    couponId,
+                    bookingRef,
+                    customerName: p.customerName || "Guest",
+                    discountSaved: discountAmount,
+                },
+            });
+        }
+
+        return created;
+    }, { isolationLevel: "Serializable" });
+
+    // Fire-and-forget notifications (same as ddBookings.ts)
+    const bookingWithAddons = await prisma.ddBooking.findUnique({
+        where: { id: booking.id },
+        include: { screen: true, package: true, addons: true },
+    });
+
+    // Email
+    sendDDEmail({ ...(bookingWithAddons || booking), customerPhone: p.customerPhone, customerEmail: p.customerEmail }).catch(() => {});
+
+    // WhatsApp
+    if (p.customerPhone) {
+        const baseUrl = process.env.FRONTEND_URL || "https://galaxiaresorts.com";
+        const voucherUrl = `${baseUrl}/api/bookings/dd/voucher/${booking.bookingRef}`;
+        sendDDWhatsApp(p.customerPhone, booking.bookingRef, voucherUrl).catch(() => {});
+    }
+
+    // Owner PDF notification
+    const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
+    generateDDBookingPDF({ ...(bookingWithAddons || booking), customerPhone: p.customerPhone, customerEmail: p.customerEmail })
+        .then((pdfBuffer: Buffer) =>
+            sendOwnerBookingNotification({
+                bookingRef: booking.bookingRef,
+                customerName: booking.customerName,
+                module: "digital-diaries",
+                propertyName: screenName,
+                pdfBuffer,
+            })
+        )
+        .catch((err: any) => console.error("[Webhook DD] Owner PDF/email failed:", err));
+
+    return booking.bookingRef;
+}
+
 router.get("/test-options", async (_req, res) => {
     try {
         const properties = await prisma.property.findMany({
@@ -362,6 +595,7 @@ router.post("/webhook/dd", async (req: any, res) => {
             const paymentId = payload?.payment?.entity?.id || entity?.payment_id || "pay_webhook";
 
             if (orderId) {
+                // ── 1. Check test payments (existing test system) ──
                 const testRecord = await prisma.testPayment.findFirst({
                     where: { razorpayOrderId: orderId },
                 });
@@ -394,6 +628,42 @@ router.post("/webhook/dd", async (req: any, res) => {
                         });
                     }
                 }
+
+                // ── 2. Check real DD pending payments (webhook safety-net) ──
+                try {
+                    const pendingRecord = await prisma.pendingDdPayment.findFirst({
+                        where: { razorpayOrderId: orderId },
+                    });
+
+                    if (pendingRecord && pendingRecord.status === "pending") {
+                        console.log(`[Webhook DD] Found pending DD payment for order ${orderId}, creating booking...`);
+                        try {
+                            const bookingRef = await processPendingDdBooking(pendingRecord, paymentId);
+                            await prisma.pendingDdPayment.update({
+                                where: { id: pendingRecord.id },
+                                data: {
+                                    status: "webhook_fulfilled",
+                                    razorpayPaymentId: paymentId,
+                                    createdBookingRef: bookingRef,
+                                },
+                            });
+                            console.log(`✅ [Webhook DD] Real DD booking created via webhook! Ref: ${bookingRef}`);
+                        } catch (bookingErr: any) {
+                            // If it's a slot conflict, the frontend likely already created the booking
+                            if (bookingErr?.message === "SLOT_CONFLICT") {
+                                console.log(`[Webhook DD] Slot conflict for order ${orderId} — booking likely already created by frontend.`);
+                                await prisma.pendingDdPayment.update({
+                                    where: { id: pendingRecord.id },
+                                    data: { status: "fulfilled", razorpayPaymentId: paymentId },
+                                }).catch(() => {});
+                            } else {
+                                console.error("[Webhook DD] Real DD booking creation error:", bookingErr);
+                            }
+                        }
+                    }
+                } catch (pendingErr) {
+                    console.error("[Webhook DD] Pending payment lookup error (non-fatal):", pendingErr);
+                }
             }
         } else if (event === "payment.failed") {
             const entity = payload?.payment?.entity;
@@ -410,6 +680,12 @@ router.post("/webhook/dd", async (req: any, res) => {
                     });
                     console.log(`❌ [Backend Payment Verification] Payment ${testRecord.paymentId} marked FAILED via Webhook.`);
                 }
+
+                // Also mark pending DD payment as failed
+                prisma.pendingDdPayment.updateMany({
+                    where: { razorpayOrderId: orderId, status: "pending" },
+                    data: { status: "failed" },
+                }).catch(e => console.error("[Webhook DD] Failed to mark pending payment as failed:", e));
             }
         }
 

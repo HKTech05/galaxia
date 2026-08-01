@@ -520,32 +520,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
             // Initiate Razorpay payment
             const customerName = `${firstName} ${lastName}`.trim();
-            let paymentResult;
-            try {
-                paymentResult = await initiateRazorpayPayment({
-                    amount: payNow,
-                    customerName,
-                    customerEmail: email || undefined,
-                    customerPhone: phone,
-                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
-                    type: "dd",
-                    notes: {
-                        bookingType: "dd",
-                        screen: screen.name,
-                        package: pkg.name,
-                        date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
-                    },
-                });
-            } catch (payErr: any) {
-                if (payErr?.message === "Payment cancelled by user") {
-                    setBookingError("");
-                    setIsSubmitting(false);
-                    return;
-                }
-                throw payErr;
-            }
 
-            const payload = {
+            // Build booking payload BEFORE payment so it can be stored for webhook safety-net
+            const bookingPayload = {
                 screenId: dbScreenId,
                 packageId: dbPackageId,
                 bookingDate: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
@@ -563,12 +540,43 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 totalAmount: subtotal,
                 amountPaid: payNow,
                 paymentMethod: "online",
-                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                 addons,
                 source: "website",
                 couponCode: appliedCoupon?.code || null,
                 discountAmount: couponDiscount,
                 specialRequests: specialRequests || null,
+            };
+
+            let paymentResult;
+            try {
+                paymentResult = await initiateRazorpayPayment({
+                    amount: payNow,
+                    customerName,
+                    customerEmail: email || undefined,
+                    customerPhone: phone,
+                    description: `Digital Diaries - ${pkg.name} (${screen.name})`,
+                    type: "dd",
+                    notes: {
+                        bookingType: "dd",
+                        screen: screen.name,
+                        package: pkg.name,
+                        date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`,
+                    },
+                    bookingPayload, // Stored by backend for webhook safety-net
+                });
+            } catch (payErr: any) {
+                if (payErr?.message === "Payment cancelled by user") {
+                    setBookingError("");
+                    setIsSubmitting(false);
+                    return;
+                }
+                throw payErr;
+            }
+
+            // Add payment details after successful payment and send to booking endpoint
+            const payload = {
+                ...bookingPayload,
+                paymentDetails: `Razorpay: ${paymentResult.razorpay_payment_id}`,
             };
 
             const result = await api.post("/bookings/dd", payload);

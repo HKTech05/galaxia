@@ -28,6 +28,7 @@ interface RazorpayPaymentOptions {
     receipt?: string;
     notes?: Record<string, string>;
     type?: "stay" | "dd"; // "dd" for Digital Diaries, default is Staycation
+    bookingPayload?: Record<string, any>; // Full booking details for webhook safety-net
 }
 
 interface RazorpayPaymentResult {
@@ -52,6 +53,7 @@ export async function initiateRazorpayPayment(
             receipt: options.receipt || `rcpt_${Date.now()}`,
             notes: options.notes || {},
             type: options.type || "stay", // default to staycation account
+            bookingPayload: options.bookingPayload, // for webhook safety-net (DD only)
         }),
     });
 
