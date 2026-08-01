@@ -32,7 +32,7 @@ class AIProviderService {
           baseURL || "https://api.anthropic.com/v1/messages",
           {
             model: model || "claude-3-5-sonnet-20241022",
-            max_tokens: 1024,
+            max_tokens: 2048,
             messages: messages.filter(m => m.role !== "system"),
             system: messages.find(m => m.role === "system")?.content || "",
             temperature: temperature
@@ -66,11 +66,14 @@ class AIProviderService {
           contents,
           generationConfig: {
             temperature: temperature,
-            maxOutputTokens: 1024
+            maxOutputTokens: 2048
           }
         });
         
         text = response.data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        if (!text || !text.trim()) {
+          console.warn(`[AIProviderService] Gemini returned empty content. Finish reason: ${response.data.candidates?.[0]?.finishReason}`);
+        }
         // Native Gemini token count may be absent in direct REST, estimate if null
         const inputCharCount = messages.reduce((acc, cur) => acc + cur.content.length, 0);
         const outputCharCount = text.length;
@@ -84,23 +87,54 @@ class AIProviderService {
         const defaultBaseUrl = provider === "deepseek" ? "https://api.deepseek.com/v1" : "https://api.openai.com/v1";
         const url = `${baseURL || defaultBaseUrl}/chat/completions`;
 
-        const response = await axios.post(
+        let response = await axios.post(
           url,
           {
             model: model,
             messages: messages,
             temperature: temperature,
-            max_tokens: 1024
+            max_tokens: 2048
           },
           {
             headers: {
               "Authorization": `Bearer ${apiKey}`,
               "Content-Type": "application/json"
-            }
+            },
+            timeout: 30000
           }
         );
 
-        text = response.data.choices[0].message.content;
+        text = response.data.choices?.[0]?.message?.content;
+        const finishReason = response.data.choices?.[0]?.finish_reason;
+
+        // If content is null/empty (safety filter, content_filter, or truncation), retry once
+        if (!text || !text.trim()) {
+          console.warn(`[AIProviderService] ${provider} returned empty content (finish_reason: ${finishReason}). Retrying with higher limit...`);
+          response = await axios.post(
+            url,
+            {
+              model: model,
+              messages: messages,
+              temperature: Math.min(temperature + 0.1, 0.5),
+              max_tokens: 4096
+            },
+            {
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+              },
+              timeout: 45000
+            }
+          );
+          text = response.data.choices?.[0]?.message?.content;
+          const retryFinish = response.data.choices?.[0]?.finish_reason;
+          if (!text || !text.trim()) {
+            console.error(`[AIProviderService] ${provider} retry also returned empty (finish_reason: ${retryFinish}). Giving up.`);
+          } else {
+            console.log(`[AIProviderService] ${provider} retry succeeded (finish_reason: ${retryFinish}).`);
+          }
+        }
+
         usage = {
           prompt_tokens: response.data.usage?.prompt_tokens || 0,
           completion_tokens: response.data.usage?.completion_tokens || 0,
