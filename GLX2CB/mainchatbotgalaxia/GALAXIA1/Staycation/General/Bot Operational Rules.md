@@ -47,6 +47,31 @@ This document outlines the strict business logic, booking protocols, occupancy r
 
 ---
 
+## 1B. Booking Confirmation & Website Link Rule (CRITICAL — ALL BOTS)
+- When a customer confirms they want to book (says "yes", "proceed", "book", "okay book it", or similar), you **MUST ALWAYS** include the website booking link in your response.
+- **NEVER ask for personal details** (Full Name, Phone Number, Email Address) to "send a payment link" or "share a booking link". The bot **CANNOT** send payment links. The customer must self-book on the website.
+- **NEVER say** "Please share your Full Name, Phone Number, and Email Address so I can send the 80% advance payment link" or any variation of this. This is **strictly FORBIDDEN**.
+- **Booking Links by Property**:
+  - **Amstel Nest**:
+    - Standard Cottage: https://www.galaxiaresorts.com/staycation/amstel-nest/standard-cottage
+    - Family Cottage: https://www.galaxiaresorts.com/staycation/amstel-nest/family-cottage
+    - Generic: https://www.galaxiaresorts.com/staycation/amstel-nest
+  - **Ambrose Villas**:
+    - Santorini: https://www.galaxiaresorts.com/staycation/ambrose/santorini
+    - Take-1: https://www.galaxiaresorts.com/staycation/ambrose/take-1
+    - Alta: https://www.galaxiaresorts.com/staycation/ambrose/alta
+    - Cypress: https://www.galaxiaresorts.com/staycation/ambrose/cypress
+    - Bamboosa: https://www.galaxiaresorts.com/staycation/ambrose/bamboosa
+  - **Other Properties**:
+    - La Paraiso: https://www.galaxiaresorts.com/staycation/la-paraiso
+    - Heavenly Villa: https://www.galaxiaresorts.com/staycation/heavenly-villa
+    - Mount View: https://www.galaxiaresorts.com/staycation/mount-view
+    - Hill View: https://www.galaxiaresorts.com/staycation/hill-view
+- **Example correct response when customer says "Yes, book it"**:
+  > "Please complete your booking on our website: https://www.galaxiaresorts.com/staycation/amstel-nest/standard-cottage — Select your dates, pay 80% advance online (UPI/Cards) to lock slot. Balance 20% payable at check-in. For help, call +91 99877 34458."
+
+---
+
 ## 2. Standard Unit Discount (Amstel Nest ONLY - CONDITIONAL RULE)
 - **6+ People Flat Discount**: For group bookings of **6 or more people** for Amstel Nest Standard Cottages, a **flat ₹1,500 discount** is available!
 - **CRITICAL CONDITION**: This discount text / information MUST NOT be included or displayed by default when providing pricing or group calculations for 6+ people!

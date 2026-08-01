@@ -625,7 +625,12 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     const aiResult = await aiProviderService.generateCompletion(finalMessages);
 
     // Enforce single-asterisk WhatsApp bold formatting across all bots (NO double asterisks)
-    const cleanReplyText = (aiResult.text || "").replace(/\*\*(.*?)\*\*/g, '*$1*');
+    let cleanReplyText = (aiResult.text || "").replace(/\*\*(.*?)\*\*/g, '*$1*');
+    // Fallback: if AI returned empty/null reply, use a safe default instead of saving blank message
+    if (!cleanReplyText || !cleanReplyText.trim()) {
+      console.warn("[ChatbotService] AI returned empty reply — using fallback message");
+      cleanReplyText = "Sorry, I couldn't process your request right now. Please try again or type 'human' to speak with our support team.";
+    }
 
     // 9. Save Messages in Database
     await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);

@@ -89,6 +89,7 @@ function formatTime(d: Date) {
 }
 
 function formatMsg(text: string) {
+    if (!text || !text.trim()) return '<em style="opacity:0.5">(Empty message)</em>';
     return text.replace(/\*([^*]+)\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
 }
 

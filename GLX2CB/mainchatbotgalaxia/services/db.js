@@ -62,11 +62,13 @@ async function getOrCreateSession(sessionId, customerPhone, phoneNumberId, botTy
  * Save a message and update session metadata.
  */
 async function saveMessage(sessionId, role, message, isHuman = false) {
+  // Guard against null/undefined/empty messages
+  const safeMessage = (typeof message === "string" && message.trim()) ? message : "(No content)";
   const result = await pool.query(
     `INSERT INTO chat_messages (session_id, role, message, is_human)
      VALUES ($1, $2, $3, $4)
      RETURNING *`,
-    [sessionId, role, message, isHuman]
+    [sessionId, role, safeMessage, isHuman]
   );
 
   // Update session last message info
@@ -78,7 +80,7 @@ async function saveMessage(sessionId, role, message, isHuman = false) {
          updated_at = NOW(),
          unread_count = unread_count + $3
      WHERE session_id = $1`,
-    [sessionId, message.substring(0, 500), unreadInc]
+    [sessionId, safeMessage.substring(0, 500), unreadInc]
   );
 
   return result.rows[0];
