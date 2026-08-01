@@ -205,7 +205,7 @@ router.post("/webhook", async (req, res) => {
       }
     }
 
-    const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstelnest_ig";
+    const isAiBot = true; // ALL Instagram bots now use AI chatbot V2
 
     // 2. Save user message to DB (only for non-AI menu bots)
     let savedUserMsg = null;
@@ -279,8 +279,18 @@ router.post("/webhook", async (req, res) => {
     let responseObj = null;
 
     if (isAiBot) {
-      // AI Chatbot V2 — route to correct bot type
-      const aiBotType = botType === "amstelnest_ig" ? "amstel_nest" : "digital_diaries";
+      // AI Chatbot V2 — route to correct bot type based on IG page
+      const aiBotTypeMap = {
+        "amstelnest_ig": "amstel_nest",
+        "ambrose_ig": "staycation",
+        "laparaiso_ig": "staycation",
+        "mountview_ig": "staycation",
+        "heavenlyvilla_ig": "staycation",
+        "hillview_ig": "staycation",
+        "celebration": "digital_diaries",
+        "digital_diaries": "digital_diaries",
+      };
+      const aiBotType = aiBotTypeMap[botType] || "staycation";
       console.log(`[Instagram] Routing to AI Chatbot V2 (${aiBotType}) for user ${senderId}`);
       const aiResult = await chatbotService.processMessage(
         sessionId,
