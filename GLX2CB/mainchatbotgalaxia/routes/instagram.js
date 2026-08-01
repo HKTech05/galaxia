@@ -205,7 +205,7 @@ router.post("/webhook", async (req, res) => {
       }
     }
 
-    const isAiBot = true; // ALL Instagram bots now use AI chatbot V2
+    const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstelnest_ig";
 
     // 2. Save user message to DB (only for non-AI menu bots)
     let savedUserMsg = null;
