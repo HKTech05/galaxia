@@ -23,8 +23,8 @@ let io = null;
 
 // Rate limiting & sliding window map for IG bot loop protection
 const messageTimestampsMap = new Map();
-const MAX_MSG_IN_WINDOW = 2;
-const WINDOW_MS = 15000;
+const MAX_MSG_IN_WINDOW = 4;
+const WINDOW_MS = 10000;
 
 function isRateLimited(sessionId) {
   const now = Date.now();
@@ -262,9 +262,7 @@ router.post("/webhook", async (req, res) => {
 
     // 4c. Sliding window rate limit check (max 2 incoming messages in 15 seconds)
     if (isRateLimited(sessionId)) {
-      console.warn(`[Instagram Loop Guard] High message frequency for ${sessionId}. Suppressing auto-reply & activating human mode.`);
-      await db.setHumanMode(sessionId, true);
-      if (io) io.emit("session_updated", await db.getSession(sessionId));
+      console.warn(`[Instagram Loop Guard] High message frequency for ${sessionId}. Suppressing auto-reply (NOT activating human mode).`);
       return;
     }
 

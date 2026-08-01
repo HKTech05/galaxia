@@ -230,8 +230,8 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         return { reply: generalPriceMsg, latency: Date.now() - startTime, tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }, cost: 0, retrievedChunksCount: 0, cached: false, messageId: savedMsg.id };
       }
 
-      // Check Bot 2 Greeting / Dot Flow (hi, ., hello)
-      const isSimpleGreeting = /^(hi+|hello|hey+|\.|namaste|good\s*(morning|evening|afternoon))$/i.test(textTrimmed);
+      // Check Bot 2 Greeting / Dot / Booking Intent Flow (hi, ., hello, booking, book, etc.)
+      const isSimpleGreeting = /^(hi+|hello|hey+|\.|namaste|good\s*(morning|evening|afternoon)|book(ing)?|i\s*want\s*to\s*book|please\s*share\s*booking\s*details|booking\s*details|new\s*booking|i\s*need\s*a?\s*room|availability|check\s*availability)$/i.test(textTrimmed);
       if (isSimpleGreeting) {
         const greetingMsg = "Hi! 👋 Welcome to Amstel Nest! To check cottage availability and rates for your stay, please let me know:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)";
         await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
