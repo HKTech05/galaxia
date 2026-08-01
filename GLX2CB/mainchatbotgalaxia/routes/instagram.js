@@ -279,18 +279,8 @@ router.post("/webhook", async (req, res) => {
     let responseObj = null;
 
     if (isAiBot) {
-      // AI Chatbot V2 — route to correct bot type based on IG page
-      const aiBotTypeMap = {
-        "amstelnest_ig": "amstel_nest",
-        "ambrose_ig": "staycation",
-        "laparaiso_ig": "staycation",
-        "mountview_ig": "staycation",
-        "heavenlyvilla_ig": "staycation",
-        "hillview_ig": "staycation",
-        "celebration": "digital_diaries",
-        "digital_diaries": "digital_diaries",
-      };
-      const aiBotType = aiBotTypeMap[botType] || "staycation";
+      // AI Chatbot V2 — route to correct bot type
+      const aiBotType = botType === "amstelnest_ig" ? "amstel_nest" : "digital_diaries";
       console.log(`[Instagram] Routing to AI Chatbot V2 (${aiBotType}) for user ${senderId}`);
       const aiResult = await chatbotService.processMessage(
         sessionId,
@@ -301,6 +291,10 @@ router.post("/webhook", async (req, res) => {
         "instagram"
       );
       replyText = aiResult.reply || "";
+      // Guard: if AI returned empty, use fallback instead of sending "Thank you for contacting Galaxia!"
+      if (!replyText.trim()) {
+        replyText = "Sorry, I couldn't process your request right now. Please try again or type 'human' to speak with our team.";
+      }
       responseObj = { message: replyText, options: [] };
     } else {
       // Staycation Instagram Menu Bot (Unswitched)
