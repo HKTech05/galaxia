@@ -414,7 +414,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 weekendPrice: liveWe || sub.pricing?.weekend.price || property.pricing.weekend.price,
                 saturdayPrice: liveSa || sub.pricing?.saturday?.price || sub.pricing?.weekend?.price || property.pricing.weekend.price,
                 primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
-                dateOverrides: sub.pricing?.dateOverrides || property.pricing.dateOverrides || {},
+                dateOverrides: (spPricing?.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? { ...(sub.pricing?.dateOverrides || property.pricing.dateOverrides || {}), ...spPricing.dateOverrides } : (sub.pricing?.dateOverrides || property.pricing.dateOverrides || {}),
                 details: sub.configuration?.slice(0, 3) || [],
                 persons: livePersons || sub.pricing?.weekday.persons || "2 guests",
                 maxPersons: sub.maxPersons || property.maxPersons || 4,
@@ -425,6 +425,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         : (() => {
             // For sub-property single bookings (e.g. ambrose/bamboosa), use sub-property DB pricing
             let dbWd: string | undefined, dbWe: string | undefined, dbSa: string | undefined, dbPersons: string | undefined;
+            let dbDateOverrides: Record<string, number> | undefined;
             if (property.id.includes('/') && backendData?.subPropertyPricing && backendData?.subProperties) {
                 const villaSlug = property.id.split('/').pop();
                 const dbSub = backendData.subProperties.find((sp: any) => sp.slug === villaSlug || sp.name?.toUpperCase() === property.name?.toUpperCase());
@@ -434,6 +435,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     dbWe = spP.weekend?.price;
                     dbSa = spP.saturday?.price || spP.weekend?.price;
                     dbPersons = spP.weekday?.personsLabel;
+                    if (spP.dateOverrides && Object.keys(spP.dateOverrides).length > 0) dbDateOverrides = spP.dateOverrides;
                 }
             } else if (backendData?.pricing) {
                 dbWd = backendData.pricing.weekday?.price;
@@ -452,7 +454,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 weekendPrice: dbWe || property.pricing.weekend.price,
                 saturdayPrice: dbSa || property.pricing.saturday?.price || property.pricing.weekend.price,
                 primeDatePrice: property.pricing.primeDates || "",
-                dateOverrides: property.pricing.dateOverrides || {},
+                dateOverrides: dbDateOverrides ? { ...(property.pricing.dateOverrides || {}), ...dbDateOverrides } : (property.pricing.dateOverrides || {}),
                 details: property.configuration.slice(0, 3),
                 persons: dbPersons || property.pricing.weekday.persons,
                 maxPersons: property.maxPersons || 4,
@@ -625,6 +627,14 @@ export default function BookingClient({ property }: BookingClientProps) {
         const initialPriceStr = (isSat ? currentSaturdayPrice : isWe ? currentWeekendPrice : currentWeekdayPrice).toString();
         const initialPrice = parseInt(initialPriceStr.replace(/,/g, ""));
 
+        // Merge dateOverrides: prefer backend DB overrides, then static room overrides, then property-level overrides
+        let currentDateOverrides = room.dateOverrides || property.pricing.dateOverrides || {};
+        if (spPricing?.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) {
+            currentDateOverrides = { ...currentDateOverrides, ...spPricing.dateOverrides };
+        } else if (!room.id?.includes('/') && backendData?.pricing?.dateOverrides && Object.keys(backendData.pricing.dateOverrides).length > 0) {
+            currentDateOverrides = { ...currentDateOverrides, ...backendData.pricing.dateOverrides };
+        }
+
         setSelectedRoom({
             id: room.id,
             name: room.name,
@@ -637,7 +647,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             weekendPrice: currentWeekendPrice,
             saturdayPrice: currentSaturdayPrice,
             primeDatePrice: room.primeDatePrice,
-            dateOverrides: room.dateOverrides,
+            dateOverrides: currentDateOverrides,
             personsLabel: currentPersonsLabel,
         });
         setNightlyRate(initialPrice);

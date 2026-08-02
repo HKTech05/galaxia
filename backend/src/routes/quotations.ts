@@ -31,6 +31,7 @@ setInterval(async () => {
 interface PricingEntry {
     weekday: number; weekend: number; saturday: number;
     extraAdult: number; kidsCharge: number; baseGuests: number;
+    dateOverrides?: Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
 }
 
 async function fetchLivePricing(): Promise<Record<string, PricingEntry>> {
@@ -42,18 +43,20 @@ async function fetchLivePricing(): Promise<Record<string, PricingEntry>> {
             const property = await prisma.property.findFirst({
                 where: { slug },
                 include: {
-                    pricing: { where: { isActive: true, overrideDate: null } },
-                    subProperties: { include: { pricing: { where: { isActive: true, overrideDate: null } } } },
+                    pricing: { where: { isActive: true } },
+                    subProperties: { include: { pricing: { where: { isActive: true } } } },
                 },
             });
             if (!property) continue;
 
             const buildEntry = (rules: any[]): PricingEntry | null => {
-                const wd = rules.find((r: any) => r.dayType === "weekday");
-                const we = rules.find((r: any) => r.dayType === "weekend");
-                const sa = rules.find((r: any) => r.dayType === "saturday");
+                const baseRules = rules.filter((r: any) => !r.overrideDate);
+                const overrideRules = rules.filter((r: any) => r.overrideDate);
+                const wd = baseRules.find((r: any) => r.dayType === "weekday");
+                const we = baseRules.find((r: any) => r.dayType === "weekend");
+                const sa = baseRules.find((r: any) => r.dayType === "saturday");
                 if (!wd && !we) return null;
-                return {
+                const entry: PricingEntry = {
                     weekday: wd ? Number(wd.basePrice) : (we ? Number(we.basePrice) : 0),
                     weekend: we ? Number(we.basePrice) : (wd ? Number(wd.basePrice) : 0),
                     saturday: sa ? Number(sa.basePrice) : (we ? Number(we.basePrice) : (wd ? Number(wd.basePrice) : 0)),
@@ -61,6 +64,22 @@ async function fetchLivePricing(): Promise<Record<string, PricingEntry>> {
                     kidsCharge: wd?.kidsCharge ? Number(wd.kidsCharge) : 500,
                     baseGuests: wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2,
                 };
+                // Build dateOverrides from DB override rows
+                if (overrideRules.length > 0) {
+                    entry.dateOverrides = {};
+                    for (const o of overrideRules) {
+                        if (o.overrideDate) {
+                            const key = o.overrideDate.toISOString().split('T')[0];
+                            entry.dateOverrides[key] = {
+                                price: Number(o.basePrice),
+                                extraAdult: o.extraAdultPrice ? Number(o.extraAdultPrice) : entry.extraAdult,
+                                kidsCharge: o.kidsPrice ? Number(o.kidsPrice) : entry.kidsCharge,
+                                baseGuests: o.personsLabel ? parseInt(o.personsLabel) || entry.baseGuests : entry.baseGuests,
+                            };
+                        }
+                    }
+                }
+                return entry;
             };
 
             const parentEntry = buildEntry(property.pricing);
@@ -143,7 +162,15 @@ function calculateUnitPrice(
         const is15Aug = dateStr.endsWith("08-15");
         const isFamily = (resolvedVilla || "").toLowerCase().includes("family");
 
-        if (is14Aug || is15Aug) {
+        // Priority 1: Check DB date overrides from livePricing
+        if (lp?.dateOverrides?.[dateStr]) {
+            const dbOverride = lp.dateOverrides[dateStr];
+            basePrice = dbOverride.price;
+            extraAdultPrice = dbOverride.extraAdult;
+            kidsPrice = dbOverride.kidsCharge;
+            baseGuests = dbOverride.baseGuests;
+        } else if (is14Aug || is15Aug) {
+            // Priority 2: Hardcoded fallback for prime dates (safety net)
             const vName = (resolvedVilla || "").toUpperCase();
             if (resolvedProperty.includes("Amstel")) {
                 basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
