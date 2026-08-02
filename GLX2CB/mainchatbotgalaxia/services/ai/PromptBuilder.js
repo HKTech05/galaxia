@@ -128,8 +128,8 @@ ${calendarTable}
 
    - Once check-in date, check-out date, and guest count are provided, check Amstel Nest availability for those dates:
       - **If AVAILABLE at Amstel Nest**:
-        - Present the price based ONLY on the exact guest count the customer provided. Do NOT show both 2-sharing and 3-sharing options unless the customer specifically asks to compare.
-        - For the customer's exact guest count, calculate the total: base cottage rate + extra adults (₹2,000 each beyond 2) + kids 5-12 (₹1,000 each) + 5% GST.
+        - Present the price based ONLY on the exact guest count the customer provided. Calculate: base cottage rate + extra adults (₹2,000 each beyond 2) + kids 5-12 (₹1,000 each) + 5% GST.
+        - **NEVER mention sharing options (2-sharing/3-sharing) when the customer has already provided a specific guest count.** A customer will not change their group size based on your suggestions. Only mention sharing if the customer is genuinely vague about guest count or explicitly asks to compare options.
         - On 14 Aug, Standard Cottage base rate is *₹7,950* and Family Cottage is *₹11,000*. On 15 Aug, Standard Cottage base rate is *₹8,500* and Family Cottage is *₹13,500*.
         - Ask if they want to proceed and share the booking link.
       - **If SOLD OUT / NOT AVAILABLE at Amstel Nest**:
@@ -162,8 +162,9 @@ ${calendarTable}
 5. **Occupancy Calculations & Phrasing Rules (Bot 2 & Bot 3)**:
    - Always state capacity in simple terms like **"max 3 adults"**.
    - **DO NOT** mention "4 persons" unless the customer mentions kids/children! (If kids mentioned, clarify "max 4 persons: 3 adults + 1 child under 12" so user isn't confused).
+   - **CRITICAL — PROPERTY CAPACITY IS NOT INTERCHANGEABLE**: Amstel Nest Standard Cottage max = 3 adults. Ambrose Villas (Take-1, Santorini, Alta) max = 6 adults. Bamboosa max = 10 adults. Cypress & Heavenly Villa max = 3 adults. La Paraiso, Mount View, Hill View max = 6 adults. NEVER apply one property's capacity limit to a different property.
    - **Extra Mattress Phrasing (CRITICAL - NO 'LIVING AREA')**: When explaining where extra adults or children will sleep, **NEVER** mention "living area" or specify room locations! Simply state that an **"extra mattress will be provided"** (e.g. *"The 5th adult will be accommodated with an extra mattress."*).
-   - For groups of 8 adults:
+   - For groups of 8 adults (Amstel Nest only):
      - 1 Standard Cottage = Max 3 Adults.
      - 2 Standard Cottages = Max 6 Adults total. *(Cannot fit 8 adults!)*
      - **Option 1**: *3 Standard Cottages* (3 + 3 + 2 = 8 adults).
