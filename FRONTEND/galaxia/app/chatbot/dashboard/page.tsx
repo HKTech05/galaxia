@@ -559,21 +559,43 @@ export default function ChatbotDashboard() {
             <div className="cb-main">
                 {/* Left Panel */}
                 <div className={`cb-left ${mobileShowChat ? "hidden" : ""}`}>
-                    <div className="cb-tabs">
-                        <button className={`cb-tab ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
-                            All
-                            {(() => { const u = filteredSessions("all").reduce((s, c) => s + c.unread, 0); return u > 0 ? <span className="cb-tab-count">{u}</span> : null; })()}
-                        </button>
-                        {allowed.map(key => {
-                            const num = PHONE_NUMBERS[key];
-                            if (!num) return null;
-                            const u = filteredSessions(key).reduce((s, c) => s + c.unread, 0);
-                            return (
-                                <button key={key} className={`cb-tab ${tab === key ? "active" : ""}`} onClick={() => setTab(key)}>
-                                    {num.icon} {num.label}{u > 0 && <span className="cb-tab-count">{u}</span>}
-                                </button>
-                            );
-                        })}
+                    <div className="cb-tabs" style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                        <select
+                            value={tab}
+                            onChange={e => setTab(e.target.value)}
+                            style={{
+                                flex: 1,
+                                padding: "8px 12px",
+                                borderRadius: 8,
+                                border: "1px solid var(--cb-border)",
+                                background: "var(--cb-bg)",
+                                color: "var(--cb-text)",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                outline: "none",
+                                appearance: "none",
+                                WebkitAppearance: "none",
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                                backgroundRepeat: "no-repeat",
+                                backgroundPosition: "right 12px center",
+                                paddingRight: 32,
+                            }}
+                        >
+                            <option value="all">
+                                📋 All {(() => { const u = filteredSessions("all").reduce((s, c) => s + c.unread, 0); return u > 0 ? `(${u})` : ""; })()}
+                            </option>
+                            {allowed.map(key => {
+                                const num = PHONE_NUMBERS[key];
+                                if (!num) return null;
+                                const u = filteredSessions(key).reduce((s, c) => s + c.unread, 0);
+                                return (
+                                    <option key={key} value={key}>
+                                        {num.icon} {num.label}{u > 0 ? ` (${u})` : ""}
+                                    </option>
+                                );
+                            })}
+                        </select>
                     </div>
                     <div className="cb-search">
                         <input placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)} />
