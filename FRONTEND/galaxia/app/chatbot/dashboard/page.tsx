@@ -21,6 +21,7 @@ interface PhoneNumber { id: string; label: string; icon: string; color: string }
 const PHONE_NUMBERS: Record<string, PhoneNumber> = {
     digital_diaries: { id: "1117204771469353", label: "Digital Diaries", icon: "🎬", color: "#f59e0b" },
     dd_instagram: { id: "instagram", label: "DD Instagram", icon: "📷", color: "#e1306c" },
+    wa_amstelnest: { id: "1265812873275552", label: "Amstel Nest WA", icon: "🏡", color: "#06b6d4" },
     website: { id: "website", label: "Website", icon: "🌐", color: "#10b981" },
     ig_ambrose: { id: "ig_ambrose", label: "Ambrose IG", icon: "📷", color: "#8b5cf6" },
     ig_amstelnest: { id: "ig_amstelnest", label: "Amstelnest IG", icon: "📷", color: "#06b6d4" },
@@ -111,6 +112,9 @@ function dbToUiSession(db: DbChatSession): ChatSession {
             instagram: "dd_instagram",
         };
         phoneNumberKey = igPhoneMap[db.phone_number_id] || "dd_instagram";
+    } else if (db.phone_number_id === "1265812873275552" || db.bot_type === "amstel_nest") {
+        // Amstel Nest WhatsApp
+        phoneNumberKey = "wa_amstelnest";
     }
 
     return {
@@ -362,7 +366,7 @@ export default function ChatbotDashboard() {
 
             if (!allowed.includes(s.phoneNumberKey)) return false;
             // Hide Instagram sessions from the "All" tab — they have their own tab
-            if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_"))) return false;
+            if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_") || s.phoneNumberKey === "wa_amstelnest")) return false;
             if (t !== "all" && s.phoneNumberKey !== t) return false;
             // Message type filter
             if (msgFilter === "human" && s.mode !== "human") return false;

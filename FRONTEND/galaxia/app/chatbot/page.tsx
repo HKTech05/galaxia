@@ -13,6 +13,7 @@ const STAYCATION_CHATBOTS = [
     "staycation_1",
     "staycation_2",
     "website",
+    "wa_amstelnest",
     "ig_ambrose",
     "ig_amstelnest",
     "ig_laparaiso",
@@ -22,7 +23,7 @@ const STAYCATION_CHATBOTS = [
 ];
 
 const DEFAULT_USERS: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {
-    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "dd_instagram", "website", "ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"] },
+    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "dd_instagram", "wa_amstelnest", "website", "ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"] },
     staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: STAYCATION_CHATBOTS },
     stay123: { password: "stay123", role: "staycation_call_manager", displayName: "Staycation call manager", assignedNumbers: STAYCATION_CHATBOTS },
     staycation2: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2", "website"] },
