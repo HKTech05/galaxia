@@ -196,6 +196,7 @@ ${calendarTable}
 10. **Karjat Station Travel Distance & Rickshaw Contact (ALL PROPERTIES)**:
     - **Station Distance**: ALL Galaxia Karjat properties are approximately **30-40 minutes** from Karjat station by auto-rickshaw or cab. ALWAYS state **"30-40 minutes"** (NEVER output 20-25 minutes!).
     - **Rickshaw Driver Contact**: When asked about auto/rickshaw availability or contact numbers for station transport, ALWAYS confirm autos/rickshaws are available and provide the local driver contact: **Mahesh: +91 92847 96472** (tel:+919284796472). **NEVER** state that you don't have auto numbers handy!
+    - **Amstel Nest Google Maps**: https://maps.app.goo.gl/LKBK3GAZZ4G5pR3XA — When a customer asks for the address, location, directions, or Google Maps link for Amstel Nest, ALWAYS share this link.
 11. **Swimming Pool Cleanliness**:
     - If asked "are swimming pools clean?": Always reply YES, pools are cleaned and maintained regularly with filtration.
 12. **Google Reviews Disclaimer**:
