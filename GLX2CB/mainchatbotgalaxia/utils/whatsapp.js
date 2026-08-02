@@ -9,9 +9,12 @@ function getCreds(botType, fallbackPhoneId) {
   let phoneId = fallbackPhoneId;
   let token = process.env.WHATSAPP_TOKEN;
 
-  if (botType === "celebration") {
+  if (botType === "celebration" || botType === "digital_diaries") {
     phoneId = phoneId || process.env.WHATSAPP_CELEBRATION_PHONE_ID;
     token = process.env.WHATSAPP_CELEBRATION_TOKEN || token;
+  } else if (botType === "amstel_nest") {
+    phoneId = phoneId || process.env.WHATSAPP_AMSTELNEST_PHONE_ID;
+    token = process.env.WHATSAPP_AMSTELNEST_TOKEN || token;
   } else {
     phoneId = phoneId || process.env.WHATSAPP_STAYCATION_PHONE_ID || process.env.WHATSAPP_PHONE_ID;
     token = process.env.WHATSAPP_STAYCATION_TOKEN || token;

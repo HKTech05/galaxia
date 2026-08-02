@@ -129,8 +129,12 @@ app.post("/webhook", async (req, res) => {
     }
 
     const from = message.from; // e.g. "919876543210"
-    const sessionId = `wa_${from}`;
-    const botType = "celebration";
+
+    // Route by phone_number_id: Amstel Nest WA vs Digital Diaries WA
+    const AMSTEL_NEST_PHONE_ID = process.env.WHATSAPP_AMSTELNEST_PHONE_ID || "1265812873275552";
+    const isAmstelNest = phoneId === AMSTEL_NEST_PHONE_ID;
+    const botType = isAmstelNest ? "amstel_nest" : "celebration";
+    const sessionId = isAmstelNest ? `wa_an_${from}` : `wa_${from}`;
 
     let userText = "";
 
@@ -154,7 +158,7 @@ app.post("/webhook", async (req, res) => {
     // 1. Get or create session
     const session = await db.getOrCreateSession(sessionId, from, phoneId, botType, "whatsapp");
 
-    const isAiBot = botType === "celebration" || botType === "digital_diaries";
+    const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstel_nest";
 
     // 2. Save user message to DB & emit to dashboard (only for non-AI menu bots, since ChatbotService handles AI bot saves)
     let savedUserMsg = null;
@@ -178,14 +182,15 @@ app.post("/webhook", async (req, res) => {
     let responseObj = null;
 
     if (isAiBot) {
-      // Digital Diaries AI Chatbot V2
-      console.log(`[WhatsApp] Routing to AI Chatbot V2 (digital_diaries) for ${from}`);
+      // AI Chatbot V2 — route to correct bot type
+      const aiBotType = botType === "amstel_nest" ? "amstel_nest" : "digital_diaries";
+      console.log(`[WhatsApp] Routing to AI Chatbot V2 (${aiBotType}) for ${from}`);
       const aiResult = await chatbotService.processMessage(
         sessionId,
         userText,
         from,
         phoneId,
-        "digital_diaries",
+        aiBotType,
         "whatsapp"
       );
       replyText = aiResult.reply || "";
@@ -352,8 +357,10 @@ app.post("/api/chats/:sessionId/send", async (req, res) => {
     } else if (WHATSAPP_LIVE) {
       // WhatsApp session — send via WhatsApp Cloud API (unchanged)
       const { sendChatResponse } = require("./utils/whatsapp");
-      // Use env phone ID to avoid stale session data
-      const phoneId = process.env.WHATSAPP_PHONE_ID || session.phone_number_id;
+      // Use the correct phone ID based on bot_type
+      const phoneId = session.bot_type === "amstel_nest"
+        ? (process.env.WHATSAPP_AMSTELNEST_PHONE_ID || "1265812873275552")
+        : (process.env.WHATSAPP_PHONE_ID || session.phone_number_id);
       console.log(`[Admin Send] Sending to ${session.customer_phone} via phone_id=${phoneId}`);
       await sendChatResponse(
         session.customer_phone,
