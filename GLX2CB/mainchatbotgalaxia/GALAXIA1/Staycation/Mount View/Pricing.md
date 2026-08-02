@@ -23,6 +23,12 @@ The package does not include food though there is a restaurant which provides no
 Check-in - 2 PM
 Check-out - 10 AM
 
+## Occupancy Limits
+- Max Capacity: 8 Persons Total Limit.
+- **Max Adult Limit**: **STRICT MAX 6 ADULTS** (Up to 6 Adults + 2 Kids).
+- Kids age range: 5 to 12 years (₹500/night). Under 5: Free.
+- Extra Adult: ₹800 per night.
+
 *RENT:*
 *PRIME DATES:* 5950/- for 2 Person
 

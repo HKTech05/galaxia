@@ -24,6 +24,12 @@ The package does not include food though there is a restaurant only 10 steps awa
 Check-in - 2 PM
 Check-out - 10 AM
 
+## Occupancy Limits
+- Max Capacity: 8 Persons Total Limit.
+- **Max Adult Limit**: **STRICT MAX 6 ADULTS** (Up to 6 Adults + 2 Kids).
+- Kids age range: 5 to 12 years (₹800/night). Under 5: Free.
+- Extra Adult: ₹1,200 per night.
+
 *RENT:*
 Prime date: 8500/-
 

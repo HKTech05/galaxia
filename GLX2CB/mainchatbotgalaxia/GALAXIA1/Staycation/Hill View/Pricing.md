@@ -20,6 +20,12 @@ Apartment includes:
 Check-in - 1 PM
 Check-out - 10 AM
 
+## Occupancy Limits
+- Max Capacity: 8 Persons Total Limit.
+- **Max Adult Limit**: **STRICT MAX 6 ADULTS** (Up to 6 Adults + 2 Kids).
+- Kids age range: 5 to 12 years (₹400/night). Under 5: Free.
+- Extra Adult: ₹600 per night.
+
 *RENT:*
 *MON to THUR*
 2000/- for 2 person + 5%
