@@ -32,7 +32,7 @@ class AIProviderService {
           baseURL || "https://api.anthropic.com/v1/messages",
           {
             model: model || "claude-3-5-sonnet-20241022",
-            max_tokens: 2048,
+            max_tokens: 4096,
             messages: messages.filter(m => m.role !== "system"),
             system: messages.find(m => m.role === "system")?.content || "",
             temperature: temperature
@@ -66,7 +66,7 @@ class AIProviderService {
           contents,
           generationConfig: {
             temperature: temperature,
-            maxOutputTokens: 2048
+            maxOutputTokens: 4096
           }
         });
         
@@ -93,7 +93,7 @@ class AIProviderService {
             model: model,
             messages: messages,
             temperature: temperature,
-            max_tokens: 2048
+            max_tokens: 4096
           },
           {
             headers: {
@@ -116,7 +116,7 @@ class AIProviderService {
               model: model,
               messages: messages,
               temperature: Math.min(temperature + 0.1, 0.5),
-              max_tokens: 4096
+              max_tokens: 8192
             },
             {
               headers: {
