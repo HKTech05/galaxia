@@ -148,7 +148,7 @@
 
 /* Left Panel */
 .cb-left { width: 360px; min-width: 360px; background: var(--cb-bg2); border-right: 1px solid var(--cb-border); display: flex; flex-direction: column; flex-shrink: 0; }
-.cb-tabs { display: flex; padding: 12px 12px 0; gap: 4px; border-bottom: 1px solid var(--cb-border); overflow-x: auto; flex-shrink: 0; }
+.cb-tabs { display: flex; padding: 0; gap: 4px; border-bottom: 1px solid var(--cb-border); overflow: visible; flex-shrink: 0; position: relative; z-index: 50; }
 .cb-tab {
   padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--cb-text-muted); background: transparent;
   border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; font-family: inherit;
