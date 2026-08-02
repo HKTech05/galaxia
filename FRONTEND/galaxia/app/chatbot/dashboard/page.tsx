@@ -137,10 +137,11 @@ function dbToUiMessage(db: DbChatMessage): Message {
     };
 }
 
-const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123", igadmin: "ig123" };
+const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", stay123: "stay123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123", igadmin: "ig123" };
 const ACCOUNTS = [
     { key: "owner", label: "Owner", access: "All Numbers" },
-    { key: "staycation1", label: "Staycation 1", access: "Staycation 1" },
+    { key: "stay123", label: "Staycation Call Manager", access: "Staycation Chatbots" },
+    { key: "staycation1", label: "Staycation 1", access: "Staycation Chatbots" },
     { key: "staycation2", label: "Staycation 2", access: "Staycation 2" },
     { key: "ddadmin", label: "DD Admin", access: "Digital Diaries" },
     { key: "igadmin", label: "IG Admin", access: "All IG Bots" },

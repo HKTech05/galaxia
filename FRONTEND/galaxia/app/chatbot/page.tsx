@@ -9,9 +9,22 @@ import "./chatbot.css";
    Route: /chatbot
    ═══════════════════════════════════════════════════════ */
 
+const STAYCATION_CHATBOTS = [
+    "staycation_1",
+    "staycation_2",
+    "website",
+    "ig_ambrose",
+    "ig_amstelnest",
+    "ig_laparaiso",
+    "ig_mountview",
+    "ig_heavenlyvilla",
+    "ig_hillview"
+];
+
 const DEFAULT_USERS: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {
-    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "dd_instagram", "website"] },
-    staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: ["staycation_1", "website"] },
+    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "dd_instagram", "website", "ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"] },
+    staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: STAYCATION_CHATBOTS },
+    stay123: { password: "stay123", role: "staycation_call_manager", displayName: "Staycation call manager", assignedNumbers: STAYCATION_CHATBOTS },
     staycation2: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2", "website"] },
     ddadmin: { password: "dd123", role: "chatbot_admin", displayName: "Digital Diaries Admin", assignedNumbers: ["digital_diaries", "dd_instagram", "website"] },
     igadmin: { password: "ig123", role: "chatbot_admin", displayName: "IG Admin", assignedNumbers: ["ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"] },
