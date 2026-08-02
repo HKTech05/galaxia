@@ -853,35 +853,45 @@ router.post("/webhook/dd", async (req: any, res) => {
 
                 // ── 2. Check real DD pending payments (webhook safety-net) ──
                 try {
-                    const pendingRecord = await prisma.pendingDdPayment.findFirst({
-                        where: { razorpayOrderId: orderId },
+                    // Atomically claim the pending record (prevents race with frontend)
+                    const claimed = await prisma.pendingDdPayment.updateMany({
+                        where: { razorpayOrderId: orderId, module: "dd", status: { in: ["pending", "failed"] } },
+                        data: { status: "webhook_processing" },
                     });
 
-                    if (pendingRecord && pendingRecord.status === "pending") {
-                        console.log(`[Webhook DD] Found pending DD payment for order ${orderId}, creating booking...`);
-                        try {
-                            const bookingRef = await processPendingDdBooking(pendingRecord, paymentId);
-                            await prisma.pendingDdPayment.update({
-                                where: { id: pendingRecord.id },
-                                data: {
-                                    status: "webhook_fulfilled",
-                                    razorpayPaymentId: paymentId,
-                                    createdBookingRef: bookingRef,
-                                },
-                            });
-                            console.log(`✅ [Webhook DD] Real DD booking created via webhook! Ref: ${bookingRef}`);
-                        } catch (bookingErr: any) {
-                            // If it's a slot conflict, the frontend likely already created the booking
-                            if (bookingErr?.message === "SLOT_CONFLICT") {
-                                console.log(`[Webhook DD] Slot conflict for order ${orderId} — booking likely already created by frontend.`);
+                    if (claimed.count > 0) {
+                        const pendingRecord = await prisma.pendingDdPayment.findFirst({
+                            where: { razorpayOrderId: orderId, module: "dd", status: "webhook_processing" },
+                        });
+
+                        if (pendingRecord) {
+                            console.log(`[Webhook DD] Claimed pending DD payment for order ${orderId}, creating booking...`);
+                            try {
+                                const bookingRef = await processPendingDdBooking(pendingRecord, paymentId);
                                 await prisma.pendingDdPayment.update({
                                     where: { id: pendingRecord.id },
-                                    data: { status: "fulfilled", razorpayPaymentId: paymentId },
-                                }).catch(() => {});
-                            } else {
-                                console.error("[Webhook DD] Real DD booking creation error:", bookingErr);
+                                    data: {
+                                        status: "webhook_fulfilled",
+                                        razorpayPaymentId: paymentId,
+                                        createdBookingRef: bookingRef,
+                                    },
+                                });
+                                console.log(`✅ [Webhook DD] Real DD booking created via webhook! Ref: ${bookingRef}`);
+                            } catch (bookingErr: any) {
+                                // If it's a slot conflict, the frontend likely already created the booking
+                                if (bookingErr?.message === "SLOT_CONFLICT") {
+                                    console.log(`[Webhook DD] Slot conflict for order ${orderId} — booking likely already created by frontend.`);
+                                    await prisma.pendingDdPayment.update({
+                                        where: { id: pendingRecord.id },
+                                        data: { status: "fulfilled", razorpayPaymentId: paymentId },
+                                    }).catch(() => {});
+                                } else {
+                                    console.error("[Webhook DD] Real DD booking creation error:", bookingErr);
+                                }
                             }
                         }
+                    } else {
+                        console.log(`[Webhook DD] Order ${orderId} already claimed by frontend, skipping.`);
                     }
                 } catch (pendingErr) {
                     console.error("[Webhook DD] Pending payment lookup error (non-fatal):", pendingErr);
@@ -951,34 +961,44 @@ router.post("/webhook/stay", async (req: any, res) => {
             if (orderId) {
                 // Check pending staycation payments
                 try {
-                    const pendingRecord = await prisma.pendingDdPayment.findFirst({
-                        where: { razorpayOrderId: orderId, module: "stay" },
+                    // Atomically claim the pending record (prevents race with frontend)
+                    const claimed = await prisma.pendingDdPayment.updateMany({
+                        where: { razorpayOrderId: orderId, module: "stay", status: { in: ["pending", "failed"] } },
+                        data: { status: "webhook_processing" },
                     });
 
-                    if (pendingRecord && pendingRecord.status === "pending") {
-                        console.log(`[Webhook Stay] Found pending Stay payment for order ${orderId}, creating booking...`);
-                        try {
-                            const bookingRef = await processPendingStayBooking(pendingRecord, paymentId);
-                            await prisma.pendingDdPayment.update({
-                                where: { id: pendingRecord.id },
-                                data: {
-                                    status: "webhook_fulfilled",
-                                    razorpayPaymentId: paymentId,
-                                    createdBookingRef: bookingRef,
-                                },
-                            });
-                            console.log(`✅ [Webhook Stay] Staycation booking created via webhook! Ref: ${bookingRef}`);
-                        } catch (bookingErr: any) {
-                            if (bookingErr?.message === "DATE_CONFLICT") {
-                                console.log(`[Webhook Stay] Date conflict for order ${orderId} — booking likely already created by frontend.`);
+                    if (claimed.count > 0) {
+                        const pendingRecord = await prisma.pendingDdPayment.findFirst({
+                            where: { razorpayOrderId: orderId, module: "stay", status: "webhook_processing" },
+                        });
+
+                        if (pendingRecord) {
+                            console.log(`[Webhook Stay] Claimed pending Stay payment for order ${orderId}, creating booking...`);
+                            try {
+                                const bookingRef = await processPendingStayBooking(pendingRecord, paymentId);
                                 await prisma.pendingDdPayment.update({
                                     where: { id: pendingRecord.id },
-                                    data: { status: "fulfilled", razorpayPaymentId: paymentId },
-                                }).catch(() => {});
-                            } else {
-                                console.error("[Webhook Stay] Staycation booking creation error:", bookingErr);
+                                    data: {
+                                        status: "webhook_fulfilled",
+                                        razorpayPaymentId: paymentId,
+                                        createdBookingRef: bookingRef,
+                                    },
+                                });
+                                console.log(`✅ [Webhook Stay] Staycation booking created via webhook! Ref: ${bookingRef}`);
+                            } catch (bookingErr: any) {
+                                if (bookingErr?.message === "DATE_CONFLICT") {
+                                    console.log(`[Webhook Stay] Date conflict for order ${orderId} — booking likely already created by frontend.`);
+                                    await prisma.pendingDdPayment.update({
+                                        where: { id: pendingRecord.id },
+                                        data: { status: "fulfilled", razorpayPaymentId: paymentId },
+                                    }).catch(() => {});
+                                } else {
+                                    console.error("[Webhook Stay] Staycation booking creation error:", bookingErr);
+                                }
                             }
                         }
+                    } else {
+                        console.log(`[Webhook Stay] Order ${orderId} already claimed by frontend, skipping.`);
                     }
                 } catch (pendingErr) {
                     console.error("[Webhook Stay] Pending payment lookup error (non-fatal):", pendingErr);

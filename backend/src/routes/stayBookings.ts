@@ -209,6 +209,34 @@ router.post("/", async (req, res) => {
             }
         }
 
+        // Atomically claim pending payment record BEFORE booking creation
+        // This prevents the webhook from also creating a booking (race condition fix)
+        if (advanceMethod && typeof advanceMethod === "string" && advanceMethod.includes("Razorpay:")) {
+            const payIdPre = advanceMethod.match(/pay_\w+/);
+            if (payIdPre) {
+                const claimed = await prisma.pendingDdPayment.updateMany({
+                    where: { razorpayPaymentId: payIdPre[0], status: { in: ["pending", "webhook_processing"] }, module: "stay" },
+                    data: { status: "frontend_processing" },
+                }).catch(() => ({ count: 0 }));
+                if ((claimed as any).count === 0) {
+                    // Webhook may have already created the booking — return it if so
+                    const webhookRecord = await prisma.pendingDdPayment.findFirst({
+                        where: { razorpayPaymentId: payIdPre[0], status: "webhook_fulfilled", module: "stay" },
+                    });
+                    if (webhookRecord && webhookRecord.createdBookingRef) {
+                        const existingBooking = await prisma.staycationBooking.findFirst({
+                            where: { bookingRef: webhookRecord.createdBookingRef },
+                            include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },
+                        });
+                        if (existingBooking) {
+                            console.log(`[Stay Booking] Returning webhook-created booking ${webhookRecord.createdBookingRef}`);
+                            return res.status(201).json(existingBooking);
+                        }
+                    }
+                }
+            }
+        }
+
         // Use serializable transaction to prevent double-booking (race-condition safe)
         const booking = await prisma.$transaction(async (tx) => {
             // 0. Check if property is active
@@ -400,10 +428,10 @@ router.post("/", async (req, res) => {
         // Mark the corresponding PendingDdPayment as fulfilled (safety-net)
         const advMethod = req.body?.advanceMethod;
         if (advMethod && typeof advMethod === "string" && advMethod.includes("Razorpay:")) {
-            const payIdMatch = advMethod.match(/pay_\\w+/);
+            const payIdMatch = advMethod.match(/pay_\w+/);
             if (payIdMatch) {
                 prisma.pendingDdPayment.updateMany({
-                    where: { razorpayPaymentId: payIdMatch[0], status: "pending", module: "stay" },
+                    where: { razorpayPaymentId: payIdMatch[0], status: { in: ["pending", "frontend_processing"] }, module: "stay" },
                     data: { status: "fulfilled", createdBookingRef: booking.bookingRef },
                 }).catch(e => console.error("[PendingStay] Mark fulfilled error (non-fatal):", e));
             }
@@ -416,7 +444,7 @@ router.post("/", async (req, res) => {
             try {
                 const advMethod = req.body?.advanceMethod;
                 if (advMethod && typeof advMethod === "string") {
-                    const payIdMatch = advMethod.match(/pay_\\w+/);
+                    const payIdMatch = advMethod.match(/pay_\w+/);
                     if (payIdMatch) {
                         const pendingRecord = await prisma.pendingDdPayment.findFirst({
                             where: { razorpayPaymentId: payIdMatch[0], status: "webhook_fulfilled", module: "stay" },

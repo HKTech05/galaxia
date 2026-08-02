@@ -192,6 +192,34 @@ router.post("/", async (req, res) => {
             }
         }
 
+        // Atomically claim pending payment record BEFORE booking creation
+        // This prevents the webhook from also creating a booking (race condition fix)
+        if (paymentDetails && typeof paymentDetails === "string" && paymentDetails.includes("Razorpay:")) {
+            const payIdPre = paymentDetails.match(/pay_\w+/);
+            if (payIdPre) {
+                const claimed = await prisma.pendingDdPayment.updateMany({
+                    where: { razorpayPaymentId: payIdPre[0], status: { in: ["pending", "webhook_processing"] }, module: "dd" },
+                    data: { status: "frontend_processing" },
+                }).catch(() => ({ count: 0 }));
+                if ((claimed as any).count === 0) {
+                    // Webhook may have already created the booking — return it if so
+                    const webhookRecord = await prisma.pendingDdPayment.findFirst({
+                        where: { razorpayPaymentId: payIdPre[0], status: "webhook_fulfilled", module: "dd" },
+                    });
+                    if (webhookRecord && webhookRecord.createdBookingRef) {
+                        const existingBooking = await prisma.ddBooking.findFirst({
+                            where: { bookingRef: webhookRecord.createdBookingRef },
+                            include: { screen: true, package: true, addons: true },
+                        });
+                        if (existingBooking) {
+                            console.log(`[DD Booking] Returning webhook-created booking ${webhookRecord.createdBookingRef}`);
+                            return res.status(201).json(existingBooking);
+                        }
+                    }
+                }
+            }
+        }
+
         // Use serializable transaction to prevent double-booking
         const booking = await prisma.$transaction(async (tx) => {
             // 0. Check if screen is active
@@ -435,7 +463,7 @@ router.post("/", async (req, res) => {
             const payIdMatch = paymentDetails.match(/pay_\w+/);
             if (payIdMatch) {
                 prisma.pendingDdPayment.updateMany({
-                    where: { razorpayPaymentId: payIdMatch[0], status: "pending" },
+                    where: { razorpayPaymentId: payIdMatch[0], status: { in: ["pending", "frontend_processing"] } },
                     data: { status: "fulfilled", createdBookingRef: booking.bookingRef },
                 }).catch(e => console.error("[PendingDD] Mark fulfilled error (non-fatal):", e));
             }
