@@ -6,12 +6,12 @@ Digital Diaries features 4 private cinema screening rooms in Wadala, Mumbai. All
 
 | Screen Name | Theme | Max Occupancy | Room Size / Dimensions | Direct Booking Link |
 |---|---|---|---|---|
-| **Sandy Screen** | **Beach / Sandy Theme** 🏖️ — Beach-inspired decor with sandy textures and coastal vibes | **Max 3 Persons** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen |
-| **Park N Watch** | **Drive-in / Car Theme** 🚗 — Vintage drive-in movie theatre experience | **Max 3 Persons** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch |
-| **Baywatch** | **Lifeguard / Ocean Theme** 🌊 — Ocean and lifeguard-inspired coastal setup | **Max 3 Persons** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/baywatch |
-| **Cine Love** | **Romantic / Couples Theme** ❤️ — Premium romantic cinema for dates and special occasions | **Max 8 Persons** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/cine-love |
+| **Sandy Screen** | **Beach / Sandy Theme** 🏖️ — Beach-inspired decor with sandy textures and coastal vibes | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen |
+| **Park N Watch** | **Drive-in / Car Theme** 🚗 — Vintage drive-in movie theatre experience | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch |
+| **Baywatch** | **Lifeguard / Ocean Theme** 🌊 — Ocean and lifeguard-inspired coastal setup | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/baywatch |
+| **Cine Love** | **Romantic / Couples Theme** ❤️ — Premium romantic cinema for dates and special occasions | **Max 8 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/cine-love |
 
-*Note*: For groups larger than 3 people (e.g. 4, 5, 6, 7, or 8 guests), **Cine Love** is the ONLY suitable screen. Sandy Screen, Park N Watch, and Baywatch are strictly limited to a maximum of 3 persons.
+*Note*: For groups larger than 3 people (e.g. 4, 5, 6, 7, or 8 guests), **Cine Love** is the ONLY suitable screen. Sandy Screen, Park N Watch, and Baywatch are strictly limited to a maximum of 3 person capacity.
 
 ## Common Theme Aliases (Customer may use these terms)
 - "Beach theme" / "beach screen" / "sandy" / "sand theme" → **Sandy Screen**

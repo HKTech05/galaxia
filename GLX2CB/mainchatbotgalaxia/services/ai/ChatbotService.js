@@ -416,9 +416,10 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     // 5. Query Dynamic Context (Availability, Coupons, Bookings)
     let dynamicContext = "";
     
-    // Check if user is asking about booking reference (supports GLX-xxx and ST-xxx formats)
-    const refRegex = /\b(GLX-[A-Z0-9-]+|ST\s*[0-9]{8}-[A-Z0-9]+)\b/gi;
-    const allRefs = [...(textTrimmed.matchAll(refRegex))].map(m => m[1].replace(/\s+/g, ' '));
+    // Check if user is asking about booking reference (supports GLX-xxx, ST-xxx, and bare date-ref formats)
+    // Flexible: allows spaces, mixed case, missing prefix, various separators
+    const refRegex = /\b(GLX[\s-]*[A-Z0-9][\s-]*[A-Z0-9-]+|ST[\s]*[0-9]{8}[\s-]*[A-Z0-9]+[a-z]*|[0-9]{8}[\s-][A-Z0-9]+[a-z]*)\b/gi;
+    const allRefs = [...(textTrimmed.matchAll(refRegex))].map(m => m[1].replace(/\s+/g, '').toUpperCase());
     if (allRefs.length > 0) {
       for (const rawRef of allRefs) {
         const bookingRef = rawRef.trim();
