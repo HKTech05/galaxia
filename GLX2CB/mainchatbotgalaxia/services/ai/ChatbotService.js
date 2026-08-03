@@ -416,28 +416,37 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     // 5. Query Dynamic Context (Availability, Coupons, Bookings)
     let dynamicContext = "";
     
-    // Check if user is asking about booking reference
-    const refRegex = /\b(GLX-[A-Z0-9-]+)\b/i;
-    const matchRef = textTrimmed.match(refRegex);
-    if (matchRef) {
-      const bookingRef = matchRef[1];
-      console.log(`[ChatbotService] Querying booking ref: ${bookingRef}`);
-      const booking = await dynamicDataService.getBookingStatus(bookingRef);
-      if (booking) {
-        dynamicContext += `### LIVE BOOKING STATUS DETECTED:\n${JSON.stringify(booking, null, 2)}\n\n`;
-      } else {
-        dynamicContext += `### LIVE BOOKING STATUS DETECTED:\nBooking reference "${bookingRef}" was NOT found in the database. Please inform the user.\n\n`;
+    // Check if user is asking about booking reference (supports GLX-xxx and ST-xxx formats)
+    const refRegex = /\b(GLX-[A-Z0-9-]+|ST\s*[0-9]{8}-[A-Z0-9]+)\b/gi;
+    const allRefs = [...(textTrimmed.matchAll(refRegex))].map(m => m[1].replace(/\s+/g, ' '));
+    if (allRefs.length > 0) {
+      for (const rawRef of allRefs) {
+        const bookingRef = rawRef.trim();
+        console.log(`[ChatbotService] Querying booking ref: ${bookingRef}`);
+        const booking = await dynamicDataService.getBookingStatus(bookingRef);
+        if (booking) {
+          dynamicContext += `### LIVE BOOKING STATUS DETECTED:\n${JSON.stringify(booking, null, 2)}\n\n`;
+        } else {
+          dynamicContext += `### LIVE BOOKING STATUS DETECTED:\nBooking reference "${bookingRef}" was NOT found in the database. Inform the user and direct them to call the booking team.\n\n`;
+        }
       }
     }
 
-    // Check if user is validating a coupon code
-    const couponRegex = /\b(COUPON|DISCOUNT|CODE|OFFER)\b\s+(\w+)\b/i;
-    const matchCoupon = textTrimmed.match(couponRegex);
-    if (matchCoupon) {
-      const code = matchCoupon[2];
-      const couponRes = await dynamicDataService.validateCoupon(code);
-      dynamicContext += `### LIVE COUPON VALIDATION DETECTED:\n${JSON.stringify(couponRes, null, 2)}\n\n`;
+    // Name-based booking lookup: if user provides a name in context of booking inquiry
+    const nameBookingRegex = /\b(?:booking\s+(?:name|for|under)|name\s+is|booked\s+(?:by|under|for))\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b/i;
+    const nameMatch = textTrimmed.match(nameBookingRegex);
+    if (nameMatch && !allRefs.length) {
+      const customerName = nameMatch[1].trim();
+      console.log(`[ChatbotService] Querying booking by name: ${customerName}`);
+      const bookings = await dynamicDataService.searchBookingsByName(customerName);
+      if (bookings && bookings.length > 0) {
+        dynamicContext += `### LIVE BOOKING SEARCH BY NAME "${customerName}":\n${JSON.stringify(bookings, null, 2)}\n\n`;
+      } else {
+        dynamicContext += `### LIVE BOOKING SEARCH BY NAME "${customerName}":\nNo bookings found for name "${customerName}". Ask the user to also provide their Booking ID or Phone Number, or call the booking team.\n\n`;
+      }
     }
+
+    // NOTE: Coupon/discount code validation intentionally REMOVED. The bot must NEVER invent or validate coupon codes.
 
     // Perform Date Intent Extraction & Calendar Check
     const textLowerCheck = textTrimmed.toLowerCase();

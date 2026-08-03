@@ -375,6 +375,80 @@ class DynamicDataService {
   }
 
   /**
+   * Search bookings by customer name (partial match, case-insensitive).
+   * Returns up to 5 recent bookings matching the name.
+   */
+  async searchBookingsByName(customerName) {
+    const nameLike = `%${customerName.trim()}%`;
+    try {
+      // Search staycation bookings by name
+      const stayRes = await pool.query(
+        `SELECT sb.booking_ref, sb.customer_name, sb.customer_phone, 
+                p.name as property_name, sp.name as sub_property_name,
+                sb.check_in_date, sb.check_out_date, sb.status, sb.total_amount,
+                sb.num_guests, sb.num_kids
+         FROM staycation_bookings sb
+         JOIN properties p ON sb.property_id = p.id
+         LEFT JOIN sub_properties sp ON sb.sub_property_id = sp.id
+         WHERE sb.customer_name ILIKE $1
+         ORDER BY sb.created_at DESC
+         LIMIT 5`,
+        [nameLike]
+      );
+
+      if (stayRes.rows.length > 0) {
+        return stayRes.rows.map(b => ({
+          type: "Staycation",
+          bookingRef: b.booking_ref,
+          customerName: b.customer_name,
+          customerPhone: b.customer_phone,
+          propertyName: b.property_name,
+          subPropertyName: b.sub_property_name,
+          checkInDate: b.check_in_date?.toISOString().split("T")[0],
+          checkOutDate: b.check_out_date?.toISOString().split("T")[0],
+          status: b.status,
+          totalAmount: b.total_amount,
+          numGuests: b.num_guests,
+          numKids: b.num_kids
+        }));
+      }
+
+      // Check digital diaries bookings too
+      const ddRes = await pool.query(
+        `SELECT db.booking_ref, db.customer_name, db.customer_phone,
+                s.name as screen_name, pkg.name as package_name,
+                db.booking_date, db.status, db.total_amount
+         FROM dd_bookings db
+         JOIN dd_screens s ON db.screen_id = s.id
+         JOIN dd_packages pkg ON db.package_id = pkg.id
+         WHERE db.customer_name ILIKE $1
+         ORDER BY db.created_at DESC
+         LIMIT 5`,
+        [nameLike]
+      );
+
+      if (ddRes.rows.length > 0) {
+        return ddRes.rows.map(b => ({
+          type: "Digital Diaries",
+          bookingRef: b.booking_ref,
+          customerName: b.customer_name,
+          customerPhone: b.customer_phone,
+          screenName: b.screen_name,
+          packageName: b.package_name,
+          bookingDate: b.booking_date?.toISOString().split("T")[0],
+          status: b.status,
+          totalAmount: b.total_amount
+        }));
+      }
+
+      return []; // No bookings found
+    } catch (err) {
+      console.error("[DynamicDataService] Search bookings by name error:", err.message);
+      return [];
+    }
+  }
+
+  /**
    * Validate a coupon code.
    */
   async validateCoupon(code) {
