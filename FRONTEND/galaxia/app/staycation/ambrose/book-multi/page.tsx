@@ -148,6 +148,7 @@ export default function BookMultiPage() {
 
     // Amstel Nest availability: per-date bookingCounts from API
     const [amstelBookingCounts, setAmstelBookingCounts] = useState<Record<string, number>>({});
+    const [familyBookingCounts, setFamilyBookingCounts] = useState<Record<string, number>>({});
     const [amstelConflicts, setAmstelConflicts] = useState<Record<string, { date: string; available: number }[]>>({});
 
     // Derived: separate by property
@@ -420,6 +421,17 @@ export default function BookMultiPage() {
                     const data = await res.json();
                     setAmstelBookingCounts(data.dateCounts || data.bookingCounts || {});
                 }
+
+                // Fetch family-cottage booking counts separately
+                const famSubId = dbSubPropertyMap["family-cottage"];
+                if (famSubId) {
+                    const famUrl = `/api/bookings/staycation/booked-dates?propertyId=${anId}&startDate=${fmt(startDate)}&endDate=${fmt(endDate)}&subPropertyId=${famSubId}`;
+                    const famRes = await fetch(famUrl);
+                    if (famRes.ok) {
+                        const famData = await famRes.json();
+                        setFamilyBookingCounts(famData.dateCounts || famData.bookingCounts || {});
+                    }
+                }
             } catch {}
         })();
     }, [dbPropertyMap, dbSubPropertyMap, amstelItems.length]);
@@ -437,14 +449,16 @@ export default function BookMultiPage() {
                 const d = new Date(checkInDate);
                 d.setDate(d.getDate() + i);
                 const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                const booked = amstelBookingCounts[ds] || 0;
+                const booked = item.villaId === 'family-cottage'
+                    ? (familyBookingCounts[ds] || 0)
+                    : (amstelBookingCounts[ds] || 0);
                 const available = maxUnits - booked;
                 if (units > available) itemConflicts.push({ date: ds, available: Math.max(0, available) });
             }
             if (itemConflicts.length > 0) conflicts[item.villaId] = itemConflicts;
         }
         setAmstelConflicts(conflicts);
-    }, [checkInDate, checkOutDate, amstelItems, amstelBookingCounts]);
+    }, [checkInDate, checkOutDate, amstelItems, amstelBookingCounts, familyBookingCounts]);
 
     const hasAnyConflicts = Object.keys(villaConflicts).length > 0 || Object.keys(amstelConflicts).length > 0;
 
