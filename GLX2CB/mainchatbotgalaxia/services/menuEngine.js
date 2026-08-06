@@ -48,6 +48,25 @@ function getResponse(choice, userId, botType = "staycation") {
     return buildResponse(rootNodeStr, rootNodeStr);
   }
 
+  /* ── handle numbered input (1, 2, 3, ...) ──── */
+  const numMatch = choice.match(/^(\d+)$/);
+  if (numMatch) {
+    const idx = parseInt(numMatch[1], 10) - 1; // 1-indexed → 0-indexed
+    const currentNode = fullTree[session.currentMenu] || fullTree[rootNodeStr];
+    if (currentNode && currentNode.options && currentNode.options[idx]) {
+      const targetValue = currentNode.options[idx].value;
+      if (fullTree[targetValue]) {
+        if (session.currentMenu !== targetValue) {
+          session.navStack.push(session.currentMenu);
+        }
+        session.currentMenu = targetValue;
+        return buildResponse(targetValue, rootNodeStr);
+      }
+    }
+    // Invalid number — show current menu again
+    return buildResponse(session.currentMenu || rootNodeStr, rootNodeStr);
+  }
+
   /* ── push current location to stack, navigate ─ */
   if (fullTree[choice]) {
     // Don't push if it's the same menu (avoid duplicate stack entries)

@@ -358,7 +358,11 @@ router.post("/webhook", async (req, res) => {
 
     // 8. Send via Instagram Graph API (use the correct token for this bot)
     console.log(`[Instagram] Sending reply to ${senderId} via Instagram API (bot: ${botType})...`);
-    await sendInstagramReply(senderId, responseObj || { message: replyText, options: [] }, botType, igToken);
+    // For menu bots, send the full replyText (includes numbered options). For AI bots, send responseObj.
+    const igPayload = isAiBot
+      ? (responseObj || { message: replyText, options: [] })
+      : { message: replyText, options: [] };
+    await sendInstagramReply(senderId, igPayload, botType, igToken);
 
   } catch (err) {
     console.error("Instagram webhook error:", err.response?.data || err.message, err.stack);
