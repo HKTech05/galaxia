@@ -51,24 +51,28 @@ export default function LiveCalendar2View() {
     // Fetch calendar data
     const fetchCalendarData = useCallback(() => {
         setCalendar2Loading(true);
+
         const year = calendar2Month.getFullYear();
         const month = calendar2Month.getMonth() + 1;
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
 
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-
-        const sDateStr = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
-        const eDateStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
-
+        const propIds = [1, 2, 3, 4, 5, 6];
         Promise.all([
-            api.get(`/bookings/staycation?status=confirmed&startDate=${sDateStr}&endDate=${eDateStr}`).catch(() => []),
-            api.get(`/blocked-dates?year=${year}&month=${month}`).catch(() => []),
-        ]).then(([bookingsData, blocksData]) => {
-            setCalendar2Bookings(Array.isArray(bookingsData) ? bookingsData : []);
-            setCalendar2Blocks(Array.isArray(blocksData) ? blocksData : []);
-            setCalendar2Loading(false);
+            ...propIds.map(id => api.get(`/blocked-dates/bookings?propertyId=${id}&month=${monthStr}`).catch(() => [])),
+            api.get(`/blocked-dates`).catch(() => [])
+        ]).then((results) => {
+            const bookingsList = results.slice(0, 6).flat();
+            const blocksList = results[6] as any[];
+
+            setCalendar2Bookings(bookingsList);
+            const filteredBlocks = (Array.isArray(blocksList) ? blocksList : []).filter(b => {
+                const bDate = new Date(b.blockedDate);
+                return bDate.getFullYear() === year && (bDate.getMonth() + 1) === month;
+            });
+            setCalendar2Blocks(filteredBlocks);
         }).catch(err => {
             console.error("Fetch calendar data error:", err);
+        }).finally(() => {
             setCalendar2Loading(false);
         });
     }, [calendar2Month]);

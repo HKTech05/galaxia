@@ -132,6 +132,21 @@ export default function FoodHistoryPage() {
         }
     };
 
+    const handleIgnoreUnpaidBill = async (bookingId: number, guestName: string) => {
+        if (!confirm(`Are you sure you want to ignore the food bill for ${guestName}? This will omit it from pending food bills.`)) {
+            return;
+        }
+        try {
+            await api.put(`/hospitality/requests/bill/${bookingId}`);
+            fetchData();
+            fetchReportRequests(reportDate);
+            alert("Food bill ignored and omitted from pending bills.");
+        } catch (err: any) {
+            console.error("Failed to ignore food bill:", err);
+            alert(err?.message || "Failed to ignore food bill.");
+        }
+    };
+
     const fetchReportRequests = async (dateStr: string) => {
         try {
             setLoadingReportRequests(true);
@@ -868,23 +883,31 @@ export default function FoodHistoryPage() {
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
                                                                 {b.status === "Unpaid" ? (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedUnpaidBill({
-                                                                                bookingId: b.bookingId,
-                                                                                guestName: b.guestName,
-                                                                                bookingRef: b.bookingRef,
-                                                                                amount: b.amount,
-                                                                                description: b.description
-                                                                            });
-                                                                            setPaymentMethod("cash");
-                                                                            setPaymentUpiProof(null);
-                                                                            setIsPaymentModalOpen(true);
-                                                                        }}
-                                                                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-lg shadow-sm transition-colors cursor-pointer uppercase tracking-wider"
-                                                                    >
-                                                                        Mark Paid
-                                                                    </button>
+                                                                    <div className="flex items-center justify-center gap-1.5">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedUnpaidBill({
+                                                                                    bookingId: b.bookingId,
+                                                                                    guestName: b.guestName,
+                                                                                    bookingRef: b.bookingRef,
+                                                                                    amount: b.amount,
+                                                                                    description: b.description
+                                                                                });
+                                                                                setPaymentMethod("cash");
+                                                                                setPaymentUpiProof(null);
+                                                                                setIsPaymentModalOpen(true);
+                                                                            }}
+                                                                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-lg shadow-sm transition-colors cursor-pointer uppercase tracking-wider"
+                                                                        >
+                                                                            Mark Paid
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleIgnoreUnpaidBill(b.bookingId, b.guestName)}
+                                                                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-black rounded-lg transition-colors cursor-pointer uppercase tracking-wider border border-slate-300"
+                                                                        >
+                                                                            Ignore
+                                                                        </button>
+                                                                    </div>
                                                                 ) : (
                                                                     <span className="text-[10px] text-slate-400 font-bold">—</span>
                                                                 )}

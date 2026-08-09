@@ -109,6 +109,114 @@ export default function InventoryPage() {
     const [insights, setInsights] = useState<InsightsData | null>(null);
     const [loadingInsights, setLoadingInsights] = useState(false);
 
+    // Inventory Report Modal State
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportMode, setReportMode] = useState<"single" | "month" | "range">("month");
+    const [singleDate, setSingleDate] = useState(() => new Date().toISOString().split("T")[0]);
+    const [monthValue, setMonthValue] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+    });
+    const [endDate, setEndDate] = useState(() => new Date().toISOString().split("T")[0]);
+    const [downloadingReport, setDownloadingReport] = useState(false);
+
+    const handleDownloadInventoryReport = async () => {
+        try {
+            setDownloadingReport(true);
+            let sDate = "";
+            let eDate = "";
+            let periodLabel = "";
+
+            if (reportMode === "single") {
+                sDate = singleDate;
+                eDate = singleDate;
+                periodLabel = `Date: ${singleDate}`;
+            } else if (reportMode === "month") {
+                const [y, m] = monthValue.split("-").map(Number);
+                const lastDay = new Date(y, m, 0).getDate();
+                sDate = `${monthValue}-01`;
+                eDate = `${monthValue}-${String(lastDay).padStart(2, '0')}`;
+                const dateObj = new Date(y, m - 1, 1);
+                periodLabel = `Month: ${dateObj.toLocaleString("default", { month: "long", year: "numeric" })}`;
+            } else {
+                sDate = startDate;
+                eDate = endDate;
+                periodLabel = `Period: ${startDate} to ${endDate}`;
+            }
+
+            const data = await api.get<InsightsData>(`/hospitality/insights?startDate=${sDate}&endDate=${eDate}`);
+            
+            const { default: jsPDF } = await import("jspdf");
+            const { default: autoTable } = await import("jspdf-autotable");
+
+            const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 41, 59);
+            doc.text("GALAXIA RESORTS — INVENTORY SALES REPORT", pageWidth / 2, 15, { align: "center" });
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text(periodLabel, pageWidth / 2, 21, { align: "center" });
+            doc.text(`Generated on: ${new Date().toLocaleString("en-IN")}`, pageWidth / 2, 26, { align: "center" });
+
+            // Summary Card
+            const totalSales = data.totalRevenue || 0;
+            doc.setFillColor(243, 240, 255);
+            doc.setDrawColor(216, 180, 254);
+            doc.roundedRect(14, 31, pageWidth - 28, 18, 3, 3, "FD");
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(126, 34, 206);
+            doc.text("TOTAL AMOUNT EARNED IN SALES", 20, 38);
+
+            doc.setFontSize(13);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(88, 28, 135);
+            doc.text(`Rs. ${totalSales.toLocaleString("en-IN")}`, 20, 44.5);
+
+            // Table Data
+            const items = data.items || [];
+            const tableRows = items.map(item => [
+                item.name || "Unknown Item",
+                String(item.totalOrdered || 0),
+                `Rs. ${(item.totalRevenue || 0).toLocaleString("en-IN")}`
+            ]);
+
+            autoTable(doc, {
+                startY: 54,
+                head: [["Item Name", "Quantity (Units)", "Sales (Total Earned)"]],
+                body: tableRows.length > 0 ? tableRows : [["No items sold in selected period", "-", "Rs. 0"]],
+                theme: "grid",
+                headStyles: { fillColor: [88, 28, 135], textColor: [255, 255, 255], fontStyle: "bold", halign: "left" },
+                columnStyles: {
+                    0: { halign: "left" },
+                    1: { halign: "center" },
+                    2: { halign: "right", fontStyle: "bold" }
+                },
+                styles: { fontSize: 9, cellPadding: 3 },
+                alternateRowStyles: { fillColor: [248, 250, 252] }
+            });
+
+            const fileName = `Inventory_Report_${sDate}_to_${eDate}.pdf`;
+            doc.save(fileName);
+            setIsReportModalOpen(false);
+        } catch (err: any) {
+            console.error("Failed to generate inventory report:", err);
+            alert(err?.message || "Failed to generate report PDF");
+        } finally {
+            setDownloadingReport(false);
+        }
+    };
+
     const fetchMenu = async () => {
         try {
             setLoading(true);
@@ -588,6 +696,22 @@ export default function InventoryPage() {
                             </div>
                         ) : (
                             <div className="space-y-8">
+                                {/* Insights Header & Report Download Button */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                    <div>
+                                        <h2 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                                            <BarChart3 size={18} className="text-purple-600" /> Inventory Insights & Analytics
+                                        </h2>
+                                        <p className="text-xs text-slate-500 font-medium mt-0.5">Track item sales, popular inventory, and download sales reports by date range.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsReportModalOpen(true)}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
+                                    >
+                                        <Download size={15} /> Download Inventory Report
+                                    </button>
+                                </div>
+
                                 {/* Top-level KPI Cards */}
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                     {[
@@ -866,6 +990,118 @@ export default function InventoryPage() {
                             >
                                 {saving ? "Adding..." : "Add Item"}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Download Inventory Report Modal */}
+            {isReportModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsReportModalOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <Download size={16} className="text-purple-600" /> Download Inventory Report
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">Select date period to generate sales report PDF.</p>
+                            </div>
+                            <button onClick={() => setIsReportModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-5">
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Selection Mode</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { id: "single", label: "Single Date" },
+                                        { id: "month", label: "Month Picker" },
+                                        { id: "range", label: "Date Range" }
+                                    ].map(m => (
+                                        <button
+                                            key={m.id}
+                                            type="button"
+                                            onClick={() => setReportMode(m.id as any)}
+                                            className={`py-2 px-2.5 rounded-xl border text-xs font-bold text-center transition-all ${
+                                                reportMode === m.id
+                                                    ? "border-purple-600 bg-purple-50 text-purple-700 shadow-sm"
+                                                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            {m.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {reportMode === "single" && (
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 block mb-1">Choose Date</label>
+                                    <input
+                                        type="date"
+                                        value={singleDate}
+                                        onChange={e => setSingleDate(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500"
+                                    />
+                                </div>
+                            )}
+
+                            {reportMode === "month" && (
+                                <div>
+                                    <label className="text-xs font-bold text-slate-600 block mb-1">Choose Month & Year</label>
+                                    <input
+                                        type="month"
+                                        value={monthValue}
+                                        onChange={e => setMonthValue(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500"
+                                    />
+                                </div>
+                            )}
+
+                            {reportMode === "range" && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-600 block mb-1">Start Date</label>
+                                        <input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={e => setStartDate(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-600 block mb-1">End Date</label>
+                                        <input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={e => setEndDate(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="pt-2">
+                                <button
+                                    onClick={handleDownloadInventoryReport}
+                                    disabled={downloadingReport}
+                                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                                >
+                                    {downloadingReport ? (
+                                        <>
+                                            <RefreshCw size={14} className="animate-spin" />
+                                            <span>Generating PDF...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download size={14} />
+                                            <span>Download PDF Report</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

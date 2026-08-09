@@ -660,8 +660,22 @@ router.put("/menu", async (req: AuthRequest, res) => {
 // 8. GET /api/hospitality/insights — Aggregated item order analytics
 router.get("/insights", async (req: AuthRequest, res) => {
     try {
+        const { startDate, endDate } = req.query;
+        const whereClause: any = { status: "fulfilled" };
+        if (startDate || endDate) {
+            whereClause.createdAt = {};
+            if (startDate) {
+                const s = new Date((startDate as string) + "T00:00:00");
+                if (!isNaN(s.getTime())) whereClause.createdAt.gte = s;
+            }
+            if (endDate) {
+                const e = new Date((endDate as string) + "T23:59:59.999");
+                if (!isNaN(e.getTime())) whereClause.createdAt.lte = e;
+            }
+        }
+
         const allRequests = await prisma.hospitalityRequest.findMany({
-            where: { status: "fulfilled" },
+            where: whereClause,
             select: { items: true, itemCategory: true, createdAt: true, villaName: true }
         });
 
