@@ -312,12 +312,19 @@ export async function sendStaycationBookingConfirmation(
     bookingRef: string,
     voucherUrl: string
 ): Promise<boolean> {
-    return sendWhatsAppTemplateMessage(
-        chatbot,
-        phone,
-        "staycation_booking_confirmation",
-        [bookingRef, voucherUrl],
-        "en",
-        true
-    );
+    const message = `*Booking Confirmed*
+
+Thank you for booking with Galaxia.
+
+*Booking Ref:* ${bookingRef}
+
+You can view or download your booking voucher here:
+${voucherUrl}
+
+We look forward to welcoming you!
+
+-- Galaxia Resorts
+www.galaxiaresorts.com`;
+
+    return sendWhatsAppMessage(chatbot, phone, message, true);
 }
