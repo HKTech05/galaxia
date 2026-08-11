@@ -6,7 +6,8 @@
 //  - Staycation 1    → STAY1_WHATSAPP_PHONE_NUMBER_ID / STAY1_WHATSAPP_TOKEN
 //  - Staycation 2    → STAY2_WHATSAPP_PHONE_NUMBER_ID / STAY2_WHATSAPP_TOKEN
 //
-//  Template will be provided later. For now, uses text messages.
+//  Booking confirmations use approved Meta templates (dd_booking_confirmation,
+//  staycation_booking_confirmation) to ensure delivery outside the 24h window.
 // ───────────────────────────────────────────────────────────────
 
 export type ChatbotId = "dd" | "stay1" | "stay2" | "otp";
@@ -292,24 +293,17 @@ async function logConfirmationToChat(phoneNumberId: string, customerPhone: strin
     }
 }
 
-// ─── Convenience helpers (ready for template integration later) ───
+// ─── Convenience helpers (using approved Meta templates) ───
 
 export async function sendDDBookingConfirmation(phone: string, bookingRef: string, voucherUrl: string): Promise<boolean> {
-    const message = `*Booking Confirmed*
-
-Thank you for booking with Galaxia Digital Diaries.
-
-*Booking Ref:* ${bookingRef}
-
-You can view or download your booking voucher here:
-${voucherUrl}
-
-We look forward to hosting you!
-
--- Galaxia Resorts
-www.galaxiaresorts.com`;
-
-    return sendWhatsAppMessage("dd", phone, message, true);
+    return sendWhatsAppTemplateMessage(
+        "dd",
+        phone,
+        "dd_booking_confirmation",
+        [bookingRef, voucherUrl],
+        "en",
+        true
+    );
 }
 
 export async function sendStaycationBookingConfirmation(
@@ -318,19 +312,12 @@ export async function sendStaycationBookingConfirmation(
     bookingRef: string,
     voucherUrl: string
 ): Promise<boolean> {
-    const message = `*Booking Confirmed*
-
-Thank you for booking with Galaxia.
-
-*Booking Ref:* ${bookingRef}
-
-You can view or download your booking voucher here:
-${voucherUrl}
-
-We look forward to welcoming you!
-
--- Galaxia Resorts
-www.galaxiaresorts.com`;
-
-    return sendWhatsAppMessage(chatbot, phone, message, true);
+    return sendWhatsAppTemplateMessage(
+        chatbot,
+        phone,
+        "staycation_booking_confirmation",
+        [bookingRef, voucherUrl],
+        "en",
+        true
+    );
 }
