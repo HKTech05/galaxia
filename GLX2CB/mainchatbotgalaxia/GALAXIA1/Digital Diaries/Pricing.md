@@ -20,8 +20,8 @@ Includes private screening space and complimentary snack hamper (dry snacks, jui
 - 250g Cake with custom message: *₹400*
 
 ### Package 2: Celebration Package (Decoration + Movie Time)
-Includes private screening space, snack hamper, **250g Celebration Cake with custom message, LED Message Tag, Fog Effect, heart-lit pathway, candle setup, and balloons**.
-All celebration items (cake, balloons, LED banner, fog effect, pathway, candles) are **already included** in the Celebration Package price. There are NO additional add-on charges for these items in Celebration Package.
+Includes private screening space, snack hamper, **250g chocolate cake with custom message (chocolate only, no flavor choice), LED message tag, fog entry, heart-lit pathway, candle setup, and balloons**.
+All celebration items (chocolate cake, balloons, LED banner, fog entry, pathway, candles) are **already included** in the Celebration Package price. The cake is chocolate flavor only — no flavor customization available. Custom message on cake is entered during website booking. There are NO additional add-on charges for these items in Celebration Package.
 - *1 Hour*: *₹2,200*
 - *2 Hours*: *₹2,950*
 - *3 Hours (Mon-Thu)*: *₹3,450*

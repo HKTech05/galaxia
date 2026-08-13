@@ -1,8 +1,14 @@
 # Digital Diaries Frequently Asked Questions
 
 ### Where is Digital Diaries located?
-We are located in Wadala, Mumbai.
+We are located in Wadala West, Mumbai.
 Google Maps location link: https://maps.app.goo.gl/ghU28kHARPrpa4a89
+
+### Is it in East or West Wadala?
+Digital Diaries is located in Wadala West.
+
+### How far is it from the station?
+Wadala station is 10 minutes walking distance. Dadar station is 10 minutes by road.
 
 ### Is there CCTV?
 No, we have a strict no CCTV policy inside the private screening rooms.
@@ -32,10 +38,28 @@ All guests must be 18+ with valid government ID. Guests under 18 are NOT permitt
 Yes, every adult guest (18+) must carry their own separate valid government ID (Aadhaar, Driving License, Passport, etc.). One ID for the entire group is not acceptable.
 
 ### What does the Celebration Package include?
-The Celebration Package includes: private screening space, snack hamper, 250g Celebration Cake with custom message, LED Message Tag, Fog Effect, heart-lit pathway, candle setup, and balloons. All these items are already included in the package price with no extra charges.
+The Celebration Package includes: private screening space, snack hamper, 250g chocolate cake with custom message, LED message tag, fog entry, heart-lit pathway, candle setup, and balloons. All these items are already included in the package price with no extra charges.
 
 ### Are balloons and LED banner available for Movie Time?
 Yes, for the Movie Time package, balloons setup (₹400) and LED Banner (₹400) are available as optional add-ons. These are NOT needed for Celebration Package as they are already included.
+
+### What flavor is the cake?
+The cake is a 250g chocolate cake only. There is no flavor choice. You can add a custom message on the cake during booking on the website.
+
+### What about parking?
+Parking is easily available near Digital Diaries. However, parking must be done outside the premises — parking inside the premises is not allowed.
+
+### Do I need to carry original ID?
+Digital copies (phone screenshots) of Aadhaar card are accepted. Physical original copies are not required. Each adult guest must have their own valid government ID.
+
+### What is the payment structure?
+50% of the booking amount is paid online through the website at the time of booking. The remaining 50% balance is paid in cash at the venue during check-in.
+
+### Can I visit the venue before booking?
+You can visit our office during office hours (10 AM - 8 PM) to inquire about packages and pricing. However, screenings and screening rooms cannot be shown before booking.
+
+### What if we have more people than the max capacity?
+For special requests regarding additional guests beyond the screen's max capacity, please call our booking number +91 98922 94042 during office hours (10 AM to 8 PM) to confirm.
 
 ---
 ## Related Notes & Navigation
