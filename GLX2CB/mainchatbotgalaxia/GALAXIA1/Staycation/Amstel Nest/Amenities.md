@@ -1,6 +1,7 @@
 # Amstel Nest Amenities & Features
 
-- **Private Indoor Pool:** Each cottage includes a private indoor swimming pool.
+- **Private Indoor Pool:** Each cottage includes its own private indoor swimming pool (1 per cottage).
+- **Common Swimming Pool:** There is also 1 common swimming pool on the resort grounds (the boating canal is also the common swimming pool).
 - **Cooling:** AC in bedroom area.
 - **Entertainment:** Smart TV in cottage.
 - **Garden:** Garden sitting area outside cottage.

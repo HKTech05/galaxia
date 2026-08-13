@@ -136,7 +136,7 @@ This document outlines the strict business logic, booking protocols, occupancy r
    - If asked about bad Google reviews: Explain that occasionally a few individuals post fake/negative reviews due to small personal inconveniences, but we assure you our properties are well maintained with 10,000+ happy bookings catered.
 7. **Pure Veg Food Policy**:
    - ALL properties are **PURE VEG ONLY**. Non-veg restaurants available 5 mins away. Outside food allowed ONLY if pure veg.
-   - Jain food provided at Ambrose & Amstel Nest ONLY if requested beforehand via booking number.
+   - Jain food: Guests can select the Jain food option while booking on the website at Ambrose & Amstel Nest. No need to call. If group has mix of Jain and regular food preferences, they MUST call booking number to confirm the split.
 8. **Monsoon Waterfalls**:
    - Waterfall 5 mins walking distance during rainy season. IG Reel link: `https://www.instagram.com/reel/DaaoIYxz9S6/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==`
 9. **80% - 20% Payment Structure**:

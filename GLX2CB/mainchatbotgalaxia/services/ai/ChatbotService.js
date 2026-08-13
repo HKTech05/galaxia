@@ -111,8 +111,8 @@ ${calendarTable}
 - IMPORTANT: In Hinglish, "free hai kya", "khali hai kya", "available hai kya" means AVAILABILITY/VACANCY QUERY for dates. It does NOT mean zero cost / complimentary!
 - "friday pe free hai kya alta" -> Querying if Alta (Ambrose Villa) is available/vacant on the coming Friday.
 - "uske baad wala friday" -> Querying availability for the Friday of the following week.
-- If the user enters a standalone number like "25" or "25th" after being asked for a date, parse checkInDate as 2026-07-25 (using 2026-07 as current month).
-- "Agle month" or "next month" means August 2026.
+- If the user enters a standalone number like "25" or "25th" after being asked for a date, parse checkInDate using the CURRENT month and year from the calendar table above. For example, if today is 13 August 2026, "25" means 2026-08-25.
+- "Agle month" or "next month" means the month AFTER the current month shown in the calendar table above.
 - Translate days like "this Friday", "next Friday", "this weekend", "tomorrow" into accurate YYYY-MM-DD check-in and check-out dates.
 
 - If the user provides a name (e.g. "Raj Shah", "Raj Shah 96531 76436") or a phone number (e.g. "96531 76436", "+919653176436"), extract them into "customerName" and "customerPhone" respectively.
@@ -534,9 +534,10 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         let effectiveCheckOut = intent.checkOutDate || updatedState.checkOutDate;
 
         if (effectiveCheckIn && (!effectiveCheckOut || effectiveCheckOut === effectiveCheckIn)) {
-          const inObj = new Date(effectiveCheckIn);
-          inObj.setDate(inObj.getDate() + 1);
-          effectiveCheckOut = inObj.toISOString().split("T")[0];
+          // UTC-safe: add 1 day without timezone drift
+          const [y, m, d] = effectiveCheckIn.split("-").map(Number);
+          const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
+          effectiveCheckOut = nextDay.toISOString().split("T")[0];
         }
 
         // Perform Staycation Availability check across ALL properties if checkIn date is identified

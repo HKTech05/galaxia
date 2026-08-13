@@ -4,17 +4,23 @@ class DynamicDataService {
   /**
    * Helper to calculate per-night accurate availability for a property / sub-property
    */
-  async calculateSubPropertyAvailability(propertyId, subPropertyId, capacity, cleanCheckIn, cleanCheckOut) {
-    const startDate = new Date(cleanCheckIn);
-    const endDate = new Date(cleanCheckOut);
+  /**
+   * UTC-safe helper: add 1 day to a YYYY-MM-DD string without timezone drift.
+   */
+  _addOneDay(dateStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + 1));
+    return dt.toISOString().split("T")[0];
+  }
 
+  async calculateSubPropertyAvailability(propertyId, subPropertyId, capacity, cleanCheckIn, cleanCheckOut) {
     let minAvailable = capacity;
     let maxBooked = 0;
     let maxBlocked = 0;
 
-    const current = new Date(startDate);
-    while (current < endDate) {
-      const dStr = current.toISOString().split("T")[0];
+    // Iterate using pure string-based YYYY-MM-DD dates to avoid timezone drift
+    let dStr = cleanCheckIn;
+    while (dStr < cleanCheckOut) {
 
       let bQuery = `
         SELECT COALESCE(SUM(COALESCE(num_cottages, 1)), 0) as cnt
@@ -53,7 +59,7 @@ class DynamicDataService {
       if (booked > maxBooked) maxBooked = booked;
       if (blocked > maxBlocked) maxBlocked = blocked;
 
-      current.setDate(current.getDate() + 1);
+      dStr = this._addOneDay(dStr);
     }
 
     return {
@@ -75,9 +81,7 @@ class DynamicDataService {
       const cleanCheckIn = String(checkIn).split("T")[0];
       let cleanCheckOut = checkOut ? String(checkOut).split("T")[0] : null;
       if (!cleanCheckOut || cleanCheckOut === cleanCheckIn) {
-        const inDateObj = new Date(cleanCheckIn);
-        inDateObj.setDate(inDateObj.getDate() + 1);
-        cleanCheckOut = inDateObj.toISOString().split("T")[0];
+        cleanCheckOut = this._addOneDay(cleanCheckIn);
       }
 
       // 2. Find property
@@ -111,11 +115,17 @@ class DynamicDataService {
           });
         }
 
+        // Add top-level isAvailable: true if ANY sub-property has available units
+        const anyAvailable = subResults.some(s => s.isAvailable);
+        const totalAvailableUnits = subResults.reduce((sum, s) => sum + s.availableUnits, 0);
+
         return {
           propertyName: property.name,
           checkIn: cleanCheckIn,
           checkOut: cleanCheckOut,
           isMultiUnit: true,
+          isAvailable: anyAvailable,
+          totalAvailableUnits,
           subPropertiesAvailability: subResults
         };
       }
