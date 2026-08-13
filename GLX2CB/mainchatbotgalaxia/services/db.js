@@ -92,7 +92,7 @@ async function saveMessage(sessionId, role, message, isHuman = false) {
  * Get all chat sessions, sorted by last message time.
  * Optionally filter by phone_number_id.
  */
-async function getChats(phoneNumberId = null, limit = 250) {
+async function getChats(phoneNumberId = null, limit = 5000) {
   let query = `
     SELECT * FROM chat_sessions 
     WHERE phone_number_id != '1015208551685641'
