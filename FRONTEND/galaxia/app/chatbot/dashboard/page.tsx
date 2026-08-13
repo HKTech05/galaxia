@@ -265,6 +265,8 @@ export default function ChatbotDashboard() {
     const [connected, setConnected] = useState(false);
     const [sending, setSending] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [chatPage, setChatPage] = useState(1);
+    const CHATS_PER_PAGE = 50;
     const dropdownRef = useRef<HTMLDivElement>(null);
     const msgEndRef = useRef<HTMLDivElement>(null);
 
@@ -630,7 +632,7 @@ export default function ChatbotDashboard() {
                                 boxShadow: "0 4px 16px rgba(0,0,0,0.15)", maxHeight: 320, overflowY: "auto",
                             }}>
                                 <button
-                                    onClick={() => { setTab("all"); setDropdownOpen(false); }}
+                                    onClick={() => { setTab("all"); setDropdownOpen(false); setChatPage(1); }}
                                     style={{
                                         width: "100%", padding: "9px 14px", border: "none", cursor: "pointer",
                                         display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: tab === "all" ? 700 : 500,
@@ -651,7 +653,7 @@ export default function ChatbotDashboard() {
                                     return (
                                         <button
                                             key={key}
-                                            onClick={() => { setTab(key); setDropdownOpen(false); }}
+                                            onClick={() => { setTab(key); setDropdownOpen(false); setChatPage(1); }}
                                             style={{
                                                 width: "100%", padding: "9px 14px", border: "none", cursor: "pointer",
                                                 display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: tab === key ? 700 : 500,
@@ -671,13 +673,13 @@ export default function ChatbotDashboard() {
                         )}
                     </div>
                     <div className="cb-search">
-                        <input placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)} />
+                        <input placeholder="Search conversations..." value={search} onChange={e => { setSearch(e.target.value); setChatPage(1); }} />
                     </div>
                     <div style={{ display: "flex", gap: 4, padding: "6px 12px", borderBottom: "1px solid var(--cb-border)" }}>
                         {(["all", "human", "collab"] as const).map(f => (
                             <button
                                 key={f}
-                                onClick={() => setMsgFilter(f)}
+                                onClick={() => { setMsgFilter(f); setChatPage(1); }}
                                 style={{
                                     flex: 1, padding: "5px 0", borderRadius: 6, border: "none", cursor: "pointer",
                                     fontSize: 11, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase",
@@ -726,7 +728,11 @@ export default function ChatbotDashboard() {
                                     </div>
                                 );
                             }
-                            return list.slice(0, 100).map(s => {
+                            // When searching, show ALL matching results. When browsing, paginate.
+                            const isSearching = search.length > 0;
+                            const totalPages = isSearching ? 1 : Math.ceil(list.length / CHATS_PER_PAGE);
+                            const pageItems = isSearching ? list : list.slice((chatPage - 1) * CHATS_PER_PAGE, chatPage * CHATS_PER_PAGE);
+                            return (<>{pageItems.map(s => {
                             // Deterministic dark hue per phone number (WhatsApp dark mode style)
                             const AVATAR_PAIRS = [
                                 { bg: "#1a3a36", fg: "#00d26a" },
@@ -784,7 +790,30 @@ export default function ChatbotDashboard() {
                                     </div>
                                 </div>
                             );
-                        });
+                        })}
+                        {/* Pagination Controls */}
+                        {!search && totalPages > 1 && (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px", borderTop: "1px solid var(--cb-border)", background: "var(--cb-sidebar)" }}>
+                                <button
+                                    disabled={chatPage <= 1}
+                                    onClick={() => setChatPage(p => Math.max(1, p - 1))}
+                                    style={{ background: chatPage <= 1 ? "transparent" : "var(--cb-active)", color: chatPage <= 1 ? "var(--cb-text-dim)" : "var(--cb-text)", border: "1px solid var(--cb-border)", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: chatPage <= 1 ? "default" : "pointer", fontFamily: "inherit" }}
+                                >
+                                    ← Newer
+                                </button>
+                                <span style={{ fontSize: 12, color: "var(--cb-text-dim)", fontWeight: 600 }}>
+                                    Page {chatPage} of {totalPages}
+                                </span>
+                                <button
+                                    disabled={chatPage >= totalPages}
+                                    onClick={() => setChatPage(p => Math.min(totalPages, p + 1))}
+                                    style={{ background: chatPage >= totalPages ? "transparent" : "var(--cb-active)", color: chatPage >= totalPages ? "var(--cb-text-dim)" : "var(--cb-text)", border: "1px solid var(--cb-border)", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: chatPage >= totalPages ? "default" : "pointer", fontFamily: "inherit" }}
+                                >
+                                    Older →
+                                </button>
+                            </div>
+                        )}
+                        </>);
                     })()}
                     </div>
                 </div>
