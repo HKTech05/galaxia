@@ -1633,9 +1633,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <button
                                                 disabled={uploadingRefund}
                                                 onClick={async () => {
-                                                    await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { method: "cash" });
-                                                    handleAction(selectedBooking, "Completed");
-                                                    setIsActionModalOpen(false);
+                                                    try {
+                                                        await api.post(`/bookings/staycation/${selectedBooking.rawId}/refund-deposit`, { method: "cash" });
+                                                        handleAction(selectedBooking, "Completed");
+                                                        setIsActionModalOpen(false);
+                                                    } catch (err: any) {
+                                                        alert(err.message || "Failed to refund deposit");
+                                                    }
                                                 }}
                                                 className="flex flex-col items-center justify-center gap-1.5 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl transition-colors border border-emerald-200 col-span-1 disabled:opacity-50"
                                             >
