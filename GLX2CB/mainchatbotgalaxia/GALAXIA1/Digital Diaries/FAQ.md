@@ -20,7 +20,7 @@ No, outside food is strictly not allowed. We provide a complimentary snack hampe
 No, bringing your own cake from outside is strictly not allowed. The Celebration Package already includes a 250g cake with custom message. For Movie Time bookings, a 250g cake add-on is available for ₹400.
 
 ### What are the office hours?
-Office hours are 10:00 AM to 8:00 PM. Phone calls will not be answered after 8:00 PM until the next day morning.
+Office hours are 10:00 AM to 12:00 AM (midnight). Phone calls will not be answered after 12:00 AM until the next day morning.
 
 ### Can unmarried couples book?
 Yes, unmarried couples are welcome with valid government IDs (18+).
@@ -56,10 +56,10 @@ Digital copies (phone screenshots) of Aadhaar card are accepted. Physical origin
 50% of the booking amount is paid online through the website at the time of booking. The remaining 50% balance is paid in cash at the venue during check-in.
 
 ### Can I visit the venue before booking?
-You can visit our office during office hours (10 AM - 8 PM) to inquire about packages and pricing. However, screenings and screening rooms cannot be shown before booking.
+You can visit our office during office hours (10 AM - 12 AM midnight) to inquire about packages and pricing. However, screenings and screening rooms cannot be shown before booking.
 
 ### What if we have more people than the max capacity?
-For special requests regarding additional guests beyond the screen's max capacity, please call our booking number +91 98922 94042 during office hours (10 AM to 8 PM) to confirm.
+For special requests regarding additional guests beyond the screen's max capacity, please call our booking number +91 98922 94042 during office hours (10 AM to 12 AM midnight) to confirm.
 
 ---
 ## Related Notes & Navigation

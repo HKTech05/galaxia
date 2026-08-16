@@ -2,7 +2,7 @@
 
 ## Verbal Phone Call Support Number
 - **Phone Number for Verbal Inquiries**: **+91 98922 94042**
-- **Office Hours**: **10:00 AM to 8:00 PM**. Phone calls will NOT be answered after 8:00 PM until the next day morning.
+- **Office Hours**: **10:00 AM to 12:00 AM (midnight)**. Phone calls will NOT be answered after 12:00 AM until the next day morning.
 - **Strict Rule for Assistant**: Provide this phone number **ONLY IF** the customer explicitly asks to call or speak on call for inquiries (e.g., "can I call you?", "give me call number", "call par baat kar sakta hu?").
 - **Do NOT** output or spam this phone number in general text inquiries.
 

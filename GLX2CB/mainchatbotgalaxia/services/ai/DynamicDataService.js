@@ -251,7 +251,7 @@ class DynamicDataService {
 
       const isFullDayBlocked = dayBlocks.rows.some(b => b.start_hour === null);
 
-      // Calculate available free time ranges between 10:00 (10 AM) and 22:00 (10 PM - Venue Closes at 10 PM)
+      // Calculate available free time ranges between 10:00 (10 AM) and 24:00 (12 AM Midnight - Venue Closes at 12 AM)
       const occupiedHours = new Set();
       dayBookings.rows.forEach(b => {
         const start = Number(b.start_hour);
@@ -268,14 +268,13 @@ class DynamicDataService {
 
       const freeRanges = [];
       let currentStart = null;
-      for (let h = 10; h <= 22; h++) {
-        const isOccupied = isFullDayBlocked || occupiedHours.has(h) || h === 22;
+      for (let h = 10; h <= 24; h++) {
+        const isOccupied = isFullDayBlocked || occupiedHours.has(h) || h === 24;
         if (!isOccupied && currentStart === null) {
           currentStart = h;
         } else if (isOccupied && currentStart !== null) {
-          const startFmt = currentStart > 12 ? `${currentStart - 12} PM` : currentStart === 12 ? '12 PM' : `${currentStart} AM`;
-          const endFmt = h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : `${h} AM`;
-          freeRanges.push(`${startFmt} - ${endFmt}`);
+          const fmtHour = (hr) => hr === 0 || hr === 24 ? '12 AM' : hr > 12 ? `${hr - 12} PM` : hr === 12 ? '12 PM' : `${hr} AM`;
+          freeRanges.push(`${fmtHour(currentStart)} - ${fmtHour(h)}`);
           currentStart = null;
         }
       }

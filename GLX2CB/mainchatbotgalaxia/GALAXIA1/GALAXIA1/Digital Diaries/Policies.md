@@ -19,7 +19,7 @@
   - If a customer says someone in their group is "under 18", "18 se kam", "minor", or similar **WITHOUT explicitly using family/child language** (kid, child, baccha, beti, beta, son, daughter) → **DO NOT assume it is a family/child situation.**
   - In such cases, **strictly enforce the 18+ rule** and respond: "All guests must be 18+ with valid government ID. We cannot accommodate guests under 18 unless they are children accompanying their parent/family."
   - **NEVER** relax the ID or age requirement for ambiguous situations. When in doubt, enforce 18+.
-- **Office Hours:** 10:00 AM to 8:00 PM. Phone calls will not be answered after 8:00 PM until next day morning.
+- **Office Hours:** 10:00 AM to 12:00 AM (midnight). Phone calls will not be answered after 12:00 AM until next day morning.
 
 ---
 ## Related Notes & Navigation

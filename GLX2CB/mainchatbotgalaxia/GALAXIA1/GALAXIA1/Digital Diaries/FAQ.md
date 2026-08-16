@@ -14,7 +14,7 @@ No, outside food is strictly not allowed. We provide a complimentary snack hampe
 No, bringing your own cake from outside is strictly not allowed. The Celebration Package already includes a 250g cake with custom message. For Movie Time bookings, a 250g cake add-on is available for ₹400.
 
 ### What are the office hours?
-Office hours are 10:00 AM to 8:00 PM. Phone calls will not be answered after 8:00 PM until the next day morning.
+Office hours are 10:00 AM to 12:00 AM (midnight). Phone calls will not be answered after 12:00 AM until the next day morning.
 
 ### Can unmarried couples book?
 Yes, unmarried couples are welcome with valid government IDs (18+).
