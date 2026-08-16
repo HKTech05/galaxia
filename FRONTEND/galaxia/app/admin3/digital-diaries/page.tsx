@@ -13,13 +13,15 @@ type PackageType = "Movie Time" | "Celebration";
 const hours = [
     "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM",
     "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
-    "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM"
+    "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM",
+    "10:00 PM", "11:00 PM", "12:00 AM"
 ];
 
 const mobileHours = [
     "10 AM", "11 AM", "12 PM", "1 PM",
     "2 PM", "3 PM", "4 PM", "5 PM",
-    "6 PM", "7 PM", "8 PM", "9 PM", "10 PM"
+    "6 PM", "7 PM", "8 PM", "9 PM",
+    "10 PM", "11 PM", "12 AM"
 ];
 
 // Screen Color Mappings:
@@ -271,7 +273,7 @@ export default function Admin1Dashboard() {
         setCloseOfficeLoading(true);
         const screenMap: Record<string, number> = { "Cine Love": 2, "Sandy Screen": 1, "Park N Watch": 3, "Baywatch": 4 };
         const allScreens = ["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"] as const;
-        const LAST_HOUR = 22; // 10 PM
+        const LAST_HOUR = 24; // 12 AM (Midnight)
 
         try {
             // Find the GLOBAL last booked (non-maintenance) slot end time across ALL screens

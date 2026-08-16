@@ -30,11 +30,12 @@ export interface ScreenData {
     size?: string;
 }
 
-// Time slots from 10:00 AM to 10:00 PM
-export const timeSlots = Array.from({ length: 12 }, (_, i) => {
+// Time slots from 10:00 AM to 12:00 AM (Midnight)
+export const timeSlots = Array.from({ length: 14 }, (_, i) => {
     const startHour = 10 + i;
     const endHour = startHour + 1;
     const format12 = (h: number) => {
+        if (h === 24 || h === 0) return "12:00 AM";
         const period = h >= 12 ? "PM" : "AM";
         const hour12 = h % 12 === 0 ? 12 : h % 12;
         return `${hour12}:00 ${period}`;
