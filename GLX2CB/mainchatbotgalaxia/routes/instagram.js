@@ -190,7 +190,7 @@ router.post("/webhook", async (req, res) => {
     const sessionId = `ig_${botType}_${senderId}`;
 
     // 1. Get or create session (platform = "instagram")
-    const session = await db.getOrCreateSession(sessionId, senderId, phoneNumberId, botType, "instagram");
+    let session = await db.getOrCreateSession(sessionId, senderId, phoneNumberId, botType, "instagram");
 
     // 1b. If new session, try to fetch and store the Instagram username
     if (session.display_name === senderId || !session.display_name) {
@@ -266,9 +266,19 @@ router.post("/webhook", async (req, res) => {
       return;
     }
 
-    // 4d. Check if human mode is active — if so, don't auto-reply
+    // 4d. Check if human mode is active — re-read from DB to avoid stale state
+    session = await db.getSession(sessionId) || session;
     if (session.is_human_active) {
       console.log(`[Instagram] Human mode active for ${sessionId} — skipping bot reply.`);
+      // Save user message so admin sees it on dashboard (ChatbotService won't run)
+      const savedMsg = await db.saveMessage(sessionId, "user", userText, false);
+      if (io) {
+        io.emit("new_message", {
+          sessionId,
+          message: savedMsg,
+          session,
+        });
+      }
       return;
     }
 
@@ -299,6 +309,12 @@ router.post("/webhook", async (req, res) => {
         "instagram"
       );
       replyText = aiResult.reply || "";
+      // If human mode was caught inside ChatbotService, don't send a reply
+      if (aiResult.humanModeSkipped) {
+        console.log(`[Instagram] Human mode caught by ChatbotService for ${sessionId} — no reply sent.`);
+        if (io) io.emit("session_updated", await db.getSession(sessionId));
+        return;
+      }
       // Guard: if AI returned empty, use fallback instead of sending "Thank you for contacting Galaxia!"
       if (!replyText.trim()) {
         replyText = "Sorry, I couldn't process your request right now. Please try again or type 'human' to speak with our team.";

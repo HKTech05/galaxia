@@ -173,6 +173,30 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     const cleanSessionId = conversationService.getIsolatedSessionId(sessionId, botType);
     const textTrimmed = text.trim();
 
+    // ── Defense-in-depth: Re-check human mode from DB before generating AI reply ──
+    // The route handler already checks, but this catches race conditions where
+    // human mode was toggled between the route's check and reaching this point.
+    try {
+      const db = require("../db");
+      const currentSession = await db.getSession(cleanSessionId);
+      if (currentSession && currentSession.is_human_active) {
+        console.log(`[ChatbotService] Human mode active for ${cleanSessionId} — saving user message but skipping AI reply.`);
+        // Still save the user message so admin can see it on the dashboard
+        await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
+        return {
+          reply: null,
+          latency: Date.now() - startTime,
+          tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+          cost: 0,
+          retrievedChunksCount: 0,
+          cached: false,
+          humanModeSkipped: true
+        };
+      }
+    } catch (err) {
+      console.warn(`[ChatbotService] Human mode re-check failed: ${err.message}`);
+    }
+
     // Check Collaboration / Partnership / Promotion Intent (Across All Bots)
     const collabRegex = /\b(collab|collaborate|collaboration|promotions?|advertising|advertisement|ads?|partnership|sponsor|sponsorship|influencer|tie\s*up|brand\s*collab|pr\s*package)\b/i;
     if (collabRegex.test(textTrimmed)) {

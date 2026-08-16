@@ -156,11 +156,12 @@ app.post("/webhook", async (req, res) => {
     console.log(`[WhatsApp] Message from ${from}: "${userText}"`);
 
     // 1. Get or create session
-    const session = await db.getOrCreateSession(sessionId, from, phoneId, botType, "whatsapp");
+    let session = await db.getOrCreateSession(sessionId, from, phoneId, botType, "whatsapp");
 
     const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstel_nest";
 
-    // 2. Save user message to DB & emit to dashboard (only for non-AI menu bots, since ChatbotService handles AI bot saves)
+    // 2. Save user message to DB & emit to dashboard
+    // For AI bots in human mode, we still need to save so admin can see the message
     let savedUserMsg = null;
     if (!isAiBot) {
       savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
@@ -171,9 +172,19 @@ app.post("/webhook", async (req, res) => {
       });
     }
 
-    // 4. Check if human mode is active — if so, don't auto-reply
+    // 4. Check if human mode is active — re-read from DB to avoid stale state
+    session = await db.getSession(sessionId) || session;
     if (session.is_human_active) {
       console.log(`[WhatsApp] Human mode active for ${sessionId} — skipping bot reply.`);
+      // For AI bots, save user message so admin sees it (ChatbotService won't run)
+      if (isAiBot) {
+        savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
+        io.emit("new_message", {
+          sessionId,
+          message: savedUserMsg,
+          session,
+        });
+      }
       return;
     }
 
@@ -193,6 +204,12 @@ app.post("/webhook", async (req, res) => {
         aiBotType,
         "whatsapp"
       );
+      // If human mode was caught inside ChatbotService, don't send a reply
+      if (aiResult.humanModeSkipped) {
+        console.log(`[WhatsApp] Human mode caught by ChatbotService for ${sessionId} — no reply sent.`);
+        io.emit("session_updated", await db.getSession(sessionId));
+        return;
+      }
       replyText = aiResult.reply || "";
       responseObj = { message: replyText, options: [] };
     } else {
