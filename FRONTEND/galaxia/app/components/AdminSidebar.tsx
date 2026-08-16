@@ -350,6 +350,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                             {!["ddadmin", "srd", "M&L"].includes(adminUsername) && renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
                                             {!["ddadmin", "srd", "M&L"].includes(adminUsername) && renderNavItem({ name: "Food Bill History", href: "/admin3/food-bill-history", icon: UtensilsCrossed })}
                                             {["ranjit", "devi"].includes(adminUsername) && renderNavItem({ name: "Inventory", href: "/admin3/read-only-inventory", icon: Package })}
+                                            {["ranjit", "devi"].includes(adminUsername) && renderNavItem({ name: "Cash Logs", href: "/admin3/employees", icon: ScrollText })}
                                             {/* Security hidden for ranjit for now */}
                                         </>
                                     )}

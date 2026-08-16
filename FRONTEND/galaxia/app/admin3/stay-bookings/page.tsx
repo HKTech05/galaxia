@@ -261,6 +261,17 @@ export default function StayBookingsPage() {
     const [reportProperty, setReportProperty] = useState<"ambrose" | "amstel-nest" | "both">("both");
     const [reportLoading, setReportLoading] = useState(false);
 
+    // Cancel & Refund Modal State
+    const [cancelModalBooking, setCancelModalBooking] = useState<StayBooking | null>(null);
+    const [cancelTotalPaid, setCancelTotalPaid] = useState<number>(0);
+    const [cancelTotalBalance, setCancelTotalBalance] = useState<number>(0);
+    const [cancelDays, setCancelDays] = useState<number>(0);
+    const [cancelPolicyBracket, setCancelPolicyBracket] = useState<string>("");
+    const [cancelRetained, setCancelRetained] = useState<number>(0);
+    const [cancelRefund, setCancelRefund] = useState<number>(0);
+    const [cancelReason, setCancelReason] = useState<string>("");
+    const [cancelling, setCancelling] = useState<boolean>(false);
+
     const fetchBookings = useCallback(async () => {
         try {
             setLoading(true);
@@ -702,6 +713,93 @@ export default function StayBookingsPage() {
             alert(err?.message || 'Transfer failed');
         } finally {
             setTransferLoading(false);
+        }
+    };
+
+    const openCancelModal = (b: StayBooking) => {
+        const totalAmount = Number(b.totalAmount) || 0;
+        const paid = (b.advancePaid ? (Number(b.advanceAmount) || 0) : 0) + (b.balanceCollected ? (Number(b.balanceAmount) || 0) : 0);
+        const balance = Math.max(0, totalAmount - paid);
+
+        // Days before check-in: diff between checkInDate (midnight) and today (midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const ciStr = b.checkIn ? (b.checkIn.includes('T') ? b.checkIn.split('T')[0] : b.checkIn) : '';
+        const checkIn = new Date(ciStr + 'T00:00:00');
+        checkIn.setHours(0, 0, 0, 0);
+
+        const diffDays = Math.ceil((checkIn.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        let bracket = "";
+        let retained = 0;
+        let refund = 0;
+
+        if (diffDays >= 21) {
+            bracket = "21 days or more before check-in (10% deduction)";
+            retained = Math.round(totalAmount * 0.10);
+            refund = Math.max(0, paid - retained);
+        } else if (diffDays >= 11) {
+            bracket = "11–20 days before check-in (50% deduction)";
+            retained = Math.round(totalAmount * 0.50);
+            refund = Math.max(0, paid - retained);
+        } else {
+            bracket = "Within 10 days of check-in (No refund applicable)";
+            retained = paid;
+            refund = 0;
+        }
+
+        setCancelModalBooking(b);
+        setCancelTotalPaid(paid);
+        setCancelTotalBalance(balance);
+        setCancelDays(diffDays);
+        setCancelPolicyBracket(bracket);
+        setCancelRetained(retained);
+        setCancelRefund(refund);
+        setCancelReason("");
+    };
+
+    const resetCancelFormula = () => {
+        if (!cancelModalBooking) return;
+        const totalAmount = Number(cancelModalBooking.totalAmount) || 0;
+        const paid = cancelTotalPaid;
+
+        if (cancelDays >= 21) {
+            const ret = Math.round(totalAmount * 0.10);
+            setCancelRetained(ret);
+            setCancelRefund(Math.max(0, paid - ret));
+        } else if (cancelDays >= 11) {
+            const ret = Math.round(totalAmount * 0.50);
+            setCancelRetained(ret);
+            setCancelRefund(Math.max(0, paid - ret));
+        } else {
+            setCancelRetained(paid);
+            setCancelRefund(0);
+        }
+    };
+
+    const handleCancelSubmit = async () => {
+        if (!cancelModalBooking) return;
+        setCancelling(true);
+        try {
+            await api.post(`/bookings/staycation/${cancelModalBooking.id}/cancel`, {
+                totalAmount: cancelModalBooking.totalAmount,
+                totalPaid: cancelTotalPaid,
+                totalBalance: cancelTotalBalance,
+                retainedAmount: Number(cancelRetained) || 0,
+                refundAmount: Number(cancelRefund) || 0,
+                policyBracket: cancelPolicyBracket,
+                reason: cancelReason || null,
+            });
+
+            setCancelModalBooking(null);
+            setSelectedBooking(null);
+            fetchBookings();
+            alert("Booking has been successfully cancelled. Refund notification and alert emails have been dispatched.");
+        } catch (err: any) {
+            console.error("Cancellation error:", err);
+            alert(err?.response?.data?.error || err?.message || "Failed to cancel booking. Please try again.");
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -1415,6 +1513,14 @@ export default function StayBookingsPage() {
                                             <ArrowRightLeft size={13} /> Transfer
                                         </button>
                                     )}
+                                    {!selectedBooking.isDd && selectedBooking.status !== 'transferred' && selectedBooking.status !== 'cancelled' && (
+                                        <button
+                                            onClick={() => openCancelModal(selectedBooking)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors"
+                                        >
+                                            <XCircle size={13} /> Cancel
+                                        </button>
+                                    )}
                                     {!isCallManager && (
                                         <button
                                             onClick={() => setDeleteConfirmBooking(selectedBooking)}
@@ -2074,6 +2180,244 @@ export default function StayBookingsPage() {
                                     {transferLoading ? 'Transferring...' : 'Confirm Transfer'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Staycation Cancellation & Refund Modal */}
+            {cancelModalBooking && (
+                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => !cancelling && setCancelModalBooking(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        
+                        {/* Header */}
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+                                    <XCircle size={22} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800">Cancel Staycation Booking</h3>
+                                    <p className="text-xs font-semibold text-slate-500">{cancelModalBooking.bookingRef} · {cancelModalBooking.customerName}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => !cancelling && setCancelModalBooking(null)}
+                                disabled={cancelling}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <X size={20} className="text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            
+                            {/* Date Summary Cards */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Booking & Stay Timeline</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                            <CalendarDays size={14} className="text-slate-400" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">Date of Booking</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-800">{formatDateTime(cancelModalBooking.bookedAt)}</p>
+                                    </div>
+                                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                            <CalendarDays size={14} className="text-indigo-500" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">Check-in / Check-out</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-800">
+                                            {formatDate(cancelModalBooking.checkIn)} → {formatDate(cancelModalBooking.checkOut)}
+                                        </p>
+                                        <p className="text-[10px] text-indigo-600 font-semibold mt-0.5">{cancelModalBooking.nights} Night{cancelModalBooking.nights > 1 ? 's' : ''} · {cancelModalBooking.propertyName}</p>
+                                    </div>
+                                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                            <Clock size={14} className="text-amber-500" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">Cancellation Window</span>
+                                        </div>
+                                        <div className="mt-0.5">
+                                            {cancelDays >= 21 ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                                                    {cancelDays} days left (10% retained)
+                                                </span>
+                                            ) : cancelDays >= 11 ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                                                    {cancelDays} days left (50% retained)
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                                                    {cancelDays > 0 ? `${cancelDays} days left (No refund)` : "Same-day / Past (No refund)"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Financial Overview Cards (Autofetched from DB) */}
+                            <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Financial Overview (DB Records)</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Amount</p>
+                                        <p className="text-lg font-black text-slate-800 mt-1">{formatPrice(cancelModalBooking.totalAmount)}</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Full booking price</p>
+                                    </div>
+                                    <div className="p-4 bg-emerald-50/70 rounded-xl border border-emerald-200">
+                                        <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Total Amount Paid</p>
+                                        <p className="text-lg font-black text-emerald-800 mt-1">{formatPrice(cancelTotalPaid)}</p>
+                                        <p className="text-[10px] text-emerald-600 mt-0.5">
+                                            Adv: {formatPrice(cancelModalBooking.advanceAmount)} ({cancelModalBooking.advancePaid ? '✓' : 'Pending'})
+                                            {cancelModalBooking.balanceAmount > 0 ? ` · Bal: ${formatPrice(cancelModalBooking.balanceAmount)} (${cancelModalBooking.balanceCollected ? '✓' : 'Pending'})` : ''}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200">
+                                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Total Balance Amount</p>
+                                        <p className="text-lg font-black text-amber-800 mt-1">{formatPrice(cancelTotalBalance)}</p>
+                                        <p className="text-[10px] text-amber-600 mt-0.5">Uncollected amount</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Settlement Formula & Editable Retention/Refund Cards */}
+                            <div className="p-5 bg-gradient-to-br from-slate-50 to-indigo-50/30 rounded-2xl border border-indigo-100 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Cancellation Policy Settlement</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Policy Bracket: <strong className="text-indigo-700">{cancelPolicyBracket}</strong></p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={resetCancelFormula}
+                                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 px-3 py-1 rounded-lg shadow-sm hover:bg-indigo-50 transition-colors"
+                                    >
+                                        Reset Formula
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    
+                                    {/* Total Retained Card (Editable) */}
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                                        <label className="block text-[10px] font-bold text-rose-600 uppercase tracking-wider">
+                                            Total Retained (Galaxia Keeps)
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                max={cancelTotalPaid}
+                                                value={cancelRetained}
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value) || 0;
+                                                    setCancelRetained(val);
+                                                    setCancelRefund(Math.max(0, cancelTotalPaid - val));
+                                                }}
+                                                className="w-full pl-7 pr-3 py-2 border-2 border-slate-200 rounded-lg text-base font-bold text-rose-700 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-slate-400">
+                                            Deduction amount retained by resort. Editable by owner.
+                                        </p>
+                                    </div>
+
+                                    {/* To Be Refunded Card (Highlighted & Editable) */}
+                                    <div className="bg-emerald-50/80 p-4 rounded-xl border-2 border-emerald-400 shadow-sm space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                                                To Be Refunded (Customer Gets)
+                                            </label>
+                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
+                                                Highlighted
+                                            </span>
+                                        </div>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 font-bold text-base">₹</span>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                max={cancelTotalPaid}
+                                                value={cancelRefund}
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value) || 0;
+                                                    setCancelRefund(val);
+                                                    setCancelRetained(Math.max(0, cancelTotalPaid - val));
+                                                }}
+                                                className="w-full pl-7 pr-3 py-2 bg-white border-2 border-emerald-500 rounded-lg text-lg font-black text-emerald-800 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/30"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-emerald-700 font-medium">
+                                            Initiated to customer source method within 5–7 business days.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Optional Internal Cancellation Note */}
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">
+                                    Reason / Owner Notes (Optional)
+                                </label>
+                                <textarea
+                                    value={cancelReason}
+                                    onChange={e => setCancelReason(e.target.value)}
+                                    rows={2}
+                                    placeholder="Enter reason for cancellation or custom refund adjustment notes..."
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
+                                />
+                            </div>
+
+                            {/* Automated Email Notice */}
+                            <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl text-xs text-sky-900 space-y-1.5">
+                                <p className="font-bold flex items-center gap-1.5 text-sky-800">
+                                    <Mail size={14} className="text-sky-600" /> Automated Email Notifications
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sky-800 text-[11px] leading-relaxed">
+                                    <li>
+                                        <strong>Customer ({cancelModalBooking.customerEmail || 'No email provided'}):</strong> Refund process initiation notice (5–7 business days) with support contacts.
+                                    </li>
+                                    <li>
+                                        <strong>Admin (admin@galaxiaresorts.com):</strong> Alert with customer name, booking ID, dates, total, retained, bracket, and <strong>highlighted refund amount (₹{cancelRefund.toLocaleString('en-IN')})</strong>.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Modal Action Buttons */}
+                        <div className="p-6 border-t border-slate-100 flex gap-3 sticky bottom-0 bg-white rounded-b-2xl">
+                            <button
+                                type="button"
+                                onClick={() => !cancelling && setCancelModalBooking(null)}
+                                disabled={cancelling}
+                                className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                            >
+                                Close & Keep Booking
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCancelSubmit}
+                                disabled={cancelling}
+                                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-lg shadow-rose-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {cancelling ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        Processing Cancellation...
+                                    </>
+                                ) : (
+                                    <>
+                                        <XCircle size={16} />
+                                        Confirm Cancellation & Initiate Refund
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

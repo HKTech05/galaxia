@@ -78,6 +78,18 @@ export default function EmployeesClient() {
     const [allCashLogsMap, setAllCashLogsMap] = useState<Record<number, CashLog[]>>({});
     const [loading, setLoading] = useState(true);
 
+    // Auth: fetch current user for read-only manager detection
+    const [currentUsername, setCurrentUsername] = useState<string>("");
+    useEffect(() => {
+        (async () => {
+            try {
+                const data = await api.get<any>("/auth/me");
+                setCurrentUsername(data?.username || "");
+            } catch {}
+        })();
+    }, []);
+    const isReadOnlyManager = ["ranjit", "devi", "devidas"].includes(currentUsername);
+
     // Fetch employees and transaction logs from API
     const fetchEmployees = useCallback(async () => {
         try {
@@ -116,7 +128,15 @@ export default function EmployeesClient() {
 
     // Filters
     const ALL_PROPERTIES = ["Digital Diaries", "Ambrose", "Amstel Nest", "La Paraiso", "Mount View", "Hill View", "Heavenly Villa"];
+    const MANAGER_PROPERTIES = ["Ambrose", "Amstel Nest"];
     const [selectedProperties, setSelectedProperties] = useState<string[]>(ALL_PROPERTIES);
+
+    // Force Ambrose + Amstel Nest filter for read-only managers
+    useEffect(() => {
+        if (isReadOnlyManager) {
+            setSelectedProperties(MANAGER_PROPERTIES);
+        }
+    }, [isReadOnlyManager]);
 
     // UI State
     const [editingEmployee, setEditingEmployee] = useState<number | null>(null);
@@ -384,8 +404,8 @@ export default function EmployeesClient() {
             {/* Header Info */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Cash Management</h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Manage staff, track collections, and view detailed histories.</p>
+                    <h1 className="text-3xl font-bold text-slate-800 tracking-tight">{isReadOnlyManager ? 'Cash Logs' : 'Cash Management'}</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-1">{isReadOnlyManager ? 'View cash collection logs for Ambrose & Amstel Nest.' : 'Manage staff, track collections, and view detailed histories.'}</p>
                 </div>
                 <div className="bg-purple-50 text-purple-700 px-4 py-2 rounded-xl flex items-center gap-2 border border-purple-100">
                     <IndianRupee size={18} />
@@ -393,7 +413,8 @@ export default function EmployeesClient() {
                 </div>
             </div>
 
-            {/* Filters Section */}
+            {/* Filters Section — hidden for read-only managers */}
+            {!isReadOnlyManager && (
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
                     <Filter size={18} className="text-slate-500" />
@@ -418,6 +439,7 @@ export default function EmployeesClient() {
                     ))}
                 </div>
             </div>
+            )}
 
             {/* Employee Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -430,7 +452,7 @@ export default function EmployeesClient() {
                         <div>
                             <div className="flex items-start justify-between mb-4">
                                 <div>
-                                    {editingEmployee === card.employeeId ? (
+                                    {!isReadOnlyManager && editingEmployee === card.employeeId ? (
                                         <div className="flex items-center gap-2 mb-1" onClick={e => e.stopPropagation()}>
                                             <input
                                                 type="text"
@@ -445,9 +467,9 @@ export default function EmployeesClient() {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2 group/edit" onClick={(e) => startEditing(e, card.employeeId, card.empName)}>
+                                        <div className={`flex items-center gap-2 ${isReadOnlyManager ? '' : 'group/edit'}`} onClick={isReadOnlyManager ? undefined : (e) => startEditing(e, card.employeeId, card.empName)}>
                                             <p className="text-lg font-bold text-slate-800">{card.title}</p>
-                                            <Pencil size={12} className="text-slate-300 group-hover/edit:text-purple-600 transition-colors" />
+                                            {!isReadOnlyManager && <Pencil size={12} className="text-slate-300 group-hover/edit:text-purple-600 transition-colors" />}
                                         </div>
                                     )}
 
@@ -478,7 +500,11 @@ export default function EmployeesClient() {
                             </div>
                         </div>
 
-                        {card.canCustomCashout ? (
+                        {isReadOnlyManager ? (
+                            <div className="w-full py-3 rounded-xl text-sm font-bold text-center bg-slate-50 text-slate-400 border border-slate-200">
+                                View Only
+                            </div>
+                        ) : card.canCustomCashout ? (
                             <button
                                 onClick={(e) => openCashoutModal(e, card)}
                                 disabled={card.pendingCash === 0}
@@ -579,7 +605,7 @@ export default function EmployeesClient() {
                                             <th className="px-5 py-3">Guest Name</th>
                                             <th className="px-5 py-3">Amount</th>
                                             <th className="px-5 py-3">Status / Notes</th>
-                                            <th className="px-5 py-3 text-center">Action</th>
+                                            {!isReadOnlyManager && <th className="px-5 py-3 text-center">Action</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -613,9 +639,11 @@ export default function EmployeesClient() {
                                                                 <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
                                                             )}
                                                         </td>
+                                                        {!isReadOnlyManager && (
                                                         <td className="px-5 py-3.5 text-center">
                                                             <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
                                                         </td>
+                                                        )}
                                                     </tr>
                                                 );
                                             })
@@ -662,7 +690,7 @@ export default function EmployeesClient() {
                                                         <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
                                                     )}
                                                 </div>
-                                                <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>
+                                                {!isReadOnlyManager && <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>}
                                             </div>
                                         );
                                     })

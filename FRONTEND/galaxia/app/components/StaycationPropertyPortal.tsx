@@ -397,6 +397,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     const [foodBillUpiProof, setFoodBillUpiProof] = useState<File | null>(null);
     const [foodBillSubmitting, setFoodBillSubmitting] = useState(false);
 
+    // Food Bill warning states
+    const [foodBillWarningBooking, setFoodBillWarningBooking] = useState<any>(null);
+    const [checkingFoodBill, setCheckingFoodBill] = useState(false);
+
     // E-menu food bill states
     const [foodBillItems, setFoodBillItems] = useState<Array<{ id: string; description: string; amount: number; isEMenu?: boolean }>>([]);
     const [customTotalAmount, setCustomTotalAmount] = useState<number | null>(null);
@@ -485,6 +489,46 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             setCustomDescription(null);
         }
     }, [isFoodBillModalOpen, foodBillBooking]);
+
+    const handleCheckoutWithFoodBillCheck = async (booking: any) => {
+        const isManagerRestricted = ["ranjit", "devi", "devidas"].includes((username || "").toLowerCase());
+        const isAmbroseOrAmstel = portalName.toLowerCase().includes("ambrose") || portalName.toLowerCase().includes("amstel");
+
+        if (!isManagerRestricted || !isAmbroseOrAmstel) {
+            // Owners/other roles or non-food bill portals: proceed directly
+            setSelectedBooking(booking);
+            setModalType('checkout');
+            setIsActionModalOpen(true);
+            return;
+        }
+        
+        // Check for unbilled e-menu orders
+        setCheckingFoodBill(true);
+        try {
+            const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token") || "";
+            const res = await fetch(`/api/hospitality/requests?bookingId=${booking.rawId}&isBilled=false&status=fulfilled`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const unbilledOrders = Array.isArray(data) ? data : [];
+            
+            if (unbilledOrders.length > 0) {
+                // Has unbilled food orders — show warning
+                setFoodBillWarningBooking(booking);
+            } else {
+                // No unbilled food orders — proceed normally
+                setSelectedBooking(booking);
+                setModalType('checkout');
+                setIsActionModalOpen(true);
+            }
+        } catch (err) {
+            console.error("Failed to check food bill status:", err);
+            // On error, still show warning to be safe
+            setFoodBillWarningBooking(booking);
+        } finally {
+            setCheckingFoodBill(false);
+        }
+    };
 
     const handleFoodBillSubmit = async () => {
         if (!foodBillBooking) return;
@@ -801,6 +845,25 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         }
     };
 
+    // Manager check-in restrictions (Ranjit / Devidas only)
+    const isManagerRestricted = ["ranjit", "devi", "devidas"].includes((username || "").toLowerCase());
+    const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+    const selectedDateStr = (() => { const d = startDate; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+    const isFutureDate = selectedDateStr > todayStr;
+    
+    // Find pending checkouts (bookings that are checked in but checkout date is today or earlier)
+    const pendingPastCheckouts = isManagerRestricted ? bookings.filter(b => {
+        const cod = b.rawCheckOutDate ? b.rawCheckOutDate.slice(0, 10) : "";
+        const st = (b.status || "").toLowerCase();
+        // Must have a checkout date that is today or before
+        if (!cod || cod > todayStr) return false;
+        // Must still be in checked-in state (not completed)
+        if (st === "checked_in" || st === "checked in") return true;
+        return false;
+    }) : [];
+    
+    const checkinBlocked = isManagerRestricted && (isFutureDate || pendingPastCheckouts.length > 0);
+
     return (
         <>
         <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -866,6 +929,20 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                      </div>
                 </div>
             </div>
+
+            {checkinBlocked && receptionistMode === 'checkin' && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl shadow-sm p-4 flex items-center gap-3 text-red-800 mb-6">
+                    <AlertTriangle size={24} className="text-red-600 shrink-0" />
+                    <div>
+                        <h3 className="font-bold">Check-ins Blocked</h3>
+                        <p className="text-sm font-medium mt-1">
+                            {pendingPastCheckouts.length > 0 
+                                ? `⚠ ${pendingPastCheckouts.length} checkout(s) from today or earlier are still pending. Complete all checkouts before taking new check-ins.` 
+                                : "⚠ Future date check-ins are not allowed. You can only perform check-ins for today's date."}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {todaysBookings.length === 0 ? (
                 <div className="bg-white border text-center border-slate-200 rounded-2xl shadow-sm p-16 flex flex-col items-center justify-center">
@@ -1120,11 +1197,19 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         </div>
                                     ) : booking.status !== "Checked In" ? (
                                         <>
-                                            <button
-                                                onClick={() => { setSelectedBooking(booking); setModalType('checkin'); setIsActionModalOpen(true); }}
-                                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-emerald-700">
-                                                <CheckCircle size={18} /> Confirm Check-in
-                                            </button>
+                                            {checkinBlocked ? (
+                                                <button
+                                                    disabled
+                                                    className="w-full bg-slate-300 text-slate-500 font-bold py-3 rounded-xl shadow-sm flex items-center justify-center gap-2 border border-slate-300 cursor-not-allowed">
+                                                    <CheckCircle size={18} /> Confirm Check-in (Blocked)
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => { setSelectedBooking(booking); setModalType('checkin'); setIsActionModalOpen(true); }}
+                                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-emerald-700">
+                                                    <CheckCircle size={18} /> Confirm Check-in
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
                                                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
@@ -1171,9 +1256,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     ) : (
                                         <>
                                             <button
-                                                onClick={() => { setSelectedBooking(booking); setModalType('checkout'); setIsActionModalOpen(true); }}
+                                                onClick={() => handleCheckoutWithFoodBillCheck(booking)}
+                                                disabled={checkingFoodBill}
                                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
-                                                <RotateCcw size={18} /> Initiate Checkout
+                                                {checkingFoodBill ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />} Initiate Checkout
                                             </button>
                                             <button
                                                 onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
@@ -2169,6 +2255,46 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     </>
                                 )}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {foodBillWarningBooking && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setFoodBillWarningBooking(null)} />
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="bg-amber-50 p-6 flex items-center justify-center border-b border-amber-100">
+                            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center shadow-inner">
+                                <AlertTriangle size={32} className="text-amber-600" />
+                            </div>
+                        </div>
+                        <div className="p-8 text-center space-y-4">
+                            <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Unbilled Food Orders</h3>
+                            <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                                Food bill has not been collected for this booking ({foodBillWarningBooking.id}). Please collect the food bill before proceeding with checkout.
+                            </p>
+                            
+                            <div className="pt-4 flex flex-col gap-3">
+                                <button
+                                    onClick={() => {
+                                        setFoodBillBooking(foodBillWarningBooking);
+                                        setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' });
+                                        setFoodBillUpiProof(null);
+                                        setIsFoodBillModalOpen(true);
+                                        setFoodBillWarningBooking(null);
+                                    }}
+                                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-sm hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <Plus size={18} /> Collect Food Bill
+                                </button>
+                                <button
+                                    onClick={() => setFoodBillWarningBooking(null)}
+                                    className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold shadow-sm transition-all text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
