@@ -165,8 +165,15 @@ export async function sendWhatsAppTemplateMessage(
         const data: any = await res.json();
         console.log(`[WhatsApp:${chatbot}] Template '${templateName}' sent to ${bare}:`, data.messages?.[0]?.id);
 
-        // Reconstruct message representation for chat logs
-        const logMessage = `[Template: ${templateName}]\n` + parameters.map((p, idx) => `{{${idx + 1}}}: ${p}`).join("\n");
+        // Reconstruct human-readable message for chat logs (so dashboard shows what customer actually received)
+        let logMessage: string;
+        if (templateName === "dd_booking_confirmation") {
+            logMessage = `*Booking Confirmed* ✅\n\nYour booking has been confirmed!\n\n*Booking Ref:* ${parameters[0]}\n\nYou can view or download your booking voucher here:\n${parameters[1]}\n\nWe look forward to hosting you!\n\n-- Galaxia Resorts\nwww.galaxiaresorts.com`;
+        } else if (templateName === "staycation_booking_confirmation") {
+            logMessage = `*Booking Confirmed* ✅\n\nThank you for booking with Galaxia.\n\n*Booking Ref:* ${parameters[0]}\n\nYou can view or download your booking voucher here:\n${parameters[1]}\n\nWe look forward to welcoming you!\n\n-- Galaxia Resorts\nwww.galaxiaresorts.com`;
+        } else {
+            logMessage = `[Template: ${templateName}]\n` + parameters.map((p, idx) => `{{${idx + 1}}}: ${p}`).join("\n");
+        }
         try {
             await logConfirmationToChat(config.phoneNumberId, bare, logMessage, addBookedTag);
         } catch (dbErr: any) {
