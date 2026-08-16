@@ -910,84 +910,64 @@ export async function sendStaycationCancellationEmails(opts: {
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin: 0; padding: 0; background: #ffffff;">
-<div style="max-width: 640px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-top: 20px;">
+<div style="max-width: 640px; margin: 0 auto; font-family: 'Georgia', 'Times New Roman', serif; background: #e8e5dd;">
 
-    <!-- Admin Alert Header -->
-    <div style="background: #0f172a; padding: 24px 28px; border-bottom: 3px solid #f43f5e;">
-        <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: #f43f5e; letter-spacing: 2px; text-transform: uppercase;">ADMIN NOTIFICATION</p>
-        <h1 style="margin: 0; font-size: 20px; color: #ffffff; font-weight: 700;">Staycation Booking Cancellation & Refund</h1>
-        <p style="margin: 4px 0 0; font-size: 13px; color: #94a3b8;">Booking Reference: <span style="color: #f8fafc; font-weight: 600;">${opts.bookingRef}</span></p>
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, ${NAVY}, ${NAVY_LIGHT}); padding: 40px 32px; text-align: center;">
+        <h1 style="margin: 0; color: ${GOLD}; font-size: 32px; letter-spacing: 6px; font-weight: 400;">GALAXIA</h1>
+        <div style="width: 60px; height: 1px; background: ${GOLD}; margin: 12px auto;"></div>
+        <p style="margin: 0; color: rgba(196,162,101,0.7); font-size: 11px; letter-spacing: 4px; text-transform: uppercase;">Admin Cancellation &amp; Refund Alert</p>
     </div>
 
-    <div style="padding: 28px;">
+    <!-- Body -->
+    <div style="background: ${WARM_BG}; padding: 40px 32px;">
+        <p style="margin: 0 0 6px; font-size: 13px; color: #dc2626; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">Admin Alert · Cancellation &amp; Refund</p>
+        <h2 style="margin: 0 0 4px; font-size: 22px; color: ${TEXT_DARK}; font-weight: 400;">Staycation Booking Cancellation</h2>
+        <p style="margin: 0 0 20px; font-size: 14px; color: ${TEXT_MED}; line-height: 1.6;">
+            Booking reference <strong>${opts.bookingRef}</strong> for <strong>${opts.customerName}</strong> has been cancelled. Please find the complete refund and deduction breakdown below.
+        </p>
 
-        <!-- Highlighted Refund Banner -->
-        <div style="margin-bottom: 24px; padding: 22px; background: #ecfdf5; border: 2px solid #10b981; border-radius: 10px; text-align: center;">
-            <p style="margin: 0 0 4px; font-size: 12px; font-weight: 800; color: #047857; text-transform: uppercase; letter-spacing: 1.5px;">Amount To Be Refunded</p>
-            <p style="margin: 0; font-size: 32px; font-weight: 900; color: #065f46; font-family: 'Times New Roman', serif;">${fmtCurrency(opts.refundAmount)}</p>
-            <p style="margin: 6px 0 0; font-size: 12px; color: #059669; font-weight: 500;">Policy Applied: <strong>${opts.policyBracket}</strong></p>
+        <!-- Prominently Highlighted Refund Banner -->
+        <div style="margin: 24px 0; padding: 22px; background: #f0fdf4; border-radius: 10px; border-left: 4px solid #16a34a; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: center;">
+            <p style="margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #16a34a; letter-spacing: 2px; text-transform: uppercase;">Amount To Be Refunded</p>
+            <p style="margin: 0; font-size: 32px; font-weight: 700; color: #15803d; font-family: 'Times New Roman', Times, serif;">${fmtCurrency(opts.refundAmount)}</p>
+            <p style="margin: 8px 0 0; font-size: 12px; color: #166534; font-weight: 500;">Policy Applied: <strong>${opts.policyBracket}</strong></p>
         </div>
 
-        <!-- Details Table -->
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 16px; font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                Customer & Reservation Details
-            </h3>
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b; width: 45%;">Name of Customer</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 700; text-align: right;">${opts.customerName}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Booking ID</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 700; text-align: right;">${opts.bookingRef}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Customer Email</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 600; text-align: right;">${opts.customerEmail || "N/A"}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Customer Phone</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 600; text-align: right;">${opts.customerPhone || "N/A"}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Property</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 600; text-align: right;">${opts.propertyName}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Check-in / Check-out Dates</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 600; text-align: right;">${opts.checkInDate} to ${opts.checkOutDate}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Booked On Date</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 600; text-align: right;">${opts.bookedAt}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b; border-top: 1px dashed #e2e8f0;">Total Amount</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 700; text-align: right; border-top: 1px dashed #e2e8f0;">${fmtCurrency(opts.totalAmount)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Total Amount Paid</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 700; text-align: right;">${fmtCurrency(opts.totalPaid)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Amount Retained</td>
-                    <td style="padding: 8px 0; color: #dc2626; font-weight: 700; text-align: right;">${fmtCurrency(opts.retainedAmount)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b;">Policy Bracket</td>
-                    <td style="padding: 8px 0; color: #0f172a; font-weight: 700; text-align: right;">${opts.policyBracket}</td>
-                </tr>
-                ${opts.cancelledBy ? `
-                <tr>
-                    <td style="padding: 8px 0; color: #64748b; border-top: 1px dashed #e2e8f0;">Cancelled By</td>
-                    <td style="padding: 8px 0; color: #475569; font-weight: 600; text-align: right; border-top: 1px dashed #e2e8f0;">@${opts.cancelledBy}</td>
-                </tr>` : ""}
+        <!-- Details Card -->
+        <div style="background: white; border-radius: 10px; padding: 24px; border: 1px solid ${BORDER}; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <table style="width: 100%; border-collapse: collapse;">
+                ${sectionTitle("Customer Details")}
+                ${row("Name of Customer", opts.customerName, { bold: true })}
+                ${opts.customerPhone ? row("Customer Phone", opts.customerPhone) : ""}
+                ${opts.customerEmail ? row("Customer Email", opts.customerEmail) : ""}
+                ${divider()}
+                ${sectionTitle("Reservation Details")}
+                ${row("Booking ID", opts.bookingRef, { bold: true })}
+                ${row("Property", opts.propertyName)}
+                ${row("Check-in / Check-out Dates", `${opts.checkInDate} to ${opts.checkOutDate}`)}
+                ${row("Booked On Date", opts.bookedAt)}
+                ${divider()}
+                ${sectionTitle("Financial & Refund Settlement")}
+                ${row("Total Amount", fmtCurrency(opts.totalAmount))}
+                ${row("Total Amount Paid", fmtCurrency(opts.totalPaid))}
+                ${row("Amount Retained", fmtCurrency(opts.retainedAmount), { color: "#dc2626", bold: true })}
+                ${row("Policy Bracket", opts.policyBracket)}
+                ${opts.cancelledBy ? row("Cancelled By", `@${opts.cancelledBy}`) : ""}
+                ${row("Amount to be Refunded", fmtCurrency(opts.refundAmount), { bold: true, color: "#16a34a", borderTop: true })}
             </table>
         </div>
 
-        <p style="margin: 0; font-size: 11px; color: #94a3b8; text-align: center;">
+        <p style="margin: 24px 0 0; font-size: 11px; color: ${TEXT_LIGHT}; text-align: center;">
             Timestamp: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} · Galaxia Admin Automated System
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: ${NAVY}; padding: 24px 32px; text-align: center;">
+        <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 12px; line-height: 1.5;">
+            Galaxia Resorts · All rights reserved.<br>
+            Galaxia Admin Security &amp; Operations System
         </p>
     </div>
 </div>
