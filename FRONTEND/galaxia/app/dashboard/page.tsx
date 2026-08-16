@@ -39,6 +39,16 @@ function parseSmartName(raw: string): { first: string; last: string } {
 
 interface Booking {
     id: string;
+    dbId?: number;
+    rawBooking?: any;
+    checkInRaw?: string;
+    checkOutRaw?: string;
+    bookedAtRaw?: string;
+    totalAmountNum?: number;
+    advanceAmountNum?: number;
+    advancePaid?: boolean;
+    balanceAmountNum?: number;
+    balanceCollected?: boolean;
     propertyDbId?: number;
     dates: string;
     status: string;
@@ -76,6 +86,7 @@ function DashboardContent() {
     const [bookingView, setBookingView] = useState<"upcoming" | "past">("upcoming");
     const [categoryFilter, setCategoryFilter] = useState<Category>("all");
     const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
+    const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(null);
     const [userName, setUserName] = useState("Guest");
     const [userInitial, setUserInitial] = useState("G");
     const [userEmail, setUserEmail] = useState("");
@@ -165,117 +176,131 @@ function DashboardContent() {
         }).catch(() => {});
     }, []);
 
-    useEffect(() => {
-        (async () => {
-            try {
-                setIsLoading(true);
-                const res = await api.get("/users/me/bookings");
+    const fetchMyBookings = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const res = await api.get("/users/me/bookings");
+            
+            const formattedStay = (res.stayBookings || []).map((b: any): Booking => {
+                const ci = new Date(b.checkInDate);
+                const co = new Date(b.checkOutDate);
                 
-                const formattedStay = (res.stayBookings || []).map((b: any): Booking => {
-                    const ci = new Date(b.checkInDate);
-                    const co = new Date(b.checkOutDate);
-                    
-                    const coDate = new Date(co);
-                    coDate.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const isUpcoming = coDate >= today;
-                    
-                    const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
-                    
-                    return {
-                        id: b.bookingRef || `#S-${b.id}`,
-                        property: b.property?.name || "Staycation Property",
-                        propertyDbId: b.propertyId,
-                        dates: `${ci.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}-${co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}`,
-                        status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
-                        amount: formatPrice(b.totalAmount),
-                        guests: b.numGuests,
-                        image: (() => {
-                            // Use raw slugs from DB for siteImages lookup (NOT the standardized combined name)
-                            const propSlug = b.property?.slug || (b.property?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                            const subSlug = b.subProperty?.slug || (b.subProperty?.name ? b.subProperty.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : null);
-                            // Try sub-property thumbnail first (e.g. ambrose/alta/thumbnail), then property (e.g. la-paraiso/thumbnail)
-                            if (subSlug) {
-                                const subThumb = (siteImages[`${propSlug}/${subSlug}/thumbnail`] || [])[0]?.url;
-                                if (subThumb) return subThumb;
-                            }
-                            const propThumb = (siteImages[`${propSlug}/thumbnail`] || [])[0]?.url;
-                            if (propThumb) return propThumb;
-                            // Fallback: try property or subProperty imageUrl from DB
-                            if (b.subProperty?.imageUrl) return b.subProperty.imageUrl;
-                            if (b.property?.imageUrl) return b.property.imageUrl;
-                            return b.property?.images?.[0] || '';
-                        })(),
-                        type: "staycation",
-                        time: isUpcoming ? "upcoming" : "past",
-                        totalPaid: formatPrice(b.totalAmount),
-                        payNow: formatPrice(b.advanceAmount ?? Math.round(b.totalAmount * 0.2)),
-                        payAtVenue: formatPrice(Math.max(0, b.balanceAmount ?? Math.round(b.totalAmount * 0.8))),
-                        securityDeposit: b.securityDeposit ? formatPrice(b.securityDeposit) : "—",
-                        depositRefunded: b.depositRefunded || false,
-                        checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkInTime || "1:00 PM"),
-                        checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkOutTime || "11:00 AM"),
-                        roomType: b.subProperty?.name || "Entire Property",
-                        taxes: formatPrice(b.gstAmount || 0),
-                        addons: b.addons || [],
-                    };
-                });
+                const coDate = new Date(co);
+                coDate.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isUpcoming = coDate >= today;
                 
-                const formattedDd = (res.ddBookings || []).map((b: any): Booking => {
-                    const date = new Date(b.bookingDate);
-                    
-                    const bookingDateOnly = new Date(date);
-                    bookingDateOnly.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const isUpcoming = bookingDateOnly >= today;
-                    const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
-                    
-                    const fmtHour = (h: number) => {
-                        const ampm = h >= 12 ? "PM" : "AM";
-                        const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
-                        return `${hr}:00 ${ampm}`;
-                    };
-                    return {
-                        id: b.bookingRef || `#DD-${b.id}`,
-                        property: b.screen?.name ? `${b.screen.name.replace(/\s*\([^)]*\)/g, '').trim()} \u2014 Digital Diaries` : "Digital Diaries",
-                        dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
-                        status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
-                        amount: formatPrice(b.totalAmount),
-                        guests: b.numGuests,
-                        image: (() => {
-                            // Try to get package-specific thumbnail from Photo Manager
-                            const screenSlug = b.screen?.slug;
-                            const pkgSlug = b.package?.slug;
-                            if (screenSlug && pkgSlug) {
-                                const thumbSection = `dd/${screenSlug}/${pkgSlug}/thumbnail`;
-                                const thumbImg = (siteImages[thumbSection] || [])[0]?.url;
-                                if (thumbImg) return thumbImg;
-                            }
-                            // Fallback to screen image
-                            return b.screen?.imageUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80";
-                        })(),
-                        type: "celebration",
-                        time: isUpcoming ? "upcoming" : "past",
-                        totalPaid: formatPrice(b.totalAmount),
-                        payNow: formatPrice(b.amountPaid ?? Math.round(b.totalAmount * 0.5)),
-                        payAtVenue: formatPrice(Math.max(0, b.amountToCollect ?? Math.round(b.totalAmount * 0.5))),
-                        screen: (b.screen?.name || "Private Screen").replace(/\s*\([^)]*\)/g, '').trim(),
-                        package: b.package?.name || "Private Screening",
-                        duration: `${b.durationHours || 3} hours`,
-                        timeSlot: b.startHour != null ? `${fmtHour(b.startHour)} - ${fmtHour(b.startHour + (b.durationHours || 3))}` : b.timeSlot
-                    };
-                });
+                const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
                 
-                setBookings([...formattedStay, ...formattedDd].sort((a, b) => b.id.localeCompare(a.id)));
-            } catch (err) {
-                console.error("Error fetching my bookings:", err);
-            } finally {
-                setIsLoading(false);
-            }
-        })();
+                return {
+                    id: b.bookingRef || `#S-${b.id}`,
+                    dbId: b.id,
+                    rawBooking: b,
+                    checkInRaw: b.checkInDate,
+                    checkOutRaw: b.checkOutDate,
+                    bookedAtRaw: b.bookedAt,
+                    totalAmountNum: Number(b.totalAmount) || 0,
+                    advanceAmountNum: Number(b.advanceAmount) || 0,
+                    advancePaid: b.advancePaid,
+                    balanceAmountNum: Number(b.balanceAmount) || 0,
+                    balanceCollected: b.balanceCollected,
+                    property: b.property?.name || "Staycation Property",
+                    propertyDbId: b.propertyId,
+                    dates: `${ci.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}-${co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}`,
+                    status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+                    amount: formatPrice(b.totalAmount),
+                    guests: b.numGuests,
+                    image: (() => {
+                        // Use raw slugs from DB for siteImages lookup (NOT the standardized combined name)
+                        const propSlug = b.property?.slug || (b.property?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                        const subSlug = b.subProperty?.slug || (b.subProperty?.name ? b.subProperty.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : null);
+                        // Try sub-property thumbnail first (e.g. ambrose/alta/thumbnail), then property (e.g. la-paraiso/thumbnail)
+                        if (subSlug) {
+                            const subThumb = (siteImages[`${propSlug}/${subSlug}/thumbnail`] || [])[0]?.url;
+                            if (subThumb) return subThumb;
+                        }
+                        const propThumb = (siteImages[`${propSlug}/thumbnail`] || [])[0]?.url;
+                        if (propThumb) return propThumb;
+                        // Fallback: try property or subProperty imageUrl from DB
+                        if (b.subProperty?.imageUrl) return b.subProperty.imageUrl;
+                        if (b.property?.imageUrl) return b.property.imageUrl;
+                        return b.property?.images?.[0] || '';
+                    })(),
+                    type: "staycation",
+                    time: isUpcoming ? "upcoming" : "past",
+                    totalPaid: formatPrice(b.totalAmount),
+                    payNow: formatPrice(b.advanceAmount ?? Math.round(b.totalAmount * 0.2)),
+                    payAtVenue: formatPrice(Math.max(0, b.balanceAmount ?? Math.round(b.totalAmount * 0.8))),
+                    securityDeposit: b.securityDeposit ? formatPrice(b.securityDeposit) : "—",
+                    depositRefunded: b.depositRefunded || false,
+                    checkIn: ci.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkInTime || "1:00 PM"),
+                    checkOut: co.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) + " · " + (b.property?.checkOutTime || "11:00 AM"),
+                    roomType: b.subProperty?.name || "Entire Property",
+                    taxes: formatPrice(b.gstAmount || 0),
+                    addons: b.addons || [],
+                };
+            });
+            
+            const formattedDd = (res.ddBookings || []).map((b: any): Booking => {
+                const date = new Date(b.bookingDate);
+                
+                const bookingDateOnly = new Date(date);
+                bookingDateOnly.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isUpcoming = bookingDateOnly >= today;
+                const formatPrice = (val: number) => `₹${val.toLocaleString("en-IN")}`;
+                
+                const fmtHour = (h: number) => {
+                    const ampm = h >= 12 ? "PM" : "AM";
+                    const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
+                    return `${hr}:00 ${ampm}`;
+                };
+                return {
+                    id: b.bookingRef || `#DD-${b.id}`,
+                    dbId: b.id,
+                    rawBooking: b,
+                    property: b.screen?.name ? `${b.screen.name.replace(/\s*\([^)]*\)/g, '').trim()} \u2014 Digital Diaries` : "Digital Diaries",
+                    dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
+                    status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+                    amount: formatPrice(b.totalAmount),
+                    guests: b.numGuests,
+                    image: (() => {
+                        // Try to get package-specific thumbnail from Photo Manager
+                        const screenSlug = b.screen?.slug;
+                        const pkgSlug = b.package?.slug;
+                        if (screenSlug && pkgSlug) {
+                            const thumbSection = `dd/${screenSlug}/${pkgSlug}/thumbnail`;
+                            const thumbImg = (siteImages[thumbSection] || [])[0]?.url;
+                            if (thumbImg) return thumbImg;
+                        }
+                        // Fallback to screen image
+                        return b.screen?.imageUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80";
+                    })(),
+                    type: "celebration",
+                    time: isUpcoming ? "upcoming" : "past",
+                    totalPaid: formatPrice(b.totalAmount),
+                    payNow: formatPrice(b.amountPaid ?? Math.round(b.totalAmount * 0.5)),
+                    payAtVenue: formatPrice(Math.max(0, b.amountToCollect ?? Math.round(b.totalAmount * 0.5))),
+                    screen: (b.screen?.name || "Private Screen").replace(/\s*\([^)]*\)/g, '').trim(),
+                    package: b.package?.name || "Private Screening",
+                    duration: `${b.durationHours || 3} hours`,
+                    timeSlot: b.startHour != null ? `${fmtHour(b.startHour)} - ${fmtHour(b.startHour + (b.durationHours || 3))}` : b.timeSlot
+                };
+            });
+            
+            setBookings([...formattedStay, ...formattedDd].sort((a, b) => b.id.localeCompare(a.id)));
+        } catch (err) {
+            console.error("Error fetching my bookings:", err);
+        } finally {
+            setIsLoading(false);
+        }
     }, [siteImages]);
+
+    useEffect(() => {
+        fetchMyBookings();
+    }, [fetchMyBookings]);
 
     useEffect(() => {
         const source = searchParams.get("source");
@@ -412,6 +437,23 @@ function DashboardContent() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Cancellation Option for Upcoming Staycation */}
+                        {isStaycation && booking.status !== 'Cancelled' && (
+                            <div className={`mt-3 p-3.5 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isDark ? "bg-rose-950/10 border-rose-900/30" : "bg-rose-50/60 border-rose-200"}`}>
+                                <div>
+                                    <p className={`font-inter text-xs font-semibold ${isDark ? "text-rose-400" : "text-rose-700"}`}>Need to cancel this reservation?</p>
+                                    <p className={`font-inter text-[10px] ${textMuted}`}>Check refund calculations based on resort cancellation policy.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelModalBooking(booking)}
+                                    className="px-4 py-2 rounded-lg text-xs font-inter font-bold text-rose-600 bg-white hover:bg-rose-50 border border-rose-200 shadow-sm transition-colors shrink-0"
+                                >
+                                    Cancel Reservation
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -587,15 +629,28 @@ function DashboardContent() {
                                                 <p className={`${textSecondary} font-inter text-xs`}>{booking.dates} • {booking.guests} guests</p>
                                                 {booking.rating && <div className="mt-2"><StarRating rating={booking.rating} /></div>}
                                             </div>
-                                            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2">
+                                            <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2.5">
                                                 <p className={`${accentText} font-cinzel font-semibold text-sm sm:text-base`}>{booking.amount}</p>
-                                                <button
-                                                    onClick={() => setExpandedBooking(expandedBooking === booking.id ? null : booking.id)}
-                                                    className={`${accentText} text-xs font-inter font-medium ${accentHoverText} transition-colors flex items-center gap-1`}
-                                                >
-                                                    {expandedBooking === booking.id ? "Hide Details" : "View Details"}
-                                                    <svg className={`w-3 h-3 transition-transform ${expandedBooking === booking.id ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    {booking.type === 'staycation' && booking.time === 'upcoming' && booking.status !== 'Cancelled' && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setCancelModalBooking(booking);
+                                                            }}
+                                                            className="text-xs font-inter font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => setExpandedBooking(expandedBooking === booking.id ? null : booking.id)}
+                                                        className={`${accentText} text-xs font-inter font-medium ${accentHoverText} transition-colors flex items-center gap-1`}
+                                                    >
+                                                        {expandedBooking === booking.id ? "Hide Details" : "View Details"}
+                                                        <svg className={`w-3 h-3 transition-transform ${expandedBooking === booking.id ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                         {expandedBooking === booking.id && <BookingDetail booking={booking} />}
@@ -821,6 +876,246 @@ function DashboardContent() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Customer Staycation Cancellation & Refund Modal */}
+            {cancelModalBooking && (
+                <CustomerStayCancelModal
+                    booking={cancelModalBooking}
+                    onClose={() => setCancelModalBooking(null)}
+                    onSuccess={() => {
+                        setCancelModalBooking(null);
+                        fetchMyBookings();
+                    }}
+                    isDark={isDark}
+                />
+            )}
+        </div>
+    );
+}
+
+// ----------------------------------------------------------------------
+// Customer Staycation Cancellation & Refund Modal (Read-Only Settlement)
+// ----------------------------------------------------------------------
+interface CustomerStayCancelModalProps {
+    booking: Booking;
+    onClose: () => void;
+    onSuccess: () => void;
+    isDark?: boolean;
+}
+
+function CustomerStayCancelModal({ booking, onClose, onSuccess, isDark }: CustomerStayCancelModalProps) {
+    const raw = booking.rawBooking || {};
+    const totalAmount = Number(booking.totalAmountNum ?? raw.totalAmount) || 0;
+    const paid = (booking.advancePaid || raw.advancePaid ? Number(booking.advanceAmountNum ?? raw.advanceAmount ?? 0) : 0) + 
+                 (booking.balanceCollected || raw.balanceCollected ? Number(booking.balanceAmountNum ?? raw.balanceAmount ?? 0) : 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const ciStr = booking.checkInRaw || raw.checkInDate || "";
+    const ciClean = ciStr.includes("T") ? ciStr.split("T")[0] : ciStr;
+    const checkIn = new Date(ciClean + "T00:00:00");
+    checkIn.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.ceil((checkIn.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    let policyBracket = "";
+    let retained = 0;
+    let refund = 0;
+
+    if (diffDays >= 21) {
+        policyBracket = "21+ days before check-in (10% deduction)";
+        retained = Math.round(totalAmount * 0.10);
+        refund = Math.max(0, paid - retained);
+    } else if (diffDays >= 11) {
+        policyBracket = "11–20 days before check-in (50% retained)";
+        retained = Math.round(totalAmount * 0.50);
+        refund = Math.max(0, paid - retained);
+    } else {
+        policyBracket = "Within 10 days of check-in (No refund applicable)";
+        retained = paid;
+        refund = 0;
+    }
+
+    const [showConfirmWarning, setShowConfirmWarning] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    const formatCurrency = (val: number) => `₹${val.toLocaleString("en-IN")}`;
+
+    const handleCancel = async () => {
+        if (!booking.dbId) return;
+        setSubmitting(true);
+        try {
+            await api.post(`/bookings/staycation/${booking.dbId}/user-cancel`, {});
+            onSuccess();
+            alert("Your booking has been cancelled successfully. A confirmation email and refund details have been sent to your registered email address.");
+        } catch (err: any) {
+            console.error("Cancellation error:", err);
+            alert(err?.response?.data?.error || err?.message || "Failed to cancel booking. Please contact admin@galaxiaresorts.com for assistance.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div 
+            className="fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center p-4 overscroll-contain"
+            onClick={() => !submitting && onClose()}
+        >
+            <div 
+                className={`rounded-2xl shadow-2xl border ${isDark ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-slate-200'} w-full max-w-xl max-h-[90vh] flex flex-col transform-gpu`}
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className={`p-5 sm:p-6 border-b ${isDark ? 'border-[#2a2a2a]' : 'border-slate-100'} flex items-center justify-between shrink-0`}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </div>
+                        <div>
+                            <h3 className={`text-base sm:text-lg font-cinzel font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Cancel Staycation Reservation</h3>
+                            <p className={`text-xs font-inter ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{booking.id} · {booking.property}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => !submitting && onClose()}
+                        disabled={submitting}
+                        className={`p-2 hover:bg-slate-100 dark:hover:bg-[#252525] rounded-lg transition-colors ${isDark ? 'text-gray-400' : 'text-slate-500'}`}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1 overscroll-contain font-inter">
+                    
+                    {/* Stay Dates & Window */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#111] border-[#2a2a2a]' : 'bg-slate-50 border-slate-200'}`}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Stay Dates</p>
+                            <p className={`text-xs font-bold mt-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{booking.dates}</p>
+                            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">{booking.roomType}</p>
+                        </div>
+                        <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#111] border-[#2a2a2a]' : 'bg-slate-50 border-slate-200'}`}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Cancellation Tier</p>
+                            <div className="mt-1">
+                                {diffDays >= 21 ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                                        {diffDays} days left (10% retained)
+                                    </span>
+                                ) : diffDays >= 11 ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                                        {diffDays} days left (50% retained)
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                                        {diffDays > 0 ? `${diffDays} days left (No refund)` : "Same-day / Past (No refund)"}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Cancellation Policy Box */}
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-amber-50/50 border-amber-200'} space-y-2`}>
+                        <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Staycation Cancellation Policy
+                        </h4>
+                        <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <p className="flex items-start gap-1.5">
+                                <span className="text-amber-500 font-bold">•</span>
+                                <span><strong>21+ days before check-in:</strong> 10% deduction from booking amount retained.</span>
+                            </p>
+                            <p className="flex items-start gap-1.5">
+                                <span className="text-amber-500 font-bold">•</span>
+                                <span><strong>11–20 days before check-in:</strong> 50% of booking amount retained.</span>
+                            </p>
+                            <p className="flex items-start gap-1.5">
+                                <span className="text-amber-500 font-bold">•</span>
+                                <span><strong>Within 10 days of check-in:</strong> No refund applicable (100% retained).</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Settlement Cards (Read-only for User) */}
+                    <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Refund & Deduction Summary</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            <div className={`p-3 rounded-xl border ${isDark ? 'bg-[#111] border-[#2a2a2a]' : 'bg-slate-50 border-slate-200'}`}>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Booking</p>
+                                <p className={`text-sm font-bold mt-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{formatCurrency(totalAmount)}</p>
+                            </div>
+                            <div className={`p-3 rounded-xl border ${isDark ? 'bg-[#111] border-[#2a2a2a]' : 'bg-slate-50 border-slate-200'}`}>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Paid</p>
+                                <p className={`text-sm font-bold mt-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{formatCurrency(paid)}</p>
+                            </div>
+                            <div className={`p-3 rounded-xl border ${isDark ? 'bg-rose-950/20 border-rose-900/30' : 'bg-rose-50 border-rose-200'}`}>
+                                <p className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Deduction</p>
+                                <p className="text-sm font-bold mt-1 text-rose-700">{formatCurrency(retained)}</p>
+                            </div>
+                            <div className={`p-3 rounded-xl border-2 ${isDark ? 'bg-emerald-950/20 border-emerald-600/50' : 'bg-emerald-50 border-emerald-400'}`}>
+                                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">To Be Refunded</p>
+                                <p className="text-sm font-black mt-1 text-emerald-700">{formatCurrency(refund)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Refund Notice */}
+                    <div className={`p-3.5 rounded-xl border text-xs ${isDark ? 'bg-[#111] border-[#2a2a2a] text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'} leading-relaxed`}>
+                        Your refund process will be initiated directly to your original payment method within <strong>5–7 business days</strong> upon confirmation. If you have questions, contact us at <a href="mailto:admin@galaxiaresorts.com" className="text-amber-600 font-bold hover:underline">admin@galaxiaresorts.com</a> or visit <a href="/staycation/contact" className="text-amber-600 font-bold hover:underline" target="_blank">Contact Support</a>.
+                    </div>
+
+                    {/* Warning confirmation step */}
+                    {showConfirmWarning && (
+                        <div className="p-4 bg-rose-50 border-2 border-rose-400 rounded-xl space-y-2 animate-in fade-in duration-200">
+                            <p className="text-xs font-black text-rose-800 flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                Final Confirmation Required
+                            </p>
+                            <p className="text-xs text-rose-700 font-medium">
+                                Are you sure you want to cancel this booking? This action is permanent and cannot be undone. Your reserved dates will be released immediately.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className={`p-4 sm:p-5 border-t ${isDark ? 'border-[#2a2a2a]' : 'border-slate-100'} flex gap-3 shrink-0`}>
+                    <button
+                        type="button"
+                        onClick={() => !submitting && (showConfirmWarning ? setShowConfirmWarning(false) : onClose())}
+                        disabled={submitting}
+                        className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors ${isDark ? 'bg-[#252525] text-gray-300 hover:bg-[#303030]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                        {showConfirmWarning ? "No, Keep My Booking" : "Keep Booking"}
+                    </button>
+                    {showConfirmWarning ? (
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={submitting}
+                            className="flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-rose-600/30"
+                        >
+                            {submitting ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                                    Cancelling...
+                                </>
+                            ) : (
+                                "Yes, Confirm Cancellation"
+                            )}
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmWarning(true)}
+                            className="flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-md shadow-rose-600/20 flex items-center justify-center gap-1.5"
+                        >
+                            Proceed to Cancel
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

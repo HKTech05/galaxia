@@ -1,7 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import jwt from "jsonwebtoken";
-import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
+import { authMiddleware, AuthRequest, requireRole, customerAuthMiddleware, CustomerAuthRequest } from "../middleware/auth";
 import { encrypt, decrypt } from "../lib/encryption";
 import { auditLog } from "../lib/logger";
 import { sendBookingConfirmation, sendOwnerBookingNotification, sendBookingEditNotification, sendStaycationCancellationEmails } from "../lib/emailService";
@@ -1625,6 +1625,147 @@ router.post("/:id/cancel", authMiddleware, async (req: AuthRequest, res) => {
         });
     } catch (error) {
         console.error("Cancel staycation booking error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// POST /api/bookings/staycation/:id/user-cancel — Customer self-service cancellation
+router.post("/:id/user-cancel", customerAuthMiddleware, async (req: CustomerAuthRequest, res) => {
+    try {
+        const bookingId = parseInt(req.params.id as string);
+        if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
+
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id }
+        });
+
+        if (!user) {
+            return res.status(401).json({ error: "User not found" });
+        }
+
+        const booking = await prisma.staycationBooking.findUnique({
+            where: { id: bookingId },
+            include: { property: true, subProperty: true },
+        });
+
+        if (!booking) {
+            return res.status(404).json({ error: "Booking not found" });
+        }
+
+        // Verify booking belongs to this user
+        const plainPhone = booking.customerPhone ? decrypt(booking.customerPhone) : null;
+        const plainEmail = booking.customerEmail ? decrypt(booking.customerEmail) : null;
+
+        const isOwner = 
+            booking.userId === user.id ||
+            (plainEmail && user.email && plainEmail.toLowerCase() === user.email.toLowerCase()) ||
+            (booking.customerEmail && user.email && booking.customerEmail.toLowerCase() === user.email.toLowerCase()) ||
+            (plainPhone && user.phone && plainPhone === user.phone);
+
+        if (!isOwner) {
+            return res.status(403).json({ error: "You do not have permission to cancel this booking" });
+        }
+
+        if (booking.status === "cancelled") {
+            return res.status(400).json({ error: "Booking is already cancelled" });
+        }
+
+        // Calculate days before check-in (midnight to midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const checkInDate = new Date(booking.checkInDate);
+        checkInDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((checkInDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        const totalAmount = Number(booking.totalAmount) || 0;
+        const totalPaid = (booking.advancePaid ? (Number(booking.advanceAmount) || 0) : 0) + (booking.balanceCollected ? (Number(booking.balanceAmount) || 0) : 0);
+
+        let policyBracket = "";
+        let retainedAmount = 0;
+        let refundAmount = 0;
+
+        if (diffDays >= 21) {
+            policyBracket = "21 days or more before check-in (10% deduction)";
+            retainedAmount = Math.round(totalAmount * 0.10);
+            refundAmount = Math.max(0, totalPaid - retainedAmount);
+        } else if (diffDays >= 11) {
+            policyBracket = "11–20 days before check-in (50% deduction)";
+            retainedAmount = Math.round(totalAmount * 0.50);
+            refundAmount = Math.max(0, totalPaid - retainedAmount);
+        } else {
+            policyBracket = "Within 10 days of check-in (No refund applicable)";
+            retainedAmount = totalPaid;
+            refundAmount = 0;
+        }
+
+        const cancelComment = `[Cancelled by Customer]: Refund ₹${refundAmount.toLocaleString('en-IN')}, Retained ₹${retainedAmount.toLocaleString('en-IN')} (${policyBracket})`;
+        const updatedComments = booking.comments 
+            ? `${booking.comments}\n${cancelComment}`
+            : cancelComment;
+
+        const updated = await prisma.staycationBooking.update({
+            where: { id: bookingId },
+            data: {
+                status: "cancelled",
+                comments: updatedComments,
+            },
+            include: { property: true, subProperty: true },
+        });
+
+        // Format dates for emails
+        const fmtDateStr = (d: string | Date) =>
+            new Date(d).toLocaleDateString("en-IN", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+            });
+
+        const checkInFormatted = fmtDateStr(booking.checkInDate);
+        const checkOutFormatted = fmtDateStr(booking.checkOutDate);
+        const bookedAtFormatted = fmtDateStr(booking.bookedAt || new Date());
+
+        const propName = booking.subProperty
+            ? `${booking.subProperty.name} — ${booking.property.name}`
+            : booking.property.name;
+
+        // Send customer refund email & admin alert email
+        sendStaycationCancellationEmails({
+            bookingRef: booking.bookingRef,
+            customerName: booking.customerName || user.fullName || "Valued Guest",
+            customerEmail: plainEmail || user.email,
+            customerPhone: plainPhone || user.phone,
+            propertyName: propName,
+            checkInDate: checkInFormatted,
+            checkOutDate: checkOutFormatted,
+            bookedAt: bookedAtFormatted,
+            totalAmount,
+            totalPaid,
+            retainedAmount,
+            refundAmount,
+            policyBracket,
+            cancelledBy: "Customer Self-Service",
+        }).catch(err => {
+            console.error("[Cancellation] Error sending customer cancellation emails:", err);
+        });
+
+        return res.json({
+            success: true,
+            booking: {
+                ...updated,
+                customerPhone: plainPhone,
+                customerEmail: plainEmail,
+            },
+            refundAmount,
+            retainedAmount,
+            policyBracket,
+        });
+    } catch (error) {
+        console.error("Customer cancel staycation booking error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
