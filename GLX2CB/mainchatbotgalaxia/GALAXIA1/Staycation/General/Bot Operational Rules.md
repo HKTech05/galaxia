@@ -134,8 +134,10 @@ This document outlines the strict business logic, booking protocols, occupancy r
    - If asked *"are swimming pools clean?"*: Reply YES, pools are cleaned and maintained regularly with filtration.
 7. **Google Reviews Disclaimer**:
    - If asked about bad Google reviews: Explain that occasionally a few individuals post fake/negative reviews due to small personal inconveniences, but we assure you our properties are well maintained with 10,000+ happy bookings catered.
-7. **Pure Veg Food Policy**:
-   - ALL properties are **PURE VEG ONLY**. Non-veg restaurants available 5 mins away. Outside food allowed ONLY if pure veg.
+7. **Food Policy (PROPERTY-SPECIFIC)**:
+   - **Amstel Nest & Ambrose (Meals INCLUDED):** Pure veg ONLY. Non-veg prohibited. Non-veg restaurant 5 mins away. Outside food allowed ONLY if pure veg.
+   - **La Paraiso, Mount View & Hill View (Meals NOT included):** Restaurant 5 steps away (inside Holiday Maiyaan society) serves veg and non-veg. Veg food can be ordered in property. Non-veg must be eaten at restaurant only.
+   - **Heavenly Villa (Meals NOT included):** Nearby restaurants available.
    - Jain food: Guests can select the Jain food option while booking on the website at Ambrose & Amstel Nest. No need to call. If group has mix of Jain and regular food preferences, they MUST call booking number to confirm the split.
 8. **Monsoon Waterfalls**:
    - Waterfall 5 mins walking distance during rainy season. IG Reel link: `https://www.instagram.com/reel/DaaoIYxz9S6/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==`
@@ -182,6 +184,42 @@ This document outlines the strict business logic, booking protocols, occupancy r
    - **Dinner**: 8:30 PM - 9:45 PM
    - No food served before or after these hours.
 6. **Running Late for Lunch**: Lunch ends at 3:00 PM. If guest is running late, advise calling booking number to request setting food aside.
+
+---
+
+## 6B. Ambrose-Specific Rules
+1. **Ambrose Policies**: All rules, regulations, and policies for Ambrose Villas are the SAME as Amstel Nest (check-in/out, late checkout, cancellation, payment, security deposit ₹3,000, max stay 3 nights, alcohol, hookah, etc.). The ONLY differences: (1) Pricing is different, (2) Pets ARE allowed (₹600/pet/night), (3) No common/canal pool.
+2. **Private Pool & NO Common Pool**: Every Ambrose villa has its own private outdoor swimming pool. Ambrose does NOT have a common swimming pool or boating canal (unlike Amstel Nest). Do NOT mention the absence of a common pool unless the customer explicitly asks.
+3. **Photo/Picture Requests**: Share property-specific website links:
+   - General: https://www.galaxiaresorts.com/staycation/ambrose
+   - Take-1: https://www.galaxiaresorts.com/staycation/ambrose/take-1
+   - Alta: https://www.galaxiaresorts.com/staycation/ambrose/alta
+   - Santorini: https://www.galaxiaresorts.com/staycation/ambrose/santorini
+   - Bamboosa: https://www.galaxiaresorts.com/staycation/ambrose/bamboosa
+   - Cypress: https://www.galaxiaresorts.com/staycation/ambrose/cypress
+4. **Occupancy Clarification**: Base pricing "2p" or "4p" refers to the pricing tier, NOT max capacity. Max capacity: Take-1/Alta/Santorini = 6 adults each, Cypress = 3 adults, Bamboosa = 10 adults.
+
+---
+
+## 6C. La Paraiso, Mount View & Hill View Specific Rules
+1. **Location**: All three properties are located inside *Holiday Maiyaan* society in Karjat.
+2. **Food Not Included**: Meals are NOT included in the tariff.
+3. **Restaurant**: There is a restaurant located just *5 steps away* (inside the society) that serves both veg and non-veg food.
+4. **Veg/Non-Veg Rule**: Guests can order *veg food* from the restaurant and eat inside the property. *Non-veg food must strictly be eaten at the restaurant only* — non-veg is NOT allowed inside the property.
+5. **Kitchen**: A small kitchen with basic utensils, induction cooktop, and fridge is available for basic self-cooking.
+6. **Pets Allowed**: Pets ARE allowed at all three properties (₹600/pet/night).
+7. **Check-in/Check-out & Late Checkout**: Same rules as Amstel Nest & Ambrose.
+8. **Swimming Pools**:
+   - *La Paraiso*: Private 25x10 ft outdoor swimming pool.
+   - *Mount View*: Access to common society swimming pool + private balcony bathtub.
+   - *Hill View*: Access to common society swimming pool.
+9. **All other policies** (cancellation, payment 80/20, booking transfer, security deposit, etc.) are the SAME as Amstel Nest & Ambrose.
+10. **Photo/Picture Requests**: Share property-specific website links:
+    - La Paraiso: https://www.galaxiaresorts.com/staycation/la-paraiso
+    - Mount View: https://www.galaxiaresorts.com/staycation/mount-view
+    - Hill View: https://www.galaxiaresorts.com/staycation/hill-view
+    - Heavenly Villa: https://www.galaxiaresorts.com/staycation/heavenly-villa
+    - Amstel Nest: https://www.galaxiaresorts.com/staycation/amstel-nest
 
 ---
 

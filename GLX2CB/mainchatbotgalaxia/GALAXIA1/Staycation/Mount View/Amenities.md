@@ -1,7 +1,10 @@
 # Mount View Amenities & Features
 
 - **Balcony Bathtub:** Private bathtub situated in mountain view balcony.
-- **Cooling & Bedding:** 1 Queen Bed + 1 Sofa Cum Bed, 2 ACs, 2 washrooms, small kitchen.
+- **Common Swimming Pool:** Access to common society swimming pool (shared with Holiday Maiyaan society).
+- **Location:** Located inside Holiday Maiyaan society, Karjat.
+- **Kitchen:** Small kitchen available with basic utensils, induction cooktop, and fridge for basic cooking.
+- **Cooling & Bedding:** 1 Queen Bed + 1 Sofa Cum Bed, 2 ACs, 2 washrooms.
 - **Tech:** Smart TV, Music Player, WiFi, power backup/inverter, free parking.
 
 ---

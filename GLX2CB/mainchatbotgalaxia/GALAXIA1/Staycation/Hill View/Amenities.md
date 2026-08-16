@@ -1,8 +1,10 @@
 # Hill View Amenities & Features
 
-- **Pool:** Access to common society swimming pool.
+- **Common Swimming Pool:** Access to common society swimming pool (shared with Holiday Maiyaan society).
+- **Location:** Located inside Holiday Maiyaan society, Karjat.
 - **View:** Mountain balcony view.
-- **Cooling & Tech:** AC, Smart TV, kitchen setup.
+- **Kitchen:** Small kitchen available with basic utensils, induction cooktop, and fridge for basic cooking.
+- **Cooling & Tech:** AC, Smart TV, 2 Air Conditioners, WiFi, power backup/inverter, free parking.
 
 ---
 ## Related Notes & Navigation

@@ -7,6 +7,20 @@ const knowledgeService = require("./KnowledgeService");
 const dynamicDataService = require("./DynamicDataService");
 const promptBuilder = require("./PromptBuilder");
 
+// Property-specific Instagram bot configuration
+const PROPERTY_BOT_CONFIG = {
+  ambrose: { name: "Ambrose Villas", slug: "ambrose", phone: "+91 81695 19564", phoneTel: "tel:+918169519564", greeting: "Hi! \u{1F44B} Welcome to *Ambrose Villas* Karjat \u2014 private pool villas with meals included! To check availability and pricing, please share:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)" },
+  heavenly_villa: { name: "Heavenly Villa", slug: "heavenly-villa", phone: "+91 81695 19564", phoneTel: "tel:+918169519564", greeting: "Hi! \u{1F44B} Welcome to *Heavenly Villa* Karjat \u2014 a romantic studio villa with private indoor pool! To check availability and pricing, please share:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)" },
+  hill_view: { name: "Hill View", slug: "hill-view", phone: "+91 81695 19564", phoneTel: "tel:+918169519564", greeting: "Hi! \u{1F44B} Welcome to *Hill View* Karjat \u2014 a mountain-view apartment with common pool access! To check availability and pricing, please share:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)" },
+  mount_view: { name: "Mount View", slug: "mount-view", phone: "+91 81695 19564", phoneTel: "tel:+918169519564", greeting: "Hi! \u{1F44B} Welcome to *Mount View* Karjat \u2014 featuring a private balcony bathtub with mountain views! To check availability and pricing, please share:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)" },
+  la_paraiso: { name: "La Paraiso", slug: "la-paraiso", phone: "+91 81695 19564", phoneTel: "tel:+918169519564", greeting: "Hi! \u{1F44B} Welcome to *La Paraiso* Karjat \u2014 a private villa with 25x10ft outdoor pool & gazebo! To check availability and pricing, please share:\n1. Check-in Date\n2. Check-out Date\n3. Total Number of Guests (Adults & Children)" },
+};
+
+function isPropertyBot(type) { return !!PROPERTY_BOT_CONFIG[type]; }
+function isStaycationBot(type) {
+  return type === "amstel_nest" || type === "amstel" || type === "bot2" || type === "staycation" || type === "bot3" || isPropertyBot(type);
+}
+
 const CACHE_FILE = path.resolve(__dirname, "../../data/faq_cache.json");
 
 class ChatbotService {
@@ -204,7 +218,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
 
     // Check Auto / Rickshaw Transport Contact Query Across Bot 2 & Bot 3
     const rickshawRegex = /\b(auto|rickshaw|auto\s*number|rickshaw\s*number|auto\s*contact|rickshaw\s*contact|auto\s*mil\s*jayega|station\s*se\s*auto|cab\s*number|driver\s*number)\b/i;
-    if ((cleanType === "amstel_nest" || cleanType === "amstel" || cleanType === "staycation" || cleanType === "bot2" || cleanType === "bot3") && rickshawRegex.test(textTrimmed)) {
+    if (isStaycationBot(cleanType) && rickshawRegex.test(textTrimmed)) {
       const rickshawMsg = "Yes, autos and rickshaws are readily available at Karjat station (approx 30-40 minutes distance to the property). You can contact local rickshaw driver Mahesh: +91 92847 96472 (tel:+919284796472).";
       await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
       const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, rickshawMsg);
@@ -246,6 +260,25 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, callMsg);
         return { reply: callMsg, latency: Date.now() - startTime, tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }, cost: 0, retrievedChunksCount: 0, cached: false, messageId: savedMsg.id };
       }
+    } else if (isPropertyBot(cleanType)) {
+      const propConfig = PROPERTY_BOT_CONFIG[cleanType];
+      // Call handler for property bots
+      const callRegex = /\b(call|phone|calling|contact\s*number|phone\s*number|call\s*number|call\s*kare|call\s*karu|call\s*par|talk\s*on\s*call|speak\s*on\s*call)\b/i;
+      if (callRegex.test(textTrimmed)) {
+        const callMsg = `For verbal inquiries or booking assistance for ${propConfig.name}, you can call us directly on: ${propConfig.phone} (${propConfig.phoneTel}).`;
+        await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
+        const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, callMsg);
+        return { reply: callMsg, latency: Date.now() - startTime, tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }, cost: 0, retrievedChunksCount: 0, cached: false, messageId: savedMsg.id };
+      }
+
+      // Greeting handler for property bots
+      const isSimpleGreeting = /^(hi+|hello|hey+|\.|namaste|good\s*(morning|evening|afternoon)|book(ing)?|i\s*want\s*to\s*book|please\s*share\s*booking\s*details|booking\s*details|new\s*booking|i\s*need\s*a?\s*room|availability|check\s*availability)$/i.test(textTrimmed);
+      if (isSimpleGreeting) {
+        const greetingMsg = propConfig.greeting;
+        await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
+        const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, greetingMsg);
+        return { reply: greetingMsg, latency: Date.now() - startTime, tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }, cost: 0, retrievedChunksCount: 0, cached: false, messageId: savedMsg.id };
+      }
     }
 
     // Check Existing Booking Inquiry Intent Across All Bots
@@ -277,7 +310,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
           messageId: savedMsg.id
         };
       }
-    } else if (cleanType === "amstel_nest" || cleanType === "amstel" || cleanType === "staycation" || cleanType === "bot2" || cleanType === "bot3") {
+    } else if (isStaycationBot(cleanType)) {
       if (diariesRegex.test(textTrimmed) && !staycationRegex.test(textTrimmed)) {
         const refusalMsg = "I am the Staycation Assistant and only handle Karjat staycation villa bookings. For Wadala movie screening bookings, please contact our Digital Diaries department.";
         await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
@@ -359,7 +392,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         "Staycation/General",
         "General"
       ];
-    } else {
+    } else if (cleanType === "staycation" || cleanType === "bot3" || isPropertyBot(cleanType)) {
       allowedCategories = [
         "Staycation/Amstel Nest",
         "Staycation/Hill View",
@@ -393,6 +426,21 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         const bIsAmstel = b.filePath.includes("Amstel Nest");
         if (aIsAmstel && !bIsAmstel) return -1;
         if (!aIsAmstel && bIsAmstel) return 1;
+        return 0;
+      });
+      ragContext = matches.map(match => `[Source: ${match.filePath} - ${match.topic}]\n${match.content}`).join("\n\n");
+    }
+
+    // Prioritize property-specific knowledge for Instagram property bots
+    if (isPropertyBot(cleanType)) {
+      const propConfig = PROPERTY_BOT_CONFIG[cleanType];
+      const propName = propConfig.name;
+      const matches = [...searchRes.matches];
+      matches.sort((a, b) => {
+        const aIsProp = a.filePath.includes(propName) || a.filePath.includes(propName.replace(/ /g, ''));
+        const bIsProp = b.filePath.includes(propName) || b.filePath.includes(propName.replace(/ /g, ''));
+        if (aIsProp && !bIsProp) return -1;
+        if (!aIsProp && bIsProp) return 1;
         return 0;
       });
       ragContext = matches.map(match => `[Source: ${match.filePath} - ${match.topic}]\n${match.content}`).join("\n\n");
@@ -529,6 +577,10 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         if (!effectivePropSlug && (cleanType === "amstel_nest" || cleanType === "amstel" || cleanType === "bot2")) {
           effectivePropSlug = "amstel-nest";
         }
+        // Default property for Instagram property bots
+        if (!effectivePropSlug && isPropertyBot(cleanType)) {
+          effectivePropSlug = PROPERTY_BOT_CONFIG[cleanType].slug;
+        }
 
         const effectiveCheckIn = intent.checkInDate || updatedState.checkInDate;
         let effectiveCheckOut = intent.checkOutDate || updatedState.checkOutDate;
@@ -636,11 +688,13 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     const aiResult = await aiProviderService.generateCompletion(finalMessages);
 
     // Enforce single-asterisk WhatsApp bold formatting across all bots (NO double asterisks)
-    let cleanReplyText = (aiResult.text || "").replace(/\*\*(.*?)\*\*/g, '*$1*');
-    // Fallback: if AI returned empty/null reply, use a safe default instead of saving blank message
-    if (!cleanReplyText || !cleanReplyText.trim()) {
-      console.warn("[ChatbotService] AI returned empty reply — using fallback message");
-      cleanReplyText = "Sorry, I couldn't process your request right now. Please try again or type 'human' to speak with our support team.";
+    let cleanReplyText = (aiResult.text || "").replace(/\*\*(.*?)\*\*/g, '*$1*').trim();
+    // Fallback: if AI returned empty/null/too-short reply, use a safe default instead of saving blank message
+    const isEmptyOrUseless = !cleanReplyText || cleanReplyText.length < 5 || /^[\s\n\r.*_\-]+$/.test(cleanReplyText);
+    if (isEmptyOrUseless) {
+      console.warn("[ChatbotService] AI returned empty/useless reply — using fallback message. Raw:", JSON.stringify(aiResult.text));
+      const fallbackPhone = (cleanType === "amstel_nest" || cleanType === "amstel" || cleanType === "bot2") ? "+91 99877 34458 (tel:+919987734458)" : "+91 81695 19564 (tel:+918169519564)";
+      cleanReplyText = `Sorry, I couldn't process your request right now. Please try again or call our booking team at ${fallbackPhone} for immediate assistance.`;
     }
 
     // 9. Save Messages in Database

@@ -37,5 +37,6 @@ test_mumbai_rds.js
 
 # === Non-production folders (backups, old bots) ===
 GLX2CB2/
+GLX2CB3/
 GLX2CB_BACKUP_*/
 galaxia-whatsapp-bot23/

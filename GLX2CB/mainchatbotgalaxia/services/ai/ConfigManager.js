@@ -5,7 +5,7 @@ const CONFIG_PATH = path.resolve(__dirname, "../../data/ai_config.json");
 
 const DEFAULT_CONFIG = {
   AI_PROVIDER: "deepseek",
-  API_KEY: process.env.DEEPSEEK_API_KEY || "",
+  API_KEY: "",
   BASE_URL: "https://api.deepseek.com/v1",
   MODEL_NAME: "deepseek-v4-flash",
   
@@ -46,19 +46,21 @@ class ConfigManager {
         const parsed = JSON.parse(fileContent);
         this.config = { ...DEFAULT_CONFIG, ...parsed };
       } else {
-        // Hydrate from environment variables if present
-        this.hydrateFromEnv();
-        this.save();
+        this.config = { ...DEFAULT_CONFIG };
       }
     } catch (err) {
       console.error("[ConfigManager] Error loading config, using defaults:", err.message);
-      this.hydrateFromEnv();
+      this.config = { ...DEFAULT_CONFIG };
     }
+    // ALWAYS hydrate from environment variables so env vars take precedence!
+    this.hydrateFromEnv();
   }
 
   hydrateFromEnv() {
     if (process.env.AI_PROVIDER) this.config.AI_PROVIDER = process.env.AI_PROVIDER;
-    if (process.env.AI_API_KEY) this.config.API_KEY = process.env.AI_API_KEY;
+    if (process.env.AI_API_KEY || process.env.API_KEY || process.env.DEEPSEEK_API_KEY) {
+      this.config.API_KEY = process.env.AI_API_KEY || process.env.API_KEY || process.env.DEEPSEEK_API_KEY;
+    }
     if (process.env.AI_BASE_URL) this.config.BASE_URL = process.env.AI_BASE_URL;
     if (process.env.AI_MODEL_NAME) this.config.MODEL_NAME = process.env.AI_MODEL_NAME;
     
