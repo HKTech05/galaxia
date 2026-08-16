@@ -398,6 +398,7 @@ export default function ChatbotDashboard() {
     const allowed = (session?.role === "owner" || session?.role === "developer") ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
 
     // Memoize filtered sessions for extreme UI speed & low GPU/CPU usage
+    const IG_STAYCATION_TABS = new Set(["ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"]);
     const filteredSessions = useCallback((t: string) => {
         return sessions.filter(s => {
             if (s.id.startsWith("1015208551685641")) return false;
@@ -407,7 +408,23 @@ export default function ChatbotDashboard() {
             // Hide Instagram sessions from the "All" tab — they have their own tab
             if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_") || s.phoneNumberKey === "wa_amstelnest")) return false;
             if (t !== "all" && s.phoneNumberKey !== t) return false;
-            // Message type filter
+
+            // For IG staycation tabs: exclusive pill filters (ALL=bot only, HUMAN=human only, COLLAB=collab only)
+            const isIgStaycation = IG_STAYCATION_TABS.has(t);
+            if (isIgStaycation) {
+                let passesFilter = true;
+                if (msgFilter === "human") passesFilter = s.mode === "human";
+                else if (msgFilter === "collab") passesFilter = s.tags.includes("collab");
+                else passesFilter = s.mode !== "human" && !s.tags.includes("collab"); // "all" pill → bot-only
+                if (!passesFilter) return false;
+                if (search) {
+                    const q = search.toLowerCase();
+                    return s.displayName.toLowerCase().includes(q) || s.sessionId.includes(q) || s.lastMessage.toLowerCase().includes(q);
+                }
+                return true;
+            }
+
+            // Default filter for non-IG tabs
             if (msgFilter === "human" && s.mode !== "human") return false;
             if (msgFilter === "collab" && !s.tags.includes("collab")) return false;
             if (search) {
