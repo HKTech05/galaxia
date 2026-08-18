@@ -11,14 +11,33 @@ const PROVIDER_RATES = {
 };
 
 class AIProviderService {
-  async generateCompletion(messages, temperature = 0.2) {
+  /**
+   * Resolve the API key for a specific bot type.
+   * Per-bot keys are stored in environment variables only (never in code/git).
+   * Falls back to the default config key if no bot-specific key is found.
+   */
+  _resolveApiKey(botType) {
+    const BOT_KEY_MAP = {
+      digital_diaries: process.env.DEEPSEEK_KEY_DD,
+      celebration:     process.env.DEEPSEEK_KEY_DD,
+      amstel_nest:     process.env.DEEPSEEK_KEY_AMSTEL,
+      ambrose:         process.env.DEEPSEEK_KEY_AMBROSE,
+      heavenly_villa:  process.env.DEEPSEEK_KEY_HEAVENLY,
+      hill_view:       process.env.DEEPSEEK_KEY_HILLVIEW,
+      mount_view:      process.env.DEEPSEEK_KEY_MOUNTVIEW,
+      la_paraiso:      process.env.DEEPSEEK_KEY_LAPARAISO,
+    };
+    return (botType && BOT_KEY_MAP[botType]) || configManager.get("API_KEY");
+  }
+
+  async generateCompletion(messages, temperature = 0.2, botType = null) {
     const provider = configManager.get("AI_PROVIDER").toLowerCase();
-    const apiKey = configManager.get("API_KEY");
+    const apiKey = botType ? this._resolveApiKey(botType) : configManager.get("API_KEY");
     const baseURL = configManager.get("BASE_URL");
     const model = configManager.get("MODEL_NAME");
 
     if (!apiKey) {
-      throw new Error(`API key is missing for provider: ${provider}`);
+      throw new Error(`API key is missing for provider: ${provider}${botType ? ` (bot: ${botType})` : ""}`);
     }
 
     const startTime = Date.now();

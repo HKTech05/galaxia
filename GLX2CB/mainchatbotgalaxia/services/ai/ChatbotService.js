@@ -104,7 +104,7 @@ class ChatbotService {
     return false;
   }
 
-  async extractIntent(text, summary = "") {
+  async extractIntent(text, summary = "", botType = null) {
     const textLower = text.toLowerCase().trim();
     
     // Fast exit for simple greetings or non-date messages (0ms latency optimization)
@@ -156,7 +156,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         { role: "system", content: systemPrompt + (summary ? `\n\nRecent context:\n${summary}` : "") },
         { role: "user", content: text }
       ];
-      const aiResult = await aiProviderService.generateCompletion(messages);
+      const aiResult = await aiProviderService.generateCompletion(messages, 0.2, botType);
       let cleanText = aiResult.text.trim();
       if (cleanText.startsWith("```")) {
         cleanText = cleanText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
@@ -536,7 +536,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
       }
 
       console.log(`[ChatbotService] Extracting date intent from query: "${textTrimmed}"`);
-      const intent = await this.extractIntent(textTrimmed, summary);
+      const intent = await this.extractIntent(textTrimmed, summary, cleanType);
       if (intent) {
         console.log(`[ChatbotService] Extracted intent:`, JSON.stringify(intent));
 
@@ -709,7 +709,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     const finalMessages = promptBuilder.buildMessages(botType, summary, history, textTrimmed, ragContext, dynamicContext, entityState);
 
     // 8. Generate response via LLM
-    const aiResult = await aiProviderService.generateCompletion(finalMessages);
+    const aiResult = await aiProviderService.generateCompletion(finalMessages, 0.2, cleanType);
 
     // Enforce single-asterisk WhatsApp bold formatting across all bots (NO double asterisks)
     let cleanReplyText = (aiResult.text || "").replace(/\*\*(.*?)\*\*/g, '*$1*').trim();
