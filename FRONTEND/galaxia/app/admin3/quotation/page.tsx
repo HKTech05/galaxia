@@ -150,21 +150,23 @@ export default function QuotationPage() {
                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 const is14Aug = dateStr.endsWith("08-14");
                 const is15Aug = dateStr.endsWith("08-15");
+                const is2Oct = dateStr.endsWith("10-02");
+                const is3Oct = dateStr.endsWith("10-03");
                 const isFamily = (villaName || "").toLowerCase().includes("family");
-                if (is14Aug || is15Aug) {
+                if (is14Aug || is15Aug || is2Oct || is3Oct) {
                     const vName = (villaName || "").toUpperCase();
                     if (propName.includes("Amstel")) {
-                        basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
+                        basePrice = (is14Aug) ? (isFamily ? 11000 : 7950) : (is15Aug) ? (isFamily ? 13500 : 8500) : (is2Oct) ? (isFamily ? 11000 : 6950) : (isFamily ? 13000 : 7950);
                         extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
                     } else if (propName.includes("Ambrose")) {
                         if (vName.includes("BAMBOOSA")) {
-                            basePrice = is14Aug ? 12500 : 14000;
+                            basePrice = (is14Aug || is2Oct) ? 12500 : 14000;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
                         } else if (vName.includes("CYPRESS")) {
                             basePrice = 7500;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                         } else {
-                            basePrice = is14Aug ? 7500 : 9500;
+                            basePrice = (is14Aug || is2Oct) ? 7500 : 9500;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                         }
                     } else if (propName.includes("Hill View")) {
@@ -174,7 +176,7 @@ export default function QuotationPage() {
                     } else if (propName.includes("Heavenly")) {
                         basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
                     } else if (propName.includes("La Paraiso")) {
-                        basePrice = is14Aug ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
+                        basePrice = (is14Aug || is2Oct) ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
                     }
                 } else if (lp) { basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday; extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests; }
                 else {

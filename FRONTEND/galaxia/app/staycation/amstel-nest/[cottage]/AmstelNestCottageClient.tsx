@@ -109,7 +109,7 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
             if (cart.some((item: any) => item.villaId === cottage.id && item.property === "amstel-nest")) {
                 setCartMessage("Already in cart!"); setTimeout(() => setCartMessage(""), 2000); return;
             }
-            const defaultOverrides = cottage.id === 'family-cottage' ? { "2026-08-14": 11000, "2026-08-15": 13500 } : { "2026-08-14": 7950, "2026-08-15": 8500 };
+            const defaultOverrides = cottage.id === 'family-cottage' ? { "2026-08-14": 11000, "2026-08-15": 13500, "2026-10-02": 11000, "2026-10-03": 13000 } : { "2026-08-14": 7950, "2026-08-15": 8500, "2026-10-02": 6950, "2026-10-03": 7950 };
             cart.push({
                 villaId: cottage.id,
                 villaName: cottage.name,

@@ -222,11 +222,17 @@ export default function BulkBookingsTab() {
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const is14Aug = dateStr.endsWith("08-14");
             const is15Aug = dateStr.endsWith("08-15");
+            const is2Oct = dateStr.endsWith("10-02");
+            const is3Oct = dateStr.endsWith("10-03");
             let basePrice: number;
             if (is14Aug) {
                 basePrice = cottageType === "family" ? 11000 : 7950;
             } else if (is15Aug) {
                 basePrice = cottageType === "family" ? 13500 : 8500;
+            } else if (is2Oct) {
+                basePrice = cottageType === "family" ? 11000 : 6950;
+            } else if (is3Oct) {
+                basePrice = cottageType === "family" ? 13000 : 7950;
             } else if (lp) {
                 basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             } else {

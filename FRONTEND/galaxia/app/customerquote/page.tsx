@@ -326,22 +326,24 @@ function CustomerQuoteInner() {
                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 const is14Aug = dateStr.endsWith("08-14");
                 const is15Aug = dateStr.endsWith("08-15");
+                const is2Oct = dateStr.endsWith("10-02");
+                const is3Oct = dateStr.endsWith("10-03");
                 const isFamily = (resolvedVilla || "").toLowerCase().includes("family");
 
-                if (is14Aug || is15Aug) {
+                if (is14Aug || is15Aug || is2Oct || is3Oct) {
                     const vName = (resolvedVilla || "").toUpperCase();
                     if (resolvedProperty.includes("Amstel")) {
-                        basePrice = is14Aug ? (isFamily ? 11000 : 7950) : (isFamily ? 13500 : 8500);
+                        basePrice = (is14Aug) ? (isFamily ? 11000 : 7950) : (is15Aug) ? (isFamily ? 13500 : 8500) : (is2Oct) ? (isFamily ? 11000 : 6950) : (isFamily ? 13000 : 7950);
                         extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
                     } else if (resolvedProperty.includes("Ambrose")) {
                         if (vName.includes("BAMBOOSA")) {
-                            basePrice = is14Aug ? 12500 : 14000;
+                            basePrice = (is14Aug || is2Oct) ? 12500 : 14000;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
                         } else if (vName.includes("CYPRESS")) {
                             basePrice = 7500;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                         } else {
-                            basePrice = is14Aug ? 7500 : 9500;
+                            basePrice = (is14Aug || is2Oct) ? 7500 : 9500;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                         }
                     } else if (resolvedProperty.includes("Hill View")) {
@@ -351,7 +353,7 @@ function CustomerQuoteInner() {
                     } else if (resolvedProperty.includes("Heavenly")) {
                         basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
                     } else if (resolvedProperty.includes("La Paraiso")) {
-                        basePrice = is14Aug ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
+                        basePrice = (is14Aug || is2Oct) ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
                     }
                 } else if (lp) {
                     basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
@@ -759,27 +761,27 @@ function CustomerQuoteInner() {
                                     if (!wePrice) wePrice = isFamily ? "10,000" : "5,950";
                                     if (!saPrice) saPrice = isFamily ? "12,000" : "6,950";
                                     if (!dateOverrides || Object.keys(dateOverrides).length === 0) {
-                                        dateOverrides = isFamily ? { "2026-08-14": 11000, "2026-08-15": 13500 } : { "2026-08-14": 7950, "2026-08-15": 8500 };
+                                        dateOverrides = isFamily ? { "2026-08-14": 11000, "2026-08-15": 13500, "2026-10-02": 11000, "2026-10-03": 13000 } : { "2026-08-14": 7950, "2026-08-15": 8500, "2026-10-02": 6950, "2026-10-03": 7950 };
                                     }
                                 } else if (slug === "hill-view") {
                                     if (!wdPrice) wdPrice = "2,500"; if (!wePrice) wePrice = "3,950";
-                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 4950, "2026-08-15": 4950 };
+                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 4950, "2026-08-15": 4950, "2026-10-02": 4950, "2026-10-03": 4950 };
                                 } else if (slug === "mount-view") {
                                     if (!wdPrice) wdPrice = "3,500"; if (!wePrice) wePrice = "4,950";
-                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 5950, "2026-08-15": 5950 };
+                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 5950, "2026-08-15": 5950, "2026-10-02": 5950, "2026-10-03": 5950 };
                                 } else if (slug === "heavenly-villa") {
                                     if (!wdPrice) wdPrice = "3,950"; if (!wePrice) wePrice = "4,950";
-                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 5950, "2026-08-15": 5950 };
+                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 5950, "2026-08-15": 5950, "2026-10-02": 5950, "2026-10-03": 5950 };
                                 } else if (slug === "la-paraiso") {
                                     if (!wdPrice) wdPrice = "4,960"; if (!wePrice) wePrice = "7,500"; if (!saPrice) saPrice = "8,500";
-                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 8500, "2026-08-15": 9500 };
+                                    if (!dateOverrides || Object.keys(dateOverrides).length === 0) dateOverrides = { "2026-08-14": 8500, "2026-08-15": 9500, "2026-10-02": 8500, "2026-10-03": 9500 };
                                 } else if (slug === "ambrose") {
                                     if (!wdPrice) wdPrice = "5,500"; if (!wePrice) wePrice = "6,500";
                                     if (!dateOverrides || Object.keys(dateOverrides).length === 0) {
                                         const activeV = Object.keys(villaQuantities).find(k => villaQuantities[k] > 0)?.toLowerCase() || "";
-                                        if (activeV.includes("bamboosa")) dateOverrides = { "2026-08-14": 12500, "2026-08-15": 14000 };
-                                        else if (activeV.includes("cypress")) dateOverrides = { "2026-08-14": 7500, "2026-08-15": 7500 };
-                                        else dateOverrides = { "2026-08-14": 7500, "2026-08-15": 9500 };
+                                        if (activeV.includes("bamboosa")) dateOverrides = { "2026-08-14": 12500, "2026-08-15": 14000, "2026-10-02": 12500, "2026-10-03": 14000 };
+                                        else if (activeV.includes("cypress")) dateOverrides = { "2026-08-14": 7500, "2026-08-15": 7500, "2026-10-02": 7500, "2026-10-03": 7500 };
+                                        else dateOverrides = { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 };
                                     }
                                 }
 

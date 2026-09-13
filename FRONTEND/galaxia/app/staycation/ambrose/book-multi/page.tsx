@@ -276,11 +276,11 @@ export default function BookMultiPage() {
 
                         if (ambData.subPropertyPricing && ambData.subProperties) {
                             const ambOverridesMap: Record<string, Record<string, number>> = {
-                                "take-1": { "2026-08-14": 7500, "2026-08-15": 9500 },
-                                "alta": { "2026-08-14": 7500, "2026-08-15": 9500 },
-                                "santorini": { "2026-08-14": 7500, "2026-08-15": 9500 },
-                                "bamboosa": { "2026-08-14": 12500, "2026-08-15": 14000 },
-                                "cypress": { "2026-08-14": 7500, "2026-08-15": 7500 },
+                                "take-1": { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 },
+                                "alta": { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 },
+                                "santorini": { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 },
+                                "bamboosa": { "2026-08-14": 12500, "2026-08-15": 14000, "2026-10-02": 12500, "2026-10-03": 14000 },
+                                "cypress": { "2026-08-14": 7500, "2026-08-15": 7500, "2026-10-02": 7500, "2026-10-03": 7500 },
                             };
                             for (const sp of ambData.subProperties) {
                                 const spPricing = ambData.subPropertyPricing[sp.id];
@@ -307,7 +307,7 @@ export default function BookMultiPage() {
                         const anParentWd = anData.pricing?.weekday?.price || "4950";
                         const anParentWe = anData.pricing?.weekend?.price || "5950";
                         const anParentSa = anData.pricing?.saturday?.price || "6950";
-                        const anParentOverrides = anData.pricing?.dateOverrides || { "2026-08-14": 7950, "2026-08-15": 8500 };
+                        const anParentOverrides = anData.pricing?.dateOverrides || { "2026-08-14": 7950, "2026-08-15": 8500, "2026-10-02": 6950, "2026-10-03": 7950 };
                         const anParentPersons = anData.pricing?.weekday?.personsLabel || "2 persons with meals";
 
                         if (anData.subPropertyPricing && anData.subProperties) {
@@ -321,7 +321,7 @@ export default function BookMultiPage() {
                                     weekday: (hasSubPricing && spPricing.weekday?.price) || (isFam ? "9000" : anParentWd),
                                     weekend: (hasSubPricing && spPricing.weekend?.price) || (isFam ? "10000" : anParentWe),
                                     saturday: (hasSubPricing && spPricing.saturday?.price) || (isFam ? "12000" : anParentSa),
-                                    dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (isFam ? { "2026-08-14": 11000, "2026-08-15": 13500 } : anParentOverrides),
+                                    dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (isFam ? { "2026-08-14": 11000, "2026-08-15": 13500, "2026-10-02": 11000, "2026-10-03": 13000 } : anParentOverrides),
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || anParentPersons,
                                 };
                             }
@@ -579,6 +579,25 @@ export default function BookMultiPage() {
                 }
             } else if (dateStr.endsWith("08-15")) {
                 if (isAmstel) total += isFamily ? 13500 : 8500;
+                else if (vId === "bamboosa") total += 14000;
+                else if (["take-1", "alta", "santorini"].includes(vId)) total += 9500;
+                else if (vId === "cypress") total += 7500;
+                else {
+                    const day = d.getDay();
+                    const priceStr = day === 6 ? (item.saturdayPrice || item.weekendPrice) : (day === 0 || day === 5) ? item.weekendPrice : item.weekdayPrice;
+                    total += parseInt((priceStr || '0').replace(/,/g, ""));
+                }
+            } else if (dateStr.endsWith("10-02")) {
+                if (isAmstel) total += isFamily ? 11000 : 6950;
+                else if (vId === "bamboosa") total += 12500;
+                else if (["take-1", "alta", "santorini", "cypress"].includes(vId)) total += 7500;
+                else {
+                    const day = d.getDay();
+                    const priceStr = day === 6 ? (item.saturdayPrice || item.weekendPrice) : (day === 0 || day === 5) ? item.weekendPrice : item.weekdayPrice;
+                    total += parseInt((priceStr || '0').replace(/,/g, ""));
+                }
+            } else if (dateStr.endsWith("10-03")) {
+                if (isAmstel) total += isFamily ? 13000 : 7950;
                 else if (vId === "bamboosa") total += 14000;
                 else if (["take-1", "alta", "santorini"].includes(vId)) total += 9500;
                 else if (vId === "cypress") total += 7500;
@@ -1240,7 +1259,7 @@ export default function BookMultiPage() {
                                 weekdayPrice={hasAmstelOnly ? (amstelItems[0]?.weekdayPrice || "4,950") : (ambroseItems[0]?.weekdayPrice || ambrose.pricing.weekday.price)}
                                 weekendPrice={hasAmstelOnly ? (amstelItems[0]?.weekendPrice || "5,950") : (ambroseItems[0]?.weekendPrice || ambrose.pricing.weekend.price)}
                                 saturdayPrice={hasAmstelOnly ? (amstelItems[0]?.saturdayPrice || "6,950") : (ambroseItems[0]?.saturdayPrice || (ambrose.pricing as any).saturday?.price)}
-                                dateOverrides={hasAmstelOnly ? (amstelItems[0]?.dateOverrides || { "2026-08-14": 7950, "2026-08-15": 8500 }) : (ambroseItems[0]?.dateOverrides || ambrose.pricing.dateOverrides || {})}
+                                dateOverrides={hasAmstelOnly ? (amstelItems[0]?.dateOverrides || { "2026-08-14": 7950, "2026-08-15": 8500, "2026-10-02": 6950, "2026-10-03": 7950 }) : (ambroseItems[0]?.dateOverrides || ambrose.pricing.dateOverrides || {})}
                                 hidePrice={hasMixedPrices}
                                 totalUnits={hasAmstelOnly ? 14 : undefined}
                                 initialCheckIn={checkInDate}
@@ -1455,7 +1474,7 @@ export default function BookMultiPage() {
                                                                         weekdayPrice={item.weekdayPrice}
                                                                         weekendPrice={item.weekendPrice}
                                                                         saturdayPrice={item.saturdayPrice || (item.villaId === 'family-cottage' ? "12,000" : "6,950")}
-                                                                        dateOverrides={item.dateOverrides || (item.villaId === 'family-cottage' ? { "2026-08-14": 11000, "2026-08-15": 13500 } : { "2026-08-14": 7950, "2026-08-15": 8500 })}
+                                                                        dateOverrides={item.dateOverrides || (item.villaId === 'family-cottage' ? { "2026-08-14": 11000, "2026-08-15": 13500, "2026-10-02": 11000, "2026-10-03": 13000 } : { "2026-08-14": 7950, "2026-08-15": 8500, "2026-10-02": 6950, "2026-10-03": 7950 })}
                                                                         totalUnits={item.villaId === 'standard-cottage' ? 14 : undefined}
                                                                         compact
                                                                     />
