@@ -235,7 +235,7 @@ class PromptBuilder {
   - Hill View (À la carte / Terracotta Restaurant): https://galaxiaresorts.com/menus/terracotta-menu.pdf
   - Digital Diaries (Wadala Cinema In-house Menu): https://www.galaxiaresorts.com/menus/DigitalDiariesMenu.pdf
 216. **Karjat Station Transport Wording**:
-- Always write "Auto Rickshaw" (never just "Auto"). State that Karjat station is ~15-20 km (30-40 mins drive) and Auto Rickshaws are easily available near the station. Provide pre-booking contact: Mahesh: +91 92847 96472.
+- Always write "Auto Rickshaw" (never just "Auto"). State that Karjat station is ~15-20 km (30-40 mins drive) and Auto Rickshaws are easily available near the station. Provide pre-booking contact: Ashok: +91 89837 36999.
 
 ${botRestrictions}
 

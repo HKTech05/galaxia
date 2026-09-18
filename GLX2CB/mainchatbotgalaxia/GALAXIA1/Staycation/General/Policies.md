@@ -1,7 +1,7 @@
 # Staycation & Amstel Nest General Policies
 
 - **Drinks & Smoking Policy:** Alcohol/drinking is allowed (guests must carry their own liquor). Hookah smoking is allowed. The bot has no knowledge of whether hookah can be provided, so direct customer to call the booking number to inquire.
-- **Karjat Station Travel Distance & Rickshaw Contact:** All properties are 30-40 minutes from Karjat station. Local auto-rickshaw driver contact: Mahesh: +91 92847 96472 (tel:+919284796472).
+- **Karjat Station Travel Distance & Rickshaw Contact:** All properties are 30-40 minutes from Karjat station. Local auto-rickshaw driver contact: Ashok: +91 89837 36999 (tel:+918983736999).
 - **Decoration Policy:** No decorations are done by default for birthdays/anniversaries. Call booking number for special requests.
 - **Food & Dining:** Pure Veg ONLY. Non-veg prohibited. Outside food allowed only if pure veg. Jain food available at Ambrose & Amstel Nest if requested beforehand.
 - **Ambrose & Amstel Food Timings:**

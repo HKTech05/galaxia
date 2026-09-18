@@ -270,7 +270,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
         <!-- Transportation Note -->
         <div style="margin-top: 20px; padding: 18px 22px; background: #f0f4f8; border-radius: 8px; border-left: 3px solid #2563eb;">
             <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 2px; text-transform: uppercase;">Local Transportation & Rickshaw</p>
-            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">For local auto-rickshaw pre-booking and transportation assistance, please contact <strong>Mahesh</strong> at <a href="tel:+919284796472" style="color: #2563eb; text-decoration: underline; font-weight: 600;">+91 92847 96472</a>.</p>
+            <p style="margin: 0; font-size: 13px; color: ${TEXT_MED}; line-height: 1.6;">For local auto-rickshaw pre-booking and transportation assistance, please contact <strong>Ashok</strong> at <a href="tel:+918983736999" style="color: #2563eb; text-decoration: underline; font-weight: 600;">+91 89837 36999</a>.</p>
         </div>
 
         ${mapsButton}

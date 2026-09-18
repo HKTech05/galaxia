@@ -243,7 +243,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     // Check Auto / Rickshaw Transport Contact Query Across Bot 2 & Bot 3
     const rickshawRegex = /\b(auto|rickshaw|auto\s*number|rickshaw\s*number|auto\s*contact|rickshaw\s*contact|auto\s*mil\s*jayega|station\s*se\s*auto|cab\s*number|driver\s*number)\b/i;
     if (isStaycationBot(cleanType) && rickshawRegex.test(textTrimmed)) {
-      const rickshawMsg = "Yes, autos and rickshaws are readily available at Karjat station (approx 30-40 minutes distance to the property). You can contact local rickshaw driver Mahesh: +91 92847 96472 (tel:+919284796472).";
+      const rickshawMsg = "Yes, autos and rickshaws are readily available at Karjat station (approx 30-40 minutes distance to the property). You can contact local rickshaw driver Ashok: +91 89837 36999 (tel:+918983736999).";
       await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
       const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, rickshawMsg);
       return { reply: rickshawMsg, latency: Date.now() - startTime, tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }, cost: 0, retrievedChunksCount: 0, cached: false, messageId: savedMsg.id };

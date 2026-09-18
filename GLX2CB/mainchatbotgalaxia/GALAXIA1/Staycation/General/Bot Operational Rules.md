@@ -129,7 +129,7 @@ This document outlines the strict business logic, booking protocols, occupancy r
    - On Mon-Thu ONLY, custom check-in/out times (e.g. 5 PM or 10 PM check-in) are allowed at **NO extra charge**, provided it is a **21-hour window** (e.g., check-in 10 PM -> checkout 7 PM next day, 3 hours early). Normal rate applies.
 5. **Karjat Station Travel Distance & Auto Rickshaw Contact**:
    - **Station Distance**: ALL Galaxia Karjat properties are approximately **30-40 minutes** from Karjat station by auto-rickshaw or cab.
-   - **Rickshaw Driver Contact**: When asked about auto/rickshaw availability or contact numbers for station transport, confirm autos/rickshaws are available and provide local driver contact: **Mahesh: +91 92847 96472** (`tel:+919284796472`).
+   - **Rickshaw Driver Contact**: When asked about auto/rickshaw availability or contact numbers for station transport, confirm autos/rickshaws are available and provide local driver contact: **Ashok: +91 89837 36999** (`tel:+918983736999`).
 6. **Swimming Pool Cleanliness**:
    - If asked *"are swimming pools clean?"*: Reply YES, pools are cleaned and maintained regularly with filtration.
 7. **Google Reviews Disclaimer**:

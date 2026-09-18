@@ -488,8 +488,8 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
             .text("LOCAL TRANSPORTATION & RICKSHAW", 50, y, { characterSpacing: 2 });
         y += 14;
         doc.fontSize(9).fill(TEXT_MED).font("Helvetica")
-            .text("For local auto-rickshaw pre-booking and assistance, please contact Mahesh at +91 92847 96472.", 60, y, { width: doc.page.width - 120 });
-        y += doc.heightOfString("For local auto-rickshaw pre-booking and assistance, please contact Mahesh at +91 92847 96472.", { width: doc.page.width - 120 }) + 18;
+            .text("For local auto-rickshaw pre-booking and assistance, please contact Ashok at +91 89837 36999.", 60, y, { width: doc.page.width - 120 });
+        y += doc.heightOfString("For local auto-rickshaw pre-booking and assistance, please contact Ashok at +91 89837 36999.", { width: doc.page.width - 120 }) + 18;
 
         // Resort Booking Terms & Conditions — property-aware text
         const tcSections: { title: string; items: string[] }[] = [
