@@ -51,7 +51,7 @@ const isSecDepositTx = (log: CashLog) => {
 const isRentTx = (log: CashLog) => {
     const note = (log.note || '').toLowerCase();
     const type = (log.transactionType || '').toLowerCase();
-    return note.includes('balance') || note.includes('food bill') || note.includes('extra guest') || note.includes('pet') || type === 'food_collection' || type === 'expense' || note.includes('satkar') || note.includes('expense') || note.includes('(rent)');
+    return note.includes('balance') || note.includes('food bill') || note.includes('extra guest') || note.includes('pet') || note.includes('driver') || type === 'food_collection' || type === 'expense' || note.includes('satkar') || note.includes('expense') || note.includes('(rent)');
 };
 
 const isExplicitSecOwnerPickup = (log: CashLog) => {
@@ -79,16 +79,37 @@ export default function EmployeesClient() {
     const [loading, setLoading] = useState(true);
 
     // Auth: fetch current user for read-only manager detection
-    const [currentUsername, setCurrentUsername] = useState<string>("");
+    const [currentUsername, setCurrentUsername] = useState<string>(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const raw = localStorage.getItem("galaxia_admin");
+                return raw ? JSON.parse(raw)?.username || "" : "";
+            } catch { return ""; }
+        }
+        return "";
+    });
+    const [currentUserRole, setCurrentUserRole] = useState<string>(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const raw = localStorage.getItem("galaxia_admin");
+                return raw ? JSON.parse(raw)?.role || "" : "";
+            } catch { return ""; }
+        }
+        return "";
+    });
+
     useEffect(() => {
         (async () => {
             try {
                 const data = await api.get<any>("/auth/me");
-                setCurrentUsername(data?.username || "");
+                if (data?.username) setCurrentUsername(data.username);
+                if (data?.role) setCurrentUserRole(data.role);
             } catch {}
         })();
     }, []);
-    const isReadOnlyManager = ["ranjit", "devi", "devidas"].includes(currentUsername);
+
+    const isReadOnlyManager = ["ranjit", "devi", "devidas"].includes((currentUsername || "").toLowerCase());
+    const canDelete = !isReadOnlyManager && ["owner", "developer"].includes((currentUserRole || "").toLowerCase());
 
     // Fetch employees and transaction logs from API
     const fetchEmployees = useCallback(async () => {
@@ -605,7 +626,7 @@ export default function EmployeesClient() {
                                             <th className="px-5 py-3">Guest Name</th>
                                             <th className="px-5 py-3">Amount</th>
                                             <th className="px-5 py-3">Status / Notes</th>
-                                            {!isReadOnlyManager && <th className="px-5 py-3 text-center">Action</th>}
+                                            {canDelete && <th className="px-5 py-3 text-center">Action</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -639,7 +660,7 @@ export default function EmployeesClient() {
                                                                 <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200 font-bold">{log.note}</span>
                                                             )}
                                                         </td>
-                                                        {!isReadOnlyManager && (
+                                                        {canDelete && (
                                                         <td className="px-5 py-3.5 text-center">
                                                             <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"><Trash2 size={13} /></button>
                                                         </td>
@@ -649,7 +670,7 @@ export default function EmployeesClient() {
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan={5} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this card.</td>
+                                                <td colSpan={canDelete ? 5 : 4} className="px-5 py-8 text-center text-slate-400 font-medium">No transactions recorded for this card.</td>
                                             </tr>
                                         )}
                                     </tbody>
@@ -690,7 +711,7 @@ export default function EmployeesClient() {
                                                         <span className="inline-block max-w-full break-words whitespace-normal bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">{log.note}</span>
                                                     )}
                                                 </div>
-                                                {!isReadOnlyManager && <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>}
+                                                {canDelete && <button onClick={() => handleDeleteCashTx(activeCard.employeeId, log.id)} className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1"><Trash2 size={10} /> Delete</button>}
                                             </div>
                                         );
                                     })

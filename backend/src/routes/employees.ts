@@ -41,6 +41,9 @@ router.patch("/:id", authMiddleware, requireRole("owner", "developer"), async (r
 // POST /api/employees/:id/collect — Cash out (full or partial)
 router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
+        if (["ranjit", "devi", "devidas"].includes((req.admin?.username || "").toLowerCase())) {
+            return res.status(403).json({ error: "Unauthorized. Cashout permission not granted." });
+        }
         const employeeId = parseInt(req.params.id as string);
         const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
         if (!employee) return res.status(404).json({ error: "Employee not found" });
@@ -117,7 +120,7 @@ router.post("/:id/collect", authMiddleware, requireRole("owner", "developer"), a
 });
 
 // GET /api/employees/:id/transactions — Transaction history
-router.get("/:id/transactions", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+router.get("/:id/transactions", authMiddleware, requireRole("owner", "developer", "staycation_admin", "dd_admin"), async (req, res) => {
     try {
         const transactions = await prisma.cashTransaction.findMany({
             where: { employeeId: parseInt(req.params.id as string) },
@@ -133,6 +136,9 @@ router.get("/:id/transactions", authMiddleware, requireRole("owner", "developer"
 // DELETE /api/employees/:empId/transactions/:txId — Delete a single cash transaction log
 router.delete("/:empId/transactions/:txId", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
+        if (["ranjit", "devi", "devidas"].includes((req.admin?.username || "").toLowerCase())) {
+            return res.status(403).json({ error: "Unauthorized. Delete permission not granted." });
+        }
         const empId = parseInt(req.params.empId as string);
         const txId = parseInt(req.params.txId as string);
 

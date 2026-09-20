@@ -620,7 +620,7 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
 
             if (isAmbroseOrAmstel) {
                 const extraAdultsCount = (existing.extraGuests || []).filter(
-                    (eg: any) => !eg.guestName?.toLowerCase().includes("pet")
+                    (eg: any) => !eg.guestName?.toLowerCase().includes("pet") && !eg.guestName?.toLowerCase().includes("driver")
                 ).length;
                 const totalAdults = Math.max(1, (existing.numGuests || 0) + extraAdultsCount);
                 waterBottlesDeducted = totalAdults;
@@ -1011,7 +1011,7 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
 // POST /api/bookings/staycation/:id/extra-guest — Add extra guest
 router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { guestName, idProofType, chargeAmount, paymentMethod } = req.body;
+        const { guestName, idProofType, chargeAmount, paymentMethod, count } = req.body;
         const bookingId = parseInt(req.params.id as string);
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
@@ -1026,12 +1026,14 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
             },
         });
 
-        // Update guest count (only if it's not purely pets being added)
+        // Update guest count (only if it's not purely pets or drivers being added)
         const isPet = guestName.toLowerCase().includes("pet");
-        if (!isPet) {
+        const isDriver = guestName.toLowerCase().includes("driver");
+        if (!isPet && !isDriver) {
+            const incCount = typeof count === "number" && count > 0 ? count : 1;
             await prisma.staycationBooking.update({
                 where: { id: bookingId },
-                data: { numGuests: { increment: 1 } },
+                data: { numGuests: { increment: incCount } },
             });
         }
 
@@ -1053,6 +1055,7 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
                             rentCollected: { increment: chargeAmount }
                         },
                     });
+                    const itemType = isPet ? 'Pet' : isDriver ? 'Driver' : 'Extra guest';
                     await prisma.cashTransaction.create({
                         data: {
                             employeeId: employee.id,
@@ -1060,7 +1063,7 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
                             guestName: booking.customerName,
                             amount: chargeAmount,
                             transactionType: "collection",
-                            note: `${isPet ? 'Pet' : 'Extra guest'} charge (cash) — ${booking.property?.name || "Property"}`,
+                            note: `${itemType} charge (cash) — ${booking.property?.name || "Property"}`,
                         },
                     });
                 }
