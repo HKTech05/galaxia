@@ -20,6 +20,8 @@ interface CartItem {
     saturdayPrice?: string;
     dateOverrides?: Record<string, number>;
     personsLabel?: string;
+    weekendPersonsLabel?: string;
+    saturdayPersonsLabel?: string;
     maxPersons: number;
     maxAdults?: number;
     maxKids?: number;
@@ -262,7 +264,7 @@ export default function BookMultiPage() {
 
         (async () => {
             try {
-                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; personsLabel: string }> = {};
+                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; personsLabel: string; weekendPersonsLabel?: string; saturdayPersonsLabel?: string }> = {};
 
                 // Fetch Ambrose availability
                 if (ambId) {
@@ -273,6 +275,8 @@ export default function BookMultiPage() {
                         const ambParentWe = ambData.pricing?.weekend?.price || "6500";
                         const ambParentSa = ambData.pricing?.saturday?.price || ambParentWe;
                         const ambParentPersons = ambData.pricing?.weekday?.personsLabel || "2 guests";
+                        const ambParentWePersons = ambData.pricing?.weekend?.personsLabel || ambParentPersons;
+                        const ambParentSaPersons = ambData.pricing?.saturday?.personsLabel || ambParentWePersons;
 
                         if (ambData.subPropertyPricing && ambData.subProperties) {
                             const ambOverridesMap: Record<string, Record<string, number>> = {
@@ -293,6 +297,8 @@ export default function BookMultiPage() {
                                     saturday: (hasSubPricing && spPricing.saturday?.price) || (hasSubPricing && spPricing.weekend?.price) || ambParentSa,
                                     dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (ambOverridesMap[key] || ambData.pricing?.dateOverrides || {}),
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || ambParentPersons,
+                                    weekendPersonsLabel: (hasSubPricing && spPricing.weekend?.personsLabel) || ambParentWePersons,
+                                    saturdayPersonsLabel: (hasSubPricing && spPricing.saturday?.personsLabel) || ambParentSaPersons,
                                 };
                             }
                         }
@@ -342,6 +348,8 @@ export default function BookMultiPage() {
                                     saturdayPrice: live.saturday,
                                     dateOverrides: live.dateOverrides || item.dateOverrides,
                                     personsLabel: live.personsLabel,
+                                    weekendPersonsLabel: live.weekendPersonsLabel,
+                                    saturdayPersonsLabel: live.saturdayPersonsLabel,
                                 };
                             }
                             return item;
@@ -624,16 +632,25 @@ export default function BookMultiPage() {
         const extraAdultCharge = 2000;
         const kidsCharge = 1000;
         const units = item.unitCount || 1;
-        // Parse base included persons from personsLabel (e.g. "upto 4 with meals" => 4)
-        const basePersons = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
-        const baseIncluded = isAmstel ? basePersons * units : basePersons;
-        // Adults beyond included are charged at adult rate
-        const extraAdults = Math.max(0, guests.adults - baseIncluded);
-        // Remaining free slots absorb kids
-        const freeKidsSlots = Math.max(0, baseIncluded - guests.adults);
-        const extraKids = Math.max(0, guests.kids - freeKidsSlots);
+        // Parse day-type-specific base included persons
+        const wdBase = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
+        const weBase = item.weekendPersonsLabel ? (parseInt(item.weekendPersonsLabel.replace(/[^0-9]/g, '')) || wdBase) : wdBase;
+        const saBase = item.saturdayPersonsLabel ? (parseInt(item.saturdayPersonsLabel.replace(/[^0-9]/g, '')) || weBase) : weBase;
         const multiplier = isAmstel ? 1 : units;
-        return (extraAdults * extraAdultCharge + extraKids * kidsCharge) * Math.max(nights, 1) * multiplier + (item.property !== 'amstel-nest' ? (petsPerVilla[item.villaId] || 0) * PET_CHARGE : 0);
+        // Compute per-night extra charges
+        let extraTotal = 0;
+        for (let i = 0; i < Math.max(nights, 1); i++) {
+            const d = checkInDate ? new Date(checkInDate) : new Date();
+            d.setDate(d.getDate() + i);
+            const day = d.getDay();
+            const nightBase = (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
+            const nightIncluded = isAmstel ? nightBase * units : nightBase;
+            const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
+            const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
+            const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
+            extraTotal += (nightExtraAdults * extraAdultCharge + nightExtraKids * kidsCharge) * multiplier;
+        }
+        return extraTotal + (item.property !== 'amstel-nest' ? (petsPerVilla[item.villaId] || 0) * PET_CHARGE : 0);
     };
 
     const getExtraChargeBreakdown = (item: CartItem) => {
@@ -642,15 +659,26 @@ export default function BookMultiPage() {
         const extraAdultRate = 2000;
         const kidsRate = 1000;
         const units = item.unitCount || 1;
-        const basePersons = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
-        const baseIncluded = isAmstel ? basePersons * units : basePersons;
-        const extraAdults = Math.max(0, guests.adults - baseIncluded);
-        const freeKidsSlots = Math.max(0, baseIncluded - guests.adults);
-        const extraKids = Math.max(0, guests.kids - freeKidsSlots);
+        const wdBase = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
+        const weBase = item.weekendPersonsLabel ? (parseInt(item.weekendPersonsLabel.replace(/[^0-9]/g, '')) || wdBase) : wdBase;
+        const saBase = item.saturdayPersonsLabel ? (parseInt(item.saturdayPersonsLabel.replace(/[^0-9]/g, '')) || weBase) : weBase;
         const multiplier = isAmstel ? 1 : units;
+        let totalAdult = 0, totalKids = 0;
+        for (let i = 0; i < Math.max(nights, 1); i++) {
+            const d = checkInDate ? new Date(checkInDate) : new Date();
+            d.setDate(d.getDate() + i);
+            const day = d.getDay();
+            const nightBase = (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
+            const nightIncluded = isAmstel ? nightBase * units : nightBase;
+            const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
+            const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
+            const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
+            totalAdult += nightExtraAdults * extraAdultRate * multiplier;
+            totalKids += nightExtraKids * kidsRate * multiplier;
+        }
         return {
-            adultCharge: extraAdults * extraAdultRate * Math.max(nights, 1) * multiplier,
-            kidsCharge: extraKids * kidsRate * Math.max(nights, 1) * multiplier,
+            adultCharge: totalAdult,
+            kidsCharge: totalKids,
             petCharge: item.property !== 'amstel-nest' ? (petsPerVilla[item.villaId] || 0) * PET_CHARGE : 0,
         };
     };

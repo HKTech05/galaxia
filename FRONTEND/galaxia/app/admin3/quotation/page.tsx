@@ -189,7 +189,12 @@ export default function QuotationPage() {
                         else { basePrice = isSat ? 6950 : (day === 0 || day === 5) ? 5950 : 4950; baseGuests = 2; }
                         extraAdultPrice = 2000; kidsPrice = 1000;
                     }
-                    else if (propName.includes("Ambrose")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; }
+                    else if (propName.includes("Ambrose")) {
+                        const vn = (villaName || "").toUpperCase();
+                        if (vn.includes("BAMBOOSA")) { basePrice = isSat ? 14000 : (day === 0 || day === 5) ? 12500 : 9500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
+                        else if (vn.includes("CYPRESS")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
+                        else { basePrice = isSat ? 12500 : (day === 0 || day === 5) ? 10500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = (isSat || day === 0 || day === 5) ? 4 : 2; }
+                    }
                 }
                 unitRoom += basePrice;
                 const exA = Math.max(0, adults - baseGuests);
