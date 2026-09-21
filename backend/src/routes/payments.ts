@@ -391,6 +391,7 @@ async function processPendingDdBooking(pendingRecord: any, razorpayPaymentId: st
                 paymentStatus: "partial",
                 status: "confirmed",
                 source: p.source || "website",
+                bookedVia: p.bookedVia || null,
                 couponId,
                 discountAmount,
             },
@@ -586,6 +587,7 @@ async function processPendingStayBooking(pendingRecord: any, razorpayPaymentId: 
                 advanceMethod: `Razorpay: ${razorpayPaymentId}`,
                 advancePaidAt: new Date(),
                 source: p.source || "website",
+                bookedVia: p.bookedVia || null,
                 couponId,
                 discountAmount,
                 addons: p.addons || null,
@@ -663,6 +665,7 @@ async function processPendingMultiStayBooking(pendingRecord: any, razorpayPaymen
                     balanceAmount: item.balanceAmount || 0,
                     securityDeposit: item.securityDeposit || 3000,
                     source: "website",
+                    bookedVia: item.bookedVia || pendingRecord.bookingPayload?.bookedVia || null,
                     addons: item.addons || null,
                 },
             };

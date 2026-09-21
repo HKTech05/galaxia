@@ -177,7 +177,7 @@ router.post("/", async (req, res) => {
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             advancePaid, advanceMethod,
-            source, couponCode, addons, discountAmount: reqDiscountAmount,
+            source, bookedVia, couponCode, addons, discountAmount: reqDiscountAmount,
         } = req.body;
 
         if (!customerName || !customerPhone || !propertyId || !checkInDate || !checkOutDate) {
@@ -347,6 +347,7 @@ router.post("/", async (req, res) => {
                     advanceMethod: advanceMethod || null,
                     advancePaidAt: advancePaid ? new Date() : null,
                     source: source || "website",
+                    bookedVia: bookedVia || null,
                     couponId,
                     discountAmount,
                     addons: addons || null,
@@ -1939,6 +1940,7 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
                     advancePaidAt: original.advancePaidAt,
                     status: "confirmed",
                     source: original.source || "website",
+                    bookedVia: original.bookedVia || null,
                     isAdminBooking: true,
                     couponId: original.couponId,
                     discountAmount: original.discountAmount,

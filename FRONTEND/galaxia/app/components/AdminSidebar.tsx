@@ -27,7 +27,8 @@ import {
     ChefHat,
     UtensilsCrossed,
     Package,
-    ShieldCheck
+    ShieldCheck,
+    UserCheck
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
@@ -67,6 +68,7 @@ const admin3ReceptionistItems = [
 const admin3BottomItems = [
     { name: "Cash Management", href: "/admin3/employees", icon: BadgeDollarSign },
     { name: "UPI Management", href: "/admin3/upi-management", icon: Smartphone },
+    { name: "Employees", href: "/admin3/booking-employees", icon: UserCheck, ownerOnly: true },
     { name: "Coupons", href: "/admin3/coupons", icon: Ticket },
     { name: "Properties", href: "/admin3/properties-mgmt", icon: Building },
     { name: "Users", href: "/admin3/users", icon: Users },
@@ -363,7 +365,10 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                     {hasFullAccess && renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
 
                                     {/* Owner/Dev only: Bottom items */}
-                                    {hasFullAccess && admin3BottomItems.map(item => renderNavItem(item))}
+                                    {hasFullAccess && admin3BottomItems.map(item => {
+                                        if ((item as any).ownerOnly && adminRole !== "owner" && adminRole !== "developer") return null;
+                                        return renderNavItem(item);
+                                    })}
                                 </>
                             )}
                         </>

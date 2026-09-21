@@ -211,6 +211,17 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
     const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
 
+    // Compulsory booking attribution
+    const STAYCATION_BOOKING_SOURCE_OPTIONS = [
+        "Sana (Bookings manager)",
+        "Pooja (Bookings manager)",
+        "Whatsapp",
+        "Instagram",
+        "Website (via online browsing)",
+    ];
+    const [bookedVia, setBookedVia] = useState<string>("");
+    const [bookedViaError, setBookedViaError] = useState(false);
+
     // Amstel Nest multi-unit cart state
     const [unitCount, setUnitCount] = useState(1);
     const [unitAvailability, setUnitAvailability] = useState<Record<string, number>>({});
@@ -826,6 +837,14 @@ export default function BookingClient({ property }: BookingClientProps) {
             setBookingError("Booking system loading, please wait...");
             return;
         }
+        if (!bookedVia) {
+            setBookedViaError(true);
+            setBookingError("Please select who helped you book or your booking source before making payment.");
+            const el = document.getElementById("booked-via-section");
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
+
         let cleanPhone = formData.phone.replace(/\D/g, '');
         // Strip leading 91 country code if present (phone may be stored as +91XXXXXXXXXX from auth)
         if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) cleanPhone = cleanPhone.slice(2);
@@ -914,6 +933,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 securityDeposit: parseInt((property.securityDeposit || '3000').replace(/,/g, '')),
                 advancePaid: true,
                 source: "website",
+                bookedVia,
                 couponCode: appliedCoupon?.code || null,
                 addons: bookingAddons.length > 0 ? bookingAddons : null,
             };
@@ -1813,6 +1833,44 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     <p className="font-inter text-[11px] text-text-secondary leading-relaxed">Security deposit of {"\u20B9"}{property.securityDeposit} is applicable and will be refunded per the property&apos;s refund timeline.</p>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Compulsory Booking Source Attribution Card */}
+                        <div id="booked-via-section" className={`bg-white border ${bookedViaError && !bookedVia ? 'border-red-500 ring-2 ring-red-100' : 'border-border-light'} rounded-xl p-5 sm:p-6 shadow-sm transition-all`}>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="font-cinzel text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                    How or who did you book with? <span className="text-red-500 font-bold">*</span>
+                                </label>
+                                <span className="text-[11px] font-inter text-red-500 font-medium">Compulsory</span>
+                            </div>
+                            <p className="font-inter text-xs text-text-secondary mb-3">
+                                Please let us know who assisted you with this reservation or your booking channel.
+                            </p>
+                            <div className="relative">
+                                <select
+                                    value={bookedVia}
+                                    onChange={(e) => {
+                                        setBookedVia(e.target.value);
+                                        if (e.target.value) setBookedViaError(false);
+                                    }}
+                                    className={`w-full px-4 py-3 bg-[#FAFAF8] border ${bookedViaError && !bookedVia ? 'border-red-500 bg-red-50/30' : 'border-border-medium'} rounded-lg text-sm font-inter text-text-primary focus:outline-none focus:border-antique-gold transition-colors cursor-pointer appearance-none`}
+                                >
+                                    <option value="" disabled>-- Select booking source / manager * --</option>
+                                    {STAYCATION_BOOKING_SOURCE_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-muted">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                            {bookedViaError && !bookedVia && (
+                                <p className="text-red-500 text-xs font-inter mt-2 flex items-center gap-1">
+                                    <span>* Please select an option before making payment.</span>
+                                </p>
+                            )}
                         </div>
 
                         {bookingError && (

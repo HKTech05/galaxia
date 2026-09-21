@@ -42,6 +42,17 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [bookingError, setBookingError] = useState("");
     const [holdSessionId, setHoldSessionId] = useState<string | null>(null);
 
+    // Compulsory booking attribution
+    const DD_BOOKING_SOURCE_OPTIONS = [
+        "Arzu (Bookings manager)",
+        "Sonal (Bookings manager)",
+        "Whatsapp",
+        "Instagram",
+        "Website (via online browsing)",
+    ];
+    const [bookedVia, setBookedVia] = useState<string>("");
+    const [bookedViaError, setBookedViaError] = useState(false);
+
     // Login prompt state
     const [showLoginPrompt, setShowLoginPrompt] = useState(false);
     const [emailMode, setEmailMode] = useState<false | "login" | "register">(false);
@@ -494,6 +505,13 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
             setBookingError("Booking system loading, please wait...");
             return;
         }
+        if (!bookedVia) {
+            setBookedViaError(true);
+            setBookingError("Please select who helped you book or your booking source before making payment.");
+            const el = document.getElementById("booked-via-dd-section");
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
         const cleanPhone = phone.replace(/\D/g, '');
         if (cleanPhone.length !== 10) {
             setBookingError("Please enter a valid 10-digit mobile number.");
@@ -542,6 +560,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 paymentMethod: "online",
                 addons,
                 source: "website",
+                bookedVia,
                 couponCode: appliedCoupon?.code || null,
                 discountAmount: couponDiscount,
                 specialRequests: specialRequests || null,
@@ -618,7 +637,7 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         } finally {
             setIsSubmitting(false);
         }
-    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, specialRequests, pkg.id, router, appliedCoupon, couponDiscount]);
+    }, [dbScreenId, dbPackageId, selectedDate, selectedSlots, firstName, lastName, phone, email, guestCount, basePrice, extraPersonCharge, total, payNow, addBalloons, addLedBanner, ledBannerType, addCake, cakeMessage, specialRequests, pkg.id, router, appliedCoupon, couponDiscount, bookedVia]);
 
     return (
         <>
@@ -1369,6 +1388,44 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                                     <div className="flex justify-between mt-2"><span className="text-cel-text-secondary">Pay Now (50%)</span><span className="text-cel-text font-semibold">{formatPrice(payNow)}</span></div>
                                     <div className="flex justify-between"><span className="text-cel-text-secondary">Due at Venue (50%) - Pay in Cash Only</span><span className="text-cel-text">{formatPrice(payAtVenue)}</span></div>
                                 </div>
+                            </div>
+
+                            {/* Compulsory Booking Source Attribution Card */}
+                            <div id="booked-via-dd-section" className={`rounded-lg border ${bookedViaError && !bookedVia ? 'border-red-500 ring-2 ring-red-500/30' : 'border-cel-border'} bg-cel-bg p-5 text-left mb-6 transition-all`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="font-cinzel text-sm font-semibold text-cel-text uppercase tracking-wider flex items-center gap-1.5">
+                                        How or who did you book with? <span className="text-rose-light font-bold">*</span>
+                                    </label>
+                                    <span className="text-[11px] font-inter text-rose-light font-medium">Compulsory</span>
+                                </div>
+                                <p className="font-inter text-xs text-cel-text-secondary mb-3">
+                                    Please let us know who assisted you with this reservation or your booking channel.
+                                </p>
+                                <div className="relative">
+                                    <select
+                                        value={bookedVia}
+                                        onChange={(e) => {
+                                            setBookedVia(e.target.value);
+                                            if (e.target.value) setBookedViaError(false);
+                                        }}
+                                        className={`w-full px-4 py-3 bg-cel-card border ${bookedViaError && !bookedVia ? 'border-red-500 bg-red-900/10' : 'border-cel-border'} rounded-lg text-sm font-inter text-cel-text focus:outline-none focus:border-rose-medium transition-colors cursor-pointer appearance-none`}
+                                    >
+                                        <option value="" disabled className="bg-[#121212] text-cel-text-muted">-- Select booking source / manager * --</option>
+                                        {DD_BOOKING_SOURCE_OPTIONS.map((opt) => (
+                                            <option key={opt} value={opt} className="bg-[#1a1a1a] text-white">
+                                                {opt}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-cel-text-muted">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </div>
+                                </div>
+                                {bookedViaError && !bookedVia && (
+                                    <p className="text-red-400 text-xs font-inter mt-2 flex items-center gap-1">
+                                        <span>* Please select an option before proceeding to payment.</span>
+                                    </p>
+                                )}
                             </div>
 
                             <p className="font-inter text-xs text-cel-text-muted mb-6">A copy of the invoice will be sent to your registered email & phone number upon confirmation.</p>

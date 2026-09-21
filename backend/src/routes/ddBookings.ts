@@ -165,7 +165,7 @@ router.post("/", async (req, res) => {
             occasion, cakeMessage, specialRequests, numGuests,
             basePrice, extraPersonCharge, gstAmount, totalAmount,
             amountPaid, paymentMethod, paymentDetails,
-            addons, source, couponCode, isMaintenance,
+            addons, source, bookedVia, couponCode, isMaintenance,
         } = req.body;
 
         // Maintenance bookings have relaxed validation
@@ -355,6 +355,7 @@ router.post("/", async (req, res) => {
                     paymentMethod,
                     paymentDetails,
                     source: source || "website",
+                    bookedVia: bookedVia || null,
                     couponId,
                     discountAmount,
                 },
@@ -834,6 +835,7 @@ router.post("/:id/transfer", authMiddleware, async (req: AuthRequest, res) => {
                     bookingRef: newRef,
                     status: "confirmed",
                     source: original.source || "website",
+                    bookedVia: original.bookedVia || null,
                     couponId: original.couponId || null,
                 },
             });

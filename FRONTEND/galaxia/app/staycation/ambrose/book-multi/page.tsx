@@ -109,6 +109,17 @@ export default function BookMultiPage() {
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
     const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
 
+    // Compulsory booking attribution
+    const STAYCATION_BOOKING_SOURCE_OPTIONS = [
+        "Sana (Bookings manager)",
+        "Pooja (Bookings manager)",
+        "Whatsapp",
+        "Instagram",
+        "Website (via online browsing)",
+    ];
+    const [bookedVia, setBookedVia] = useState<string>("");
+    const [bookedViaError, setBookedViaError] = useState(false);
+
     // Site images from admin panel (for celebration thumbnails)
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
     const [celebrationEnabled, setCelebrationEnabled] = useState(false);
@@ -888,6 +899,14 @@ export default function BookMultiPage() {
     };
 
     const handlePayment = async () => {
+        if (!bookedVia) {
+            setBookedViaError(true);
+            setBookingError("Please select who helped you book or your booking source before making payment.");
+            const el = document.getElementById("booked-via-multi-section");
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
+
         let cleanPhone = formData.phone.replace(/\D/g, '');
         // Strip leading 91 country code if present (phone may be stored as +91XXXXXXXXXX from auth)
         if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) cleanPhone = cleanPhone.slice(2);
@@ -952,6 +971,7 @@ export default function BookMultiPage() {
                         advanceAmount: totalPayNow,
                         balanceAmount: totalPayAtVenue,
                         securityDeposit: amstelDepositForPayload,
+                        bookedVia,
                         addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
                     });
                 } else {
@@ -992,6 +1012,7 @@ export default function BookMultiPage() {
                             advanceAmount: perUnitPayNow,
                             balanceAmount: perUnitPayAtVenue,
                             securityDeposit: 3000,
+                            bookedVia,
                             addons: isFirstBooking && itemAddons.length > 0 ? itemAddons : null,
                         });
                     }
@@ -1008,6 +1029,7 @@ export default function BookMultiPage() {
                 items: bookingPayloadItems,
                 totalAmount: payNow,
                 source: "website",
+                bookedVia,
             };
 
             // Initiate single Razorpay payment for total advance
@@ -1107,6 +1129,7 @@ export default function BookMultiPage() {
                         advancePaid: true,
                         advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                         source: "website",
+                        bookedVia,
                         addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
                     });
 
@@ -1167,6 +1190,7 @@ export default function BookMultiPage() {
                             advancePaid: true,
                             advanceMethod: `Razorpay: ${paymentResult.razorpay_payment_id}`,
                             source: "website",
+                            bookedVia,
                             addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
                         });
 
@@ -1855,6 +1879,44 @@ export default function BookMultiPage() {
                                     <div className="flex justify-between text-xs text-amber-600 mt-1"><span>Balance at venue (20%)</span><span>{formatPrice(payAtVenue)}</span></div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Compulsory Booking Source Attribution Card */}
+                        <div id="booked-via-multi-section" className={`bg-white border ${bookedViaError && !bookedVia ? 'border-red-500 ring-2 ring-red-100' : 'border-border-light'} rounded-xl p-5 sm:p-6 shadow-sm transition-all`}>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="font-cinzel text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                    How or who did you book with? <span className="text-red-500 font-bold">*</span>
+                                </label>
+                                <span className="text-[11px] font-inter text-red-500 font-medium">Compulsory</span>
+                            </div>
+                            <p className="font-inter text-xs text-text-secondary mb-3">
+                                Please let us know who assisted you with this reservation or your booking channel.
+                            </p>
+                            <div className="relative">
+                                <select
+                                    value={bookedVia}
+                                    onChange={(e) => {
+                                        setBookedVia(e.target.value);
+                                        if (e.target.value) setBookedViaError(false);
+                                    }}
+                                    className={`w-full px-4 py-3 bg-[#FAFAF8] border ${bookedViaError && !bookedVia ? 'border-red-500 bg-red-50/30' : 'border-border-medium'} rounded-lg text-sm font-inter text-text-primary focus:outline-none focus:border-antique-gold transition-colors cursor-pointer appearance-none`}
+                                >
+                                    <option value="" disabled>-- Select booking source / manager * --</option>
+                                    {STAYCATION_BOOKING_SOURCE_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-muted">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                            {bookedViaError && !bookedVia && (
+                                <p className="text-red-500 text-xs font-inter mt-2 flex items-center gap-1">
+                                    <span>* Please select an option before making payment.</span>
+                                </p>
+                            )}
                         </div>
 
                         {bookingError && (
