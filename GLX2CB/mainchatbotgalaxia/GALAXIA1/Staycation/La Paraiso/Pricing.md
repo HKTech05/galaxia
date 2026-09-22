@@ -45,6 +45,10 @@ Kids age 5 to 12 yrs: -800/-
 Security deposit Rs 3k not included, has to be paid during check-in and refunded on check-out.
 Booking is non refundable / non transferable.
 
+## Prime Date Pricing (Excl. 5% GST)
+- **2 October 2026**: ₹8,500 (Up to 4 persons)
+- **3 October 2026**: ₹9,500 (Up to 4 persons)
+
 Instagram: https://instagram.com/la_paraiso001
 
 ---

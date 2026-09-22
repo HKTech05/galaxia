@@ -21,6 +21,10 @@ Amstel Nest features 14 Standard Cottages and 1 Family Cottage with private indo
 - **Kids under 5**: FREE / Complimentary
 - **Security Deposit**: *₹2,000* (refundable), payable at check-in via Cash or UPI. It is not included in the stay price.
 
+## Prime Date Pricing (Excl. 5% GST)
+- **2 October 2026**: Standard Cottage: ₹6,950 (2p with meals) | Family Cottage: ₹11,000 (4p with meals)
+- **3 October 2026**: Standard Cottage: ₹7,950 (2p with meals) | Family Cottage: ₹13,000 (4p with meals)
+
 ## Sharing Calculations & Capacity Limits
 - **Max Capacity per Standard Cottage**: Strictly *max 3 adults* (or 4 persons total if 3 adults + 1 child under 12).
 - **2 Sharing**: 1 Standard Cottage = 2 Adults

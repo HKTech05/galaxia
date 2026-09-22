@@ -47,6 +47,10 @@ Extra person on Dec 31st: 2500/-
 Security deposit Rs 3000/- not included in stay prices, has to be paid during check-in and refunded within 24 hrs of check-out.
 Once the booking is done, it's non-refundable and non-transferable in any condition.
 
+## Prime Date Pricing (Excl. 5% GST)
+- **2 October 2026**: ₹5,950 (2 persons)
+- **3 October 2026**: ₹5,950 (2 persons)
+
 Google Maps: https://maps.app.goo.gl/1v6azy
 
 ---

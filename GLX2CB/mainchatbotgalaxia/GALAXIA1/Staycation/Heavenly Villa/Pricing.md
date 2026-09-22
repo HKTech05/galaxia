@@ -36,6 +36,10 @@ Kids age 5 to 12 yrs: -500/-
 Security deposit Rs 3000/- not included in stay prices, has to be paid during check-in and refunded on check-out.
 Once the booking is done, it's non-refundable and non-transferable in any condition.
 
+## Prime Date Pricing (Excl. 5% GST)
+- **2 October 2026**: ₹5,950 (2 persons)
+- **3 October 2026**: ₹5,950 (2 persons)
+
 Instagram: https://www.instagram.com/heavenly_villa01?igsh=dXJmc3B5NHNoeXBt&utm_source=qr
 Google Maps: https://maps.app.goo.gl/Ja5bygsXrSRDrcNDA?g_st=ipc
 

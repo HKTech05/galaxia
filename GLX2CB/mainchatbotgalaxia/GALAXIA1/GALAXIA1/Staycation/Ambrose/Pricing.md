@@ -32,7 +32,7 @@ Check-out - 10:00 AM
 
 *(Saturdays)*
 8500 for 2 with meals + 5%
-12000 for 4 with meals + 5%
+12500 for 4 with meals + 5%
 
 Rs. 2000/- per person extra with meals
 Child 5 to 12 yrs: - 1000/-

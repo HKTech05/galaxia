@@ -43,6 +43,10 @@ Directions: Get down at Karjat station, then take rickshaw directly to property 
 
 Security deposit Rs 2k not included in stay prices, pay during check-in, refunded at check-out.
 
+## Prime Date Pricing (Excl. 5% GST)
+- **2 October 2026**: ₹4,950 (2 persons)
+- **3 October 2026**: ₹4,950 (2 persons)
+
 ---
 ## Related Notes & Navigation
 - [[Amenities|Hill View Amenities & Society Pool]]

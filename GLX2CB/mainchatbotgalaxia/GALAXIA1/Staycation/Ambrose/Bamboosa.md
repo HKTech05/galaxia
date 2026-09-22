@@ -21,6 +21,10 @@
 - Security Deposit: ₹3,000 refundable deposit.
 - Unit Count: **1 Unit Only**.
 
+## Prime Date Pricing (Excl. 5% GST)
+- **2 October 2026**: ₹12,500 for 4 Persons (with meals)
+- **3 October 2026**: ₹14,000 for 4 Persons (with meals)
+
 - **Direct Clickable Food Menu Link**: https://galaxiaresorts.com/menus/ambrose-amstel-menu.jpeg
 - **Booking Link**: https://www.galaxiaresorts.com/staycation/ambrose/bamboosa
 
