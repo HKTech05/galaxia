@@ -15,6 +15,9 @@ function getCreds(botType, fallbackPhoneId) {
   } else if (botType === "amstel_nest") {
     phoneId = phoneId || process.env.WHATSAPP_AMSTELNEST_PHONE_ID;
     token = process.env.WHATSAPP_AMSTELNEST_TOKEN || token;
+  } else if (botType === "ambrose") {
+    phoneId = phoneId || process.env.WHATSAPP_AMBROSE_PHONE_ID;
+    token = process.env.WHATSAPP_AMBROSE_TOKEN || token;
   } else {
     phoneId = phoneId || process.env.WHATSAPP_STAYCATION_PHONE_ID || process.env.WHATSAPP_PHONE_ID;
     token = process.env.WHATSAPP_STAYCATION_TOKEN || token;
