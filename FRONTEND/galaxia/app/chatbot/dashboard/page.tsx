@@ -22,7 +22,7 @@ const PHONE_NUMBERS: Record<string, PhoneNumber> = {
     digital_diaries: { id: "1117204771469353", label: "Digital Diaries", icon: "🎬", color: "#f59e0b", iconType: "whatsapp" },
     dd_instagram: { id: "instagram", label: "DD Instagram", icon: "📷", color: "#e1306c", iconType: "instagram" },
     wa_amstelnest: { id: "1265812873275552", label: "Amstel Nest WA", icon: "🏡", color: "#06b6d4", iconType: "whatsapp" },
-    wa_ambrose: { id: "1413924248459417", label: "Ambrose WA", icon: "🏠", color: "#8b5cf6", iconType: "whatsapp" },
+    wa_staycation: { id: "1413924248459417", label: "Staycation WA", icon: "🏡", color: "#8b5cf6", iconType: "whatsapp" },
     website: { id: "website", label: "Website", icon: "🌐", color: "#10b981", iconType: "website" },
     ig_ambrose: { id: "ig_ambrose", label: "Ambrose IG", icon: "📷", color: "#8b5cf6", iconType: "instagram" },
     ig_amstelnest: { id: "ig_amstelnest", label: "Amstelnest IG", icon: "📷", color: "#06b6d4", iconType: "instagram" },
@@ -140,9 +140,9 @@ function dbToUiSession(db: DbChatSession): ChatSession {
     } else if (db.phone_number_id === "1265812873275552" || db.bot_type === "amstel_nest") {
         // Amstel Nest WhatsApp
         phoneNumberKey = "wa_amstelnest";
-    } else if (db.phone_number_id === "1413924248459417" || (db.bot_type === "ambrose" && db.platform !== "instagram")) {
-        // Ambrose WhatsApp
-        phoneNumberKey = "wa_ambrose";
+    } else if (db.phone_number_id === "1413924248459417" || (db.bot_type === "staycation" && db.platform !== "instagram")) {
+        // Staycation WhatsApp (Bot 3 - generalized)
+        phoneNumberKey = "wa_staycation";
     }
 
     return {
@@ -410,7 +410,7 @@ export default function ChatbotDashboard() {
 
             if (!allowed.includes(s.phoneNumberKey)) return false;
             // Hide Instagram/dedicated WA sessions from the "All" tab — they have their own tab
-            if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_") || s.phoneNumberKey === "wa_amstelnest" || s.phoneNumberKey === "wa_ambrose")) return false;
+            if (t === "all" && (s.phoneNumberKey === "dd_instagram" || s.phoneNumberKey.startsWith("ig_") || s.phoneNumberKey === "wa_amstelnest" || s.phoneNumberKey === "wa_staycation")) return false;
             if (t !== "all" && s.phoneNumberKey !== t) return false;
 
             // For IG staycation tabs: exclusive pill filters (ALL=bot only, HUMAN=human only, COLLAB=collab only)

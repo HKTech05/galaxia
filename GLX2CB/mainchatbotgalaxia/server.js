@@ -134,9 +134,9 @@ app.post("/webhook", async (req, res) => {
     const AMSTEL_NEST_PHONE_ID = process.env.WHATSAPP_AMSTELNEST_PHONE_ID || "1265812873275552";
     const AMBROSE_PHONE_ID = process.env.WHATSAPP_AMBROSE_PHONE_ID || "1413924248459417";
     const isAmstelNest = phoneId === AMSTEL_NEST_PHONE_ID;
-    const isAmbrose = phoneId === AMBROSE_PHONE_ID;
-    const botType = isAmstelNest ? "amstel_nest" : isAmbrose ? "ambrose" : "celebration";
-    const sessionId = isAmstelNest ? `wa_an_${from}` : isAmbrose ? `wa_amb_${from}` : `wa_${from}`;
+    const isStaycationWA = phoneId === AMBROSE_PHONE_ID;
+    const botType = isAmstelNest ? "amstel_nest" : isStaycationWA ? "staycation" : "celebration";
+    const sessionId = isAmstelNest ? `wa_an_${from}` : isStaycationWA ? `wa_stc_${from}` : `wa_${from}`;
 
     let userText = "";
 
@@ -160,7 +160,7 @@ app.post("/webhook", async (req, res) => {
     // 1. Get or create session
     let session = await db.getOrCreateSession(sessionId, from, phoneId, botType, "whatsapp");
 
-    const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstel_nest" || botType === "ambrose";
+    const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstel_nest" || botType === "staycation";
 
     // 2. Save user message to DB & emit to dashboard
     // For AI bots in human mode, we still need to save so admin can see the message
@@ -198,7 +198,7 @@ app.post("/webhook", async (req, res) => {
       // AI Chatbot V2 — route to correct bot type
       const WA_TO_AI_BOT_TYPE = {
         "amstel_nest": "amstel_nest",
-        "ambrose": "ambrose",
+        "staycation": "staycation",
         "celebration": "digital_diaries",
         "digital_diaries": "digital_diaries",
       };
@@ -385,7 +385,7 @@ app.post("/api/chats/:sessionId/send", async (req, res) => {
       // Use the correct phone ID based on bot_type
       const botPhoneIds = {
         "amstel_nest": process.env.WHATSAPP_AMSTELNEST_PHONE_ID || "1265812873275552",
-        "ambrose": process.env.WHATSAPP_AMBROSE_PHONE_ID || "1413924248459417",
+        "staycation": process.env.WHATSAPP_AMBROSE_PHONE_ID || "1413924248459417",
       };
       const phoneId = botPhoneIds[session.bot_type] || process.env.WHATSAPP_PHONE_ID || session.phone_number_id;
       console.log(`[Admin Send] Sending to ${session.customer_phone} via phone_id=${phoneId}`);
