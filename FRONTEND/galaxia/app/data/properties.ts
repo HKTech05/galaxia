@@ -174,8 +174,8 @@ export const properties: Record<string, PropertyData> = {
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
-                    weekend: { price: "10,500", persons: "4 with meals" },
-                    saturday: { price: "12,500", persons: "4 with meals" },
+                    weekend: { price: "6,500", persons: "2 with meals" },
+                    saturday: { price: "12,000", persons: "4 with meals" },
                     dateOverrides: { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 },
                 },
             },
@@ -192,8 +192,8 @@ export const properties: Record<string, PropertyData> = {
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
-                    weekend: { price: "10,500", persons: "4 with meals" },
-                    saturday: { price: "12,500", persons: "4 with meals" },
+                    weekend: { price: "6,500", persons: "2 with meals" },
+                    saturday: { price: "12,000", persons: "4 with meals" },
                     dateOverrides: { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 },
                 },
             },
@@ -210,8 +210,8 @@ export const properties: Record<string, PropertyData> = {
                 pricing: {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
-                    weekend: { price: "10,500", persons: "4 with meals" },
-                    saturday: { price: "12,500", persons: "4 with meals" },
+                    weekend: { price: "6,500", persons: "2 with meals" },
+                    saturday: { price: "12,000", persons: "4 with meals" },
                     dateOverrides: { "2026-08-14": 7500, "2026-08-15": 9500, "2026-10-02": 7500, "2026-10-03": 9500 },
                 },
             },

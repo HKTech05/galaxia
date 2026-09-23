@@ -246,7 +246,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 const vn = (villaName || "").toUpperCase();
                 if (vn.includes("BAMBOOSA")) { basePrice = isSaturday ? 14000 : isWeekend ? 12500 : 9500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
                 else if (vn.includes("CYPRESS")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
-                else { basePrice = isSaturday ? 12500 : (day === 0 || day === 5) ? 10500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = (isSaturday || day === 0 || day === 5) ? 4 : 2; }
+                else { basePrice = isSaturday ? 12000 : isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isSaturday ? 4 : 2; }
             }
         }
 

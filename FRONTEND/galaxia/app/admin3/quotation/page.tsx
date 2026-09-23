@@ -193,7 +193,7 @@ export default function QuotationPage() {
                         const vn = (villaName || "").toUpperCase();
                         if (vn.includes("BAMBOOSA")) { basePrice = isSat ? 14000 : (day === 0 || day === 5) ? 12500 : 9500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
                         else if (vn.includes("CYPRESS")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
-                        else { basePrice = isSat ? 12500 : (day === 0 || day === 5) ? 10500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = (isSat || day === 0 || day === 5) ? 4 : 2; }
+                        else { basePrice = isSat ? 12000 : isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isSat ? 4 : 2; }
                     }
                 }
                 unitRoom += basePrice;
