@@ -371,23 +371,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     }
                 });
 
-                for (const v of selectedAmbroseVillas) {
-                    const isAmbroseVilla = v === "TAKE-1" || v === "ALTA" || v === "SANTORINI";
-                    if (isAmbroseVilla) {
-                        const totalG = villaGuests[v] + villaKids[v];
-                        if (totalG === 4) {
-                            for (let i = 0; i < nights; i++) {
-                                const currentDate = new Date(start);
-                                currentDate.setDate(start.getDate() + i);
-                                const day = currentDate.getDay();
-                                const isSaturday = day === 6;
-                                if (isSaturday) {
-                                    specialDiscount += 500;
-                                }
-                            }
-                        }
-                    }
-                }
+                // Saturday base rate already includes 4 guests at Rs 12,000 — no discount needed
             }
         } else if (manualForm.property.includes("La Paraiso")) {
             const totalG = manualForm.guests + manualForm.kids;
@@ -915,17 +899,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     const decorChargeV = (idx === 0 && manualDecoration) ? DECORATION_PRICE : 0;
 
                     let vSpecialDiscount = 0;
-                    const isAmbroseVilla = v === "TAKE-1" || v === "ALTA" || v === "SANTORINI";
-                    if (isAmbroseVilla && (guestsV + villaKids[v]) === 4) {
-                        for (let i = 0; i < nights; i++) {
-                            const currentDate = new Date(start);
-                            currentDate.setDate(start.getDate() + i);
-                            const day = currentDate.getDay();
-                            if (day === 6) {
-                                vSpecialDiscount += 500;
-                            }
-                        }
-                    }
+                    // Saturday base rate already includes 4 guests at Rs 12,000 — no discount needed
 
                     villaRawBases[v] = roomTotals[v] + extraAdultChargeV + extraKidsChargeV + decorChargeV - vSpecialDiscount;
                 });

@@ -579,9 +579,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             const isWeekend = day === 0 || day === 5 || day === 6;
             
             if (isAmbroseVilla) {
-                if (isSaturday && totalGuests === 4) {
-                    totalDiscount += 500;
-                }
+                // Saturday base rate already includes 4 guests at Rs 12,000 — no discount needed
             } else if (isLaParaiso) {
                 if (isWeekend) {
                     if (totalGuests >= 3) {

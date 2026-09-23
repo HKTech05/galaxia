@@ -726,9 +726,7 @@ export default function BookMultiPage() {
                 
                 let nightDiscount = 0;
                 if (isAmbroseVilla) {
-                    if (isSaturday && totalGuests === 4) {
-                        nightDiscount = 500;
-                    }
+                    // Saturday base rate already includes 4 guests at Rs 12,000 — no discount needed
                 } else if (isLaParaiso) {
                     if (!isWeekend) {
                         if (totalGuests === 4) {
