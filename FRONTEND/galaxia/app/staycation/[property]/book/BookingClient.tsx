@@ -1135,10 +1135,12 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                         const weP = parseInt((room.weekendPrice || '0').toString().replace(/,/g, ''));
                                                         const saP = parseInt((room.saturdayPrice || room.weekendPrice || '0').toString().replace(/,/g, ''));
                                                         const perNight: {day: string; price: number}[] = [];
+                                                        const roomOverrides = (room as any)?.dateOverrides || (property as any)?.pricing?.dateOverrides || {};
                                                         for (let i = 0; i < nights; i++) {
                                                             const d = new Date(checkInDate); d.setDate(d.getDate() + i);
                                                             const dw = d.getDay();
-                                                            const p = dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP;
+                                                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                                            const p = roomOverrides[dateStr] ? roomOverrides[dateStr] : (dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP);
                                                             perNight.push({ day: DAY_NAMES[dw], price: p });
                                                         }
                                                         return (
@@ -1661,10 +1663,12 @@ export default function BookingClient({ property }: BookingClientProps) {
                                             const weP = parseInt((selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
                                             const saP = parseInt((selectedRoom.saturdayPrice || selectedRoom.weekendPrice || '0').toString().replace(/,/g, ''));
                                             const perNight: {day: string; price: number}[] = [];
+                                            const selOverrides = (selectedRoom as any)?.dateOverrides || (property as any)?.pricing?.dateOverrides || {};
                                             for (let i = 0; i < nights; i++) {
                                                 const d = new Date(checkInDate); d.setDate(d.getDate() + i);
                                                 const dw = d.getDay();
-                                                const p = dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP;
+                                                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                                const p = selOverrides[dateStr] ? selOverrides[dateStr] : (dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP);
                                                 perNight.push({ day: DAY_NAMES[dw], price: p });
                                             }
                                             const units = isAmstelNest ? unitCount : 1;

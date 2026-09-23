@@ -1437,7 +1437,9 @@ export default function BookMultiPage() {
                                                                     {Array.from({length: nights}, (_, i) => {
                                                                         const d = new Date(checkInDate); d.setDate(d.getDate() + i);
                                                                         const dw = d.getDay();
-                                                                        const p = dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP;
+                                                                        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                                                        const itemOverrides = item.dateOverrides || {};
+                                                                        const p = itemOverrides[dateStr] ? itemOverrides[dateStr] : (dw === 6 ? saP : (dw === 0 || dw === 5) ? weP : wdP);
                                                                         return <div key={i} className="flex justify-between"><span className="text-text-secondary text-xs">{DAY_NAMES[dw]}</span><span className="text-text-primary text-xs">{formatPrice(p * units)}</span></div>;
                                                                     })}
                                                                 </>;
