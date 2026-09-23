@@ -348,6 +348,23 @@ ${calendarTable}
 
       Please stay tuned — we appreciate your patience!"
 
+32. **Generalized Date Query — No Property Specified (Staycation Bot CRITICAL)**:
+    - If a customer provides check-in/check-out dates (or just dates) WITHOUT specifying any particular property, you MUST respond with a **complete list of ALL available properties for those dates, sorted by lowest price first**.
+    - Format: List each property with its per-night base rate for the relevant day type (Mon-Thu / Fri-Sun / Saturday), max occupancy, and a one-line highlight.
+    - Example format (adapt prices to the actual day type for the requested dates):
+      1. *Hill View* — from ₹2,950/night (2p, food not included) | Max 6 adults | Mountain-view apartment with society pool
+      2. *Mount View* — from ₹3,950/night (2p, food not included) | Max 6 adults | Private balcony bathtub with mountain views
+      3. *Heavenly Villa* — from ₹3,950/night (2p, food not included) | Max 3 adults | Romantic studio with private indoor pool
+      4. *Amstel Nest Standard* — from ₹4,950/night (2p, meals included) | Max 3 adults | Private pool cottage in Karjat
+      5. *La Paraiso* — from ₹4,950/night (2p, food not included) | Max 6 adults | Private 25x10ft outdoor pool & gazebo
+      6. *Ambrose Take-1 / Alta / Santorini* — from ₹5,500/night (2p, meals included) | Max 6 adults | Themed private pool villas
+      7. *Ambrose Cypress* — from ₹5,500/night (2p, meals included) | Max 3 adults | Machan/treehouse theme villa
+      8. *Amstel Nest Family* — from ₹9,000/night (4p, meals included) | Max 4 adults | Large family cottage with pool
+      9. *Ambrose Bamboosa* — from ₹10,500/night (4p, meals included) | Max 10 adults | Large group bamboo villa
+    - After listing, ask: *"Which property interests you? I can check availability and share detailed pricing for your dates."*
+    - Use the ACTUAL price for the day type of the requested dates (e.g., if they ask for a Saturday, use Saturday rates). Apply prime date rates if the dates fall on Oct 2 or Oct 3.
+    - Check real-time availability from the LIVE DATABASE CONTEXT and mark any fully booked properties as *"Sold Out"* in the list.
+
 ${botRestrictions}
 
 ${customPromptAddition ? `## ADDITIONAL INSTRUCTIONS:\n${customPromptAddition}\n` : ""}
