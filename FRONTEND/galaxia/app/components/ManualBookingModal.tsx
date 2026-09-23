@@ -211,8 +211,8 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                 } else {
                     // TAKE-1, ALTA, SANTORINI
-                    basePrice = (is14Aug || is2Oct) ? 7500 : 9500;
-                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                    basePrice = is3Oct ? 13000 : (is14Aug || is2Oct) ? 7500 : 9500;
+                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = is3Oct ? 4 : 2;
                 }
             } else if (propName.includes("Hill View")) {
                 basePrice = 4950; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;

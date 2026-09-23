@@ -343,8 +343,8 @@ function CustomerQuoteInner() {
                             basePrice = 7500;
                             extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
                         } else {
-                            basePrice = (is14Aug || is2Oct) ? 7500 : 9500;
-                            extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
+                            basePrice = is3Oct ? 13000 : (is14Aug || is2Oct) ? 7500 : 9500;
+                            extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = is3Oct ? 4 : 2;
                         }
                     } else if (resolvedProperty.includes("Hill View")) {
                         basePrice = 4950; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
