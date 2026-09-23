@@ -28,10 +28,10 @@ Check-out - 10 AM
 
 *RENT:*
 *MON to THUR*
-2000/- for 2 person + 5%
+2950/- for 2 person + 5%
 
 *FRI-SUN AND PUBLIC HOLIDAYS*
-3000/- 2 person + 5%
+3950/- 2 person + 5%
 
 600/- per person extra after 2
 Kids age 5 to 12 yrs: -400/-

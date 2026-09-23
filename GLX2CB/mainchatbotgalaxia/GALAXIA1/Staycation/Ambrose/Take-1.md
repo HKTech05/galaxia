@@ -14,9 +14,9 @@
 - Kids age range: 5 to 12 years (₹1,000/night). Under 5: Free.
 
 ## Tariff Schedule (Excl. 5% GST)
-- **Mon to Thu**: ₹5,500 for 2 Persons (with meals) | ₹9,500 for 4 Persons (with meals)
-- **Fri & Sun**: ₹6,500 for 2 Persons (with meals) | ₹10,500 for 4 Persons (with meals)
-- **Saturday**: ₹8,500 for 2 Persons (with meals) | ₹12,500 for 4 Persons (with meals)
+- **Mon to Thu**: ₹5,500 for 2 Persons (with meals)
+- **Fri & Sun**: ₹6,500 for 2 Persons (with meals)
+- **Saturday**: ₹12,000 for 4 Persons (with meals)
 - Extra Adult: ₹2,000 per night (meals included).
 - Meals Included: Lunch, Dinner, Breakfast (strictly Vegetarian ONLY).
 - Security Deposit: ₹3,000 refundable deposit.
@@ -24,7 +24,7 @@
 
 ## Prime Date Pricing (Excl. 5% GST)
 - **2 October 2026**: ₹7,500 for 2 Persons (with meals)
-- **3 October 2026**: ₹9,500 for 2 Persons (with meals)
+- **3 October 2026**: ₹13,000 for 4 Persons (with meals)
 
 - **Direct Clickable Food Menu Link**: https://galaxiaresorts.com/menus/ambrose-amstel-menu.jpeg
 - **Booking Link**: https://www.galaxiaresorts.com/staycation/ambrose/take-1

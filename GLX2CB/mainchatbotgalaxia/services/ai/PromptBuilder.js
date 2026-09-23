@@ -292,17 +292,17 @@ ${calendarTable}
 29. **Exact Base Rates (Excl 5% GST)**:
     - **Amstel Nest**: *Standard Cottage* (2 Adults + meals): Mon-Thu *₹4,950*, Fri/Sun *₹5,950*, Saturday *₹6,950*. *Family Cottage* (4 Adults + meals): Mon-Thu *₹9,000*, Fri/Sun *₹10,000*, Saturday *₹12,000*. Extra Adult: *₹2,000*, Kids 5–12 yrs: *₹1,000*, Under 5: *Free*. Security deposit: *₹2,000*.
     - **Ambrose Villas** (NOTE: "2p" / "4p" below means BASE pricing tier, NOT max capacity. Max capacity: Take-1/Alta/Santorini = 6 adults, Cypress = 3 adults, Bamboosa = 10 adults):
-      *TAKE-1 / ALTA / SANTORINI* (max 6 adults each): Mon-Thu *₹5,500* (2p base) / *₹9,500* (4p base); Fri/Sun *₹6,500* (2p) / *₹10,500* (4p); Saturday *₹8,500* (2p) / *₹12,500* (4p). Extra Adult *₹2,000*, Kids 5-12 *₹1,000*. Security deposit: *₹3,000*.
+      *TAKE-1 / ALTA / SANTORINI* (max 6 adults each): Mon-Thu *₹5,500* (2p base); Fri/Sun *₹6,500* (2p); Saturday *₹12,000* (4p base). Extra Adult *₹2,000*, Kids 5-12 *₹1,000*. Security deposit: *₹3,000*.
       *CYPRESS* (max 3 adults): Mon-Thu *₹5,500* (2p base); Fri-Sun *₹6,500* (2p). Extra Adult *₹2,000*, Kids *₹1,000*. Security deposit: *₹3,000*.
       *BAMBOOSA* (max 10 adults): Mon-Thu *₹10,500* (4p base); Fri/Sun *₹11,500* (4p); Saturday *₹13,000* (4p). Extra Adult *₹2,000*, Kids *₹1,000*. Security deposit: *₹3,000*.
-    - **La Paraiso** (max 6 adults, food NOT included): Prime date *₹8,500*, Mon-Thu *₹4,950* (2p), Fri/Sun *₹7,500* (4p), Extra adult *₹1,200*, Kids *₹800*, Sec deposit *₹3,000*.
-    - **Hill View** (max 6 adults, food NOT included): Mon-Thu *₹2,000* (2p), Fri-Sun *₹3,000* (2p), Extra adult *₹600*, Kids *₹400*, Sec deposit *₹2,000*.
-    - **Mount View** (max 6 adults, food NOT included): Prime date *₹5,950*, Mon-Thu *₹3,000* (2p), Fri-Sun *₹4,000* (2p), Extra adult *₹800*, Kids *₹500*, Sec deposit *₹3,000*.
+    - **La Paraiso** (max 6 adults, food NOT included): Mon-Thu *₹4,950* (2p), Fri/Sun *₹7,500* (4p), Saturday *₹8,500* (4p), Extra adult *₹1,200*, Kids *₹800*, Sec deposit *₹3,000*.
+    - **Hill View** (max 6 adults, food NOT included): Mon-Thu *₹2,950* (2p), Fri-Sun *₹3,950* (2p), Extra adult *₹600*, Kids *₹400*, Sec deposit *₹2,000*.
+    - **Mount View** (max 6 adults, food NOT included): Mon-Thu *₹3,950* (2p), Fri-Sun *₹4,950* (2p), Extra adult *₹800*, Kids *₹500*, Sec deposit *₹3,000*.
     - **Heavenly Villa** (max 3 adults, food NOT included): Mon-Thu *₹3,950* (2p), Fri-Sun *₹4,950* (2p), Extra adult *₹800*, Kids *₹500*, Sec deposit *₹3,000*.
     - **Digital Diaries**: Movie Time (2p): 1h *₹999*, 2h *₹1,500*, 3h *₹2,500*. Celebration Package (2p): 1h *₹2,200*, 2h *₹2,950*, 3h Mon-Thu *₹3,450*, 3h Fri-Sun *₹3,950*. Extra guest *₹300*, Extra hour *₹1,000*.
 30. **Prime Date Pricing (2 & 3 October 2026) — CRITICAL: Override base Fri/Sat rates on these dates (Excl. 5% GST)**:
     - **Amstel Nest**: Standard Cottage: 2 Oct *₹6,950*, 3 Oct *₹7,950*. Family Cottage: 2 Oct *₹11,000*, 3 Oct *₹13,000*.
-    - **Ambrose Take-1 / Alta / Santorini**: 2 Oct *₹7,500* (2p), 3 Oct *₹9,500* (2p).
+    - **Ambrose Take-1 / Alta / Santorini**: 2 Oct *₹7,500* (2p), 3 Oct *₹13,000* (4p).
     - **Ambrose Cypress**: 2 Oct *₹7,500* (2p), 3 Oct *₹7,500* (2p).
     - **Ambrose Bamboosa**: 2 Oct *₹12,500* (4p), 3 Oct *₹14,000* (4p).
     - **La Paraiso**: 2 Oct *₹8,500* (4p), 3 Oct *₹9,500* (4p).

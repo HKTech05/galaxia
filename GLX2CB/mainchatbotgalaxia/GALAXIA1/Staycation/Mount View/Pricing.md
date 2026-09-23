@@ -32,8 +32,8 @@ Check-out - 10 AM
 *RENT:*
 *PRIME DATES:* 5950/- for 2 Person
 
-*MON to THUR:* 3000/- per night for 2 person + 5%
-*FRI-SUN AND PUBLIC HOLIDAYS:* 4000/- for 2 person + 5%
+*MON to THUR:* 3950/- per night for 2 person + 5%
+*FRI-SUN AND PUBLIC HOLIDAYS:* 4950/- for 2 person + 5%
 
 Food is excluded.
 

@@ -38,6 +38,9 @@ Prime date: 8500/-
 
 *FRI & SUN AND PUBLIC HOLIDAYS*
 7500/- 4 person + 5%
+
+*SATURDAY*
+8500/- 4 person + 5%
 1200/- per person extra after 4
 
 Kids age 5 to 12 yrs: -800/-
