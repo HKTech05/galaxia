@@ -110,7 +110,9 @@ export default function PropertiesMgmtPage() {
         setEditId(key);
         setEditPr({
             weekday_base: String(wd?.basePrice || ""), weekend_base: String(we?.basePrice || ""), saturday_base: String(sa?.basePrice || ""),
-            weekday_extra: String(wd?.extraAdultPrice || ""),
+            weekday_extra: String(wd?.extraAdultPrice || we?.extraAdultPrice || ""),
+            extra_kid: String(wd?.kidsPrice || we?.kidsPrice || ""),
+            has_saturday: sa ? "1" : "",
         });
     };
 
@@ -122,6 +124,7 @@ export default function PropertiesMgmtPage() {
             if (editPr.weekend_base) body.weekend = parseInt(editPr.weekend_base);
             if (editPr.saturday_base) body.saturday = parseInt(editPr.saturday_base);
             if (editPr.weekday_extra) body.extraGuest = parseInt(editPr.weekday_extra);
+            if (editPr.extra_kid) body.extraKid = parseInt(editPr.extra_kid);
             const [type, id] = editId.split("-");
             if (type === "sub") {
                 await api.patch(`/properties/sub/${id}/pricing`, body);
@@ -173,7 +176,7 @@ export default function PropertiesMgmtPage() {
 
     const getFiltered = () => {
         switch (tab) {
-            case "standalone": return props.filter(p => p.type === "standalone");
+            case "standalone": return props.filter(p => p.type === "standalone" && p.slug !== "digital-diaries");
             case "amstelnest": return props.filter(p => p.slug === "amstel-nest" || (p.name || "").toLowerCase().includes("amstel"));
             case "ambrose": return props.filter(p => p.slug === "ambrose" || (p.name || "").toLowerCase().includes("ambrose"));
             case "digitaldiaries": return props.filter(p => p.slug === "digital-diaries");
@@ -186,20 +189,28 @@ export default function PropertiesMgmtPage() {
 
     const renderPrShow = (prop: any, sub?: any) => {
         const { wd, we, sa } = getPrice(prop, sub);
+        const hasSeparateSat = !!sa;
+        const weLabel = hasSeparateSat ? "Fri/Sun" : "Fri/Sat/Sun";
         return (<div className="space-y-2">
-            <div className="flex justify-between text-sm"><span className="text-slate-500">Mon-Thu</span><span className="text-slate-700 font-bold">₹{(wd?.basePrice || 0).toLocaleString("en-IN")}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-500">Fri/Sun</span><span className="text-slate-700 font-bold">₹{(we?.basePrice || 0).toLocaleString("en-IN")}</span></div>
-            {sa && <div className="flex justify-between text-sm"><span className="text-slate-500">Saturday</span><span className="text-slate-700 font-bold">₹{(sa.basePrice || 0).toLocaleString("en-IN")}</span></div>}
-            {wd?.extraAdultPrice > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Extra Guest</span><span className="text-slate-700 font-bold">₹{wd.extraAdultPrice.toLocaleString("en-IN")}/person</span></div>}
+            <div className="flex justify-between text-sm"><span className="text-slate-500">Mon-Thu</span><span className="text-slate-700 font-bold">₹{(wd?.basePrice || 0).toLocaleString("en-IN")}{wd?.personsLabel ? <span className="text-[10px] font-normal text-slate-400 ml-1">· {wd.personsLabel}</span> : null}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-500">{weLabel}</span><span className="text-slate-700 font-bold">₹{(we?.basePrice || 0).toLocaleString("en-IN")}{we?.personsLabel ? <span className="text-[10px] font-normal text-slate-400 ml-1">· {we.personsLabel}</span> : null}</span></div>
+            {sa && <div className="flex justify-between text-sm"><span className="text-slate-500">Saturday</span><span className="text-slate-700 font-bold">₹{(sa.basePrice || 0).toLocaleString("en-IN")}{sa.personsLabel ? <span className="text-[10px] font-normal text-slate-400 ml-1">· {sa.personsLabel}</span> : null}</span></div>}
+            {wd?.extraAdultPrice > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Extra Adult</span><span className="text-slate-700 font-bold">₹{wd.extraAdultPrice.toLocaleString("en-IN")}/person</span></div>}
+            {wd?.kidsPrice > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">Extra Kid</span><span className="text-slate-700 font-bold">₹{wd.kidsPrice.toLocaleString("en-IN")}/child</span></div>}
         </div>);
     };
 
     // Render inline to avoid React unmounting on re-render (no component identity change)
     const renderEditForm = (editKey: string) => {
         if (editId !== editKey) return null;
+        const hasSat = !!editPr.has_saturday;
+        const dayTypes = hasSat
+            ? [{ key: "weekday", label: "Mon-Thu" }, { key: "weekend", label: "Fri/Sun" }, { key: "saturday", label: "Saturday" }]
+            : [{ key: "weekday", label: "Mon-Thu" }, { key: "weekend", label: "Fri/Sat/Sun" }];
         return (<div className="p-4 space-y-3 border-t border-slate-100 bg-purple-50/30">
-            {["weekday", "weekend", "saturday"].map(dt => (<div key={dt} className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">{dt === "weekday" ? "Mon-Thu" : dt === "weekend" ? "Fri/Sun" : "Saturday"}</label><NI value={editPr[`${dt}_base`] || ""} onChange={v => setEditPr(prev => ({ ...prev, [`${dt}_base`]: v }))} /></div>))}
-            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Guest</label><NI value={editPr.weekday_extra || ""} onChange={v => setEditPr(prev => ({ ...prev, weekday_extra: v }))} /></div>
+            {dayTypes.map(dt => (<div key={dt.key} className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">{dt.label}</label><NI value={editPr[`${dt.key}_base`] || ""} onChange={v => setEditPr(prev => ({ ...prev, [`${dt.key}_base`]: v }))} /></div>))}
+            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Adult (per person)</label><NI value={editPr.weekday_extra || ""} onChange={v => setEditPr(prev => ({ ...prev, weekday_extra: v }))} /></div>
+            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Kid (per child)</label><NI value={editPr.extra_kid || ""} onChange={v => setEditPr(prev => ({ ...prev, extra_kid: v }))} /></div>
             <div className="flex gap-2"><button onClick={saveEdit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button><button onClick={() => setEditId(null)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button></div>
         </div>);
     };
@@ -215,11 +226,10 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
-    const renderCardBtns = (editKey: string, onToggle: () => void) => {
+    const renderCardBtns = (editKey: string, onToggle: () => void, prop: any, sub?: any) => {
         if (editId === editKey) return null;
-        const [type, id] = editKey.split("-");
         return (<div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex gap-2 flex-wrap">
-            <button onClick={() => { const p = filtered[0]; const sub = type === "sub" ? (p?.subProperties || []).find((s: any) => s.id === parseInt(id)) : undefined; startEdit(editKey, p, sub); }}
+            <button onClick={() => startEdit(editKey, prop, sub)}
                 className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:text-purple-600 hover:border-purple-200 shadow-sm"><Edit3 size={14} /> Edit</button>
             <button onClick={() => { setOverrideId(overrideId === editKey ? null : editKey); setOvDate(""); setOvPrice(""); setOvMsg(""); }}
                 className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-indigo-600 hover:border-indigo-200 shadow-sm"><Calendar size={14} /> Override</button>
@@ -236,7 +246,7 @@ export default function PropertiesMgmtPage() {
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{p.isActive ? "Active" : "Disabled"}</span>
             </div>
             <div className="p-5">{renderPrShow(p)}</div>
-            {renderEditForm(k)}{renderCardBtns(k, () => toggleProp(p))}{renderOverrideUI(k)}
+            {renderEditForm(k)}{renderCardBtns(k, () => toggleProp(p), p)}{renderOverrideUI(k)}
         </div>);
     };
 
@@ -272,7 +282,7 @@ export default function PropertiesMgmtPage() {
                     })}</div>
                 </div>
                 {renderEditForm(`prop-${a.id}`)}
-                {renderCardBtns(`prop-${a.id}`, () => toggleProp(a))}
+                {renderCardBtns(`prop-${a.id}`, () => toggleProp(a), a)}
                 {renderOverrideUI(`prop-${a.id}`)}
             </div>
             {/* Family Cottage card */}
@@ -283,7 +293,7 @@ export default function PropertiesMgmtPage() {
                 </div>
                 <div className="p-5">{renderPrShow(a, fam)}</div>
                 {renderEditForm(`sub-${fam.id}`)}
-                {renderCardBtns(`sub-${fam.id}`, () => toggleSub(fam.id))}
+                {renderCardBtns(`sub-${fam.id}`, () => toggleSub(fam.id), a, fam)}
                 {renderOverrideUI(`sub-${fam.id}`)}
             </div>)}
         </div>);
@@ -303,7 +313,7 @@ export default function PropertiesMgmtPage() {
                     </div>
                     <div className="p-5">{renderPrShow(a, v)}</div>
                     {renderEditForm(k)}
-                    {renderCardBtns(k, () => toggleSub(v.id))}
+                    {renderCardBtns(k, () => toggleSub(v.id), a, v)}
                     {renderOverrideUI(k)}
                 </div>);
             })}

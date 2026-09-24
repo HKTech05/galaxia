@@ -135,9 +135,13 @@ router.patch("/sub/:id/unit-count", authMiddleware, requireRole("owner", "develo
 router.patch("/sub/:id/pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const subId = parseInt(req.params.id as string);
-        const { weekday, weekend, saturday, extraGuest } = req.body;
+        const { weekday, weekend, saturday, extraGuest, extraKid } = req.body;
         const sp = await prisma.subProperty.findUnique({ where: { id: subId } });
         if (!sp) return res.status(404).json({ error: "Sub-property not found" });
+
+        const extraFields: any = {};
+        if (extraGuest !== undefined) extraFields.extraAdultPrice = extraGuest;
+        if (extraKid !== undefined) extraFields.kidsPrice = extraKid;
 
         for (const [dayType, price] of [["weekday", weekday], ["weekend", weekend], ["saturday", saturday]] as [string, number | undefined][]) {
             if (price === undefined) continue;
@@ -147,18 +151,18 @@ router.patch("/sub/:id/pricing", authMiddleware, requireRole("owner", "developer
             if (existing) {
                 await prisma.propertyPricing.update({
                     where: { id: existing.id },
-                    data: { basePrice: price, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
+                    data: { basePrice: price, ...extraFields },
                 });
             } else {
                 await prisma.propertyPricing.create({
-                    data: { subPropertyId: subId, propertyId: sp.propertyId, dayType, basePrice: price, extraAdultPrice: extraGuest || 0 },
+                    data: { subPropertyId: subId, propertyId: sp.propertyId, dayType, basePrice: price, extraAdultPrice: extraGuest || 0, kidsPrice: extraKid || 0 },
                 });
             }
         }
-        if (extraGuest !== undefined && weekday === undefined && weekend === undefined && saturday === undefined) {
+        if (Object.keys(extraFields).length > 0 && weekday === undefined && weekend === undefined && saturday === undefined) {
             await prisma.propertyPricing.updateMany({
                 where: { subPropertyId: subId, overrideDate: null, isActive: true },
-                data: { extraAdultPrice: extraGuest },
+                data: extraFields,
             });
         }
         return res.json({ success: true });
@@ -182,8 +186,20 @@ router.post("/sub/:id/date-pricing", authMiddleware, requireRole("owner", "devel
             const dow = overrideDate.getUTCDay();
             const dayType = dow === 6 ? "saturday" : (dow === 0 || dow === 5) ? "weekend" : "weekday";
             const sp = await prisma.subProperty.findUnique({ where: { id: subId } });
+            // Inherit fields from base day-type row (or weekend fallback)
+            const baseRow = await prisma.propertyPricing.findFirst({
+                where: { subPropertyId: subId, dayType, overrideDate: null, isActive: true },
+            }) || await prisma.propertyPricing.findFirst({
+                where: { subPropertyId: subId, dayType: "weekend", overrideDate: null, isActive: true },
+            });
             await prisma.propertyPricing.create({
-                data: { subPropertyId: subId, propertyId: sp?.propertyId, dayType, basePrice: parseInt(price), overrideDate, specialLabel: `Override ${date}` },
+                data: {
+                    subPropertyId: subId, propertyId: sp?.propertyId, dayType, basePrice: parseInt(price), overrideDate,
+                    specialLabel: `Override ${date}`,
+                    personsLabel: baseRow?.personsLabel || null,
+                    extraAdultPrice: baseRow?.extraAdultPrice || 0,
+                    kidsPrice: baseRow?.kidsPrice || 0,
+                },
             });
         }
         return res.json({ success: true, message: `Price ₹${price} set for ${date}` });
@@ -193,33 +209,41 @@ router.post("/sub/:id/date-pricing", authMiddleware, requireRole("owner", "devel
     }
 });
 
-// PATCH /api/properties/:id/pricing — Update property pricing
+// PATCH /api/properties/:id/pricing — Update property pricing (upsert pattern)
 router.patch("/:id/pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const id = parseInt(req.params.id as string);
-        const { weekday, weekend, saturday, extraGuest } = req.body;
-        
-        const updates = [];
-        if (weekday !== undefined) {
-            updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, subPropertyId: null, dayType: "weekday", isActive: true, overrideDate: null },
-                data: { basePrice: weekday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
-            }));
+        const { weekday, weekend, saturday, extraGuest, extraKid } = req.body;
+
+        const extraFields: any = {};
+        if (extraGuest !== undefined) extraFields.extraAdultPrice = extraGuest;
+        if (extraKid !== undefined) extraFields.kidsPrice = extraKid;
+
+        for (const [dayType, price] of [["weekday", weekday], ["weekend", weekend], ["saturday", saturday]] as [string, number | undefined][]) {
+            if (price === undefined) continue;
+            const existing = await prisma.propertyPricing.findFirst({
+                where: { propertyId: id, subPropertyId: null, dayType, overrideDate: null, isActive: true },
+            });
+            if (existing) {
+                await prisma.propertyPricing.update({
+                    where: { id: existing.id },
+                    data: { basePrice: price, ...extraFields },
+                });
+            } else {
+                await prisma.propertyPricing.create({
+                    data: { propertyId: id, dayType, basePrice: price, extraAdultPrice: extraGuest || 0, kidsPrice: extraKid || 0 },
+                });
+            }
         }
-        if (weekend !== undefined) {
-            updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, subPropertyId: null, dayType: "weekend", isActive: true, overrideDate: null },
-                data: { basePrice: weekend, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
-            }));
+
+        // If only extra charges changed (no base prices), update all existing rows
+        if (Object.keys(extraFields).length > 0 && weekday === undefined && weekend === undefined && saturday === undefined) {
+            await prisma.propertyPricing.updateMany({
+                where: { propertyId: id, subPropertyId: null, overrideDate: null, isActive: true },
+                data: extraFields,
+            });
         }
-        if (saturday !== undefined) {
-            updates.push(prisma.propertyPricing.updateMany({
-                where: { propertyId: id, subPropertyId: null, dayType: "saturday", isActive: true, overrideDate: null },
-                data: { basePrice: saturday, ...(extraGuest !== undefined ? { extraAdultPrice: extraGuest } : {}) },
-            }));
-        }
-        
-        await Promise.all(updates);
+
         return res.json({ success: true });
     } catch (error) {
         console.error("Update pricing error:", error);
@@ -239,7 +263,7 @@ router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer
 
         // Check if override already exists for this date
         const existing = await prisma.propertyPricing.findFirst({
-            where: { propertyId, overrideDate, isActive: true },
+            where: { propertyId, subPropertyId: null, overrideDate, isActive: true },
         });
 
         if (existing) {
@@ -251,6 +275,12 @@ router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer
             // Determine day type from the date
             const dow = overrideDate.getUTCDay();
             const dayType = dow === 6 ? "saturday" : (dow === 0 || dow === 5) ? "weekend" : "weekday";
+            // Inherit fields from base day-type row (or weekend fallback)
+            const baseRow = await prisma.propertyPricing.findFirst({
+                where: { propertyId, subPropertyId: null, dayType, overrideDate: null, isActive: true },
+            }) || await prisma.propertyPricing.findFirst({
+                where: { propertyId, subPropertyId: null, dayType: "weekend", overrideDate: null, isActive: true },
+            });
             await prisma.propertyPricing.create({
                 data: {
                     propertyId,
@@ -258,6 +288,9 @@ router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer
                     basePrice: parseInt(price),
                     overrideDate,
                     specialLabel: `Override ${date}`,
+                    personsLabel: baseRow?.personsLabel || null,
+                    extraAdultPrice: baseRow?.extraAdultPrice || 0,
+                    kidsPrice: baseRow?.kidsPrice || 0,
                 },
             });
         }
