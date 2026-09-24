@@ -215,9 +215,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = is3Oct ? 4 : 2;
                 }
             } else if (propName.includes("Hill View")) {
-                basePrice = 4950; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
+                basePrice = 4000; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
             } else if (propName.includes("Mount View")) {
-                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
+                basePrice = 5000; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
             } else if (propName.includes("Heavenly")) {
                 basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
             } else if (propName.includes("La Paraiso")) {
@@ -229,8 +229,8 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             kidsPrice = lp.kidsCharge;
             baseGuests = lp.baseGuests;
         } else {
-            if (propName.includes("Hill View")) { basePrice = isWeekend ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
-            else if (propName.includes("Mount View")) { basePrice = isWeekend ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+            if (propName.includes("Hill View")) { basePrice = isWeekend ? 3000 : 2000; extraAdultPrice = 600; kidsPrice = 400; }
+            else if (propName.includes("Mount View")) { basePrice = isWeekend ? 4000 : 3000; extraAdultPrice = 800; kidsPrice = 500; }
             else if (propName.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
             else if (propName.includes("La Paraiso")) { basePrice = isWeekend ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWeekend ? 4 : 2; }
             else if (propName.includes("Amstel")) {

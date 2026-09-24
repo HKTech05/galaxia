@@ -189,9 +189,9 @@ function calculateUnitPrice(
                     extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = is3Oct ? 4 : 2;
                 }
             } else if (resolvedProperty.includes("Hill View")) {
-                basePrice = 4950; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
+                basePrice = 4000; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
             } else if (resolvedProperty.includes("Mount View")) {
-                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
+                basePrice = 5000; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
             } else if (resolvedProperty.includes("Heavenly")) {
                 basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
             } else if (resolvedProperty.includes("La Paraiso")) {
@@ -202,8 +202,8 @@ function calculateUnitPrice(
             extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;
         } else {
             // Hardcoded fallback
-            if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3950 : 2500; extraAdultPrice = 600; kidsPrice = 400; }
-            else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4950 : 3500; extraAdultPrice = 800; kidsPrice = 500; }
+            if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3000 : 2000; extraAdultPrice = 600; kidsPrice = 400; }
+            else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4000 : 3000; extraAdultPrice = 800; kidsPrice = 500; }
             else if (resolvedProperty.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
             else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4960; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
             else if (resolvedProperty.includes("Amstel")) {
