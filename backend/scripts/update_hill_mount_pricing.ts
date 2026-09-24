@@ -81,7 +81,7 @@ async function updateHillMountPricing() {
     for (const p of allPricing) {
         const dateStr = p.overrideDate ? p.overrideDate.toISOString().split("T")[0] : "—";
         console.log(
-            `${(p.property.slug).padEnd(12)} | ${(p.dayType || "prime").padEnd(10)} | ${dateStr.padEnd(12)} | Rs ${Number(p.basePrice).toString().padStart(5)} | ${p.personsLabel}`
+            `${(p.property?.slug || "?").padEnd(12)} | ${(p.dayType || "prime").padEnd(10)} | ${dateStr.padEnd(12)} | Rs ${Number(p.basePrice).toString().padStart(5)} | ${p.personsLabel}`
         );
     }
 
