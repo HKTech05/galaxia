@@ -27,6 +27,8 @@ interface CartItem {
     maxKids?: number;
     property?: string; // "amstel-nest" | undefined (Ambrose default)
     unitCount?: number; // Amstel Nest: how many cottages
+    extraAdultRate?: number;
+    kidsRate?: number;
 }
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -275,7 +277,7 @@ export default function BookMultiPage() {
 
         (async () => {
             try {
-                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; personsLabel: string; weekendPersonsLabel?: string; saturdayPersonsLabel?: string }> = {};
+                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; personsLabel: string; weekendPersonsLabel?: string; saturdayPersonsLabel?: string; extraAdultRate?: number; kidsRate?: number }> = {};
 
                 // Fetch Ambrose availability
                 if (ambId) {
@@ -310,6 +312,8 @@ export default function BookMultiPage() {
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || ambParentPersons,
                                     weekendPersonsLabel: (hasSubPricing && spPricing.weekend?.personsLabel) || ambParentWePersons,
                                     saturdayPersonsLabel: (hasSubPricing && spPricing.saturday?.personsLabel) || ambParentSaPersons,
+                                    extraAdultRate: spPricing?.weekday?.extraAdult ?? spPricing?.weekend?.extraAdult ?? ambData.pricing?.weekday?.extraAdult ?? 2000,
+                                    kidsRate: spPricing?.weekday?.kidsPrice ?? spPricing?.weekend?.kidsPrice ?? ambData.pricing?.weekday?.kidsPrice ?? 1000,
                                 };
                             }
                         }
@@ -340,6 +344,8 @@ export default function BookMultiPage() {
                                     saturday: (hasSubPricing && spPricing.saturday?.price) || (isFam ? "12000" : anParentSa),
                                     dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (isFam ? { "2026-08-14": 11000, "2026-08-15": 13500, "2026-10-02": 11000, "2026-10-03": 13000 } : anParentOverrides),
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || anParentPersons,
+                                    extraAdultRate: spPricing?.weekday?.extraAdult ?? spPricing?.weekend?.extraAdult ?? anData.pricing?.weekday?.extraAdult ?? 2000,
+                                    kidsRate: spPricing?.weekday?.kidsPrice ?? spPricing?.weekend?.kidsPrice ?? anData.pricing?.weekday?.kidsPrice ?? 1000,
                                 };
                             }
                         }
@@ -361,6 +367,8 @@ export default function BookMultiPage() {
                                     personsLabel: live.personsLabel,
                                     weekendPersonsLabel: live.weekendPersonsLabel,
                                     saturdayPersonsLabel: live.saturdayPersonsLabel,
+                                    extraAdultRate: live.extraAdultRate,
+                                    kidsRate: live.kidsRate,
                                 };
                             }
                             return item;
@@ -640,8 +648,8 @@ export default function BookMultiPage() {
     const getExtraCharges = (item: CartItem) => {
         const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
         const isAmstel = item.property === "amstel-nest";
-        const extraAdultCharge = 2000;
-        const kidsCharge = 1000;
+        const extraAdultCharge = item.extraAdultRate ?? 2000;
+        const kidsCharge = item.kidsRate ?? 1000;
         const units = item.unitCount || 1;
         // Parse day-type-specific base included persons
         const wdBase = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
@@ -667,8 +675,8 @@ export default function BookMultiPage() {
     const getExtraChargeBreakdown = (item: CartItem) => {
         const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
         const isAmstel = item.property === "amstel-nest";
-        const extraAdultRate = 2000;
-        const kidsRate = 1000;
+        const extraAdultRate = item.extraAdultRate ?? 2000;
+        const kidsRate = item.kidsRate ?? 1000;
         const units = item.unitCount || 1;
         const wdBase = item.personsLabel ? (parseInt(item.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
         const weBase = item.weekendPersonsLabel ? (parseInt(item.weekendPersonsLabel.replace(/[^0-9]/g, '')) || wdBase) : wdBase;
@@ -710,10 +718,10 @@ export default function BookMultiPage() {
             const guests = guestsPerVilla[item.villaId] || { adults: 2, kids: 0 };
             const totalGuests = guests.adults + guests.kids;
             
-            let extraAdultRate = 0;
-            let kidsRate = 0;
-            if (pSlug === "ambrose") { extraAdultRate = 2000; kidsRate = 1000; }
-            else if (pSlug === "la-paraiso") { extraAdultRate = 1200; kidsRate = 800; }
+            let extraAdultRate = item.extraAdultRate ?? 0;
+            let kidsRate = item.kidsRate ?? 0;
+            if (!extraAdultRate && pSlug === "ambrose") { extraAdultRate = 2000; kidsRate = kidsRate || 1000; }
+            else if (!extraAdultRate && pSlug === "la-paraiso") { extraAdultRate = 1200; kidsRate = kidsRate || 800; }
             
             const units = item.unitCount || 1;
             

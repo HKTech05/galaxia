@@ -97,7 +97,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                             weekend: we ? parseInt(we.price) : 0,
                             saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : 0),
                             extraAdult: wd?.extraAdult || 0, 
-                            kidsCharge: 1000, 
+                            kidsCharge: wd?.kidsPrice ?? we?.kidsPrice ?? 0, 
                             baseGuests: personsNum,
                         };
                     }
@@ -116,7 +116,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                     weekend: spWe ? parseInt(spWe.price) : (spWd ? parseInt(spWd.price) : 0),
                                     saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : (spWd ? parseInt(spWd.price) : 0)),
                                     extraAdult: spWd?.extraAdult || spWe?.extraAdult || 2000, 
-                                    kidsCharge: 1000, 
+                                    kidsCharge: spWd?.kidsPrice ?? spWe?.kidsPrice ?? 1000, 
                                     baseGuests: spPersons,
                                 };
                             }

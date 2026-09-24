@@ -490,10 +490,13 @@ export default function BookingClient({ property }: BookingClientProps) {
     const formatPrice = (price: number) => `₹ ${price.toLocaleString('en-IN')}`;
     const formatDateShort = (d: Date) => `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 
-    // Extra person charges
-    const extraAdultCharge = parseInt(property.pricing.extraAdult.replace(/,/g, ""));
+    // Extra person charges — prefer sub-property DB values, then parent DB, then static config
+    const spExtra = effectiveSubPropertyId ? backendData?.subPropertyPricing?.[effectiveSubPropertyId] : null;
+    const liveExtraAdult = spExtra?.weekday?.extraAdult ?? spExtra?.weekend?.extraAdult ?? backendData?.pricing?.weekday?.extraAdult ?? backendData?.pricing?.weekend?.extraAdult;
+    const liveKidsPrice = spExtra?.weekday?.kidsPrice ?? spExtra?.weekend?.kidsPrice ?? backendData?.pricing?.weekday?.kidsPrice ?? backendData?.pricing?.weekend?.kidsPrice;
+    const extraAdultCharge = liveExtraAdult !== undefined && liveExtraAdult !== null ? liveExtraAdult : parseInt(property.pricing.extraAdult.replace(/,/g, ""));
     const kidsChargeStr = property.pricing.kidsCharge;
-    const kidsChargeNum = parseInt(kidsChargeStr.replace(/,/g, ""));
+    const kidsChargeNum = liveKidsPrice !== undefined && liveKidsPrice !== null ? liveKidsPrice : parseInt(kidsChargeStr.replace(/,/g, ""));
 
     // Base included persons from persons label (e.g. "4 with meals" => 4, "2 with meals" => 2, "upto 4 with meals" => 4)
     const weekdayPersons = selectedRoom?.personsLabel ? (parseInt(selectedRoom.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
