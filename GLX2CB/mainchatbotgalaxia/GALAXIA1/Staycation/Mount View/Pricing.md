@@ -32,8 +32,8 @@ Check-out - 10 AM
 *RENT:*
 *PRIME DATES:* 5950/- for 2 Person
 
-*MON to THUR:* 3950/- per night for 2 person + 5%
-*FRI-SUN AND PUBLIC HOLIDAYS:* 4950/- for 2 person + 5%
+*MON to THUR:* 3000/- per night for 2 person + 5%
+*FRI-SUN AND PUBLIC HOLIDAYS:* 4000/- for 2 person + 5%
 
 Food is excluded.
 
@@ -48,8 +48,8 @@ Security deposit Rs 3000/- not included in stay prices, has to be paid during ch
 Once the booking is done, it's non-refundable and non-transferable in any condition.
 
 ## Prime Date Pricing (Excl. 5% GST)
-- **2 October 2026**: ₹5,950 (2 persons)
-- **3 October 2026**: ₹5,950 (2 persons)
+- **2 October 2026**: ₹5,000 (2 persons)
+- **3 October 2026**: ₹5,000 (2 persons)
 
 Google Maps: https://maps.app.goo.gl/1v6azy
 

@@ -296,8 +296,8 @@ ${calendarTable}
       *CYPRESS* (max 3 adults): Mon-Thu *₹5,500* (2p base); Fri-Sun *₹6,500* (2p). Extra Adult *₹2,000*, Kids *₹1,000*. Security deposit: *₹3,000*.
       *BAMBOOSA* (max 10 adults): Mon-Thu *₹10,500* (4p base); Fri/Sun *₹11,500* (4p); Saturday *₹13,000* (4p). Extra Adult *₹2,000*, Kids *₹1,000*. Security deposit: *₹3,000*.
     - **La Paraiso** (max 6 adults, food NOT included): Mon-Thu *₹4,950* (2p), Fri/Sun *₹7,500* (4p), Saturday *₹8,500* (4p), Extra adult *₹1,200*, Kids *₹800*, Sec deposit *₹3,000*.
-    - **Hill View** (max 6 adults, food NOT included): Mon-Thu *₹2,950* (2p), Fri-Sun *₹3,950* (2p), Extra adult *₹600*, Kids *₹400*, Sec deposit *₹2,000*.
-    - **Mount View** (max 6 adults, food NOT included): Mon-Thu *₹3,950* (2p), Fri-Sun *₹4,950* (2p), Extra adult *₹800*, Kids *₹500*, Sec deposit *₹3,000*.
+    - **Hill View** (max 6 adults, food NOT included): Mon-Thu *₹2,000* (2p), Fri-Sun *₹3,000* (2p), Extra adult *₹600*, Kids *₹400*, Sec deposit *₹2,000*.
+    - **Mount View** (max 6 adults, food NOT included): Mon-Thu *₹3,000* (2p), Fri-Sun *₹4,000* (2p), Extra adult *₹800*, Kids *₹500*, Sec deposit *₹3,000*.
     - **Heavenly Villa** (max 3 adults, food NOT included): Mon-Thu *₹3,950* (2p), Fri-Sun *₹4,950* (2p), Extra adult *₹800*, Kids *₹500*, Sec deposit *₹3,000*.
     - **Digital Diaries**: Movie Time (2p): 1h *₹999*, 2h *₹1,500*, 3h *₹2,500*. Celebration Package (2p): 1h *₹2,200*, 2h *₹2,950*, 3h Mon-Thu *₹3,450*, 3h Fri-Sun *₹3,950*. Extra guest *₹300*, Extra hour *₹1,000*.
 30. **Prime Date Pricing (2 & 3 October 2026) — CRITICAL: Override base Fri/Sat rates on these dates (Excl. 5% GST)**:
@@ -306,8 +306,8 @@ ${calendarTable}
     - **Ambrose Cypress**: 2 Oct *₹7,500* (2p), 3 Oct *₹7,500* (2p).
     - **Ambrose Bamboosa**: 2 Oct *₹12,500* (4p), 3 Oct *₹14,000* (4p).
     - **La Paraiso**: 2 Oct *₹8,500* (4p), 3 Oct *₹9,500* (4p).
-    - **Hill View**: 2 Oct *₹4,950*, 3 Oct *₹4,950*.
-    - **Mount View**: 2 Oct *₹5,950*, 3 Oct *₹5,950*.
+    - **Hill View**: 2 Oct *₹4,000*, 3 Oct *₹4,000*.
+    - **Mount View**: 2 Oct *₹5,000*, 3 Oct *₹5,000*.
     - **Heavenly Villa**: 2 Oct *₹5,950*, 3 Oct *₹5,950*.
 31. **Digital Diaries Specific Operational & Policy Rules**:
     - **Staycation Redirect Rule**: Digital Diaries handles ONLY Wadala private cinema screening bookings. If asked about staycation, answer: "For staycation/resort bookings, please visit our staycation contact page for all details and contact numbers: https://www.galaxiaresorts.com/staycation/contact".
@@ -352,8 +352,8 @@ ${calendarTable}
     - If a customer provides check-in/check-out dates (or just dates) WITHOUT specifying any particular property, you MUST respond with a **complete list of ALL available properties for those dates, sorted by lowest price first**.
     - Format: List each property with its per-night base rate for the relevant day type (Mon-Thu / Fri-Sun / Saturday), max occupancy, and a one-line highlight.
     - Example format (adapt prices to the actual day type for the requested dates):
-      1. *Hill View* — from ₹2,950/night (2p, food not included) | Max 6 adults | Mountain-view apartment with society pool
-      2. *Mount View* — from ₹3,950/night (2p, food not included) | Max 6 adults | Private balcony bathtub with mountain views
+      1. *Hill View* — from ₹2,000/night (2p, food not included) | Max 6 adults | Mountain-view apartment with society pool
+      2. *Mount View* — from ₹3,000/night (2p, food not included) | Max 6 adults | Private balcony bathtub with mountain views
       3. *Heavenly Villa* — from ₹3,950/night (2p, food not included) | Max 3 adults | Romantic studio with private indoor pool
       4. *Amstel Nest Standard* — from ₹4,950/night (2p, meals included) | Max 3 adults | Private pool cottage in Karjat
       5. *La Paraiso* — from ₹4,950/night (2p, food not included) | Max 6 adults | Private 25x10ft outdoor pool & gazebo

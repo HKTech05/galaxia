@@ -28,10 +28,10 @@ Check-out - 10 AM
 
 *RENT:*
 *MON to THUR*
-2950/- for 2 person + 5%
+2000/- for 2 person + 5%
 
 *FRI-SUN AND PUBLIC HOLIDAYS*
-3950/- 2 person + 5%
+3000/- 2 person + 5%
 
 600/- per person extra after 2
 Kids age 5 to 12 yrs: -400/-
@@ -44,8 +44,8 @@ Directions: Get down at Karjat station, then take rickshaw directly to property 
 Security deposit Rs 2k not included in stay prices, pay during check-in, refunded at check-out.
 
 ## Prime Date Pricing (Excl. 5% GST)
-- **2 October 2026**: ₹4,950 (2 persons)
-- **3 October 2026**: ₹4,950 (2 persons)
+- **2 October 2026**: ₹4,000 (2 persons)
+- **3 October 2026**: ₹4,000 (2 persons)
 
 ---
 ## Related Notes & Navigation
