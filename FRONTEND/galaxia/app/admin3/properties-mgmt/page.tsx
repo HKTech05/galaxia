@@ -363,21 +363,6 @@ export default function PropertiesMgmtPage() {
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{a.isActive ? "Active" : "Disabled"}</span>
                 </div>
                 <div className="p-5">{renderPrShow(a)}</div>
-                <div className="px-5 pb-4 border-t border-slate-100 pt-4">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-3">Villas ({stdActive}/{stdCount} active)</p>
-                    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">{Array.from({ length: stdCount }, (_, i) => {
-                        const villaNum = i + 1;
-                        const isActive = villaNum <= stdActive;
-                        const stdSub = std[0]; // The sub-property row to update unitCount on
-                        return <button key={i} onClick={async () => {
-                            const newCount = isActive ? stdActive - 1 : stdActive + 1;
-                            try { await api.patch(`/properties/sub/${stdSub.id}/unit-count`, { unitCount: newCount }); await load(); } catch { alert("Failed"); }
-                        }} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold border ${isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'}`}>
-                            <span className="truncate">Villa {villaNum}</span>
-                            {isActive ? <Check size={12} /> : <Ban size={12} />}
-                        </button>;
-                    })}</div>
-                </div>
                 {renderCardBtns(`prop-${a.id}`, () => toggleProp(a), a)}
             </div>
             {/* Family Cottage card */}

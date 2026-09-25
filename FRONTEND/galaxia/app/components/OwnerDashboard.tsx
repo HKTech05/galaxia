@@ -3551,7 +3551,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         celebrationEnabled: !currentConfig.celebrationEnabled
                                     };
                                     try {
-                                        await api.patch(`/properties/${property.id}`, {
+                                        await api.patch(`/properties/${property.id}/config`, {
                                             configuration: newConfig
                                         });
                                         // Update local state

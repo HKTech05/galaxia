@@ -131,6 +131,10 @@ export default function BookMultiPage() {
         }).catch(() => {});
         // Fetch Ambrose property config for celebration toggle
         fetch("/api/properties/ambrose/availability").then(r => r.json()).then(data => {
+            if (data?.isActive === false) {
+                window.location.replace('/staycation/unavailable');
+                return;
+            }
             if (data?.configuration?.celebrationEnabled === true) setCelebrationEnabled(true);
         }).catch(() => {});
     }, []);

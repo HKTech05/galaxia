@@ -160,9 +160,15 @@ export default function AmbroseVillaClient({ parent, villa }: AmbroseVillaClient
                 const res = await fetch(`${baseUrl}/properties/ambrose/availability`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.isActive === false) setIsVillaDisabled(true);
+                    if (data.isActive === false) {
+                        window.location.replace('/staycation/unavailable');
+                        return;
+                    }
                     const sub = (data.subProperties || []).find((sp: any) => sp.id === parseInt(villa.id) || sp.slug === villa.id);
-                    if (sub && sub.isActive === false) setIsVillaDisabled(true);
+                    if (sub && sub.isActive === false) {
+                        window.location.replace('/staycation/unavailable');
+                        return;
+                    }
                     
                     // Use sub-property pricing if available, else parent pricing
                     const subId = sub?.id;

@@ -245,6 +245,14 @@ router.post("/", async (req, res) => {
                 throw new Error("PROPERTY_INACTIVE");
             }
 
+            // 0b. Check if sub-property is active (for Ambrose villas etc.)
+            if (subPropertyId) {
+                const subProp = await tx.subProperty.findUnique({ where: { id: parseInt(subPropertyId) } });
+                if (subProp && !subProp.isActive) {
+                    throw new Error("PROPERTY_INACTIVE");
+                }
+            }
+
             // ── Capacity-aware conflict check ──────────────────────────
             const assignedSubPropertyId = await checkAvailability(
                 tx,

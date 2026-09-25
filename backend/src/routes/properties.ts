@@ -4,6 +4,27 @@ import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 
 const router = Router();
 
+// GET /api/properties/active-slugs — Public: returns slugs of active properties + sub-properties
+router.get("/active-slugs", async (_req, res) => {
+    try {
+        const properties = await prisma.property.findMany({
+            select: { slug: true, isActive: true, subProperties: { select: { slug: true, isActive: true } } },
+        });
+        const result: { slug: string; isActive: boolean; subSlugs?: { slug: string; isActive: boolean }[] }[] = [];
+        for (const p of properties) {
+            result.push({
+                slug: p.slug,
+                isActive: p.isActive,
+                subSlugs: p.subProperties.map(s => ({ slug: s.slug, isActive: s.isActive })),
+            });
+        }
+        return res.json(result);
+    } catch (error) {
+        console.error("Active slugs error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // GET /api/properties/all — Admin: list ALL properties (including inactive)
 router.get("/all", authMiddleware, requireRole("owner", "developer", "manager"), async (_req, res) => {
     try {
@@ -616,8 +637,8 @@ router.get("/:slug/availability", async (req, res) => {
     }
 });
 
-// PATCH /api/properties/:id — Update property configuration (celebration addon toggle, etc.)
-router.patch("/:id", authMiddleware, requireRole("owner", "developer", "manager"), async (req: any, res: any) => {
+// PATCH /api/properties/:id/config — Update property configuration (celebration addon toggle, etc.)
+router.patch("/:id/config", authMiddleware, requireRole("owner", "developer", "manager"), async (req: any, res: any) => {
     try {
         const id = parseInt(req.params.id);
         if (isNaN(id)) return res.status(400).json({ error: "Invalid property ID" });

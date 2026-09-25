@@ -173,7 +173,10 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
                 const res = await fetch(`${baseUrl}/properties/${property.id}/availability`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.isActive === false) setIsPropertyDisabled(true);
+                    if (data.isActive === false) {
+                        window.location.replace('/staycation/unavailable');
+                        return;
+                    }
                     if (data.subProperties) {
                         const status: Record<number, boolean> = {};
                         data.subProperties.forEach((sp: any) => { status[sp.id] = sp.isActive === false; });

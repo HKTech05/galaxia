@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import PhoneAuthModal from "./PhoneAuthModal";
 
-const propertyLinks = [
-    { name: "Ambrose", href: "/staycation/ambrose" },
-    { name: "Amstel Nest", href: "/staycation/amstel-nest" },
-    { name: "La Paraiso", href: "/staycation/la-paraiso" },
-    { name: "Heavenly Villa", href: "/staycation/heavenly-villa" },
-    { name: "Mount View", href: "/staycation/mount-view" },
-    { name: "Hill View", href: "/staycation/hill-view" },
+const allPropertyLinks = [
+    { name: "Ambrose", href: "/staycation/ambrose", slug: "ambrose" },
+    { name: "Amstel Nest", href: "/staycation/amstel-nest", slug: "amstel-nest" },
+    { name: "La Paraiso", href: "/staycation/la-paraiso", slug: "la-paraiso" },
+    { name: "Heavenly Villa", href: "/staycation/heavenly-villa", slug: "heavenly-villa" },
+    { name: "Mount View", href: "/staycation/mount-view", slug: "mount-view" },
+    { name: "Hill View", href: "/staycation/hill-view", slug: "hill-view" },
 ];
 
 const menuItems = [
@@ -27,6 +27,19 @@ export default function StaycationNavbar() {
     const [showPhoneAuth, setShowPhoneAuth] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
+
+    // Fetch active property slugs to hide disabled properties from nav
+    const [propertyLinks, setPropertyLinks] = useState(allPropertyLinks);
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/properties/active-slugs`)
+            .then(r => r.ok ? r.json() : [])
+            .then((data: { slug: string; isActive: boolean }[]) => {
+                if (!data || !Array.isArray(data)) return;
+                const activeSlugs = new Set(data.filter(p => p.isActive).map(p => p.slug));
+                setPropertyLinks(allPropertyLinks.filter(l => activeSlugs.has(l.slug)));
+            })
+            .catch(() => {}); // On error, show all links (safe fallback)
+    }, []);
 
     // Navbar stays visible on all pages including booking
 

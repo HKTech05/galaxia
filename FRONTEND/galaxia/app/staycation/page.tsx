@@ -66,6 +66,28 @@ export default function StaycationPage() {
         }).catch(() => {});
     }, []);
 
+    // Fetch active property slugs to hide disabled properties
+    const [activeSlugs, setActiveSlugs] = useState<Set<string> | null>(null);
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/properties/active-slugs`)
+            .then(r => r.ok ? r.json() : [])
+            .then((data: { slug: string; isActive: boolean; subSlugs?: { slug: string; isActive: boolean }[] }[]) => {
+                if (!data || !Array.isArray(data)) return;
+                const slugs = new Set<string>();
+                for (const p of data) {
+                    if (p.isActive) slugs.add(p.slug);
+                    // For Ambrose sub-villas: add active sub-slugs
+                    if (p.subSlugs) {
+                        for (const s of p.subSlugs) {
+                            if (s.isActive && p.isActive) slugs.add(s.slug);
+                        }
+                    }
+                }
+                setActiveSlugs(slugs);
+            })
+            .catch(() => {});
+    }, []);
+
     const checkAvailability = async () => {
         if (!filterCheckIn || !filterCheckOut) return;
         setFilterLoading(true);
@@ -281,6 +303,8 @@ export default function StaycationPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 stagger-children">
                     {(() => {
                         const visibleProperties = propertiesData.filter(property => {
+                            // Hide properties that are disabled in DB
+                            if (activeSlugs && !activeSlugs.has(property.id)) return false;
                             if (!filterResults) {
                                 // No date chosen: hide subproperties, show main properties
                                 return !property.parentId;

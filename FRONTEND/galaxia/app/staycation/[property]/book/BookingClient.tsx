@@ -148,7 +148,19 @@ export default function BookingClient({ property }: BookingClientProps) {
                 const fetchSlug = property.id.includes('/') ? property.id.split('/')[0] : property.id;
                 const data = await api.get(`/properties/${fetchSlug}/availability`);
                 setBackendData(data);
-                setIsMaintenance(data.isActive === false);
+                if (data.isActive === false) {
+                    window.location.replace('/staycation/unavailable');
+                    return;
+                }
+                // Check if specific sub-property is disabled (e.g. ambrose/bollywood-villa)
+                if (property.id.includes('/') && data.subProperties) {
+                    const villaSlug = property.id.split('/')[1];
+                    const sub = data.subProperties.find((sp: any) => sp.slug === villaSlug || String(sp.id) === villaSlug);
+                    if (!sub || sub.isActive === false) {
+                        window.location.replace('/staycation/unavailable');
+                        return;
+                    }
+                }
                 
                 // If dates were in URL, update rate from backend pricing
                 const ciStr = searchParams.get("checkIn");
