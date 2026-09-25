@@ -459,25 +459,50 @@ export default function Admin1Dashboard() {
     const [editForm, setEditForm] = useState<Record<string, any>>({});
     const [editLoading, setEditLoading] = useState(false);
 
-    // Calculate pricing based on selection
+    // Live DD pricing from DB
+    const [ddLivePkgs, setDdLivePkgs] = useState<any[]>([]);
+    useEffect(() => {
+        api.get<any[]>("/dd/packages").then(pkgs => { if (pkgs) setDdLivePkgs(pkgs); }).catch(() => {});
+    }, []);
+
+    // Calculate pricing based on selection — use live DB prices, fallback to hardcoded
     let basePrice = 0;
     const durNum = parseInt(duration);
 
-    if (packageType === "Movie Time") {
-        if (durNum === 1) basePrice = 999;
-        else if (durNum === 2) basePrice = 1500;
-        else if (durNum === 3) basePrice = 2500;
-        else basePrice = 2500 + ((durNum - 3) * 1000);
-    } else {
+    const livePkg = ddLivePkgs.find(p => p.slug === (packageType === "Movie Time" ? "movie-time" : "celebration"));
+    const liveTier = livePkg?.pricing?.find((t: any) => t.hours === durNum);
+    const liveExtraPerson = livePkg?.extraPersonPrice ?? 300;
+    const liveAddonPricing = livePkg?.addonPricing as Record<string, number> | undefined;
+    const liveExtraHourRate = livePkg?.extraHourRate ?? 1000;
+
+    if (liveTier) {
         const isWeekend = startDate.getDay() === 0 || startDate.getDay() === 6;
-        if (durNum === 1) basePrice = 2200;
-        else if (durNum === 2) basePrice = 2950;
-        else if (durNum === 3) basePrice = isWeekend ? 3950 : 3450;
-        else basePrice = (isWeekend ? 3950 : 3450) + ((durNum - 3) * 1000);
+        basePrice = isWeekend ? liveTier.weekendPrice : liveTier.weekdayPrice;
+    } else if (durNum > 0) {
+        // Overtime: find max tier and add extra hour rate
+        const maxTier = livePkg?.pricing?.length > 0 ? livePkg.pricing[livePkg.pricing.length - 1] : null;
+        if (maxTier) {
+            const isWeekend = startDate.getDay() === 0 || startDate.getDay() === 6;
+            basePrice = (isWeekend ? maxTier.weekendPrice : maxTier.weekdayPrice) + ((durNum - maxTier.hours) * liveExtraHourRate);
+        } else {
+            // Fallback to hardcoded if no DB data
+            if (packageType === "Movie Time") {
+                if (durNum === 1) basePrice = 999;
+                else if (durNum === 2) basePrice = 1500;
+                else if (durNum === 3) basePrice = 2500;
+                else basePrice = 2500 + ((durNum - 3) * 1000);
+            } else {
+                const isWeekend = startDate.getDay() === 0 || startDate.getDay() === 6;
+                if (durNum === 1) basePrice = 2200;
+                else if (durNum === 2) basePrice = 2950;
+                else if (durNum === 3) basePrice = isWeekend ? 3950 : 3450;
+                else basePrice = (isWeekend ? 3950 : 3450) + ((durNum - 3) * 1000);
+            }
+        }
     }
 
-    const extraGuestFee = guestsCount > 2 ? (guestsCount - 2) * 300 : 0;
-    const addOnsCharge = (addBalloons ? 400 : 0) + (addLedBanner ? 400 : 0) + (addCake ? 400 : 0);
+    const extraGuestFee = guestsCount > 2 ? (guestsCount - 2) * liveExtraPerson : 0;
+    const addOnsCharge = (addBalloons ? (liveAddonPricing?.balloons ?? 400) : 0) + (addLedBanner ? (liveAddonPricing?.led_banner ?? 400) : 0) + (addCake ? (liveAddonPricing?.cake ?? 400) : 0);
     // Walk-in coupon discount
     let walkInCouponDiscount = 0;
     if (walkInAppliedCoupon) {
@@ -864,22 +889,38 @@ export default function Admin1Dashboard() {
         const guests = editForm.numGuests || 2;
         const bookingDateStr = editForm.bookingDate || '';
         let calcBase = 0;
-        if (pkgId === 1) { // Movie Time
-            if (durNum === 1) calcBase = 999;
-            else if (durNum === 2) calcBase = 1500;
-            else if (durNum === 3) calcBase = 2500;
-            else calcBase = 2500 + ((durNum - 3) * 1000);
-        } else { // Celebration
-            let isWeekend = false;
-            if (bookingDateStr) {
-                const d = new Date(bookingDateStr + 'T12:00:00');
-                isWeekend = d.getDay() === 0 || d.getDay() === 6;
-            }
-            if (durNum <= 2) calcBase = 2950;
-            else if (durNum === 3) calcBase = isWeekend ? 3950 : 3450;
-            else calcBase = (isWeekend ? 3950 : 3450) + ((durNum - 3) * 1000);
+        // Use live DB pricing
+        const editPkg = ddLivePkgs.find(p => p.id === pkgId) || ddLivePkgs.find(p => p.slug === (pkgId === 1 ? "movie-time" : "celebration"));
+        const editTier = editPkg?.pricing?.find((t: any) => t.hours === durNum);
+        const editExtraRate = editPkg?.extraPersonPrice ?? 300;
+        const editExtraHrRate = editPkg?.extraHourRate ?? 1000;
+        let isWeekend = false;
+        if (bookingDateStr) {
+            const d = new Date(bookingDateStr + 'T12:00:00');
+            isWeekend = d.getDay() === 0 || d.getDay() === 6;
         }
-        const extraFee = guests > 2 ? (guests - 2) * 300 : 0;
+        if (editTier) {
+            calcBase = isWeekend ? editTier.weekendPrice : editTier.weekdayPrice;
+        } else {
+            // Overtime or no DB data
+            const maxTier = editPkg?.pricing?.length > 0 ? editPkg.pricing[editPkg.pricing.length - 1] : null;
+            if (maxTier) {
+                calcBase = (isWeekend ? maxTier.weekendPrice : maxTier.weekdayPrice) + ((durNum - maxTier.hours) * editExtraHrRate);
+            } else {
+                // Fallback to hardcoded
+                if (pkgId === 1) {
+                    if (durNum === 1) calcBase = 999;
+                    else if (durNum === 2) calcBase = 1500;
+                    else if (durNum === 3) calcBase = 2500;
+                    else calcBase = 2500 + ((durNum - 3) * 1000);
+                } else {
+                    if (durNum <= 2) calcBase = 2950;
+                    else if (durNum === 3) calcBase = isWeekend ? 3950 : 3450;
+                    else calcBase = (isWeekend ? 3950 : 3450) + ((durNum - 3) * 1000);
+                }
+            }
+        }
+        const extraFee = guests > 2 ? (guests - 2) * editExtraRate : 0;
         const newTotal = calcBase + extraFee;
         const paid = editForm.amountPaid || 0;
         setEditForm((prev: any) => ({
@@ -890,7 +931,7 @@ export default function Admin1Dashboard() {
             amountToCollect: Math.max(0, newTotal - paid),
         }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showEditModal, editForm.numGuests, editForm.packageId, editForm.durationHours, editForm.bookingDate]);
+    }, [showEditModal, editForm.numGuests, editForm.packageId, editForm.durationHours, editForm.bookingDate, ddLivePkgs]);
 
     // 1. EVENT DETAIL VIEW
     if (activeEvent) {

@@ -79,9 +79,18 @@ export default function PropertiesMgmtPage() {
     const [ddEdit, setDdEdit] = useState<Record<string, { wd: string; we: string; dwd: string; dwe: string }>>({});
     const [ddExEdit, setDdExEdit] = useState<Record<string, string>>({});
     const [ddHrEdit, setDdHrEdit] = useState<Record<string, string>>({});
-    // DD Override
+    // DD Override popup modal
     const [ddOvScreen, setDdOvScreen] = useState<number | null>(null);
     const [ddOvPkg, setDdOvPkg] = useState<number | null>(null);
+    const [ddOvRows, setDdOvRows] = useState<any[]>([]);
+    const [ddOvName, setDdOvName] = useState("");
+    const [ddOvDate, setDdOvDate] = useState("");
+    const [ddOvPrices, setDdOvPrices] = useState<Record<number, string>>({});
+    const [ddOvSaving, setDdOvSaving] = useState(false);
+    const [ddOvMsg, setDdOvMsg] = useState("");
+    // DD View Overrides modal
+    const [ddViewOvPkg, setDdViewOvPkg] = useState<any>(null);
+    const [ddViewOvName, setDdViewOvName] = useState("");
     // View Overrides modal
     const [viewOvKey, setViewOvKey] = useState<string | null>(null);
     const [viewOvProp, setViewOvProp] = useState<any>(null);
@@ -402,6 +411,113 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
+    // DD Override save (popup modal version)
+    const saveDdOverride = async () => {
+        if (!ddOvDate) return alert("Please select a date");
+        const filled = Object.entries(ddOvPrices).filter(([, v]) => v && v.trim() !== "");
+        if (filled.length === 0) return alert("Enter at least one price");
+        setDdOvSaving(true);
+        try {
+            let saved = 0;
+            for (const [id, price] of filled) {
+                await api.post("/properties/dd-override", { pricingId: parseInt(id), date: ddOvDate, price: parseInt(price) });
+                saved++;
+            }
+            setDdOvMsg(`Override saved! (${saved} tier${saved > 1 ? "s" : ""})`);
+            await load();
+            setTimeout(() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); }, 1200);
+        } catch (e: any) { alert("Override failed: " + (e?.message || "Unknown error")); }
+        finally { setDdOvSaving(false); }
+    };
+
+    // DD Override popup modal
+    const renderDdOverrideModal = () => {
+        if (ddOvScreen === null || ddOvPkg === null) return null;
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
+                        <div><h3 className="font-bold text-slate-800">Set Date Override</h3><p className="text-xs text-slate-500">{ddOvName}</p></div>
+                        <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                    </div>
+                    <div className="px-6 py-5 space-y-4">
+                        {ddOvMsg ? <p className="text-sm text-emerald-700 font-bold text-center py-4">✓ {ddOvMsg}</p> : (<>
+                            <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Date</label>
+                                <CustomDatePicker date={ddOvDate ? new Date(ddOvDate + 'T00:00:00') : new Date()} onDateChange={(d) => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); setDdOvDate(`${y}-${m}-${day}`); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase">Override Prices</label>
+                                {ddOvRows.map((pr: any) => (
+                                    <div key={pr.id} className="flex items-center gap-3">
+                                        <span className="text-xs text-slate-600 w-12 shrink-0">{pr.hours}hr{pr.hours > 1 ? "s" : ""}:</span>
+                                        <NI value={ddOvPrices[pr.id] || ""} onChange={v => setDdOvPrices(p => ({ ...p, [pr.id]: v }))} placeholder={`₹${pr.weekdayPrice}`} className="flex-1" />
+                                    </div>
+                                ))}
+                            </div>
+                        </>)}
+                    </div>
+                    {!ddOvMsg && <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+                        <button onClick={saveDdOverride} disabled={ddOvSaving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50">{ddOvSaving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Set Override</button>
+                        <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
+                    </div>}
+                </div>
+            </div>
+        );
+    };
+
+    // DD View Overrides modal
+    const renderDdViewOverridesModal = () => {
+        if (!ddViewOvPkg) return null;
+        // Re-derive fresh data from props
+        const dd = props.find((p: any) => p.slug === "digital-diaries");
+        const freshPkg = dd?.ddPackages?.find((p: any) => p.id === ddViewOvPkg.id) || ddViewOvPkg;
+        const allOverrides: any[] = [];
+        for (const pr of (freshPkg.pricing || [])) {
+            for (const ov of (pr.overrides || [])) {
+                allOverrides.push({ ...ov, hours: pr.hours, tierLabel: `${pr.hours}hr${pr.hours > 1 ? 's' : ''}` });
+            }
+        }
+        allOverrides.sort((a, b) => new Date(a.overrideDate).getTime() - new Date(b.overrideDate).getTime());
+        const deleteDdOverride = async (id: number) => {
+            if (!confirm("Delete this override?")) return;
+            try { await api.delete(`/properties/dd-override/${id}`); await load(); } catch { alert("Failed to delete"); }
+        };
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setDdViewOvPkg(null); setDdViewOvName(""); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-amber-50 shrink-0">
+                        <div><h3 className="font-bold text-slate-800">Date Overrides</h3><p className="text-xs text-slate-500">{ddViewOvName}</p></div>
+                        <button onClick={() => { setDdViewOvPkg(null); setDdViewOvName(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                    </div>
+                    <div className="px-6 py-4 overflow-y-auto flex-1">
+                        {allOverrides.length === 0 ? (
+                            <p className="text-sm text-slate-400 text-center py-8">No date overrides set</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {allOverrides.map((ov: any) => {
+                                    const d = new Date(ov.overrideDate);
+                                    const dateStr = `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}`;
+                                    return (
+                                        <div key={ov.id} className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                                            <div><span className="text-sm font-bold text-slate-700">{dateStr}</span><span className="text-xs text-slate-400 ml-2">({ov.tierLabel})</span></div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-slate-800">₹{ov.price.toLocaleString("en-IN")}</span>
+                                                <button onClick={() => deleteDdOverride(ov.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                    <div className="px-6 py-3 border-t border-slate-100 shrink-0">
+                        <button onClick={() => { setDdViewOvPkg(null); setDdViewOvName(""); }} className="w-full py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     /* ========= DIGITAL DIARIES ========= */
     const DDPage = () => {
         const dd = filtered[0]; if (!dd) return <Empty />;
@@ -505,12 +621,13 @@ export default function PropertiesMgmtPage() {
                                     })}</tbody>
                                 </table>
 
-                                {/* DD Override per package */}
-                                {ddOvScreen === scr.id && ddOvPkg === pkg.id ? (
-                                    <DdOverrideForm rows={rows} onClose={() => { setDdOvScreen(null); setDdOvPkg(null); }} onSaved={load} />
-                                ) : (
-                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); }} className="w-full py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
-                                )}
+                                {/* DD Override + View Overrides buttons */}
+                                <div className="flex gap-2 border-t border-slate-100 px-3 py-2">
+                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvRows(rows); setDdOvName(`${scr.name} — ${pkg.name}`); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="flex-1 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
+                                    {(() => { const ovCount = rows.reduce((n: number, pr: any) => n + (pr.overrides?.length || 0), 0); return (
+                                        <button onClick={() => { setDdViewOvPkg(pkg); setDdViewOvName(`${scr.name} — ${pkg.name}`); }} className="flex-1 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-lg flex items-center justify-center gap-1.5">Overrides{ovCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{ovCount}</span>}</button>
+                                    ); })()}
+                                </div>
                             </div>);
                         })}
 
@@ -575,5 +692,7 @@ export default function PropertiesMgmtPage() {
         {renderEditModal()}
         {renderOverrideModal()}
         {renderViewOverridesModal()}
+        {renderDdOverrideModal()}
+        {renderDdViewOverridesModal()}
     </>);
 }

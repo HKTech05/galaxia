@@ -360,7 +360,9 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
         if (tier) {
             // Check for date-specific override
             if ((tier as any).id && selectedDate) {
-                const dateKey = `${(tier as any).id}-${selectedDate}`;
+                const sd = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+                const dateStr = `${sd.getFullYear()}-${String(sd.getMonth()+1).padStart(2,'0')}-${String(sd.getDate()).padStart(2,'0')}`;
+                const dateKey = `${(tier as any).id}-${dateStr}`;
                 if (ddOverrides[dateKey] !== undefined) return ddOverrides[dateKey];
             }
             return weekend ? tier.weekend : tier.weekday;

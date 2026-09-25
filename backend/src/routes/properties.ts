@@ -79,7 +79,7 @@ router.get("/all-nested", authMiddleware, requireRole("owner", "developer", "man
         const ddScreens = await prisma.ddScreen.findMany({ orderBy: { displayOrder: "asc" } });
         const ddPackages = await prisma.ddPackage.findMany({
             where: { isActive: true },
-            include: { pricing: { orderBy: { hours: "asc" } } },
+            include: { pricing: { orderBy: { hours: "asc" }, include: { overrides: true } } },
         });
 
         // Attach DD data to the Digital Diaries property
@@ -374,6 +374,20 @@ router.post("/dd-override", authMiddleware, requireRole("owner", "developer", "m
         return res.json({ success: true, message: `DD override set to ₹${price} for ${date}`, override });
     } catch (error) {
         console.error("DD override error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// DELETE /api/properties/dd-override/:id — Delete a specific DD pricing override
+router.delete("/dd-override/:id", authMiddleware, requireRole("owner", "developer", "manager"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const row = await prisma.ddPricingOverride.findUnique({ where: { id } });
+        if (!row) return res.status(404).json({ error: "DD override not found" });
+        await prisma.ddPricingOverride.delete({ where: { id } });
+        return res.json({ success: true, message: "DD override deleted" });
+    } catch (error) {
+        console.error("Delete DD override error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
