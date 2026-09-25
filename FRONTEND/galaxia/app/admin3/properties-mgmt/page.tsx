@@ -264,9 +264,12 @@ export default function PropertiesMgmtPage() {
     // View Overrides modal — shows all date overrides with delete button
     const renderViewOverridesModal = () => {
         if (!viewOvKey || !viewOvProp) return null;
-        const pricing = viewOvSub?.pricing?.length > 0 ? viewOvSub.pricing : (viewOvProp.pricing || []).filter((t: any) => viewOvSub ? t.subPropertyId === viewOvSub.id : !t.subPropertyId);
+        // Re-derive fresh data from props state so it updates after delete+reload
+        const freshProp = props.find((p: any) => p.id === viewOvProp.id) || viewOvProp;
+        const freshSub = viewOvSub ? (freshProp.subProperties || []).find((s: any) => s.id === viewOvSub.id) || viewOvSub : null;
+        const pricing = freshSub?.pricing?.length > 0 ? freshSub.pricing : (freshProp.pricing || []).filter((t: any) => freshSub ? t.subPropertyId === freshSub.id : !t.subPropertyId);
         const overrides = pricing.filter((t: any) => t.overrideDate).sort((a: any, b: any) => new Date(a.overrideDate).getTime() - new Date(b.overrideDate).getTime());
-        const propName = viewOvSub?.name || viewOvProp.name;
+        const propName = freshSub?.name || freshProp.name;
         const deleteOverride = async (id: number) => {
             if (!confirm("Delete this override?")) return;
             try { await api.delete(`/properties/pricing/${id}`); await load(); } catch { alert("Failed to delete"); }
@@ -317,7 +320,7 @@ export default function PropertiesMgmtPage() {
             <button onClick={() => { setModalPropName(name); setOverrideId(editKey); setOvDate(""); setOvPrice(""); setOvMsg(""); }}
                 className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-indigo-600 hover:border-indigo-200 shadow-sm"><Calendar size={14} /> Override</button>
             <button onClick={() => { setViewOvKey(editKey); setViewOvProp(prop); setViewOvSub(sub || null); }}
-                className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-amber-600 hover:border-amber-200 shadow-sm"><Eye size={14} /> Overrides{ovCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{ovCount}</span>}</button>
+                className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-amber-600 hover:border-amber-200 shadow-sm">Overrides{ovCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{ovCount}</span>}</button>
             <button onClick={onToggle} className="flex items-center justify-center gap-1.5 py-2 px-3 border rounded-lg text-sm font-semibold shadow-sm bg-white border-red-200 text-red-600 hover:bg-red-50"><Power size={14} /></button>
         </div>);
     };
