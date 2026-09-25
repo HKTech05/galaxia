@@ -464,6 +464,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 dbPersons = backendData.pricing.weekday?.personsLabel;
                 dbWePersons = backendData.pricing.weekend?.personsLabel;
                 dbSaPersons = backendData.pricing.saturday?.personsLabel;
+                if (backendData.pricing.dateOverrides && Object.keys(backendData.pricing.dateOverrides).length > 0) dbDateOverrides = backendData.pricing.dateOverrides;
             }
             return [{
                 id: property.id,

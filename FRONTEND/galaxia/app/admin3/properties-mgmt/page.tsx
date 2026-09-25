@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus } from "lucide-react";
+import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus, Trash2, Eye } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
@@ -82,6 +82,12 @@ export default function PropertiesMgmtPage() {
     // DD Override
     const [ddOvScreen, setDdOvScreen] = useState<number | null>(null);
     const [ddOvPkg, setDdOvPkg] = useState<number | null>(null);
+    // View Overrides modal
+    const [viewOvKey, setViewOvKey] = useState<string | null>(null);
+    const [viewOvProp, setViewOvProp] = useState<any>(null);
+    const [viewOvSub, setViewOvSub] = useState<any>(null);
+    // Modal property name for edit/override titles
+    const [modalPropName, setModalPropName] = useState("");
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -200,39 +206,118 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
-    // Render inline to avoid React unmounting on re-render (no component identity change)
-    const renderEditForm = (editKey: string) => {
-        if (editId !== editKey) return null;
+    // Edit modal — centered popup overlay
+    const renderEditModal = () => {
+        if (!editId) return null;
         const hasSat = !!editPr.has_saturday;
         const dayTypes = hasSat
             ? [{ key: "weekday", label: "Mon-Thu" }, { key: "weekend", label: "Fri/Sun" }, { key: "saturday", label: "Saturday" }]
             : [{ key: "weekday", label: "Mon-Thu" }, { key: "weekend", label: "Fri/Sat/Sun" }];
-        return (<div className="p-4 space-y-3 border-t border-slate-100 bg-purple-50/30">
-            {dayTypes.map(dt => (<div key={dt.key} className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">{dt.label}</label><NI value={editPr[`${dt.key}_base`] || ""} onChange={v => setEditPr(prev => ({ ...prev, [`${dt.key}_base`]: v }))} /></div>))}
-            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Adult (per person)</label><NI value={editPr.weekday_extra || ""} onChange={v => setEditPr(prev => ({ ...prev, weekday_extra: v }))} /></div>
-            <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Extra Kid (per child)</label><NI value={editPr.extra_kid || ""} onChange={v => setEditPr(prev => ({ ...prev, extra_kid: v }))} /></div>
-            <div className="flex gap-2"><button onClick={saveEdit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button><button onClick={() => setEditId(null)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button></div>
-        </div>);
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditId(null)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-purple-50">
+                        <div><h3 className="font-bold text-slate-800">Edit Pricing</h3>{modalPropName && <p className="text-xs text-slate-500">{modalPropName}</p>}</div>
+                        <button onClick={() => setEditId(null)} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                    </div>
+                    <div className="px-6 py-5 space-y-4">
+                        {dayTypes.map(dt => (<div key={dt.key} className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">{dt.label}</label><NI value={editPr[`${dt.key}_base`] || ""} onChange={v => setEditPr(prev => ({ ...prev, [`${dt.key}_base`]: v }))} /></div>))}
+                        <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Extra Adult (per person)</label><NI value={editPr.weekday_extra || ""} onChange={v => setEditPr(prev => ({ ...prev, weekday_extra: v }))} /></div>
+                        <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Extra Kid (per child)</label><NI value={editPr.extra_kid || ""} onChange={v => setEditPr(prev => ({ ...prev, extra_kid: v }))} /></div>
+                    </div>
+                    <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+                        <button onClick={saveEdit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 disabled:opacity-50">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
+                        <button onClick={() => setEditId(null)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
-    const renderOverrideUI = (oKey: string) => {
-        if (overrideId !== oKey) return null;
-        return (<div className="px-5 py-4 bg-indigo-50/50 border-t border-indigo-100 space-y-3">
-            {ovMsg ? <p className="text-sm text-emerald-700 font-bold text-center py-2">✓ {ovMsg}</p> : (<>
-                <p className="text-[10px] font-bold text-indigo-600 uppercase">Set Price for Specific Date</p>
-                <div className="flex gap-2 items-center"><CustomDatePicker date={ovDate ? new Date(ovDate + 'T00:00:00') : new Date()} onDateChange={(d) => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); setOvDate(`${y}-${m}-${day}`); }} /><NI value={ovPrice} onChange={setOvPrice} placeholder="Price" className="flex-1" /></div>
-                <button onClick={saveOverride} className="w-full py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700"><Plus size={14} className="inline mr-1" />Set Override</button>
-            </>)}
-        </div>);
+    // Override modal — centered popup overlay
+    const renderOverrideModal = () => {
+        if (!overrideId) return null;
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setOverrideId(null); setOvMsg(""); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
+                        <div><h3 className="font-bold text-slate-800">Set Date Override</h3>{modalPropName && <p className="text-xs text-slate-500">{modalPropName}</p>}</div>
+                        <button onClick={() => { setOverrideId(null); setOvMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                    </div>
+                    <div className="px-6 py-5 space-y-4">
+                        {ovMsg ? <p className="text-sm text-emerald-700 font-bold text-center py-4">✓ {ovMsg}</p> : (<>
+                            <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Date</label>
+                                <CustomDatePicker date={ovDate ? new Date(ovDate + 'T00:00:00') : new Date()} onDateChange={(d) => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); setOvDate(`${y}-${m}-${day}`); }} />
+                            </div>
+                            <div className="space-y-1"><label className="text-xs font-bold text-slate-500 uppercase">Override Price</label><NI value={ovPrice} onChange={setOvPrice} placeholder="Price" /></div>
+                        </>)}
+                    </div>
+                    {!ovMsg && <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+                        <button onClick={saveOverride} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700"><Plus size={14} /> Set Override</button>
+                        <button onClick={() => { setOverrideId(null); setOvMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
+                    </div>}
+                </div>
+            </div>
+        );
+    };
+
+    // View Overrides modal — shows all date overrides with delete button
+    const renderViewOverridesModal = () => {
+        if (!viewOvKey || !viewOvProp) return null;
+        const pricing = viewOvSub?.pricing?.length > 0 ? viewOvSub.pricing : (viewOvProp.pricing || []).filter((t: any) => viewOvSub ? t.subPropertyId === viewOvSub.id : !t.subPropertyId);
+        const overrides = pricing.filter((t: any) => t.overrideDate).sort((a: any, b: any) => new Date(a.overrideDate).getTime() - new Date(b.overrideDate).getTime());
+        const propName = viewOvSub?.name || viewOvProp.name;
+        const deleteOverride = async (id: number) => {
+            if (!confirm("Delete this override?")) return;
+            try { await api.delete(`/properties/pricing/${id}`); await load(); } catch { alert("Failed to delete"); }
+        };
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setViewOvKey(null); setViewOvProp(null); setViewOvSub(null); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-amber-50 shrink-0">
+                        <div><h3 className="font-bold text-slate-800">Date Overrides</h3><p className="text-xs text-slate-500">{propName}</p></div>
+                        <button onClick={() => { setViewOvKey(null); setViewOvProp(null); setViewOvSub(null); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                    </div>
+                    <div className="px-6 py-4 overflow-y-auto flex-1">
+                        {overrides.length === 0 ? (
+                            <p className="text-sm text-slate-400 text-center py-8">No date overrides set</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {overrides.map((ov: any) => {
+                                    const d = new Date(ov.overrideDate);
+                                    const dateStr = `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}`;
+                                    return (
+                                        <div key={ov.id} className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                                            <div><span className="text-sm font-bold text-slate-700">{dateStr}</span><span className="text-xs text-slate-400 ml-2">({ov.dayType})</span></div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-slate-800">₹{ov.basePrice.toLocaleString("en-IN")}</span>
+                                                <button onClick={() => deleteOverride(ov.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                    <div className="px-6 py-3 border-t border-slate-100 shrink-0">
+                        <button onClick={() => { setViewOvKey(null); setViewOvProp(null); setViewOvSub(null); }} className="w-full py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Close</button>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const renderCardBtns = (editKey: string, onToggle: () => void, prop: any, sub?: any) => {
-        if (editId === editKey) return null;
+        const name = sub?.name || prop.name;
+        const pricing = sub?.pricing?.length > 0 ? sub.pricing : (prop.pricing || []).filter((t: any) => sub ? t.subPropertyId === sub.id : !t.subPropertyId);
+        const ovCount = pricing.filter((t: any) => t.overrideDate).length;
         return (<div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex gap-2 flex-wrap">
-            <button onClick={() => startEdit(editKey, prop, sub)}
-                className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:text-purple-600 hover:border-purple-200 shadow-sm"><Edit3 size={14} /> Edit</button>
-            <button onClick={() => { setOverrideId(overrideId === editKey ? null : editKey); setOvDate(""); setOvPrice(""); setOvMsg(""); }}
-                className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-indigo-600 hover:border-indigo-200 shadow-sm"><Calendar size={14} /> Override</button>
+            <button onClick={() => { setModalPropName(name); startEdit(editKey, prop, sub); }}
+                className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:text-purple-600 hover:border-purple-200 shadow-sm"><Edit3 size={14} /> Edit</button>
+            <button onClick={() => { setModalPropName(name); setOverrideId(editKey); setOvDate(""); setOvPrice(""); setOvMsg(""); }}
+                className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-indigo-600 hover:border-indigo-200 shadow-sm"><Calendar size={14} /> Override</button>
+            <button onClick={() => { setViewOvKey(editKey); setViewOvProp(prop); setViewOvSub(sub || null); }}
+                className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-amber-600 hover:border-amber-200 shadow-sm"><Eye size={14} /> Overrides{ovCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{ovCount}</span>}</button>
             <button onClick={onToggle} className="flex items-center justify-center gap-1.5 py-2 px-3 border rounded-lg text-sm font-semibold shadow-sm bg-white border-red-200 text-red-600 hover:bg-red-50"><Power size={14} /></button>
         </div>);
     };
@@ -246,7 +331,7 @@ export default function PropertiesMgmtPage() {
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{p.isActive ? "Active" : "Disabled"}</span>
             </div>
             <div className="p-5">{renderPrShow(p)}</div>
-            {renderEditForm(k)}{renderCardBtns(k, () => toggleProp(p), p)}{renderOverrideUI(k)}
+            {renderCardBtns(k, () => toggleProp(p), p)}
         </div>);
     };
 
@@ -281,9 +366,7 @@ export default function PropertiesMgmtPage() {
                         </button>;
                     })}</div>
                 </div>
-                {renderEditForm(`prop-${a.id}`)}
                 {renderCardBtns(`prop-${a.id}`, () => toggleProp(a), a)}
-                {renderOverrideUI(`prop-${a.id}`)}
             </div>
             {/* Family Cottage card */}
             {fam && (<div className="bg-white border border-slate-200 rounded-2xl overflow-visible shadow-sm">
@@ -292,9 +375,7 @@ export default function PropertiesMgmtPage() {
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${fam.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{fam.isActive ? "Active" : "Disabled"}</span>
                 </div>
                 <div className="p-5">{renderPrShow(a, fam)}</div>
-                {renderEditForm(`sub-${fam.id}`)}
                 {renderCardBtns(`sub-${fam.id}`, () => toggleSub(fam.id), a, fam)}
-                {renderOverrideUI(`sub-${fam.id}`)}
             </div>)}
         </div>);
     };
@@ -312,9 +393,7 @@ export default function PropertiesMgmtPage() {
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${v.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{v.isActive ? "Active" : "Disabled"}</span>
                     </div>
                     <div className="p-5">{renderPrShow(a, v)}</div>
-                    {renderEditForm(k)}
                     {renderCardBtns(k, () => toggleSub(v.id), a, v)}
-                    {renderOverrideUI(k)}
                 </div>);
             })}
         </div>);
@@ -479,14 +558,19 @@ export default function PropertiesMgmtPage() {
 
     const Empty = () => <div className="text-center py-20 text-slate-500">No properties found.</div>;
 
-    return (<div className="max-w-7xl mx-auto space-y-6">
-        <div><h1 className="text-2xl font-bold text-slate-800">Properties Management</h1><p className="text-sm text-slate-500 mt-1">Manage pricing, availability, and sub-properties.</p></div>
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">{tabs.map(t => <button key={t.key} onClick={() => { setTab(t.key); setEditId(null); setOverrideId(null); }} className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t.label}</button>)}</div>
-        {loading ? <div className="flex flex-col items-center py-20"><Loader2 className="animate-spin text-purple-500" size={32} /><p className="text-sm text-slate-500 mt-3">Loading…</p></div>
-            : tab === "amstelnest" ? <AmstelNest />
-            : tab === "ambrose" ? <AmbrosePage />
-            : tab === "digitaldiaries" ? <DDPage />
-            : filtered.length === 0 ? <Empty />
-            : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{filtered.map(p => renderVillaCard(p))}</div>}
-    </div>);
+    return (<>
+        <div className="max-w-7xl mx-auto space-y-6">
+            <div><h1 className="text-2xl font-bold text-slate-800">Properties Management</h1><p className="text-sm text-slate-500 mt-1">Manage pricing, availability, and sub-properties.</p></div>
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">{tabs.map(t => <button key={t.key} onClick={() => { setTab(t.key); setEditId(null); setOverrideId(null); }} className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t.label}</button>)}</div>
+            {loading ? <div className="flex flex-col items-center py-20"><Loader2 className="animate-spin text-purple-500" size={32} /><p className="text-sm text-slate-500 mt-3">Loading…</p></div>
+                : tab === "amstelnest" ? <AmstelNest />
+                : tab === "ambrose" ? <AmbrosePage />
+                : tab === "digitaldiaries" ? <DDPage />
+                : filtered.length === 0 ? <Empty />
+                : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{filtered.map(p => renderVillaCard(p))}</div>}
+        </div>
+        {renderEditModal()}
+        {renderOverrideModal()}
+        {renderViewOverridesModal()}
+    </>);
 }

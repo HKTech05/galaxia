@@ -302,6 +302,21 @@ router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer
     }
 });
 
+// DELETE /api/properties/pricing/:id — Delete a specific pricing override row
+router.delete("/pricing/:id", authMiddleware, requireRole("owner", "developer", "manager"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const row = await prisma.propertyPricing.findUnique({ where: { id } });
+        if (!row) return res.status(404).json({ error: "Pricing row not found" });
+        if (!row.overrideDate) return res.status(400).json({ error: "Cannot delete base pricing row. Use edit instead." });
+        await prisma.propertyPricing.delete({ where: { id } });
+        return res.json({ success: true, message: "Override deleted" });
+    } catch (error) {
+        console.error("Delete pricing error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // PATCH /api/properties/dd-screen/:id/toggle — Toggle DD screen active status
 router.patch("/dd-screen/:id/toggle", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
