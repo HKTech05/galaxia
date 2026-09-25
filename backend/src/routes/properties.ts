@@ -4,19 +4,24 @@ import { authMiddleware, AuthRequest, requireRole } from "../middleware/auth";
 
 const router = Router();
 
-// GET /api/properties/active-slugs — Public: returns slugs of active properties + sub-properties
+// GET /api/properties/active-slugs — Public: returns slugs of active properties + sub-properties + DD screens
 router.get("/active-slugs", async (_req, res) => {
     try {
         const properties = await prisma.property.findMany({
             select: { slug: true, isActive: true, subProperties: { select: { slug: true, isActive: true } } },
         });
-        const result: { slug: string; isActive: boolean; subSlugs?: { slug: string; isActive: boolean }[] }[] = [];
+        const result: { slug: string; isActive: boolean; type?: string; subSlugs?: { slug: string; isActive: boolean }[] }[] = [];
         for (const p of properties) {
             result.push({
                 slug: p.slug,
                 isActive: p.isActive,
                 subSlugs: p.subProperties.map(s => ({ slug: s.slug, isActive: s.isActive })),
             });
+        }
+        // DD Screens
+        const screens = await prisma.ddScreen.findMany({ select: { slug: true, isActive: true } });
+        for (const s of screens) {
+            result.push({ slug: s.slug, isActive: s.isActive, type: "dd-screen" });
         }
         return res.json(result);
     } catch (error) {

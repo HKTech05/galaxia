@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import PhoneAuthModal from "./PhoneAuthModal";
 
-const screenLinks = [
-    { name: "Sandy Screen", href: "/celebration/movie-time/sandy-screen" },
-    { name: "Cine Love", href: "/celebration/movie-time/cine-love" },
-    { name: "Park N Watch", href: "/celebration/movie-time/park-n-watch" },
-    { name: "Baywatch", href: "/celebration/movie-time/baywatch" },
+const allScreenLinks = [
+    { name: "Sandy Screen", href: "/celebration/movie-time/sandy-screen", slug: "sandy-screen" },
+    { name: "Cine Love", href: "/celebration/movie-time/cine-love", slug: "cine-love" },
+    { name: "Park N Watch", href: "/celebration/movie-time/park-n-watch", slug: "park-n-watch" },
+    { name: "Baywatch", href: "/celebration/movie-time/baywatch", slug: "baywatch" },
 ];
 
 export default function CelebrationNavbar() {
@@ -18,6 +18,20 @@ export default function CelebrationNavbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+
+    // Fetch active DD screen slugs to hide disabled screens from nav
+    const [screenLinks, setScreenLinks] = useState(allScreenLinks);
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/properties/active-slugs`)
+            .then(r => r.ok ? r.json() : [])
+            .then((data: { slug: string; isActive: boolean; type?: string }[]) => {
+                if (!data || !Array.isArray(data)) return;
+                const activeDdSlugs = new Set(data.filter(p => p.type === "dd-screen" && p.isActive).map(p => p.slug));
+                if (activeDdSlugs.size === 0) return; // No DD data yet, show all
+                setScreenLinks(allScreenLinks.filter(l => activeDdSlugs.has(l.slug)));
+            })
+            .catch(() => {}); // On error, show all links
+    }, []);
 
     return (
         <>

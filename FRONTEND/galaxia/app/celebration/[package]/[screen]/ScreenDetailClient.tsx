@@ -20,7 +20,18 @@ export default function ScreenDetailClient({ pkg, screen }: ScreenDetailClientPr
         fetch("/api/site-images").then(r => r.json()).then(data => {
             if (data && typeof data === 'object') setSiteImages(data);
         }).catch(() => {});
-    }, []);
+        // Check if this screen is active
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/dd/screens`)
+            .then(r => r.ok ? r.json() : [])
+            .then((screens: { slug: string; isActive: boolean }[]) => {
+                if (!screens || !Array.isArray(screens)) return;
+                const thisScreen = screens.find(s => s.slug === screen.id);
+                if (thisScreen && !thisScreen.isActive) {
+                    window.location.replace('/celebration/unavailable');
+                }
+            })
+            .catch(() => {});
+    }, [screen.id]);
 
     // Use per-package per-screen slideshow from API, fall back to static gallery
     const apiGallery = (siteImages[`dd/${screen.id}/${pkg.id}/slideshow`] || []).map(i => i.url);

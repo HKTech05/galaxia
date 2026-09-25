@@ -210,11 +210,17 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
                 const dbPackage = packages.find((p: any) => p.slug === pkg.id);
                 if (dbScreen) {
                     setDbScreenId(dbScreen.id);
-                    if (dbScreen.isActive === false) setIsScreenDisabled(true);
+                    if (dbScreen.isActive === false) {
+                        window.location.replace('/celebration/unavailable');
+                        return;
+                    }
                 }
                 if (dbPackage) {
                     setDbPackageId(dbPackage.id);
-                    if (dbPackage.isActive === false) setIsPackageDisabled(true);
+                    if (dbPackage.isActive === false) {
+                        window.location.replace('/celebration/unavailable');
+                        return;
+                    }
                     // Use live pricing from DB
                     if (dbPackage.pricing && dbPackage.pricing.length > 0) {
                         setLivePricing(dbPackage.pricing.map((p: any) => ({

@@ -34,10 +34,19 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
 
     // Site images from admin panel
     const [siteImages, setSiteImages] = useState<Record<string, { id: number; url: string }[]>>({});
+    const [activeScreenSlugs, setActiveScreenSlugs] = useState<Set<string> | null>(null);
     useEffect(() => {
         fetch("/api/site-images").then(r => r.json()).then(data => {
             if (data && typeof data === 'object') setSiteImages(data);
         }).catch(() => {});
+        // Fetch active screen slugs to hide disabled screens
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/dd/screens`)
+            .then(r => r.ok ? r.json() : [])
+            .then((data: { slug: string; isActive: boolean }[]) => {
+                if (!data || !Array.isArray(data)) return;
+                setActiveScreenSlugs(new Set(data.filter(s => s.isActive).map(s => s.slug)));
+            })
+            .catch(() => {});
     }, []);
 
     // Package slug determines which sub-key to use (movie-time or celebration)
@@ -138,7 +147,7 @@ export default function PackageDetailClient({ pkg, screens }: PackageDetailClien
                         <h2 className="font-cinzel text-xl sm:text-2xl md:text-3xl font-semibold text-cel-text">Where Would You Like to Watch?</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-                        {screens.map((screen) => {
+                        {screens.filter(s => !activeScreenSlugs || activeScreenSlugs.has(s.id)).map((screen) => {
                             const screenThumb = (siteImages[`dd/${screen.id}/${pkgKey}/thumbnail`] || [])[0]?.url || screen.image;
                             return (
                             <Link key={screen.id} href={`/celebration/${pkg.id}/${screen.id}`} className="group block">

@@ -177,6 +177,12 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
+        // Check if screen is active
+        const screen = await prisma.ddScreen.findUnique({ where: { id: parseInt(screenId) } });
+        if (screen && !screen.isActive) {
+            return res.status(400).json({ error: "This screen is currently unavailable" });
+        }
+
         // Extract logged-in user ID from token
         let loggedInUserId: number | null = null;
         const authHeader = req.headers.authorization;
