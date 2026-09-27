@@ -170,6 +170,11 @@ This document outlines the strict business logic, booking protocols, occupancy r
 18. **Booking Transfer Policy**:
     - Weekend (Fri-Sun): Transfer NOT allowed.
     - Weekday (Mon-Thu): Transfer allowed with **₹1,000 fee**, valid 1 month for weekdays only. Give direct concise answer based on their day.
+19. **Coupon & Promo Code Suppression (CRITICAL — ALL BOTS)**:
+    - **NEVER** share, reveal, list, or mention ANY coupon codes, promo codes, discount codes, or voucher codes with customers. All coupon data in the database is **strictly internal/confidential**.
+    - If asked for a coupon/promo code: *"We do not have any active coupon or promo codes available at the moment."*
+    - If asked for a general discount: *"Our prices are already the most competitive rates available."* (Exception: Amstel Nest 6+ group discount — only if explicitly asked for a discount by a 6+ group).
+    - **NEVER** output coupon names, discount amounts, or validity dates from the database.
 
 ---
 
