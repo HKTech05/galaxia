@@ -331,23 +331,37 @@ export default function PropertiesMgmtPage() {
 
     // Build flat list of all staycation properties for Master Override
     const getAllStayProperties = () => {
-        const items: { key: string; name: string; type: "prop" | "sub"; id: number; currentPrice: string }[] = [];
+        const items: { key: string; name: string; type: "prop" | "sub"; id: number; prices: { weekday: number; weekend: number; saturday: number } }[] = [];
         for (const p of props) {
             if (p.type === "dd" || p.slug === "digital-diaries") continue;
             if (p.slug === "ambrose" || p.slug === "amstel-nest") {
                 for (const sp of (p.subProperties || [])) {
                     const parentLabel = p.slug === "ambrose" ? "Ambrose" : "Amstel Nest";
                     const spPricing = sp.pricing?.length > 0 ? sp.pricing : (p.pricing || []).filter((t: any) => t.subPropertyId === sp.id);
-                    const baseWd = spPricing.find((t: any) => t.dayType === "weekday" && !t.overrideDate);
-                    items.push({ key: `sub-${sp.id}`, name: `${sp.name} (${parentLabel})`, type: "sub", id: sp.id, currentPrice: String(baseWd?.basePrice || "") });
+                    const base = spPricing.filter((t: any) => !t.overrideDate);
+                    const wd = base.find((t: any) => t.dayType === "weekday")?.basePrice || 0;
+                    const we = base.find((t: any) => t.dayType === "weekend")?.basePrice || 0;
+                    const sa = base.find((t: any) => t.dayType === "saturday")?.basePrice || we;
+                    items.push({ key: `sub-${sp.id}`, name: `${sp.name} (${parentLabel})`, type: "sub", id: sp.id, prices: { weekday: wd, weekend: we, saturday: sa } });
                 }
             } else {
                 const basePricing = (p.pricing || []).filter((t: any) => !t.subPropertyId && !t.overrideDate);
-                const baseWd = basePricing.find((t: any) => t.dayType === "weekday");
-                items.push({ key: `prop-${p.id}`, name: p.name, type: "prop", id: p.id, currentPrice: String(baseWd?.basePrice || "") });
+                const wd = basePricing.find((t: any) => t.dayType === "weekday")?.basePrice || 0;
+                const we = basePricing.find((t: any) => t.dayType === "weekend")?.basePrice || 0;
+                const sa = basePricing.find((t: any) => t.dayType === "saturday")?.basePrice || we;
+                items.push({ key: `prop-${p.id}`, name: p.name, type: "prop", id: p.id, prices: { weekday: wd, weekend: we, saturday: sa } });
             }
         }
         return items;
+    };
+
+    // Get day type label for a date string
+    const getDayType = (dateStr: string): { type: "weekday" | "weekend" | "saturday"; label: string } => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const day = d.getDay();
+        if (day === 6) return { type: "saturday", label: "Sat" };
+        if (day === 0 || day === 5) return { type: "weekend", label: day === 5 ? "Fri" : "Sun" };
+        return { type: "weekday", label: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][day] };
     };
 
     // Generate dates from single or range
@@ -369,22 +383,31 @@ export default function PropertiesMgmtPage() {
         const dates = getMasterDates();
         if (dates.length === 0) return alert("Select at least one date");
         const selected = Array.from(masterOvSelected);
-        const toSave = selected.filter(k => masterOvPrices[k] && masterOvPrices[k].trim() !== "");
-        if (toSave.length === 0) return alert("Enter at least one price");
+        // Collect all property|date combos that have a price
+        const saves: { type: string; id: string; date: string; price: number }[] = [];
+        for (const key of selected) {
+            const [type, idStr] = key.split("-");
+            for (const date of dates) {
+                const priceKey = `${key}|${date}`;
+                const val = masterOvPrices[priceKey];
+                if (val && val.trim() !== "") {
+                    const price = parseInt(val);
+                    if (!isNaN(price) && price > 0) saves.push({ type, id: idStr, date, price });
+                }
+            }
+        }
+        if (saves.length === 0) return alert("Enter at least one price");
         setMasterOvSaving(true);
         try {
             let count = 0;
-            for (const key of toSave) {
-                const [type, idStr] = key.split("-");
-                const price = parseInt(masterOvPrices[key]);
-                if (isNaN(price) || price <= 0) continue;
-                for (const date of dates) {
-                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
-                    await api.post(endpoint, { date, price });
-                    count++;
-                }
+            for (const s of saves) {
+                const endpoint = s.type === "sub" ? `/properties/sub/${s.id}/date-pricing` : `/properties/${s.id}/date-pricing`;
+                await api.post(endpoint, { date: s.date, price: s.price });
+                count++;
             }
-            setMasterOvMsg(`✓ ${count} override${count !== 1 ? "s" : ""} saved successfully across ${toSave.length} propert${toSave.length !== 1 ? "ies" : "y"} and ${dates.length} date${dates.length !== 1 ? "s" : ""}`);
+            const propCount = new Set(saves.map(s => `${s.type}-${s.id}`)).size;
+            const dateCount = new Set(saves.map(s => s.date)).size;
+            setMasterOvMsg(`✓ ${count} override${count !== 1 ? "s" : ""} saved across ${propCount} propert${propCount !== 1 ? "ies" : "y"} and ${dateCount} date${dateCount !== 1 ? "s" : ""}`);
             await load();
         } catch (e: any) {
             alert("Failed: " + (e?.message || "Unknown error"));
@@ -418,7 +441,7 @@ export default function PropertiesMgmtPage() {
                     }
                 }
             }
-            allOverrides.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            allOverrides.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setMasterOvHistory(false); }}>
@@ -500,35 +523,50 @@ export default function PropertiesMgmtPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Single Date</label>
-                                            <CustomDatePicker date={masterOvSingleDate ? new Date(masterOvSingleDate + 'T00:00:00') : new Date()} onDateChange={(d) => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); setMasterOvSingleDate(`${y}-${m}-${day}`); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} />
+                                            <div className="flex gap-1 items-center">
+                                                <input type="date" value={masterOvSingleDate} onChange={e => { setMasterOvSingleDate(e.target.value); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                                {masterOvSingleDate && <button onClick={() => setMasterOvSingleDate("")} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Or Date Range</label>
-                                            <div className="flex gap-2 items-center">
+                                            <div className="flex gap-1 items-center">
                                                 <input type="date" value={masterOvRangeFrom} onChange={e => { setMasterOvRangeFrom(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                                                 <span className="text-xs text-slate-400">to</span>
                                                 <input type="date" value={masterOvRangeTo} min={masterOvRangeFrom} onChange={e => { setMasterOvRangeTo(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                                {(masterOvRangeFrom || masterOvRangeTo) && <button onClick={() => { setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
                                             </div>
                                         </div>
                                     </div>
                                     {dates.length > 0 && <p className="text-[10px] text-indigo-600 font-medium mt-1">{dates.length} date{dates.length !== 1 ? "s" : ""} selected</p>}
                                 </div>
 
-                                {/* Step 3: Price Catalog */}
+                                {/* Step 3: Price Catalog — per property × per date */}
                                 {selectedItems.length > 0 && dates.length > 0 && (
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 uppercase mb-2">3. Set Override Prices</p>
                                         <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                            <div className="grid grid-cols-[1fr_100px_120px] gap-2 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
-                                                <span>Property</span><span>Current</span><span>Override Price</span>
+                                            <div className="grid grid-cols-[1fr_80px_70px_90px_110px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                <span>Property</span><span>Date</span><span>Day</span><span className="text-right">Current</span><span>Override</span>
                                             </div>
-                                            <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
+                                            <div className="max-h-60 overflow-y-auto divide-y divide-slate-50">
                                                 {selectedItems.map(item => (
-                                                    <div key={item.key} className="grid grid-cols-[1fr_100px_120px] gap-2 items-center px-3 py-2.5">
-                                                        <span className="text-sm font-medium text-slate-700 truncate">{item.name}</span>
-                                                        <span className="text-xs text-slate-400">₹{parseInt(item.currentPrice || "0").toLocaleString("en-IN")}</span>
-                                                        <NI value={masterOvPrices[item.key] || ""} onChange={v => setMasterOvPrices(prev => ({ ...prev, [item.key]: v }))} placeholder="₹ Price" />
-                                                    </div>
+                                                    dates.map(dateStr => {
+                                                        const dt = getDayType(dateStr);
+                                                        const currentPrice = item.prices[dt.type];
+                                                        const d = new Date(dateStr + 'T12:00:00');
+                                                        const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
+                                                        const priceKey = `${item.key}|${dateStr}`;
+                                                        return (
+                                                            <div key={priceKey} className="grid grid-cols-[1fr_80px_70px_90px_110px] gap-1 items-center px-3 py-2">
+                                                                <span className="text-xs font-medium text-slate-700 truncate">{item.name}</span>
+                                                                <span className="text-[11px] text-slate-500">{dateLabel}</span>
+                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-center ${dt.type === "saturday" ? "bg-orange-50 text-orange-600" : dt.type === "weekend" ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500"}`}>{dt.label}</span>
+                                                                <span className="text-xs text-slate-400 text-right">₹{currentPrice.toLocaleString("en-IN")}</span>
+                                                                <NI value={masterOvPrices[priceKey] || ""} onChange={v => setMasterOvPrices(prev => ({ ...prev, [priceKey]: v }))} placeholder="₹ Price" />
+                                                            </div>
+                                                        );
+                                                    })
                                                 ))}
                                             </div>
                                         </div>
