@@ -604,6 +604,11 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
         });
         if (!existing) return res.status(404).json({ error: "Booking not found" });
 
+        // Ensure checkout can only be initiated/taken if the guest has actually completed check-in
+        if (status === "checked_out" && existing.status !== "checked_in") {
+            return res.status(400).json({ error: "Cannot check out a booking that has not completed check-in." });
+        }
+
         const now = new Date();
         const timeOnly = new Date(`1970-01-01T${now.toISOString().slice(11)}`);
 

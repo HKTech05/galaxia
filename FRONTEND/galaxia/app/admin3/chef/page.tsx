@@ -254,10 +254,17 @@ export default function ChefPortalPage() {
                 });
                 alert("Request updated successfully!");
             } else {
+                const staffIdentity = 
+                    adminUsername.toLowerCase() === "ranjit" ? "Ranjit" :
+                    (adminUsername.toLowerCase() === "devi" || adminUsername.toLowerCase() === "devidas") ? "Devidas" :
+                    adminUsername.toLowerCase() === "chef" ? "Chef" :
+                    (userName || adminUsername || "Chef");
+
                 await api.post("/hospitality/requests", {
                     villaName: formVilla,
                     itemCategory: formCategory,
-                    items: selectedItems
+                    items: selectedItems,
+                    createdBy: staffIdentity
                 });
                 alert("Request created successfully!");
             }
@@ -478,6 +485,14 @@ export default function ChefPortalPage() {
         return d.getFullYear() === selectedDate.getFullYear() &&
                d.getMonth() === selectedDate.getMonth() &&
                d.getDate() === selectedDate.getDate();
+    };
+
+    const formatOrderDateTime = (dateStr: string) => {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        const datePart = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+        const timePart = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase().replace(/\s+/g, "");
+        return `${datePart} ${timePart}`;
     };
 
     const fetchAllRequests = () => {
@@ -1064,7 +1079,7 @@ export default function ChefPortalPage() {
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
                                                 <div>
-                                                    <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                                                    <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5 flex-wrap">
                                                         {req.villaName}
                                                         {req.itemCategory === "High Tea" ? (
                                                             <span className="text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded uppercase">High Tea</span>
@@ -1073,6 +1088,15 @@ export default function ChefPortalPage() {
                                                         ) : (
                                                             <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded uppercase">Normal</span>
                                                         )}
+                                                        {req.bookedBy && req.bookedBy !== "Direct" ? (
+                                                            <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded uppercase">
+                                                                {req.bookedBy}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded uppercase">
+                                                                Direct
+                                                            </span>
+                                                        )}
                                                     </h3>
                                                     {req.booking ? (
                                                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{req.booking.customerName} ({req.booking.bookingRef})</p>
@@ -1080,11 +1104,8 @@ export default function ChefPortalPage() {
                                                         <p className="text-[10px] text-red-500 font-bold mt-0.5">No active booking today</p>
                                                     )}
                                                 </div>
-                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded">
-                                                    {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    })}
+                                                <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/40 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                                    {formatOrderDateTime(req.createdAt)}
                                                 </span>
                                             </div>
 
@@ -1157,7 +1178,7 @@ export default function ChefPortalPage() {
                                     <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3.5 hover:shadow-sm transition-shadow flex flex-col justify-between">
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between text-slate-400 font-semibold border-b border-slate-200/60 pb-2.5">
-                                                <span className="text-slate-800 font-extrabold text-sm flex items-center gap-2">
+                                                <span className="text-slate-800 font-extrabold text-sm flex items-center gap-1.5 flex-wrap">
                                                     {req.villaName}
                                                     {req.itemCategory === "High Tea" ? (
                                                         <span className="text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded uppercase">High Tea</span>
@@ -1166,12 +1187,18 @@ export default function ChefPortalPage() {
                                                     ) : (
                                                         <span className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded uppercase">Normal</span>
                                                     )}
+                                                    {req.bookedBy && req.bookedBy !== "Direct" ? (
+                                                        <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded uppercase">
+                                                            {req.bookedBy}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded uppercase">
+                                                            Direct
+                                                        </span>
+                                                    )}
                                                 </span>
-                                                <span className="font-mono text-xs">
-                                                    {new Date(req.createdAt).toLocaleTimeString("en-IN", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    })}
+                                                <span className="font-mono text-xs text-slate-400 whitespace-nowrap">
+                                                    {formatOrderDateTime(req.createdAt)}
                                                 </span>
                                             </div>
                                             <div className="space-y-1.5">

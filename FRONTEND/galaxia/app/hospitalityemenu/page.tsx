@@ -106,6 +106,41 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
             });
     }, []);
 
+    // Active checked-in villas state
+    const [activeVillas, setActiveVillas] = useState<string[]>([]);
+    const [loadingActiveVillas, setLoadingActiveVillas] = useState(!isOwnerMode);
+
+    const fetchActiveVillas = async () => {
+        if (isOwnerMode) return;
+        setLoadingActiveVillas(true);
+        try {
+            const res = await fetch("/api/hospitality/active-villas");
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.activeVillas)) {
+                    setActiveVillas(data.activeVillas);
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching active villas:", err);
+        } finally {
+            setLoadingActiveVillas(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchActiveVillas();
+    }, [isOwnerMode]);
+
+    const normalizeVilla = (str: string) => (str || "").toLowerCase().replace(/[\s-_]/g, "");
+
+    const isVillaCheckedIn = useMemo(() => {
+        if (isOwnerMode) return true;
+        if (!selectedVilla) return false;
+        const normSelected = normalizeVilla(selectedVilla);
+        return activeVillas.some(v => normalizeVilla(v) === normSelected);
+    }, [selectedVilla, activeVillas, isOwnerMode]);
+
     // Quantity selections: { itemId: quantity }
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     
@@ -311,6 +346,11 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
             return;
         }
 
+        if (!isVillaCheckedIn && !isOwnerMode) {
+            alert("Complete your check-in in order to view this page and place orders.");
+            return;
+        }
+
         setSubmitting(true);
         setSubmitError("");
         try {
@@ -445,7 +485,47 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                 )}
             </div>
 
-            {/* Normal refreshments section */}
+            {loadingActiveVillas ? (
+                <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center shadow-sm space-y-4">
+                    <RefreshCw className="animate-spin text-amber-600 mx-auto" size={32} />
+                    <p className="text-sm font-bold text-slate-700">Checking room check-in status...</p>
+                    <p className="text-xs text-slate-400">Verifying your active stay details</p>
+                </div>
+            ) : !selectedVilla ? (
+                <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center shadow-sm space-y-3">
+                    <AlertCircle className="text-amber-500 mx-auto" size={32} />
+                    <h3 className="font-extrabold text-slate-800 text-base">Select Your Room / Cottage</h3>
+                    <p className="text-xs text-slate-500">Please choose your assigned cottage above to view the in-villa menu.</p>
+                </div>
+            ) : !isVillaCheckedIn ? (
+                <div className="bg-white border border-amber-200/60 rounded-3xl p-8 sm:p-10 text-center shadow-sm space-y-5 animate-in fade-in duration-300">
+                    <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto text-amber-600 shadow-sm">
+                        <AlertCircle size={32} />
+                    </div>
+                    <div className="space-y-2 max-w-md mx-auto">
+                        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">
+                            Complete your checkin in order to view this page
+                        </h2>
+                        <p className="text-xs sm:text-sm font-medium text-slate-500 leading-relaxed">
+                            This in-villa dining menu is operational only for guests currently checked in to <span className="font-bold text-amber-900">{VILLAS_LIST.find(v => v.value === selectedVilla)?.name || selectedVilla}</span>.
+                        </p>
+                        <p className="text-xs text-slate-400">
+                            If you have just arrived, please complete your check-in with our front desk reception to activate your menu and start ordering.
+                        </p>
+                    </div>
+                    <div className="pt-2 flex justify-center">
+                        <button
+                            onClick={fetchActiveVillas}
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md shadow-amber-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                        >
+                            <RefreshCw size={14} />
+                            Check Again / Refresh
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {/* Normal refreshments section */}
             <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
                     <div className="flex flex-col gap-0.5">
@@ -774,6 +854,8 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                     )}
                 </button>
             </div>
+            </>
+            )}
 
             {/* Success Modal */}
             {submitSuccess && (

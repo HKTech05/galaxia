@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare, Image as ImageIcon, FileText, ChevronRight } from "lucide-react";
+import { Users, Info, Clock, CheckCircle, CheckCircle2, Ban, IndianRupee, RotateCcw, BedDouble, AlertTriangle, AlertCircle, X, Plus, CalendarDays, Phone, User as UserIcon, Upload, Camera, Loader2, MessageSquare, Image as ImageIcon, FileText, ChevronRight } from "lucide-react";
 import CustomDatePicker from "./CustomDatePicker";
 import IdProofModal from "./IdProofModal";
 import { api } from "../../lib/api";
@@ -105,6 +105,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         fileName: g.fileName,
                         fileType: g.fileType,
                     })),
+                    rawStatus: b.status,
                     status: b.status === "checked_out" ? "Completed" : 
                             b.status === "confirmed" ? "Confirmed" : 
                             b.status === "checked_in" ? "Checked In" : 
@@ -494,6 +495,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     }, [isFoodBillModalOpen, foodBillBooking]);
 
     const handleCheckoutWithFoodBillCheck = async (booking: any) => {
+        if (!booking.isCheckedIn && booking.rawStatus !== "checked_in" && booking.status !== "Checked In") {
+            alert("This guest has not completed check-in yet. Please complete check-in first.");
+            return;
+        }
+
         const isManagerRestricted = ["ranjit", "devi", "devidas"].includes((username || "").toLowerCase());
         const isAmbroseOrAmstel = portalName.toLowerCase().includes("ambrose") || portalName.toLowerCase().includes("amstel");
 
@@ -741,21 +747,23 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
             const isActiveToday = rawCID <= selectedDateStr && rawCOD > selectedDateStr;
             if (isActiveToday) {
                 const isContinue = rawCID < selectedDateStr;
+                const isCheckedIn = b.rawStatus === "checked_in" || b.status === "Checked In" || b.status === "checked_in";
                 let resolvedStatus = "Pending";
-                if (b.status === "Checked In" || b.status === "checked_in") {
+                if (isCheckedIn) {
                     resolvedStatus = "Checked In";
-                } else if (b.status === "checked_out" || b.status === "Completed" || b.status === "Completed") {
+                } else if (b.rawStatus === "checked_out" || b.status === "checked_out" || b.status === "Completed") {
                     resolvedStatus = "Checked Out";
                 }
-                return { ...b, isContinue, status: resolvedStatus };
+                return { ...b, isContinue, status: resolvedStatus, isCheckedIn };
             }
         } else {
             // Checkout today: check-out === selected day
             const isCheckoutToday = rawCOD === selectedDateStr;
             if (isCheckoutToday) {
-                const isCheckedOut = b.status === "Completed" || b.status === "checked_out" || b.status === "checked-out";
-                const resolvedStatus = isCheckedOut ? "Checked Out" : "Pending";
-                return { ...b, status: resolvedStatus };
+                const isCheckedOut = b.rawStatus === "checked_out" || b.status === "Completed" || b.status === "checked_out" || b.status === "checked-out";
+                const isCheckedIn = b.rawStatus === "checked_in" || b.status === "Checked In" || b.status === "checked_in";
+                const resolvedStatus = isCheckedOut ? "Checked Out" : isCheckedIn ? "Checked In" : "Pending";
+                return { ...b, status: resolvedStatus, isCheckedIn };
             }
         }
         return null;
@@ -809,6 +817,13 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 }
 
                 await Promise.all([balanceUpiPromise, depositUpiPromise]);
+            }
+
+            if (newStatus === "Checked Out" || newStatus === "Completed") {
+                if (booking.rawStatus !== "checked_in" && booking.status !== "Checked In") {
+                    alert("Cannot check out a booking that has not completed check-in.");
+                    return;
+                }
             }
 
             await api.patch(`/bookings/staycation/${numericId}/status`, { 
@@ -1308,7 +1323,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             <h4 className="font-bold text-slate-800">Checkout Completed</h4>
                                             <p className="text-xs font-medium text-slate-500 mt-1">Guest has departed</p>
                                         </div>
-                                    ) : (
+                                    ) : (booking.isCheckedIn || booking.rawStatus === "checked_in") ? (
                                         <>
                                             <button
                                                 onClick={() => handleCheckoutWithFoodBillCheck(booking)}
@@ -1329,6 +1344,16 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             </button>
                                             )}
                                         </>
+                                    ) : (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center space-y-2">
+                                            <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto shadow-xs">
+                                                <AlertCircle size={20} />
+                                            </div>
+                                            <h4 className="font-bold text-amber-900 text-xs uppercase tracking-wide">Check-in Not Completed</h4>
+                                            <p className="text-xs font-medium text-amber-700 leading-relaxed">
+                                                This guest has not completed check-in yet. Complete check-in first before initiating checkout.
+                                            </p>
+                                        </div>
                                     )
                                 )}
                             </div>

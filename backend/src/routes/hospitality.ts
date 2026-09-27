@@ -7,6 +7,7 @@ import { sendOrderDeletionNotification } from "../lib/emailService";
 import { generateMenuPDF, generateStockPDF } from "../lib/pdfService";
 import fs from "fs";
 import path from "path";
+import jwt from "jsonwebtoken";
 
 const router = Router();
 
@@ -149,18 +150,83 @@ const isChefPreparedItem = (item: any) => {
     return name.includes("lime");
 };
 
-// 1. Public Route: POST /api/hospitality/requests — Submit request from a guest villa e-menu
+// 0. Public Route: GET /api/hospitality/active-villas — Return all currently checked-in villas/cottages
+router.get("/active-villas", async (req, res) => {
+    try {
+        const checkedInBookings = await prisma.staycationBooking.findMany({
+            where: {
+                status: "checked_in"
+            },
+            select: {
+                id: true,
+                customerName: true,
+                assignedUnit: true,
+                subProperty: { select: { name: true } },
+                property: { select: { name: true } }
+            }
+        });
+
+        const activeUnitsSet = new Set<string>();
+
+        checkedInBookings.forEach(booking => {
+            if (booking.assignedUnit) {
+                booking.assignedUnit.split(",").forEach(u => {
+                    const trimmed = u.trim();
+                    if (trimmed) activeUnitsSet.add(trimmed);
+                });
+            }
+            if (booking.subProperty?.name) {
+                activeUnitsSet.add(booking.subProperty.name.trim());
+            }
+        });
+
+        return res.json({
+            activeVillas: Array.from(activeUnitsSet)
+        });
+    } catch (err: any) {
+        console.error("Error fetching active villas:", err);
+        return res.status(500).json({ error: "Failed to fetch active villas" });
+    }
+});
+
+// 1. Public Route: POST /api/hospitality/requests — Submit request from a guest villa e-menu or staff
 router.post("/requests", async (req, res) => {
     try {
-        const { villaName, itemCategory, items, isOwnerMode } = req.body;
+        const { villaName, itemCategory, items, isOwnerMode, createdBy: bodyCreatedBy } = req.body;
 
         if (!villaName || !itemCategory || !items || !Array.isArray(items)) {
             return res.status(400).json({ error: "villaName, itemCategory, and items array are required" });
         }
 
         const now = new Date();
-        // Set date to local midnight to match date comparison
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Determine creator/puncher identity
+        let createdBy = "Direct";
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+                const token = authHeader.split(" ")[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as any;
+                if (decoded?.username) {
+                    const u = decoded.username.toLowerCase();
+                    if (u === "chef") createdBy = "Chef";
+                    else if (u === "ranjit") createdBy = "Ranjit";
+                    else if (u === "devi" || u === "devidas") createdBy = "Devidas";
+                    else createdBy = decoded.displayName || decoded.username;
+                }
+            } catch {
+                // Ignore token errors for public guest submissions
+            }
+        }
+
+        if (bodyCreatedBy && typeof bodyCreatedBy === "string" && bodyCreatedBy.trim()) {
+            const raw = bodyCreatedBy.trim();
+            const u = raw.toLowerCase();
+            if (u === "chef") createdBy = "Chef";
+            else if (u === "ranjit") createdBy = "Ranjit";
+            else if (u === "devi" || u === "devidas") createdBy = "Devidas";
+            else createdBy = raw;
+        }
 
         // Auto-decrement stock for each ordered item
         try {
@@ -196,12 +262,10 @@ router.post("/requests", async (req, res) => {
             });
         }
 
-        // Find active booking for this villa today
+        // Find active checked-in booking for this villa
         const activeBookings = await prisma.staycationBooking.findMany({
             where: {
-                status: { in: ["confirmed", "checked_in"] },
-                checkInDate: { lte: todayStart },
-                checkOutDate: { gte: todayStart }
+                status: "checked_in"
             },
             include: {
                 subProperty: true
@@ -217,11 +281,24 @@ router.post("/requests", async (req, res) => {
             return false;
         });
 
+        // Strict enforcement: Direct guest orders MUST have an active checked-in booking
+        if (!isOwnerMode && createdBy === "Direct" && !activeBooking) {
+            return res.status(403).json({
+                error: "This villa does not have an active check-in. Complete your check-in in order to view this page and place orders."
+            });
+        }
+
+        // Attach bookedBy attribute to all items in Json array
+        const itemsWithAttribution = items.map((item: any) => ({
+            ...item,
+            bookedBy: item.bookedBy || createdBy
+        }));
+
         const request = await prisma.hospitalityRequest.create({
             data: {
                 villaName,
                 itemCategory,
-                items: items,
+                items: itemsWithAttribution,
                 status: "pending",
                 isBilled: false,
                 bookingId: activeBooking ? activeBooking.id : null
@@ -345,7 +422,10 @@ router.get("/requests", async (req: AuthRequest, res) => {
             if (typeof parsedItems === "string") {
                 try { parsedItems = JSON.parse(parsedItems); } catch { parsedItems = []; }
             }
-            return { ...req, items: parsedItems };
+            const bookedBy = Array.isArray(parsedItems) && (parsedItems[0] as any)?.bookedBy 
+                ? (parsedItems[0] as any).bookedBy 
+                : ((parsedItems as any)?.bookedBy || "Direct");
+            return { ...req, items: parsedItems, bookedBy };
         });
 
         // Additional Chef vs Housekeeping item filtering & segregation
@@ -417,7 +497,17 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
         if (villaName !== undefined) data.villaName = villaName;
         if (itemCategory !== undefined) data.itemCategory = itemCategory;
         if (items !== undefined) {
-            data.items = items;
+            let existingItems: any[] = [];
+            if (typeof existing.items === "string") {
+                try { existingItems = JSON.parse(existing.items); } catch {}
+            } else if (Array.isArray(existing.items)) {
+                existingItems = existing.items as any[];
+            }
+            const existingBookedBy = existingItems[0]?.bookedBy || "Direct";
+            data.items = items.map((i: any) => ({
+                ...i,
+                bookedBy: i.bookedBy || existingBookedBy
+            }));
             
             // Send email if items were removed or reduced
             try {

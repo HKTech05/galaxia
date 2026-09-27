@@ -295,10 +295,17 @@ export default function HousekeepingPortalPage() {
         setModalSubmitting(true);
         try {
             if (modalMode === "create") {
+                const staffIdentity = 
+                    userName.toLowerCase() === "ranjit" ? "Ranjit" :
+                    (userName.toLowerCase() === "devi" || userName.toLowerCase() === "devidas") ? "Devidas" :
+                    userName.toLowerCase() === "chef" ? "Chef" :
+                    (userName || "Staff");
+
                 await api.post("/hospitality/requests", {
                     villaName: formVilla,
                     itemCategory: formCategory,
-                    items: selectedItems
+                    items: selectedItems,
+                    createdBy: staffIdentity
                 });
             } else {
                 await api.put(`/hospitality/requests/${editingRequestId}`, {
