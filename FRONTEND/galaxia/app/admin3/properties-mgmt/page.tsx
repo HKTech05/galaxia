@@ -97,6 +97,16 @@ export default function PropertiesMgmtPage() {
     const [viewOvSub, setViewOvSub] = useState<any>(null);
     // Modal property name for edit/override titles
     const [modalPropName, setModalPropName] = useState("");
+    // Master Override
+    const [masterOvOpen, setMasterOvOpen] = useState(false);
+    const [masterOvHistory, setMasterOvHistory] = useState(false);
+    const [masterOvSelected, setMasterOvSelected] = useState<Set<string>>(new Set());
+    const [masterOvSingleDate, setMasterOvSingleDate] = useState("");
+    const [masterOvRangeFrom, setMasterOvRangeFrom] = useState("");
+    const [masterOvRangeTo, setMasterOvRangeTo] = useState("");
+    const [masterOvPrices, setMasterOvPrices] = useState<Record<string, string>>({});
+    const [masterOvSaving, setMasterOvSaving] = useState(false);
+    const [masterOvMsg, setMasterOvMsg] = useState("");
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -248,7 +258,7 @@ export default function PropertiesMgmtPage() {
         if (!overrideId) return null;
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setOverrideId(null); setOvMsg(""); }}>
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-visible" onClick={e => e.stopPropagation()}>
                     <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
                         <div><h3 className="font-bold text-slate-800">Set Date Override</h3>{modalPropName && <p className="text-xs text-slate-500">{modalPropName}</p>}</div>
                         <button onClick={() => { setOverrideId(null); setOvMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
@@ -314,6 +324,227 @@ export default function PropertiesMgmtPage() {
                     <div className="px-6 py-3 border-t border-slate-100 shrink-0">
                         <button onClick={() => { setViewOvKey(null); setViewOvProp(null); setViewOvSub(null); }} className="w-full py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Close</button>
                     </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Build flat list of all staycation properties for Master Override
+    const getAllStayProperties = () => {
+        const items: { key: string; name: string; type: "prop" | "sub"; id: number; currentPrice: string }[] = [];
+        for (const p of props) {
+            if (p.type === "dd" || p.slug === "digital-diaries") continue;
+            if (p.slug === "ambrose" || p.slug === "amstel-nest") {
+                for (const sp of (p.subProperties || [])) {
+                    const parentLabel = p.slug === "ambrose" ? "Ambrose" : "Amstel Nest";
+                    const spPricing = sp.pricing?.length > 0 ? sp.pricing : (p.pricing || []).filter((t: any) => t.subPropertyId === sp.id);
+                    const baseWd = spPricing.find((t: any) => t.dayType === "weekday" && !t.overrideDate);
+                    items.push({ key: `sub-${sp.id}`, name: `${sp.name} (${parentLabel})`, type: "sub", id: sp.id, currentPrice: String(baseWd?.basePrice || "") });
+                }
+            } else {
+                const basePricing = (p.pricing || []).filter((t: any) => !t.subPropertyId && !t.overrideDate);
+                const baseWd = basePricing.find((t: any) => t.dayType === "weekday");
+                items.push({ key: `prop-${p.id}`, name: p.name, type: "prop", id: p.id, currentPrice: String(baseWd?.basePrice || "") });
+            }
+        }
+        return items;
+    };
+
+    // Generate dates from single or range
+    const getMasterDates = (): string[] => {
+        if (masterOvSingleDate) return [masterOvSingleDate];
+        if (masterOvRangeFrom && masterOvRangeTo) {
+            const dates: string[] = [];
+            const from = new Date(masterOvRangeFrom + 'T12:00:00');
+            const to = new Date(masterOvRangeTo + 'T12:00:00');
+            for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+                dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            }
+            return dates;
+        }
+        return [];
+    };
+
+    const saveMasterOverride = async () => {
+        const dates = getMasterDates();
+        if (dates.length === 0) return alert("Select at least one date");
+        const selected = Array.from(masterOvSelected);
+        const toSave = selected.filter(k => masterOvPrices[k] && masterOvPrices[k].trim() !== "");
+        if (toSave.length === 0) return alert("Enter at least one price");
+        setMasterOvSaving(true);
+        try {
+            let count = 0;
+            for (const key of toSave) {
+                const [type, idStr] = key.split("-");
+                const price = parseInt(masterOvPrices[key]);
+                if (isNaN(price) || price <= 0) continue;
+                for (const date of dates) {
+                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
+                    await api.post(endpoint, { date, price });
+                    count++;
+                }
+            }
+            setMasterOvMsg(`✓ ${count} override${count !== 1 ? "s" : ""} saved successfully across ${toSave.length} propert${toSave.length !== 1 ? "ies" : "y"} and ${dates.length} date${dates.length !== 1 ? "s" : ""}`);
+            await load();
+        } catch (e: any) {
+            alert("Failed: " + (e?.message || "Unknown error"));
+        } finally { setMasterOvSaving(false); }
+    };
+
+    const renderMasterOverrideModal = () => {
+        if (!masterOvOpen) return null;
+        const allItems = getAllStayProperties();
+        const dates = getMasterDates();
+        const selectedItems = allItems.filter(i => masterOvSelected.has(i.key));
+
+        // History view
+        if (masterOvHistory) {
+            // Collect all overrides from props
+            const allOverrides: { name: string; date: string; price: number; dayType: string; id: number }[] = [];
+            for (const p of props) {
+                if (p.type === "dd" || p.slug === "digital-diaries") continue;
+                if (p.slug === "ambrose" || p.slug === "amstel-nest") {
+                    for (const sp of (p.subProperties || [])) {
+                        const parentLabel = p.slug === "ambrose" ? "Ambrose" : "Amstel Nest";
+                        const pricing = sp.pricing?.length > 0 ? sp.pricing : (p.pricing || []).filter((t: any) => t.subPropertyId === sp.id);
+                        for (const ov of pricing.filter((t: any) => t.overrideDate)) {
+                            allOverrides.push({ name: `${sp.name} (${parentLabel})`, date: ov.overrideDate, price: ov.basePrice, dayType: ov.dayType, id: ov.id });
+                        }
+                    }
+                } else {
+                    const pricing = (p.pricing || []).filter((t: any) => !t.subPropertyId);
+                    for (const ov of pricing.filter((t: any) => t.overrideDate)) {
+                        allOverrides.push({ name: p.name, date: ov.overrideDate, price: ov.basePrice, dayType: ov.dayType, id: ov.id });
+                    }
+                }
+            }
+            allOverrides.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setMasterOvHistory(false); }}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-amber-50 shrink-0 rounded-t-2xl">
+                            <div><h3 className="font-bold text-slate-800">All Override History</h3><p className="text-xs text-slate-500">All staycation date overrides</p></div>
+                            <button onClick={() => setMasterOvHistory(false)} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                        </div>
+                        <div className="px-6 py-4 overflow-y-auto flex-1">
+                            {allOverrides.length === 0 ? (
+                                <p className="text-sm text-slate-400 text-center py-8">No overrides found</p>
+                            ) : (
+                                <div className="space-y-1.5">
+                                    <div className="grid grid-cols-[1fr_100px_90px_40px] gap-2 text-[10px] font-bold text-slate-400 uppercase px-3 pb-1">
+                                        <span>Property</span><span>Date</span><span className="text-right">Price</span><span></span>
+                                    </div>
+                                    {allOverrides.map((ov) => {
+                                        const d = new Date(ov.date);
+                                        const dateStr = `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}`;
+                                        return (
+                                            <div key={ov.id} className="grid grid-cols-[1fr_100px_90px_40px] gap-2 items-center py-2 px-3 bg-slate-50 rounded-lg border border-slate-100 text-sm">
+                                                <span className="font-medium text-slate-700 truncate">{ov.name}</span>
+                                                <span className="text-slate-500 text-xs">{dateStr}</span>
+                                                <span className="text-right font-bold text-slate-800">₹{ov.price.toLocaleString("en-IN")}</span>
+                                                <button onClick={async () => { if (!confirm("Delete?")) return; try { await api.delete(`/properties/pricing/${ov.id}`); await load(); } catch { alert("Failed"); } }} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600"><Trash2 size={13} /></button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        <div className="px-6 py-3 border-t border-slate-100 shrink-0 rounded-b-2xl">
+                            <button onClick={() => setMasterOvHistory(false)} className="w-full py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Main modal
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setMasterOvOpen(false); setMasterOvMsg(""); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-visible" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-purple-50 to-indigo-50 shrink-0 rounded-t-2xl">
+                        <div><h3 className="font-bold text-slate-800 text-lg">Master Override</h3><p className="text-xs text-slate-500">Set price overrides across multiple properties and dates at once</p></div>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setMasterOvHistory(true)} className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline decoration-dashed">View Override History</button>
+                            <button onClick={() => { setMasterOvOpen(false); setMasterOvMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                        </div>
+                    </div>
+
+                    {masterOvMsg ? (
+                        <div className="px-6 py-12 text-center">
+                            <p className="text-lg text-emerald-700 font-bold mb-4">{masterOvMsg}</p>
+                            <button onClick={() => { setMasterOvOpen(false); setMasterOvMsg(""); setMasterOvSelected(new Set()); setMasterOvPrices({}); setMasterOvSingleDate(""); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700">Done</button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="px-6 py-4 overflow-y-auto flex-1 space-y-5">
+                                {/* Step 1: Select Properties */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs font-bold text-slate-500 uppercase">1. Select Properties</p>
+                                        <button onClick={() => { masterOvSelected.size === allItems.length ? setMasterOvSelected(new Set()) : setMasterOvSelected(new Set(allItems.map(i => i.key))); }} className="text-[10px] text-indigo-600 font-bold hover:underline">{masterOvSelected.size === allItems.length ? "Deselect All" : "Select All"}</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2">
+                                        {allItems.map(item => (
+                                            <label key={item.key} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer text-xs font-medium transition-colors ${masterOvSelected.has(item.key) ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "bg-white text-slate-600 border border-slate-100 hover:bg-slate-50"}`}>
+                                                <input type="checkbox" checked={masterOvSelected.has(item.key)} onChange={() => { const next = new Set(masterOvSelected); next.has(item.key) ? next.delete(item.key) : next.add(item.key); setMasterOvSelected(next); }} className="accent-indigo-600 w-3.5 h-3.5" />
+                                                <span className="truncate">{item.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Step 2: Date Selection */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">2. Select Date(s)</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Single Date</label>
+                                            <CustomDatePicker date={masterOvSingleDate ? new Date(masterOvSingleDate + 'T00:00:00') : new Date()} onDateChange={(d) => { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); setMasterOvSingleDate(`${y}-${m}-${day}`); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Or Date Range</label>
+                                            <div className="flex gap-2 items-center">
+                                                <input type="date" value={masterOvRangeFrom} onChange={e => { setMasterOvRangeFrom(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                                <span className="text-xs text-slate-400">to</span>
+                                                <input type="date" value={masterOvRangeTo} min={masterOvRangeFrom} onChange={e => { setMasterOvRangeTo(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {dates.length > 0 && <p className="text-[10px] text-indigo-600 font-medium mt-1">{dates.length} date{dates.length !== 1 ? "s" : ""} selected</p>}
+                                </div>
+
+                                {/* Step 3: Price Catalog */}
+                                {selectedItems.length > 0 && dates.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">3. Set Override Prices</p>
+                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="grid grid-cols-[1fr_100px_120px] gap-2 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                <span>Property</span><span>Current</span><span>Override Price</span>
+                                            </div>
+                                            <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
+                                                {selectedItems.map(item => (
+                                                    <div key={item.key} className="grid grid-cols-[1fr_100px_120px] gap-2 items-center px-3 py-2.5">
+                                                        <span className="text-sm font-medium text-slate-700 truncate">{item.name}</span>
+                                                        <span className="text-xs text-slate-400">₹{parseInt(item.currentPrice || "0").toLocaleString("en-IN")}</span>
+                                                        <NI value={masterOvPrices[item.key] || ""} onChange={v => setMasterOvPrices(prev => ({ ...prev, [item.key]: v }))} placeholder="₹ Price" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Save Button */}
+                            <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0 rounded-b-2xl">
+                                <button onClick={saveMasterOverride} disabled={masterOvSaving || selectedItems.length === 0 || dates.length === 0} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {masterOvSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All Overrides
+                                </button>
+                                <button onClick={() => { setMasterOvOpen(false); setMasterOvMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -420,7 +651,7 @@ export default function PropertiesMgmtPage() {
         if (ddOvScreen === null || ddOvPkg === null) return null;
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); }}>
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-visible" onClick={e => e.stopPropagation()}>
                     <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
                         <div><h3 className="font-bold text-slate-800">Set Date Override</h3><p className="text-xs text-slate-500">{ddOvName}</p></div>
                         <button onClick={() => { setDdOvScreen(null); setDdOvPkg(null); setDdOvMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
@@ -665,7 +896,10 @@ export default function PropertiesMgmtPage() {
 
     return (<>
         <div className="max-w-7xl mx-auto space-y-6">
-            <div><h1 className="text-2xl font-bold text-slate-800">Properties Management</h1><p className="text-sm text-slate-500 mt-1">Manage pricing, availability, and sub-properties.</p></div>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <div><h1 className="text-2xl font-bold text-slate-800">Properties Management</h1><p className="text-sm text-slate-500 mt-1">Manage pricing, availability, and sub-properties.</p></div>
+                <button onClick={() => { setMasterOvOpen(true); setMasterOvMsg(""); setMasterOvSelected(new Set()); setMasterOvPrices({}); setMasterOvSingleDate(""); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-indigo-700 hover:to-purple-700"><Calendar size={16} /> Master Override</button>
+            </div>
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">{tabs.map(t => <button key={t.key} onClick={() => { setTab(t.key); setEditId(null); setOverrideId(null); }} className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t.label}</button>)}</div>
             {loading ? <div className="flex flex-col items-center py-20"><Loader2 className="animate-spin text-purple-500" size={32} /><p className="text-sm text-slate-500 mt-3">Loading…</p></div>
                 : tab === "amstelnest" ? <AmstelNest />
@@ -679,5 +913,6 @@ export default function PropertiesMgmtPage() {
         {renderViewOverridesModal()}
         {renderDdOverrideModal()}
         {renderDdViewOverridesModal()}
+        {renderMasterOverrideModal()}
     </>);
 }
