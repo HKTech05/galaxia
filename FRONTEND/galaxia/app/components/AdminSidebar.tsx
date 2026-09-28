@@ -64,6 +64,13 @@ const admin3ReceptionistItems = [
     { name: "Amstel Nest", href: "/admin3/amstel", icon: Hotel, slugs: ["amstel-nest"] },
 ];
 
+const admin3StaycationReceptionistItems = [
+    { name: "Heavenly Villa & Hill View", href: "/admin3/heavenly-villa", icon: Hotel },
+    { name: "Mount View & La Paraiso", href: "/admin3/views-paraiso", icon: Hotel },
+    { name: "Ambrose", href: "/admin3/ambrose", icon: Hotel },
+    { name: "Amstel Nest", href: "/admin3/amstel", icon: Hotel },
+];
+
 // Admin3 bottom items (owner/dev only)
 const admin3BottomItems = [
     { name: "Cash Management", href: "/admin3/employees", icon: BadgeDollarSign },
@@ -115,6 +122,30 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
     useEffect(() => {
         if (!isAdmin3 || !adminUsername) return;
         
+        const isTestUser = adminRole === "test_viewer" || adminUsername === "test";
+        if (isTestUser) {
+            const allowedPaths = [
+                "/admin3",
+                "/admin3/properties-view-2",
+                "/admin3/dd-view",
+                "/admin3/heavenly-villa",
+                "/admin3/views-paraiso",
+                "/admin3/ambrose",
+                "/admin3/amstel",
+                "/admin3/security",
+                "/admin3/chef",
+                "/admin3/housekeeping",
+                "/admin3/booking-employees",
+                "/admin3/coupons"
+            ];
+            const cleanPath = pathname.split('?')[0].replace(/\/$/, "") || "/admin3";
+            const isAllowed = allowedPaths.some(p => cleanPath === p || cleanPath.startsWith(p + "/"));
+            if (!isAllowed) {
+                router.push("/admin3");
+            }
+            return;
+        }
+
         const isCallManagerRole = adminRole === "staycation_call_manager" || adminUsername === "stay123";
         if (isCallManagerRole) {
             if (pathname === "/admin3" || pathname === "/admin3/") {
@@ -157,10 +188,11 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
         }
     }, [isAdmin3, adminUsername, adminRole, pathname, router]);
 
+    const isTestViewer = adminRole === "test_viewer" || adminUsername === "test";
     const isCallManager = adminRole === "staycation_call_manager" || adminUsername === "stay123";
 
-    // Full access = owner or developer ONLY (not sub-admins or call manager)
-    const hasFullAccess = (adminRole === "owner" || adminRole === "developer") || (!assignedProperties && !isCallManager && !["housekeeping", "chef", "accountant", "ddadmin", "srd", "M&L"].includes(adminUsername));
+    // Full access = owner or developer ONLY (not sub-admins, test viewer, or call manager)
+    const hasFullAccess = !isTestViewer && ((adminRole === "owner" || adminRole === "developer") || (!assignedProperties && !isCallManager && !["housekeeping", "chef", "accountant", "ddadmin", "srd", "M&L"].includes(adminUsername)));
 
     // Filter receptionist items by assigned property slugs
     const visibleReceptionistItems = hasFullAccess
@@ -242,7 +274,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                         )}
                         <div>
                             <h1 className="font-bold text-xl text-slate-800 tracking-tight leading-none">Galaxia</h1>
-                            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-widest mt-1">{isAdmin3 ? (hasFullAccess ? "Owner Panel" : "Staff Panel") : "Admin Panel"}</p>
+                            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-widest mt-1">{isTestViewer ? "Test (View Only)" : isAdmin3 ? (hasFullAccess ? "Owner Panel" : "Staff Panel") : "Admin Panel"}</p>
                         </div>
                     </div>
                 </div>
@@ -251,7 +283,63 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 <nav className="flex-1 px-4 py-8 overflow-y-auto space-y-1">
                     {isAdmin3 ? (
                         <>
-                            {adminRole === "housekeeping" ? (
+                            {isTestViewer ? (
+                                <>
+                                    {renderNavItem({ name: "Dashboard", href: "/admin3", icon: LayoutDashboard })}
+
+                                    {/* Daily Checkins Dropdown */}
+                                    <button
+                                        onClick={() => setDailyCheckinsOpen(!dailyCheckinsOpen)}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${isDailyCheckinsActive && !dailyCheckinsOpen
+                                            ? "bg-purple-50 text-purple-700"
+                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                            }`}
+                                    >
+                                        <CalendarDays size={20} className={isDailyCheckinsActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
+                                        <span className={`font-medium text-[15px] flex-1 ${isDailyCheckinsActive ? "font-semibold" : ""}`}>
+                                            Daily Checkins
+                                        </span>
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform duration-200 ${dailyCheckinsOpen ? "rotate-180" : ""} ${isDailyCheckinsActive ? "text-purple-500" : "text-slate-400"}`}
+                                        />
+                                    </button>
+                                    {dailyCheckinsOpen && (
+                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            {admin3DailyCheckinItems.map(item => renderNavItem(item, true))}
+                                        </div>
+                                    )}
+
+                                    {/* Receptionist View Dropdown (Staycation Only) */}
+                                    <button
+                                        onClick={() => setReceptionistOpen(!receptionistOpen)}
+                                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 w-full text-left group ${admin3StaycationReceptionistItems.some(i => pathname.startsWith(i.href)) && !receptionistOpen
+                                            ? "bg-purple-50 text-purple-700"
+                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                            }`}
+                                    >
+                                        <Eye size={20} className={admin3StaycationReceptionistItems.some(i => pathname.startsWith(i.href)) ? "text-purple-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
+                                        <span className={`font-medium text-[15px] flex-1 ${admin3StaycationReceptionistItems.some(i => pathname.startsWith(i.href)) ? "font-semibold" : ""}`}>
+                                            Receptionist View
+                                        </span>
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform duration-200 ${receptionistOpen ? "rotate-180" : ""} ${admin3StaycationReceptionistItems.some(i => pathname.startsWith(i.href)) ? "text-purple-500" : "text-slate-400"}`}
+                                        />
+                                    </button>
+                                    {receptionistOpen && (
+                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            {admin3StaycationReceptionistItems.map(item => renderNavItem(item, true))}
+                                        </div>
+                                    )}
+
+                                    {renderNavItem({ name: "Security", href: "/admin3/security", icon: ShieldCheck })}
+                                    {renderNavItem({ name: "Chef", href: "/admin3/chef", icon: ChefHat })}
+                                    {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
+                                    {renderNavItem({ name: "Employees", href: "/admin3/booking-employees", icon: UserCheck })}
+                                    {renderNavItem({ name: "Coupons", href: "/admin3/coupons", icon: Ticket })}
+                                </>
+                            ) : adminRole === "housekeeping" ? (
                                 <>
                                     {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
                                 </>

@@ -79,6 +79,8 @@ export default function ChefPortalPage() {
     const [userRole, setUserRole] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
     const [adminUsername, setAdminUsername] = useState<string>("");
+    const isOwnerOrDev = userRole === "owner" || userRole === "developer";
+    const isTestViewer = userRole === "test_viewer" || adminUsername === "test";
     const [loadingIngredients, setLoadingIngredients] = useState(true);
     const [loadingLogs, setLoadingLogs] = useState(false);
     
@@ -199,6 +201,7 @@ export default function ChefPortalPage() {
     }, []);
 
     const handleSaveStock = async () => {
+        if (isTestViewer) return;
         setSavingStock(true);
         try {
             const updatedMenu = menuItems.map(item => {
@@ -224,6 +227,7 @@ export default function ChefPortalPage() {
     };
 
     const handleChefCreateSubmit = async () => {
+        if (isTestViewer) return;
         if (!formVilla.trim()) {
             alert("Please enter a Villa / Screen name.");
             return;
@@ -305,6 +309,7 @@ export default function ChefPortalPage() {
     };
 
     const handleDeleteRequest = async (id: number) => {
+        if (isTestViewer) return;
         if (!confirm("Are you sure you want to delete this request?")) return;
         try {
             await api.delete(`/hospitality/requests/${id}`);
@@ -315,8 +320,6 @@ export default function ChefPortalPage() {
             alert(err.message || "Failed to delete request.");
         }
     };
-
-    const isOwnerOrDev = userRole === "owner" || userRole === "developer";
 
     // Generate dynamic quantity options based on unit
     const getQuantityOptions = (unit: string, nameEn?: string) => {
@@ -462,18 +465,18 @@ export default function ChefPortalPage() {
     }, []);
 
     useEffect(() => {
-        if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
+        if (userRole === "chef" || userRole === "owner" || userRole === "developer" || isTestViewer) {
             fetchMealCounter(counterDate);
         }
-    }, [userRole, counterDate, fetchMealCounter]);
+    }, [userRole, counterDate, fetchMealCounter, isTestViewer]);
 
     useEffect(() => {
-        if (userRole === "chef" || userRole === "owner" || userRole === "developer") {
+        if (userRole === "chef" || userRole === "owner" || userRole === "developer" || isTestViewer) {
             fetchHighTeaRequests();
             fetchTimepassRequests();
             fetchNormalRequests();
         }
-    }, [userRole]);
+    }, [userRole, isTestViewer]);
 
     const combinedRequests = useMemo(() => {
         return [...highTeaRequests, ...timepassRequests, ...normalRequests];
@@ -502,6 +505,7 @@ export default function ChefPortalPage() {
     };
 
     const handleFulfilHighTea = async (id: number, targetStatus: string = "prepared") => {
+        if (isTestViewer) return;
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
                 status: targetStatus
@@ -517,6 +521,7 @@ export default function ChefPortalPage() {
     };
 
     const handleFulfilTimepass = async (id: number, targetStatus: string = "prepared") => {
+        if (isTestViewer) return;
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
                 status: targetStatus
@@ -532,6 +537,7 @@ export default function ChefPortalPage() {
     };
 
     const handleFulfilNormal = async (id: number, targetStatus: string = "prepared") => {
+        if (isTestViewer) return;
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
                 status: targetStatus
@@ -688,6 +694,7 @@ export default function ChefPortalPage() {
     // Add New Ingredient (En -> Auto Hi)
     const handleAddIngredient = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isTestViewer) return;
         const name = newIngredientName.trim();
         if (!name) return;
 
@@ -715,6 +722,7 @@ export default function ChefPortalPage() {
 
     // Delete Ingredient (Owner/Dev only)
     const handleDeleteIngredient = async (id: number) => {
+        if (isTestViewer) return;
         if (!confirm("Are you sure you want to delete this ingredient? This will log this deletion.")) return;
         
         try {
@@ -736,6 +744,7 @@ export default function ChefPortalPage() {
 
     // Done / Submit Checklist
     const handleSubmitChecklist = async () => {
+        if (isTestViewer) return;
         const selectedIds = Object.keys(selectedQuantities).map(Number);
         if (selectedIds.length === 0) {
             alert("Please select at least one ingredient and specify quantity.");
@@ -908,7 +917,7 @@ export default function ChefPortalPage() {
             </div>
 
             {/* Meal Counters Section */}
-            {(userRole === "chef" || userRole === "owner" || userRole === "developer") && (
+            {(userRole === "chef" || userRole === "owner" || userRole === "developer" || isTestViewer) && (
                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div>
@@ -995,8 +1004,8 @@ export default function ChefPortalPage() {
                 </div>
             )}
 
-            {/* High Tea, Timepass & Normal Requests Dashboard (only for chef/owner/dev) */}
-            {(userRole === "chef" || userRole === "owner" || userRole === "developer") && (
+            {/* High Tea, Timepass & Normal Requests Dashboard (only for chef/owner/dev/test_viewer) */}
+            {(userRole === "chef" || userRole === "owner" || userRole === "developer" || isTestViewer) && (
                 <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                         <div>
@@ -1008,8 +1017,10 @@ export default function ChefPortalPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                             <button
-                                onClick={() => { setModalMode("create"); setFormCategory("Normal"); setFormVilla(VILLAS_LIST[0].value); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
-                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-purple-100 hover:shadow"
+                                onClick={() => { if (isTestViewer) return; setModalMode("create"); setFormCategory("Normal"); setFormVilla(VILLAS_LIST[0].value); setFormQuantities({}); setFormComments({}); setIsCreateModalOpen(true); }}
+                                disabled={isTestViewer}
+                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                className={`bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-purple-100 hover:shadow ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                                 <Plus size={14} className="stroke-[3px]" />
                                 New Request
@@ -1131,16 +1142,18 @@ export default function ChefPortalPage() {
                                                  {(!["ranjit", "devi"].includes(adminUsername.toLowerCase()) || req.itemCategory !== "Normal") && (
                                                      <>
                                                          <button
-                                                             onClick={() => handleOpenEditModal(req)}
-                                                             className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                             title="Edit Order"
+                                                             onClick={() => { if (isTestViewer) return; handleOpenEditModal(req); }}
+                                                             disabled={isTestViewer}
+                                                             className={`p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                             title={isTestViewer ? "Action disabled in test verification mode" : "Edit Order"}
                                                          >
                                                              <Edit size={12} />
                                                          </button>
                                                          <button
-                                                             onClick={() => handleDeleteRequest(req.id)}
-                                                             className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                             title="Delete Order"
+                                                             onClick={() => { if (isTestViewer) return; handleDeleteRequest(req.id); }}
+                                                             disabled={isTestViewer}
+                                                             className={`p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                             title={isTestViewer ? "Action disabled in test verification mode" : "Delete Order"}
                                                          >
                                                              <Trash2 size={12} />
                                                          </button>
@@ -1149,6 +1162,7 @@ export default function ChefPortalPage() {
                                              </div>
                                             <button
                                                 onClick={() => {
+                                                    if (isTestViewer) return;
                                                     if (req.itemCategory === "High Tea") {
                                                         handleFulfilHighTea(req.id);
                                                     } else if (req.itemCategory === "Timepass") {
@@ -1157,7 +1171,9 @@ export default function ChefPortalPage() {
                                                         handleFulfilNormal(req.id, "prepared");
                                                     }
                                                 }}
-                                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm"
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 transition-colors shadow-sm ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                             >
                                                 <Check size={12} className="stroke-[3px]" />
                                                 Mark Prepared
@@ -1234,16 +1250,18 @@ export default function ChefPortalPage() {
                                                 {(!["ranjit", "devi"].includes(adminUsername.toLowerCase()) || req.itemCategory !== "Normal") && (
                                                     <>
                                                         <button
-                                                            onClick={() => handleOpenEditModal(req)}
-                                                            className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
-                                                            title="Edit Order"
+                                                            onClick={() => { if (isTestViewer) return; handleOpenEditModal(req); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Edit Order"}
                                                         >
                                                             <Edit size={12} />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteRequest(req.id)}
-                                                            className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
-                                                            title="Delete Order"
+                                                            onClick={() => { if (isTestViewer) return; handleDeleteRequest(req.id); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Delete Order"}
                                                         >
                                                             <Trash2 size={12} />
                                                         </button>
@@ -1322,8 +1340,9 @@ export default function ChefPortalPage() {
                                 </select>
                                 <button
                                     type="submit"
-                                    disabled={addingIngredient || !newIngredientName.trim()}
-                                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold text-sm px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm shadow-purple-100 whitespace-nowrap"
+                                    disabled={isTestViewer || addingIngredient || !newIngredientName.trim()}
+                                    title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                    className={`bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold text-sm px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm shadow-purple-100 whitespace-nowrap ${isTestViewer ? "cursor-not-allowed" : ""}`}
                                 >
                                     {addingIngredient ? (
                                         <Loader2 size={16} className="animate-spin" />
@@ -1488,8 +1507,9 @@ export default function ChefPortalPage() {
                         <div className="pt-2">
                             <button
                                 onClick={handleSubmitChecklist}
-                                disabled={selectedCount === 0 || submitting}
-                                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-sm py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-100 hover:shadow-lg"
+                                disabled={isTestViewer || selectedCount === 0 || submitting}
+                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                className={`w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-sm py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-100 hover:shadow-lg ${isTestViewer ? "cursor-not-allowed" : ""}`}
                             >
                                 {submitting ? (
                                     <>
@@ -1854,8 +1874,9 @@ export default function ChefPortalPage() {
                             </button>
                             <button
                                 onClick={handleChefCreateSubmit}
-                                disabled={modalSubmitting}
-                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                                disabled={isTestViewer || modalSubmitting}
+                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                className={`bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors disabled:opacity-50 ${isTestViewer ? "cursor-not-allowed" : ""}`}
                             >
                                 {modalSubmitting ? "Submitting..." : "Submit Request"}
                             </button>

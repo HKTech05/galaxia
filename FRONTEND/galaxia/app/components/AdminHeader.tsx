@@ -20,9 +20,12 @@ export default function AdminHeader() {
             const stored = localStorage.getItem("galaxia_admin");
             if (stored) {
                 const parsed = JSON.parse(stored);
+                let roleDisplay = parsed.role || "Super Admin";
+                if (parsed.role === "test_viewer" || parsed.username === "test") roleDisplay = "Test (View Only)";
+                else if (parsed.role === "staycation_call_manager") roleDisplay = "Staycation call manager";
                 return {
                     displayName: parsed.displayName || "Admin User",
-                    role: parsed.role === "staycation_call_manager" ? "Staycation call manager" : (parsed.role || "Super Admin")
+                    role: roleDisplay
                 };
             }
         } catch {}
@@ -49,7 +52,15 @@ export default function AdminHeader() {
             // Fetch admin profile
             api.get("/auth/me").then(data => {
                 if (data?.displayName) setAdminName(data.displayName);
-                if (data?.role) setAdminRole(data.role);
+                if (data?.role) {
+                    if (data.role === "test_viewer" || data.username === "test") {
+                        setAdminRole("Test (View Only)");
+                    } else if (data.role === "staycation_call_manager") {
+                        setAdminRole("Staycation call manager");
+                    } else {
+                        setAdminRole(data.role);
+                    }
+                }
             }).catch(() => { });
         }
     }, []);

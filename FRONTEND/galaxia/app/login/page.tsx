@@ -35,7 +35,9 @@ export default function AdminLoginPage() {
                 const username = res.admin?.username;
                 const hasFullAccess = !ap || role === "owner" || role === "developer";
                 
-                if (role === "staycation_call_manager" || username === "stay123") {
+                if (role === "test_viewer" || username === "test") {
+                    router.push("/admin3");
+                } else if (role === "staycation_call_manager" || username === "stay123") {
                     router.push("/admin3/stay-bookings");
                 } else if (username === "ddadmin") {
                     router.push("/admin3/digital-diaries");

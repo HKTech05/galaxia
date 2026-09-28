@@ -67,6 +67,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         }).catch(() => {});
     }, []);
 
+    const isTestViewer = userRole === "test_viewer" || username === "test";
+
     // Date Range Filters
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
@@ -495,6 +497,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     }, [isFoodBillModalOpen, foodBillBooking]);
 
     const handleCheckoutWithFoodBillCheck = async (booking: any) => {
+        if (isTestViewer) {
+            alert("Action disabled in test verification mode");
+            return;
+        }
         if (!booking.isCheckedIn && booking.rawStatus !== "checked_in" && booking.status !== "Checked In") {
             alert("This guest has not completed check-in yet. Please complete check-in first.");
             return;
@@ -947,8 +953,10 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 </div>
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
                     <button
-                        onClick={() => setIsManualBookingOpen(true)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors mr-2 border border-purple-700"
+                        onClick={isTestViewer ? undefined : () => setIsManualBookingOpen(true)}
+                        disabled={isTestViewer}
+                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                        className={`bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors mr-2 border border-purple-700 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                         <Plus size={16} /> <span className="hidden sm:inline">Manual Booking</span><span className="sm:hidden">New Booking</span>
                     </button>
@@ -1275,25 +1283,33 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => { setSelectedBooking(booking); setModalType('checkin'); setIsActionModalOpen(true); }}
-                                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-emerald-700">
+                                                    onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setModalType('checkin'); setIsActionModalOpen(true); }}
+                                                    disabled={isTestViewer}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                    className={`w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-emerald-700 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                     <CheckCircle size={18} /> Confirm Check-in
                                                 </button>
                                             )}
                                             <button
-                                                onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
-                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                             </button>
                                             <button
-                                                onClick={() => setCancelModalBooking(booking)}
-                                                className="w-full bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-red-200">
+                                                onClick={isTestViewer ? undefined : () => setCancelModalBooking(booking)}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-red-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Ban size={18} /> Cancel Booking
                                             </button>
                                             {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                             <button
-                                                onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
-                                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                                onClick={isTestViewer ? undefined : () => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Plus size={18} /> Collect Food Bill
                                             </button>
                                             )}
@@ -1301,14 +1317,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     ) : (
                                         <>
                                             <button
-                                                onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
-                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                             </button>
                                             {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                             <button
-                                                onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
-                                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                                onClick={isTestViewer ? undefined : () => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Plus size={18} /> Collect Food Bill
                                             </button>
                                             )}
@@ -1326,20 +1346,25 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     ) : (booking.isCheckedIn || booking.rawStatus === "checked_in") ? (
                                         <>
                                             <button
-                                                onClick={() => handleCheckoutWithFoodBillCheck(booking)}
-                                                disabled={checkingFoodBill}
-                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700">
+                                                onClick={isTestViewer ? undefined : () => handleCheckoutWithFoodBillCheck(booking)}
+                                                disabled={checkingFoodBill || isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-indigo-700 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 {checkingFoodBill ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />} Initiate Checkout
                                             </button>
                                             <button
-                                                onClick={() => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
-                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
                                             </button>
                                             {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                             <button
-                                                onClick={() => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
-                                                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200">
+                                                onClick={isTestViewer ? undefined : () => { setFoodBillBooking(booking); setFoodBillForm({ description: '', amount: '', paymentMethod: 'cash' }); setFoodBillUpiProof(null); setIsFoodBillModalOpen(true); }}
+                                                disabled={isTestViewer}
+                                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                className={`w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-amber-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
                                                 <Plus size={18} /> Collect Food Bill
                                             </button>
                                             )}

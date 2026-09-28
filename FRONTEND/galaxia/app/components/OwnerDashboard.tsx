@@ -275,7 +275,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
     const makeCellKey = (date: Date, colType: string, colName: string, unitIndex?: number) =>
         `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}|${colType}|${colName}${unitIndex !== undefined ? `|${unitIndex}` : ''}`;
+    const isTestViewer = adminRole === "test_viewer";
     const toggleCellSelection = (key: string) => {
+        if (isTestViewer) return;
         setSelectedCells(prev => {
             const next = new Set(prev);
             if (next.has(key)) next.delete(key); else next.add(key);
@@ -745,6 +747,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
 
     // Single batch handler for multi-selected cells (handles both blocking vacant cells AND unblocking existing blocked/OR cells)
     const handleBatchBlockSubmit = async () => {
+        if (isTestViewer) {
+            alert("Action disabled in test verification mode");
+            return;
+        }
         if (selectedCells.size === 0) return;
         setBlockActionLoading(true);
 
@@ -806,6 +812,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     };
 
     const handleUnblockCellSubmit = async (blockId: number) => {
+        if (isTestViewer) return;
         if (!confirm("Are you sure you want to remove this block?")) return;
         setBlockActionLoading(true);
         try {
@@ -2201,7 +2208,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                 key={d}
                                                 disabled={!isFullyBooked ? false : true}
                                                 onClick={() => {
-                                                    if (isFullyBooked) return;
+                                                    if (isTestViewer || isFullyBooked) return;
                                                     if (isSelected) {
                                                         setBlackoutDates(blackoutDates.filter(bd => !(bd.getDate() === d && bd.getMonth() === calendarMonth && bd.getFullYear() === calendarYear)));
                                                     } else {
@@ -2297,9 +2304,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         </div>
                                     )}
                                     <button
-                                        onClick={handleBlockDates}
-                                        disabled={blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey || blackoutLoading}
-                                        className="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                        onClick={isTestViewer ? undefined : handleBlockDates}
+                                        disabled={blackoutDates.length === 0 || !blackoutReason || !blackoutPropertyKey || blackoutLoading || isTestViewer}
+                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                        className={`w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         {blackoutLoading ? (
                                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -2330,7 +2338,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                             {(block.numUnits || 1) > 1 && <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">×{block.numUnits} cottages</span>}
                                                         </p>
                                                     </div>
-                                                    <button onClick={() => handleUnblockDate(block.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0">
+                                                    <button
+                                                        onClick={isTestViewer ? undefined : () => handleUnblockDate(block.id)}
+                                                        disabled={isTestViewer}
+                                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                        className={`p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors shrink-0 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                    >
                                                         <X size={14} />
                                                     </button>
                                                 </div>
@@ -2735,9 +2748,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         </div>
                                     )}
                                     <button
-                                        onClick={handleBatchBlockSubmit}
-                                        disabled={blockActionLoading}
-                                        className={`w-full py-2.5 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all shadow-sm ${
+                                        onClick={isTestViewer ? undefined : handleBatchBlockSubmit}
+                                        disabled={blockActionLoading || isTestViewer}
+                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                        className={`w-full py-2.5 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all shadow-sm ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""} ${
                                             blockedCount > 0 && vacantCount === 0
                                                 ? "bg-emerald-600 hover:bg-emerald-700"
                                                 : blockReasonType === "owner"

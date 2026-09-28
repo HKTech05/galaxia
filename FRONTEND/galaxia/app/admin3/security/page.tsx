@@ -70,6 +70,7 @@ export default function SecurityPage() {
     }, []);
 
     const canManageStaff = adminUsername !== "ranjit";
+    const isTestViewer = adminRole === "test_viewer" || adminUsername === "test";
 
     const formatDateStr = (d: Date) => {
         const year = d.getFullYear();
@@ -128,6 +129,7 @@ export default function SecurityPage() {
 
     // Handle Adding New Staff
     const handleAddStaff = async () => {
+        if (isTestViewer) return;
         if (!newStaffName.trim()) {
             alert("Please enter staff name.");
             return;
@@ -161,7 +163,7 @@ export default function SecurityPage() {
 
     // Handle Deleting Staff
     const handleDeleteStaff = async () => {
-        if (!deletingStaff) return;
+        if (isTestViewer || !deletingStaff) return;
         setDeleting(true);
         try {
             await api.delete(`/security/staff/${deletingStaff.id}`);
@@ -187,6 +189,7 @@ export default function SecurityPage() {
     };
 
     const checkoutStaff = async (staff: SecurityStaff, photoBase64?: string | null) => {
+        if (isTestViewer) return;
         setSubmittingId(staff.id);
         try {
             await api.post("/security/attendance", {
@@ -232,6 +235,7 @@ export default function SecurityPage() {
 
     // Open Camera Modal & Start Stream
     const openCameraModal = async (staff: SecurityStaff, action: "checkin" | "checkout" = "checkin") => {
+        if (isTestViewer) return;
         if (!canMarkAttendance) {
             alert("Ranjit profile is only permitted to mark attendance for today's date.");
             return;
@@ -286,6 +290,7 @@ export default function SecurityPage() {
 
     // Mark Attendance (Present / Absent)
     const markAttendance = async (staff: SecurityStaff, status: "present" | "absent", photoBase64?: string | null) => {
+        if (isTestViewer) return;
         if (!canMarkAttendance) {
             alert("Ranjit profile is only permitted to mark attendance for today's date.");
             return;
@@ -363,8 +368,10 @@ export default function SecurityPage() {
 
                     {canManageStaff && (
                         <button
-                            onClick={() => setShowAddModal(true)}
-                            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-2xl shadow-sm transition-colors text-sm"
+                            onClick={isTestViewer ? undefined : () => setShowAddModal(true)}
+                            disabled={isTestViewer}
+                            title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                            className={`flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-2xl shadow-sm transition-colors text-sm ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                             <Plus size={18} />
                             <span>Add Staff</span>
@@ -534,9 +541,10 @@ export default function SecurityPage() {
 
                                                 {canManageStaff && (
                                                     <button
-                                                        onClick={() => setDeletingStaff(staff)}
-                                                        className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
-                                                        title="Delete Staff"
+                                                        onClick={isTestViewer ? undefined : () => setDeletingStaff(staff)}
+                                                        disabled={isTestViewer}
+                                                        title={isTestViewer ? "Action disabled in test verification mode" : "Delete Staff"}
+                                                        className={`p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                                     >
                                                         <Trash2 size={15} />
                                                     </button>
@@ -563,14 +571,16 @@ export default function SecurityPage() {
                                                         </button>
                                                     ) : (
                                                         <button
-                                                            onClick={() => openCameraModal(staff, "checkin")}
-                                                            disabled={!canMarkAttendance}
+                                                            onClick={isTestViewer ? undefined : () => openCameraModal(staff, "checkin")}
+                                                            disabled={!canMarkAttendance || isTestViewer}
                                                             className={`w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
-                                                                canMarkAttendance
+                                                                isTestViewer
+                                                                    ? "border-slate-200 bg-slate-100 text-slate-300 opacity-50 cursor-not-allowed"
+                                                                    : canMarkAttendance
                                                                     ? "border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 text-slate-400 hover:text-purple-600"
                                                                     : "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
                                                             }`}
-                                                            title={canMarkAttendance ? "Capture Photo via Phone Camera" : "Attendance can only be marked for today"}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : canMarkAttendance ? "Capture Photo via Phone Camera" : "Attendance can only be marked for today"}
                                                         >
                                                             <Camera size={20} />
                                                             <span className="text-[9px] font-bold mt-0.5">Camera</span>
@@ -621,11 +631,13 @@ export default function SecurityPage() {
                                             {/* Action Buttons: Green YES / Red NO & Re-take Camera */}
                                             <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
                                                 <button
-                                                    onClick={() => markAttendance(staff, "present")}
-                                                    disabled={isSubmitting || !canMarkAttendance}
-                                                    title={canMarkAttendance ? "Mark Present" : "Attendance can only be marked for today"}
+                                                    onClick={isTestViewer ? undefined : () => markAttendance(staff, "present")}
+                                                    disabled={isSubmitting || !canMarkAttendance || isTestViewer}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : canMarkAttendance ? "Mark Present" : "Attendance can only be marked for today"}
                                                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                        !canMarkAttendance
+                                                        isTestViewer
+                                                            ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-50 cursor-not-allowed"
+                                                            : !canMarkAttendance
                                                             ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
                                                             : att?.status === "present"
                                                                 ? "bg-emerald-600 text-white shadow-sm shadow-emerald-200"
@@ -637,11 +649,13 @@ export default function SecurityPage() {
                                                 </button>
 
                                                 <button
-                                                    onClick={() => markAttendance(staff, "absent")}
-                                                    disabled={isSubmitting || !canMarkAttendance}
-                                                    title={canMarkAttendance ? "Mark Absent" : "Attendance can only be marked for today"}
+                                                    onClick={isTestViewer ? undefined : () => markAttendance(staff, "absent")}
+                                                    disabled={isSubmitting || !canMarkAttendance || isTestViewer}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : canMarkAttendance ? "Mark Absent" : "Attendance can only be marked for today"}
                                                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                        !canMarkAttendance
+                                                        isTestViewer
+                                                            ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-50 cursor-not-allowed"
+                                                            : !canMarkAttendance
                                                             ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
                                                             : att?.status === "absent"
                                                                 ? "bg-red-600 text-white shadow-sm shadow-red-200"
@@ -653,14 +667,16 @@ export default function SecurityPage() {
                                                 </button>
 
                                                 <button
-                                                    onClick={() => openCameraModal(staff, "checkin")}
-                                                    disabled={!canMarkAttendance}
+                                                    onClick={isTestViewer ? undefined : () => openCameraModal(staff, "checkin")}
+                                                    disabled={!canMarkAttendance || isTestViewer}
                                                     className={`p-2 rounded-xl transition-colors shrink-0 ${
-                                                        canMarkAttendance
+                                                        isTestViewer
+                                                            ? "bg-slate-100 text-slate-300 opacity-50 cursor-not-allowed"
+                                                            : canMarkAttendance
                                                             ? "bg-slate-100 hover:bg-slate-200 text-slate-600"
                                                             : "bg-slate-100 text-slate-300 cursor-not-allowed opacity-60"
                                                     }`}
-                                                    title={canMarkAttendance ? "Retake Photo via Camera" : "Attendance can only be marked for today"}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : canMarkAttendance ? "Retake Photo via Camera" : "Attendance can only be marked for today"}
                                                 >
                                                     <Camera size={14} />
                                                 </button>
@@ -740,15 +756,19 @@ export default function SecurityPage() {
                                                         </button>
                                                     ) : (
                                                         <button
-                                                            onClick={() => openCameraModal(staff, "checkout")}
-                                                            disabled={!canMarkAttendance || !isPresentToday || isCheckedOut}
+                                                            onClick={isTestViewer ? undefined : () => openCameraModal(staff, "checkout")}
+                                                            disabled={!canMarkAttendance || !isPresentToday || isCheckedOut || isTestViewer}
                                                             className={`w-16 h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${
-                                                                canMarkAttendance && isPresentToday && !isCheckedOut
+                                                                isTestViewer
+                                                                    ? "border-slate-200 bg-slate-100 text-slate-300 opacity-50 cursor-not-allowed"
+                                                                    : canMarkAttendance && isPresentToday && !isCheckedOut
                                                                     ? "border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/50 text-slate-400 hover:text-purple-600"
                                                                     : "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
                                                             }`}
                                                             title={
-                                                                !isPresentToday
+                                                                isTestViewer
+                                                                    ? "Action disabled in test verification mode"
+                                                                    : !isPresentToday
                                                                     ? "Must be marked Present first"
                                                                     : isCheckedOut
                                                                         ? "Already Checked Out"
@@ -795,10 +815,13 @@ export default function SecurityPage() {
                                                     </div>
                                                 ) : (
                                                     <button
-                                                        onClick={() => openCameraModal(staff, "checkout")}
-                                                        disabled={isSubmitting || !canMarkAttendance || !isPresentToday}
+                                                        onClick={isTestViewer ? undefined : () => openCameraModal(staff, "checkout")}
+                                                        disabled={isSubmitting || !canMarkAttendance || !isPresentToday || isTestViewer}
+                                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
                                                         className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-extrabold text-xs transition-all ${
-                                                            !canMarkAttendance || !isPresentToday
+                                                            isTestViewer
+                                                                ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-50 cursor-not-allowed"
+                                                                : !canMarkAttendance || !isPresentToday
                                                                 ? "bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed"
                                                                 : "bg-purple-600 hover:bg-purple-700 text-white shadow-sm shadow-purple-200"
                                                         }`}

@@ -56,6 +56,7 @@ export default function CouponsClient() {
     }, []);
 
     const isCallManager = adminRole === "staycation_call_manager" || adminUsername === "stay123";
+    const isTestViewer = adminRole === "test_viewer" || adminUsername === "test";
 
     // Fetch coupons from API
     const fetchCoupons = useCallback(async () => {
@@ -84,6 +85,7 @@ export default function CouponsClient() {
     useEffect(() => { fetchCoupons(); }, [fetchCoupons]);
 
     const handleCreateCoupon = async () => {
+        if (isTestViewer) return;
         if (!newCoupon.code || !newCoupon.discount || !newCoupon.maxUses) {
             alert("Please fill all required fields");
             return;
@@ -127,6 +129,7 @@ export default function CouponsClient() {
     };
 
     const handleDelete = async (id: string) => {
+        if (isTestViewer) return;
         if (confirm("Are you sure you want to delete this coupon?")) {
             try {
                 await api.delete(`/coupons/${id}`);
@@ -163,8 +166,10 @@ export default function CouponsClient() {
                         <p className="text-slate-500 font-medium mt-1">Create, track, and manage discount codes for bookings.</p>
                     </div>
                     <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-purple-600/20 flex items-center gap-2 w-full sm:w-auto justify-center"
+                        onClick={() => { if (isTestViewer) return; setIsCreateModalOpen(true); }}
+                        disabled={isTestViewer}
+                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                        className={`bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-purple-600/20 flex items-center gap-2 w-full sm:w-auto justify-center ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                         <Plus size={18} />
                         Create Coupon
@@ -253,9 +258,10 @@ export default function CouponsClient() {
                                                     </button>
                                                     {!isCallManager && (
                                                         <button
-                                                            onClick={() => handleDelete(coupon.id)}
-                                                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                                                            title="Delete Coupon"
+                                                            onClick={() => { if (isTestViewer) return; handleDelete(coupon.id); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Delete Coupon"}
                                                         >
                                                             <Trash2 size={18} />
                                                         </button>
@@ -366,7 +372,9 @@ export default function CouponsClient() {
                             </div>
                             <button
                                 onClick={handleCreateCoupon}
-                                className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                                disabled={isTestViewer}
+                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                className={`w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${isTestViewer ? "cursor-not-allowed opacity-50" : ""}`}
                             >
                                 <CheckCircle size={18} /> Generate Coupon
                             </button>

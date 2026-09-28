@@ -102,6 +102,7 @@ export default function HousekeepingPortalPage() {
     const [error, setError] = useState("");
     const [userRole, setUserRole] = useState("");
     const [userName, setUserName] = useState("");
+    const isTestViewer = userRole === "test_viewer" || userName === "test";
 
     // Food Deliveries (Prepared food ready for delivery)
     const [foodDeliveries, setFoodDeliveries] = useState<HospitalityRequest[]>([]);
@@ -172,6 +173,7 @@ export default function HousekeepingPortalPage() {
     };
 
     const handleSaveMenuChanges = async () => {
+        if (isTestViewer) return;
         try {
             const res = await api.put<{ success: boolean; menuItems: any[] }>("/hospitality/menu", {
                 menuItems: tempMenuItems
@@ -244,6 +246,7 @@ export default function HousekeepingPortalPage() {
     };
 
     const handleDeleteRequest = async (id: number) => {
+        if (isTestViewer) return;
         if (!confirm("Are you sure you want to delete this request?")) return;
         try {
             await api.delete(`/hospitality/requests/${id}`);
@@ -276,6 +279,7 @@ export default function HousekeepingPortalPage() {
     };
 
     const handleFormSubmit = async () => {
+        if (isTestViewer) return;
         const selectedItems = Object.entries(formQuantities).map(([itemId, qty]) => {
             const item = menuItems.find(m => m.id === itemId);
             return {
@@ -409,6 +413,7 @@ export default function HousekeepingPortalPage() {
     };
 
     const handleMarkDelivered = async (id: number) => {
+        if (isTestViewer) return;
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
                 status: "fulfilled"
@@ -440,6 +445,7 @@ export default function HousekeepingPortalPage() {
     };
 
     const handleEditAllocation = async (bookingId: number) => {
+        if (isTestViewer) return;
         if (!editAllocationUnit.trim()) {
             alert("Please select a cottage/villa.");
             return;
@@ -495,6 +501,7 @@ export default function HousekeepingPortalPage() {
     }, [selectedDate]);
 
     const handleUpdateMealCount = async (bookingId: number, meal: "breakfast" | "lunch" | "dinner", change: number) => {
+        if (isTestViewer) return;
         if (!mealCounter) return;
         
         const booking = mealCounter.bookings.find(b => b.bookingId === bookingId);
@@ -549,6 +556,7 @@ export default function HousekeepingPortalPage() {
     }, [selectedDate, userRole, fetchMealCounter]);
 
     const handleFulfilRequest = async (id: number) => {
+        if (isTestViewer) return;
         try {
             const res = await api.put<{ success: boolean }>(`/hospitality/requests/${id}`, {
                 status: "fulfilled"
@@ -564,7 +572,7 @@ export default function HousekeepingPortalPage() {
         }
     };
 
-    if (userRole && userRole !== "housekeeping" && userRole !== "owner" && userRole !== "developer" && userRole !== "staycation_admin") {
+    if (userRole && userRole !== "housekeeping" && userRole !== "owner" && userRole !== "developer" && userRole !== "staycation_admin" && !isTestViewer) {
         return (
             <div className="max-w-md mx-auto py-20 text-center space-y-4">
                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
@@ -696,8 +704,10 @@ export default function HousekeepingPortalPage() {
                                 </div>
 
                                 <button
-                                    onClick={() => handleMarkDelivered(req.id)}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                                    onClick={() => { if (isTestViewer) return; handleMarkDelivered(req.id); }}
+                                    disabled={isTestViewer}
+                                    title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                    className={`w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                 >
                                     <Check size={14} className="stroke-[3px]" />
                                     Mark Delivered
@@ -722,8 +732,10 @@ export default function HousekeepingPortalPage() {
                             <div className="flex items-center gap-3">
                                 {userRole !== "housekeeping" && (
                                     <button
-                                        onClick={handleOpenCreateModal}
-                                        className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                                        onClick={() => { if (isTestViewer) return; handleOpenCreateModal(); }}
+                                        disabled={isTestViewer}
+                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                        className={`bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         <Plus size={14} />
                                         New Request
@@ -801,24 +813,28 @@ export default function HousekeepingPortalPage() {
                                                 {userRole !== "housekeeping" && !["ranjit", "devi"].includes(userName.toLowerCase()) && (
                                                     <div className="flex gap-2">
                                                         <button
-                                                            onClick={() => handleOpenEditModal(req)}
-                                                            className="p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200"
-                                                            title="Edit Request"
+                                                            onClick={() => { if (isTestViewer) return; handleOpenEditModal(req); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-2 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Edit Request"}
                                                         >
                                                             <Edit size={14} />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteRequest(req.id)}
-                                                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100"
-                                                            title="Delete Request"
+                                                            onClick={() => { if (isTestViewer) return; handleDeleteRequest(req.id); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-red-100 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Delete Request"}
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>
                                                     </div>
                                                 )}
                                                 <button
-                                                    onClick={() => handleFulfilRequest(req.id)}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100 hover:shadow"
+                                                    onClick={() => { if (isTestViewer) return; handleFulfilRequest(req.id); }}
+                                                    disabled={isTestViewer}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                    className={`bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100 hover:shadow ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                                 >
                                                     <Check size={14} className="stroke-[3px]" />
                                                     Mark as Done
@@ -899,16 +915,18 @@ export default function HousekeepingPortalPage() {
                                                 {userRole !== "housekeeping" && !["ranjit", "devi"].includes(userName.toLowerCase()) && (
                                                     <div className="flex items-center gap-1">
                                                         <button
-                                                            onClick={() => handleOpenEditModal(req)}
-                                                            className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200"
-                                                            title="Edit Request"
+                                                            onClick={() => { if (isTestViewer) return; handleOpenEditModal(req); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Edit Request"}
                                                         >
                                                             <Edit size={12} />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteRequest(req.id)}
-                                                            className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100"
-                                                            title="Delete Request"
+                                                            onClick={() => { if (isTestViewer) return; handleDeleteRequest(req.id); }}
+                                                            disabled={isTestViewer}
+                                                            className={`p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors border border-red-100 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Delete Request"}
                                                         >
                                                             <Trash2 size={12} />
                                                         </button>
@@ -1042,8 +1060,10 @@ export default function HousekeepingPortalPage() {
                                             return (
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     <button
-                                                        onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, -1)}
-                                                        className="w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] cursor-pointer"
+                                                        onClick={() => { if (isTestViewer) return; handleUpdateMealCount(mealBooking.bookingId, mealKey, -1); }}
+                                                        disabled={isTestViewer}
+                                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                        className={`w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] ${isTestViewer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                                                     >
                                                         -
                                                     </button>
@@ -1051,8 +1071,10 @@ export default function HousekeepingPortalPage() {
                                                         {count} / {maxGuests}
                                                     </span>
                                                     <button
-                                                        onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, 1)}
-                                                        className="w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] cursor-pointer"
+                                                        onClick={() => { if (isTestViewer) return; handleUpdateMealCount(mealBooking.bookingId, mealKey, 1); }}
+                                                        disabled={isTestViewer}
+                                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                        className={`w-5 h-5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center transition-colors text-[10px] ${isTestViewer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                                                     >
                                                         +
                                                     </button>
@@ -1099,14 +1121,16 @@ export default function HousekeepingPortalPage() {
                                                     ) : (
                                                         <div className="flex items-center gap-1.5">
                                                             <span>{unitName}</span>
-                                                            {(userRole === "owner" || userRole === "developer") && (
+                                                            {(userRole === "owner" || userRole === "developer" || isTestViewer) && (
                                                                 <button
                                                                     onClick={() => {
+                                                                        if (isTestViewer) return;
                                                                         setEditingAllocationId(alloc.bookingId);
                                                                         setEditAllocationUnit(unitName);
                                                                     }}
-                                                                    className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                                                                    title="Edit Allotment"
+                                                                    disabled={isTestViewer}
+                                                                    className={`p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors ${isTestViewer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                                                    title={isTestViewer ? "Action disabled in test verification mode" : "Edit Allotment"}
                                                                 >
                                                                     <Edit size={12} />
                                                                 </button>
@@ -1154,8 +1178,10 @@ export default function HousekeepingPortalPage() {
                                             <span className="font-bold text-slate-600">{label}</span>
                                             <div className="flex items-center gap-1.5">
                                                 <button
-                                                    onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, -1)}
-                                                    className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold flex items-center justify-center transition-colors text-xs cursor-pointer"
+                                                    onClick={() => { if (isTestViewer) return; handleUpdateMealCount(mealBooking.bookingId, mealKey, -1); }}
+                                                    disabled={isTestViewer}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                    className={`w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold flex items-center justify-center transition-colors text-xs ${isTestViewer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                                                 >
                                                     -
                                                 </button>
@@ -1163,8 +1189,10 @@ export default function HousekeepingPortalPage() {
                                                     {count} / {maxGuests}
                                                 </span>
                                                 <button
-                                                    onClick={() => handleUpdateMealCount(mealBooking.bookingId, mealKey, 1)}
-                                                    className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold flex items-center justify-center transition-colors text-xs cursor-pointer"
+                                                    onClick={() => { if (isTestViewer) return; handleUpdateMealCount(mealBooking.bookingId, mealKey, 1); }}
+                                                    disabled={isTestViewer}
+                                                    title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                                    className={`w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold flex items-center justify-center transition-colors text-xs ${isTestViewer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                                                 >
                                                     +
                                                 </button>
@@ -1221,14 +1249,16 @@ export default function HousekeepingPortalPage() {
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    (userRole === "owner" || userRole === "developer") && (
+                                                    (userRole === "owner" || userRole === "developer" || isTestViewer) && (
                                                         <button
                                                             onClick={() => {
+                                                                if (isTestViewer) return;
                                                                 setEditingAllocationId(alloc.bookingId);
                                                                 setEditAllocationUnit(unitName);
                                                             }}
-                                                            className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
-                                                            title="Edit Allotment"
+                                                            disabled={isTestViewer}
+                                                            className={`p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition-colors border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                                            title={isTestViewer ? "Action disabled in test verification mode" : "Edit Allotment"}
                                                         >
                                                             <Edit size={12} />
                                                         </button>
@@ -1433,9 +1463,10 @@ export default function HousekeepingPortalPage() {
                             </button>
                             <button
                                 type="button"
-                                disabled={modalSubmitting}
+                                disabled={isTestViewer || modalSubmitting}
+                                title={isTestViewer ? "Action disabled in test verification mode" : undefined}
                                 onClick={handleFormSubmit}
-                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100"
+                                className={`bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm shadow-blue-100 ${isTestViewer ? "cursor-not-allowed" : ""}`}
                             >
                                 {modalSubmitting ? (
                                     <>
