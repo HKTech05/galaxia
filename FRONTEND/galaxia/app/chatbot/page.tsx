@@ -22,8 +22,25 @@ const STAYCATION_CHATBOTS = [
     "ig_hillview"
 ];
 
+const ALL_NUMBERS = [
+    "staycation_1",
+    "staycation_2",
+    "digital_diaries",
+    "dd_instagram",
+    "wa_amstelnest",
+    "wa_staycation",
+    "website",
+    "ig_ambrose",
+    "ig_amstelnest",
+    "ig_laparaiso",
+    "ig_mountview",
+    "ig_heavenlyvilla",
+    "ig_hillview"
+];
+
 const DEFAULT_USERS: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {
-    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ["staycation_1", "staycation_2", "digital_diaries", "dd_instagram", "wa_amstelnest", "website", "ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"] },
+    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ALL_NUMBERS },
+    test: { password: "test@123", role: "test_viewer", displayName: "Test Account", assignedNumbers: ALL_NUMBERS },
     staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: STAYCATION_CHATBOTS },
     stay123: { password: "stay123", role: "staycation_call_manager", displayName: "Staycation call manager", assignedNumbers: STAYCATION_CHATBOTS },
     staycation2: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2", "website"] },
@@ -68,7 +85,14 @@ export default function ChatbotLoginPage() {
         if (user && user.password === password) {
             localStorage.setItem(
                 "chatbot_session",
-                JSON.stringify({ username: username.trim(), role: user.role, displayName: user.displayName, assignedNumbers: user.assignedNumbers, loginTime: new Date().toISOString() })
+                JSON.stringify({
+                    username: username.trim(),
+                    role: user.role,
+                    displayName: user.displayName,
+                    assignedNumbers: user.assignedNumbers,
+                    isReadOnly: user.role === "test_viewer",
+                    loginTime: new Date().toISOString()
+                })
             );
             router.push("/chatbot/dashboard");
         } else {

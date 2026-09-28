@@ -63,11 +63,11 @@
                         </div>
                         <div class="chat-header-right">
                             <div class="tag-buttons">
-                                <button class="tag-btn" data-tag="hot" onclick="toggleTag('hot')">🔥 Hot</button>
-                                <button class="tag-btn" data-tag="followup" onclick="toggleTag('followup')">📌 Follow-up</button>
-                                <button class="tag-btn" data-tag="resolved" onclick="toggleTag('resolved')">✅ Resolved</button>
+                                <button class="tag-btn" data-tag="hot" onclick="if(!isTestViewer)toggleTag('hot')">🔥 Hot</button>
+                                <button class="tag-btn" data-tag="followup" onclick="if(!isTestViewer)toggleTag('followup')">📌 Follow-up</button>
+                                <button class="tag-btn" data-tag="resolved" onclick="if(!isTestViewer)toggleTag('resolved')">✅ Resolved</button>
                             </div>
-                            <div class="mode-toggle" onclick="toggleMode()">
+                            <div class="mode-toggle" onclick="if(!isTestViewer)toggleMode()">
                                 <span class="mode-label bot" id="modeLabelBot">🤖</span>
                                 <div class="toggle-switch" id="modeSwitch"></div>
                                 <span class="mode-label human" id="modeLabelHuman">👤</span>
@@ -123,6 +123,8 @@
     if (!session) {
         window.location.href = 'login.html';
     }
+
+    const isTestViewer = session && (session.role === 'test_viewer' || session.username === 'test' || Boolean(session.isReadOnly));
 
     // ─── STATE ───────────────────────────────────────────
     let currentTab = 'all';
@@ -217,7 +219,7 @@
     // ─── INIT ────────────────────────────────────────────
     async function init() {
         // Set role badge
-        document.getElementById('roleBadge').textContent = session.role === 'owner' ? 'Owner' : session.displayName;
+        document.getElementById('roleBadge').textContent = session.role === 'owner' ? 'Owner' : (isTestViewer ? 'Test (View Only)' : session.displayName);
 
         // Build number tabs
         buildNumberTabs();
@@ -253,7 +255,9 @@
     // ─── NUMBER TABS ─────────────────────────────────────
     function buildNumberTabs() {
         const container = document.getElementById('numberTabs');
-        const allowedNumbers = session.assignedNumbers || Object.keys(PHONE_NUMBERS);
+        const allowedNumbers = (session.role === 'owner' || isTestViewer)
+            ? Object.keys(PHONE_NUMBERS)
+            : (session.assignedNumbers || Object.keys(PHONE_NUMBERS));
 
         let html = `<button class="number-tab ${currentTab === 'all' ? 'active' : ''}" onclick="switchTab('all')">All`;
 
@@ -387,12 +391,14 @@
             console.error('Failed to load messages:', err);
         }
 
-        // Mark as read
-        try {
-            await apiPatch(`/api/chats/${sessionId}/read`, {});
-            chat.unread_count = 0;
-        } catch (err) {
-            console.error('Failed to mark read:', err);
+        // Mark as read (skip for test viewer)
+        if (!isTestViewer) {
+            try {
+                await apiPatch(`/api/chats/${sessionId}/read`, {});
+                chat.unread_count = 0;
+            } catch (err) {
+                console.error('Failed to mark read:', err);
+            }
         }
 
         // Re-render chat list
@@ -456,6 +462,7 @@
 
     // ─── SEND MESSAGE ────────────────────────────────────
     async function sendMessage() {
+        if (isTestViewer) return;
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if (!text || !currentChatId) return;
@@ -477,7 +484,7 @@
 
     // ─── MODE TOGGLE ─────────────────────────────────────
     async function toggleMode() {
-        if (!currentChatId) return;
+        if (isTestViewer || !currentChatId) return;
         const chat = chatSessions.find(s => s.session_id === currentChatId);
         if (!chat) return;
 
@@ -497,6 +504,35 @@
         const switchEl = document.getElementById('modeSwitch');
         const inputArea = document.getElementById('messageInputArea');
         const botBanner = document.getElementById('botBanner');
+        const input = document.getElementById('messageInput');
+        const sendBtn = document.querySelector('.btn-send');
+
+        if (isTestViewer) {
+            switchEl.style.cursor = 'not-allowed';
+            switchEl.style.opacity = '0.6';
+            input.value = '';
+            input.disabled = true;
+            input.readOnly = true;
+            input.placeholder = 'this is a test account you are unable to send messages.';
+            input.style.cursor = 'not-allowed';
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.style.cursor = 'not-allowed';
+                sendBtn.style.opacity = '0.4';
+            }
+
+            if (mode === 'human') {
+                switchEl.classList.add('human-mode');
+                inputArea.style.display = 'flex';
+                botBanner.style.display = 'none';
+            } else {
+                switchEl.classList.remove('human-mode');
+                botBanner.innerHTML = '<p>🤖 Bot is handling this conversation</p>';
+                botBanner.style.display = 'block';
+                inputArea.style.display = 'flex';
+            }
+            return;
+        }
 
         if (mode === 'human') {
             switchEl.classList.add('human-mode');
@@ -505,13 +541,14 @@
         } else {
             switchEl.classList.remove('human-mode');
             inputArea.style.display = 'none';
+            botBanner.innerHTML = '<p>🤖 Bot is handling this conversation · <a href="#" onclick="toggleMode(); return false;" style="color:var(--green); font-weight:700;">Switch to Human</a></p>';
             botBanner.style.display = 'block';
         }
     }
 
     // ─── TAGS ────────────────────────────────────────────
     async function toggleTag(tag) {
-        if (!currentChatId) return;
+        if (isTestViewer || !currentChatId) return;
         const chat = chatSessions.find(s => s.session_id === currentChatId);
         if (!chat) return;
 

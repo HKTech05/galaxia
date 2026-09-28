@@ -52,7 +52,14 @@
             password: 'owner123',
             role: 'owner',
             displayName: 'Owner',
-            assignedNumbers: ['staycation_1', 'staycation_2', 'digital_diaries']
+            assignedNumbers: ['staycation_1', 'staycation_2', 'digital_diaries', 'website', 'ig_ambrose', 'ig_amstelnest', 'ig_laparaiso', 'ig_mountview', 'ig_heavenlyvilla', 'ig_hillview']
+        },
+        // Test viewer account (view only)
+        'test': {
+            password: 'test@123',
+            role: 'test_viewer',
+            displayName: 'Test Account',
+            assignedNumbers: ['staycation_1', 'staycation_2', 'digital_diaries', 'website', 'ig_ambrose', 'ig_amstelnest', 'ig_laparaiso', 'ig_mountview', 'ig_heavenlyvilla', 'ig_hillview']
         },
         // Staycation 1 admin
         'stay123': {
@@ -107,6 +114,7 @@
                 role: user.role,
                 displayName: user.displayName,
                 assignedNumbers: user.assignedNumbers,
+                isReadOnly: user.role === 'test_viewer',
                 loginTime: new Date().toISOString()
             };
             localStorage.setItem('chatbot_session', JSON.stringify(session));

@@ -169,9 +169,10 @@ function dbToUiMessage(db: DbChatMessage): Message {
     };
 }
 
-const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", stay123: "stay123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123", igadmin: "ig123" };
+const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", test: "test@123", stay123: "stay123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123", igadmin: "ig123" };
 const ACCOUNTS = [
     { key: "owner", label: "Owner", access: "All Numbers" },
+    { key: "test", label: "Test Account", access: "View Only (All)" },
     { key: "stay123", label: "Staycation Call Manager", access: "Staycation Chatbots" },
     { key: "staycation1", label: "Staycation 1", access: "Staycation Chatbots" },
     { key: "staycation2", label: "Staycation 2", access: "Staycation 2" },
@@ -256,7 +257,8 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
 export default function ChatbotDashboard() {
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
-    const [session, setSession] = useState<{ role: string; displayName: string; assignedNumbers: string[] } | null>(null);
+    const [session, setSession] = useState<{ role: string; displayName: string; assignedNumbers: string[]; username?: string; isReadOnly?: boolean } | null>(null);
+    const isTestViewer = session?.role === "test_viewer" || session?.username === "test" || Boolean(session?.isReadOnly);
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [messages, setMessages] = useState<Record<string, Message[]>>({});
     const [tab, setTab] = useState("all");
@@ -310,7 +312,7 @@ export default function ChatbotDashboard() {
             const data = await res.json();
 
             const nums = session.assignedNumbers || [];
-            const isOwner = session.role === "owner" || session.role === "developer" || (nums.includes("staycation_1") && nums.includes("digital_diaries"));
+            const isOwner = session.role === "owner" || session.role === "developer" || isTestViewer || (nums.includes("staycation_1") && nums.includes("digital_diaries"));
             const canSeeCelebration = isOwner || nums.includes("digital_diaries");
             const canSeeStaycation = isOwner || nums.includes("staycation_1") || nums.includes("staycation_2");
 
@@ -399,7 +401,7 @@ export default function ChatbotDashboard() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [dropdownOpen]);
 
-    const allowed = (session?.role === "owner" || session?.role === "developer") ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
+    const allowed = (session?.role === "owner" || session?.role === "developer" || isTestViewer) ? Object.keys(PHONE_NUMBERS) : (session?.assignedNumbers || Object.keys(PHONE_NUMBERS));
 
     // Memoize filtered sessions for extreme UI speed & low GPU/CPU usage
     const IG_STAYCATION_TABS = new Set(["ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"]);
@@ -452,8 +454,10 @@ export default function ChatbotDashboard() {
         const chat = sessions.find(s => s.id === id);
         if (!chat) return;
 
-        // Mark read locally
-        setSessions(prev => prev.map(s => s.id === id ? { ...s, unread: 0 } : s));
+        // Mark read locally (only for authorized accounts, not test viewer)
+        if (!isTestViewer) {
+            setSessions(prev => prev.map(s => s.id === id ? { ...s, unread: 0 } : s));
+        }
 
         // For WhatsApp chats, load messages from bot server
         if (chat.dbSessionId) {
@@ -465,12 +469,14 @@ export default function ChatbotDashboard() {
                     setMessages(prev => ({ ...prev, [id]: uiMessages }));
                 }
 
-                // Mark read on server
-                await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/read`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: "{}",
-                });
+                // Mark read on server (only for authorized accounts, not test viewer)
+                if (!isTestViewer) {
+                    await fetch(`${BOT_API_BASE}/api/chats/${chat.dbSessionId}/read`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: "{}",
+                    });
+                }
             } catch (err) {
                 console.error("Failed to load chat messages:", err);
             }
@@ -479,6 +485,7 @@ export default function ChatbotDashboard() {
 
     // ─── Mark all visible bot chats as read ───
     const handleMarkAllAsRead = async () => {
+        if (isTestViewer) return;
         const visibleSessions = filteredSessions(tab);
         const toMark = visibleSessions.filter(s => s.mode === "bot" && s.unread > 0);
         if (toMark.length === 0) return;
@@ -505,7 +512,7 @@ export default function ChatbotDashboard() {
 
     // ─── Toggle mode — call bot server API ───
     const toggleMode = async () => {
-        if (!activeChat) return;
+        if (isTestViewer || !activeChat) return;
         const chat = sessions.find(s => s.id === activeChat);
         if (!chat) return;
 
@@ -531,7 +538,7 @@ export default function ChatbotDashboard() {
 
     // ─── Toggle tag — call bot server API ───
     const toggleTag = async (tag: string) => {
-        if (!activeChat) return;
+        if (isTestViewer || !activeChat) return;
         const chat = sessions.find(s => s.id === activeChat);
         if (!chat) return;
 
@@ -556,7 +563,7 @@ export default function ChatbotDashboard() {
 
     // ─── Send message — call bot server API (sends to WhatsApp too) ───
     const sendMessage = async () => {
-        if (!msgInput.trim() || !activeChat || sending) return;
+        if (isTestViewer || !msgInput.trim() || !activeChat || sending) return;
         const text = msgInput.trim();
         const chat = sessions.find(s => s.id === activeChat);
         if (!chat) return;
@@ -600,7 +607,7 @@ export default function ChatbotDashboard() {
             <header className="cb-topbar">
                 <div className="cb-topbar-left">
                     <h1>Galaxia</h1>
-                    <span className="cb-role-badge">{session.role === "owner" || session.role === "developer" ? (session.role === "developer" ? "Developer" : "Owner") : session.displayName}</span>
+                    <span className="cb-role-badge">{session.role === "owner" || session.role === "developer" ? (session.role === "developer" ? "Developer" : "Owner") : isTestViewer ? "Test (View Only)" : session.displayName}</span>
                 </div>
                 <div className="cb-topbar-right">
                     <div className="cb-conn-status">
@@ -609,9 +616,11 @@ export default function ChatbotDashboard() {
                             {connected ? "Connected" : "Connecting…"}
                         </span>
                     </div>
-                    <button className="cb-btn-settings" onClick={() => setShowSettings(true)} title="Settings">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" /><circle cx="12" cy="12" r="3" /></svg>
-                    </button>
+                    {!isTestViewer && (
+                        <button className="cb-btn-settings" onClick={() => setShowSettings(true)} title="Settings">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </button>
+                    )}
                     <button className="cb-btn-logout" onClick={handleLogout}>Log Out</button>
                 </div>
             </header>
@@ -718,6 +727,7 @@ export default function ChatbotDashboard() {
                         ))}
                     </div>
                     {(() => {
+                        if (isTestViewer) return null;
                         const unreadBotCount = filteredSessions(tab).filter(s => s.mode === "bot" && s.unread > 0).length;
                         if (unreadBotCount > 0) {
                             return (
@@ -862,12 +872,23 @@ export default function ChatbotDashboard() {
                                 <div className="cb-header-right">
                                     <div className="cb-tag-btns">
                                         {["hot", "followup", "resolved"].map(t => (
-                                            <button key={t} className={`cb-tag-btn ${active.tags.includes(t) ? `active-${t}` : ""}`} onClick={() => toggleTag(t)}>
+                                            <button
+                                                key={t}
+                                                className={`cb-tag-btn ${active.tags.includes(t) ? `active-${t}` : ""}`}
+                                                onClick={isTestViewer ? undefined : () => toggleTag(t)}
+                                                style={isTestViewer ? { cursor: "default" } : undefined}
+                                                title={isTestViewer ? "Test account: tags are view-only" : undefined}
+                                            >
                                                 {t === "hot" ? "🔥 Hot" : t === "followup" ? "📌 Follow-up" : "✅ Resolved"}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="cb-mode-toggle" onClick={toggleMode}>
+                                    <div
+                                        className="cb-mode-toggle"
+                                        onClick={isTestViewer ? undefined : toggleMode}
+                                        style={isTestViewer ? { cursor: "not-allowed", opacity: 0.6 } : undefined}
+                                        title={isTestViewer ? "Test account: mode switching disabled" : undefined}
+                                    >
                                         <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: 0.5, background: "rgba(245,158,11,0.12)", color: "#f59e0b" }}>BOT</span>
                                         <div className={`cb-toggle-track ${active.mode === "human" ? "human-mode" : "bot-mode"}`}>
                                             <div className="cb-toggle-thumb" />
@@ -911,18 +932,52 @@ export default function ChatbotDashboard() {
                             {active.mode === "human" ? (
                                 <div className="cb-input-area">
                                     <input
-                                        value={msgInput}
-                                        onChange={e => setMsgInput(e.target.value)}
-                                        onKeyDown={e => e.key === "Enter" && sendMessage()}
-                                        placeholder="Type a message..."
-                                        disabled={sending}
+                                        value={isTestViewer ? "" : msgInput}
+                                        onChange={e => { if (!isTestViewer) setMsgInput(e.target.value); }}
+                                        onKeyDown={e => { if (!isTestViewer && e.key === "Enter") sendMessage(); }}
+                                        placeholder={isTestViewer ? "this is a test account you are unable to send messages." : "Type a message..."}
+                                        disabled={isTestViewer || sending}
+                                        readOnly={isTestViewer}
+                                        style={isTestViewer ? { cursor: "not-allowed", opacity: 0.85 } : undefined}
                                     />
-                                    <button className="cb-btn-send" onClick={sendMessage} disabled={sending}>➤</button>
+                                    <button
+                                        className="cb-btn-send"
+                                        onClick={sendMessage}
+                                        disabled={isTestViewer || sending}
+                                        style={isTestViewer ? { cursor: "not-allowed", opacity: 0.4 } : undefined}
+                                    >
+                                        ➤
+                                    </button>
                                 </div>
                             ) : (
-                                <div className="cb-bot-banner">
-                                    <p>🤖 Bot is handling this conversation · <a onClick={toggleMode}>Switch to Human</a></p>
-                                </div>
+                                <>
+                                    <div className="cb-bot-banner">
+                                        <p>
+                                            🤖 Bot is handling this conversation
+                                            {!isTestViewer && (
+                                                <> · <a onClick={toggleMode}>Switch to Human</a></>
+                                            )}
+                                        </p>
+                                    </div>
+                                    {isTestViewer && (
+                                        <div className="cb-input-area" style={{ opacity: 0.85 }}>
+                                            <input
+                                                value=""
+                                                readOnly
+                                                disabled
+                                                placeholder="this is a test account you are unable to send messages."
+                                                style={{ cursor: "not-allowed" }}
+                                            />
+                                            <button
+                                                className="cb-btn-send"
+                                                disabled
+                                                style={{ cursor: "not-allowed", opacity: 0.4 }}
+                                            >
+                                                ➤
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </>
                     )}
@@ -930,7 +985,7 @@ export default function ChatbotDashboard() {
             </div>
 
             {/* Settings Modal */}
-            {showSettings && (
+            {showSettings && !isTestViewer && (
                 <SettingsModal onClose={() => setShowSettings(false)} />
             )}
         </div>
