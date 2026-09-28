@@ -350,7 +350,7 @@ export default function BookingEmployeesClient() {
         );
     }
 
-    if (adminRole !== "owner" && adminRole !== "developer") {
+    if (adminRole !== "owner" && adminRole !== "developer" && adminRole !== "test_viewer") {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
                 <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-sm border border-slate-200">

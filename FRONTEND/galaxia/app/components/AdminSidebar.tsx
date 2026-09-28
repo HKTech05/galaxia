@@ -136,7 +136,8 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                 "/admin3/chef",
                 "/admin3/housekeeping",
                 "/admin3/booking-employees",
-                "/admin3/coupons"
+                "/admin3/coupons",
+                "/admin3/read-only-inventory"
             ];
             const cleanPath = pathname.split('?')[0].replace(/\/$/, "") || "/admin3";
             const isAllowed = allowedPaths.some(p => cleanPath === p || cleanPath.startsWith(p + "/"));
@@ -338,6 +339,7 @@ export default function AdminSidebar({ isAdmin3 = false }: { isAdmin3?: boolean 
                                     {renderNavItem({ name: "Housekeeping", href: "/admin3/housekeeping", icon: ClipboardList })}
                                     {renderNavItem({ name: "Employees", href: "/admin3/booking-employees", icon: UserCheck })}
                                     {renderNavItem({ name: "Coupons", href: "/admin3/coupons", icon: Ticket })}
+                                    {renderNavItem({ name: "Inventory", href: "/admin3/read-only-inventory", icon: Package })}
                                 </>
                             ) : adminRole === "housekeeping" ? (
                                 <>

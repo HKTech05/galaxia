@@ -41,6 +41,27 @@ export default function LiveCalendar2View() {
     const [blockCustomNote, setBlockCustomNote] = useState("");
     const [blockActionLoading, setBlockActionLoading] = useState(false);
 
+    const getInitialAdmin = () => {
+        if (typeof window === "undefined") return { role: "", username: "" };
+        try {
+            const stored = localStorage.getItem("galaxia_admin");
+            if (stored) return JSON.parse(stored);
+        } catch {}
+        return { role: "", username: "" };
+    };
+
+    const [adminRole, setAdminRole] = useState<string>(() => getInitialAdmin().role || "");
+    const [adminUsername, setAdminUsername] = useState<string>(() => getInitialAdmin().username || "");
+
+    useEffect(() => {
+        api.get("/auth/me").then(data => {
+            if (data?.role) setAdminRole(data.role);
+            if (data?.username) setAdminUsername(data.username);
+        }).catch(() => {});
+    }, []);
+
+    const isTestViewer = adminRole === "test_viewer" || adminUsername === "test";
+
     // Fetch properties on mount
     useEffect(() => {
         api.get("/properties").then((data: any) => {
@@ -85,6 +106,7 @@ export default function LiveCalendar2View() {
         `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}|${colType}|${colName}${unitIndex !== undefined ? `|${unitIndex}` : ''}`;
 
     const toggleCellSelection = (key: string) => {
+        if (isTestViewer) return;
         setSelectedCells(prev => {
             const next = new Set(prev);
             if (next.has(key)) next.delete(key); else next.add(key);
@@ -221,6 +243,10 @@ export default function LiveCalendar2View() {
     };
 
     const handleBlockCellSubmit = async () => {
+        if (isTestViewer) {
+            alert("Action disabled in test verification mode");
+            return;
+        }
         if (!selectedCell) return;
         const info = getColumnInfo(selectedCell.colType, selectedCell.colName);
         if (!info.propertyId) return;
@@ -250,6 +276,10 @@ export default function LiveCalendar2View() {
     };
 
     const handleBatchBlockSubmit = async () => {
+        if (isTestViewer) {
+            alert("Action disabled in test verification mode");
+            return;
+        }
         if (selectedCells.size === 0) return;
         setBlockActionLoading(true);
 
@@ -309,6 +339,10 @@ export default function LiveCalendar2View() {
     };
 
     const handleUnblockCellSubmit = async (blockId: number) => {
+        if (isTestViewer) {
+            alert("Action disabled in test verification mode");
+            return;
+        }
         if (!confirm("Are you sure you want to remove this block?")) return;
         setBlockActionLoading(true);
         try {
@@ -506,36 +540,45 @@ export default function LiveCalendar2View() {
             </div>
 
             {/* Multi-Select Toggle */}
-            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => { setMultiSelectMode(prev => !prev); clearMultiSelect(); }}
-                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                            multiSelectMode ? 'bg-indigo-600' : 'bg-slate-300'
-                        }`}
-                    >
-                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                            multiSelectMode ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
-                    </button>
-                    <span className="text-xs font-bold text-slate-700">
-                        Multi-Select Mode
-                    </span>
-                    {multiSelectMode && selectedCells.size > 0 && (
-                        <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                            {selectedCells.size} selected
+            {!isTestViewer && (
+                <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => { setMultiSelectMode(prev => !prev); clearMultiSelect(); }}
+                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                                multiSelectMode ? 'bg-indigo-600' : 'bg-slate-300'
+                            }`}
+                        >
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                multiSelectMode ? 'translate-x-5' : 'translate-x-0'
+                            }`} />
+                        </button>
+                        <span className="text-xs font-bold text-slate-700">
+                            Multi-Select Mode
                         </span>
+                        {multiSelectMode && selectedCells.size > 0 && (
+                            <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                {selectedCells.size} selected
+                            </span>
+                        )}
+                    </div>
+                    {multiSelectMode && selectedCells.size > 0 && (
+                        <button
+                            onClick={clearMultiSelect}
+                            className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
+                        >
+                            Clear All
+                        </button>
                     )}
                 </div>
-                {multiSelectMode && selectedCells.size > 0 && (
-                    <button
-                        onClick={clearMultiSelect}
-                        className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
-                    >
-                        Clear All
-                    </button>
-                )}
-            </div>
+            )}
+
+            {isTestViewer && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2">
+                    <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                    <span>Test Verification Mode: Calendar is view-only. Cell selection and block/reservation creation are disabled.</span>
+                </div>
+            )}
 
             {/* Calendar Grid Table */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm lg:overflow-hidden overflow-visible">
@@ -545,7 +588,7 @@ export default function LiveCalendar2View() {
                         <span>Loading calendar data...</span>
                     </div>
                 ) : (
-                    <div className="overflow-auto max-h-[70vh] lg:max-h-none lg:overflow-x-auto max-w-full">
+                    <div className={`overflow-auto max-h-[70vh] lg:max-h-none lg:overflow-x-auto max-w-full ${isTestViewer ? "pointer-events-none select-none" : ""}`}>
                         {calendar2View === "all" ? (
                             <table className="w-full border-collapse">
                                 <thead>
@@ -598,13 +641,14 @@ export default function LiveCalendar2View() {
                                                             <td
                                                                 key={col}
                                                                 onClick={() => {
+                                                                    if (isTestViewer) return;
                                                                     if (multiSelectMode) {
                                                                         if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                     } else {
                                                                         setSelectedCell({ date, colType: "all", colName: col, ...res });
                                                                     }
                                                                 }}
-                                                                className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                className={`px-2 py-2.5 text-center text-xs border-r border-b select-none transition-colors border-dashed ${isTestViewer ? '!cursor-not-allowed' : 'cursor-pointer'} ${
                                                                     isMultiSelected
                                                                         ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                             ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
@@ -675,13 +719,14 @@ export default function LiveCalendar2View() {
                                                             <td
                                                                 key={unitIndex}
                                                                 onClick={() => {
+                                                                    if (isTestViewer) return;
                                                                     if (multiSelectMode) {
                                                                         if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                     } else {
                                                                         setSelectedCell({ date, colType: "amstelnest", colName: "Standard", unitIndex, ...res });
                                                                     }
                                                                 }}
-                                                                className={`px-1 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                className={`px-1 py-2.5 text-center text-xs border-r border-b select-none transition-colors border-dashed ${isTestViewer ? '!cursor-not-allowed' : 'cursor-pointer'} ${
                                                                     isMultiSelected
                                                                         ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                             ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
@@ -714,13 +759,14 @@ export default function LiveCalendar2View() {
                                                         return (
                                                             <td
                                                                 onClick={() => {
+                                                                    if (isTestViewer) return;
                                                                     if (multiSelectMode) {
                                                                         if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                     } else {
                                                                         setSelectedCell({ date, colType: "amstelnest", colName: "FAMILY UNIT", ...res });
                                                                     }
                                                                 }}
-                                                                className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                className={`px-2 py-2.5 text-center text-xs border-r border-b select-none transition-colors border-dashed ${isTestViewer ? '!cursor-not-allowed' : 'cursor-pointer'} ${
                                                                     isMultiSelected
                                                                         ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                             ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
@@ -868,9 +914,10 @@ export default function LiveCalendar2View() {
                                     </div>
 
                                     <button
-                                        onClick={handleBlockCellSubmit}
-                                        disabled={blockActionLoading}
-                                        className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                                        onClick={isTestViewer ? undefined : handleBlockCellSubmit}
+                                        disabled={blockActionLoading || isTestViewer}
+                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                        className={`w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         {blockActionLoading ? "Blocking..." : "Confirm Block Cell"}
                                     </button>
@@ -894,9 +941,10 @@ export default function LiveCalendar2View() {
                                     </div>
 
                                     <button
-                                        onClick={() => selectedCell.block?.id && handleUnblockCellSubmit(selectedCell.block.id)}
-                                        disabled={blockActionLoading || !selectedCell.block?.id}
-                                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                                        onClick={isTestViewer ? undefined : () => selectedCell.block?.id && handleUnblockCellSubmit(selectedCell.block.id)}
+                                        disabled={blockActionLoading || !selectedCell.block?.id || isTestViewer}
+                                        title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                        className={`w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
                                         {blockActionLoading ? "Unblocking..." : "Remove Block & Mark Vacant"}
                                     </button>

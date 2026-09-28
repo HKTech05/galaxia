@@ -87,7 +87,7 @@ async function translateEnglishToMarathi(text: string): Promise<string> {
 //  Authenticated Routes
 // ───────────────────────────────────────────────────────────────
 router.use(authMiddleware);
-router.use(requireRole("chef", "owner", "developer"));
+router.use(requireRole("chef", "owner", "developer", "test_viewer"));
 
 // GET /api/chef/ingredients — List all ingredients
 router.get("/ingredients", async (req: AuthRequest, res) => {
@@ -105,6 +105,9 @@ router.get("/ingredients", async (req: AuthRequest, res) => {
 // POST /api/chef/ingredients — Add a new ingredient (auto-translates nameEn to Hindi)
 router.post("/ingredients", async (req: AuthRequest, res) => {
     try {
+        if (req.admin?.role === "test_viewer") {
+            return res.status(403).json({ error: "Action disabled in test verification mode" });
+        }
         const { nameEn, category, unit } = req.body;
         if (!nameEn || typeof nameEn !== "string" || nameEn.trim() === "") {
             return res.status(400).json({ error: "Ingredient English name is required" });
@@ -191,7 +194,7 @@ router.delete("/ingredients/:id", requireRole("owner", "developer"), async (req:
 });
 
 // GET /api/chef/logs — Fetch chef logs
-router.get("/logs", requireRole("owner", "developer", "chef", "sub-admin", "housekeeping", "staycation_admin"), async (req: AuthRequest, res) => {
+router.get("/logs", requireRole("owner", "developer", "chef", "sub-admin", "housekeeping", "staycation_admin", "test_viewer"), async (req: AuthRequest, res) => {
     try {
         const logs = await prisma.chefLog.findMany({
             include: {
@@ -217,6 +220,9 @@ router.get("/logs", requireRole("owner", "developer", "chef", "sub-admin", "hous
 // POST /api/chef/submit — Submit checklist (generates daily list PDF, logs it, and sends download link to WhatsApp)
 router.post("/submit", async (req: AuthRequest, res) => {
     try {
+        if (req.admin?.role === "test_viewer") {
+            return res.status(403).json({ error: "Action disabled in test verification mode" });
+        }
         const { ingredients, date } = req.body;
         if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
             return res.status(400).json({ error: "Ingredients list cannot be empty" });

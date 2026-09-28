@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
     LayoutDashboard, Building, Film, Globe, CalendarDays,
     CheckCircle, XCircle, Clock, IndianRupee, Users, ChevronRight,
-    X, Upload, Trash2, Ban, User as UserIcon, Phone, Image as ImageIcon, Download, Eye
+    X, Upload, Trash2, Ban, User as UserIcon, Phone, Image as ImageIcon, Download, Eye, ShieldAlert
 } from "lucide-react";
 import {
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -206,7 +206,17 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [dashboardSubTab, setDashboardSubTab] = useState<"insights" | "reports" | "calendar" | "bulk" | "calendar2">("insights");
     const [propertyStatusMode, setPropertyStatusMode] = useState<"checkin" | "checkout">("checkin");
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-    const [adminRole, setAdminRole] = useState<string>("");
+    const getInitialAdmin = () => {
+        if (typeof window === "undefined") return { role: "", username: "" };
+        try {
+            const stored = localStorage.getItem("galaxia_admin");
+            if (stored) return JSON.parse(stored);
+        } catch {}
+        return { role: "", username: "" };
+    };
+
+    const [adminRole, setAdminRole] = useState<string>(() => getInitialAdmin().role || "");
+    const [adminUsername, setAdminUsername] = useState<string>(() => getInitialAdmin().username || "");
 
     // Reports Tab States
     const [selectedReportsProps, setSelectedReportsProps] = useState<string[]>([]);
@@ -275,7 +285,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
     const makeCellKey = (date: Date, colType: string, colName: string, unitIndex?: number) =>
         `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}|${colType}|${colName}${unitIndex !== undefined ? `|${unitIndex}` : ''}`;
-    const isTestViewer = adminRole === "test_viewer";
+    const isTestViewer = adminRole === "test_viewer" || adminUsername === "test";
     const toggleCellSelection = (key: string) => {
         if (isTestViewer) return;
         setSelectedCells(prev => {
@@ -717,6 +727,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     };
 
     const handleBlockCellSubmit = async () => {
+        if (isTestViewer) {
+            alert("Action disabled in test verification mode");
+            return;
+        }
         if (!selectedCell) return;
         const info = getColumnInfo(selectedCell.colType, selectedCell.colName);
         if (!info.propertyId) return;
@@ -840,7 +854,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
     useEffect(() => {
         api.get("/auth/me").then(data => {
             const role = data?.role || "";
+            const username = data?.username || "";
             setAdminRole(role);
+            setAdminUsername(username);
         }).catch(() => {});
 
         // Map frontend timeRange to backend period format
@@ -1711,7 +1727,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div>
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Staycation Overview</h3>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                {(adminRole === "owner" || adminRole === "developer") && (
+                                {(adminRole === "owner" || adminRole === "developer" || isTestViewer) && (
                                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
                                         <p className="text-xl font-bold text-emerald-700 mt-1">₹{staycationRevenue.toLocaleString('en-IN')}</p>
@@ -1723,7 +1739,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <p className="text-xl font-bold text-purple-700 mt-1">{occupancyRate}%</p>
                                     <p className="text-[10px] text-purple-500 font-medium mt-1">{totalOccupied} / {totalUnits} units occupied</p>
                                 </div>
-                                {(adminRole === "owner" || adminRole === "developer") && (
+                                {(adminRole === "owner" || adminRole === "developer" || isTestViewer) && (
                                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Nightly Rate</p>
                                         <p className="text-xl font-bold text-indigo-700 mt-1">₹{avgNightlyRate.toLocaleString('en-IN')}</p>
@@ -1742,7 +1758,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <div>
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Digital Diaries Overview</h3>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                {(adminRole === "owner" || adminRole === "developer") && (
+                                {(adminRole === "owner" || adminRole === "developer" || isTestViewer) && (
                                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">DD Revenue</p>
                                         <p className="text-xl font-bold text-violet-700 mt-1">₹{(dashboardKPIs?.kpis?.ddRevenue || 0).toLocaleString('en-IN')}</p>
@@ -1754,7 +1770,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <p className="text-xl font-bold text-sky-700 mt-1">{dashboardKPIs?.kpis?.totalDdBookings || 0}</p>
                                     <p className="text-[10px] text-sky-500 font-medium mt-1">Across all screens</p>
                                 </div>
-                                {(adminRole === "owner" || adminRole === "developer") && (
+                                {(adminRole === "owner" || adminRole === "developer" || isTestViewer) && (
                                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Booking Value</p>
                                         <p className="text-xl font-bold text-teal-700 mt-1">₹{dashboardKPIs?.kpis?.totalDdBookings > 0 ? Math.round((dashboardKPIs?.kpis?.ddRevenue || 0) / dashboardKPIs.kpis.totalDdBookings).toLocaleString('en-IN') : 0}</p>
@@ -2182,7 +2198,13 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <div key={d} className="text-center text-xs font-bold text-slate-400 py-2">{d}</div>
                                 ))}
                             </div>
-                            <div className="grid grid-cols-7 gap-2">
+                            {isTestViewer && (
+                                <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2">
+                                    <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                                    <span>Test Verification Mode: Calendar is view-only. Selecting or blocking dates is disabled.</span>
+                                </div>
+                            )}
+                            <div className={`grid grid-cols-7 gap-2 ${isTestViewer ? "pointer-events-none select-none" : ""}`}>
                                 {Array.from({ length: calFirstDay }, (_, i) => <div key={`e-${i}`} className="h-16" />)}
                                 {(() => {
                                     const blockedDays = getBlockedDaysForMonth();
@@ -2206,7 +2228,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         return (
                                             <button
                                                 key={d}
-                                                disabled={!isFullyBooked ? false : true}
+                                                disabled={isTestViewer || isFullyBooked}
                                                 onClick={() => {
                                                     if (isTestViewer || isFullyBooked) return;
                                                     if (isSelected) {
@@ -2222,7 +2244,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                 (isBooked && calendarCapacity > 1) ? 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100 cursor-pointer' :
                                                                     isBlocked ? 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100 cursor-pointer' :
                                                                         isWeekend ? 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 cursor-pointer' :
-                                                                            'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                                                                            'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'} ${isTestViewer ? '!cursor-not-allowed' : ''}`}
                                             >
                                                 <span className={`font-bold ${isToday && !isSelected ? 'text-indigo-700' : ''}`}>{d}</span>
                                                 {showOccupancy ? (
@@ -2445,36 +2467,45 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         </div>
 
                         {/* Multi-Select Toggle */}
-                        <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => { setMultiSelectMode(prev => !prev); clearMultiSelect(); }}
-                                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                                        multiSelectMode ? 'bg-indigo-600' : 'bg-slate-300'
-                                    }`}
-                                >
-                                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                                        multiSelectMode ? 'translate-x-5' : 'translate-x-0'
-                                    }`} />
-                                </button>
-                                <span className="text-xs font-bold text-slate-700">
-                                    Multi-Select Mode
-                                </span>
-                                {multiSelectMode && selectedCells.size > 0 && (
-                                    <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                        {selectedCells.size} selected
+                        {!isTestViewer && (
+                            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => { setMultiSelectMode(prev => !prev); clearMultiSelect(); }}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                                            multiSelectMode ? 'bg-indigo-600' : 'bg-slate-300'
+                                        }`}
+                                    >
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                                            multiSelectMode ? 'translate-x-5' : 'translate-x-0'
+                                        }`} />
+                                    </button>
+                                    <span className="text-xs font-bold text-slate-700">
+                                        Multi-Select Mode
                                     </span>
+                                    {multiSelectMode && selectedCells.size > 0 && (
+                                        <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                            {selectedCells.size} selected
+                                        </span>
+                                    )}
+                                </div>
+                                {multiSelectMode && selectedCells.size > 0 && (
+                                    <button
+                                        onClick={clearMultiSelect}
+                                        className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
+                                    >
+                                        Clear All
+                                    </button>
                                 )}
                             </div>
-                            {multiSelectMode && selectedCells.size > 0 && (
-                                <button
-                                    onClick={clearMultiSelect}
-                                    className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
-                                >
-                                    Clear All
-                                </button>
-                            )}
-                        </div>
+                        )}
+
+                        {isTestViewer && (
+                            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2">
+                                <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                                <span>Test Verification Mode: Calendar is view-only. Cell selection and block/reservation creation are disabled.</span>
+                            </div>
+                        )}
 
                         {/* Calendar Grid Table */}
                         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm lg:overflow-hidden overflow-visible">
@@ -2484,7 +2515,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                     <span>Loading calendar data...</span>
                                 </div>
                             ) : (
-                                <div className="overflow-auto max-h-[70vh] lg:max-h-none lg:overflow-x-auto max-w-full">
+                                <div className={`overflow-auto max-h-[70vh] lg:max-h-none lg:overflow-x-auto max-w-full ${isTestViewer ? "pointer-events-none select-none" : ""}`}>
                                     {calendar2View === "all" ? (
                                         <table className="w-full border-collapse">
                                             <thead>
@@ -2537,13 +2568,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             key={col}
                                                                             onClick={() => {
+                                                                                if (isTestViewer) return;
                                                                                 if (multiSelectMode) {
                                                                                     if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                                 } else {
                                                                                     setSelectedCell({ date, colType: "all", colName: col, ...res });
                                                                                 }
                                                                             }}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b select-none transition-colors border-dashed ${isTestViewer ? '!cursor-not-allowed' : 'cursor-pointer'} ${
                                                                                 isMultiSelected
                                                                                     ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                                         ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
@@ -2614,13 +2646,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                         <td
                                                                             key={unitIndex}
                                                                             onClick={() => {
+                                                                                if (isTestViewer) return;
                                                                                 if (multiSelectMode) {
                                                                                     if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                                 } else {
                                                                                     setSelectedCell({ date, colType: "amstelnest", colName: "Standard", unitIndex, ...res });
                                                                                 }
                                                                             }}
-                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                            className={`px-1 py-2.5 text-center text-xs border-r border-b select-none transition-colors border-dashed ${isTestViewer ? '!cursor-not-allowed' : 'cursor-pointer'} ${
                                                                                 isMultiSelected
                                                                                     ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                                         ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
@@ -2653,13 +2686,14 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                                     return (
                                                                         <td
                                                                             onClick={() => {
+                                                                                if (isTestViewer) return;
                                                                                 if (multiSelectMode) {
                                                                                     if (res.status !== "booked") toggleCellSelection(cellKey);
                                                                                 } else {
                                                                                     setSelectedCell({ date, colType: "amstelnest", colName: "FAMILY UNIT", ...res });
                                                                                 }
                                                                             }}
-                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b cursor-pointer select-none transition-colors border-dashed ${
+                                                                            className={`px-2 py-2.5 text-center text-xs border-r border-b select-none transition-colors border-dashed ${isTestViewer ? '!cursor-not-allowed' : 'cursor-pointer'} ${
                                                                                 isMultiSelected
                                                                                     ? (res.status === "owner_reserved" || res.status === "maintenance")
                                                                                         ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold ring-2 ring-amber-400/50 ring-inset'
@@ -3726,9 +3760,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                             Close
                                         </button>
                                         <button
-                                            onClick={() => handleUnblockCellSubmit(selectedCell.block.id)}
-                                            disabled={blockActionLoading}
-                                            className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                            onClick={isTestViewer ? undefined : () => handleUnblockCellSubmit(selectedCell.block.id)}
+                                            disabled={blockActionLoading || isTestViewer}
+                                            title={isTestViewer ? "Action disabled in test verification mode" : undefined}
+                                            className={`flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                         >
                                             {blockActionLoading ? "..." : "Remove Block"}
                                         </button>
@@ -3783,11 +3818,12 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={handleBlockCellSubmit}
-                                            disabled={blockActionLoading}
+                                            onClick={isTestViewer ? undefined : handleBlockCellSubmit}
+                                            disabled={blockActionLoading || isTestViewer}
+                                            title={isTestViewer ? "Action disabled in test verification mode" : undefined}
                                             className={`flex-1 py-2.5 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all ${
                                                 blockReasonType === "owner" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"
-                                            }`}
+                                            } ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}
                                         >
                                             {blockActionLoading ? "..." : "Confirm Block"}
                                         </button>

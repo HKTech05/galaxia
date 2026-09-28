@@ -6,7 +6,7 @@ import { authMiddleware, requireRole } from "../middleware/auth";
 const router = Router();
 
 // GET /api/admin/dashboard — Dashboard KPIs and chart data
-router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), async (req, res) => {
+router.get("/", authMiddleware, requireRole("owner", "developer", "manager", "test_viewer"), async (req, res) => {
     try {
         const { period } = req.query; // '1month', '3months', '6months', 'year'
         const now = new Date();
@@ -222,7 +222,7 @@ router.get("/", authMiddleware, requireRole("owner", "developer", "manager"), as
 });
 
 // GET /api/admin/dashboard/earnings — Earnings chart data
-router.get("/earnings", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+router.get("/earnings", authMiddleware, requireRole("owner", "developer", "test_viewer"), async (req, res) => {
     try {
         const { period } = req.query;
         const now = new Date();

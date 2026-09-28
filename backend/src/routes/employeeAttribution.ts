@@ -23,7 +23,7 @@ export const DD_EMPLOYEES = [
 ];
 
 // GET /api/admin/employee-attribution — Owner only sales attribution analytics
-router.get("/", authMiddleware, requireRole("owner", "developer"), async (req, res) => {
+router.get("/", authMiddleware, requireRole("owner", "developer", "test_viewer"), async (req, res) => {
     try {
         const { date, startDate, endDate, period, type, source } = req.query as Record<string, string | undefined>;
 
