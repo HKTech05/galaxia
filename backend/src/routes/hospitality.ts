@@ -860,9 +860,16 @@ router.get("/insights", async (req: AuthRequest, res) => {
     }
 });
 
-// 9. PATCH /api/hospitality/allocations/:bookingId — Re-allot cottage & re-send WhatsApp notification (owner/developer only)
-router.patch("/allocations/:bookingId", requireRole("owner", "developer"), async (req: AuthRequest, res) => {
+// 9. PATCH /api/hospitality/allocations/:bookingId — Re-allot cottage & re-send WhatsApp notification (owner, developer, ranjit, devidas)
+router.patch("/allocations/:bookingId", async (req: AuthRequest, res) => {
     try {
+        const role = req.admin?.role;
+        const username = (req.admin?.username || "").toLowerCase();
+        const isAllowed = role === "owner" || role === "developer" || ["ranjit", "devi", "devidas"].includes(username);
+        if (!isAllowed) {
+            return res.status(403).json({ error: "Insufficient permissions to edit villa allotments" });
+        }
+
         const bookingId = parseInt(req.params.bookingId as string);
         const { assignedUnit } = req.body;
 

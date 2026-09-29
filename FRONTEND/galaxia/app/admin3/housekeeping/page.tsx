@@ -100,9 +100,30 @@ export default function HousekeepingPortalPage() {
     const [requests, setRequests] = useState<HospitalityRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [userRole, setUserRole] = useState("");
-    const [userName, setUserName] = useState("");
+    const [userRole, setUserRole] = useState<string>(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const raw = localStorage.getItem("galaxia_admin");
+                return raw ? JSON.parse(raw)?.role || "" : "";
+            } catch { return ""; }
+        }
+        return "";
+    });
+    const [userName, setUserName] = useState<string>(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const raw = localStorage.getItem("galaxia_admin");
+                return raw ? JSON.parse(raw)?.username || "" : "";
+            } catch { return ""; }
+        }
+        return "";
+    });
     const isTestViewer = userRole === "test_viewer" || userName === "test";
+    const canEditAllotment =
+        userRole === "owner" ||
+        userRole === "developer" ||
+        isTestViewer ||
+        ["ranjit", "devi", "devidas"].includes(userName.trim().toLowerCase());
 
     // Food Deliveries (Prepared food ready for delivery)
     const [foodDeliveries, setFoodDeliveries] = useState<HospitalityRequest[]>([]);
@@ -1121,7 +1142,7 @@ export default function HousekeepingPortalPage() {
                                                     ) : (
                                                         <div className="flex items-center gap-1.5">
                                                             <span>{unitName}</span>
-                                                            {(userRole === "owner" || userRole === "developer" || isTestViewer) && (
+                                                            {canEditAllotment && (
                                                                 <button
                                                                     onClick={() => {
                                                                         if (isTestViewer) return;
@@ -1249,7 +1270,7 @@ export default function HousekeepingPortalPage() {
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    (userRole === "owner" || userRole === "developer" || isTestViewer) && (
+                                                    canEditAllotment && (
                                                         <button
                                                             onClick={() => {
                                                                 if (isTestViewer) return;
