@@ -564,16 +564,16 @@ export default function PropertiesMgmtPage() {
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Single Date</label>
                                             <div className="flex gap-1 items-center">
-                                                <input type="date" value={masterOvSingleDate} onChange={e => { setMasterOvSingleDate(e.target.value); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                                <input type="date" lang="en-GB" value={masterOvSingleDate} onChange={e => { setMasterOvSingleDate(e.target.value); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                                                 {masterOvSingleDate && <button onClick={() => setMasterOvSingleDate("")} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
                                             </div>
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Or Date Range</label>
                                             <div className="flex gap-1 items-center">
-                                                <input type="date" value={masterOvRangeFrom} onChange={e => { setMasterOvRangeFrom(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                                <input type="date" lang="en-GB" value={masterOvRangeFrom} onChange={e => { setMasterOvRangeFrom(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                                                 <span className="text-xs text-slate-400">to</span>
-                                                <input type="date" value={masterOvRangeTo} min={masterOvRangeFrom} onChange={e => { setMasterOvRangeTo(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
+                                                <input type="date" lang="en-GB" value={masterOvRangeTo} min={masterOvRangeFrom} onChange={e => { setMasterOvRangeTo(e.target.value); setMasterOvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none" />
                                                 {(masterOvRangeFrom || masterOvRangeTo) && <button onClick={() => { setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
                                             </div>
                                         </div>
@@ -819,16 +819,16 @@ export default function PropertiesMgmtPage() {
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Single Date</label>
                                             <div className="flex gap-1 items-center">
-                                                <input type="date" value={bulkIncSingleDate} onChange={e => { setBulkIncSingleDate(e.target.value); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
+                                                <input type="date" lang="en-GB" value={bulkIncSingleDate} onChange={e => { setBulkIncSingleDate(e.target.value); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
                                                 {bulkIncSingleDate && <button onClick={() => setBulkIncSingleDate("")} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
                                             </div>
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Or Date Range</label>
                                             <div className="flex gap-1 items-center">
-                                                <input type="date" value={bulkIncRangeFrom} onChange={e => { setBulkIncRangeFrom(e.target.value); setBulkIncSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
+                                                <input type="date" lang="en-GB" value={bulkIncRangeFrom} onChange={e => { setBulkIncRangeFrom(e.target.value); setBulkIncSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
                                                 <span className="text-xs text-slate-400">to</span>
-                                                <input type="date" value={bulkIncRangeTo} min={bulkIncRangeFrom} onChange={e => { setBulkIncRangeTo(e.target.value); setBulkIncSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
+                                                <input type="date" lang="en-GB" value={bulkIncRangeTo} min={bulkIncRangeFrom} onChange={e => { setBulkIncRangeTo(e.target.value); setBulkIncSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
                                                 {(bulkIncRangeFrom || bulkIncRangeTo) && <button onClick={() => { setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
                                             </div>
                                         </div>
