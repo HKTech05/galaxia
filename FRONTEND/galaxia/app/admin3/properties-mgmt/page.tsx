@@ -114,6 +114,8 @@ export default function PropertiesMgmtPage() {
     const [bulkIncRangeFrom, setBulkIncRangeFrom] = useState("");
     const [bulkIncRangeTo, setBulkIncRangeTo] = useState("");
     const [bulkIncAmount, setBulkIncAmount] = useState("");
+    const [bulkIncExtraAdult, setBulkIncExtraAdult] = useState("");
+    const [bulkIncExtraKid, setBulkIncExtraKid] = useState("");
     const [bulkIncSaving, setBulkIncSaving] = useState(false);
     const [bulkIncMsg, setBulkIncMsg] = useState("");
     const [bulkIncHistory, setBulkIncHistory] = useState(false);
@@ -341,7 +343,7 @@ export default function PropertiesMgmtPage() {
 
     // Build flat list of all staycation properties for Master Override
     const getAllStayProperties = () => {
-        const items: { key: string; name: string; type: "prop" | "sub"; id: number; prices: { weekday: number; weekend: number; saturday: number } }[] = [];
+        const items: { key: string; name: string; type: "prop" | "sub"; id: number; prices: { weekday: number; weekend: number; saturday: number }; extraAdult: number; extraKid: number }[] = [];
         for (const p of props) {
             if (p.type === "dd" || p.slug === "digital-diaries") continue;
             if (p.slug === "ambrose" || p.slug === "amstel-nest") {
@@ -349,17 +351,25 @@ export default function PropertiesMgmtPage() {
                     const parentLabel = p.slug === "ambrose" ? "Ambrose" : "Amstel Nest";
                     const spPricing = sp.pricing?.length > 0 ? sp.pricing : (p.pricing || []).filter((t: any) => t.subPropertyId === sp.id);
                     const base = spPricing.filter((t: any) => !t.overrideDate);
-                    const wd = base.find((t: any) => t.dayType === "weekday")?.basePrice || 0;
-                    const we = base.find((t: any) => t.dayType === "weekend")?.basePrice || 0;
-                    const sa = base.find((t: any) => t.dayType === "saturday")?.basePrice || we;
-                    items.push({ key: `sub-${sp.id}`, name: `${sp.name} (${parentLabel})`, type: "sub", id: sp.id, prices: { weekday: wd, weekend: we, saturday: sa } });
+                    const wdRow = base.find((t: any) => t.dayType === "weekday");
+                    const weRow = base.find((t: any) => t.dayType === "weekend");
+                    const saRow = base.find((t: any) => t.dayType === "saturday");
+                    items.push({ key: `sub-${sp.id}`, name: `${sp.name} (${parentLabel})`, type: "sub", id: sp.id,
+                        prices: { weekday: wdRow?.basePrice || 0, weekend: weRow?.basePrice || 0, saturday: saRow?.basePrice || weRow?.basePrice || 0 },
+                        extraAdult: wdRow?.extraAdultPrice || weRow?.extraAdultPrice || 0,
+                        extraKid: wdRow?.kidsPrice || weRow?.kidsPrice || 0,
+                    });
                 }
             } else {
                 const basePricing = (p.pricing || []).filter((t: any) => !t.subPropertyId && !t.overrideDate);
-                const wd = basePricing.find((t: any) => t.dayType === "weekday")?.basePrice || 0;
-                const we = basePricing.find((t: any) => t.dayType === "weekend")?.basePrice || 0;
-                const sa = basePricing.find((t: any) => t.dayType === "saturday")?.basePrice || we;
-                items.push({ key: `prop-${p.id}`, name: p.name, type: "prop", id: p.id, prices: { weekday: wd, weekend: we, saturday: sa } });
+                const wdRow = basePricing.find((t: any) => t.dayType === "weekday");
+                const weRow = basePricing.find((t: any) => t.dayType === "weekend");
+                const saRow = basePricing.find((t: any) => t.dayType === "saturday");
+                items.push({ key: `prop-${p.id}`, name: p.name, type: "prop", id: p.id,
+                    prices: { weekday: wdRow?.basePrice || 0, weekend: weRow?.basePrice || 0, saturday: saRow?.basePrice || weRow?.basePrice || 0 },
+                    extraAdult: wdRow?.extraAdultPrice || weRow?.extraAdultPrice || 0,
+                    extraKid: wdRow?.kidsPrice || weRow?.kidsPrice || 0,
+                });
             }
         }
         return items;
@@ -391,22 +401,36 @@ export default function PropertiesMgmtPage() {
 
     const saveMasterOverride = async () => {
         const dates = getMasterDates();
-        if (dates.length === 0) return alert("Select at least one date");
         const selected = Array.from(masterOvSelected);
         // Collect all property|date combos that have a price
         const saves: { type: string; id: string; date: string; price: number }[] = [];
-        for (const key of selected) {
-            const [type, idStr] = key.split("-");
-            for (const date of dates) {
-                const priceKey = `${key}|${date}`;
-                const val = masterOvPrices[priceKey];
-                if (val && val.trim() !== "") {
-                    const price = parseInt(val);
-                    if (!isNaN(price) && price > 0) saves.push({ type, id: idStr, date, price });
+        if (dates.length > 0) {
+            for (const key of selected) {
+                const [type, idStr] = key.split("-");
+                for (const date of dates) {
+                    const priceKey = `${key}|${date}`;
+                    const val = masterOvPrices[priceKey];
+                    if (val && val.trim() !== "") {
+                        const price = parseInt(val);
+                        if (!isNaN(price) && price > 0) saves.push({ type, id: idStr, date, price });
+                    }
                 }
             }
         }
-        if (saves.length === 0) return alert("Enter at least one price");
+        // Collect extra adult/kid edits
+        const extraEdits: { type: string; id: string; extraGuest?: number; extraKid?: number }[] = [];
+        for (const key of selected) {
+            const [type, idStr] = key.split("-");
+            const ea = masterOvPrices[`${key}|extraAdult`];
+            const ek = masterOvPrices[`${key}|extraKid`];
+            if ((ea && ea.trim() !== "") || (ek && ek.trim() !== "")) {
+                const edit: any = { type, id: idStr };
+                if (ea && ea.trim() !== "") edit.extraGuest = parseInt(ea);
+                if (ek && ek.trim() !== "") edit.extraKid = parseInt(ek);
+                extraEdits.push(edit);
+            }
+        }
+        if (saves.length === 0 && extraEdits.length === 0) return alert("Enter at least one price or extra charge");
         setMasterOvSaving(true);
         try {
             let count = 0;
@@ -415,9 +439,15 @@ export default function PropertiesMgmtPage() {
                 await api.post(endpoint, { date: s.date, price: s.price });
                 count++;
             }
-            const propCount = new Set(saves.map(s => `${s.type}-${s.id}`)).size;
-            const dateCount = new Set(saves.map(s => s.date)).size;
-            setMasterOvMsg(`✓ ${count} override${count !== 1 ? "s" : ""} saved across ${propCount} propert${propCount !== 1 ? "ies" : "y"} and ${dateCount} date${dateCount !== 1 ? "s" : ""}`);
+            for (const e of extraEdits) {
+                const endpoint = e.type === "sub" ? `/properties/sub/${e.id}/pricing` : `/properties/${e.id}/pricing`;
+                const body: any = {};
+                if (e.extraGuest !== undefined) body.extraGuest = e.extraGuest;
+                if (e.extraKid !== undefined) body.extraKid = e.extraKid;
+                await api.patch(endpoint, body);
+                count++;
+            }
+            setMasterOvMsg(`✓ ${count} change${count !== 1 ? "s" : ""} saved successfully`);
             await load();
         } catch (e: any) {
             alert("Failed: " + (e?.message || "Unknown error"));
@@ -582,12 +612,35 @@ export default function PropertiesMgmtPage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Step 4: Extra Adult / Extra Kid */}
+                                {selectedItems.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">{dates.length > 0 ? "4" : "3"}. Extra Adult / Extra Kid Charges</p>
+                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="grid grid-cols-[1fr_80px_100px_80px_100px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                <span>Property</span><span className="text-right">Adult ₹</span><span>New Adult</span><span className="text-right">Kid ₹</span><span>New Kid</span>
+                                            </div>
+                                            <div className="max-h-48 overflow-y-auto divide-y divide-slate-50">
+                                                {selectedItems.map(item => (
+                                                    <div key={`${item.key}-extra`} className="grid grid-cols-[1fr_80px_100px_80px_100px] gap-1 items-center px-3 py-2">
+                                                        <span className="text-xs font-medium text-slate-700 truncate">{item.name}</span>
+                                                        <span className="text-xs text-slate-400 text-right">₹{item.extraAdult.toLocaleString("en-IN")}</span>
+                                                        <NI value={masterOvPrices[`${item.key}|extraAdult`] || ""} onChange={v => setMasterOvPrices(prev => ({ ...prev, [`${item.key}|extraAdult`]: v }))} placeholder="₹" />
+                                                        <span className="text-xs text-slate-400 text-right">₹{item.extraKid.toLocaleString("en-IN")}</span>
+                                                        <NI value={masterOvPrices[`${item.key}|extraKid`] || ""} onChange={v => setMasterOvPrices(prev => ({ ...prev, [`${item.key}|extraKid`]: v }))} placeholder="₹" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Save Button */}
                             <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0 rounded-b-2xl">
-                                <button onClick={saveMasterOverride} disabled={masterOvSaving || selectedItems.length === 0 || dates.length === 0} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    {masterOvSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All Overrides
+                                <button onClick={saveMasterOverride} disabled={masterOvSaving || selectedItems.length === 0} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {masterOvSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save All Changes
                                 </button>
                                 <button onClick={() => { setMasterOvOpen(false); setMasterOvMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
                             </div>
@@ -615,28 +668,50 @@ export default function PropertiesMgmtPage() {
 
     const saveBulkIncrease = async () => {
         const dates = getBulkIncDates();
-        if (dates.length === 0) return alert("Select at least one date");
-        const delta = parseInt(bulkIncAmount);
-        if (isNaN(delta) || delta === 0) return alert("Enter an increase amount");
+        const delta = parseInt(bulkIncAmount) || 0;
+        const eaDelta = parseInt(bulkIncExtraAdult) || 0;
+        const ekDelta = parseInt(bulkIncExtraKid) || 0;
         const allItems = getAllStayProperties();
         const selected = allItems.filter(i => bulkIncSelected.has(i.key));
         if (selected.length === 0) return alert("Select at least one property");
+        const hasDateOverrides = dates.length > 0 && delta !== 0;
+        const hasExtraEdits = eaDelta !== 0 || ekDelta !== 0;
+        if (!hasDateOverrides && !hasExtraEdits) return alert("Enter at least one increase amount");
         setBulkIncSaving(true);
         try {
             let count = 0;
-            for (const item of selected) {
-                const [type, idStr] = item.key.split("-");
-                for (const dateStr of dates) {
-                    const dt = getDayType(dateStr);
-                    const currentPrice = item.prices[dt.type];
-                    const newPrice = currentPrice + delta;
-                    if (newPrice <= 0) continue;
-                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
-                    await api.post(endpoint, { date: dateStr, price: newPrice });
+            // Date-based price overrides
+            if (hasDateOverrides) {
+                for (const item of selected) {
+                    const [type, idStr] = item.key.split("-");
+                    for (const dateStr of dates) {
+                        const dt = getDayType(dateStr);
+                        const currentPrice = item.prices[dt.type];
+                        const newPrice = currentPrice + delta;
+                        if (newPrice <= 0) continue;
+                        const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
+                        await api.post(endpoint, { date: dateStr, price: newPrice });
+                        count++;
+                    }
+                }
+            }
+            // Extra adult/kid increases
+            if (hasExtraEdits) {
+                for (const item of selected) {
+                    const [type, idStr] = item.key.split("-");
+                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/pricing` : `/properties/${idStr}/pricing`;
+                    const body: any = {};
+                    if (eaDelta !== 0) body.extraGuest = item.extraAdult + eaDelta;
+                    if (ekDelta !== 0) body.extraKid = item.extraKid + ekDelta;
+                    await api.patch(endpoint, body);
                     count++;
                 }
             }
-            setBulkIncMsg(`✓ ${count} override${count !== 1 ? "s" : ""} saved — prices increased by ₹${delta.toLocaleString("en-IN")} across ${selected.length} propert${selected.length !== 1 ? "ies" : "y"} and ${dates.length} date${dates.length !== 1 ? "s" : ""}`);
+            const parts: string[] = [];
+            if (hasDateOverrides) parts.push(`prices +₹${delta.toLocaleString("en-IN")}`);
+            if (eaDelta !== 0) parts.push(`extra adult +₹${eaDelta.toLocaleString("en-IN")}`);
+            if (ekDelta !== 0) parts.push(`extra kid +₹${ekDelta.toLocaleString("en-IN")}`);
+            setBulkIncMsg(`✓ ${count} change${count !== 1 ? "s" : ""} saved — ${parts.join(", ")} across ${selected.length} propert${selected.length !== 1 ? "ies" : "y"}`);
             await load();
         } catch (e: any) {
             alert("Failed: " + (e?.message || "Unknown error"));
@@ -649,6 +724,8 @@ export default function PropertiesMgmtPage() {
         const dates = getBulkIncDates();
         const selectedItems = allItems.filter(i => bulkIncSelected.has(i.key));
         const delta = parseInt(bulkIncAmount) || 0;
+        const eaDelta = parseInt(bulkIncExtraAdult) || 0;
+        const ekDelta = parseInt(bulkIncExtraKid) || 0;
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }}>
@@ -714,7 +791,7 @@ export default function PropertiesMgmtPage() {
                     })() : bulkIncMsg ? (
                         <div className="px-6 py-12 text-center">
                             <p className="text-lg text-emerald-700 font-bold mb-4">{bulkIncMsg}</p>
-                            <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700">Done</button>
+                            <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncExtraAdult(""); setBulkIncExtraKid(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700">Done</button>
                         </div>
                     ) : (
                         <>
@@ -759,26 +836,36 @@ export default function PropertiesMgmtPage() {
                                     {dates.length > 0 && <p className="text-[10px] text-emerald-600 font-medium mt-1">{dates.length} date{dates.length !== 1 ? "s" : ""} selected</p>}
                                 </div>
 
-                                {/* Step 3: Increase Amount */}
-                                {selectedItems.length > 0 && dates.length > 0 && (
+                                {/* Step 3: Increase Amounts */}
+                                {selectedItems.length > 0 && (
                                     <div>
-                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">3. Increase Amount</p>
-                                        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                            <span className="text-sm font-medium text-slate-700 whitespace-nowrap">Increase selected prices by</span>
-                                            <NI value={bulkIncAmount} onChange={setBulkIncAmount} placeholder="Amount" className="w-32" />
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">3. Increase Amounts</p>
+                                        <div className="space-y-2">
+                                            {dates.length > 0 && (
+                                                <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                                    <span className="text-sm font-medium text-slate-700 whitespace-nowrap">Base price</span>
+                                                    <NI value={bulkIncAmount} onChange={setBulkIncAmount} placeholder="+₹ Amount" className="w-28" />
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                <span className="text-sm font-medium text-slate-700 whitespace-nowrap">Extra Adult</span>
+                                                <NI value={bulkIncExtraAdult} onChange={setBulkIncExtraAdult} placeholder="+₹ Amount" className="w-28" />
+                                                <span className="text-sm font-medium text-slate-700 whitespace-nowrap ml-2">Extra Kid</span>
+                                                <NI value={bulkIncExtraKid} onChange={setBulkIncExtraKid} placeholder="+₹ Amount" className="w-28" />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Preview */}
+                                {/* Preview — Date overrides */}
                                 {selectedItems.length > 0 && dates.length > 0 && delta !== 0 && (
                                     <div>
-                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Preview</p>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Preview — Base Prices</p>
                                         <div className="border border-slate-200 rounded-lg overflow-hidden">
                                             <div className="grid grid-cols-[1fr_70px_60px_80px_20px_80px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
                                                 <span>Property</span><span>Date</span><span>Day</span><span className="text-right">Current</span><span></span><span className="text-right">New</span>
                                             </div>
-                                            <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
+                                            <div className="max-h-44 overflow-y-auto divide-y divide-slate-50">
                                                 {selectedItems.map(item => (
                                                     dates.map(dateStr => {
                                                         const dt = getDayType(dateStr);
@@ -802,11 +889,36 @@ export default function PropertiesMgmtPage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Preview — Extra charges */}
+                                {selectedItems.length > 0 && (eaDelta !== 0 || ekDelta !== 0) && (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Preview — Extra Charges</p>
+                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="grid grid-cols-[1fr_80px_20px_80px_80px_20px_80px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                <span>Property</span><span className="text-right">Adult</span><span></span><span className="text-right">New</span><span className="text-right">Kid</span><span></span><span className="text-right">New</span>
+                                            </div>
+                                            <div className="max-h-40 overflow-y-auto divide-y divide-slate-50">
+                                                {selectedItems.map(item => (
+                                                    <div key={`${item.key}-ep`} className="grid grid-cols-[1fr_80px_20px_80px_80px_20px_80px] gap-1 items-center px-3 py-1.5">
+                                                        <span className="text-xs font-medium text-slate-700 truncate">{item.name}</span>
+                                                        <span className="text-xs text-slate-400 text-right">₹{item.extraAdult.toLocaleString("en-IN")}</span>
+                                                        <span className="text-center text-slate-300">→</span>
+                                                        <span className={`text-xs font-bold text-right ${eaDelta !== 0 ? "text-emerald-600" : "text-slate-400"}`}>₹{(item.extraAdult + eaDelta).toLocaleString("en-IN")}</span>
+                                                        <span className="text-xs text-slate-400 text-right">₹{item.extraKid.toLocaleString("en-IN")}</span>
+                                                        <span className="text-center text-slate-300">→</span>
+                                                        <span className={`text-xs font-bold text-right ${ekDelta !== 0 ? "text-emerald-600" : "text-slate-400"}`}>₹{(item.extraKid + ekDelta).toLocaleString("en-IN")}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Save Button */}
                             <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0 rounded-b-2xl">
-                                <button onClick={saveBulkIncrease} disabled={bulkIncSaving || selectedItems.length === 0 || dates.length === 0 || delta === 0} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button onClick={saveBulkIncrease} disabled={bulkIncSaving || selectedItems.length === 0} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
                                     {bulkIncSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Apply Increase
                                 </button>
                                 <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
@@ -1168,7 +1280,7 @@ export default function PropertiesMgmtPage() {
                 <div><h1 className="text-2xl font-bold text-slate-800">Properties Management</h1><p className="text-sm text-slate-500 mt-1">Manage pricing, availability, and sub-properties.</p></div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <button onClick={() => { setMasterOvOpen(true); setMasterOvMsg(""); setMasterOvSelected(new Set()); setMasterOvPrices({}); setMasterOvSingleDate(""); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-indigo-700 hover:to-purple-700"><Calendar size={16} /> Master Override</button>
-                    <button onClick={() => { setBulkIncOpen(true); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-emerald-700 hover:to-teal-700"><Plus size={16} /> Bulk Increase</button>
+                    <button onClick={() => { setBulkIncOpen(true); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncExtraAdult(""); setBulkIncExtraKid(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-emerald-700 hover:to-teal-700"><Plus size={16} /> Bulk Increase</button>
                 </div>
             </div>
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">{tabs.map(t => <button key={t.key} onClick={() => { setTab(t.key); setEditId(null); setOverrideId(null); }} className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t.label}</button>)}</div>
