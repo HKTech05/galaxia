@@ -116,6 +116,7 @@ export default function PropertiesMgmtPage() {
     const [bulkIncAmount, setBulkIncAmount] = useState("");
     const [bulkIncSaving, setBulkIncSaving] = useState(false);
     const [bulkIncMsg, setBulkIncMsg] = useState("");
+    const [bulkIncHistory, setBulkIncHistory] = useState(false);
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -654,10 +655,63 @@ export default function PropertiesMgmtPage() {
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-visible" onClick={e => e.stopPropagation()}>
                     <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50 shrink-0 rounded-t-2xl">
                         <div><h3 className="font-bold text-slate-800 text-lg">Bulk Price Increase</h3><p className="text-xs text-slate-500">Increase prices by a fixed amount across properties and dates</p></div>
-                        <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setBulkIncHistory(true)} className="text-xs text-emerald-600 hover:text-emerald-800 font-semibold underline decoration-dashed">View Override History</button>
+                            <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                        </div>
                     </div>
 
-                    {bulkIncMsg ? (
+                    {bulkIncHistory ? (() => {
+                        const allOverrides: { name: string; date: string; price: number; dayType: string; id: number }[] = [];
+                        for (const p of props) {
+                            if (p.type === "dd" || p.slug === "digital-diaries") continue;
+                            if (p.slug === "ambrose" || p.slug === "amstel-nest") {
+                                for (const sp of (p.subProperties || [])) {
+                                    const parentLabel = p.slug === "ambrose" ? "Ambrose" : "Amstel Nest";
+                                    const pricing = sp.pricing?.length > 0 ? sp.pricing : (p.pricing || []).filter((t: any) => t.subPropertyId === sp.id);
+                                    for (const ov of pricing.filter((t: any) => t.overrideDate)) {
+                                        allOverrides.push({ name: `${sp.name} (${parentLabel})`, date: ov.overrideDate, price: ov.basePrice, dayType: ov.dayType, id: ov.id });
+                                    }
+                                }
+                            } else {
+                                const pricing = (p.pricing || []).filter((t: any) => !t.subPropertyId);
+                                for (const ov of pricing.filter((t: any) => t.overrideDate)) {
+                                    allOverrides.push({ name: p.name, date: ov.overrideDate, price: ov.basePrice, dayType: ov.dayType, id: ov.id });
+                                }
+                            }
+                        }
+                        allOverrides.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                        return (
+                            <>
+                                <div className="px-6 py-4 overflow-y-auto flex-1">
+                                    {allOverrides.length === 0 ? (
+                                        <p className="text-sm text-slate-400 text-center py-8">No overrides found</p>
+                                    ) : (
+                                        <div className="space-y-1.5">
+                                            <div className="grid grid-cols-[1fr_100px_90px_40px] gap-2 text-[10px] font-bold text-slate-400 uppercase px-3 pb-1">
+                                                <span>Property</span><span>Date</span><span className="text-right">Price</span><span></span>
+                                            </div>
+                                            {allOverrides.map((ov) => {
+                                                const d = new Date(ov.date);
+                                                const dateStr = `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}`;
+                                                return (
+                                                    <div key={ov.id} className="grid grid-cols-[1fr_100px_90px_40px] gap-2 items-center py-2 px-3 bg-slate-50 rounded-lg border border-slate-100 text-sm">
+                                                        <span className="font-medium text-slate-700 truncate">{ov.name}</span>
+                                                        <span className="text-slate-500 text-xs">{dateStr}</span>
+                                                        <span className="text-right font-bold text-slate-800">₹{ov.price.toLocaleString("en-IN")}</span>
+                                                        <button onClick={async () => { if (!confirm("Delete?")) return; try { await api.delete(`/properties/pricing/${ov.id}`); await load(); } catch { alert("Failed"); } }} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600"><Trash2 size={13} /></button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="px-6 py-3 border-t border-slate-100 shrink-0 rounded-b-2xl">
+                                    <button onClick={() => setBulkIncHistory(false)} className="w-full py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Back</button>
+                                </div>
+                            </>
+                        );
+                    })() : bulkIncMsg ? (
                         <div className="px-6 py-12 text-center">
                             <p className="text-lg text-emerald-700 font-bold mb-4">{bulkIncMsg}</p>
                             <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700">Done</button>
