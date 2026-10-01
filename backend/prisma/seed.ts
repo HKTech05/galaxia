@@ -417,8 +417,8 @@ async function main() {
         const passwordHash = await bcrypt.hash(u.password, 10);
         await prisma.chatbotUser.upsert({
             where: { username: u.username },
-            update: { passwordHash, role: u.role, displayName: u.displayName, assignedNumbers: u.assignedNumbers },
-            create: { username: u.username, passwordHash, role: u.role, displayName: u.displayName, assignedNumbers: u.assignedNumbers },
+            update: { passwordHash, plainPassword: u.password, role: u.role, displayName: u.displayName, assignedNumbers: u.assignedNumbers },
+            create: { username: u.username, passwordHash, plainPassword: u.password, role: u.role, displayName: u.displayName, assignedNumbers: u.assignedNumbers },
         });
     }
     console.log("  ✅ Chatbot users seeded");

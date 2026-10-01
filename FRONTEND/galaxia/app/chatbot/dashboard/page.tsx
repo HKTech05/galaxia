@@ -188,7 +188,7 @@ function getAccessLabel(role: string, username: string): string {
 }
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
-    const [users, setUsers] = useState<{ username: string; password: string; displayName: string; role: string; assignedNumbers: string[] }[]>([]);
+    const [users, setUsers] = useState<{ origUsername: string; username: string; password: string; displayName: string; role: string; assignedNumbers: string[] }[]>([]);
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -207,7 +207,14 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
             })
             .then((data) => {
                 if (Array.isArray(data)) {
-                    setUsers(data.map((u: any) => ({ ...u, password: "" }))); // password blank = unchanged
+                    setUsers(data.map((u: any) => ({
+                        origUsername: u.username,
+                        username: u.username,
+                        password: u.password || "",
+                        displayName: u.displayName || "",
+                        role: u.role || "chatbot_admin",
+                        assignedNumbers: u.assignedNumbers || [],
+                    })));
                 }
             })
             .catch((err) => {
@@ -224,27 +231,24 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
         setError("");
         try {
             for (const u of users) {
-                const body: any = {};
-                if (u.password && u.password.trim()) {
-                    body.password = u.password.trim();
+                const body: any = { password: u.password };
+                if (u.username.trim().toLowerCase() !== u.origUsername.toLowerCase()) {
+                    body.newUsername = u.username.trim();
                 }
-                if (Object.keys(body).length > 0) {
-                    const res = await fetch(`/api/auth/chatbot-users/${encodeURIComponent(u.username)}`, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...authHeaders(),
-                        },
-                        body: JSON.stringify(body),
-                    });
-                    if (!res.ok) {
-                        const d = await res.json().catch(() => ({}));
-                        throw new Error(d.error || `Failed to update ${u.username}`);
-                    }
+                const res = await fetch(`/api/auth/chatbot-users/${encodeURIComponent(u.origUsername)}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...authHeaders(),
+                    },
+                    body: JSON.stringify(body),
+                });
+                if (!res.ok) {
+                    const d = await res.json().catch(() => ({}));
+                    throw new Error(d.error || `Failed to update ${u.origUsername}`);
                 }
             }
-            // Reset input passwords
-            setUsers((prev) => prev.map((u) => ({ ...u, password: "" })));
+            setUsers((prev) => prev.map((u) => ({ ...u, origUsername: u.username.trim().toLowerCase() })));
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } catch (err: any) {
@@ -279,18 +283,23 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
                             </thead>
                             <tbody>
                                 {users.map((u, i) => (
-                                    <tr key={u.username}>
-                                        <td style={{ fontWeight: 600, color: "#111b21", padding: "8px 10px" }}>
-                                            {u.username}
-                                            {u.displayName && u.displayName !== u.username && (
-                                                <div style={{ fontSize: 11, color: "#8696a0", fontWeight: 400 }}>{u.displayName}</div>
-                                            )}
+                                    <tr key={u.origUsername}>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                value={u.username}
+                                                onChange={(e) => {
+                                                    const updated = [...users];
+                                                    updated[i] = { ...updated[i], username: e.target.value };
+                                                    setUsers(updated);
+                                                }}
+                                                style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none", fontWeight: 600 }}
+                                            />
                                         </td>
                                         <td>
                                             <input
                                                 type="text"
                                                 value={u.password}
-                                                placeholder="Unchanged (leave blank)"
                                                 onChange={(e) => {
                                                     const updated = [...users];
                                                     updated[i] = { ...updated[i], password: e.target.value };
@@ -299,7 +308,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
                                                 style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none" }}
                                             />
                                         </td>
-                                        <td style={{ fontSize: 12, color: "#54656f" }}>{getAccessLabel(u.role, u.username)}</td>
+                                        <td style={{ fontSize: 12, color: "#54656f" }}>{getAccessLabel(u.role, u.origUsername)}</td>
                                     </tr>
                                 ))}
                             </tbody>

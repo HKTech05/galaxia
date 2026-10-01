@@ -88,10 +88,19 @@ router.get("/chatbot-users", authMiddleware, requireRole("owner"), async (_req: 
                 role: true,
                 assignedNumbers: true,
                 isActive: true,
+                plainPassword: true,
             },
             orderBy: { id: "asc" },
         });
-        return res.json(users);
+        const mapped = users.map(u => ({
+            username: u.username,
+            displayName: u.displayName,
+            role: u.role,
+            assignedNumbers: u.assignedNumbers,
+            isActive: u.isActive,
+            password: u.plainPassword || "",
+        }));
+        return res.json(mapped);
     } catch (error: any) {
         console.error("Chatbot users list error:", error);
         return res.status(500).json({ error: error?.message || "Failed to fetch users" });
@@ -111,6 +120,7 @@ router.patch("/chatbot-users/:username", authMiddleware, requireRole("owner"), a
         const updateData: any = {};
         if (password && typeof password === "string" && password.trim()) {
             updateData.passwordHash = await bcrypt.hash(password.trim(), 10);
+            updateData.plainPassword = password.trim();
         }
         if (newUsername && typeof newUsername === "string" && newUsername.trim()) {
             updateData.username = newUsername.trim().toLowerCase();
@@ -141,6 +151,7 @@ router.patch("/chatbot-users/:username", authMiddleware, requireRole("owner"), a
                 role: user.role,
                 assignedNumbers: user.assignedNumbers,
                 isActive: user.isActive,
+                password: user.plainPassword || "",
             },
         });
     } catch (error: any) {

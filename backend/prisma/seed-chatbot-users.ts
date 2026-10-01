@@ -21,6 +21,7 @@ async function main() {
             where: { username: u.username },
             update: {
                 passwordHash,
+                plainPassword: u.password,
                 role: u.role,
                 displayName: u.displayName,
                 assignedNumbers: u.assignedNumbers,
@@ -29,6 +30,7 @@ async function main() {
             create: {
                 username: u.username,
                 passwordHash,
+                plainPassword: u.password,
                 role: u.role,
                 displayName: u.displayName,
                 assignedNumbers: u.assignedNumbers,
