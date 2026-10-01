@@ -107,6 +107,15 @@ export default function PropertiesMgmtPage() {
     const [masterOvPrices, setMasterOvPrices] = useState<Record<string, string>>({});
     const [masterOvSaving, setMasterOvSaving] = useState(false);
     const [masterOvMsg, setMasterOvMsg] = useState("");
+    // Bulk Increase
+    const [bulkIncOpen, setBulkIncOpen] = useState(false);
+    const [bulkIncSelected, setBulkIncSelected] = useState<Set<string>>(new Set());
+    const [bulkIncSingleDate, setBulkIncSingleDate] = useState("");
+    const [bulkIncRangeFrom, setBulkIncRangeFrom] = useState("");
+    const [bulkIncRangeTo, setBulkIncRangeTo] = useState("");
+    const [bulkIncAmount, setBulkIncAmount] = useState("");
+    const [bulkIncSaving, setBulkIncSaving] = useState(false);
+    const [bulkIncMsg, setBulkIncMsg] = useState("");
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -588,6 +597,173 @@ export default function PropertiesMgmtPage() {
         );
     };
 
+    // Bulk Increase dates helper
+    const getBulkIncDates = (): string[] => {
+        if (bulkIncSingleDate) return [bulkIncSingleDate];
+        if (bulkIncRangeFrom && bulkIncRangeTo) {
+            const dates: string[] = [];
+            const from = new Date(bulkIncRangeFrom + 'T12:00:00');
+            const to = new Date(bulkIncRangeTo + 'T12:00:00');
+            for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+                dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            }
+            return dates;
+        }
+        return [];
+    };
+
+    const saveBulkIncrease = async () => {
+        const dates = getBulkIncDates();
+        if (dates.length === 0) return alert("Select at least one date");
+        const delta = parseInt(bulkIncAmount);
+        if (isNaN(delta) || delta === 0) return alert("Enter an increase amount");
+        const allItems = getAllStayProperties();
+        const selected = allItems.filter(i => bulkIncSelected.has(i.key));
+        if (selected.length === 0) return alert("Select at least one property");
+        setBulkIncSaving(true);
+        try {
+            let count = 0;
+            for (const item of selected) {
+                const [type, idStr] = item.key.split("-");
+                for (const dateStr of dates) {
+                    const dt = getDayType(dateStr);
+                    const currentPrice = item.prices[dt.type];
+                    const newPrice = currentPrice + delta;
+                    if (newPrice <= 0) continue;
+                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
+                    await api.post(endpoint, { date: dateStr, price: newPrice });
+                    count++;
+                }
+            }
+            setBulkIncMsg(`✓ ${count} override${count !== 1 ? "s" : ""} saved — prices increased by ₹${delta.toLocaleString("en-IN")} across ${selected.length} propert${selected.length !== 1 ? "ies" : "y"} and ${dates.length} date${dates.length !== 1 ? "s" : ""}`);
+            await load();
+        } catch (e: any) {
+            alert("Failed: " + (e?.message || "Unknown error"));
+        } finally { setBulkIncSaving(false); }
+    };
+
+    const renderBulkIncreaseModal = () => {
+        if (!bulkIncOpen) return null;
+        const allItems = getAllStayProperties();
+        const dates = getBulkIncDates();
+        const selectedItems = allItems.filter(i => bulkIncSelected.has(i.key));
+        const delta = parseInt(bulkIncAmount) || 0;
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-visible" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50 shrink-0 rounded-t-2xl">
+                        <div><h3 className="font-bold text-slate-800 text-lg">Bulk Price Increase</h3><p className="text-xs text-slate-500">Increase prices by a fixed amount across properties and dates</p></div>
+                        <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                    </div>
+
+                    {bulkIncMsg ? (
+                        <div className="px-6 py-12 text-center">
+                            <p className="text-lg text-emerald-700 font-bold mb-4">{bulkIncMsg}</p>
+                            <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700">Done</button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="px-6 py-4 overflow-y-auto flex-1 space-y-5">
+                                {/* Step 1: Select Properties */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs font-bold text-slate-500 uppercase">1. Select Properties</p>
+                                        <button onClick={() => { bulkIncSelected.size === allItems.length ? setBulkIncSelected(new Set()) : setBulkIncSelected(new Set(allItems.map(i => i.key))); }} className="text-[10px] text-emerald-600 font-bold hover:underline">{bulkIncSelected.size === allItems.length ? "Deselect All" : "Select All"}</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2">
+                                        {allItems.map(item => (
+                                            <label key={item.key} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer text-xs font-medium transition-colors ${bulkIncSelected.has(item.key) ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-white text-slate-600 border border-slate-100 hover:bg-slate-50"}`}>
+                                                <input type="checkbox" checked={bulkIncSelected.has(item.key)} onChange={() => { const next = new Set(bulkIncSelected); next.has(item.key) ? next.delete(item.key) : next.add(item.key); setBulkIncSelected(next); }} className="accent-emerald-600 w-3.5 h-3.5" />
+                                                <span className="truncate">{item.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Step 2: Date Selection */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">2. Select Date(s)</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Single Date</label>
+                                            <div className="flex gap-1 items-center">
+                                                <input type="date" value={bulkIncSingleDate} onChange={e => { setBulkIncSingleDate(e.target.value); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
+                                                {bulkIncSingleDate && <button onClick={() => setBulkIncSingleDate("")} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Or Date Range</label>
+                                            <div className="flex gap-1 items-center">
+                                                <input type="date" value={bulkIncRangeFrom} onChange={e => { setBulkIncRangeFrom(e.target.value); setBulkIncSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
+                                                <span className="text-xs text-slate-400">to</span>
+                                                <input type="date" value={bulkIncRangeTo} min={bulkIncRangeFrom} onChange={e => { setBulkIncRangeTo(e.target.value); setBulkIncSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500/20 outline-none" />
+                                                {(bulkIncRangeFrom || bulkIncRangeTo) && <button onClick={() => { setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {dates.length > 0 && <p className="text-[10px] text-emerald-600 font-medium mt-1">{dates.length} date{dates.length !== 1 ? "s" : ""} selected</p>}
+                                </div>
+
+                                {/* Step 3: Increase Amount */}
+                                {selectedItems.length > 0 && dates.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">3. Increase Amount</p>
+                                        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                            <span className="text-sm font-medium text-slate-700 whitespace-nowrap">Increase selected prices by</span>
+                                            <NI value={bulkIncAmount} onChange={setBulkIncAmount} placeholder="Amount" className="w-32" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Preview */}
+                                {selectedItems.length > 0 && dates.length > 0 && delta !== 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Preview</p>
+                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="grid grid-cols-[1fr_70px_60px_80px_20px_80px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                <span>Property</span><span>Date</span><span>Day</span><span className="text-right">Current</span><span></span><span className="text-right">New</span>
+                                            </div>
+                                            <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
+                                                {selectedItems.map(item => (
+                                                    dates.map(dateStr => {
+                                                        const dt = getDayType(dateStr);
+                                                        const currentPrice = item.prices[dt.type];
+                                                        const newPrice = currentPrice + delta;
+                                                        const d = new Date(dateStr + 'T12:00:00');
+                                                        const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
+                                                        return (
+                                                            <div key={`${item.key}|${dateStr}`} className="grid grid-cols-[1fr_70px_60px_80px_20px_80px] gap-1 items-center px-3 py-1.5">
+                                                                <span className="text-xs font-medium text-slate-700 truncate">{item.name}</span>
+                                                                <span className="text-[11px] text-slate-500">{dateLabel}</span>
+                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-center ${dt.type === "saturday" ? "bg-orange-50 text-orange-600" : dt.type === "weekend" ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500"}`}>{dt.label}</span>
+                                                                <span className="text-xs text-slate-400 text-right">₹{currentPrice.toLocaleString("en-IN")}</span>
+                                                                <span className="text-center text-slate-300">→</span>
+                                                                <span className={`text-xs font-bold text-right ${newPrice > currentPrice ? "text-emerald-600" : "text-red-500"}`}>₹{newPrice.toLocaleString("en-IN")}</span>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Save Button */}
+                            <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0 rounded-b-2xl">
+                                <button onClick={saveBulkIncrease} disabled={bulkIncSaving || selectedItems.length === 0 || dates.length === 0 || delta === 0} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {bulkIncSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Apply Increase
+                                </button>
+                                <button onClick={() => { setBulkIncOpen(false); setBulkIncMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     const renderCardBtns = (editKey: string, onToggle: () => void, prop: any, sub?: any) => {
         const name = sub?.name || prop.name;
         const pricing = sub?.pricing?.length > 0 ? sub.pricing : (prop.pricing || []).filter((t: any) => sub ? t.subPropertyId === sub.id : !t.subPropertyId);
@@ -936,7 +1112,10 @@ export default function PropertiesMgmtPage() {
         <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div><h1 className="text-2xl font-bold text-slate-800">Properties Management</h1><p className="text-sm text-slate-500 mt-1">Manage pricing, availability, and sub-properties.</p></div>
-                <button onClick={() => { setMasterOvOpen(true); setMasterOvMsg(""); setMasterOvSelected(new Set()); setMasterOvPrices({}); setMasterOvSingleDate(""); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-indigo-700 hover:to-purple-700"><Calendar size={16} /> Master Override</button>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <button onClick={() => { setMasterOvOpen(true); setMasterOvMsg(""); setMasterOvSelected(new Set()); setMasterOvPrices({}); setMasterOvSingleDate(""); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-indigo-700 hover:to-purple-700"><Calendar size={16} /> Master Override</button>
+                    <button onClick={() => { setBulkIncOpen(true); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-emerald-700 hover:to-teal-700"><Plus size={16} /> Bulk Increase</button>
+                </div>
             </div>
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">{tabs.map(t => <button key={t.key} onClick={() => { setTab(t.key); setEditId(null); setOverrideId(null); }} className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t.label}</button>)}</div>
             {loading ? <div className="flex flex-col items-center py-20"><Loader2 className="animate-spin text-purple-500" size={32} /><p className="text-sm text-slate-500 mt-3">Loading…</p></div>
@@ -952,5 +1131,6 @@ export default function PropertiesMgmtPage() {
         {renderDdOverrideModal()}
         {renderDdViewOverridesModal()}
         {renderMasterOverrideModal()}
+        {renderBulkIncreaseModal()}
     </>);
 }
