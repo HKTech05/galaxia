@@ -5,62 +5,9 @@ import { useRouter } from "next/navigation";
 import "./chatbot.css";
 
 /* ═══════════════════════════════════════════════════════
-   CHATBOT LOGIN — Mock Auth (replace with real API)
+   CHATBOT LOGIN — Real Backend API Auth
    Route: /chatbot
    ═══════════════════════════════════════════════════════ */
-
-const STAYCATION_CHATBOTS = [
-    "staycation_1",
-    "staycation_2",
-    "website",
-    "wa_amstelnest",
-    "ig_ambrose",
-    "ig_amstelnest",
-    "ig_laparaiso",
-    "ig_mountview",
-    "ig_heavenlyvilla",
-    "ig_hillview"
-];
-
-const ALL_NUMBERS = [
-    "staycation_1",
-    "staycation_2",
-    "digital_diaries",
-    "dd_instagram",
-    "wa_amstelnest",
-    "wa_staycation",
-    "website",
-    "ig_ambrose",
-    "ig_amstelnest",
-    "ig_laparaiso",
-    "ig_mountview",
-    "ig_heavenlyvilla",
-    "ig_hillview"
-];
-
-const DEFAULT_USERS: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {
-    owner: { password: "owner123", role: "owner", displayName: "Owner", assignedNumbers: ALL_NUMBERS },
-    test: { password: "test@123", role: "test_viewer", displayName: "Test Account", assignedNumbers: ALL_NUMBERS },
-    staycation1: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 1 Admin", assignedNumbers: STAYCATION_CHATBOTS },
-    stay123: { password: "stay123", role: "staycation_call_manager", displayName: "Staycation call manager", assignedNumbers: STAYCATION_CHATBOTS },
-    staycation2: { password: "stay123", role: "chatbot_admin", displayName: "Staycation 2 Admin", assignedNumbers: ["staycation_2", "website"] },
-    ddadmin: { password: "dd123", role: "chatbot_admin", displayName: "Digital Diaries Admin", assignedNumbers: ["digital_diaries", "dd_instagram", "website"] },
-    igadmin: { password: "ig123", role: "chatbot_admin", displayName: "IG Admin", assignedNumbers: ["ig_ambrose", "ig_amstelnest", "ig_laparaiso", "ig_mountview", "ig_heavenlyvilla", "ig_hillview"] },
-};
-
-function getMockUsers() {
-    try {
-        const custom = JSON.parse(localStorage.getItem("chatbot_passwords") || "{}");
-        const users: Record<string, { password: string; role: string; displayName: string; assignedNumbers: string[] }> = {};
-        const keys = Object.keys(DEFAULT_USERS) as Array<keyof typeof DEFAULT_USERS>;
-        for (const key of keys) {
-            const customUsername = custom[`${key}_username`] || key;
-            const customPassword = custom[key] || DEFAULT_USERS[key].password;
-            users[customUsername] = { ...DEFAULT_USERS[key], password: customPassword };
-        }
-        return users;
-    } catch { return DEFAULT_USERS; }
-}
 
 export default function ChatbotLoginPage() {
     const router = useRouter();
@@ -70,33 +17,46 @@ export default function ChatbotLoginPage() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        const token = localStorage.getItem("chatbot_token");
         const session = localStorage.getItem("chatbot_session");
-        if (session) router.replace("/chatbot/dashboard");
+        if (token && session) router.replace("/chatbot/dashboard");
     }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setLoading(true);
-        await new Promise((r) => setTimeout(r, 500));
 
-        const MOCK_USERS = getMockUsers();
-        const user = MOCK_USERS[username.trim()];
-        if (user && user.password === password) {
+        try {
+            const res = await fetch("/api/auth/chatbot-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: username.trim(), password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Login failed");
+            }
+
+            // Store token + session
+            localStorage.setItem("chatbot_token", data.token);
             localStorage.setItem(
                 "chatbot_session",
                 JSON.stringify({
-                    username: username.trim(),
-                    role: user.role,
-                    displayName: user.displayName,
-                    assignedNumbers: user.assignedNumbers,
-                    isReadOnly: user.role === "test_viewer",
-                    loginTime: new Date().toISOString()
+                    username: data.user.username,
+                    role: data.user.role,
+                    displayName: data.user.displayName,
+                    assignedNumbers: data.user.assignedNumbers,
+                    isReadOnly: data.user.role === "test_viewer",
+                    loginTime: new Date().toISOString(),
                 })
             );
             router.push("/chatbot/dashboard");
-        } else {
-            setError("Invalid credentials. Please try again.");
+        } catch (err: any) {
+            setError(err.message || "Invalid credentials. Please try again.");
+        } finally {
             setLoading(false);
         }
     };
@@ -113,11 +73,27 @@ export default function ChatbotLoginPage() {
                 <form onSubmit={handleSubmit} className="cb-login-form">
                     <div className="cb-form-group">
                         <label htmlFor="cb-user">Username</label>
-                        <input id="cb-user" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" autoComplete="username" required />
+                        <input
+                            id="cb-user"
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter your username"
+                            autoComplete="username"
+                            required
+                        />
                     </div>
                     <div className="cb-form-group">
                         <label htmlFor="cb-pass">Password</label>
-                        <input id="cb-pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" autoComplete="current-password" required />
+                        <input
+                            id="cb-pass"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            autoComplete="current-password"
+                            required
+                        />
                     </div>
                     {error && <div className="cb-login-error">{error}</div>}
                     <button type="submit" disabled={loading} className="cb-btn-primary">

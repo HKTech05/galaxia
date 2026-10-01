@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import authRoutes from "./routes/auth";
+import chatbotAuthRoutes from "./routes/chatbotAuth";
 import cognitoAuthRoutes from "./routes/cognitoAuth";
 import phoneAuthRoutes from "./routes/phoneAuth";
 import propertyRoutes from "./routes/properties";
@@ -98,6 +99,7 @@ app.get("/api/health", (_req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", chatbotAuthRoutes);
 app.use("/api/auth/cognito", cognitoAuthRoutes);
 app.use("/api/auth/phone", phoneAuthRoutes);
 app.use("/api/properties", propertyRoutes);

@@ -859,3 +859,15 @@ model PendingDdPayment {
 
   @@map("pending_dd_payments")
 }
+
+model ChatbotUser {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  passwordHash    String
+  displayName     String
+  role            String   @default("chatbot_admin")  // owner | chatbot_admin | staycation_call_manager | test_viewer
+  assignedNumbers String[] @default([])               // ["digital_diaries", "dd_instagram", "wa_staycation", ...]
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

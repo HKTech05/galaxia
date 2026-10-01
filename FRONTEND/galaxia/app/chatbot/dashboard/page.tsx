@@ -169,83 +169,150 @@ function dbToUiMessage(db: DbChatMessage): Message {
     };
 }
 
-const DEFAULT_PASSWORDS: Record<string, string> = { owner: "owner123", test: "test@123", stay123: "stay123", staycation1: "stay123", staycation2: "stay123", ddadmin: "dd123", igadmin: "ig123" };
-const ACCOUNTS = [
-    { key: "owner", label: "Owner", access: "All Numbers" },
-    { key: "test", label: "Test Account", access: "View Only (All)" },
-    { key: "stay123", label: "Staycation Call Manager", access: "Staycation Chatbots" },
-    { key: "staycation1", label: "Staycation 1", access: "Staycation Chatbots" },
-    { key: "staycation2", label: "Staycation 2", access: "Staycation 2" },
-    { key: "ddadmin", label: "DD Admin", access: "Digital Diaries" },
-    { key: "igadmin", label: "IG Admin", access: "All IG Bots" },
-];
+function authHeaders(): Record<string, string> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("chatbot_token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function getAccessLabel(role: string, username: string): string {
+    const map: Record<string, string> = {
+        owner: "All Numbers",
+        test: "View Only (All)",
+        stay123: "Staycation Chatbots",
+        staycation1: "Staycation Chatbots",
+        staycation2: "Staycation 2",
+        ddadmin: "Digital Diaries",
+        igadmin: "All IG Bots",
+    };
+    return map[username.toLowerCase()] || (role === "owner" ? "All Numbers" : role === "test_viewer" ? "View Only (All)" : "Restricted");
+}
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
-    const [credentials, setCredentials] = useState<{ username: string; password: string }[]>([]);
+    const [users, setUsers] = useState<{ username: string; password: string; displayName: string; role: string; assignedNumbers: string[] }[]>([]);
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
-        try {
-            const custom = JSON.parse(localStorage.getItem("chatbot_passwords") || "{}");
-            const creds = ACCOUNTS.map(a => ({
-                username: custom[`${a.key}_username`] || a.key,
-                password: custom[a.key] || DEFAULT_PASSWORDS[a.key] || "",
-            }));
-            setCredentials(creds);
-        } catch {
-            setCredentials(ACCOUNTS.map(a => ({ username: a.key, password: DEFAULT_PASSWORDS[a.key] || "" })));
-        }
+        fetch("/api/auth/chatbot-users", {
+            headers: authHeaders(),
+        })
+            .then(async (r) => {
+                if (!r.ok) {
+                    const d = await r.json().catch(() => ({}));
+                    throw new Error(d.error || "Failed to load users");
+                }
+                return r.json();
+            })
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    setUsers(data.map((u: any) => ({ ...u, password: "" }))); // password blank = unchanged
+                }
+            })
+            .catch((err) => {
+                console.error("Error loading chatbot users:", err);
+                setError(err.message || "Failed to load users");
+            })
+            .finally(() => {
+                setFetching(false);
+            });
     }, []);
 
-    const handleSave = () => {
-        const toSave: Record<string, string> = {};
-        ACCOUNTS.forEach((a, i) => {
-            toSave[a.key] = credentials[i]?.password || DEFAULT_PASSWORDS[a.key] || "";
-            toSave[`${a.key}_username`] = credentials[i]?.username || a.key;
-        });
-        localStorage.setItem("chatbot_passwords", JSON.stringify(toSave));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+    const handleSave = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            for (const u of users) {
+                const body: any = {};
+                if (u.password && u.password.trim()) {
+                    body.password = u.password.trim();
+                }
+                if (Object.keys(body).length > 0) {
+                    const res = await fetch(`/api/auth/chatbot-users/${encodeURIComponent(u.username)}`, {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...authHeaders(),
+                        },
+                        body: JSON.stringify(body),
+                    });
+                    if (!res.ok) {
+                        const d = await res.json().catch(() => ({}));
+                        throw new Error(d.error || `Failed to update ${u.username}`);
+                    }
+                }
+            }
+            // Reset input passwords
+            setUsers((prev) => prev.map((u) => ({ ...u, password: "" })));
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch (err: any) {
+            setError(err.message || "Failed to save changes");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <div className="cb-settings-overlay" onClick={onClose}>
-            <div className="cb-settings-modal" onClick={e => e.stopPropagation()}>
+            <div className="cb-settings-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="cb-settings-header">
                     <h3>⚙️ Settings</h3>
                     <button className="cb-settings-close" onClick={onClose}>✕</button>
                 </div>
                 <div className="cb-settings-body">
-                    <table className="cb-settings-table">
-                        <thead><tr><th>Username</th><th>Password</th><th>Access</th></tr></thead>
-                        <tbody>
-                            {ACCOUNTS.map((a, i) => (
-                                <tr key={a.key}>
-                                    <td>
-                                        <input
-                                            type="text"
-                                            value={credentials[i]?.username || ""}
-                                            onChange={e => { const c = [...credentials]; c[i] = { ...c[i], username: e.target.value }; setCredentials(c); }}
-                                            style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none", fontWeight: 600 }}
-                                        />
-                                    </td>
-                                    <td>
-                                        <input
-                                            type="text"
-                                            value={credentials[i]?.password || ""}
-                                            onChange={e => { const c = [...credentials]; c[i] = { ...c[i], password: e.target.value }; setCredentials(c); }}
-                                            style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none" }}
-                                        />
-                                    </td>
-                                    <td>{a.access}</td>
+                    {fetching ? (
+                        <div style={{ padding: "20px", textAlign: "center", color: "#667781" }}>Loading accounts...</div>
+                    ) : error ? (
+                        <div style={{ padding: "12px", background: "#fee2e2", color: "#dc2626", borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
+                            {error}
+                        </div>
+                    ) : (
+                        <table className="cb-settings-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Password</th>
+                                    <th>Access</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {users.map((u, i) => (
+                                    <tr key={u.username}>
+                                        <td style={{ fontWeight: 600, color: "#111b21", padding: "8px 10px" }}>
+                                            {u.username}
+                                            {u.displayName && u.displayName !== u.username && (
+                                                <div style={{ fontSize: 11, color: "#8696a0", fontWeight: 400 }}>{u.displayName}</div>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                value={u.password}
+                                                placeholder="Unchanged (leave blank)"
+                                                onChange={(e) => {
+                                                    const updated = [...users];
+                                                    updated[i] = { ...updated[i], password: e.target.value };
+                                                    setUsers(updated);
+                                                }}
+                                                style={{ width: "100%", border: "1px solid #e9edef", borderRadius: 6, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                                            />
+                                        </td>
+                                        <td style={{ fontSize: 12, color: "#54656f" }}>{getAccessLabel(u.role, u.username)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
                         {saved && <span style={{ color: "#00a884", fontSize: 13, fontWeight: 600 }}>✓ Saved</span>}
-                        <button onClick={handleSave} style={{ background: "#075e54", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                            Save Changes
+                        <button
+                            onClick={handleSave}
+                            disabled={loading || fetching}
+                            style={{ background: "#075e54", color: "white", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, fontSize: 13, cursor: loading || fetching ? "not-allowed" : "pointer", opacity: loading || fetching ? 0.7 : 1, fontFamily: "inherit" }}
+                        >
+                            {loading ? "Saving..." : "Save Changes"}
                         </button>
                     </div>
                 </div>
@@ -279,11 +346,33 @@ export default function ChatbotDashboard() {
     // ─── Auth check ───
     useEffect(() => {
         setMounted(true);
-        try {
-            const s = JSON.parse(localStorage.getItem("chatbot_session") || "null");
-            if (!s) { router.replace("/chatbot"); return; }
-            setSession(s);
-        } catch { router.replace("/chatbot"); }
+        const token = localStorage.getItem("chatbot_token");
+        const s = JSON.parse(localStorage.getItem("chatbot_session") || "null");
+        if (!s || !token) { router.replace("/chatbot"); return; }
+        setSession(s);
+
+        // Validate token with /api/auth/chatbot-me
+        fetch("/api/auth/chatbot-me", {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then((r) => {
+                if (!r.ok) throw new Error("Invalid session");
+                return r.json();
+            })
+            .then((fresh) => {
+                const updated = {
+                    ...s,
+                    ...fresh,
+                    isReadOnly: fresh.role === "test_viewer",
+                };
+                localStorage.setItem("chatbot_session", JSON.stringify(updated));
+                setSession(updated);
+            })
+            .catch(() => {
+                localStorage.removeItem("chatbot_token");
+                localStorage.removeItem("chatbot_session");
+                router.replace("/chatbot");
+            });
     }, [router]);
 
     // ─── Load chats from bot server ───
@@ -593,7 +682,11 @@ export default function ChatbotDashboard() {
         setSending(false);
     };
 
-    const handleLogout = () => { localStorage.removeItem("chatbot_session"); router.push("/chatbot"); };
+    const handleLogout = () => {
+        localStorage.removeItem("chatbot_token");
+        localStorage.removeItem("chatbot_session");
+        router.push("/chatbot");
+    };
     const goBack = () => setMobileShowChat(false);
 
     if (!mounted || !session) return null;
@@ -616,7 +709,7 @@ export default function ChatbotDashboard() {
                             {connected ? "Connected" : "Connecting…"}
                         </span>
                     </div>
-                    {!isTestViewer && (
+                    {session.role === "owner" && (
                         <button className="cb-btn-settings" onClick={() => setShowSettings(true)} title="Settings">
                             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" /><circle cx="12" cy="12" r="3" /></svg>
                         </button>
@@ -985,7 +1078,7 @@ export default function ChatbotDashboard() {
             </div>
 
             {/* Settings Modal */}
-            {showSettings && !isTestViewer && (
+            {showSettings && session.role === "owner" && (
                 <SettingsModal onClose={() => setShowSettings(false)} />
             )}
         </div>
