@@ -51,6 +51,13 @@ Once the booking is done, it's non-refundable and non-transferable in any condit
 - **2 October 2026**: ₹5,000 (2 persons)
 - **3 October 2026**: ₹5,000 (2 persons)
 
+## Diwali Week Pricing (Excl. 5% GST)
+- **6 November 2026**: ₹5,000 (2 persons)
+- **7 November 2026**: ₹5,000 (2 persons)
+- **8 November 2026**: ₹5,000 (2 persons)
+- **9-12 November 2026**: ₹4,000 (2 persons)
+- **13 November 2026**: ₹5,000 (2 persons)
+- **14 November 2026**: ₹5,000 (2 persons)
 Google Maps: https://maps.app.goo.gl/1v6azy
 
 ---

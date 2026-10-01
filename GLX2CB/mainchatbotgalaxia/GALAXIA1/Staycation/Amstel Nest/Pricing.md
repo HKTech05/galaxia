@@ -25,6 +25,13 @@ Amstel Nest features 14 Standard Cottages and 1 Family Cottage with private indo
 - **2 October 2026**: Standard Cottage: ₹6,950 (2p with meals) | Family Cottage: ₹11,000 (4p with meals)
 - **3 October 2026**: Standard Cottage: ₹7,950 (2p with meals) | Family Cottage: ₹13,000 (4p with meals)
 
+## Diwali Week Pricing (Excl. 5% GST)
+- **6 November 2026**: Standard ₹6,950 (2p) | Family ₹11,000 (4p)
+- **7 November 2026**: Standard ₹7,950 (2p) | Family ₹13,000 (4p)
+- **8 November 2026**: Standard ₹6,950 (2p) | Family ₹11,000 (4p)
+- **9-12 November 2026**: Standard ₹5,950 (2p) | Family ₹10,000 (4p)
+- **13 November 2026**: Standard ₹6,950 (2p) | Family ₹11,000 (4p)
+- **14 November 2026**: Standard ₹7,950 (2p) | Family ₹13,000 (4p)
 ## Sharing Calculations & Capacity Limits
 - **Max Capacity per Standard Cottage**: Strictly *max 3 adults* (or 4 persons total if 3 adults + 1 child under 12).
 - **2 Sharing**: 1 Standard Cottage = 2 Adults

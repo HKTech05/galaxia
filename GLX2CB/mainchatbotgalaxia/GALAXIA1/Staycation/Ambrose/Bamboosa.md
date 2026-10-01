@@ -25,6 +25,13 @@
 - **2 October 2026**: ₹12,500 for 4 Persons (with meals)
 - **3 October 2026**: ₹14,000 for 4 Persons (with meals)
 
+## Diwali Week Pricing (Excl. 5% GST)
+- **6 November 2026**: ₹12,500 for 4 Persons (with meals)
+- **7 November 2026**: ₹14,000 for 4 Persons (with meals)
+- **8 November 2026**: ₹12,500 for 4 Persons (with meals)
+- **9-12 November 2026**: ₹11,500 for 4 Persons (with meals)
+- **13 November 2026**: ₹12,500 for 4 Persons (with meals)
+- **14 November 2026**: ₹14,000 for 4 Persons (with meals)
 - **Direct Clickable Food Menu Link**: https://galaxiaresorts.com/menus/ambrose-amstel-menu.jpeg
 - **Booking Link**: https://www.galaxiaresorts.com/staycation/ambrose/bamboosa
 

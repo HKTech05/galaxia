@@ -47,6 +47,13 @@ Security deposit Rs 2k not included in stay prices, pay during check-in, refunde
 - **2 October 2026**: ₹4,000 (2 persons)
 - **3 October 2026**: ₹4,000 (2 persons)
 
+## Diwali Week Pricing (Excl. 5% GST)
+- **6 November 2026**: ₹4,000 (2 persons)
+- **7 November 2026**: ₹4,000 (2 persons)
+- **8 November 2026**: ₹4,000 (2 persons)
+- **9-12 November 2026**: ₹3,000 (2 persons)
+- **13 November 2026**: ₹4,000 (2 persons)
+- **14 November 2026**: ₹4,000 (2 persons)
 ---
 ## Related Notes & Navigation
 - [[Amenities|Hill View Amenities & Society Pool]]

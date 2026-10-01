@@ -309,6 +309,15 @@ ${calendarTable}
     - **Hill View**: 2 Oct *₹4,000*, 3 Oct *₹4,000*.
     - **Mount View**: 2 Oct *₹5,000*, 3 Oct *₹5,000*.
     - **Heavenly Villa**: 2 Oct *₹5,950*, 3 Oct *₹5,950*.
+30B. **Diwali Week Prime Date Pricing (6–14 November 2026) — CRITICAL: Override base rates on ALL these dates (Excl. 5% GST)**:
+    - **Amstel Nest**: Standard: 9-12 Nov *₹5,950*, 6/8/13 Nov *₹6,950*, 7/14 Nov *₹7,950*. Family: 9-12 Nov *₹10,000*, 6/8/13 Nov *₹11,000*, 7/14 Nov *₹13,000*.
+    - **Ambrose Take-1 / Alta / Santorini**: 9-12 Nov *₹6,500* (2p), 6/8/13 Nov *₹7,500* (2p), 7/14 Nov *₹13,000* (4p).
+    - **Ambrose Cypress**: 9-12 Nov *₹6,500* (2p), 6/8/13 Nov *₹7,500* (2p), 7/14 Nov *₹7,500* (2p).
+    - **Ambrose Bamboosa**: 9-12 Nov *₹11,500* (4p), 6/8/13 Nov *₹12,500* (4p), 7/14 Nov *₹14,000* (4p).
+    - **La Paraiso**: 9-12 Nov *₹5,960* (4p), 6/8/13 Nov *₹8,500* (4p), 7/14 Nov *₹8,500* (4p).
+    - **Hill View**: 9-12 Nov *₹3,000*, 6/8/13 Nov *₹4,000*, 7/14 Nov *₹4,000*.
+    - **Mount View**: 9-12 Nov *₹4,000*, 6/8/13 Nov *₹5,000*, 7/14 Nov *₹5,000*.
+    - **Heavenly Villa**: 9-12 Nov *₹4,950*, 6/8/13 Nov *₹5,950*, 7/14 Nov *₹5,950*.
 31. **Digital Diaries Specific Operational & Policy Rules**:
     - **Staycation Redirect Rule**: Digital Diaries handles ONLY Wadala private cinema screening bookings. If asked about staycation, answer: "For staycation/resort bookings, please visit our staycation contact page for all details and contact numbers: https://www.galaxiaresorts.com/staycation/contact".
     - **Location (CRITICAL)**: Digital Diaries is located in *Wadala West*, Mumbai. When asked "east or west?", ALWAYS answer *Wadala West*. NEVER say just "Wadala" without "West" when east/west is asked.

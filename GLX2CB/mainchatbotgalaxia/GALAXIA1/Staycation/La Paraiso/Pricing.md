@@ -52,6 +52,13 @@ Booking is non refundable / non transferable.
 - **2 October 2026**: ₹8,500 (Up to 4 persons)
 - **3 October 2026**: ₹9,500 (Up to 4 persons)
 
+## Diwali Week Pricing (Excl. 5% GST)
+- **6 November 2026**: ₹8,500 (4 persons)
+- **7 November 2026**: ₹8,500 (4 persons)
+- **8 November 2026**: ₹8,500 (4 persons)
+- **9-12 November 2026**: ₹5,960 (4 persons)
+- **13 November 2026**: ₹8,500 (4 persons)
+- **14 November 2026**: ₹8,500 (4 persons)
 Instagram: https://instagram.com/la_paraiso001
 
 ---
