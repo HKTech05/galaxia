@@ -721,7 +721,7 @@ router.post("/driver-pricing/override", authMiddleware, requireRole("admin", "su
 // DELETE /api/properties/driver-pricing/:id — Delete a driver pricing override
 router.delete("/driver-pricing/:id", authMiddleware, requireRole("admin", "superadmin"), async (req: AuthRequest, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseInt(req.params.id as string);
         const row = await prisma.driverPricing.findUnique({ where: { id } });
         if (!row) return res.status(404).json({ error: "Not found" });
         if (!row.overrideDate) return res.status(400).json({ error: "Cannot delete base pricing row" });
