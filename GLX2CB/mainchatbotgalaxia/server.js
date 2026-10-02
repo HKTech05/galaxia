@@ -166,6 +166,21 @@ app.get(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
   res.json({ count: Object.values(summary).reduce((a, b) => a + b, 0), users: summary });
 });
 
+// Push notification test endpoint — hit /bot/api/push-test in browser to debug
+app.get(["/api/push-test", "/bot/api/push-test"], async (req, res) => {
+  const tokenCount = [...pushTokens.values()].reduce((sum, set) => sum + set.size, 0);
+  const tokenList = {};
+  for (const [user, tokens] of pushTokens) {
+    tokenList[user] = [...tokens];
+  }
+  try {
+    await sendPushNotifications("🔔 Push Test", "If you see this, push notifications work!", "test");
+    res.json({ success: true, tokenCount, tokens: tokenList, message: "Test push sent" });
+  } catch (err) {
+    res.json({ success: false, tokenCount, tokens: tokenList, error: err.message });
+  }
+});
+
 /* =========================
    RATE LIMITER
 ========================= */
