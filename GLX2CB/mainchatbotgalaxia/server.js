@@ -283,21 +283,24 @@ app.post("/webhook", async (req, res) => {
 
     const isAiBot = botType === "celebration" || botType === "digital_diaries" || botType === "amstel_nest" || botType === "staycation";
 
-    // 2. Save user message to DB & emit to dashboard
-    // For AI bots in human mode, we still need to save so admin can see the message
+    // 2. Save user message to DB (only for non-AI menu bots, since ChatbotService handles AI bot saves)
     let savedUserMsg = null;
     if (!isAiBot) {
       savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
-      io.emit("new_message", {
-        sessionId,
-        message: savedUserMsg,
-        session: await db.getSession(sessionId),
-      });
-      // Push notification to mobile app (works even when app is closed)
-      const pushSession = await db.getSession(sessionId);
-      const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
-      sendPushNotifications(pushName, userText, sessionId);
     }
+
+    // Emit user message to ALL connected clients (mobile app + web dashboard)
+    // This fires for ALL bot types so the mobile app can cache the customer's text for notifications
+    io.emit("new_message", {
+      sessionId,
+      message: savedUserMsg || { role: "user", message: userText, session_id: sessionId, created_at: new Date().toISOString() },
+      session: await db.getSession(sessionId),
+    });
+
+    // Push notification to mobile app (works even when app is completely closed)
+    const pushSession = await db.getSession(sessionId);
+    const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
+    sendPushNotifications(pushName, userText, sessionId);
 
     // 4. Check if human mode is active — re-read from DB to avoid stale state
     session = await db.getSession(sessionId) || session;
@@ -306,15 +309,6 @@ app.post("/webhook", async (req, res) => {
       // For AI bots, save user message so admin sees it (ChatbotService won't run)
       if (isAiBot) {
         savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
-        io.emit("new_message", {
-          sessionId,
-          message: savedUserMsg,
-          session,
-        });
-        // Push notification when human mode is active
-        const pushSession = await db.getSession(sessionId) || session;
-        const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
-        sendPushNotifications(pushName, userText, sessionId);
       }
       return;
     }
@@ -333,10 +327,6 @@ app.post("/webhook", async (req, res) => {
       };
       const aiBotType = WA_TO_AI_BOT_TYPE[botType] || "digital_diaries";
       console.log(`[WhatsApp] Routing to AI Chatbot V2 (${aiBotType}) for ${from}`);
-      // Push notification BEFORE AI processes (so it shows the customer's message, not bot reply)
-      const pushSession = await db.getSession(sessionId);
-      const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
-      sendPushNotifications(pushName, userText, sessionId);
 
       const aiResult = await chatbotService.processMessage(
         sessionId,

@@ -214,18 +214,6 @@ router.post("/webhook", async (req, res) => {
     let savedUserMsg = null;
     if (!isAiBot) {
       savedUserMsg = await db.saveMessage(sessionId, "user", userText, false);
-      if (io) {
-        io.emit("new_message", {
-          sessionId,
-          message: savedUserMsg,
-          session: await db.getSession(sessionId),
-        });
-      }
-      // Push notification for closed-app delivery
-      if (pushNotify) {
-        const ps = await db.getSession(sessionId);
-        pushNotify(ps?.display_name || senderId, userText, sessionId);
-      }
     }
 
     // 4. Check if sender is an official internal account or self
@@ -274,24 +262,26 @@ router.post("/webhook", async (req, res) => {
       return;
     }
 
+    // Emit user message to ALL connected clients for ALL bot types
+    if (io) {
+      io.emit("new_message", {
+        sessionId,
+        message: savedUserMsg || { role: "user", message: userText, session_id: sessionId, created_at: new Date().toISOString() },
+        session: await db.getSession(sessionId),
+      });
+    }
+    // Push notification for closed-app delivery
+    if (pushNotify) {
+      const ps = await db.getSession(sessionId);
+      pushNotify(ps?.display_name || senderId, userText, sessionId);
+    }
+
     // 4d. Check if human mode is active — re-read from DB to avoid stale state
     session = await db.getSession(sessionId) || session;
     if (session.is_human_active) {
       console.log(`[Instagram] Human mode active for ${sessionId} — skipping bot reply.`);
       // Save user message so admin sees it on dashboard (ChatbotService won't run)
       const savedMsg = await db.saveMessage(sessionId, "user", userText, false);
-      if (io) {
-        io.emit("new_message", {
-          sessionId,
-          message: savedMsg,
-          session,
-        });
-      }
-      // Push notification when human mode is active
-      if (pushNotify) {
-        const ps = await db.getSession(sessionId) || session;
-        pushNotify(ps?.display_name || senderId, userText, sessionId);
-      }
       return;
     }
 
@@ -313,11 +303,6 @@ router.post("/webhook", async (req, res) => {
       };
       const aiBotType = IG_TO_AI_BOT_TYPE[botType] || "staycation";
       console.log(`[Instagram] Routing to AI Chatbot V2 (${aiBotType}) for user ${senderId}`);
-      // Push notification BEFORE AI processes (shows customer's message, not bot reply)
-      if (pushNotify) {
-        const ps = await db.getSession(sessionId);
-        pushNotify(ps?.display_name || senderId, userText, sessionId);
-      }
       const aiResult = await chatbotService.processMessage(
         sessionId,
         userText,
