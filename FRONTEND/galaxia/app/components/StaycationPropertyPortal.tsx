@@ -396,6 +396,18 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         idFileName: ""
     });
 
+    // Driver pricing from DB
+    const [driverBasePrices, setDriverBasePrices] = useState({ stay: 500, food: 1000, stay_food: 1500 });
+    useEffect(() => {
+        api.get("/properties/driver-pricing").then((rows: any[]) => {
+            const base = { stay: 500, food: 1000, stay_food: 1500 };
+            for (const r of (rows || [])) {
+                if (!r.overrideDate) base[r.type as keyof typeof base] = r.basePrice;
+            }
+            setDriverBasePrices(base);
+        }).catch(() => {});
+    }, []);
+
     // Food Bill modal states
     const [isFoodBillModalOpen, setIsFoodBillModalOpen] = useState(false);
     const [foodBillBooking, setFoodBillBooking] = useState<any>(null);
@@ -637,9 +649,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         let total = 0;
         if (includeGuests) total += extraAdultPrice * extraGuestForm.guests * nights;
         if (includePets) total += 600 * extraGuestForm.pets * nights;
-        if (includeDriverStay) total += 500 * extraGuestForm.driverStay * nights;
-        if (includeDriverFood) total += 1000 * extraGuestForm.driverFood * nights;
-        if (includeDriverStayAndFood) total += 1500 * extraGuestForm.driverStayAndFood * nights;
+        if (includeDriverStay) total += driverBasePrices.stay * extraGuestForm.driverStay * nights;
+        if (includeDriverFood) total += driverBasePrices.food * extraGuestForm.driverFood * nights;
+        if (includeDriverStayAndFood) total += driverBasePrices.stay_food * extraGuestForm.driverStayAndFood * nights;
 
         return Math.round(total);
     };
@@ -678,7 +690,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 }
             }
             if (extraGuestForm.driverStay > 0) {
-                const driverStayCharge = 500 * extraGuestForm.driverStay * nights;
+                const driverStayCharge = driverBasePrices.stay * extraGuestForm.driverStay * nights;
                 if (driverStayCharge > 0) {
                     await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
                         guestName: `Driver - Stay (${extraGuestForm.driverStay})`,
@@ -689,7 +701,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 }
             }
             if (extraGuestForm.driverFood > 0) {
-                const driverFoodCharge = 1000 * extraGuestForm.driverFood * nights;
+                const driverFoodCharge = driverBasePrices.food * extraGuestForm.driverFood * nights;
                 if (driverFoodCharge > 0) {
                     await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
                         guestName: `Driver - Food (${extraGuestForm.driverFood})`,
@@ -700,7 +712,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                 }
             }
             if (extraGuestForm.driverStayAndFood > 0) {
-                const driverStayAndFoodCharge = 1500 * extraGuestForm.driverStayAndFood * nights;
+                const driverStayAndFoodCharge = driverBasePrices.stay_food * extraGuestForm.driverStayAndFood * nights;
                 if (driverStayAndFoodCharge > 0) {
                     await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
                         guestName: `Driver - Stay + Food (${extraGuestForm.driverStayAndFood})`,
@@ -1975,7 +1987,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         >+</button>
                                     </div>
 
-                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Driver Only Stay (₹500/night)</label>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Driver Only Stay (₹{driverBasePrices.stay.toLocaleString('en-IN')}/night)</label>
                                     <div className="flex items-center gap-3 mt-2 mb-4">
                                         <button
                                             type="button"
@@ -1990,7 +2002,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         >+</button>
                                     </div>
 
-                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Driver Only Food (₹1,000/night)</label>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Driver Only Food (₹{driverBasePrices.food.toLocaleString('en-IN')}/night)</label>
                                     <div className="flex items-center gap-3 mt-2 mb-4">
                                         <button
                                             type="button"
@@ -2005,7 +2017,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         >+</button>
                                     </div>
 
-                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Driver Stay + Food (₹1,500/night)</label>
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Driver Stay + Food (₹{driverBasePrices.stay_food.toLocaleString('en-IN')}/night)</label>
                                     <div className="flex items-center gap-3 mt-2 mb-4">
                                         <button
                                             type="button"
@@ -2049,9 +2061,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 <div className="mt-2 space-y-0.5 text-[11px] font-medium text-purple-700">
                                                     {extraGuestForm.guests > 0 && <p>Extra guests: {extraGuestForm.guests} × ₹{extraAdultPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.guests * extraAdultPrice * nights).toLocaleString('en-IN')}</p>}
                                                     {extraGuestForm.pets > 0 && <p>Pets: {extraGuestForm.pets} × ₹600/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.pets * 600 * nights).toLocaleString('en-IN')}</p>}
-                                                    {extraGuestForm.driverStay > 0 && <p>Driver (Stay only): {extraGuestForm.driverStay} × ₹500/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverStay * 500 * nights).toLocaleString('en-IN')}</p>}
-                                                    {extraGuestForm.driverFood > 0 && <p>Driver (Food only): {extraGuestForm.driverFood} × ₹1,000/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverFood * 1000 * nights).toLocaleString('en-IN')}</p>}
-                                                    {extraGuestForm.driverStayAndFood > 0 && <p>Driver (Stay + Food): {extraGuestForm.driverStayAndFood} × ₹1,500/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverStayAndFood * 1500 * nights).toLocaleString('en-IN')}</p>}
+                                                    {extraGuestForm.driverStay > 0 && <p>Driver (Stay only): {extraGuestForm.driverStay} × ₹{driverBasePrices.stay.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverStay * driverBasePrices.stay * nights).toLocaleString('en-IN')}</p>}
+                                                    {extraGuestForm.driverFood > 0 && <p>Driver (Food only): {extraGuestForm.driverFood} × ₹{driverBasePrices.food.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverFood * driverBasePrices.food * nights).toLocaleString('en-IN')}</p>}
+                                                    {extraGuestForm.driverStayAndFood > 0 && <p>Driver (Stay + Food): {extraGuestForm.driverStayAndFood} × ₹{driverBasePrices.stay_food.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverStayAndFood * driverBasePrices.stay_food * nights).toLocaleString('en-IN')}</p>}
                                                 </div>
                                             );
                                         })()}

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus, Trash2, Eye } from "lucide-react";
+import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus, Trash2, Eye, Car } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
@@ -119,6 +119,17 @@ export default function PropertiesMgmtPage() {
     const [bulkIncSaving, setBulkIncSaving] = useState(false);
     const [bulkIncMsg, setBulkIncMsg] = useState("");
     const [bulkIncHistory, setBulkIncHistory] = useState(false);
+    // Driver Pricing
+    const [drvOpen, setDrvOpen] = useState(false);
+    const [drvPrices, setDrvPrices] = useState<{ stay: number; food: number; stay_food: number }>({ stay: 500, food: 1000, stay_food: 1500 });
+    const [drvOverrides, setDrvOverrides] = useState<any[]>([]);
+    const [drvEditPrices, setDrvEditPrices] = useState<Record<string, string>>({});
+    const [drvSingleDate, setDrvSingleDate] = useState("");
+    const [drvRangeFrom, setDrvRangeFrom] = useState("");
+    const [drvRangeTo, setDrvRangeTo] = useState("");
+    const [drvSaving, setDrvSaving] = useState(false);
+    const [drvMsg, setDrvMsg] = useState("");
+    const [drvHistory, setDrvHistory] = useState(false);
 
     useEffect(() => { load(); }, []);
     const load = useCallback(async () => {
@@ -930,6 +941,213 @@ export default function PropertiesMgmtPage() {
         );
     };
 
+    // =================== DRIVER PRICING ===================
+    const loadDriverPricing = async () => {
+        try {
+            const rows = await api.get("/properties/driver-pricing");
+            const base = { stay: 500, food: 1000, stay_food: 1500 };
+            const overrides: any[] = [];
+            for (const r of (rows || [])) {
+                if (!r.overrideDate) {
+                    base[r.type as keyof typeof base] = r.basePrice;
+                } else {
+                    overrides.push(r);
+                }
+            }
+            setDrvPrices(base);
+            setDrvOverrides(overrides);
+        } catch { /* silently fail — use defaults */ }
+    };
+
+    const getDrvDates = (): string[] => {
+        if (drvSingleDate) return [drvSingleDate];
+        if (drvRangeFrom && drvRangeTo) {
+            const dates: string[] = [];
+            const from = new Date(drvRangeFrom + 'T12:00:00');
+            const to = new Date(drvRangeTo + 'T12:00:00');
+            for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+                dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            }
+            return dates;
+        }
+        return [];
+    };
+
+    const saveDriverPricing = async () => {
+        const dates = getDrvDates();
+        // Save base price edits
+        const basePatch: any = {};
+        if (drvEditPrices["base_stay"]?.trim()) basePatch.stay = parseInt(drvEditPrices["base_stay"]);
+        if (drvEditPrices["base_food"]?.trim()) basePatch.food = parseInt(drvEditPrices["base_food"]);
+        if (drvEditPrices["base_stay_food"]?.trim()) basePatch.stay_food = parseInt(drvEditPrices["base_stay_food"]);
+        // Save date overrides
+        const overrideSaves: { type: string; date: string; price: number }[] = [];
+        if (dates.length > 0) {
+            for (const dateStr of dates) {
+                for (const type of ["stay", "food", "stay_food"]) {
+                    const key = `${type}|${dateStr}`;
+                    const val = drvEditPrices[key];
+                    if (val && val.trim()) {
+                        const price = parseInt(val);
+                        if (!isNaN(price) && price > 0) overrideSaves.push({ type, date: dateStr, price });
+                    }
+                }
+            }
+        }
+        if (Object.keys(basePatch).length === 0 && overrideSaves.length === 0) return alert("Enter at least one price");
+        setDrvSaving(true);
+        try {
+            let count = 0;
+            if (Object.keys(basePatch).length > 0) { await api.patch("/properties/driver-pricing", basePatch); count++; }
+            for (const s of overrideSaves) { await api.post("/properties/driver-pricing/override", s); count++; }
+            setDrvMsg(`✓ ${count} change${count !== 1 ? "s" : ""} saved`);
+            await loadDriverPricing();
+        } catch (e: any) { alert("Failed: " + (e?.message || "Unknown error")); }
+        finally { setDrvSaving(false); }
+    };
+
+    const DRIVER_TYPES = [
+        { key: "stay", label: "Driver Only Stay" },
+        { key: "food", label: "Driver Only Food" },
+        { key: "stay_food", label: "Driver Stay + Food" },
+    ] as const;
+
+    const renderDriverPricingModal = () => {
+        if (!drvOpen) return null;
+        const dates = getDrvDates();
+        const sortedOverrides = [...drvOverrides].sort((a, b) => new Date(b.overrideDate).getTime() - new Date(a.overrideDate).getTime());
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setDrvOpen(false); setDrvMsg(""); }}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col overflow-visible" onClick={e => e.stopPropagation()}>
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 shrink-0 rounded-t-2xl">
+                        <div><h3 className="font-bold text-slate-800 text-lg">Driver Pricing</h3><p className="text-xs text-slate-500">Edit base prices and set date-specific overrides</p></div>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setDrvHistory(!drvHistory)} className="text-xs text-amber-600 hover:text-amber-800 font-semibold underline decoration-dashed">{drvHistory ? "Back to Editor" : "View Override History"}</button>
+                            <button onClick={() => { setDrvOpen(false); setDrvMsg(""); }} className="p-1 hover:bg-slate-200 rounded-lg"><X size={18} className="text-slate-500" /></button>
+                        </div>
+                    </div>
+
+                    {drvHistory ? (
+                        <>
+                            <div className="px-6 py-4 overflow-y-auto flex-1">
+                                {sortedOverrides.length === 0 ? (
+                                    <p className="text-sm text-slate-400 text-center py-8">No date overrides found</p>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        <div className="grid grid-cols-[1fr_100px_90px_40px] gap-2 text-[10px] font-bold text-slate-400 uppercase px-3 pb-1">
+                                            <span>Type</span><span>Date</span><span className="text-right">Price</span><span></span>
+                                        </div>
+                                        {sortedOverrides.map((ov: any) => {
+                                            const d = new Date(ov.overrideDate);
+                                            const dateStr = `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]} ${d.getFullYear()}`;
+                                            const typeLabel = DRIVER_TYPES.find(t => t.key === ov.type)?.label || ov.type;
+                                            return (
+                                                <div key={ov.id} className="grid grid-cols-[1fr_100px_90px_40px] gap-2 items-center py-2 px-3 bg-slate-50 rounded-lg border border-slate-100 text-sm">
+                                                    <span className="font-medium text-slate-700">{typeLabel}</span>
+                                                    <span className="text-slate-500 text-xs">{dateStr}</span>
+                                                    <span className="text-right font-bold text-slate-800">₹{ov.basePrice.toLocaleString("en-IN")}</span>
+                                                    <button onClick={async () => { if (!confirm("Delete?")) return; try { await api.delete(`/properties/driver-pricing/${ov.id}`); await loadDriverPricing(); } catch { alert("Failed"); } }} className="p-1 hover:bg-red-50 rounded text-red-400 hover:text-red-600"><Trash2 size={13} /></button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : drvMsg ? (
+                        <div className="px-6 py-12 text-center">
+                            <p className="text-lg text-amber-700 font-bold mb-4">{drvMsg}</p>
+                            <button onClick={() => { setDrvOpen(false); setDrvMsg(""); setDrvEditPrices({}); setDrvSingleDate(""); setDrvRangeFrom(""); setDrvRangeTo(""); }} className="px-6 py-2.5 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700">Done</button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="px-6 py-4 overflow-y-auto flex-1 space-y-5">
+                                {/* Step 1: Base Prices */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">1. Current Base Prices</p>
+                                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                        <div className="grid grid-cols-[1fr_80px_100px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                            <span>Type</span><span className="text-right">Current</span><span>New Price</span>
+                                        </div>
+                                        {DRIVER_TYPES.map(dt => (
+                                            <div key={dt.key} className="grid grid-cols-[1fr_80px_100px] gap-1 items-center px-3 py-2.5 border-b border-slate-50">
+                                                <span className="text-sm font-medium text-slate-700">{dt.label}</span>
+                                                <span className="text-xs text-slate-400 text-right">₹{drvPrices[dt.key as keyof typeof drvPrices].toLocaleString("en-IN")}</span>
+                                                <NI value={drvEditPrices[`base_${dt.key}`] || ""} onChange={v => setDrvEditPrices(prev => ({ ...prev, [`base_${dt.key}`]: v }))} placeholder="₹" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Step 2: Date Selection */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">2. Date Override (Optional)</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Single Date</label>
+                                            <div className="flex gap-1 items-center">
+                                                <input type="date" lang="en-GB" value={drvSingleDate} onChange={e => { setDrvSingleDate(e.target.value); setDrvRangeFrom(""); setDrvRangeTo(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-amber-500/20 outline-none" />
+                                                {drvSingleDate && <button onClick={() => setDrvSingleDate("")} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">Or Date Range</label>
+                                            <div className="flex gap-1 items-center">
+                                                <input type="date" lang="en-GB" value={drvRangeFrom} onChange={e => { setDrvRangeFrom(e.target.value); setDrvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-amber-500/20 outline-none" />
+                                                <span className="text-xs text-slate-400">to</span>
+                                                <input type="date" lang="en-GB" value={drvRangeTo} min={drvRangeFrom} onChange={e => { setDrvRangeTo(e.target.value); setDrvSingleDate(""); }} className="flex-1 px-2 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-amber-500/20 outline-none" />
+                                                {(drvRangeFrom || drvRangeTo) && <button onClick={() => { setDrvRangeFrom(""); setDrvRangeTo(""); }} className="p-1 text-slate-400 hover:text-red-500"><X size={14} /></button>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {dates.length > 0 && <p className="text-[10px] text-amber-600 font-medium mt-1">{dates.length} date{dates.length !== 1 ? "s" : ""} selected</p>}
+                                </div>
+
+                                {/* Step 3: Override Prices per Date */}
+                                {dates.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">3. Set Override Prices</p>
+                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="grid grid-cols-[1fr_80px_90px_110px] gap-1 bg-slate-50 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                <span>Type</span><span>Date</span><span className="text-right">Current</span><span>Override</span>
+                                            </div>
+                                            <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
+                                                {DRIVER_TYPES.map(dt => (
+                                                    dates.map(dateStr => {
+                                                        const d = new Date(dateStr + 'T12:00:00');
+                                                        const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
+                                                        const priceKey = `${dt.key}|${dateStr}`;
+                                                        return (
+                                                            <div key={priceKey} className="grid grid-cols-[1fr_80px_90px_110px] gap-1 items-center px-3 py-2">
+                                                                <span className="text-xs font-medium text-slate-700">{dt.label}</span>
+                                                                <span className="text-[11px] text-slate-500">{dateLabel}</span>
+                                                                <span className="text-xs text-slate-400 text-right">₹{drvPrices[dt.key as keyof typeof drvPrices].toLocaleString("en-IN")}</span>
+                                                                <NI value={drvEditPrices[priceKey] || ""} onChange={v => setDrvEditPrices(prev => ({ ...prev, [priceKey]: v }))} placeholder="₹ Price" />
+                                                            </div>
+                                                        );
+                                                    })
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Save Button */}
+                            <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0 rounded-b-2xl">
+                                <button onClick={saveDriverPricing} disabled={drvSaving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {drvSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
+                                </button>
+                                <button onClick={() => { setDrvOpen(false); setDrvMsg(""); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200"><X size={14} /> Cancel</button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     const renderCardBtns = (editKey: string, onToggle: () => void, prop: any, sub?: any) => {
         const name = sub?.name || prop.name;
         const pricing = sub?.pricing?.length > 0 ? sub.pricing : (prop.pricing || []).filter((t: any) => sub ? t.subPropertyId === sub.id : !t.subPropertyId);
@@ -1281,6 +1499,7 @@ export default function PropertiesMgmtPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                     <button onClick={() => { setMasterOvOpen(true); setMasterOvMsg(""); setMasterOvSelected(new Set()); setMasterOvPrices({}); setMasterOvSingleDate(""); setMasterOvRangeFrom(""); setMasterOvRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-indigo-700 hover:to-purple-700"><Calendar size={16} /> Master Override</button>
                     <button onClick={() => { setBulkIncOpen(true); setBulkIncMsg(""); setBulkIncSelected(new Set()); setBulkIncAmount(""); setBulkIncExtraAdult(""); setBulkIncExtraKid(""); setBulkIncSingleDate(""); setBulkIncRangeFrom(""); setBulkIncRangeTo(""); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-emerald-700 hover:to-teal-700"><Plus size={16} /> Bulk Increase</button>
+                    <button onClick={() => { setDrvOpen(true); setDrvMsg(""); setDrvEditPrices({}); setDrvSingleDate(""); setDrvRangeFrom(""); setDrvRangeTo(""); setDrvHistory(false); loadDriverPricing(); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all hover:from-amber-700 hover:to-orange-700"><Car size={16} /> Driver Pricing</button>
                 </div>
             </div>
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">{tabs.map(t => <button key={t.key} onClick={() => { setTab(t.key); setEditId(null); setOverrideId(null); }} className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t.label}</button>)}</div>
@@ -1298,5 +1517,6 @@ export default function PropertiesMgmtPage() {
         {renderDdViewOverridesModal()}
         {renderMasterOverrideModal()}
         {renderBulkIncreaseModal()}
+        {renderDriverPricingModal()}
     </>);
 }
