@@ -30,6 +30,75 @@ router.get("/active-slugs", async (_req, res) => {
     }
 });
 
+// =================== DRIVER PRICING ===================
+
+// GET /api/properties/driver-pricing — Public: returns all driver pricing (base + overrides)
+router.get("/driver-pricing", async (_req, res) => {
+    try {
+        const rows = await prisma.driverPricing.findMany({ orderBy: [{ type: "asc" }, { overrideDate: "asc" }] });
+        return res.json(rows);
+    } catch (error) {
+        console.error("Driver pricing fetch error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// PATCH /api/properties/driver-pricing — Update base prices (no date)
+router.patch("/driver-pricing", authMiddleware, requireRole("owner", "developer", "admin", "superadmin"), async (req: AuthRequest, res) => {
+    try {
+        const { stay, food, stay_food } = req.body;
+        const updates: any[] = [];
+        for (const [type, price] of [["stay", stay], ["food", food], ["stay_food", stay_food]]) {
+            if (price !== undefined && price !== null) {
+                const existing = await prisma.driverPricing.findFirst({ where: { type: type as string, overrideDate: null } });
+                if (existing) {
+                    updates.push(prisma.driverPricing.update({ where: { id: existing.id }, data: { basePrice: parseInt(String(price)) } }));
+                } else {
+                    updates.push(prisma.driverPricing.create({ data: { type: type as string, basePrice: parseInt(String(price)) } }));
+                }
+            }
+        }
+        await prisma.$transaction(updates);
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Driver pricing update error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// POST /api/properties/driver-pricing/override — Create date override
+router.post("/driver-pricing/override", authMiddleware, requireRole("owner", "developer", "admin", "superadmin"), async (req: AuthRequest, res) => {
+    try {
+        const { type, date, price } = req.body;
+        if (!type || !date || !price) return res.status(400).json({ error: "type, date, and price are required" });
+        const overrideDate = new Date(date + "T00:00:00.000Z");
+        // Upsert: delete existing override for same type+date, then create
+        await prisma.driverPricing.deleteMany({ where: { type, overrideDate } });
+        const created = await prisma.driverPricing.create({
+            data: { type, basePrice: parseInt(String(price)), overrideDate }
+        });
+        return res.json({ success: true, id: created.id });
+    } catch (error) {
+        console.error("Driver pricing override error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// DELETE /api/properties/driver-pricing/:id — Delete a driver pricing override
+router.delete("/driver-pricing/:id", authMiddleware, requireRole("owner", "developer", "admin", "superadmin"), async (req: AuthRequest, res) => {
+    try {
+        const id = parseInt(req.params.id as string);
+        const row = await prisma.driverPricing.findUnique({ where: { id } });
+        if (!row) return res.status(404).json({ error: "Not found" });
+        if (!row.overrideDate) return res.status(400).json({ error: "Cannot delete base pricing row" });
+        await prisma.driverPricing.delete({ where: { id } });
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Driver pricing delete error:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // GET /api/properties/all — Admin: list ALL properties (including inactive)
 router.get("/all", authMiddleware, requireRole("owner", "developer", "manager"), async (_req, res) => {
     try {
@@ -664,75 +733,6 @@ router.patch("/:id/config", authMiddleware, requireRole("owner", "developer", "m
         return res.status(500).json({ error: "Internal server error" });
     }
 });
-// =================== DRIVER PRICING ===================
-
-// GET /api/properties/driver-pricing — Public: returns all driver pricing (base + overrides)
-router.get("/driver-pricing", async (_req, res) => {
-    try {
-        const rows = await prisma.driverPricing.findMany({ orderBy: [{ type: "asc" }, { overrideDate: "asc" }] });
-        return res.json(rows);
-    } catch (error) {
-        console.error("Driver pricing fetch error:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// PATCH /api/properties/driver-pricing — Update base prices (no date)
-router.patch("/driver-pricing", authMiddleware, requireRole("admin", "superadmin"), async (req: AuthRequest, res) => {
-    try {
-        const { stay, food, stay_food } = req.body;
-        const updates: any[] = [];
-        for (const [type, price] of [["stay", stay], ["food", food], ["stay_food", stay_food]]) {
-            if (price !== undefined && price !== null) {
-                const existing = await prisma.driverPricing.findFirst({ where: { type: type as string, overrideDate: null } });
-                if (existing) {
-                    updates.push(prisma.driverPricing.update({ where: { id: existing.id }, data: { basePrice: parseInt(String(price)) } }));
-                } else {
-                    updates.push(prisma.driverPricing.create({ data: { type: type as string, basePrice: parseInt(String(price)) } }));
-                }
-            }
-        }
-        await prisma.$transaction(updates);
-        return res.json({ success: true });
-    } catch (error) {
-        console.error("Driver pricing update error:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// POST /api/properties/driver-pricing/override — Create date override
-router.post("/driver-pricing/override", authMiddleware, requireRole("admin", "superadmin"), async (req: AuthRequest, res) => {
-    try {
-        const { type, date, price } = req.body;
-        if (!type || !date || !price) return res.status(400).json({ error: "type, date, and price are required" });
-        const overrideDate = new Date(date + "T00:00:00.000Z");
-        // Upsert: delete existing override for same type+date, then create
-        await prisma.driverPricing.deleteMany({ where: { type, overrideDate } });
-        const created = await prisma.driverPricing.create({
-            data: { type, basePrice: parseInt(String(price)), overrideDate }
-        });
-        return res.json({ success: true, id: created.id });
-    } catch (error) {
-        console.error("Driver pricing override error:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// DELETE /api/properties/driver-pricing/:id — Delete a driver pricing override
-router.delete("/driver-pricing/:id", authMiddleware, requireRole("admin", "superadmin"), async (req: AuthRequest, res) => {
-    try {
-        const id = parseInt(req.params.id as string);
-        const row = await prisma.driverPricing.findUnique({ where: { id } });
-        if (!row) return res.status(404).json({ error: "Not found" });
-        if (!row.overrideDate) return res.status(400).json({ error: "Cannot delete base pricing row" });
-        await prisma.driverPricing.delete({ where: { id } });
-        return res.json({ success: true });
-    } catch (error) {
-        console.error("Driver pricing delete error:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-});
 
 export default router;
-
 
