@@ -12,6 +12,8 @@ const { getResponse, getMainMenu } = require("./services/menuEngine");
 const { sendChatResponse } = require("./utils/whatsapp");
 const db = require("./services/db");
 const chatbotService = require("./services/ai/ChatbotService");
+const axios = require("axios");
+const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
@@ -40,9 +42,128 @@ io.on("connection", (socket) => {
   });
 });
 
+/* =========================
+   PUSH NOTIFICATIONS (Expo Push API)
+   Enables notifications when the mobile app is completely closed.
+========================= */
+const pushTokens = new Map(); // username → Set<token>
+const PUSH_TOKENS_FILE = path.join(__dirname, "push_tokens.json");
+
+// Load persisted tokens from disk on startup
+try {
+  if (fs.existsSync(PUSH_TOKENS_FILE)) {
+    const rawData = JSON.parse(fs.readFileSync(PUSH_TOKENS_FILE, "utf8"));
+    for (const [user, tokens] of Object.entries(rawData)) {
+      if (Array.isArray(tokens)) {
+        pushTokens.set(user, new Set(tokens));
+      }
+    }
+    console.log(`[Push] Loaded push tokens from disk for ${pushTokens.size} user(s).`);
+  }
+} catch (err) {
+  console.warn("[Push] Could not read push_tokens.json:", err.message);
+}
+
+function savePushTokensToDisk() {
+  try {
+    const obj = {};
+    for (const [user, tokens] of pushTokens) {
+      obj[user] = Array.from(tokens);
+    }
+    fs.writeFileSync(PUSH_TOKENS_FILE, JSON.stringify(obj, null, 2), "utf8");
+  } catch (err) {
+    console.error("[Push] Failed to persist push tokens to disk:", err.message);
+  }
+}
+
+// Send push notification to ALL registered devices
+async function sendPushNotifications(title, body, sessionId) {
+  const allTokens = [];
+  for (const [, tokens] of pushTokens) {
+    for (const token of tokens) {
+      if (token && !allTokens.includes(token)) allTokens.push(token);
+    }
+  }
+  if (allTokens.length === 0) return;
+
+  const messages = allTokens.map(token => ({
+    to: token,
+    sound: "default",
+    title: title || "New Message",
+    body: (typeof body === "string" ? body : String(body || "")).slice(0, 500),
+    data: { sessionId, type: "chat_message" },
+    priority: "high",
+    channelId: "chat-messages",
+  }));
+
+  try {
+    const chunks = [];
+    for (let i = 0; i < messages.length; i += 100) {
+      chunks.push(messages.slice(i, i + 100));
+    }
+    let pruned = false;
+    for (const chunk of chunks) {
+      const response = await axios.post("https://exp.host/--/api/v2/push/send", chunk, {
+        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+      });
+      const result = response.data;
+      // Clean up invalid tokens
+      if (result.data) {
+        result.data.forEach((receipt, idx) => {
+          if (receipt.status === "error" && receipt.details?.error === "DeviceNotRegistered") {
+            const badToken = chunk[idx].to;
+            for (const [, tokens] of pushTokens) {
+              if (tokens.delete(badToken)) pruned = true;
+            }
+          }
+        });
+      }
+    }
+    if (pruned) savePushTokensToDisk();
+    console.log(`[Push] Sent ${messages.length} push notification(s) for session ${sessionId}`);
+  } catch (err) {
+    console.error("[Push] Failed to send:", err.message);
+  }
+}
+
 app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cors());
+
+// Push token registration endpoint (supports both direct and /bot forwarded proxy)
+app.post(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
+  const { token, username, platform } = req.body;
+  if (!token) return res.status(400).json({ error: "Token required" });
+  const user = username || "anonymous";
+  if (!pushTokens.has(user)) pushTokens.set(user, new Set());
+  pushTokens.get(user).add(token);
+  savePushTokensToDisk();
+  console.log(`[Push] Token registered for ${user} (${platform || "unknown"}). Total: ${pushTokens.get(user).size}`);
+  res.json({ success: true });
+});
+
+app.delete(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
+  const { token, username } = req.body;
+  if (!token) return res.status(400).json({ error: "Token required" });
+  let removed = false;
+  if (username && pushTokens.has(username)) {
+    removed = pushTokens.get(username).delete(token);
+  } else {
+    for (const [, tokens] of pushTokens) {
+      if (tokens.delete(token)) removed = true;
+    }
+  }
+  if (removed) savePushTokensToDisk();
+  res.json({ success: true, removed });
+});
+
+app.get(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
+  const summary = {};
+  for (const [user, tokens] of pushTokens) {
+    summary[user] = tokens.size;
+  }
+  res.json({ count: Object.values(summary).reduce((a, b) => a + b, 0), users: summary });
+});
 
 /* =========================
    RATE LIMITER
@@ -57,7 +178,7 @@ const limiter = rateLimit({
 
 app.use("/chat", limiter);
 app.use("/chat", chatRoute);
-app.use("/instagram", createInstagramRouter(io));
+app.use("/instagram", createInstagramRouter(io, sendPushNotifications));
 app.use("/api/admin/ai", adminRoute);
 
 app.use("/widget", express.static(path.join(__dirname, "widget")));
@@ -172,6 +293,10 @@ app.post("/webhook", async (req, res) => {
         message: savedUserMsg,
         session: await db.getSession(sessionId),
       });
+      // Push notification to mobile app (works even when app is closed)
+      const pushSession = await db.getSession(sessionId);
+      const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
+      sendPushNotifications(pushName, userText, sessionId);
     }
 
     // 4. Check if human mode is active — re-read from DB to avoid stale state
@@ -186,6 +311,10 @@ app.post("/webhook", async (req, res) => {
           message: savedUserMsg,
           session,
         });
+        // Push notification when human mode is active
+        const pushSession = await db.getSession(sessionId) || session;
+        const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
+        sendPushNotifications(pushName, userText, sessionId);
       }
       return;
     }
@@ -204,6 +333,11 @@ app.post("/webhook", async (req, res) => {
       };
       const aiBotType = WA_TO_AI_BOT_TYPE[botType] || "digital_diaries";
       console.log(`[WhatsApp] Routing to AI Chatbot V2 (${aiBotType}) for ${from}`);
+      // Push notification BEFORE AI processes (so it shows the customer's message, not bot reply)
+      const pushSession = await db.getSession(sessionId);
+      const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
+      sendPushNotifications(pushName, userText, sessionId);
+
       const aiResult = await chatbotService.processMessage(
         sessionId,
         userText,
