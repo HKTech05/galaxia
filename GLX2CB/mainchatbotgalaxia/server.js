@@ -107,6 +107,7 @@ async function sendPushNotifications(title, body, sessionId) {
         headers: { "Accept": "application/json", "Content-Type": "application/json" },
       });
       const result = response.data;
+      console.log("[Push] Expo API response:", JSON.stringify(result).substring(0, 200));
       // Clean up invalid tokens
       if (result.data) {
         result.data.forEach((receipt, idx) => {
@@ -120,7 +121,7 @@ async function sendPushNotifications(title, body, sessionId) {
       }
     }
     if (pruned) savePushTokensToDisk();
-    console.log(`[Push] Sent ${messages.length} push notification(s) for session ${sessionId}`);
+    console.log(`[Push] Sent ${messages.length} push notification(s) to ${allTokens.length} device(s) for session ${sessionId}`);
   } catch (err) {
     console.error("[Push] Failed to send:", err.message);
   }
