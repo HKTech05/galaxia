@@ -94,6 +94,7 @@ async function sendPushNotifications(title, body, sessionId) {
     data: { sessionId, type: "chat_message" },
     priority: "high",
     channelId: "chat-messages",
+    collapseId: sessionId, // Groups notifications per conversation
   }));
 
   try {
