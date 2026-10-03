@@ -104,6 +104,25 @@ async function sendPushNotifications(title, body, sessionId) {
     console.log("[Push] No tokens registered — skipping push");
     return;
   }
+
+  // Build notification body with ALL unread customer messages (WhatsApp-like stacking)
+  let notifBody = body;
+  let notifTitle = title;
+  try {
+    const session = await db.getSession(sessionId);
+    const unreadCount = session?.unread_count || 0;
+    if (unreadCount > 1) {
+      const allMsgs = await db.getChatMessages(sessionId);
+      const userMsgs = allMsgs.filter(m => m.role === "user").slice(-unreadCount);
+      if (userMsgs.length > 1) {
+        notifBody = userMsgs.map(m => m.message).join("\n");
+        notifTitle = `${title} (${userMsgs.length})`;
+      }
+    }
+  } catch (e) {
+    console.log("[Push] Could not fetch unread messages for stacking:", e.message);
+  }
+
   let successCount = 0;
   let cleaned = false;
   for (const token of allTokens) {
@@ -111,8 +130,8 @@ async function sendPushNotifications(title, body, sessionId) {
       await admin.messaging().send({
         token: token,
         notification: {
-          title: title,
-          body: body,
+          title: notifTitle,
+          body: notifBody,
         },
         android: {
           priority: "high",
