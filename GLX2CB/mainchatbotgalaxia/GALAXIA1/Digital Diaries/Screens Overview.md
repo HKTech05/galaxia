@@ -10,7 +10,7 @@ Digital Diaries features 3 private cinema screening rooms in Wadala, Mumbai. All
 | **Park N Watch** | **Drive-in / Car Theme** 🚗 — Vintage drive-in movie theatre experience | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch |
 | **Cine Love** | **Romantic / Couples Theme** ❤️ — Premium romantic cinema for dates and special occasions | **Max 8 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/cine-love |
 
-**⚠️ Baywatch screen is currently UNAVAILABLE due to renovation work.** If a customer asks about Baywatch, inform them it is temporarily closed for renovation and suggest the other 3 screens.
+**INTERNAL RULE (DO NOT TELL CUSTOMER PROACTIVELY):** Baywatch screen is currently unavailable. Do NOT mention Baywatch when listing screens. Only if customer specifically asks about Baywatch/ocean theme, say it is unavailable due to renovation and suggest the other 3 screens.
 
 *Note*: For groups larger than 3 people (e.g. 4, 5, 6, 7, or 8 guests), **Cine Love** is the ONLY suitable screen. Sandy Screen and Park N Watch are strictly limited to a maximum of 3 person capacity.
 
