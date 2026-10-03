@@ -30,8 +30,8 @@
 - **Time Slot Rules:** Slots are FULL HOURS ONLY — 10-11 AM, 11-12, 12-1 PM, 1-2, 2-3, 3-4, 4-5, 5-6, 6-7, 7-8, 8-9, 9-10, 10-11, 11-12 AM. No half-hour slots exist (e.g. 3:30-4:30 is NOT a valid slot). Operating hours: 10 AM to 12 AM (midnight).
 - **Photo / Picture Requests:** The bot cannot share photos directly. When customers ask for pics:
   - General venue pics: https://www.galaxiaresorts.com/celebration
-  - Movie Time screen pics: https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen, https://www.galaxiaresorts.com/celebration/movie-time/cine-love, https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch, https://www.galaxiaresorts.com/celebration/movie-time/baywatch
-  - Celebration setup pics: https://www.galaxiaresorts.com/celebration/celebration/sandy-screen, https://www.galaxiaresorts.com/celebration/celebration/cine-love, https://www.galaxiaresorts.com/celebration/celebration/park-n-watch, https://www.galaxiaresorts.com/celebration/celebration/baywatch
+  - Movie Time screen pics: https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen, https://www.galaxiaresorts.com/celebration/movie-time/cine-love, https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch
+  - Celebration setup pics: https://www.galaxiaresorts.com/celebration/celebration/sandy-screen, https://www.galaxiaresorts.com/celebration/celebration/cine-love, https://www.galaxiaresorts.com/celebration/celebration/park-n-watch
 
 ---
 ## Related Notes & Navigation
