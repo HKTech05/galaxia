@@ -22,6 +22,7 @@ const axios = require("axios");
 let io = null;
 // Push notification sender — injected by server.js
 let pushNotify = null;
+let trackUnreadFn = null;
 
 // Rate limiting & sliding window map for IG bot loop protection
 const messageTimestampsMap = new Map();
@@ -126,9 +127,10 @@ async function fetchIgUsername(igsid, token) {
  * Initialize the router with the Socket.IO instance.
  * Called once from server.js.
  */
-function createInstagramRouter(socketIo, sendPush) {
+function createInstagramRouter(socketIo, sendPush, trackUnread) {
   io = socketIo;
   pushNotify = sendPush || null;
+  trackUnreadFn = trackUnread || null;
   return router;
 }
 
@@ -271,6 +273,7 @@ router.post("/webhook", async (req, res) => {
       });
     }
     // Push notification for closed-app delivery
+    if (trackUnreadFn) trackUnreadFn(sessionId, userText);
     if (pushNotify) {
       const ps = await db.getSession(sessionId);
       pushNotify(ps?.display_name || senderId, userText, sessionId);

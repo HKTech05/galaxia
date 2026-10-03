@@ -90,6 +90,16 @@ function savePushTokens() {
   }
 }
 
+// In-memory unread message tracker for notification stacking (WhatsApp-like)
+const unreadMsgTracker = new Map();
+function trackUnreadMessage(sessionId, messageText) {
+  if (!unreadMsgTracker.has(sessionId)) unreadMsgTracker.set(sessionId, []);
+  unreadMsgTracker.get(sessionId).push(messageText);
+}
+function clearUnreadTracker(sessionId) {
+  unreadMsgTracker.delete(sessionId);
+}
+
 // Send push notification via FCM directly (with tag for conversation grouping)
 async function sendPushNotifications(title, body, sessionId) {
   if (!admin.apps.length) {
@@ -105,22 +115,14 @@ async function sendPushNotifications(title, body, sessionId) {
     return;
   }
 
-  // Build notification body with ALL unread customer messages (WhatsApp-like stacking)
-  let notifBody = body;
+  const msgs = unreadMsgTracker.get(sessionId) || [body];
   let notifTitle = title;
-  try {
-    const session = await db.getSession(sessionId);
-    const unreadCount = session?.unread_count || 0;
-    if (unreadCount > 1) {
-      const allMsgs = await db.getChatMessages(sessionId);
-      const userMsgs = allMsgs.filter(m => m.role === "user").slice(-unreadCount);
-      if (userMsgs.length > 1) {
-        notifBody = userMsgs.map(m => m.message).join("\n");
-        notifTitle = `${title} (${userMsgs.length})`;
-      }
-    }
-  } catch (e) {
-    console.log("[Push] Could not fetch unread messages for stacking:", e.message);
+  let notifBody = body;
+  if (msgs.length > 1) {
+    notifBody = msgs.join("\n");
+    notifTitle = `${title} (${msgs.length})`;
+  } else if (msgs.length === 1) {
+    notifBody = msgs[0];
   }
 
   let successCount = 0;
@@ -229,7 +231,7 @@ const limiter = rateLimit({
 
 app.use("/chat", limiter);
 app.use("/chat", chatRoute);
-app.use("/instagram", createInstagramRouter(io, sendPushNotifications));
+app.use("/instagram", createInstagramRouter(io, sendPushNotifications, trackUnreadMessage));
 app.use("/api/admin/ai", adminRoute);
 
 app.use("/widget", express.static(path.join(__dirname, "widget")));
@@ -351,6 +353,7 @@ app.post("/webhook", async (req, res) => {
     // Push notification to mobile app (works even when app is completely closed)
     const pushSession = await db.getSession(sessionId);
     const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
+    trackUnreadMessage(sessionId, userText);
     sendPushNotifications(pushName, userText, sessionId);
 
     // 4. Check if human mode is active — re-read from DB to avoid stale state
@@ -635,6 +638,7 @@ app.patch("/api/chats/:sessionId/read", async (req, res) => {
   try {
     const { sessionId } = req.params;
     await db.markRead(sessionId);
+    clearUnreadTracker(sessionId);
 
     const updated = await db.getSession(sessionId);
     io.emit("session_updated", updated);
