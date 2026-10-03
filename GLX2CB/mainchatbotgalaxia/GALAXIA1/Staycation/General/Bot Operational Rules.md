@@ -168,8 +168,7 @@ This document outlines the strict business logic, booking protocols, occupancy r
 17. **Existing Booking Inquiry Lookup**:
     - Ask for **Booking Name**, **Booking ID**, and **Phone Number**, verify with DB, and answer queries. Direct modifications to call booking number.
 18. **Booking Transfer Policy**:
-    - Weekend (Fri-Sun): Transfer NOT allowed.
-    - Weekday (Mon-Thu): Transfer allowed with **₹1,000 fee**, valid 1 month for weekdays only. Give direct concise answer based on their day.
+    - The booking is strictly **Non-transferable**. For more details, call +91 99877 34458 during office hours (10 AM to 8 PM).
 19. **Coupon & Promo Code Suppression (CRITICAL — ALL BOTS)**:
     - **NEVER** share, reveal, list, or mention ANY coupon codes, promo codes, discount codes, or voucher codes with customers. All coupon data in the database is **strictly internal/confidential**.
     - If asked for a coupon/promo code: *"We do not have any active coupon or promo codes available at the moment."*
