@@ -59,38 +59,55 @@ try {
     console.log("[Firebase] Admin SDK initialized successfully");
   } else {
     console.warn("[Firebase] No service account file found at", SERVICE_ACCOUNT_FILE);
+    console.warn("[Firebase] Push notifications will NOT work. Copy your Firebase service account JSON to:", SERVICE_ACCOUNT_FILE);
   }
 } catch (e) {
   console.error("[Firebase] Failed to initialize:", e.message);
 }
-
 // Load tokens from file (survives PM2 restarts)
+// Structure: { username: { tokens: [...], role: "...", assignedNumbers: [...] } }
 let pushTokens = new Map();
 try {
   if (fs.existsSync(PUSH_TOKENS_FILE)) {
     const saved = JSON.parse(fs.readFileSync(PUSH_TOKENS_FILE, "utf8"));
-    for (const [user, tokens] of Object.entries(saved)) {
-      pushTokens.set(user, new Set(tokens));
+    for (const [user, data] of Object.entries(saved)) {
+      if (Array.isArray(data)) {
+        pushTokens.set(user, { tokens: new Set(data), role: "", assignedNumbers: [] });
+      } else {
+        pushTokens.set(user, { tokens: new Set(data.tokens || []), role: data.role || "", assignedNumbers: data.assignedNumbers || [] });
+      }
     }
     console.log(`[Push] Loaded ${pushTokens.size} user(s) from push_tokens.json`);
   }
 } catch (e) {
   console.log("[Push] No saved tokens found, starting fresh");
 }
-
 function savePushTokens() {
   try {
     const obj = {};
-    for (const [user, tokens] of pushTokens) {
-      obj[user] = [...tokens];
+    for (const [user, data] of pushTokens) {
+      obj[user] = { tokens: [...(data.tokens || [])], role: data.role || "", assignedNumbers: data.assignedNumbers || [] };
     }
     fs.writeFileSync(PUSH_TOKENS_FILE, JSON.stringify(obj, null, 2));
   } catch (e) {
     console.error("[Push] Failed to save tokens:", e.message);
   }
 }
-
-// In-memory unread message tracker for notification stacking (WhatsApp-like)
+// Phone number ID → assignedNumbers key mapping (must match mobile app's PHONE_NUMBERS)
+const PHONE_ID_TO_KEY = {
+  "1117204771469353": "digital_diaries",
+  "1265812873275552": "wa_amstelnest",
+  "1413924248459417": "wa_staycation",
+  "instagram": "dd_instagram",
+  "website": "website",
+  "ig_ambrose": "ig_ambrose",
+  "ig_amstelnest": "ig_amstelnest",
+  "ig_laparaiso": "ig_laparaiso",
+  "ig_mountview": "ig_mountview",
+  "ig_heavenlyvilla": "ig_heavenlyvilla",
+  "ig_hillview": "ig_hillview",
+};
+// In-memory unread message tracker for notification stacking
 const unreadMsgTracker = new Map();
 function trackUnreadMessage(sessionId, messageText) {
   if (!unreadMsgTracker.has(sessionId)) unreadMsgTracker.set(sessionId, []);
@@ -99,22 +116,32 @@ function trackUnreadMessage(sessionId, messageText) {
 function clearUnreadTracker(sessionId) {
   unreadMsgTracker.delete(sessionId);
 }
-
-// Send push notification via FCM directly (with tag for conversation grouping)
-async function sendPushNotifications(title, body, sessionId) {
+// Send push notification via FCM — filtered by user's assigned bots
+async function sendPushNotifications(title, body, sessionId, phoneNumberId) {
   if (!admin.apps.length) {
     console.log("[Push] Firebase not initialized — skipping push");
     return;
   }
-  const allTokens = [];
-  for (const [, tokens] of pushTokens) {
-    for (const token of tokens) allTokens.push(token);
+  // Determine bot key from phone_number_id
+  const botKey = PHONE_ID_TO_KEY[phoneNumberId] || phoneNumberId || null;
+  // Collect tokens that should receive this notification
+  const eligibleTokens = [];
+  for (const [username, userData] of pushTokens) {
+    const role = userData.role || "";
+    const assigned = userData.assignedNumbers || [];
+    // Owner, developer, test_viewer get ALL notifications
+    const isGlobal = role === "owner" || role === "developer" || role === "test_viewer";
+    if (isGlobal || !botKey || assigned.includes(botKey)) {
+      for (const token of (userData.tokens || [])) {
+        eligibleTokens.push({ token, username });
+      }
+    }
   }
-  if (allTokens.length === 0) {
-    console.log("[Push] No tokens registered — skipping push");
+  if (eligibleTokens.length === 0) {
+    console.log(`[Push] No eligible tokens for bot ${botKey} — skipping`);
     return;
   }
-
+  // Build stacked notification body from in-memory tracker
   const msgs = unreadMsgTracker.get(sessionId) || [body];
   let notifTitle = title;
   let notifBody = body;
@@ -124,10 +151,9 @@ async function sendPushNotifications(title, body, sessionId) {
   } else if (msgs.length === 1) {
     notifBody = msgs[0];
   }
-
   let successCount = 0;
   let cleaned = false;
-  for (const token of allTokens) {
+  for (const { token, username } of eligibleTokens) {
     try {
       await admin.messaging().send({
         token: token,
@@ -152,8 +178,11 @@ async function sendPushNotifications(title, body, sessionId) {
     } catch (err) {
       if (err.code === "messaging/registration-token-not-registered" ||
           err.code === "messaging/invalid-registration-token") {
-        console.log(`[Push] Removing invalid token: ${token.substring(0, 20)}...`);
-        for (const [, tokens] of pushTokens) tokens.delete(token);
+        console.log(`[Push] Removing invalid token for ${username}`);
+        if (pushTokens.has(username)) {
+          const ud = pushTokens.get(username);
+          if (ud.tokens) ud.tokens.delete(token);
+        }
         cleaned = true;
       } else {
         console.error(`[Push] FCM send error:`, err.code || err.message);
@@ -161,57 +190,50 @@ async function sendPushNotifications(title, body, sessionId) {
     }
   }
   if (cleaned) savePushTokens();
-  console.log(`[Push] Sent ${successCount}/${allTokens.length} FCM notification(s)`);
+  console.log(`[Push] Sent ${successCount}/${eligibleTokens.length} FCM notification(s) for bot=${botKey} — ${msgs.length} msg(s) stacked`);
 }
-
 app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cors());
-
-// Push token registration endpoint (supports both direct and /bot forwarded proxy)
+// Push token registration endpoint — stores token + role + assignedNumbers
 app.post(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
-  const { token, username, platform } = req.body;
+  const { token, username, platform, role, assignedNumbers } = req.body;
   if (!token) return res.status(400).json({ error: "Token required" });
   const user = username || "anonymous";
-  if (!pushTokens.has(user)) pushTokens.set(user, new Set());
-  pushTokens.get(user).add(token);
+  if (!pushTokens.has(user)) {
+    pushTokens.set(user, { tokens: new Set(), role: role || "", assignedNumbers: assignedNumbers || [] });
+  }
+  const userData = pushTokens.get(user);
+  userData.tokens.add(token);
+  userData.role = role || userData.role || "";
+  userData.assignedNumbers = assignedNumbers || userData.assignedNumbers || [];
   savePushTokens();
-  console.log(`[Push] Token registered for ${user} (${platform || "unknown"}). Total: ${pushTokens.get(user).size}`);
+  console.log(`[Push] Token registered for ${user} (role=${userData.role}, bots=${userData.assignedNumbers.length}, platform=${platform || "unknown"})`);
   res.json({ success: true });
 });
-
+// Push token unregister endpoint — called on logout
 app.delete(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
   const { token, username } = req.body;
-  if (!token) return res.status(400).json({ error: "Token required" });
-  let removed = false;
-  if (username && pushTokens.has(username)) {
-    removed = pushTokens.get(username).delete(token);
-  } else {
-    for (const [, tokens] of pushTokens) {
-      if (tokens.delete(token)) removed = true;
+  if (token) {
+    for (const [, userData] of pushTokens) {
+      if (userData.tokens) userData.tokens.delete(token);
     }
+  } else if (username) {
+    pushTokens.delete(username);
   }
-  if (removed) savePushTokens();
-  res.json({ success: true, removed });
+  savePushTokens();
+  console.log(`[Push] Token unregistered: user=${username || "any"}, token=${token ? token.substring(0, 20) + "..." : "all"}`);
+  res.json({ success: true });
 });
-
-app.get(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
-  const summary = {};
-  for (const [user, tokens] of pushTokens) {
-    summary[user] = tokens.size;
-  }
-  res.json({ count: Object.values(summary).reduce((a, b) => a + b, 0), users: summary });
-});
-
-// Push notification test endpoint — hit /bot/api/push-test in browser to debug
+// Push notification test endpoint
 app.get(["/api/push-test", "/bot/api/push-test"], async (req, res) => {
-  const tokenCount = [...pushTokens.values()].reduce((sum, set) => sum + set.size, 0);
+  const tokenCount = [...pushTokens.values()].reduce((sum, ud) => sum + (ud.tokens ? ud.tokens.size : 0), 0);
   const tokenList = {};
-  for (const [user, tokens] of pushTokens) {
-    tokenList[user] = [...tokens];
+  for (const [user, ud] of pushTokens) {
+    tokenList[user] = { tokens: ud.tokens ? [...ud.tokens] : [], role: ud.role, assignedNumbers: ud.assignedNumbers };
   }
   try {
-    await sendPushNotifications("🔔 Push Test", "If you see this, push notifications work!", "test");
+    await sendPushNotifications("🔔 Push Test", "If you see this, push notifications work!", "test", null);
     res.json({ success: true, tokenCount, tokens: tokenList, message: "Test push sent" });
   } catch (err) {
     res.json({ success: false, tokenCount, tokens: tokenList, error: err.message });
@@ -354,7 +376,7 @@ app.post("/webhook", async (req, res) => {
     const pushSession = await db.getSession(sessionId);
     const pushName = pushSession?.display_name || pushSession?.customer_phone || from;
     trackUnreadMessage(sessionId, userText);
-    sendPushNotifications(pushName, userText, sessionId);
+    sendPushNotifications(pushName, userText, sessionId, phoneId);
 
     // 4. Check if human mode is active — re-read from DB to avoid stale state
     session = await db.getSession(sessionId) || session;

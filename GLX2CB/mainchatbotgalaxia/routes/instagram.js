@@ -273,10 +273,10 @@ router.post("/webhook", async (req, res) => {
       });
     }
     // Push notification for closed-app delivery
-    if (trackUnreadFn) trackUnreadFn(sessionId, userText);
     if (pushNotify) {
       const ps = await db.getSession(sessionId);
-      pushNotify(ps?.display_name || senderId, userText, sessionId);
+      if (trackUnreadFn) trackUnreadFn(sessionId, userText);
+      pushNotify(ps?.display_name || senderId, userText, sessionId, phoneNumberId);
     }
 
     // 4d. Check if human mode is active — re-read from DB to avoid stale state
