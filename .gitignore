@@ -34,6 +34,8 @@ dist/
 **/cleanup.js
 migrate_core_data.js
 test_mumbai_rds.js
+**/*firebase*.json
+**/push_tokens.json
 
 # === Non-production folders (backups, old bots) ===
 GLX2CB2/

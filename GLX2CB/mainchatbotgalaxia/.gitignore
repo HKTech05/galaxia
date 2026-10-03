@@ -1,1 +1,3 @@
 .vercel
+*firebase*.json
+push_tokens.json

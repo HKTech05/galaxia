@@ -14,6 +14,7 @@ const db = require("./services/db");
 const chatbotService = require("./services/ai/ChatbotService");
 const axios = require("axios");
 const fs = require("fs");
+const admin = require("firebase-admin");
 
 const app = express();
 const server = http.createServer(app);
@@ -43,89 +44,103 @@ io.on("connection", (socket) => {
 });
 
 /* =========================
-   PUSH NOTIFICATIONS (Expo Push API)
-   Enables notifications when the mobile app is completely closed.
+   PUSH NOTIFICATIONS (Firebase Admin SDK — direct FCM)
+   Uses FCM 'tag' field so Android REPLACES previous notification
+   from the same conversation — WhatsApp-like behavior.
 ========================= */
-const pushTokens = new Map(); // username → Set<token>
 const PUSH_TOKENS_FILE = path.join(__dirname, "push_tokens.json");
-
-// Load persisted tokens from disk on startup
+// Initialize Firebase Admin with service account
+const SERVICE_ACCOUNT_FILE = path.join(__dirname, "firebase-service-account.json");
 try {
-  if (fs.existsSync(PUSH_TOKENS_FILE)) {
-    const rawData = JSON.parse(fs.readFileSync(PUSH_TOKENS_FILE, "utf8"));
-    for (const [user, tokens] of Object.entries(rawData)) {
-      if (Array.isArray(tokens)) {
-        pushTokens.set(user, new Set(tokens));
-      }
-    }
-    console.log(`[Push] Loaded push tokens from disk for ${pushTokens.size} user(s).`);
+  if (fs.existsSync(SERVICE_ACCOUNT_FILE)) {
+    admin.initializeApp({
+      credential: admin.credential.cert(require(SERVICE_ACCOUNT_FILE)),
+    });
+    console.log("[Firebase] Admin SDK initialized successfully");
+  } else {
+    console.warn("[Firebase] No service account file found at", SERVICE_ACCOUNT_FILE);
   }
-} catch (err) {
-  console.warn("[Push] Could not read push_tokens.json:", err.message);
+} catch (e) {
+  console.error("[Firebase] Failed to initialize:", e.message);
 }
 
-function savePushTokensToDisk() {
+// Load tokens from file (survives PM2 restarts)
+let pushTokens = new Map();
+try {
+  if (fs.existsSync(PUSH_TOKENS_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(PUSH_TOKENS_FILE, "utf8"));
+    for (const [user, tokens] of Object.entries(saved)) {
+      pushTokens.set(user, new Set(tokens));
+    }
+    console.log(`[Push] Loaded ${pushTokens.size} user(s) from push_tokens.json`);
+  }
+} catch (e) {
+  console.log("[Push] No saved tokens found, starting fresh");
+}
+
+function savePushTokens() {
   try {
     const obj = {};
     for (const [user, tokens] of pushTokens) {
-      obj[user] = Array.from(tokens);
+      obj[user] = [...tokens];
     }
-    fs.writeFileSync(PUSH_TOKENS_FILE, JSON.stringify(obj, null, 2), "utf8");
-  } catch (err) {
-    console.error("[Push] Failed to persist push tokens to disk:", err.message);
+    fs.writeFileSync(PUSH_TOKENS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error("[Push] Failed to save tokens:", e.message);
   }
 }
 
-// Send push notification to ALL registered devices
+// Send push notification via FCM directly (with tag for conversation grouping)
 async function sendPushNotifications(title, body, sessionId) {
+  if (!admin.apps.length) {
+    console.log("[Push] Firebase not initialized — skipping push");
+    return;
+  }
   const allTokens = [];
   for (const [, tokens] of pushTokens) {
-    for (const token of tokens) {
-      if (token && !allTokens.includes(token)) allTokens.push(token);
-    }
+    for (const token of tokens) allTokens.push(token);
   }
-  if (allTokens.length === 0) return;
-
-  const messages = allTokens.map(token => ({
-    to: token,
-    sound: "default",
-    title: title || "New Message",
-    body: (typeof body === "string" ? body : String(body || "")).slice(0, 500),
-    data: { sessionId, type: "chat_message" },
-    priority: "high",
-    channelId: "chat-messages",
-    collapseId: sessionId, // Groups notifications per conversation
-  }));
-
-  try {
-    const chunks = [];
-    for (let i = 0; i < messages.length; i += 100) {
-      chunks.push(messages.slice(i, i + 100));
-    }
-    let pruned = false;
-    for (const chunk of chunks) {
-      const response = await axios.post("https://exp.host/--/api/v2/push/send", chunk, {
-        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+  if (allTokens.length === 0) {
+    console.log("[Push] No tokens registered — skipping push");
+    return;
+  }
+  let successCount = 0;
+  let cleaned = false;
+  for (const token of allTokens) {
+    try {
+      await admin.messaging().send({
+        token: token,
+        notification: {
+          title: title,
+          body: body,
+        },
+        android: {
+          priority: "high",
+          notification: {
+            tag: sessionId,
+            channelId: "chat-messages",
+            sound: "default",
+          },
+        },
+        data: {
+          sessionId: sessionId,
+          type: "chat_message",
+        },
       });
-      const result = response.data;
-      console.log("[Push] Expo API response:", JSON.stringify(result).substring(0, 200));
-      // Clean up invalid tokens
-      if (result.data) {
-        result.data.forEach((receipt, idx) => {
-          if (receipt.status === "error" && receipt.details?.error === "DeviceNotRegistered") {
-            const badToken = chunk[idx].to;
-            for (const [, tokens] of pushTokens) {
-              if (tokens.delete(badToken)) pruned = true;
-            }
-          }
-        });
+      successCount++;
+    } catch (err) {
+      if (err.code === "messaging/registration-token-not-registered" ||
+          err.code === "messaging/invalid-registration-token") {
+        console.log(`[Push] Removing invalid token: ${token.substring(0, 20)}...`);
+        for (const [, tokens] of pushTokens) tokens.delete(token);
+        cleaned = true;
+      } else {
+        console.error(`[Push] FCM send error:`, err.code || err.message);
       }
     }
-    if (pruned) savePushTokensToDisk();
-    console.log(`[Push] Sent ${messages.length} push notification(s) to ${allTokens.length} device(s) for session ${sessionId}`);
-  } catch (err) {
-    console.error("[Push] Failed to send:", err.message);
   }
+  if (cleaned) savePushTokens();
+  console.log(`[Push] Sent ${successCount}/${allTokens.length} FCM notification(s)`);
 }
 
 app.set("trust proxy", 1);
@@ -139,7 +154,7 @@ app.post(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
   const user = username || "anonymous";
   if (!pushTokens.has(user)) pushTokens.set(user, new Set());
   pushTokens.get(user).add(token);
-  savePushTokensToDisk();
+  savePushTokens();
   console.log(`[Push] Token registered for ${user} (${platform || "unknown"}). Total: ${pushTokens.get(user).size}`);
   res.json({ success: true });
 });
@@ -155,7 +170,7 @@ app.delete(["/api/push-tokens", "/bot/api/push-tokens"], (req, res) => {
       if (tokens.delete(token)) removed = true;
     }
   }
-  if (removed) savePushTokensToDisk();
+  if (removed) savePushTokens();
   res.json({ success: true, removed });
 });
 
