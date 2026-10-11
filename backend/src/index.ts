@@ -78,6 +78,7 @@ app.use(cors({
         "https://galaxia-dusky.vercel.app",
         "https://www.galaxiaresorts.com",
         "https://galaxiaresorts.com",
+        "https://api.galaxiaresorts.com",
     ],
     credentials: true,
 }));

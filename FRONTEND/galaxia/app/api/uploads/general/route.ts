@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
     try {
-        const backendUrl = "http://65.1.183.241:4000/api/uploads/general";
+        const backendUrl = "https://api.galaxiaresorts.com/api/uploads/general";
 
         const formData = await req.formData();
 

@@ -1,4 +1,4 @@
-const BASE_URL = typeof window !== "undefined" ? "/api" : "http://65.1.183.241:4000/api";
+const BASE_URL = typeof window !== "undefined" ? "/api" : "https://api.galaxiaresorts.com/api";
 
 /* ─── Token helpers ─────────────────────────────────────── */
 

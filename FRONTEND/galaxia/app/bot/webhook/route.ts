@@ -3,7 +3,7 @@
    Proxies Meta webhook calls to the bot server on EC2
    ═══════════════════════════════════════════════════════ */
 
-const BOT_SERVER = "http://65.1.183.241:4000/bot";
+const BOT_SERVER = "https://api.galaxiaresorts.com/bot";
 
 // GET — Meta webhook verification
 export async function GET(request: Request) {

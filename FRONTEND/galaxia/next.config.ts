@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const apiUrl = "http://65.1.183.241:4000/api";
+    const apiUrl = "https://api.galaxiaresorts.com/api";
     return [
       {
         source: "/api/:path*",
@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
         // Proxy /bot/* through the main backend (port 4000) which internally
         // reverse-proxies to the wa-chatbot service on port 4001
         source: "/bot/:path*",
-        destination: "http://65.1.183.241:4000/bot/:path*",
+        destination: "https://api.galaxiaresorts.com/bot/:path*",
       },
     ];
   },

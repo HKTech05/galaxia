@@ -1200,7 +1200,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     const token = localStorage.getItem("galaxia_admin_token") || localStorage.getItem("galaxia_token");
                     const headers: Record<string, string> = {};
                     if (token) headers["Authorization"] = `Bearer ${token}`;
-                    const res = await fetch("http://65.1.183.241:4000/api/site-images", {
+                    const res = await fetch("https://api.galaxiaresorts.com/api/site-images", {
                         method: "POST", headers, body: formData,
                     });
                     if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Upload failed"); }
