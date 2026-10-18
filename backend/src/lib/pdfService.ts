@@ -419,9 +419,36 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         const taxes = booking.gstAmount || 0;
         const advanceAmount = booking.advanceAmount || 0;
         const balanceAmount = booking.balanceAmount || 0;
+        const savedSpecialDiscount = booking.specialDiscount || 0;
 
-        // Reconstruct the correct Total Amount (post-tax actual total booking amount)
-        const displayTotalAmount = advanceAmount + balanceAmount;
+        // Use booking.totalAmount as the authoritative total; fall back to advance + balance
+        let displayTotalAmount = booking.totalAmount || (advanceAmount + balanceAmount);
+
+        // Compute what the visible line items sum to (gross, before discounts)
+        const extraPersonDisplay = (!extraAdult && !extraKids && extraPerson > 0) ? extraPerson : 0;
+        const lineItemsGross = displayBasePrice + extraAdult + extraKids + extraPersonDisplay
+            + petCharges + addonsTotal + taxes + transferFee;
+
+        // Detect if coupon discount exists but wasn't applied to the stored total
+        // (happens when frontend sent undiscounted amounts but backend recorded the coupon)
+        if (discountAmount > 0 && Math.abs(displayTotalAmount - lineItemsGross) < 100) {
+            // Total ≈ gross line items → discount was NOT baked into total; correct for display
+            displayTotalAmount = Math.round((lineItemsGross - discountAmount) / 10) * 10;
+        }
+
+        // Calculate implied special discount (e.g. La Paraiso weekend complimentary guests)
+        // This is the gap between visible line items minus known discounts and the actual total
+        const impliedSpecialDiscount = savedSpecialDiscount > 0
+            ? savedSpecialDiscount
+            : Math.max(0, Math.round(lineItemsGross - discountAmount - displayTotalAmount));
+
+        // If total was corrected for undiscounted coupon, adjust advance/balance display to match
+        let displayAdvance = advanceAmount;
+        let displayBalance = balanceAmount;
+        if (displayTotalAmount !== (booking.totalAmount || (advanceAmount + balanceAmount))) {
+            displayAdvance = Math.round(Math.round(displayTotalAmount * 0.8) / 10) * 10;
+            displayBalance = displayTotalAmount - displayAdvance;
+        }
 
         y = drawSectionTitle(doc, "Payment Summary", y);
         y = drawPaymentRow(doc, "Base Price", fmtCurrency(displayBasePrice), y, { bold: true });
@@ -441,6 +468,9 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         for (const addon of displayAddons) {
             y = drawPaymentRow(doc, addon.label, fmtCurrency(addon.price), y);
         }
+        if (impliedSpecialDiscount > 0) {
+            y = drawPaymentRow(doc, "Complimentary Guests Included", `- ${fmtCurrency(impliedSpecialDiscount)}`, y, { color: "#16a34a" });
+        }
         if (discountAmount > 0) {
             const discountLabel = (booking.couponId || booking.couponCode || booking.coupon) ? "Coupon Applied" : "Discount";
             y = drawPaymentRow(doc, discountLabel, `- ${fmtCurrency(discountAmount)}`, y, { color: "#16a34a" });
@@ -456,9 +486,9 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
         y = drawPaymentRow(doc, "Total Amount", fmtCurrency(displayTotalAmount), y, { bold: true, color: GOLD });
         y = drawDivider(doc, y);
 
-        y = drawPaymentRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(advanceAmount) : "Not yet paid", y,
+        y = drawPaymentRow(doc, "Advance Paid", booking.advancePaid ? fmtCurrency(displayAdvance) : "Not yet paid", y,
             { color: booking.advancePaid ? "#16a34a" : TEXT_MED });
-        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(balanceAmount), y, { bold: true });
+        y = drawPaymentRow(doc, "Balance Due at Venue", fmtCurrency(displayBalance), y, { bold: true });
         if (securityDeposit) {
             y = drawPaymentRow(doc, "Security Deposit - Pay at Venue", securityDeposit, y);
         }

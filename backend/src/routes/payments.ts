@@ -590,6 +590,7 @@ async function processPendingStayBooking(pendingRecord: any, razorpayPaymentId: 
                 bookedVia: p.bookedVia || null,
                 couponId,
                 discountAmount,
+                specialDiscount: parseInt(p.specialDiscount) || 0,
                 addons: p.addons || null,
             },
             include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },

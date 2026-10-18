@@ -177,7 +177,7 @@ router.post("/", async (req, res) => {
             gstAmount, totalAmount,
             advanceAmount, balanceAmount, securityDeposit,
             advancePaid, advanceMethod,
-            source, bookedVia, couponCode, addons, discountAmount: reqDiscountAmount,
+            source, bookedVia, couponCode, addons, discountAmount: reqDiscountAmount, specialDiscount: reqSpecialDiscount,
         } = req.body;
 
         if (!customerName || !customerPhone || !propertyId || !checkInDate || !checkOutDate) {
@@ -358,6 +358,7 @@ router.post("/", async (req, res) => {
                     bookedVia: bookedVia || null,
                     couponId,
                     discountAmount,
+                    specialDiscount: parseInt(reqSpecialDiscount) || 0,
                     addons: addons || null,
                 },
                 include: { property: { include: { pricing: true } }, subProperty: { include: { pricing: true } }, coupon: true },

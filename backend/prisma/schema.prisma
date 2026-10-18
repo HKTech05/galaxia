@@ -352,6 +352,7 @@ model StaycationBooking {
   isAdminBooking     Boolean          @default(false) @map("is_admin_booking")
   couponId           Int?             @map("coupon_id")
   discountAmount     Int              @default(0) @map("discount_amount")
+  specialDiscount    Int              @default(0) @map("special_discount")
   bookedAt           DateTime         @default(now()) @map("booked_at")
   createdBy          Int?             @map("created_by")
   updatedAt          DateTime         @updatedAt @map("updated_at")

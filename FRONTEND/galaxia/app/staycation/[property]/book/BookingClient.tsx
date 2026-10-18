@@ -949,6 +949,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                 source: "website",
                 bookedVia,
                 couponCode: appliedCoupon?.code || null,
+                discountAmount: discountAmount || 0,
+                specialDiscount: specialDiscount || 0,
                 addons: bookingAddons.length > 0 ? bookingAddons : null,
             };
 

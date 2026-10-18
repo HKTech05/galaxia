@@ -1141,6 +1141,7 @@ export default function BookMultiPage() {
                         source: "website",
                         bookedVia,
                         addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
+                        ...(isFirstItem && appliedCoupon ? { couponCode: appliedCoupon.code, discountAmount: discountAmount } : {}),
                     });
 
                     if (idFile && booking?.id) {
@@ -1202,6 +1203,7 @@ export default function BookMultiPage() {
                             source: "website",
                             bookedVia,
                             addons: isFirstItem && itemAddons.length > 0 ? itemAddons : null,
+                            ...(isFirstBooking && appliedCoupon ? { couponCode: appliedCoupon.code, discountAmount: discountAmount } : {}),
                         });
 
                         if (idFile && booking?.id) {
