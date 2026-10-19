@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { loadRazorpayScript } from "../../lib/razorpay";
+// HDFC SmartGateway integration (replaces Razorpay for test page only)
 
 interface SystemLog {
     time: string;
@@ -58,7 +58,7 @@ export default function TestPaymentPage() {
     const [paymentStatus, setPaymentStatus] = useState<string>("idle");
     const [createdBookingRef, setCreatedBookingRef] = useState<string | null>(null);
     const [logs, setLogs] = useState<SystemLog[]>([]);
-    const [razorpayPaymentId, setRazorpayPaymentId] = useState<string | null>(null);
+    const [hdfcTxnId, setHdfcTxnId] = useState<string | null>(null);
 
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -115,7 +115,7 @@ export default function TestPaymentPage() {
                 setPaymentVerified(data.verified);
 
                 if (data.razorpayPaymentId) {
-                    setRazorpayPaymentId(data.razorpayPaymentId);
+                    setHdfcTxnId(data.razorpayPaymentId);
                 }
 
                 if (data.createdBookingRef) {
@@ -123,7 +123,7 @@ export default function TestPaymentPage() {
                 }
 
                 if (data.verified && data.status === "success") {
-                    addLog(`🎉 BACKEND CONFIRMED! System status turned TRUE! (Pay ID: ${data.razorpayPaymentId || "Captured"})`, "success");
+                    addLog(`🎉 BACKEND CONFIRMED! System status turned TRUE! (Txn ID: ${data.razorpayPaymentId || "Captured"})`, "success");
                     if (data.createdBookingRef) {
                         addLog(`🏆 REAL BOOKING CREATED IN DB: ${data.createdBookingRef}`, "success");
                         addLog(`Confirmation voucher & email sent to ${data.customerEmail}`, "success");
@@ -154,7 +154,7 @@ export default function TestPaymentPage() {
         setPaymentVerified(false);
         setPaymentStatus("initiating");
         setActivePaymentId(null);
-        setRazorpayPaymentId(null);
+        setHdfcTxnId(null);
         setCreatedBookingRef(null);
 
         const selectedVillaObj = properties.find((p) => p.id === selectedPropertyId);
@@ -163,11 +163,9 @@ export default function TestPaymentPage() {
             ? (selectedVillaObj?.name || "Staycation Villa") 
             : (selectedScreenObj?.name || "DD Screen");
 
-        addLog(`1. Initializing 1 INR Test Payment for [${selectedName}] on backend...`, "info");
+        addLog(`1. Initializing ₹1.00 Test Payment for [${selectedName}] via HDFC SmartGateway...`, "info");
 
         try {
-            await loadRazorpayScript();
-
             const bookingDetails = {
                 moduleType,
                 propertyId: selectedPropertyId,
@@ -179,8 +177,10 @@ export default function TestPaymentPage() {
                 price: moduleType === "staycation" ? 5000 : 2500,
             };
 
-            // 1. Create order & track payment intent on backend
-            const orderRes = await fetch("/api/payments/test-create-order", {
+            // 1. Create order on HDFC SmartGateway via backend
+            addLog("2. Creating order on HDFC SmartGateway...", "info");
+
+            const orderRes = await fetch("/api/payments/hdfc-test/create-order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -193,74 +193,27 @@ export default function TestPaymentPage() {
 
             if (!orderRes.ok) {
                 const errData = await orderRes.json();
-                throw new Error(errData.error || "Failed to create order");
+                throw new Error(errData.error || "Failed to create HDFC order");
             }
 
-            const { orderId, paymentId, keyId } = await orderRes.json();
+            const { paymentId, hdfcOrderId, paymentUrl } = await orderRes.json();
             setActivePaymentId(paymentId);
 
-            addLog(`2. Created Order: ${orderId} | Payment ID: ${paymentId}`, "info");
-            addLog(`3. System status in DB set to verified = FALSE (waiting for payment)...`, "warning");
+            addLog(`3. HDFC Order Created: ${hdfcOrderId} | Payment ID: ${paymentId}`, "info");
+            addLog(`4. System status in DB set to verified = FALSE (waiting for payment)...`, "warning");
 
             // Start polling status in background immediately
             startPollingStatus(paymentId);
 
-            // 2. Open Razorpay Modal using Digital Diaries keyId
-            addLog("4. Opening Razorpay Checkout Modal...", "info");
+            // 2. Redirect to HDFC SmartGateway hosted payment page
+            addLog("5. Redirecting to HDFC SmartGateway payment page...", "info");
+            addLog("⚡ You will be redirected back here after payment completes.", "info");
 
-            const rzp = new (window as any).Razorpay({
-                key: keyId,
-                order_id: orderId,
-                amount: 100, // 1 INR in paise
-                currency: "INR",
-                name: `Test Booking — ${selectedName}`,
-                description: `1 INR Booking Test (${moduleType.toUpperCase()})`,
-                image: "/logo.png",
-                prefill: {
-                    name,
-                    email,
-                    contact: phone,
-                },
-                theme: {
-                    color: moduleType === "staycation" ? "#C4A265" : "#4F46E5",
-                },
-                handler: async function (response: any) {
-                    addLog(`5. Razorpay Modal completed on client side! Payment ID: ${response.razorpay_payment_id}`, "info");
-                    addLog("6. Client signature verification in progress...", "info");
+            // Small delay so user can see the logs before redirect
+            setTimeout(() => {
+                window.location.href = paymentUrl;
+            }, 1500);
 
-                    try {
-                        const verifyRes = await fetch("/api/payments/verify", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                type: "dd",
-                            }),
-                        });
-                        const verifyData = await verifyRes.json();
-                        if (verifyData.verified) {
-                            addLog("Client signature verified. Backend Webhook is finalizing booking creation in DB...", "info");
-                        }
-                    } catch (err) {
-                        addLog("Client signature check failed, but backend Webhook will still process & create booking!", "warning");
-                    }
-                },
-                modal: {
-                    ondismiss: function () {
-                        addLog("Razorpay modal closed by user.", "warning");
-                        setIsSubmitting(false);
-                    },
-                },
-            });
-
-            rzp.on("payment.failed", function (failedResp: any) {
-                addLog(`Payment failed: ${failedResp?.error?.description || "Failed"}`, "error");
-                setIsSubmitting(false);
-            });
-
-            rzp.open();
         } catch (err: any) {
             addLog(`Error: ${err.message || "Failed to initiate payment"}`, "error");
             setIsSubmitting(false);
@@ -549,8 +502,8 @@ export default function TestPaymentPage() {
                         {activePaymentId && (
                             <div className="bg-[#0F0F12] p-3 rounded-lg border border-white/5 text-xs font-mono space-y-1 text-gray-300">
                                 <div><span className="text-gray-500">Payment ID:</span> {activePaymentId}</div>
-                                {razorpayPaymentId && (
-                                    <div><span className="text-gray-500">Razorpay Pay ID:</span> {razorpayPaymentId}</div>
+                                {hdfcTxnId && (
+                                    <div><span className="text-gray-500">HDFC Txn ID:</span> {hdfcTxnId}</div>
                                 )}
                             </div>
                         )}
@@ -600,7 +553,7 @@ export default function TestPaymentPage() {
                     <div className="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-4 text-xs text-indigo-200 space-y-1.5">
                         <span className="font-semibold text-indigo-400 block">🧪 Network Resiliency Test</span>
                         <p className="leading-relaxed text-gray-300">
-                            Close the browser tab right after Razorpay completes. The backend webhook will still process the payment and create the booking reference in the database!
+                            Close the browser tab right after HDFC payment completes. The backend webhook will still process the payment and create the booking reference in the database!
                         </p>
                     </div>
                 </div>
