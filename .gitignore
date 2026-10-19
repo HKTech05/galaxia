@@ -36,6 +36,8 @@ migrate_core_data.js
 test_mumbai_rds.js
 **/*firebase*.json
 **/push_tokens.json
+apiKey*
+/config.json
 
 # === Non-production folders (backups, old bots) ===
 GLX2CB2/
