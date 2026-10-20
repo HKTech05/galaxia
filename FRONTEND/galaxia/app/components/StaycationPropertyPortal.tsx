@@ -2002,6 +2002,21 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                         >+</button>
                                     </div>
 
+                                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Number of Extra Kids (₹{getGuestPricing(selectedBooking).extraKidPrice.toLocaleString('en-IN')}/kid/night)</label>
+                                    <div className="flex items-center gap-3 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, kids: Math.max(0, extraGuestForm.kids - 1) })}
+                                            className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                        >−</button>
+                                        <span className="text-lg font-black text-slate-800 w-6 text-center">{extraGuestForm.kids}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExtraGuestForm({ ...extraGuestForm, kids: Math.min(100, extraGuestForm.kids + 1) })}
+                                            className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                                        >+</button>
+                                    </div>
+
                                     <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mt-4">Number of Pets (₹600/pet/night)</label>
                                     <div className="flex items-center gap-3 mt-2 mb-4">
                                         <button
@@ -2078,18 +2093,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                             const start = selectedBooking.rawCheckInDate ? new Date(selectedBooking.rawCheckInDate) : new Date();
                                             const end = selectedBooking.rawCheckOutDate ? new Date(selectedBooking.rawCheckOutDate) : new Date();
                                             const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
-                                            const prop = selectedBooking.property || "";
-                                            const parentProp = selectedBooking.parentProperty || "";
-                                            let extraAdultPrice = 0;
-                                            if (prop.includes('Hill View') || parentProp.includes('Hill View')) extraAdultPrice = 600;
-                                            else if (prop.includes('Mount View') || parentProp.includes('Mount View')) extraAdultPrice = 800;
-                                            else if (prop.includes('Heavenly Villa') || parentProp.includes('Heavenly Villa')) extraAdultPrice = 800;
-                                            else if (prop.includes('La Paraiso') || parentProp.includes('La Paraiso')) extraAdultPrice = 1200;
-                                            else if (prop.includes('Amstel') || parentProp.includes('Amstel')) extraAdultPrice = 2000;
-                                            else if (prop.includes('Ambrose') || parentProp.includes('Ambrose')) extraAdultPrice = 2000;
+                                            const { extraAdultPrice, extraKidPrice } = getGuestPricing(selectedBooking);
                                             return (
                                                 <div className="mt-2 space-y-0.5 text-[11px] font-medium text-purple-700">
                                                     {extraGuestForm.guests > 0 && <p>Extra guests: {extraGuestForm.guests} × ₹{extraAdultPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.guests * extraAdultPrice * nights).toLocaleString('en-IN')}</p>}
+                                                    {extraGuestForm.kids > 0 && <p>Extra kids: {extraGuestForm.kids} × ₹{extraKidPrice.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.kids * extraKidPrice * nights).toLocaleString('en-IN')}</p>}
                                                     {extraGuestForm.pets > 0 && <p>Pets: {extraGuestForm.pets} × ₹600/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.pets * 600 * nights).toLocaleString('en-IN')}</p>}
                                                     {extraGuestForm.driverStay > 0 && <p>Driver (Stay only): {extraGuestForm.driverStay} × ₹{driverBasePrices.stay.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverStay * driverBasePrices.stay * nights).toLocaleString('en-IN')}</p>}
                                                     {extraGuestForm.driverFood > 0 && <p>Driver (Food only): {extraGuestForm.driverFood} × ₹{driverBasePrices.food.toLocaleString('en-IN')}/night × {nights} night{nights > 1 ? 's' : ''} = ₹{(extraGuestForm.driverFood * driverBasePrices.food * nights).toLocaleString('en-IN')}</p>}

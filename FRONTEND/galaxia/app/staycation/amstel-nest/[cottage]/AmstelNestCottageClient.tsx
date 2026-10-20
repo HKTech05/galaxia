@@ -123,6 +123,9 @@ export default function AmstelNestCottageClient({ parent, cottage }: AmstelNestC
                 maxKids: (cottage as any).maxKids ?? parent.maxKids ?? 1,
                 property: "amstel-nest",
                 unitCount: 1,
+                extraAdultRate: 2000,
+                kidsRate: 1000,
+                personsLabel: cottage.id === 'family-cottage' ? "upto 4 with meals" : "2 persons with meals",
             });
             localStorage.setItem("ambrose_cart", JSON.stringify(cart));
             if (calCheckIn && calCheckOut) {
