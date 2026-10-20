@@ -200,7 +200,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
     // Check Collaboration / Partnership / Promotion Intent (Across All Bots)
     const collabRegex = /\b(collab|collaborate|collaboration|promotions?|advertising|advertisement|ads?|partnership|sponsor|sponsorship|influencer|tie\s*up|brand\s*collab|pr\s*package)\b/i;
     if (collabRegex.test(textTrimmed)) {
-      const collabMsg = "Thank you for your interest in collaborating with us! Our team will contact you shortly.\n\nPlease stay tuned — we appreciate your patience!";
+      const collabMsg = "Thank you for your interest in collaborating with us! For further discussions, please contact us at 9821884042.";
       await conversationService.saveUserMessage(sessionId, textTrimmed, customerPhone, phoneNumberId, botType, platform);
       const savedMsg = await conversationService.saveAssistantMessage(cleanSessionId, collabMsg);
       // Auto-switch to human mode so staff can follow up

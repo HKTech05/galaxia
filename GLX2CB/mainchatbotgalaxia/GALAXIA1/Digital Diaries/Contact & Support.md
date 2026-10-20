@@ -14,9 +14,7 @@
 ## Business Collaborations, Promotions & Partnership Inquiries
 - **Trigger**: When a user asks about collaborations, Instagram promotions, advertising, sponsorships, brand tie-ups, or business partnerships.
 - **Template Message**:
-  > *"Thank you for your interest in collaborating with us! Our team will contact you shortly.*
-  > 
-  > *Please stay tuned — we appreciate your patience!"*
+  > *"Thank you for your interest in collaborating with us! For further discussions, please contact us at 9821884042."*
 
 ## Human Staff Handover / Escalation Mode
 - **Trigger**: When a customer explicitly asks to speak to a human, staff, or admin, OR indicates that the automated assistant was unable to solve their query.

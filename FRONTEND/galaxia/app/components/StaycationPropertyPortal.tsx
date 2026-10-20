@@ -387,7 +387,8 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
     // Add Extra Guest states
     const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
     const [extraGuestForm, setExtraGuestForm] = useState({
-        guests: 1,
+        guests: 0,
+        kids: 0,
         pets: 0,
         driverStay: 0,
         driverFood: 0,
@@ -623,12 +624,27 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         }
     };
 
+    const getGuestPricing = (booking: any) => {
+        const prop = booking?.property || "";
+        const parentProp = booking?.parentProperty || "";
+        let extraAdultPrice = 0;
+        let extraKidPrice = 1000;
+        if (prop.includes("Hill View") || parentProp.includes("Hill View")) { extraAdultPrice = 600; extraKidPrice = 400; }
+        else if (prop.includes("Mount View") || parentProp.includes("Mount View")) { extraAdultPrice = 800; extraKidPrice = 500; }
+        else if (prop.includes("Heavenly Villa") || parentProp.includes("Heavenly Villa")) { extraAdultPrice = 800; extraKidPrice = 500; }
+        else if (prop.includes("La Paraiso") || parentProp.includes("La Paraiso")) { extraAdultPrice = 1200; extraKidPrice = 800; }
+        else if (prop.includes("Amstel") || parentProp.includes("Amstel")) { extraAdultPrice = 2000; extraKidPrice = 1000; }
+        else if (prop.includes("Ambrose") || parentProp.includes("Ambrose")) { extraAdultPrice = 2000; extraKidPrice = 1000; }
+        return { extraAdultPrice, extraKidPrice };
+    };
+
     const calculateExtraGuestPrice = (
         includeGuests = true,
         includePets = true,
         includeDriverStay = true,
         includeDriverFood = true,
-        includeDriverStayAndFood = true
+        includeDriverStayAndFood = true,
+        includeKids = true
     ) => {
         if (!selectedBooking) return 0;
 
@@ -636,22 +652,15 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         const end = selectedBooking.rawCheckOutDate ? new Date(selectedBooking.rawCheckOutDate) : new Date();
         const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
 
-        let extraAdultPrice = 0;
-        const prop = selectedBooking.property || "";
-        const parentProp = selectedBooking.parentProperty || "";
-        if (prop.includes("Hill View") || parentProp.includes("Hill View")) extraAdultPrice = 600;
-        else if (prop.includes("Mount View") || parentProp.includes("Mount View")) extraAdultPrice = 800;
-        else if (prop.includes("Heavenly Villa") || parentProp.includes("Heavenly Villa")) extraAdultPrice = 800;
-        else if (prop.includes("La Paraiso") || parentProp.includes("La Paraiso")) extraAdultPrice = 1200;
-        else if (prop.includes("Amstel") || parentProp.includes("Amstel")) extraAdultPrice = 2000;
-        else if (prop.includes("Ambrose") || parentProp.includes("Ambrose")) extraAdultPrice = 2000;
+        const { extraAdultPrice, extraKidPrice } = getGuestPricing(selectedBooking);
 
         let total = 0;
-        if (includeGuests) total += extraAdultPrice * extraGuestForm.guests * nights;
-        if (includePets) total += 600 * extraGuestForm.pets * nights;
-        if (includeDriverStay) total += driverBasePrices.stay * extraGuestForm.driverStay * nights;
-        if (includeDriverFood) total += driverBasePrices.food * extraGuestForm.driverFood * nights;
-        if (includeDriverStayAndFood) total += driverBasePrices.stay_food * extraGuestForm.driverStayAndFood * nights;
+        if (includeGuests) total += extraAdultPrice * (extraGuestForm.guests || 0) * nights;
+        if (includeKids) total += extraKidPrice * (extraGuestForm.kids || 0) * nights;
+        if (includePets) total += 600 * (extraGuestForm.pets || 0) * nights;
+        if (includeDriverStay) total += driverBasePrices.stay * (extraGuestForm.driverStay || 0) * nights;
+        if (includeDriverFood) total += driverBasePrices.food * (extraGuestForm.driverFood || 0) * nights;
+        if (includeDriverStayAndFood) total += driverBasePrices.stay_food * (extraGuestForm.driverStayAndFood || 0) * nights;
 
         return Math.round(total);
     };
@@ -660,22 +669,35 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
         if (!selectedBooking) return;
         const totalCost = calculateExtraGuestPrice();
         if (totalCost <= 0) {
-            alert("Please select at least one extra guest, pet, or driver addable.");
+            alert("Please select at least one extra guest, kid, pet, or driver addable.");
             return;
         }
         try {
             const start = selectedBooking.rawCheckInDate ? new Date(selectedBooking.rawCheckInDate) : new Date();
             const end = selectedBooking.rawCheckOutDate ? new Date(selectedBooking.rawCheckOutDate) : new Date();
             const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
+            const { extraAdultPrice, extraKidPrice } = getGuestPricing(selectedBooking);
 
             if (extraGuestForm.guests > 0) {
-                const extraCharge = calculateExtraGuestPrice(true, false, false, false, false);
+                const extraCharge = extraAdultPrice * extraGuestForm.guests * nights;
                 await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
                     guestName: extraGuestForm.guests === 1 ? "Extra Guest" : `Extra Guest (${extraGuestForm.guests})`,
                     idProofType: "Uploaded",
                     chargeAmount: extraCharge,
                     paymentMethod: extraGuestForm.paymentMethod,
-                    count: extraGuestForm.guests
+                    count: extraGuestForm.guests,
+                    isKid: false
+                });
+            }
+            if (extraGuestForm.kids > 0) {
+                const extraKidsCharge = extraKidPrice * extraGuestForm.kids * nights;
+                await api.post(`/bookings/staycation/${selectedBooking.rawId}/extra-guest`, {
+                    guestName: extraGuestForm.kids === 1 ? "Extra Kid" : `Extra Kid (${extraGuestForm.kids})`,
+                    idProofType: "None",
+                    chargeAmount: extraKidsCharge,
+                    paymentMethod: extraGuestForm.paymentMethod,
+                    count: extraGuestForm.kids,
+                    isKid: true
                 });
             }
             if (extraGuestForm.pets > 0) {
@@ -685,7 +707,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         guestName: `Pet (${extraGuestForm.pets})`,
                         idProofType: "None",
                         chargeAmount: petsCharge,
-                        paymentMethod: extraGuestForm.paymentMethod
+                        paymentMethod: extraGuestForm.paymentMethod,
+                        count: extraGuestForm.pets,
+                        isPet: true
                     });
                 }
             }
@@ -696,7 +720,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         guestName: `Driver - Stay (${extraGuestForm.driverStay})`,
                         idProofType: "None",
                         chargeAmount: driverStayCharge,
-                        paymentMethod: extraGuestForm.paymentMethod
+                        paymentMethod: extraGuestForm.paymentMethod,
+                        count: extraGuestForm.driverStay,
+                        isDriver: true
                     });
                 }
             }
@@ -707,7 +733,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         guestName: `Driver - Food (${extraGuestForm.driverFood})`,
                         idProofType: "None",
                         chargeAmount: driverFoodCharge,
-                        paymentMethod: extraGuestForm.paymentMethod
+                        paymentMethod: extraGuestForm.paymentMethod,
+                        count: extraGuestForm.driverFood,
+                        isDriver: true
                     });
                 }
             }
@@ -718,7 +746,9 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                         guestName: `Driver - Stay + Food (${extraGuestForm.driverStayAndFood})`,
                         idProofType: "None",
                         chargeAmount: driverStayAndFoodCharge,
-                        paymentMethod: extraGuestForm.paymentMethod
+                        paymentMethod: extraGuestForm.paymentMethod,
+                        count: extraGuestForm.driverStayAndFood,
+                        isDriver: true
                     });
                 }
             }
@@ -1091,7 +1121,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                              const isAmbroseOrAmstel = propName.includes("ambrose") || propName.includes("amstel");
                                              if (!isAmbroseOrAmstel) return null;
 
-                                             const extraAdultsCount = (booking.extraGuests || []).filter((eg: any) => !eg.guestName?.toLowerCase().includes("pet") && !eg.guestName?.toLowerCase().includes("driver")).length;
+                                             const extraAdultsCount = (booking.extraGuests || []).filter((eg: any) => !eg.guestName?.toLowerCase().includes("pet") && !eg.guestName?.toLowerCase().includes("driver") && !eg.guestName?.toLowerCase().includes("kid") && !eg.guestName?.toLowerCase().includes("child")).length;
                                              const totalAdults = Math.max(1, (booking.guests || 0) + extraAdultsCount);
                                              return (
                                                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 text-cyan-800 rounded-lg border border-cyan-200 text-xs font-bold shadow-xs">
@@ -1303,11 +1333,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 </button>
                                             )}
                                             <button
-                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 0, kids: 0, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
                                                 disabled={isTestViewer}
                                                 title={isTestViewer ? "Action disabled in test verification mode" : undefined}
                                                 className={`w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
-                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
+                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Kid / Pet
                                             </button>
                                             <button
                                                 onClick={isTestViewer ? undefined : () => setCancelModalBooking(booking)}
@@ -1329,11 +1359,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                     ) : (
                                         <>
                                             <button
-                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 0, kids: 0, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
                                                 disabled={isTestViewer}
                                                 title={isTestViewer ? "Action disabled in test verification mode" : undefined}
                                                 className={`w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
-                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
+                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Kid / Pet
                                             </button>
                                             {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                             <button
@@ -1365,11 +1395,11 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 {checkingFoodBill ? <Loader2 size={18} className="animate-spin" /> : <RotateCcw size={18} />} Initiate Checkout
                                             </button>
                                             <button
-                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 1, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
+                                                onClick={isTestViewer ? undefined : () => { setSelectedBooking(booking); setExtraGuestForm({ guests: 0, kids: 0, pets: 0, driverStay: 0, driverFood: 0, driverStayAndFood: 0, paymentMethod: 'UPI', idFileName: '' }); setIsAddGuestModalOpen(true); }}
                                                 disabled={isTestViewer}
                                                 title={isTestViewer ? "Action disabled in test verification mode" : undefined}
                                                 className={`w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-200 ${isTestViewer ? "opacity-50 cursor-not-allowed" : ""}`}>
-                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Pet
+                                                <Users size={18} className="text-purple-600" /> Add Extra Guest / Kid / Pet
                                             </button>
                                             {(portalName.includes('Ambrose') || portalName.includes('Amstel')) && (
                                             <button

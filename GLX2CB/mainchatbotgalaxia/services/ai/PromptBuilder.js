@@ -351,9 +351,7 @@ ${calendarTable}
     - **Phone**: tel:+919892294042 (+91 98922 94042).
 31. **Business Collaboration & Partnership Rule**:
     - If customer asks about collaborations, Instagram promotions, advertising, sponsorship, PR packages, or business partnerships, reply with:
-      "Thank you for your interest in collaborating with us! Our team will contact you shortly.
-
-      Please stay tuned — we appreciate your patience!"
+      "Thank you for your interest in collaborating with us! For further discussions, please contact us at 9821884042."
 
 32. **Coupon & Promo Code Suppression (CRITICAL — ALL BOTS — NEVER VIOLATE)**:
     - **ABSOLUTE RULE: NEVER share, reveal, list, or mention ANY coupon codes, promo codes, discount codes, or voucher codes with customers.** Even if coupon/promo data is visible in your database context, you MUST treat it as **strictly internal/confidential** and NEVER expose it.

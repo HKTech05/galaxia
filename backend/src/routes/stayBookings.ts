@@ -635,7 +635,7 @@ router.patch("/:id/status", authMiddleware, async (req: AuthRequest, res) => {
 
             if (isAmbroseOrAmstel) {
                 const extraAdultsCount = (existing.extraGuests || []).filter(
-                    (eg: any) => !eg.guestName?.toLowerCase().includes("pet") && !eg.guestName?.toLowerCase().includes("driver")
+                    (eg: any) => !eg.guestName?.toLowerCase().includes("pet") && !eg.guestName?.toLowerCase().includes("driver") && !eg.guestName?.toLowerCase().includes("kid") && !eg.guestName?.toLowerCase().includes("child")
                 ).length;
                 const totalAdults = Math.max(1, (existing.numGuests || 0) + extraAdultsCount);
                 waterBottlesDeducted = totalAdults;
@@ -1026,7 +1026,7 @@ router.post("/:id/refund-deposit", authMiddleware, async (req: AuthRequest, res)
 // POST /api/bookings/staycation/:id/extra-guest — Add extra guest
 router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) => {
     try {
-        const { guestName, idProofType, chargeAmount, paymentMethod, count } = req.body;
+        const { guestName, idProofType, chargeAmount, paymentMethod, count, isKid } = req.body;
         const bookingId = parseInt(req.params.id as string);
         if (isNaN(bookingId)) return res.status(400).json({ error: "Invalid booking ID" });
 
@@ -1041,14 +1041,47 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
             },
         });
 
-        // Update guest count (only if it's not purely pets or drivers being added)
-        const isPet = guestName.toLowerCase().includes("pet");
-        const isDriver = guestName.toLowerCase().includes("driver");
-        if (!isPet && !isDriver) {
-            const incCount = typeof count === "number" && count > 0 ? count : 1;
+        // Determine item category
+        const isPet = Boolean(req.body.isPet) || guestName.toLowerCase().includes("pet");
+        const isDriver = Boolean(req.body.isDriver) || guestName.toLowerCase().includes("driver");
+        const isChild = Boolean(isKid) || guestName.toLowerCase().includes("kid") || guestName.toLowerCase().includes("child");
+        const incCount = typeof count === "number" && count > 0 ? count : 1;
+
+        if (isChild) {
             await prisma.staycationBooking.update({
                 where: { id: bookingId },
-                data: { numGuests: { increment: incCount } },
+                data: {
+                    numKids: { increment: incCount },
+                    extraKidsCharge: { increment: chargeAmount || 0 },
+                    extraPersonCharge: { increment: chargeAmount || 0 },
+                    totalAmount: { increment: chargeAmount || 0 }
+                },
+            });
+        } else if (!isPet && !isDriver) {
+            await prisma.staycationBooking.update({
+                where: { id: bookingId },
+                data: {
+                    numGuests: { increment: incCount },
+                    extraAdultCharge: { increment: chargeAmount || 0 },
+                    extraPersonCharge: { increment: chargeAmount || 0 },
+                    totalAmount: { increment: chargeAmount || 0 }
+                },
+            });
+        } else if (isPet) {
+            await prisma.staycationBooking.update({
+                where: { id: bookingId },
+                data: {
+                    numPets: { increment: incCount },
+                    totalAmount: { increment: chargeAmount || 0 }
+                },
+            });
+        } else {
+            // Driver
+            await prisma.staycationBooking.update({
+                where: { id: bookingId },
+                data: {
+                    totalAmount: { increment: chargeAmount || 0 }
+                },
             });
         }
 
@@ -1070,7 +1103,7 @@ router.post("/:id/extra-guest", authMiddleware, async (req: AuthRequest, res) =>
                             rentCollected: { increment: chargeAmount }
                         },
                     });
-                    const itemType = isPet ? 'Pet' : isDriver ? 'Driver' : 'Extra guest';
+                    const itemType = isPet ? 'Pet' : isDriver ? 'Driver' : isChild ? 'Extra kid' : 'Extra guest';
                     await prisma.cashTransaction.create({
                         data: {
                             employeeId: employee.id,
