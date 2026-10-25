@@ -113,7 +113,7 @@ async function seed() {
             bannerOccasion: ["Birthday", "Anniversary", "Celebration"][Math.floor(Math.random() * 3)]
         } : null;
 
-        const celebrationCharge = hasCelebration ? 1200 : 0;
+        const celebrationCharge = hasCelebration ? 2000 : 0;
         const totalWithAddons = total + celebrationCharge;
 
         // Determine status based on date

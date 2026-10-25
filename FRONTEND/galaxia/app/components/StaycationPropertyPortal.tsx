@@ -1164,7 +1164,7 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                 <div key={i} className="bg-amber-50 p-2.5 rounded-lg border border-amber-100 flex items-center justify-between">
                                                     <div>
                                                         <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Celebration Add-on</p>
-                                                        <p className="text-sm font-bold text-amber-800 mt-0.5">₹{Number(addon.price || 1200).toLocaleString('en-IN')}</p>
+                                                        <p className="text-sm font-bold text-amber-800 mt-0.5">₹{Number(addon.price || 2000).toLocaleString('en-IN')}</p>
                                                     </div>
                                                     <div className="text-right">
                                                         {addon.cakeMessage && <p className="text-xs text-slate-700">Cake: <span className="font-bold">{addon.cakeMessage}</span></p>}

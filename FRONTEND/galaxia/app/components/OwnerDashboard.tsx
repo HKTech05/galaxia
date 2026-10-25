@@ -1578,7 +1578,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                 return (
                                     <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
-                                        <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 1200).toLocaleString('en-IN')}</p>
+                                        <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 2000).toLocaleString('en-IN')}</p>
                                         {celebrationAddon.cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {celebrationAddon.cakeMessage}</p>}
                                         {celebrationAddon.occasion && <p className="text-[10px] text-slate-600">Occasion: {celebrationAddon.occasion}</p>}
                                     </div>
@@ -3262,7 +3262,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                     return (
                                                         <div className="col-span-2 p-3 rounded-lg border bg-purple-50 border-purple-100">
                                                             <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Celebration Add-on</p>
-                                                            <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 1200).toLocaleString('en-IN')}</p>
+                                                            <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 2000).toLocaleString('en-IN')}</p>
                                                             {celebrationAddon.cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {celebrationAddon.cakeMessage}</p>}
                                                             {celebrationAddon.occasion && <p className="text-[10px] text-slate-600">Occasion: {celebrationAddon.occasion}</p>}
                                                         </div>
