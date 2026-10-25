@@ -11,6 +11,8 @@ interface MenuItem {
     price: number;
     category: "Normal" | "High Tea" | "Timepass";
     stock?: number;
+    hidden?: boolean;
+    visible?: boolean;
 }
 
 const DEFAULT_MENU_ITEMS: MenuItem[] = [
@@ -443,9 +445,11 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
         }
     };
 
-    const normalItems = menuItems.filter(item => item.category === "Normal");
-    const highTeaItems = menuItems.filter(item => item.category === "High Tea");
-    const timepassItems = menuItems.filter(item => item.category === "Timepass");
+    const isItemVisible = (item: MenuItem) => !item.hidden && item.visible !== false;
+
+    const normalItems = menuItems.filter(item => item.category === "Normal" && isItemVisible(item));
+    const highTeaItems = menuItems.filter(item => item.category === "High Tea" && isItemVisible(item));
+    const timepassItems = menuItems.filter(item => item.category === "Timepass" && isItemVisible(item));
 
     return (
         <div className="max-w-2xl mx-auto space-y-6 pb-12">

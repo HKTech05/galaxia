@@ -119,7 +119,7 @@ router.get("/menu", (req, res) => {
 // Download Menu PDF route
 router.get("/menu/download-pdf", async (req, res) => {
     try {
-        const menuItems = getMenuItems();
+        const menuItems = getMenuItems().filter((item: any) => !item.hidden && item.visible !== false);
         const pdfBuffer = await generateMenuPDF(menuItems);
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", 'attachment; filename="Galaxia_Resorts_Menu.pdf"');

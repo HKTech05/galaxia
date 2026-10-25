@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Package, RefreshCw, Save, Coffee, Sparkles, AlertCircle, ShoppingBag, Plus, Trash2, Pencil, X, TrendingUp, BarChart3, DollarSign, Award, ArrowDown, ArrowUp, PieChart, Download } from "lucide-react";
+import { Package, RefreshCw, Save, Coffee, Sparkles, AlertCircle, ShoppingBag, Plus, Trash2, Pencil, X, TrendingUp, BarChart3, DollarSign, Award, ArrowDown, ArrowUp, PieChart, Download, Eye, EyeOff, ChevronDown } from "lucide-react";
 import { api } from "../../../lib/api";
 import { EMenuContent } from "../../hospitalityemenu/page";
 
@@ -13,6 +13,8 @@ interface MenuItem {
     stock?: number;
     tracked?: boolean;
     costPrice?: number;
+    hidden?: boolean;
+    visible?: boolean;
 }
 
 interface InsightItem {
@@ -326,7 +328,9 @@ export default function InventoryPage() {
             category: newItemCategory,
             stock: parseInt(newItemStock) || 100,
             tracked: true,
-            costPrice: parseInt(newItemCostPrice) || 0
+            costPrice: parseInt(newItemCostPrice) || 0,
+            hidden: false,
+            visible: true
         };
 
         const currentUpdated = getUpdatedMenuItems(menuItems);
@@ -368,6 +372,45 @@ export default function InventoryPage() {
             setError(err.message || "Failed to delete item.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleToggleVisibility = async (itemId: string) => {
+        const currentUpdated = getUpdatedMenuItems(menuItems);
+        const updated = currentUpdated.map(m => {
+            if (m.id === itemId) {
+                const isCurrentlyHidden = m.hidden === true || m.visible === false;
+                return {
+                    ...m,
+                    hidden: !isCurrentlyHidden,
+                    visible: isCurrentlyHidden
+                };
+            }
+            return m;
+        });
+        setMenuItems(updated);
+        try {
+            await api.put("/hospitality/menu", { menuItems: updated });
+            const item = updated.find(m => m.id === itemId);
+            const isHiddenNow = item?.hidden === true || item?.visible === false;
+            setSuccessMsg(`"${item?.name}" is now ${isHiddenNow ? "hidden from" : "visible on"} customer menu.`);
+        } catch (err: any) {
+            console.error("Failed to auto-save visibility toggle:", err);
+            setError(err.message || "Failed to update item visibility.");
+        }
+    };
+
+    const handleCategoryChange = async (itemId: string, newCat: MenuItem["category"]) => {
+        const currentUpdated = getUpdatedMenuItems(menuItems);
+        const updated = currentUpdated.map(m => m.id === itemId ? { ...m, category: newCat } : m);
+        setMenuItems(updated);
+        try {
+            await api.put("/hospitality/menu", { menuItems: updated });
+            const item = updated.find(m => m.id === itemId);
+            setSuccessMsg(`"${item?.name}" category changed to ${newCat}.`);
+        } catch (err: any) {
+            console.error("Failed to auto-save category change:", err);
+            setError(err.message || "Failed to change category.");
         }
     };
 
@@ -656,15 +699,59 @@ export default function InventoryPage() {
                                                         TRACKED
                                                     </span>
                                                 )}
-                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
-                                                    item.category === "Normal"
-                                                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                                                        : item.category === "High Tea"
-                                                        ? "bg-purple-50 text-purple-700 border-purple-200"
-                                                        : "bg-teal-50 text-teal-700 border-teal-200"
-                                                }`}>
-                                                    {item.category}
-                                                </span>
+                                                {(item.hidden === true || item.visible === false) && (
+                                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full" title="Hidden from customer menu">
+                                                        HIDDEN
+                                                    </span>
+                                                )}
+
+                                                {/* Category Dropdown Pill */}
+                                                <div className="relative inline-flex items-center">
+                                                    <select
+                                                        value={item.category}
+                                                        onChange={(e) => handleCategoryChange(item.id, e.target.value as MenuItem["category"])}
+                                                        className={`text-[10px] font-bold pl-2.5 pr-6 py-1 rounded-full border uppercase tracking-wider cursor-pointer outline-none appearance-none transition-all shadow-xs ${
+                                                            item.category === "Normal"
+                                                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/80"
+                                                                : item.category === "High Tea"
+                                                                ? "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100/80"
+                                                                : "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100/80"
+                                                        }`}
+                                                        title="Click to change category"
+                                                    >
+                                                        <option value="Normal" className="text-slate-800 bg-white font-semibold normal-case">Normal</option>
+                                                        <option value="High Tea" className="text-slate-800 bg-white font-semibold normal-case">High Tea</option>
+                                                        {item.category === "Timepass" && (
+                                                            <option value="Timepass" className="text-slate-800 bg-white font-semibold normal-case">Timepass</option>
+                                                        )}
+                                                    </select>
+                                                    <ChevronDown size={11} className={`absolute right-2 pointer-events-none opacity-60 ${
+                                                        item.category === "Normal" ? "text-amber-700" : item.category === "High Tea" ? "text-purple-700" : "text-teal-700"
+                                                    }`} />
+                                                </div>
+
+                                                {/* Visibility Toggle Eye Icon */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleVisibility(item.id)}
+                                                    className={`p-2 rounded-lg transition-colors border shrink-0 ${
+                                                        item.hidden === true || item.visible === false
+                                                            ? "bg-slate-100 text-slate-400 hover:text-slate-600 hover:bg-slate-200 border-slate-200"
+                                                            : "hover:bg-purple-50 text-purple-600 hover:text-purple-700 border-transparent hover:border-purple-100"
+                                                    }`}
+                                                    title={
+                                                        item.hidden === true || item.visible === false
+                                                            ? "Hidden from customer menu (click to make visible)"
+                                                            : "Visible on customer menu (click to hide)"
+                                                    }
+                                                >
+                                                    {item.hidden === true || item.visible === false ? (
+                                                        <EyeOff size={16} />
+                                                    ) : (
+                                                        <Eye size={16} />
+                                                    )}
+                                                </button>
+
                                                 <button
                                                     onClick={() => handleDeleteItem(item.id)}
                                                     className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100 shrink-0"
@@ -968,16 +1055,32 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Category</label>
-                                <div className="flex gap-2">
-                                    {categories.map(cat => (
-                                        <button
-                                            key={cat}
-                                            onClick={() => setNewItemCategory(cat)}
-                                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${newItemCategory === cat ? "bg-purple-600 text-white border-purple-700 shadow-sm" : "bg-white text-slate-500 border-slate-200 hover:border-purple-300"}`}
-                                        >
-                                            {cat}
-                                        </button>
-                                    ))}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { id: "Normal" as const, name: "Normal", timing: "8:30 AM to 12:00 AM" },
+                                        { id: "High Tea" as const, name: "High Tea", timing: "4:30 PM to 6:30 PM" }
+                                    ].map(cat => {
+                                        const isSelected = newItemCategory === cat.id;
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => setNewItemCategory(cat.id)}
+                                                className={`py-2.5 px-3 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all border cursor-pointer ${
+                                                    isSelected
+                                                        ? "bg-purple-600 text-white border-purple-700 shadow-sm ring-2 ring-purple-500/20"
+                                                        : "bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:bg-purple-50/30"
+                                                }`}
+                                            >
+                                                <span className="text-xs font-bold uppercase tracking-wider">{cat.name}</span>
+                                                <span className={`text-[10px] font-semibold leading-tight ${
+                                                    isSelected ? "text-purple-100" : "text-slate-400"
+                                                }`}>
+                                                    {cat.timing}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>

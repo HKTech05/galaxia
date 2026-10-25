@@ -437,6 +437,8 @@ model Coupon {
   expiryDate    DateTime            @map("expiry_date") @db.Date
   expiryHours   Int?                @map("expiry_hours")
   isActive      Boolean             @default(true) @map("is_active")
+  isPublic      Boolean             @default(true) @map("is_public")
+  applicableTo  String              @default("all") @map("applicable_to") @db.VarChar(20)
   createdBy     Int?                @map("created_by")
   createdAt     DateTime            @default(now()) @map("created_at")
   usageLogs     CouponUsage[]

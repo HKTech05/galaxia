@@ -262,7 +262,7 @@ router.post("/", async (req, res) => {
             let discountAmount = 0;
             if (couponCode) {
                 const coupon = await tx.coupon.findFirst({ where: { code: couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
-                if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
+                if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date() && (coupon.applicableTo === 'all' || coupon.applicableTo === 'digital')) {
                     couponId = coupon.id;
                     if (coupon.discountType === "percentage") {
                         discountAmount = Math.round((totalAmount * Number(coupon.discountValue)) / 100);

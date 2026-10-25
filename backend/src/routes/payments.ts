@@ -346,7 +346,7 @@ async function processPendingDdBooking(pendingRecord: any, razorpayPaymentId: st
         let discountAmount = 0;
         if (p.couponCode) {
             const coupon = await tx.coupon.findFirst({ where: { code: p.couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
-            if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
+            if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date() && (coupon.applicableTo === 'all' || coupon.applicableTo === 'digital')) {
                 couponId = coupon.id;
                 if (coupon.discountType === "percentage") {
                     discountAmount = Math.round(((p.totalAmount || 0) * Number(coupon.discountValue)) / 100);
@@ -531,7 +531,7 @@ async function processPendingStayBooking(pendingRecord: any, razorpayPaymentId: 
         // Coupon handling
         if (p.couponCode) {
             const coupon = await tx.coupon.findFirst({ where: { code: p.couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
-            if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
+            if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date() && (coupon.applicableTo === 'all' || coupon.applicableTo === 'staycation')) {
                 couponId = coupon.id;
                 if (coupon.discountType === "percentage") {
                     const petCharges = (p.numPets || 0) * 600;

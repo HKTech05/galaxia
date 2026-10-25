@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CelebrationPackage, ScreenData, timeSlots, formatPrice } from "../../../../data/celebrations";
 import { api } from "../../../../../lib/api";
 import { initiateRazorpayPayment } from "../../../../../lib/razorpay";
+import { Ticket } from "lucide-react";
 import PhoneAuthModal from "../../../../components/PhoneAuthModal";
 
 interface CelebrationBookingClientProps {
@@ -69,6 +70,24 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
+    const [publicCoupons, setPublicCoupons] = useState<Array<{
+        id: number;
+        code: string;
+        discountType: string;
+        discountValue: number;
+        applicableTo: string;
+        expiryDate?: string;
+        expiryHours?: number | null;
+    }>>([]);
+
+    // Fetch active public coupons for Digital Diaries
+    useEffect(() => {
+        api.get("/coupons/public?type=digital")
+            .then(data => {
+                if (Array.isArray(data)) setPublicCoupons(data);
+            })
+            .catch(() => {});
+    }, []);
 
     // DB IDs for screen and package (fetched by slug)
     const [dbScreenId, setDbScreenId] = useState<number | null>(null);
@@ -491,16 +510,18 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
     }, [selectedSlots]);
 
     // Coupon validation
-    const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) return;
+    const handleApplyCoupon = async (codeToApply?: string) => {
+        const code = (codeToApply || couponCode).trim().toUpperCase();
+        if (!code) return;
         setCouponLoading(true);
         setCouponError("");
         try {
-            const result = await api.post("/coupons/validate", { code: couponCode });
+            const result = await api.post("/coupons/validate", { code, type: "digital" });
             if (result && result.valid) {
+                setCouponCode(result.code);
                 setAppliedCoupon({ code: result.code, discountType: result.discountType, discountValue: result.discountValue });
             } else {
-                setCouponError("Invalid or expired coupon code");
+                setCouponError(result?.error || "Invalid or expired coupon code");
             }
         } catch (err: any) {
             setCouponError(err?.message || "Invalid or expired coupon code");
@@ -992,22 +1013,93 @@ export default function CelebrationBookingClient({ pkg, screen }: CelebrationBoo
 
                                     {/* Coupon Input */}
                                     <div className="pt-3 border-t border-cel-border/30">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-semibold text-cel-text uppercase tracking-wider flex items-center gap-1.5">
+                                                <Ticket size={13} className="text-rose-light" />
+                                                Have a Coupon?
+                                            </span>
+                                            {appliedCoupon && (
+                                                <span className="text-[10px] font-semibold text-green-400 bg-green-950/60 border border-green-700/40 px-2 py-0.5 rounded-full">
+                                                    Applied
+                                                </span>
+                                            )}
+                                        </div>
+
                                         {appliedCoupon ? (
                                             <div className="flex items-center justify-between bg-green-900/20 border border-green-500/30 rounded-lg px-3 py-2">
-                                                <div>
+                                                <div className="flex items-center gap-2">
                                                     <span className="text-green-400 font-inter text-xs font-semibold">🎉 {appliedCoupon.code}</span>
-                                                    <span className="text-green-300 font-inter text-xs ml-2">
-                                                        {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`}
+                                                    <span className="text-green-300 font-inter text-xs">
+                                                        ({appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`})
                                                     </span>
                                                 </div>
                                                 <button onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} className="text-red-400 hover:text-red-300 text-xs font-inter font-semibold">Remove</button>
                                             </div>
                                         ) : (
-                                            <div className="flex gap-2">
-                                                <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Coupon code" className="flex-1 bg-cel-bg border border-cel-border rounded-lg px-3 py-2 text-xs font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none uppercase tracking-widest" />
-                                                <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()} className="bg-rose-dark/80 text-white px-4 py-2 rounded-lg font-inter text-xs font-semibold hover:bg-rose-dark transition-colors disabled:opacity-40">
-                                                    {couponLoading ? "..." : "Apply"}
-                                                </button>
+                                            <div>
+                                                {/* Click to Apply Public Coupons */}
+                                                {publicCoupons.length > 0 && (
+                                                    <div className="mb-2.5 space-y-1.5">
+                                                        <p className="text-[10px] font-medium text-cel-text-muted">Available Offers:</p>
+                                                        <div className="grid grid-cols-1 gap-1.5">
+                                                            {publicCoupons.map((c) => (
+                                                                <div
+                                                                    key={c.id}
+                                                                    onClick={() => !couponLoading && handleApplyCoupon(c.code)}
+                                                                    className="group flex items-center justify-between p-2 rounded-lg border border-dashed border-rose-medium/30 bg-cel-bg/70 hover:border-rose-medium hover:bg-rose-950/20 transition-all cursor-pointer"
+                                                                >
+                                                                    <div className="min-w-0 pr-2">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="font-mono text-xs font-bold text-rose-light group-hover:text-white">
+                                                                                {c.code}
+                                                                            </span>
+                                                                            <span className="text-[9px] font-bold text-green-300 bg-green-950/60 px-1.5 py-0.2 rounded border border-green-800/40">
+                                                                                {c.discountType === "percentage" ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[9px] text-cel-text-muted mt-0.5 truncate">
+                                                                            Tap to apply instantly
+                                                                        </p>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleApplyCoupon(c.code);
+                                                                        }}
+                                                                        disabled={couponLoading}
+                                                                        className="text-[10px] font-bold uppercase tracking-wider text-rose-light hover:text-white px-2 py-0.5 rounded bg-rose-medium/20 hover:bg-rose-medium/40 whitespace-nowrap transition-colors"
+                                                                    >
+                                                                        Apply
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={couponCode}
+                                                        onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                                                        placeholder="Coupon code"
+                                                        className="flex-1 bg-cel-bg border border-cel-border rounded-lg px-3 py-2 text-xs font-inter text-cel-text placeholder-cel-text-muted focus:border-rose-medium focus:outline-none uppercase tracking-widest"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter") {
+                                                                e.preventDefault();
+                                                                handleApplyCoupon();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={() => handleApplyCoupon()}
+                                                        disabled={couponLoading || !couponCode.trim()}
+                                                        className="bg-rose-dark/80 text-white px-4 py-2 rounded-lg font-inter text-xs font-semibold hover:bg-rose-dark transition-colors disabled:opacity-40"
+                                                    >
+                                                        {couponLoading ? "..." : "Apply"}
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
                                         {couponError && <p className="text-red-400 text-[10px] font-inter mt-1">{couponError}</p>}

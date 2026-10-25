@@ -268,7 +268,7 @@ router.post("/", async (req, res) => {
             let discountAmount = parseInt(reqDiscountAmount) || 0;
             if (couponCode) {
                 const coupon = await tx.coupon.findFirst({ where: { code: couponCode, isActive: true, expiryDate: { gte: new Date() } }, orderBy: { createdAt: "desc" } });
-                if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date()) {
+                if (coupon && coupon.isActive && coupon.currentUses < coupon.maxUses && new Date(coupon.expiryDate) >= new Date() && (coupon.applicableTo === 'all' || coupon.applicableTo === 'staycation')) {
                     couponId = coupon.id;
                     if (coupon.discountType === "percentage") {
                         const petCharges = (numPets || 0) * 600;

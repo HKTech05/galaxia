@@ -10,6 +10,7 @@ import { api } from "../../../../lib/api";
 import { initiateRazorpayPayment } from "../../../../lib/razorpay";
 import PhoneAuthModal from "../../../components/PhoneAuthModal";
 import { useBookedDates } from "../../../hooks/useBookedDates";
+import { Ticket } from "lucide-react";
 
 interface CartItem {
     villaId: string;
@@ -102,6 +103,24 @@ export default function BookMultiPage() {
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
+    const [publicCoupons, setPublicCoupons] = useState<Array<{
+        id: number;
+        code: string;
+        discountType: string;
+        discountValue: number;
+        applicableTo: string;
+        expiryDate?: string;
+        expiryHours?: number | null;
+    }>>([]);
+
+    // Fetch active public coupons for staycation
+    useEffect(() => {
+        api.get("/coupons/public?type=staycation")
+            .then(data => {
+                if (Array.isArray(data)) setPublicCoupons(data);
+            })
+            .catch(() => {});
+    }, []);
 
     // Celebration Add-on + Food Preference
     const [celebrationAddon, setCelebrationAddon] = useState(false);
@@ -868,20 +887,22 @@ export default function BookMultiPage() {
         }
     };
 
-    const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) return;
+    const handleApplyCoupon = async (codeToApply?: string) => {
+        const code = (codeToApply || couponCode).trim().toUpperCase();
+        if (!code) return;
         setCouponLoading(true);
         setCouponError("");
         try {
-            const result = await api.post("/coupons/validate", { code: couponCode });
+            const result = await api.post("/coupons/validate", { code, type: "staycation" });
             if (result && result.valid) {
+                setCouponCode(result.code);
                 setAppliedCoupon({
                     code: result.code,
                     discountType: result.discountType,
                     discountValue: result.discountValue,
                 });
             } else {
-                setCouponError("Invalid or expired coupon code");
+                setCouponError(result?.error || "Invalid or expired coupon code");
             }
         } catch (err: any) {
             setCouponError(err?.message || "Invalid or expired coupon code");
@@ -1621,26 +1642,106 @@ export default function BookMultiPage() {
 
                                 {/* Coupon */}
                                 <div className="mt-4 pt-4 border-t border-border-light">
-                                    <h4 className="font-inter text-xs font-semibold text-text-primary uppercase tracking-wider mb-3">Have a Coupon?</h4>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-inter text-xs font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                            <Ticket size={14} className="text-antique-gold" />
+                                            Have a Coupon?
+                                        </h4>
+                                        {appliedCoupon && (
+                                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                Applied
+                                            </span>
+                                        )}
+                                    </div>
+
                                     {appliedCoupon ? (
-                                        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                                            <div>
-                                                <span className="font-mono text-sm font-bold text-antique-gold">{appliedCoupon.code}</span>
-                                                <p className="text-[10px] text-green-600 font-inter mt-0.5">
-                                                    {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`} applied
-                                                </p>
+                                        <div className="flex items-center justify-between bg-white border border-emerald-300 rounded-lg p-3 shadow-xs">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                                                    ✓
+                                                </div>
+                                                <div>
+                                                    <span className="font-mono text-sm font-bold text-text-primary tracking-wider">{appliedCoupon.code}</span>
+                                                    <p className="text-[11px] font-inter text-emerald-700 font-medium">
+                                                        {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}% off` : `₹${appliedCoupon.discountValue} off`} applied
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} className="text-red-400 text-xs font-inter hover:text-red-600">Remove</button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}
+                                                className="text-red-500 text-xs font-inter font-medium hover:text-red-700 hover:underline px-2 py-1"
+                                            >
+                                                Remove
+                                            </button>
                                         </div>
                                     ) : (
                                         <div>
+                                            {/* Click to Apply Public Coupons */}
+                                            {publicCoupons.length > 0 && (
+                                                <div className="mb-3 space-y-1.5">
+                                                    <p className="text-[11px] font-medium text-text-secondary">Available Offers:</p>
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        {publicCoupons.map((c) => (
+                                                            <div
+                                                                key={c.id}
+                                                                onClick={() => !couponLoading && handleApplyCoupon(c.code)}
+                                                                className="group flex items-center justify-between p-2 rounded-lg border border-dashed border-antique-gold/40 bg-white hover:border-antique-gold hover:bg-antique-gold/5 shadow-xs transition-all cursor-pointer"
+                                                            >
+                                                                <div className="min-w-0 pr-2">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="font-mono text-xs font-bold text-antique-gold tracking-wider group-hover:text-dark-gold">
+                                                                            {c.code}
+                                                                        </span>
+                                                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                                                            {c.discountType === "percentage" ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-text-muted mt-0.5 truncate">
+                                                                        Tap to apply instantly
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleApplyCoupon(c.code);
+                                                                    }}
+                                                                    disabled={couponLoading}
+                                                                    className="text-[10px] font-bold uppercase tracking-wider text-antique-gold hover:text-dark-gold px-2 py-1 rounded bg-antique-gold/10 hover:bg-antique-gold/20 whitespace-nowrap transition-colors"
+                                                                >
+                                                                    Apply
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="flex gap-2">
-                                                <input type="text" placeholder="Enter coupon code" className="flex-1 bg-white border border-border-light rounded-lg px-3 py-2 text-sm font-inter text-text-primary outline-none focus:border-antique-gold uppercase tracking-wider" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
-                                                <button type="button" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()} className="bg-antique-gold text-white font-inter text-xs font-medium px-4 py-2 rounded-lg hover:bg-dark-gold transition-colors whitespace-nowrap disabled:opacity-40">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter coupon code"
+                                                    className="flex-1 bg-white border border-border-light rounded-lg px-3 py-2 text-sm font-inter text-text-primary outline-none focus:border-antique-gold uppercase tracking-wider"
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault();
+                                                            handleApplyCoupon();
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleApplyCoupon()}
+                                                    disabled={couponLoading || !couponCode.trim()}
+                                                    className="bg-antique-gold text-white font-inter text-xs font-medium px-4 py-2 rounded-lg hover:bg-dark-gold transition-colors whitespace-nowrap disabled:opacity-40"
+                                                >
                                                     {couponLoading ? "..." : "Apply"}
                                                 </button>
                                             </div>
-                                            {couponError && <p className="text-red-500 text-[10px] font-inter mt-1">{couponError}</p>}
+                                            {couponError && <p className="text-red-500 text-[10px] font-inter mt-1.5">{couponError}</p>}
                                         </div>
                                     )}
                                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Ticket, Plus, Trash2, Eye, X, CalendarDays, Hash, Percent, Users, CheckCircle, Search, Mail, Phone } from "lucide-react";
+import { Ticket, Plus, Trash2, Eye, X, CalendarDays, Hash, Percent, Users, CheckCircle, Search, Mail, Phone, ChevronDown, Globe, Lock, Layers } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
 
@@ -13,6 +13,8 @@ interface Coupon {
     currentUses: number;
     expiryDate: string;
     expiryHours?: number | null;
+    isPublic: boolean;
+    applicableTo: "all" | "staycation" | "digital";
     createdAt?: string;
     createdBy?: string;
 }
@@ -31,6 +33,7 @@ export default function CouponsClient() {
     const [usageLogs, setUsageLogs] = useState<UsageLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     // Modals
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -41,7 +44,9 @@ export default function CouponsClient() {
         code: "",
         discount: "",
         maxUses: "",
-        expiryDate: ""
+        expiryDate: "",
+        isPublic: true,
+        applicableTo: "all" as "all" | "staycation" | "digital",
     });
     const [expiryType, setExpiryType] = useState<"date" | "hours">("date");
     const [expiryHours, setExpiryHours] = useState("");
@@ -71,6 +76,8 @@ export default function CouponsClient() {
                 currentUses: c.currentUses || 0,
                 expiryDate: new Date(c.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
                 expiryHours: c.expiryHours || null,
+                isPublic: c.isPublic !== false,
+                applicableTo: (c.applicableTo || "all") as "all" | "staycation" | "digital",
                 createdAt: c.createdAt,
                 createdBy: c.admin?.displayName || c.admin?.username || "Owner/System",
             }));
@@ -83,6 +90,37 @@ export default function CouponsClient() {
     }, []);
 
     useEffect(() => { fetchCoupons(); }, [fetchCoupons]);
+
+    // Update coupon visibility (public / private dropdown)
+    const handleToggleVisibility = async (couponId: string, currentIsPublic: boolean, newIsPublic: boolean) => {
+        if (isTestViewer) return;
+        if (currentIsPublic === newIsPublic) return;
+        setUpdatingId(couponId);
+        try {
+            await api.patch(`/coupons/${couponId}`, { isPublic: newIsPublic });
+            setCoupons(prev => prev.map(c => c.id === couponId ? { ...c, isPublic: newIsPublic } : c));
+        } catch (err) {
+            console.error("Failed to update coupon visibility:", err);
+            alert("Failed to update coupon visibility status");
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    // Update coupon property scope (all / staycation / digital)
+    const handleUpdateApplicableTo = async (couponId: string, newApplicableTo: "all" | "staycation" | "digital") => {
+        if (isTestViewer) return;
+        setUpdatingId(couponId);
+        try {
+            await api.patch(`/coupons/${couponId}`, { applicableTo: newApplicableTo });
+            setCoupons(prev => prev.map(c => c.id === couponId ? { ...c, applicableTo: newApplicableTo } : c));
+        } catch (err) {
+            console.error("Failed to update coupon scope:", err);
+            alert("Failed to update coupon property scope");
+        } finally {
+            setUpdatingId(null);
+        }
+    };
 
     const handleCreateCoupon = async () => {
         if (isTestViewer) return;
@@ -111,20 +149,23 @@ export default function CouponsClient() {
         }
         try {
             await api.post("/coupons", {
-                code: newCoupon.code.toUpperCase(),
+                code: newCoupon.code.toUpperCase().trim(),
                 discountType,
                 discountValue,
                 maxUses: parseInt(newCoupon.maxUses),
                 expiryDate: expiryType === "date" ? newCoupon.expiryDate : undefined,
                 expiryHours: expiryType === "hours" ? parseInt(expiryHours) : undefined,
+                isPublic: newCoupon.isPublic,
+                applicableTo: newCoupon.applicableTo,
             });
             await fetchCoupons();
             setIsCreateModalOpen(false);
-            setNewCoupon({ code: "", discount: "", maxUses: "", expiryDate: "" });
+            setNewCoupon({ code: "", discount: "", maxUses: "", expiryDate: "", isPublic: true, applicableTo: "all" });
             setExpiryHours("");
             setExpiryType("date");
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to create coupon:", err);
+            alert(err?.message || "Failed to create coupon");
         }
     };
 
@@ -163,7 +204,7 @@ export default function CouponsClient() {
                             <Ticket className="text-purple-600" size={32} />
                             Coupon Management
                         </h1>
-                        <p className="text-slate-500 font-medium mt-1">Create, track, and manage discount codes for bookings.</p>
+                        <p className="text-slate-500 font-medium mt-1">Create, track, and manage public & private discount codes for bookings.</p>
                     </div>
                     <button
                         onClick={() => { if (isTestViewer) return; setIsCreateModalOpen(true); }}
@@ -196,6 +237,8 @@ export default function CouponsClient() {
                                 <tr className="bg-slate-50 border-b border-slate-100">
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Coupon Code</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Discount</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Visibility</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Applicable For</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Usage / Max</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Created By</th>
                                     <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Expiry Date</th>
@@ -205,6 +248,7 @@ export default function CouponsClient() {
                             <tbody className="divide-y divide-slate-100">
                                 {filteredCoupons.map((coupon) => {
                                     const isMaxedOut = coupon.currentUses >= coupon.maxUses;
+                                    const isBusy = updatingId === coupon.id;
                                     return (
                                         <tr key={coupon.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="p-4">
@@ -214,6 +258,51 @@ export default function CouponsClient() {
                                             </td>
                                             <td className="p-4">
                                                 <span className="font-bold text-slate-700">{coupon.discount}</span>
+                                            </td>
+                                            {/* Visibility Dropdown (Public / Private) */}
+                                            <td className="p-4">
+                                                <div className="relative inline-block">
+                                                    <select
+                                                        value={coupon.isPublic ? "public" : "private"}
+                                                        disabled={isTestViewer || isBusy}
+                                                        onChange={(e) => handleToggleVisibility(coupon.id, coupon.isPublic, e.target.value === "public")}
+                                                        className={`text-xs font-bold pl-3 pr-7 py-1.5 rounded-lg border appearance-none cursor-pointer transition-all shadow-sm ${
+                                                            coupon.isPublic
+                                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-400"
+                                                                : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 focus:ring-2 focus:ring-slate-400"
+                                                        } ${isBusy ? "opacity-50 cursor-wait" : ""}`}
+                                                    >
+                                                        <option value="public">🌐 Public</option>
+                                                        <option value="private">🔒 Private</option>
+                                                    </select>
+                                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-slate-500">
+                                                        <ChevronDown size={13} />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {/* Scope Dropdown (All / Staycation / Digital) */}
+                                            <td className="p-4">
+                                                <div className="relative inline-block">
+                                                    <select
+                                                        value={coupon.applicableTo || "all"}
+                                                        disabled={isTestViewer || isBusy}
+                                                        onChange={(e) => handleUpdateApplicableTo(coupon.id, e.target.value as any)}
+                                                        className={`text-xs font-semibold pl-2.5 pr-6 py-1.5 rounded-lg border appearance-none cursor-pointer transition-all shadow-sm ${
+                                                            coupon.applicableTo === "staycation"
+                                                                ? "bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100"
+                                                                : coupon.applicableTo === "digital"
+                                                                ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                                                                : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                                                        } ${isBusy ? "opacity-50 cursor-wait" : ""}`}
+                                                    >
+                                                        <option value="all">🌟 All Properties</option>
+                                                        <option value="staycation">🏡 Staycation Only</option>
+                                                        <option value="digital">🎬 Digital Only</option>
+                                                    </select>
+                                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1.5 text-slate-500">
+                                                        <ChevronDown size={12} />
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-2">
@@ -269,11 +358,11 @@ export default function CouponsClient() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    )
+                                    );
                                 })}
                                 {filteredCoupons.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="p-8 text-center text-slate-500 font-medium">
+                                        <td colSpan={8} className="p-8 text-center text-slate-500 font-medium">
                                             No coupons found matching your search.
                                         </td>
                                     </tr>
@@ -339,6 +428,52 @@ export default function CouponsClient() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Visibility Dropdown (Public / Private) */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Visibility</span>
+                                    <span className="text-[11px] font-normal text-slate-400">
+                                        {newCoupon.isPublic ? "Shown on website" : "Hidden (manual entry)"}
+                                    </span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={newCoupon.isPublic ? "public" : "private"}
+                                        onChange={e => setNewCoupon({ ...newCoupon, isPublic: e.target.value === "public" })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 cursor-pointer appearance-none pr-8"
+                                    >
+                                        <option value="public">🌐 Public (Shown in Click-to-Apply on Booking Flow)</option>
+                                        <option value="private">🔒 Private (Hidden — Admin gives code for manual typing)</option>
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                                        <ChevronDown size={14} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Scope Dropdown (All / Staycation / Digital) */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Applicable Properties</span>
+                                    <span className="text-[11px] font-normal text-slate-400">Where this can be used</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={newCoupon.applicableTo}
+                                        onChange={e => setNewCoupon({ ...newCoupon, applicableTo: e.target.value as "all" | "staycation" | "digital" })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 cursor-pointer appearance-none pr-8"
+                                    >
+                                        <option value="all">🌟 All Properties (Staycation & Digital Diaries)</option>
+                                        <option value="staycation">🏡 Only Staycation (Ambrose, Amstel, Paraiso, etc.)</option>
+                                        <option value="digital">🎬 Only Digital Diaries (Private Cinema & Celebration)</option>
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                                        <ChevronDown size={14} />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Expiry Type</label>
                                 <div className="flex bg-slate-100 rounded-lg p-1">

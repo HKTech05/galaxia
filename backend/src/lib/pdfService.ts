@@ -885,6 +885,7 @@ export async function generateMenuPDF(menuItems: any[]): Promise<Buffer> {
         };
 
         for (const item of menuItems) {
+            if (item.hidden === true || item.visible === false) continue;
             const cat = item.category || "Normal";
             if (!categories[cat]) categories[cat] = [];
             categories[cat].push(item);
