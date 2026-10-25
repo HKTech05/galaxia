@@ -600,11 +600,12 @@ export default function BookingClient({ property }: BookingClientProps) {
             (pSlug === "ambrose" && ["take-1", "alta", "santorini"].includes(sSlug)) ||
             (pSlug.startsWith("ambrose/") && ["take-1", "alta", "santorini"].includes(pSlug.split("/")[1]));
         const isLaParaiso = pSlug === "la-paraiso";
+        // La Paraiso no longer needs specialDiscount — weekend personsLabel "Up to 4 persons"
+        // already sets base included persons to 4 so extraCharges correctly computes 0 for ≤4 guests.
         
-        if (!isAmbroseVilla && !isLaParaiso) return 0;
+        if (!isAmbroseVilla) return 0;
         
         let totalDiscount = 0;
-        const totalGuests = adults + kids;
         
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
@@ -615,21 +616,6 @@ export default function BookingClient({ property }: BookingClientProps) {
             
             if (isAmbroseVilla) {
                 // Saturday base rate already includes 4 guests at Rs 12,000 — no discount needed
-            } else if (isLaParaiso) {
-                if (isWeekend) {
-                    if (totalGuests >= 3) {
-                        let extraAdultsCount = 0;
-                        let extraKidsCount = 0;
-                        for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
-                            if (slot <= adults) {
-                                extraAdultsCount++;
-                            } else {
-                                extraKidsCount++;
-                            }
-                        }
-                        totalDiscount += (extraAdultsCount * extraAdultCharge) + (extraKidsCount * kidsChargeNum);
-                    }
-                }
             }
         }
         return totalDiscount;
