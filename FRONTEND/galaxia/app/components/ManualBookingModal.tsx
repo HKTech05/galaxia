@@ -14,7 +14,7 @@ interface ManualBookingModalProps {
     isPropertyPortal?: boolean;
 }
 
-const DECORATION_PRICE = 1200;
+const DECORATION_PRICE = 2000;
 const AMBROSE_VILLAS = ["TAKE-1", "ALTA", "SANTORINI", "BAMBOOSA", "CYPRESS"];
 
 export default function ManualBookingModal({ isOpen, onClose, onSuccess, properties, isCollab = false, isPropertyPortal = false }: ManualBookingModalProps) {

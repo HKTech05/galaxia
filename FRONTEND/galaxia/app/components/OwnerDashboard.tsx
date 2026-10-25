@@ -3588,38 +3588,6 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         <span className="text-sm font-bold text-slate-800">{group.label}</span>
                         <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-md">{totalImages} photos</span>
                     </button>
-                    {property && (
-                        <div className="flex items-center gap-2 mr-4" onClick={e => e.stopPropagation()}>
-                            <span className="text-xs font-semibold text-slate-500">Celebration Add-on:</span>
-                            <button
-                                onClick={async () => {
-                                    const currentConfig = property.configuration || {};
-                                    const newConfig = {
-                                        ...currentConfig,
-                                        celebrationEnabled: !currentConfig.celebrationEnabled
-                                    };
-                                    try {
-                                        await api.patch(`/properties/${property.id}/config`, {
-                                            configuration: newConfig
-                                        });
-                                        // Update local state
-                                        setPropertyList(prev => prev.map(p => p.id === property.id ? { ...p, configuration: newConfig } : p));
-                                    } catch (err: any) {
-                                        alert("Failed to update celebration addon status");
-                                    }
-                                }}
-                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                    property.configuration?.celebrationEnabled ? "bg-purple-600" : "bg-slate-200"
-                                }`}
-                            >
-                                <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                        property.configuration?.celebrationEnabled ? "translate-x-5" : "translate-x-0"
-                                    }`}
-                                />
-                            </button>
-                        </div>
-                    )}
                 </div>
                 {isOpen && (
                     <div className="px-5 pb-5 border-t border-slate-100 space-y-3 mt-3">

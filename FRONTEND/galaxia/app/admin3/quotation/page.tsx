@@ -265,12 +265,12 @@ export default function QuotationPage() {
         const subtotal = roomTotal + extraAdultTotal + extraKidsTotal + petCharge;
         const baseAmount = Math.round(subtotal - specialDiscount);
         const gstAmount = Math.round(baseAmount * 0.05);
-        let total = baseAmount + gstAmount + (decoration ? 1200 : 0);
+        let total = baseAmount + gstAmount + (decoration ? 2000 : 0);
         total = Math.round(total / 10) * 10;
         return {
             nights, totalUnits, roomTotal: Math.round(roomTotal),
             extraAdultCharge: Math.round(extraAdultTotal), extraKidsCharge: Math.round(extraKidsTotal),
-            decorationCharge: decoration ? 1200 : 0, subtotal: baseAmount, gstAmount,
+            decorationCharge: decoration ? 2000 : 0, subtotal: baseAmount, gstAmount,
             petCharge, totalAmount: total, specialDiscount
         };
     }, [quotationType, selectedProperty, villaQuantities, multiSelections, checkIn, checkOut, adults, kids, pets, decoration, livePricing, isMultiVilla]);

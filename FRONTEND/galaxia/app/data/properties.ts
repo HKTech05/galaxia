@@ -176,7 +176,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
                     weekend: { price: "10,500", persons: "4 with meals" },
                     saturday: { price: "12,500", persons: "4 with meals" },
-                    dateOverrides: {},
+                    dateOverrides: { "2026-11-08": 12500, "2026-11-09": 12500, "2026-11-10": 12500, "2026-11-11": 12500, "2026-11-12": 12500, "2026-11-13": 12500 },
                 },
             },
             {
@@ -194,7 +194,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
                     weekend: { price: "10,500", persons: "4 with meals" },
                     saturday: { price: "12,500", persons: "4 with meals" },
-                    dateOverrides: {},
+                    dateOverrides: { "2026-11-08": 12500, "2026-11-09": 12500, "2026-11-10": 12500, "2026-11-11": 12500, "2026-11-12": 12500, "2026-11-13": 12500 },
                 },
             },
             {
@@ -212,7 +212,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday4Ppl: { price: "9,500", persons: "4 with meals" },
                     weekend: { price: "10,500", persons: "4 with meals" },
                     saturday: { price: "12,500", persons: "4 with meals" },
-                    dateOverrides: {},
+                    dateOverrides: { "2026-11-08": 12500, "2026-11-09": 12500, "2026-11-10": 12500, "2026-11-11": 12500, "2026-11-12": 12500, "2026-11-13": 12500 },
                 },
             },
             {
@@ -229,7 +229,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday: { price: "10,500", persons: "4 with meals" },
                     weekend: { price: "11,500", persons: "4 with meals" },
                     saturday: { price: "13,000", persons: "4 with meals" },
-                    dateOverrides: {},
+                    dateOverrides: { "2026-11-08": 13000, "2026-11-09": 13000, "2026-11-10": 13000, "2026-11-11": 13000, "2026-11-12": 13000, "2026-11-13": 13000 },
                 },
             },
             {
@@ -246,7 +246,7 @@ export const properties: Record<string, PropertyData> = {
                     weekday: { price: "5,500", persons: "2 with meals" },
                     weekend: { price: "6,500", persons: "2 with meals" },
                     saturday: { price: "6,500", persons: "2 with meals" },
-                    dateOverrides: {},
+                    dateOverrides: { "2026-11-08": 6500, "2026-11-09": 6500, "2026-11-10": 6500, "2026-11-11": 6500, "2026-11-12": 6500, "2026-11-13": 6500 },
                 },
             },
         ],

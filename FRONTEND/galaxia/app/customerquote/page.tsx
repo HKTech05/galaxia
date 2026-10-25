@@ -465,14 +465,14 @@ function CustomerQuoteInner() {
         const subtotal = roomTotal + extraAdultTotal + extraKidsTotal + petCharges;
         const gstBase = Math.max(0, subtotal - specialDiscount);
         const gst = Math.round(gstBase * 0.05);
-        let total = Math.round(subtotal - specialDiscount) + gst + (decoration ? 1200 : 0);
+        let total = Math.round(subtotal - specialDiscount) + gst + (decoration ? 2000 : 0);
         total = Math.round(total / 10) * 10;
         const advance = Math.round(total * 0.8);
 
         return {
             nights, totalUnits, roomTotal: Math.round(roomTotal), gst,
             extraAdultCharge: Math.round(extraAdultTotal), extraKidsCharge: Math.round(extraKidsTotal),
-            decorationCharge: decoration ? 1200 : 0, petCharge: petCharges,
+            decorationCharge: decoration ? 2000 : 0, petCharge: petCharges,
             specialDiscount: Math.round(specialDiscount),
             totalAmount: total, advanceAmount: advance, balanceAmount: total - advance,
         };
@@ -572,7 +572,7 @@ function CustomerQuoteInner() {
 
             // Build addons
             const addons: any[] = [];
-            if (decoration) addons.push({ name: 'Celebration Add-on', price: 1200, description: 'Cake, balloons, and a banner' });
+            if (decoration) addons.push({ name: 'Celebration Add-on', price: 2000, description: 'Cake, balloons, and a banner' });
             const isAmstelOrAmbrose = propertyName.includes("Amstel") || propertyName.includes("Ambrose");
             if (isAmstelOrAmbrose) {
                 if (regularCount > 0) {
@@ -868,7 +868,7 @@ function CustomerQuoteInner() {
                                     <button onClick={() => setDecoration(!decoration)}
                                         className={`w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold border transition-all
                                             ${decoration ? "bg-[#C4A265]/10 border-[#C4A265] text-[#1a1a2e]" : "bg-[#faf9f6] border-[#e8e5dd] text-[#555] hover:border-[#C4A265]/50"}`}>
-                                        <PartyPopper size={13} /> {decoration ? "Added ✓" : "+₹1,200"}
+                                        <PartyPopper size={13} /> {decoration ? "Added ✓" : "+₹2,000"}
                                     </button>
                                 </div>
                             </div>

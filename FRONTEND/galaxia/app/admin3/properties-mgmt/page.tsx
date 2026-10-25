@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus, Trash2, Eye, Car } from "lucide-react";
+import { Building, Home, Edit3, Power, Save, X, Loader2, IndianRupee, Ban, Check, Calendar, Plus, Trash2, Eye, Car, Sparkles, Gift } from "lucide-react";
 import { api } from "../../../lib/api";
 import CustomDatePicker from "../../components/CustomDatePicker";
-type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries";
+type Tab = "standalone" | "amstelnest" | "ambrose" | "digitaldiaries" | "addons";
 
 // Shared numeric input — defined outside component to keep stable React identity and prevent focus loss
 function NI({ value, onChange, placeholder, className }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
@@ -217,9 +217,26 @@ export default function PropertiesMgmtPage() {
 
 
 
+    const toggleCelebration = async (prop: any) => {
+        const currentConfig = prop.configuration || {};
+        const newConfig = {
+            ...currentConfig,
+            celebrationEnabled: !currentConfig.celebrationEnabled
+        };
+        try {
+            await api.patch(`/properties/${prop.id}/config`, {
+                configuration: newConfig
+            });
+            setProps(prev => prev.map(p => p.id === prop.id ? { ...p, configuration: newConfig } : p));
+        } catch (err: any) {
+            alert("Failed to update celebration addon status");
+        }
+    };
+
     const tabs: { key: Tab; label: string }[] = [
         { key: "standalone", label: "Standalone Villas" }, { key: "amstelnest", label: "Amstel Nest" },
         { key: "ambrose", label: "Ambrose" }, { key: "digitaldiaries", label: "Digital Diaries" },
+        { key: "addons", label: "Add ons" },
     ];
 
     const getFiltered = () => {
@@ -1490,6 +1507,109 @@ export default function PropertiesMgmtPage() {
         </div>);
     };
 
+    /* ========= ADD ONS ========= */
+    const AddonsPage = () => {
+        const staycationProps = props.filter(p => p.slug !== "digital-diaries");
+        const enabledCount = staycationProps.filter(p => p.configuration?.celebrationEnabled).length;
+
+        return (
+            <div className="space-y-6">
+                {/* Section Header */}
+                <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-pink-50 border border-purple-100 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-sm">
+                            <Sparkles size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-bold text-slate-800">Staycation Add-ons</h2>
+                            <p className="text-xs text-slate-500 font-medium">Manage and toggle extra packages offered to guests during booking.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Celebration Add-on Card */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2.5">
+                                <span className="p-1.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-200">
+                                    <Gift size={18} />
+                                </span>
+                                <h3 className="text-base font-bold text-slate-800">Celebration Add-on</h3>
+                                <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full">
+                                    ₹2,000
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                Includes cake, balloons, and banner for a warm ambiance. Toggle celebration visibility per property on customer booking flows.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                {enabledCount} of {staycationProps.length} Active
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Properties Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {staycationProps.map(p => {
+                            const isEnabled = !!p.configuration?.celebrationEnabled;
+                            const isComplex = p.type === "complex" || (p.subProperties && p.subProperties.length > 0);
+                            return (
+                                <div
+                                    key={p.id}
+                                    className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                                        isEnabled
+                                            ? "bg-purple-50/40 border-purple-200 shadow-xs"
+                                            : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                    }`}
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${isEnabled ? "bg-emerald-500" : "bg-slate-300"}`} />
+                                            <h4 className="text-sm font-bold text-slate-800 truncate">{p.name}</h4>
+                                        </div>
+                                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-4">
+                                            {isComplex ? "Multi-unit Property" : "Standalone Villa"} · {isEnabled ? "Visible on booking" : "Hidden"}
+                                        </p>
+                                    </div>
+
+                                    {/* Toggle Switch */}
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleCelebration(p)}
+                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                            isEnabled ? "bg-purple-600" : "bg-slate-200"
+                                        }`}
+                                        title={isEnabled ? `Disable celebration for ${p.name}` : `Enable celebration for ${p.name}`}
+                                    >
+                                        <span
+                                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                                isEnabled ? "translate-x-5" : "translate-x-0"
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Future Add-ons Container */}
+                <div className="bg-slate-50/70 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center mx-auto shadow-xs">
+                        <Plus size={20} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-700">More Add-ons</h3>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto font-medium">
+                        Additional staycation add-on packages (e.g. customized decor, bonfires, live BBQ setups) will be added and configured here in the future.
+                    </p>
+                </div>
+            </div>
+        );
+    };
+
     const Empty = () => <div className="text-center py-20 text-slate-500">No properties found.</div>;
 
     return (<>
@@ -1507,6 +1627,7 @@ export default function PropertiesMgmtPage() {
                 : tab === "amstelnest" ? <AmstelNest />
                 : tab === "ambrose" ? <AmbrosePage />
                 : tab === "digitaldiaries" ? <DDPage />
+                : tab === "addons" ? <AddonsPage />
                 : filtered.length === 0 ? <Empty />
                 : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{filtered.map(p => renderVillaCard(p))}</div>}
         </div>

@@ -1824,7 +1824,7 @@ export default function StayBookingsPage() {
                                     ) : (
                                         <p className="text-xs text-slate-400 italic">No add-ons</p>
                                     )}
-                                    <button onClick={() => updateStayFormAndRecalculate({ addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 1200, occasion: '', cakeMessage: '' }] })}
+                                    <button onClick={() => updateStayFormAndRecalculate({ addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 2000, occasion: '', cakeMessage: '' }] })}
                                         className="mt-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">+ Add Celebration Add-on</button>
                                 </div>
                             )}

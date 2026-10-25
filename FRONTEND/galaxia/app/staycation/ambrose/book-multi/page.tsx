@@ -126,7 +126,7 @@ export default function BookMultiPage() {
     const [celebrationAddon, setCelebrationAddon] = useState(false);
     const [celebrationCakeMsg, setCelebrationCakeMsg] = useState('');
     const [celebrationOccasion, setCelebrationOccasion] = useState('Birthday');
-    const CELEBRATION_ADDON_PRICE = 1200;
+    const CELEBRATION_ADDON_PRICE = 2000;
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
     const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
 

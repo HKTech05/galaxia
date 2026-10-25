@@ -311,7 +311,7 @@ function calculateQuotePrice(data: {
         totalUnits = 1;
     }
 
-    const DECORATION_PRICE = 1200;
+    const DECORATION_PRICE = 2000;
     const petCharge = data.pets * 600;
     const baseSubtotal = totalRoomTotal + totalExtraAdult + totalExtraKids + petCharge;
 
