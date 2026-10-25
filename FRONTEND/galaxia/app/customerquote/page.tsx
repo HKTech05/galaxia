@@ -199,13 +199,28 @@ function CustomerQuoteInner() {
                 const buildEntry = (p: any) => {
                     if (!p?.weekday && !p?.weekend) return null;
                     const wd = p.weekday; const we = p.weekend; const sa = p.saturday;
-                    return {
+                    const entry: any = {
                         weekday: wd ? parseInt(wd.price) : (we ? parseInt(we.price) : 0),
                         weekend: we ? parseInt(we.price) : (wd ? parseInt(wd.price) : 0),
                         saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : (wd ? parseInt(wd.price) : 0)),
-                        extraAdult: wd?.extraAdult || 1000, kidsCharge: wd?.kidsCharge || 500,
+                        extraAdult: wd?.extraAdult || we?.extraAdult || 1000,
+                        kidsCharge: wd?.kidsPrice || we?.kidsPrice || wd?.kidsCharge || we?.kidsCharge || 500,
                         baseGuests: wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2,
+                        weekendBaseGuests: we?.personsLabel ? parseInt(we.personsLabel) || (wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2) : (wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2),
+                        saturdayBaseGuests: sa?.personsLabel ? parseInt(sa.personsLabel) || (we?.personsLabel ? parseInt(we.personsLabel) || 2 : 2) : (we?.personsLabel ? parseInt(we.personsLabel) || 2 : (wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2)),
                     };
+                    if (p.dateOverrides && Object.keys(p.dateOverrides).length > 0) {
+                        entry.dateOverrides = {};
+                        for (const [dateStr, price] of Object.entries(p.dateOverrides)) {
+                            entry.dateOverrides[dateStr] = {
+                                price: Number(price),
+                                extraAdult: entry.extraAdult,
+                                kidsCharge: entry.kidsCharge,
+                                baseGuests: entry.baseGuests,
+                            };
+                        }
+                    }
+                    return entry;
                 };
                 const parentEntry = buildEntry(data.pricing);
                 if (parentEntry) result[propName] = parentEntry;
@@ -324,46 +339,22 @@ function CustomerQuoteInner() {
                 }
 
                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                const is14Aug = dateStr.endsWith("08-14");
-                const is15Aug = dateStr.endsWith("08-15");
-                const is2Oct = dateStr.endsWith("10-02");
-                const is3Oct = dateStr.endsWith("10-03");
-                const isFamily = (resolvedVilla || "").toLowerCase().includes("family");
-
-                if (is14Aug || is15Aug || is2Oct || is3Oct) {
-                    const vName = (resolvedVilla || "").toUpperCase();
-                    if (resolvedProperty.includes("Amstel")) {
-                        basePrice = (is14Aug) ? (isFamily ? 11000 : 7950) : (is15Aug) ? (isFamily ? 13500 : 8500) : (is2Oct) ? (isFamily ? 11000 : 6950) : (isFamily ? 13000 : 7950);
-                        extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
-                    } else if (resolvedProperty.includes("Ambrose")) {
-                        if (vName.includes("BAMBOOSA")) {
-                            basePrice = (is14Aug || is2Oct) ? 12500 : 14000;
-                            extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
-                        } else if (vName.includes("CYPRESS")) {
-                            basePrice = 7500;
-                            extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
-                        } else {
-                            basePrice = is3Oct ? 13000 : (is14Aug || is2Oct) ? 7500 : 9500;
-                            extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = is3Oct ? 4 : 2;
-                        }
-                    } else if (resolvedProperty.includes("Hill View")) {
-                        basePrice = 4000; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
-                    } else if (resolvedProperty.includes("Mount View")) {
-                        basePrice = 5000; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
-                    } else if (resolvedProperty.includes("Heavenly")) {
-                        basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
-                    } else if (resolvedProperty.includes("La Paraiso")) {
-                        basePrice = (is14Aug || is2Oct) ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
-                    }
+                // Priority 1: DB date overrides (fetched from API)
+                if (lp?.dateOverrides?.[dateStr]) {
+                    const dbOvr = lp.dateOverrides[dateStr];
+                    basePrice = dbOvr.price; extraAdultPrice = dbOvr.extraAdult; kidsPrice = dbOvr.kidsCharge; baseGuests = dbOvr.baseGuests;
                 } else if (lp) {
+                    // Priority 2: DB base prices (weekday/weekend/saturday)
                     basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
-                    extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;
+                    extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge;
+                    baseGuests = isSat ? (lp.saturdayBaseGuests || lp.weekendBaseGuests || lp.baseGuests) : (day === 0 || day === 5) ? (lp.weekendBaseGuests || lp.baseGuests) : lp.baseGuests;
                 } else {
-                    // Fallback
+                    // Priority 3: Hardcoded fallback (safety net)
+                    const isFamily = (resolvedVilla || "").toLowerCase().includes("family");
                     if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3000 : 2000; extraAdultPrice = 600; kidsPrice = 400; }
                     else if (resolvedProperty.includes("Mount View")) { basePrice = isWe ? 4000 : 3000; extraAdultPrice = 800; kidsPrice = 500; }
                     else if (resolvedProperty.includes("Heavenly")) { basePrice = isWe ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
-                    else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4960; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
+                    else if (resolvedProperty.includes("La Paraiso")) { basePrice = isWe ? 7500 : 4950; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = isWe ? 4 : 2; }
                     else if (resolvedProperty.includes("Amstel")) {
                         if (isFamily) { basePrice = isSat ? 12000 : (day === 0 || day === 5) ? 10000 : 9000; baseGuests = 4; }
                         else { basePrice = isSat ? 6950 : (day === 0 || day === 5) ? 5950 : 4950; baseGuests = 2; }
@@ -371,9 +362,9 @@ function CustomerQuoteInner() {
                     }
                     else if (resolvedProperty.includes("Ambrose")) {
                         const vn = (resolvedVilla || "").toUpperCase();
-                        if (vn.includes("BAMBOOSA")) { basePrice = isSat ? 14000 : (day === 0 || day === 5) ? 12500 : 9500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
+                        if (vn.includes("BAMBOOSA")) { basePrice = isSat ? 13000 : (day === 0 || day === 5) ? 11500 : 10500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
                         else if (vn.includes("CYPRESS")) { basePrice = isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
-                        else { basePrice = isSat ? 12000 : isWe ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isSat ? 4 : 2; }
+                        else { basePrice = isSat ? 12500 : (day === 0 || day === 5) ? 10500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isSat ? 4 : 2; }
                     }
                 }
 
@@ -404,30 +395,8 @@ function CustomerQuoteInner() {
         if (checkIn && checkOut && nights > 0) {
             const totalGuests = adults + kids;
             const pSlug = propertyName.toLowerCase();
-            if (pSlug.includes("la paraiso") || pSlug.includes("la-paraiso")) {
-                const extraAdultCharge = 1200;
-                const kidsChargeNum = 800;
-                for (let i = 0; i < nights; i++) {
-                    const d = new Date(checkIn);
-                    d.setDate(checkIn.getDate() + i);
-                    const day = d.getDay();
-                    const isWeekend = day === 0 || day === 5 || day === 6;
-                    if (isWeekend) {
-                        if (totalGuests >= 3) {
-                            let extraAdultsCount = 0;
-                            let extraKidsCount = 0;
-                            for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
-                                if (slot <= adults) {
-                                    extraAdultsCount++;
-                                } else {
-                                    extraKidsCount++;
-                                }
-                            }
-                            specialDiscount += (extraAdultsCount * extraAdultCharge) + (extraKidsCount * kidsChargeNum);
-                        }
-                    }
-                }
-            } else if (pSlug.includes("ambrose")) {
+            // La Paraiso no longer needs specialDiscount — weekendBaseGuests=4 handles "Up to 4 persons"
+            if (pSlug.includes("ambrose")) {
                 const checkAmbroseDiscount = (vName: string, qty: number) => {
                     const sSlug = vName.toLowerCase();
                     const isAmbroseVilla = sSlug === "take-1" || sSlug === "alta" || sSlug === "santorini" || sSlug === "take 1";

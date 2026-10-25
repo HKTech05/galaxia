@@ -31,6 +31,7 @@ setInterval(async () => {
 interface PricingEntry {
     weekday: number; weekend: number; saturday: number;
     extraAdult: number; kidsCharge: number; baseGuests: number;
+    weekendBaseGuests?: number; saturdayBaseGuests?: number;
     dateOverrides?: Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
 }
 
@@ -56,13 +57,18 @@ async function fetchLivePricing(): Promise<Record<string, PricingEntry>> {
                 const we = baseRules.find((r: any) => r.dayType === "weekend");
                 const sa = baseRules.find((r: any) => r.dayType === "saturday");
                 if (!wd && !we) return null;
+                const wdGuests = wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2;
+                const weGuests = we?.personsLabel ? parseInt(we.personsLabel) || wdGuests : wdGuests;
+                const saGuests = sa?.personsLabel ? parseInt(sa.personsLabel) || weGuests : weGuests;
                 const entry: PricingEntry = {
                     weekday: wd ? Number(wd.basePrice) : (we ? Number(we.basePrice) : 0),
                     weekend: we ? Number(we.basePrice) : (wd ? Number(wd.basePrice) : 0),
                     saturday: sa ? Number(sa.basePrice) : (we ? Number(we.basePrice) : (wd ? Number(wd.basePrice) : 0)),
-                    extraAdult: wd?.extraAdultPrice ? Number(wd.extraAdultPrice) : 1000,
-                    kidsCharge: wd?.kidsCharge ? Number(wd.kidsCharge) : 500,
-                    baseGuests: wd?.personsLabel ? parseInt(wd.personsLabel) || 2 : 2,
+                    extraAdult: wd?.extraAdultPrice ? Number(wd.extraAdultPrice) : (we?.extraAdultPrice ? Number(we.extraAdultPrice) : 1000),
+                    kidsCharge: wd?.kidsPrice ? Number(wd.kidsPrice) : (we?.kidsPrice ? Number(we.kidsPrice) : 500),
+                    baseGuests: wdGuests,
+                    weekendBaseGuests: weGuests,
+                    saturdayBaseGuests: saGuests,
                 };
                 // Build dateOverrides from DB override rows
                 if (overrideRules.length > 0) {
@@ -199,7 +205,8 @@ function calculateUnitPrice(
             }
         } else if (lp) {
             basePrice = isSat ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
-            extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge; baseGuests = lp.baseGuests;
+            extraAdultPrice = lp.extraAdult; kidsPrice = lp.kidsCharge;
+            baseGuests = isSat ? (lp.saturdayBaseGuests || lp.weekendBaseGuests || lp.baseGuests) : (day === 0 || day === 5) ? (lp.weekendBaseGuests || lp.baseGuests) : lp.baseGuests;
         } else {
             // Hardcoded fallback
             if (resolvedProperty.includes("Hill View")) { basePrice = isWe ? 3000 : 2000; extraAdultPrice = 600; kidsPrice = 400; }
@@ -228,35 +235,8 @@ function calculateUnitPrice(
         extraKidsTotal += exK * kidsPrice;
 
         // Apply special discount rules per night
-        const pSlug = resolvedProperty.toLowerCase();
-        const sSlug = (resolvedVilla || "").toLowerCase();
-        const totalGuests = adults + kids;
-
-        const isAmbroseVilla = pSlug.includes("ambrose") && (sSlug.includes("take-1") || sSlug.includes("alta") || sSlug.includes("santorini") || sSlug.includes("take 1"));
-        const isLaParaiso = pSlug.includes("la paraiso") || pSlug.includes("la-paraiso");
-
-        let nightDiscount = 0;
-        if (isAmbroseVilla) {
-            if (isSat && totalGuests === 4) {
-                nightDiscount = 500;
-            }
-        } else if (isLaParaiso) {
-            if (isWe) {
-                if (totalGuests >= 3) {
-                    let extraAdultsCount = 0;
-                    let extraKidsCount = 0;
-                    for (let slot = 3; slot <= Math.min(4, totalGuests); slot++) {
-                        if (slot <= adults) {
-                            extraAdultsCount++;
-                        } else {
-                            extraKidsCount++;
-                        }
-                    }
-                    nightDiscount = (extraAdultsCount * extraAdultPrice) + (extraKidsCount * kidsPrice);
-                }
-            }
-        }
-        specialDiscount += nightDiscount;
+        // La Paraiso no longer needs specialDiscount — weekendBaseGuests=4 handles "Up to 4 persons"
+        specialDiscount += 0;
     }
 
     return { nights, roomTotal, extraAdultTotal, extraKidsTotal, specialDiscount };
