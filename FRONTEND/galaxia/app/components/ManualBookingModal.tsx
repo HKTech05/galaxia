@@ -41,7 +41,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
 
     // DB property list and live pricing
     const [dbPropertyList, setDbPropertyList] = useState<any[]>([]);
-    const [livePricing, setLivePricing] = useState<Record<string, { weekday: number; weekend: number; saturday: number; extraAdult: number; kidsCharge: number; baseGuests: number }>>({});
+    const [livePricing, setLivePricing] = useState<Record<string, { weekday: number; weekend: number; saturday: number; extraAdult: number; kidsCharge: number; baseGuests: number; weekendBaseGuests?: number; saturdayBaseGuests?: number; dateOverrides?: Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }> }>>({});
 
     // Split payment state
     const [customSplitMode, setCustomSplitMode] = useState(false);
@@ -91,15 +91,26 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         const wd = d.pricing.weekday; 
                         const we = d.pricing.weekend; 
                         const sa = d.pricing.saturday;
-                        const personsNum = wd?.personsLabel ? (parseInt(wd.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
-                        pm[propName] = {
+                        const wdGuests = wd?.personsLabel ? (parseInt(wd.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
+                        const weGuests = we?.personsLabel ? (parseInt(we.personsLabel.replace(/[^0-9]/g, '')) || wdGuests) : wdGuests;
+                        const saGuests = sa?.personsLabel ? (parseInt(sa.personsLabel.replace(/[^0-9]/g, '')) || weGuests) : weGuests;
+                        const entry: any = {
                             weekday: wd ? parseInt(wd.price) : 0, 
                             weekend: we ? parseInt(we.price) : 0,
                             saturday: sa ? parseInt(sa.price) : (we ? parseInt(we.price) : 0),
-                            extraAdult: wd?.extraAdult || 0, 
+                            extraAdult: wd?.extraAdult || we?.extraAdult || 0, 
                             kidsCharge: wd?.kidsPrice ?? we?.kidsPrice ?? 0, 
-                            baseGuests: personsNum,
+                            baseGuests: wdGuests,
+                            weekendBaseGuests: weGuests,
+                            saturdayBaseGuests: saGuests,
                         };
+                        if (d.pricing.dateOverrides && Object.keys(d.pricing.dateOverrides).length > 0) {
+                            entry.dateOverrides = {} as Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
+                            for (const [ds, price] of Object.entries(d.pricing.dateOverrides)) {
+                                entry.dateOverrides[ds] = { price: Number(price), extraAdult: entry.extraAdult, kidsCharge: entry.kidsCharge, baseGuests: entry.baseGuests };
+                            }
+                        }
+                        pm[propName] = entry;
                     }
 
                     if (d.subProperties && d.subPropertyPricing) {
@@ -110,15 +121,26 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                 const spWe = spP.weekend; 
                                 const spSa = spP.saturday;
                                 if (!spWd && !spWe) continue;
-                                const spPersons = spWd?.personsLabel ? (parseInt(spWd.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
-                                pm[`${propName}/${sp.name.toUpperCase()}`] = {
+                                const spWdGuests = spWd?.personsLabel ? (parseInt(spWd.personsLabel.replace(/[^0-9]/g, '')) || 2) : 2;
+                                const spWeGuests = spWe?.personsLabel ? (parseInt(spWe.personsLabel.replace(/[^0-9]/g, '')) || spWdGuests) : spWdGuests;
+                                const spSaGuests = spSa?.personsLabel ? (parseInt(spSa.personsLabel.replace(/[^0-9]/g, '')) || spWeGuests) : spWeGuests;
+                                const spEntry: any = {
                                     weekday: spWd ? parseInt(spWd.price) : (spWe ? parseInt(spWe.price) : 0),
                                     weekend: spWe ? parseInt(spWe.price) : (spWd ? parseInt(spWd.price) : 0),
                                     saturday: spSa ? parseInt(spSa.price) : (spWe ? parseInt(spWe.price) : (spWd ? parseInt(spWd.price) : 0)),
                                     extraAdult: spWd?.extraAdult || spWe?.extraAdult || 2000, 
                                     kidsCharge: spWd?.kidsPrice ?? spWe?.kidsPrice ?? 1000, 
-                                    baseGuests: spPersons,
+                                    baseGuests: spWdGuests,
+                                    weekendBaseGuests: spWeGuests,
+                                    saturdayBaseGuests: spSaGuests,
                                 };
+                                if (spP.dateOverrides && Object.keys(spP.dateOverrides).length > 0) {
+                                    spEntry.dateOverrides = {} as Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
+                                    for (const [ds, price] of Object.entries(spP.dateOverrides)) {
+                                        spEntry.dateOverrides[ds] = { price: Number(price), extraAdult: spEntry.extraAdult, kidsCharge: spEntry.kidsCharge, baseGuests: spEntry.baseGuests };
+                                    }
+                                }
+                                pm[`${propName}/${sp.name.toUpperCase()}`] = spEntry;
                             }
                         }
                     }
@@ -188,47 +210,19 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         }
 
         const dateStr = currentDate ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}` : "";
-        const is14Aug = dateStr.endsWith("08-14");
-        const is15Aug = dateStr.endsWith("08-15");
-        const is2Oct = dateStr.endsWith("10-02");
-        const is3Oct = dateStr.endsWith("10-03");
 
-        if (is14Aug || is15Aug || is2Oct || is3Oct) {
-            const vName = (villaName || "").toUpperCase();
-            if (propName.includes("Amstel")) {
-                const isFamily = villaName === "Family Cottage";
-                if (is14Aug) basePrice = isFamily ? 11000 : 7950;
-                else if (is15Aug) basePrice = isFamily ? 13500 : 8500;
-                else if (is2Oct) basePrice = isFamily ? 11000 : 6950;
-                else if (is3Oct) basePrice = isFamily ? 13000 : 7950;
-                extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isFamily ? 4 : 2;
-            } else if (propName.includes("Ambrose")) {
-                if (vName.includes("BAMBOOSA")) {
-                    basePrice = (is14Aug || is2Oct) ? 12500 : 14000;
-                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4;
-                } else if (vName.includes("CYPRESS")) {
-                    basePrice = 7500;
-                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2;
-                } else {
-                    // TAKE-1, ALTA, SANTORINI
-                    basePrice = is3Oct ? 13000 : (is14Aug || is2Oct) ? 7500 : 9500;
-                    extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = is3Oct ? 4 : 2;
-                }
-            } else if (propName.includes("Hill View")) {
-                basePrice = 4000; extraAdultPrice = 600; kidsPrice = 400; baseGuests = 2;
-            } else if (propName.includes("Mount View")) {
-                basePrice = 5000; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
-            } else if (propName.includes("Heavenly")) {
-                basePrice = 5950; extraAdultPrice = 800; kidsPrice = 500; baseGuests = 2;
-            } else if (propName.includes("La Paraiso")) {
-                basePrice = (is14Aug || is2Oct) ? 8500 : 9500; extraAdultPrice = 1200; kidsPrice = 800; baseGuests = 4;
-            }
+        // Priority 1: DB date overrides (fetched from API — covers Nov 8-13 overrides, prime dates, etc.)
+        if (dateStr && lp?.dateOverrides?.[dateStr]) {
+            const dbOvr = lp.dateOverrides[dateStr];
+            basePrice = dbOvr.price; extraAdultPrice = dbOvr.extraAdult; kidsPrice = dbOvr.kidsCharge; baseGuests = dbOvr.baseGuests;
         } else if (lp) {
+            // Priority 2: DB base prices (weekday/weekend/saturday)
             basePrice = isSaturday ? lp.saturday : (day === 0 || day === 5) ? lp.weekend : lp.weekday;
             extraAdultPrice = lp.extraAdult;
             kidsPrice = lp.kidsCharge;
-            baseGuests = lp.baseGuests;
+            baseGuests = isSaturday ? (lp.saturdayBaseGuests || lp.weekendBaseGuests || lp.baseGuests) : (day === 0 || day === 5) ? (lp.weekendBaseGuests || lp.baseGuests) : lp.baseGuests;
         } else {
+            // Priority 3: Hardcoded fallback (safety net — only if API fails)
             if (propName.includes("Hill View")) { basePrice = isWeekend ? 3000 : 2000; extraAdultPrice = 600; kidsPrice = 400; }
             else if (propName.includes("Mount View")) { basePrice = isWeekend ? 4000 : 3000; extraAdultPrice = 800; kidsPrice = 500; }
             else if (propName.includes("Heavenly")) { basePrice = isWeekend ? 4950 : 3950; extraAdultPrice = 800; kidsPrice = 500; }
@@ -244,9 +238,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             }
             else if (propName.includes("Ambrose")) {
                 const vn = (villaName || "").toUpperCase();
-                if (vn.includes("BAMBOOSA")) { basePrice = isSaturday ? 14000 : isWeekend ? 12500 : 9500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
+                if (vn.includes("BAMBOOSA")) { basePrice = isSaturday ? 13000 : isWeekend ? 11500 : 10500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 4; }
                 else if (vn.includes("CYPRESS")) { basePrice = isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = 2; }
-                else { basePrice = isSaturday ? 12000 : isWeekend ? 6500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isSaturday ? 4 : 2; }
+                else { basePrice = isSaturday ? 12500 : (day === 0 || day === 5) ? 10500 : 5500; extraAdultPrice = 2000; kidsPrice = 1000; baseGuests = isSaturday ? 4 : 2; }
             }
         }
 
@@ -374,37 +368,26 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 // Saturday base rate already includes 4 guests at Rs 12,000 — no discount needed
             }
         } else if (manualForm.property.includes("La Paraiso")) {
+            // La Paraiso no longer needs specialDiscount:
+            // - Weekend: weekendBaseGuests=4 from DB handles "Up to 4 persons" correctly
+            // - Weekday 4-person cap at 6500 is handled by the "special" pricing row in DB
             const totalG = manualForm.guests + manualForm.kids;
-            const extraAdultCharge = 1200;
-            const kidsChargeNum = 800;
+            const extraAdultCharge = livePricing["La Paraiso"]?.extraAdult || 1200;
+            const kidsChargeNum = livePricing["La Paraiso"]?.kidsCharge || 800;
+            const weekdayBase = livePricing["La Paraiso"]?.weekday || 4950;
             for (let i = 0; i < nights; i++) {
                 const currentDate = new Date(start);
                 currentDate.setDate(start.getDate() + i);
                 const day = currentDate.getDay();
                 const isWeekend = day === 0 || day === 5 || day === 6;
-                if (!isWeekend) {
-                    if (totalG === 4) {
-                        const exAdults = Math.max(0, manualForm.guests - 2);
-                        const freeKidsSlots = Math.max(0, 2 - manualForm.guests);
-                        const extraKids = Math.max(0, manualForm.kids - freeKidsSlots);
-                        const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
-                        const subtotalForNight = 4950 + extraChargesForNight;
-                        if (subtotalForNight > 6500) {
-                            specialDiscount += (subtotalForNight - 6500);
-                        }
-                    }
-                } else {
-                    if (totalG >= 3) {
-                        let extraAdultsCount = 0;
-                        let extraKidsCount = 0;
-                        for (let slot = 3; slot <= Math.min(4, totalG); slot++) {
-                            if (slot <= manualForm.guests) {
-                                extraAdultsCount++;
-                            } else {
-                                extraKidsCount++;
-                            }
-                        }
-                        specialDiscount += (extraAdultsCount * extraAdultCharge) + (extraKidsCount * kidsChargeNum);
+                if (!isWeekend && totalG === 4) {
+                    const exAdults = Math.max(0, manualForm.guests - 2);
+                    const freeKidsSlots = Math.max(0, 2 - manualForm.guests);
+                    const extraKids = Math.max(0, manualForm.kids - freeKidsSlots);
+                    const extraChargesForNight = (exAdults * extraAdultCharge) + (extraKids * kidsChargeNum);
+                    const subtotalForNight = weekdayBase + extraChargesForNight;
+                    if (subtotalForNight > 6500) {
+                        specialDiscount += (subtotalForNight - 6500);
                     }
                 }
             }
@@ -589,18 +572,16 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         const isSaturday = day === 6;
 
                         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-                        const is14Aug = dateStr.endsWith("08-14");
-                        const is15Aug = dateStr.endsWith("08-15");
-                        const is2Oct = dateStr.endsWith("10-02");
-                        const is3Oct = dateStr.endsWith("10-03");
 
                         const customRateSubmit = parseFloat(customBasePriceInput) || 0;
                         const hasCustomSubmit = customPriceEnabled && customBasePriceInput.trim() !== "" && !isNaN(customRateSubmit);
 
-                        let stdBase = hasCustomSubmit ? customRateSubmit : (is14Aug ? 7950 : is15Aug ? 8500 : is2Oct ? 6950 : is3Oct ? 7950 : isSaturday ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.saturday || 6950) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekend || 5950) : (livePricing["Amstel Nest/STANDARD COTTAGE"]?.weekday || 4950));
+                        const stdLP = livePricing["Amstel Nest/STANDARD COTTAGE"];
+                        let stdBase = hasCustomSubmit ? customRateSubmit : (stdLP?.dateOverrides?.[dateStr]?.price ?? (isSaturday ? (stdLP?.saturday || 6950) : (day === 0 || day === 5) ? (stdLP?.weekend || 5950) : (stdLP?.weekday || 4950)));
                         stdRoomTotal += stdBase * amstelStandardCount;
 
-                        let famBase = hasCustomSubmit ? customRateSubmit : (is14Aug ? 11000 : is15Aug ? 13500 : is2Oct ? 11000 : is3Oct ? 13000 : isSaturday ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.saturday || 12000) : (day === 0 || day === 5) ? (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekend || 10000) : (livePricing["Amstel Nest/FAMILY COTTAGE"]?.weekday || 9000));
+                        const famLP = livePricing["Amstel Nest/FAMILY COTTAGE"];
+                        let famBase = hasCustomSubmit ? customRateSubmit : (famLP?.dateOverrides?.[dateStr]?.price ?? (isSaturday ? (famLP?.saturday || 12000) : (day === 0 || day === 5) ? (famLP?.weekend || 10000) : (famLP?.weekday || 9000)));
                         famRoomTotal += famBase;
                     }
 
