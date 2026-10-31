@@ -130,6 +130,12 @@ export default function BookMultiPage() {
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
     const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
 
+    // Mud Bath Add-on (Ambrose & Amstel Nest only)
+    const [mudBathAddon, setMudBathAddon] = useState(false);
+    const [mudBathPersons, setMudBathPersons] = useState<1 | 2>(1);
+    const [mudBathPreviewOpen, setMudBathPreviewOpen] = useState(false);
+    const mudBathPrice = mudBathPersons === 2 ? 2000 : 1500;
+
     // Compulsory booking attribution
     const STAYCATION_BOOKING_SOURCE_OPTIONS = [
         "Sana (Bookings manager)",
@@ -174,6 +180,24 @@ export default function BookMultiPage() {
         // Last resort: try each Ambrose villa then Amstel cottage
         for (const key of ['ambrose/take-1', 'ambrose/alta', 'ambrose/santorini', 'ambrose/bamboosa', 'ambrose/cypress', 'amstel-nest/standard-cottage', 'amstel-nest/family-cottage']) {
             const url = (siteImages[`${key}/celebration`] || [])[0]?.url;
+            if (url) return url;
+        }
+        return '';
+    })();
+
+    // Mud Bath add-on image
+    const mudBathImageUrl = (() => {
+        for (const item of cart) {
+            const prefix = item.property === "amstel-nest" ? "amstel-nest" : "ambrose";
+            const specific = (siteImages[`${prefix}/${item.villaId}/mud-bath`] || [])[0]?.url;
+            if (specific) return specific;
+        }
+        const ambroseLevel = (siteImages['ambrose/mud-bath'] || [])[0]?.url;
+        if (ambroseLevel) return ambroseLevel;
+        const amstelLevel = (siteImages['amstel-nest/mud-bath'] || [])[0]?.url;
+        if (amstelLevel) return amstelLevel;
+        for (const key of ['ambrose/take-1', 'ambrose/alta', 'ambrose/santorini', 'ambrose/bamboosa', 'ambrose/cypress', 'amstel-nest/standard-cottage', 'amstel-nest/family-cottage']) {
+            const url = (siteImages[`${key}/mud-bath`] || [])[0]?.url;
             if (url) return url;
         }
         return '';
@@ -792,7 +816,7 @@ export default function BookMultiPage() {
     })();
 
     const afterSpecial = grandSubtotal - specialDiscount;
-    const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+    const addonTotal = (celebrationAddon ? CELEBRATION_ADDON_PRICE : 0) + (mudBathAddon ? mudBathPrice : 0);
     const gst = Math.round((afterSpecial + addonTotal) * 0.05);
     const preDiscountTotal = afterSpecial + addonTotal + gst;
 
@@ -971,7 +995,7 @@ export default function BookMultiPage() {
                     const totalPrice = getItemPrice(item);
                     const totalExtra = getExtraCharges(item);
                     const totalSubtotal = totalPrice + totalExtra;
-                    const addonAmount = isFirstItem && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                    const addonAmount = (isFirstItem && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0) + (isFirstItem && mudBathAddon ? mudBathPrice : 0);
                     const totalGst = Math.round(totalSubtotal * 0.05);
                     const totalTotal = Math.round((totalSubtotal + addonAmount + totalGst) / 10) * 10;
                     const totalPayNow = Math.round(Math.round(totalTotal * 0.8) / 10) * 10;
@@ -979,6 +1003,7 @@ export default function BookMultiPage() {
                     const breakdown = getExtraChargeBreakdown(item);
                     const itemAddons: any[] = [];
                     if (isFirstItem && celebrationAddon) itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                    if (isFirstItem && mudBathAddon) itemAddons.push({ name: 'Mud Bath', price: mudBathPrice, persons: mudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${mudBathPersons} ${mudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
                     if (isFirstItem) itemAddons.push({ name: 'Food Preference', foodType });
 
                     bookingPayloadItems.push({
@@ -1012,7 +1037,7 @@ export default function BookMultiPage() {
                         const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
                         const perUnitSubtotal = perUnitPrice + perUnitExtra;
                         const isFirstBooking = cart.indexOf(item) === 0 && u === 0;
-                        const unitAddon = isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                        const unitAddon = (isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0) + (isFirstBooking && mudBathAddon ? mudBathPrice : 0);
                         const perUnitGst = Math.round(perUnitSubtotal * 0.05);
                         const perUnitTotal = Math.round((perUnitSubtotal + unitAddon + perUnitGst) / 10) * 10;
                         const perUnitPayNow = Math.round(Math.round(perUnitTotal * 0.8) / 10) * 10;
@@ -1020,6 +1045,7 @@ export default function BookMultiPage() {
                         const perUnitBreakdown = getExtraChargeBreakdown({ ...item, unitCount: 1 });
                         const itemAddons: any[] = [];
                         if (isFirstBooking && celebrationAddon) itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                        if (isFirstBooking && mudBathAddon) itemAddons.push({ name: 'Mud Bath', price: mudBathPrice, persons: mudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${mudBathPersons} ${mudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
                         if (isFirstBooking) itemAddons.push({ name: 'Food Preference', foodType });
 
                         bookingPayloadItems.push({
@@ -1120,7 +1146,7 @@ export default function BookMultiPage() {
                     const totalExtra = getExtraCharges(item);
                     const totalSubtotal = totalPrice + totalExtra;
                     const isFirstItem = cart.indexOf(item) === 0;
-                    const addonAmount = isFirstItem && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                    const addonAmount = (isFirstItem && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0) + (isFirstItem && mudBathAddon ? mudBathPrice : 0);
                     const totalGst = Math.round(totalSubtotal * 0.05);
                     const totalTotal = Math.round((totalSubtotal + addonAmount + totalGst) / 10) * 10;
                     const totalPayNow = Math.round(Math.round(totalTotal * 0.8) / 10) * 10;
@@ -1130,6 +1156,9 @@ export default function BookMultiPage() {
                     const itemAddons: any[] = [];
                     if (isFirstItem && celebrationAddon) {
                         itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                    }
+                    if (isFirstItem && mudBathAddon) {
+                        itemAddons.push({ name: 'Mud Bath', price: mudBathPrice, persons: mudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${mudBathPersons} ${mudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
                     }
                     if (isFirstItem) {
                         itemAddons.push({ name: 'Food Preference', foodType });
@@ -1182,7 +1211,7 @@ export default function BookMultiPage() {
                         const perUnitExtra = getExtraCharges({ ...item, unitCount: 1 });
                         const perUnitSubtotal = perUnitPrice + perUnitExtra;
                         const isFirstBooking = cart.indexOf(item) === 0 && u === 0;
-                        const unitAddon = isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+                        const unitAddon = (isFirstBooking && celebrationAddon ? CELEBRATION_ADDON_PRICE : 0) + (isFirstBooking && mudBathAddon ? mudBathPrice : 0);
                         const perUnitGst = Math.round(perUnitSubtotal * 0.05);
                         const perUnitTotal = Math.round((perUnitSubtotal + unitAddon + perUnitGst) / 10) * 10;
                         const perUnitPayNow = Math.round(Math.round(perUnitTotal * 0.8) / 10) * 10;
@@ -1193,6 +1222,9 @@ export default function BookMultiPage() {
                         const itemAddons: any[] = [];
                         if (isFirstItem && celebrationAddon) {
                             itemAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+                        }
+                        if (isFirstItem && mudBathAddon) {
+                            itemAddons.push({ name: 'Mud Bath', price: mudBathPrice, persons: mudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${mudBathPersons} ${mudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
                         }
                         if (isFirstItem) {
                             itemAddons.push({ name: 'Food Preference', foodType });
@@ -1882,6 +1914,74 @@ export default function BookMultiPage() {
                                     </div>
                                 )}
 
+                                {/* Mud Bath Add-on */}
+                                <div className="mb-6 p-4 border border-amber-900/20 rounded-lg bg-amber-50/40">
+                                    <div className="flex items-start sm:items-center gap-3">
+                                        <input type="checkbox" id="multi-mudbath" checked={mudBathAddon} onChange={(e) => setMudBathAddon(e.target.checked)} className="mt-1 sm:mt-0 w-4 h-4 accent-[#B8860B] cursor-pointer shrink-0" />
+                                        <label htmlFor="multi-mudbath" className="cursor-pointer flex-1 min-w-0">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+                                                <h4 className="font-inter text-sm font-semibold text-text-primary">Mud Bath Experience</h4>
+                                                <span className="font-cinzel text-sm font-semibold text-dark-gold whitespace-nowrap">+ ₹{mudBathPrice.toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <p className="font-inter text-xs text-text-secondary mt-0.5">Therapeutic 1-hour mud bath session (₹1,500 for 1 person · ₹2,000 for 2 people)</p>
+                                        </label>
+                                        {mudBathImageUrl && (
+                                            <div className="shrink-0 flex flex-col items-center gap-1">
+                                                <button type="button" onClick={(e) => { e.preventDefault(); setMudBathPreviewOpen(true); }} className="w-[78px] h-[78px] sm:w-[92px] sm:h-[92px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
+                                                    <img src={mudBathImageUrl} alt="Mud bath preview" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                        <svg className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                                                    </div>
+                                                </button>
+                                                <span className="text-[9px] font-inter text-text-muted">Click to view</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {mudBathAddon && (
+                                        <div className="mt-4 space-y-3 pl-7 animate-in fade-in">
+                                            <div>
+                                                <label className="block font-inter text-xs text-text-secondary mb-1.5">Number of Guests (1 Hour Duration)</label>
+                                                <div className="grid grid-cols-2 gap-3 max-w-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setMudBathPersons(1)}
+                                                        className={`py-2 px-3 rounded-lg border text-xs font-inter font-medium text-center transition-all ${
+                                                            mudBathPersons === 1
+                                                                ? 'border-antique-gold bg-antique-gold/10 text-dark-gold font-semibold'
+                                                                : 'border-border-medium bg-white text-text-secondary hover:border-antique-gold/50'
+                                                        }`}
+                                                    >
+                                                        1 Person · ₹1,500
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setMudBathPersons(2)}
+                                                        className={`py-2 px-3 rounded-lg border text-xs font-inter font-medium text-center transition-all ${
+                                                            mudBathPersons === 2
+                                                                ? 'border-antique-gold bg-antique-gold/10 text-dark-gold font-semibold'
+                                                                : 'border-border-medium bg-white text-text-secondary hover:border-antique-gold/50'
+                                                        }`}
+                                                    >
+                                                        2 People · ₹2,000
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Mud Bath Image Preview Modal */}
+                                {mudBathPreviewOpen && mudBathImageUrl && (
+                                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setMudBathPreviewOpen(false)}>
+                                        <div className="relative max-w-lg w-full max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                                            <img src={mudBathImageUrl} alt="Mud bath preview" className="w-full h-auto max-h-[80vh] object-contain bg-white" />
+                                            <button onClick={() => setMudBathPreviewOpen(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Food Preference (compulsory for Ambrose & Amstel Nest) */}
                                 <div className="mb-6 p-4 border border-emerald-200 rounded-lg bg-emerald-50/50">
                                     <h4 className="font-inter text-sm font-semibold text-text-primary mb-1">Food Preference <span className="text-red-500">*</span></h4>
@@ -1984,6 +2084,8 @@ export default function BookMultiPage() {
 
                             <div className="border-t border-border-light mt-4 pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(grandSubtotal)}</span></div>
+                                {celebrationAddon && <div className="flex justify-between text-amber-700 text-xs"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
+                                {mudBathAddon && <div className="flex justify-between text-amber-800 text-xs"><span>Mud Bath ({mudBathPersons} {mudBathPersons === 2 ? 'ppl' : 'person'})</span><span>{formatPrice(mudBathPrice)}</span></div>}
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">Taxes (5%)</span><span>{formatPrice(gst)}</span></div>

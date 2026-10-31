@@ -317,7 +317,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
 
     // Strict Regex Scoping with Word Boundaries
     const staycationRegex = /\b(stay|vacation|staycations?|resorts?|hotels?|cottages?|villas?|karjat|amstel|ambrose|paraiso|la\s*paraiso|heavenly|mount\s*view|hill\s*view|santorini|alta|take-?1|bamboosa|cypress)\b/i;
-    const diariesRegex = /\b(sandy|cine\s*love|park\s*n\s*watch|baywatch|wadala|movie\s*time|celebration|screen|screens|digital\s*diaries)\b/i;
+    const diariesRegex = /\b(sandy|cine\s*love|park\s*n\s*watch|baywatch|love\s*nest|wadala|movie\s*time|celebration|screen|screens|digital\s*diaries)\b/i;
 
     if (cleanType === "digital_diaries" || cleanType === "diaries" || cleanType === "bot1") {
       if (staycationRegex.test(textTrimmed) && !diariesRegex.test(textTrimmed)) {

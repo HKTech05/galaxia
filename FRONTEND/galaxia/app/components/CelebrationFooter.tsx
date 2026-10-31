@@ -28,7 +28,7 @@ export default function CelebrationFooter() {
                             {["Sandy Screen", "Cine Love", "Park N Watch", "Baywatch"].map((s) => (
                                 <li key={s}>
                                     <Link href={`/celebration/movie-time/${s.toLowerCase().replace(/ /g, "-")}`} className="font-inter text-sm text-cel-text-secondary hover:text-rose-light transition-colors">
-                                        {s}
+                                        {s === "Baywatch" ? "Love Nest" : s}
                                     </Link>
                                 </li>
                             ))}

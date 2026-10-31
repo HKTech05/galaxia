@@ -118,7 +118,7 @@ export async function sendBookingConfirmation(booking: any): Promise<void> {
                 }
             } else if (a && a.name && a.price) {
                 displayAddons.push({
-                    label: a.occasion ? `${a.name} (${a.occasion})` : a.name,
+                    label: a.occasion ? `${a.name} (${a.occasion})` : a.persons ? `${a.name} (${a.persons} ${Number(a.persons) === 2 ? 'ppl' : 'person'}, ${a.duration || '1 hr'})` : a.name,
                     price: Number(a.price) || 0
                 });
             }
@@ -440,7 +440,7 @@ export async function sendDDBookingConfirmation(booking: any): Promise<void> {
     if (!process.env.RESEND_API_KEY || !booking.customerEmail) return;
 
     const email = booking.customerEmail;
-    const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
+    const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").replace(/Baywatch/gi, "Love Nest").trim();
     const packageName = booking.package?.name || "Experience";
     const bookingDate = fmtDate(booking.bookingDate);
     const bookedOn = fmtShortDate(booking.bookedAt || new Date());

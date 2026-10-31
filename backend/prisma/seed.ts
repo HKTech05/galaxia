@@ -277,7 +277,7 @@ async function main() {
         { slug: "sandy-screen", name: "Sandy Screen (15 x 8 sq ft)", theme: "Beach Theme", tagline: "Feel the sand between your toes", capacity: "Up to 3 guests", displayOrder: 1 },
         { slug: "cine-love", name: "Cine Love (15 x 8 sq ft)", theme: "Romantic Theme", tagline: "The perfect date night screen", capacity: "Up to 8 guests", displayOrder: 2 },
         { slug: "park-n-watch", name: "Park N Watch (15 x 8 sq ft)", theme: "Car / Drive-In Theme", tagline: "Your own drive-in cinema", capacity: "Up to 3 guests", displayOrder: 3 },
-        { slug: "baywatch", name: "Baywatch (15 x 8 sq ft)", theme: "Greece Theme", tagline: "Mediterranean cinema under the stars", capacity: "Up to 3 guests", displayOrder: 4 },
+        { slug: "baywatch", name: "Love Nest (15 x 8 sq ft)", theme: "Greece Theme", tagline: "Mediterranean cinema under the stars", capacity: "Up to 3 guests", displayOrder: 4 },
     ];
     for (const s of screensData) {
         await prisma.ddScreen.upsert({

@@ -57,6 +57,11 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
     const [manualCakeMsg, setManualCakeMsg] = useState("");
     const [manualOccasion, setManualOccasion] = useState("Birthday");
 
+    // Mud Bath states (Ambrose & Amstel Nest only)
+    const [manualMudBath, setManualMudBath] = useState(false);
+    const [manualMudBathPersons, setManualMudBathPersons] = useState<1 | 2>(1);
+    const manualMudBathPrice = manualMudBathPersons === 2 ? 2000 : 1500;
+
     // Food preferences
     const [manualRegularCount, setManualRegularCount] = useState<string>("0");
     const [manualJainCount, setManualJainCount] = useState<string>("0");
@@ -409,6 +414,7 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
         let subtotal = roomTotal + extraAdultTotal + extraKidsTotal - specialDiscount;
 
         if (manualDecoration) subtotal += DECORATION_PRICE;
+        if (manualMudBath && isAmbroseOrAmstel) subtotal += manualMudBathPrice;
 
         // Taxes are calculated on the base price before coupon discount
         const baseBeforeCoupon = Math.round(subtotal);
@@ -656,6 +662,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
 
                     if (manualDecoration) {
                         stdAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+                    }
+                    if (manualMudBath) {
+                        stdAddons.push({ name: 'Mud Bath', price: manualMudBathPrice, persons: manualMudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${manualMudBathPersons} ${manualMudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
                     }
                     // Attach total food preference counts only to the standard cottage (first booking in split transaction)
                     if (regCount > 0) stdAddons.push({ name: 'Food Preference', foodType: 'Regular', count: regCount });
@@ -948,6 +957,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                     if (isFirstVilla && manualDecoration) {
                         villaAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
                     }
+                    if (isFirstVilla && manualMudBath) {
+                        villaAddons.push({ name: 'Mud Bath', price: manualMudBathPrice, persons: manualMudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${manualMudBathPersons} ${manualMudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
+                    }
                     // Attach total food preference counts only to the first villa booking (to avoid duplicating/inflating total counts in chef portal)
                     if (isFirstVilla) {
                         const regCount = parseInt(manualRegularCount) || 0;
@@ -988,6 +1000,9 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                 const bookingAddons: any[] = [];
                 if (manualDecoration) {
                     bookingAddons.push({ name: 'Celebration Add-on', price: DECORATION_PRICE, cakeMessage: manualCakeMsg || '', occasion: manualOccasion });
+                }
+                if (manualMudBath && isAmbroseOrAmstel) {
+                    bookingAddons.push({ name: 'Mud Bath', price: manualMudBathPrice, persons: manualMudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${manualMudBathPersons} ${manualMudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
                 }
 
                 await api.post("/bookings/staycation", {
@@ -1045,6 +1060,8 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
             setCustomBalance("");
             setManualDecoration(false);
             setManualCakeMsg("");
+            setManualMudBath(false);
+            setManualMudBathPersons(1);
             setManualOccasion("Birthday");
             setManualRegularCount("0");
             setManualJainCount("0");
@@ -1252,6 +1269,49 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                             </div>
                         )}
                     </div>
+
+                    {/* Mud Bath Add-on — Ambrose & Amstel Nest only */}
+                    {isAmbroseOrAmstel && (
+                        <div className="space-y-3">
+                            <div className="flex items-start gap-3 p-4 border border-amber-900/20 rounded-xl bg-amber-50/50">
+                                <input
+                                    type="checkbox"
+                                    id="manual-mudbath"
+                                    checked={manualMudBath}
+                                    onChange={(e) => setManualMudBath(e.target.checked)}
+                                    className="mt-0.5 w-4 h-4 accent-amber-800 cursor-pointer"
+                                />
+                                <label htmlFor="manual-mudbath" className="cursor-pointer flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-bold text-slate-800">Mud Bath Experience</h4>
+                                        <span className="text-sm font-bold text-amber-800">+ ₹{manualMudBathPrice.toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-0.5">Therapeutic 1-hour session (₹1,500 for 1 person · ₹2,000 for 2 people)</p>
+                                </label>
+                            </div>
+                            {manualMudBath && (
+                                <div className="grid grid-cols-2 gap-3 pl-2 animate-in fade-in">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Guests</label>
+                                        <select
+                                            value={manualMudBathPersons}
+                                            onChange={(e) => setManualMudBathPersons(parseInt(e.target.value) as 1 | 2)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-700"
+                                        >
+                                            <option value={1}>1 Person (₹1,500)</option>
+                                            <option value={2}>2 People (₹2,000)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Duration</label>
+                                        <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600">
+                                            1 Hour
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Food Preference — Ambrose & Amstel Nest only */}
                     {isAmbroseOrAmstel && (

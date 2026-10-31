@@ -153,10 +153,21 @@ export default function PropertyDetailClient({ property }: { property: PropertyD
 
     // Use site images if available, otherwise fall back to data file
     const displayImages = slideshowImages.length > 0 ? slideshowImages : property.images.filter(Boolean);
-    const displayActivities = (property.activities || []).map((act: { title: string; description: string; image: string }, i: number) => ({
-        ...act,
-        image: activityImages[i] || act.image,
-    }));
+    const displayActivities = (property.activities || []).map((act: { title: string; description: string; image: string }, i: number) => {
+        let img = activityImages[i] || act.image;
+        if (!img) {
+            const titleLower = act.title.toLowerCase();
+            if (titleLower.includes('celebration')) {
+                img = (siteImages[`${property.id}/celebration`] || [])[0]?.url || '';
+            } else if (titleLower.includes('mud bath')) {
+                img = (siteImages[`${property.id}/mud-bath`] || [])[0]?.url || '';
+            }
+        }
+        return {
+            ...act,
+            image: img,
+        };
+    });
 
     // Build sub-properties with dynamic thumbnails from admin
     const displaySubProperties = property.subProperties?.map(sub => {

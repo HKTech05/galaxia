@@ -103,7 +103,7 @@ export default function Admin3BookingsPage() {
                             <option value="Cine Love">Cine Love</option>
                             <option value="Sandy Screen">Sandy Screen</option>
                             <option value="Park N Watch">Park N Watch</option>
-                            <option value="Baywatch">Baywatch</option>
+                            <option value="Baywatch">Love Nest</option>
                         </select>
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
@@ -161,7 +161,7 @@ export default function Admin3BookingsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">
-                                                {booking.screen}
+                                                {(booking.screen || '').replace(/Baywatch/gi, 'Love Nest')}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">

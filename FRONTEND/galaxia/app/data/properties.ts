@@ -110,6 +110,8 @@ export const properties: Record<string, PropertyData> = {
             { icon: "snowflake", name: "2 AC" },
             { icon: "tv", name: "Smart TV" },
             { icon: "food", name: "Meals Included" },
+            { icon: "sparkles", name: "Celebrations Indoor and Outdoor" },
+            { icon: "bath", name: "Mud Bath" },
         ],
         configuration: [
             "1 King Bedroom",
@@ -120,6 +122,8 @@ export const properties: Record<string, PropertyData> = {
             "2 AC",
             "Smart TV",
             "Meals Included",
+            "Celebrations Indoor and Outdoor",
+            "Mud Bath",
         ],
         facilities: [
             {
@@ -159,6 +163,16 @@ export const properties: Record<string, PropertyData> = {
                 description: "All meals included — enjoy delicious vegetarian cuisine throughout your stay.",
                 image: "",
             },
+            {
+                title: "Celebrations (Indoor & Outdoor)",
+                description: "Make birthdays, anniversaries, and milestones unforgettable with bespoke indoor and outdoor decor setups.",
+                image: "",
+            },
+            {
+                title: "Mud Bath Experience",
+                description: "Rejuvenate with a therapeutic mud bath session designed to relax and revitalize. ₹1,500 for 1 person, ₹2,000 for 2 people (1 hour).",
+                image: "",
+            },
         ],
         subProperties: [
             {
@@ -167,7 +181,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Bollywood Theme",
                 description: "Film-inspired interiors with vibrant dramatic decor that celebrates Indian cinema.",
                 image: "",
-                configuration: ["1 King Bedroom", "1 Sofa Cum Bed Room", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
+                configuration: ["1 King Bedroom", "1 Sofa Cum Bed Room", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 8,
                 maxAdults: 6,
                 maxKids: 4,
@@ -185,7 +199,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Rustic Theme",
                 description: "Earthy wooden textures with countryside aesthetics for a grounded, cozy escape.",
                 image: "",
-                configuration: ["2 King Size Beds", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
+                configuration: ["2 King Size Beds", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 8,
                 maxAdults: 6,
                 maxKids: 4,
@@ -203,7 +217,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Greek Inspired Theme",
                 description: "White & blue Mediterranean-style interiors that bring Santorini to Karjat.",
                 image: "",
-                configuration: ["1 King Size Bed", "1 Queen Size Bed", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV"],
+                configuration: ["1 King Size Bed", "1 Queen Size Bed", "2 Washrooms", "Private Pool", "Garden Seating", "2 AC", "Smart TV", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 8,
                 maxAdults: 6,
                 maxKids: 4,
@@ -221,7 +235,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Bali Theme (Premium)",
                 description: "Premium villa with 2 king bedrooms, spacious living room, and tropical Bali-inspired interiors.",
                 image: "",
-                configuration: ["2 King Bedrooms", "Spacious Living Room", "4 Bathrooms", "4 AC", "Private Pool", "Garden Seating"],
+                configuration: ["2 King Bedrooms", "Spacious Living Room", "4 Bathrooms", "4 AC", "Private Pool", "Garden Seating", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 12,
                 maxAdults: 10,
                 maxKids: 5,
@@ -238,7 +252,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Machan Theme",
                 description: "Elevated treehouse-style villa with a glass-bottom pool view and mountain deck.",
                 image: "",
-                configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Private Pool", "Kids Sleeping Area", "Mountain Deck"],
+                configuration: ["1 Queen Bedroom", "Glass Bottom Pool View", "Private Pool", "Kids Sleeping Area", "Mountain Deck", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 4,
                 maxAdults: 3,
                 maxKids: 1,
@@ -297,6 +311,8 @@ export const properties: Record<string, PropertyData> = {
             { icon: "wifi", name: "WiFi" },
             { icon: "boat", name: "Boating" },
             { icon: "food", name: "Meals Included" },
+            { icon: "sparkles", name: "Celebrations Indoor and Outdoor" },
+            { icon: "bath", name: "Mud Bath" },
         ],
         configuration: [
             "Double Bed (1 cottage has 2 double beds)",
@@ -305,6 +321,8 @@ export const properties: Record<string, PropertyData> = {
             "Washroom",
             "Indoor Private Pool",
             "Garden Sitting Area",
+            "Celebrations Indoor and Outdoor",
+            "Mud Bath",
         ],
         facilities: [
             {
@@ -344,6 +362,16 @@ export const properties: Record<string, PropertyData> = {
                 description: "Take a peaceful boat ride on the lake and enjoy the surrounding natural beauty.",
                 image: "",
             },
+            {
+                title: "Celebrations (Indoor & Outdoor)",
+                description: "Celebrate special occasions with custom indoor and outdoor setups, romantic lighting, and decor.",
+                image: "",
+            },
+            {
+                title: "Mud Bath Experience",
+                description: "Unwind and detox with a natural, therapeutic mud bath. ₹1,500 for 1 person, ₹2,000 for 2 people (1 hour).",
+                image: "",
+            },
         ],
         subProperties: [
             {
@@ -352,7 +380,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Amsterdam-Inspired · 14 Units",
                 description: "Cozy cottage with double bed and private indoor pool — the essence of Amstel Nest. Auto-assigned from 14 available units.",
                 image: "",
-                configuration: ["Double Bed", "Smart TV", "Air Conditioner", "Washroom", "Indoor Private Pool", "Garden Sitting Area", "Gaming Zone", "WiFi", "Boating"],
+                configuration: ["Double Bed", "Smart TV", "Air Conditioner", "Washroom", "Indoor Private Pool", "Garden Sitting Area", "Gaming Zone", "WiFi", "Boating", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 4,
                 maxAdults: 3,
                 maxKids: 3,
@@ -369,7 +397,7 @@ export const properties: Record<string, PropertyData> = {
                 theme: "Amsterdam-Inspired · 1 Unit (Larger)",
                 description: "Spacious cottage with 2 double beds — perfect for families or groups of friends.",
                 image: "",
-                configuration: ["2 Double Beds", "Smart TV", "Air Conditioner", "Washroom", "Indoor Private Pool", "Garden Sitting Area", "Gaming Zone", "WiFi", "Boating"],
+                configuration: ["2 Double Beds", "Smart TV", "Air Conditioner", "Washroom", "Indoor Private Pool", "Garden Sitting Area", "Gaming Zone", "WiFi", "Boating", "Celebrations Indoor and Outdoor", "Mud Bath"],
                 maxPersons: 8,
                 maxAdults: 6,
                 maxKids: 4,

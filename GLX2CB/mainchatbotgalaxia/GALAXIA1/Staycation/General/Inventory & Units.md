@@ -17,7 +17,7 @@ This document details the exact unit inventory count for every property and scre
 
 ## Digital Diaries Inventory Breakdown (Wadala Cinema)
 - **Sandy Screen**: **1 Unit** (Single private screen).
-- **Baywatch**: **1 Unit** (Single private screen).
+- **Love Nest**: **1 Unit** (Single private screen).
 - **Cine Love**: **1 Unit** (Single private screen).
 - **Park N Watch**: **1 Unit** (Single private screen).
 

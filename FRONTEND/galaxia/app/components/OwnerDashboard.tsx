@@ -109,34 +109,43 @@ const staycationGroups: ImageGroup[] = [
     { id: "ambrose", label: "Ambrose", subSections: [
         { id: "ambrose/slideshow", label: "Slideshow Images" },
         { id: "ambrose/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
-        { id: "ambrose/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+        { id: "ambrose/activities", label: "Activity Images (Up to 5 Thumbnails)", maxImages: 5 },
+        { id: "ambrose/mud-bath", label: "Mud Bath Add-on Image", maxImages: 1 },
         // Per-villa sections
         { id: "ambrose/take-1/slideshow", label: "TAKE-1 — Slideshow" },
         { id: "ambrose/take-1/thumbnail", label: "TAKE-1 — Main Thumbnail", maxImages: 1 },
         { id: "ambrose/take-1/celebration", label: "TAKE-1 — Celebration Add-on Image", maxImages: 1 },
+        { id: "ambrose/take-1/mud-bath", label: "TAKE-1 — Mud Bath Add-on Image", maxImages: 1 },
         { id: "ambrose/alta/slideshow", label: "ALTA — Slideshow" },
         { id: "ambrose/alta/thumbnail", label: "ALTA — Main Thumbnail", maxImages: 1 },
         { id: "ambrose/alta/celebration", label: "ALTA — Celebration Add-on Image", maxImages: 1 },
+        { id: "ambrose/alta/mud-bath", label: "ALTA — Mud Bath Add-on Image", maxImages: 1 },
         { id: "ambrose/santorini/slideshow", label: "SANTORINI — Slideshow" },
         { id: "ambrose/santorini/thumbnail", label: "SANTORINI — Main Thumbnail", maxImages: 1 },
         { id: "ambrose/santorini/celebration", label: "SANTORINI — Celebration Add-on Image", maxImages: 1 },
+        { id: "ambrose/santorini/mud-bath", label: "SANTORINI — Mud Bath Add-on Image", maxImages: 1 },
         { id: "ambrose/bamboosa/slideshow", label: "BAMBOOSA — Slideshow" },
         { id: "ambrose/bamboosa/thumbnail", label: "BAMBOOSA — Main Thumbnail", maxImages: 1 },
         { id: "ambrose/bamboosa/celebration", label: "BAMBOOSA — Celebration Add-on Image", maxImages: 1 },
+        { id: "ambrose/bamboosa/mud-bath", label: "BAMBOOSA — Mud Bath Add-on Image", maxImages: 1 },
         { id: "ambrose/cypress/slideshow", label: "CYPRESS — Slideshow" },
         { id: "ambrose/cypress/thumbnail", label: "CYPRESS — Main Thumbnail", maxImages: 1 },
         { id: "ambrose/cypress/celebration", label: "CYPRESS — Celebration Add-on Image", maxImages: 1 },
+        { id: "ambrose/cypress/mud-bath", label: "CYPRESS — Mud Bath Add-on Image", maxImages: 1 },
     ]},
     { id: "amstel-nest", label: "Amstel Nest", subSections: [
         { id: "amstel-nest/slideshow", label: "Slideshow Images" },
         { id: "amstel-nest/thumbnail", label: "Main Thumbnail (Booking Card)", maxImages: 1 },
-        { id: "amstel-nest/activities", label: "Activity Images (3 Mini Thumbnails)", maxImages: 3 },
+        { id: "amstel-nest/activities", label: "Activity Images (Up to 5 Thumbnails)", maxImages: 5 },
+        { id: "amstel-nest/mud-bath", label: "Mud Bath Add-on Image", maxImages: 1 },
         { id: "amstel-nest/standard-cottage/slideshow", label: "Standard Cottage — Slideshow" },
         { id: "amstel-nest/standard-cottage/thumbnail", label: "Standard Cottage — Main Thumbnail", maxImages: 1 },
         { id: "amstel-nest/standard-cottage/celebration", label: "Standard Cottage — Celebration Add-on Image", maxImages: 1 },
+        { id: "amstel-nest/standard-cottage/mud-bath", label: "Standard Cottage — Mud Bath Add-on Image", maxImages: 1 },
         { id: "amstel-nest/family-cottage/slideshow", label: "Family Cottage — Slideshow" },
         { id: "amstel-nest/family-cottage/thumbnail", label: "Family Cottage — Main Thumbnail", maxImages: 1 },
         { id: "amstel-nest/family-cottage/celebration", label: "Family Cottage — Celebration Add-on Image", maxImages: 1 },
+        { id: "amstel-nest/family-cottage/mud-bath", label: "Family Cottage — Mud Bath Add-on Image", maxImages: 1 },
     ]},
 ];
 
@@ -164,7 +173,7 @@ const ddGroups: ImageGroup[] = [
         { id: "dd/park-n-watch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
         { id: "dd/park-n-watch/celebration/thumbnail", label: "Deco + Movie Time — Thumbnail", maxImages: 1 },
     ]},
-    { id: "dd/baywatch", label: "Baywatch", subSections: [
+    { id: "dd/baywatch", label: "Love Nest", subSections: [
         { id: "dd/baywatch/movie-time/slideshow", label: "Movie Time — Slideshow" },
         { id: "dd/baywatch/movie-time/thumbnail", label: "Movie Time — Thumbnail", maxImages: 1 },
         { id: "dd/baywatch/celebration/slideshow", label: "Deco + Movie Time — Slideshow" },
@@ -1581,6 +1590,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                         <p className="text-xs font-bold text-purple-800 mt-0.5">₹{Number(celebrationAddon.price || 2000).toLocaleString('en-IN')}</p>
                                         {celebrationAddon.cakeMessage && <p className="text-[10px] text-slate-600 mt-1">Cake: {celebrationAddon.cakeMessage}</p>}
                                         {celebrationAddon.occasion && <p className="text-[10px] text-slate-600">Occasion: {celebrationAddon.occasion}</p>}
+                                    </div>
+                                );
+                            })()}
+                            {(() => {
+                                const mudBathAddon = addonsList && Array.isArray(addonsList)
+                                    ? addonsList.find((a: any) => a.name === 'Mud Bath')
+                                    : null;
+                                if (!mudBathAddon) return null;
+                                return (
+                                    <div className="col-span-2 p-3 rounded-lg border bg-amber-50 border-amber-200">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Mud Bath Add-on</p>
+                                        <p className="text-xs font-bold text-amber-900 mt-0.5">₹{Number(mudBathAddon.price || 1500).toLocaleString('en-IN')}</p>
+                                        <p className="text-[10px] text-slate-600 mt-1">{mudBathAddon.persons || 1} Person{Number(mudBathAddon.persons) === 2 ? 's' : ''} · {mudBathAddon.duration || '1 Hour'}</p>
                                     </div>
                                 );
                             })()}
@@ -3268,6 +3290,19 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                                                         </div>
                                                     );
                                                 })()}
+                                                {(() => {
+                                                    const mudBathAddon = addonsList && Array.isArray(addonsList)
+                                                        ? addonsList.find((a: any) => a.name === 'Mud Bath')
+                                                        : null;
+                                                    if (!mudBathAddon) return null;
+                                                    return (
+                                                        <div className="col-span-2 p-3 rounded-lg border bg-amber-50 border-amber-200">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Mud Bath Add-on</p>
+                                                            <p className="text-xs font-bold text-amber-900 mt-0.5">₹{Number(mudBathAddon.price || 1500).toLocaleString('en-IN')}</p>
+                                                            <p className="text-[10px] text-slate-600 mt-1">{mudBathAddon.persons || 1} Person{Number(mudBathAddon.persons) === 2 ? 's' : ''} · {mudBathAddon.duration || '1 Hour'}</p>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* Extra Guests Display */}
@@ -3345,7 +3380,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
             id: b.bookingRef || `#DD-${b.id}`,
             customer: b.customerName,
             phone: b.customerPhone,
-            screen: b.screen?.name || "Unknown Screen",
+            screen: (b.screen?.name || "Unknown Screen").replace(/Baywatch/gi, "Love Nest"),
             date: new Date(b.bookingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
             rawDate: b.bookingDate ? (() => { const d = new Date(b.bookingDate); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
             slot: b.startHour != null ? `${b.startHour > 12 ? b.startHour - 12 : b.startHour}:00 ${b.startHour >= 12 ? 'PM' : 'AM'} - ${b.startHour + (b.durationHours || 3) > 12 ? b.startHour + (b.durationHours || 3) - 12 : b.startHour + (b.durationHours || 3)}:00 ${b.startHour + (b.durationHours || 3) >= 12 ? 'PM' : 'AM'}` : 'N/A',
@@ -3363,7 +3398,7 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         const bookingsToDisplay = allMapped.filter((b: any) => b.rawDate === selectedDateStr);
 
         bookingsToDisplay.forEach((b: any) => {
-            const cleanScreen = (b.screen || '').replace(/\s*\(.*?\)/g, '').trim();
+            const cleanScreen = (b.screen || '').replace(/\s*\(.*?\)/g, '').replace(/Baywatch/gi, "Love Nest").trim();
             if (!screenGroups[cleanScreen]) screenGroups[cleanScreen] = [];
             screenGroups[cleanScreen].push(b);
         });
@@ -3381,9 +3416,9 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                         { name: "Park N Watch", short: "P", color: "bg-orange-50 border-orange-200 text-orange-700" },
                         { name: "Cine Love", short: "C", color: "bg-green-50 border-green-200 text-green-700" },
                         { name: "Sandy Screen", short: "S", color: "bg-amber-50 border-amber-200 text-amber-800" },
-                        { name: "Baywatch", short: "B", color: "bg-blue-50 border-blue-200 text-blue-700" },
+                        { name: "Love Nest", short: "L", color: "bg-blue-50 border-blue-200 text-blue-700" },
                     ].map(screen => {
-                        const count = (screenGroups[screen.name] || []).length;
+                        const count = ((screenGroups[screen.name] || []).length) + (screen.name === "Love Nest" ? (screenGroups["Baywatch"] || []).length : 0);
                         return (
                             <div key={screen.name} className={`${screen.color} border rounded-xl p-3 text-center`}>
                                 <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{screen.name}</p>

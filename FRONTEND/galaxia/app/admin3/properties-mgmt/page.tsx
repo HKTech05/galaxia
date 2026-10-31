@@ -233,6 +233,23 @@ export default function PropertiesMgmtPage() {
         }
     };
 
+    const toggleMudBath = async (prop: any) => {
+        const currentConfig = prop.configuration || {};
+        const isCurrentlyEnabled = currentConfig.mudBathEnabled !== false;
+        const newConfig = {
+            ...currentConfig,
+            mudBathEnabled: !isCurrentlyEnabled
+        };
+        try {
+            await api.patch(`/properties/${prop.id}/config`, {
+                configuration: newConfig
+            });
+            setProps(prev => prev.map(p => p.id === prop.id ? { ...p, configuration: newConfig } : p));
+        } catch (err: any) {
+            alert("Failed to update mud bath addon status");
+        }
+    };
+
     const tabs: { key: Tab; label: string }[] = [
         { key: "standalone", label: "Standalone Villas" }, { key: "amstelnest", label: "Amstel Nest" },
         { key: "ambrose", label: "Ambrose" }, { key: "digitaldiaries", label: "Digital Diaries" },
@@ -1400,7 +1417,7 @@ export default function PropertiesMgmtPage() {
                         <div className="p-5 border-b border-slate-100 flex justify-between items-start">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600"><Building size={20} /></div>
-                                <div><h3 className="font-bold text-slate-800">{scr.name}</h3><p className="text-xs text-slate-500">{scr.theme}</p></div>
+                                <div><h3 className="font-bold text-slate-800">{(scr.name || '').replace(/Baywatch/gi, 'Love Nest')}</h3><p className="text-xs text-slate-500">{scr.theme}</p></div>
                             </div>
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${scr.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{scr.isActive ? "Active" : "Disabled"}</span>
                         </div>
@@ -1454,9 +1471,9 @@ export default function PropertiesMgmtPage() {
 
                                 {/* DD Override + View Overrides buttons */}
                                 <div className="flex gap-2 border-t border-slate-100 px-3 py-2">
-                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvRows(rows); setDdOvName(`${scr.name} — ${pkg.name}`); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="flex-1 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
+                                    <button onClick={() => { setDdOvScreen(scr.id); setDdOvPkg(pkg.id); setDdOvRows(rows); setDdOvName(`${(scr.name || '').replace(/Baywatch/gi, 'Love Nest')} — ${pkg.name}`); setDdOvDate(""); setDdOvPrices({}); setDdOvMsg(""); }} className="flex-1 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center justify-center gap-1.5"><Calendar size={12} /> Override</button>
                                     {(() => { const ovCount = rows.reduce((n: number, pr: any) => n + (pr.overrides?.length || 0), 0); return (
-                                        <button onClick={() => { setDdViewOvPkg(pkg); setDdViewOvName(`${scr.name} — ${pkg.name}`); }} className="flex-1 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-lg flex items-center justify-center gap-1.5">Overrides{ovCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{ovCount}</span>}</button>
+                                        <button onClick={() => { setDdViewOvPkg(pkg); setDdViewOvName(`${(scr.name || '').replace(/Baywatch/gi, 'Love Nest')} — ${pkg.name}`); }} className="flex-1 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-lg flex items-center justify-center gap-1.5">Overrides{ovCount > 0 && <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{ovCount}</span>}</button>
                                     ); })()}
                                 </div>
                             </div>);
@@ -1583,6 +1600,74 @@ export default function PropertiesMgmtPage() {
                                             isEnabled ? "bg-purple-600" : "bg-slate-200"
                                         }`}
                                         title={isEnabled ? `Disable celebration for ${p.name}` : `Enable celebration for ${p.name}`}
+                                    >
+                                        <span
+                                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                                isEnabled ? "translate-x-5" : "translate-x-0"
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Mud Bath Add-on Card (Ambrose & Amstel Nest only) */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2.5">
+                                <span className="p-1.5 bg-amber-50 text-amber-700 rounded-lg border border-amber-200">
+                                    <Sparkles size={18} />
+                                </span>
+                                <h3 className="text-base font-bold text-slate-800">Mud Bath Add-on</h3>
+                                <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                                    ₹1,500 (1p) / ₹2,000 (2p) · 1 hr
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                Therapeutic 1-hour mud bath session. Exclusively available for Ambrose and Amstel Nest. Toggle visibility on customer booking flows.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                {staycationProps.filter(p => (p.slug === 'ambrose' || p.slug === 'amstel-nest') && p.configuration?.mudBathEnabled !== false).length} of 2 Active
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Properties Grid (Ambrose & Amstel Nest only) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {staycationProps.filter(p => p.slug === 'ambrose' || p.slug === 'amstel-nest').map(p => {
+                            const isEnabled = p.configuration?.mudBathEnabled !== false;
+                            return (
+                                <div
+                                    key={p.id}
+                                    className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-3 ${
+                                        isEnabled
+                                            ? "bg-amber-50/40 border-amber-200 shadow-xs"
+                                            : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                    }`}
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${isEnabled ? "bg-emerald-500" : "bg-slate-300"}`} />
+                                            <h4 className="text-sm font-bold text-slate-800 truncate">{p.name}</h4>
+                                        </div>
+                                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-4">
+                                            {isEnabled ? "Visible on booking" : "Hidden"}
+                                        </p>
+                                    </div>
+
+                                    {/* Toggle Switch */}
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleMudBath(p)}
+                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                            isEnabled ? "bg-amber-700" : "bg-slate-200"
+                                        }`}
+                                        title={isEnabled ? `Disable mud bath for ${p.name}` : `Enable mud bath for ${p.name}`}
                                     >
                                         <span
                                             className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${

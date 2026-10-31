@@ -261,7 +261,7 @@ function DashboardContent() {
                     id: b.bookingRef || `#DD-${b.id}`,
                     dbId: b.id,
                     rawBooking: b,
-                    property: b.screen?.name ? `${b.screen.name.replace(/\s*\([^)]*\)/g, '').trim()} \u2014 Digital Diaries` : "Digital Diaries",
+                    property: b.screen?.name ? `${b.screen.name.replace(/\s*\([^)]*\)/g, '').replace(/Baywatch/gi, 'Love Nest').trim()} \u2014 Digital Diaries` : "Digital Diaries",
                     dates: date.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }),
                     status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
                     amount: formatPrice(b.totalAmount),
@@ -283,7 +283,7 @@ function DashboardContent() {
                     totalPaid: formatPrice(b.totalAmount),
                     payNow: formatPrice(b.amountPaid ?? Math.round(b.totalAmount * 0.5)),
                     payAtVenue: formatPrice(Math.max(0, b.amountToCollect ?? Math.round(b.totalAmount * 0.5))),
-                    screen: (b.screen?.name || "Private Screen").replace(/\s*\([^)]*\)/g, '').trim(),
+                    screen: (b.screen?.name || "Private Screen").replace(/\s*\([^)]*\)/g, '').replace(/Baywatch/gi, 'Love Nest').trim(),
                     package: b.package?.name || "Private Screening",
                     duration: `${b.durationHours || 3} hours`,
                     timeSlot: b.startHour != null ? `${fmtHour(b.startHour)} - ${fmtHour(b.startHour + (b.durationHours || 3))}` : b.timeSlot
@@ -385,16 +385,20 @@ function DashboardContent() {
                     )}
                 </div>
 
-                {/* Celebration Add-on (above Payment Details) */}
-                {booking.addons && booking.addons.length > 0 && (
-                    <div className={`border-t ${borderMain} pt-4 mb-4`}>
-                        <div className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200"}`}>
-                            <div>
-                                <p className={`font-inter text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-700"}`}>Celebration Add-on</p>
-                                <p className={`font-inter text-[10px] ${isDark ? "text-amber-500/70" : "text-amber-600/70"}`}>{booking.addons[0].description}</p>
+                {/* Add-ons (above Payment Details) */}
+                {booking.addons && booking.addons.filter((a: any) => a.price > 0).length > 0 && (
+                    <div className={`border-t ${borderMain} pt-4 mb-4 space-y-2`}>
+                        {booking.addons.filter((a: any) => a.price > 0).map((addon: any, idx: number) => (
+                            <div key={idx} className={`flex justify-between items-center p-3 rounded-lg ${isDark ? "bg-amber-900/10 border border-amber-900/30" : "bg-amber-50 border border-amber-200"}`}>
+                                <div>
+                                    <p className={`font-inter text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-700"}`}>
+                                        {addon.name}{addon.persons ? ` (${addon.persons} ${Number(addon.persons) === 2 ? 'people' : 'person'}, ${addon.duration || '1 hr'})` : ''}
+                                    </p>
+                                    {addon.description && <p className={`font-inter text-[10px] ${isDark ? "text-amber-500/70" : "text-amber-600/70"}`}>{addon.description}</p>}
+                                </div>
+                                <span className={`font-cinzel font-bold text-sm ${isDark ? "text-amber-400" : "text-amber-700"}`}>₹{addon.price?.toLocaleString('en-IN')}</span>
                             </div>
-                            <span className={`font-cinzel font-bold text-sm ${isDark ? "text-amber-400" : "text-amber-700"}`}>₹{booking.addons[0].price?.toLocaleString('en-IN')}</span>
-                        </div>
+                        ))}
                     </div>
                 )}
 

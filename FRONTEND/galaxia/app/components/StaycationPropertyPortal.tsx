@@ -1172,6 +1172,17 @@ export default function StaycationPropertyPortal({ properties, portalName }: { p
                                                     </div>
                                                 </div>
                                             ))}
+                                            {booking.addons.filter((a: any) => a.name === 'Mud Bath').map((addon: any, i: number) => (
+                                                <div key={`mud-${i}`} className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Mud Bath Add-on</p>
+                                                        <p className="text-sm font-bold text-amber-900 mt-0.5">₹{Number(addon.price || 1500).toLocaleString('en-IN')}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-slate-700 font-medium">{addon.persons || 1} Person{Number(addon.persons) === 2 ? 's' : ''} · {addon.duration || '1 Hour'}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                             {booking.addons.filter((a: any) => a.name === 'Food Preference').map((addon: any, i: number) => (
                                                 <div key={`food-${i}`} className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 flex items-center gap-2">
                                                     <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Food:</span>

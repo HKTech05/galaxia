@@ -171,7 +171,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         }
       }
     } else if (cleanType === "amstel_nest" || cleanType === "amstel" || cleanType === "staycation" || cleanType === "bot2" || cleanType === "bot3") {
-      const diariesKeywords = ["wadala", "private theater", "private screening", "movie time", "celebration package", "sandy screen", "cine love", "park n watch", "baywatch"];
+      const diariesKeywords = ["wadala", "private theater", "private screening", "movie time", "celebration package", "sandy screen", "cine love", "park n watch", "baywatch", "love nest"];
       for (const kw of diariesKeywords) {
         if (textLower.includes(kw)) {
           const refusalMsg = "I am the Staycation Assistant and only handle Karjat staycation villa bookings. For Wadala movie screening bookings, please contact our Digital Diaries department.";

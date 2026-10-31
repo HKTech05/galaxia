@@ -203,7 +203,7 @@ export default function StayBookingsPage() {
         let addonsTotal = 0;
         if (merged.addons && Array.isArray(merged.addons)) {
             merged.addons.forEach((addon: any) => {
-                if (addon.name === 'Celebration Add-on') {
+                if (addon.price && addon.name !== 'Food Preference') {
                     addonsTotal += Number(addon.price) || 0;
                 }
             });
@@ -347,7 +347,7 @@ export default function StayBookingsPage() {
                 customerName: b.customerName || "Unknown",
                 customerPhone: b.customerPhone || "",
                 customerEmail: b.customerEmail || null,
-                propertyName: `DD: ${(b.screen?.name || 'Unknown Screen').replace(/\s*\(.*?\)/g, '')}`,
+                propertyName: `DD: ${(b.screen?.name || 'Unknown Screen').replace(/\s*\(.*?\)/g, '').replace(/Baywatch/gi, 'Love Nest')}`,
                 subPropertyName: b.package?.name || null,
                 checkIn: b.bookingDate,
                 checkOut: b.bookingDate,
@@ -1205,6 +1205,16 @@ export default function StayBookingsPage() {
                                                              {addon.occasion && <p className="text-xs text-slate-500 ml-1">Occasion: {addon.occasion}</p>}
                                                          </div>
                                                      );
+                                                } else if (addon.name === 'Mud Bath') {
+                                                    addonsTotal += Number(addon.price || 0);
+                                                    addonRows.push(
+                                                        <div key={`addon-${i}`} className="space-y-1">
+                                                            <div className="flex justify-between text-sm">
+                                                                <span className="text-amber-800 font-medium">Mud Bath ({addon.persons || 1} {Number(addon.persons) === 2 ? 'people' : 'person'}, {addon.duration || '1 hour'})</span>
+                                                                <span className="font-bold text-amber-800">{formatPrice(addon.price || 0)}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
                                                  } else if (addon.name === 'Food Preference') {
                                                      addonRows.push(
                                                          <div key={`addon-${i}`} className="flex justify-between text-sm items-center">
@@ -1544,7 +1554,7 @@ export default function StayBookingsPage() {
                                                 <option value={1}>Sandy Screen</option>
                                                 <option value={2}>Cine Love</option>
                                                 <option value={3}>Park N Watch</option>
-                                                <option value={4}>Baywatch</option>
+                                                <option value={4}>Love Nest</option>
                                             </select>
                                         </div>
                                         <div>
@@ -1818,14 +1828,40 @@ export default function StayBookingsPage() {
                                                             </div>
                                                         </div>
                                                     )}
+                                                    {addon.name === 'Mud Bath' && (
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <div>
+                                                                <label className="text-[9px] font-bold text-amber-800 uppercase">Price</label>
+                                                                <input type="number" value={addon.price || ''} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], price: parseInt(e.target.value) || 0}; updateStayFormAndRecalculate({ addons: a }); }}
+                                                                    className="w-full mt-0.5 px-2 py-1.5 border border-amber-300 rounded text-xs font-medium" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[9px] font-bold text-amber-800 uppercase">Persons</label>
+                                                                <select value={addon.persons || 1} onChange={e => { const a = [...editForm.addons]; const p = parseInt(e.target.value) || 1; a[idx] = {...a[idx], persons: p, price: p === 2 ? 2000 : 1500}; updateStayFormAndRecalculate({ addons: a }); }}
+                                                                    className="w-full mt-0.5 px-2 py-1.5 border border-amber-300 rounded text-xs font-medium bg-white">
+                                                                    <option value={1}>1 person (₹1500)</option>
+                                                                    <option value={2}>2 people (₹2000)</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[9px] font-bold text-amber-800 uppercase">Duration</label>
+                                                                <input type="text" value={addon.duration || '1 hour'} onChange={e => { const a = [...editForm.addons]; a[idx] = {...a[idx], duration: e.target.value}; setEditForm({...editForm, addons: a}); }}
+                                                                    className="w-full mt-0.5 px-2 py-1.5 border border-amber-300 rounded text-xs font-medium" />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
                                         <p className="text-xs text-slate-400 italic">No add-ons</p>
                                     )}
-                                    <button onClick={() => updateStayFormAndRecalculate({ addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 2000, occasion: '', cakeMessage: '' }] })}
-                                        className="mt-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">+ Add Celebration Add-on</button>
+                                    <div className="flex gap-2 mt-2">
+                                        <button onClick={() => updateStayFormAndRecalculate({ addons: [...(editForm.addons || []), { name: 'Celebration Add-on', price: 2000, occasion: '', cakeMessage: '' }] })}
+                                            className="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">+ Add Celebration Add-on</button>
+                                        <button onClick={() => updateStayFormAndRecalculate({ addons: [...(editForm.addons || []), { name: 'Mud Bath', price: 1500, persons: 1, duration: '1 hour' }] })}
+                                            className="text-xs font-bold text-amber-800 hover:text-amber-900 transition-colors">+ Add Mud Bath</button>
+                                    </div>
                                 </div>
                             )}
                         </div>

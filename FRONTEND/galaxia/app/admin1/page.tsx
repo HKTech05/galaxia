@@ -402,7 +402,7 @@ export default function Admin1Dashboard() {
                             <div className="flex flex-wrap items-center gap-4">
                                 <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${activeEvent.color.split(' ')[1]}`}>{activeEvent.customerName}</h1>
                                 <span className={`px-4 py-1.5 rounded-lg text-sm md:text-base font-black uppercase tracking-widest bg-white/60 border-2 shadow-sm ${activeEvent.color}`}>
-                                    {activeEvent.screen}
+                                    {activeEvent.screen === "Baywatch" ? "Love Nest" : activeEvent.screen}
                                 </span>
                                 {activeEvent.isMaintenance && (
                                     <span className="px-4 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest bg-red-100 text-red-700 border-2 border-red-200 flex items-center gap-1 shadow-sm">
@@ -871,7 +871,7 @@ export default function Admin1Dashboard() {
                                             <option value="Cine Love">Cine Love (Pink)</option>
                                             <option value="Sandy Screen">Sandy Screen (Yellow)</option>
                                             <option value="Park N Watch">Park N Watch (Orange)</option>
-                                            <option value="Baywatch">Baywatch (Light Blue)</option>
+                                            <option value="Baywatch">Love Nest (Light Blue)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
@@ -909,7 +909,7 @@ export default function Admin1Dashboard() {
                                             <option value="Cine Love">Cine Love (Pink)</option>
                                             <option value="Sandy Screen">Sandy Screen (Yellow)</option>
                                             <option value="Park N Watch">Park N Watch (Orange)</option>
-                                            <option value="Baywatch">Baywatch (Light Blue)</option>
+                                            <option value="Baywatch">Love Nest (Light Blue)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
@@ -1133,7 +1133,7 @@ export default function Admin1Dashboard() {
                                 </div>
                                 {screens.map((screen, i) => (
                                     <div key={i} className={`p-4 border-r border-slate-200 text-center last:border-r-0`}>
-                                        <div className="text-sm font-bold uppercase text-slate-800">{screen}</div>
+                                        <div className="text-sm font-bold uppercase text-slate-800">{screen === "Baywatch" ? "Love Nest" : screen}</div>
                                     </div>
                                 ))}
                             </div>
@@ -1193,7 +1193,7 @@ export default function Admin1Dashboard() {
                                         >
                                             <div className="flex items-center gap-1.5 mb-1">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen === "Baywatch" ? "Love Nest" : ev.screen}</span>
                                             </div>
                                             <span className="text-sm font-bold leading-tight line-clamp-2">{ev.customerName}</span>
 

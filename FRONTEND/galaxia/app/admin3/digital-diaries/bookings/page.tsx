@@ -122,7 +122,7 @@ export default function Admin3DDBookingsPage() {
         }
     };
 
-    const screens = [...new Set(bookings.map(b => b.screen?.name).filter(Boolean))];
+    const screens = [...new Set(bookings.map(b => b.screen?.name).filter((n): n is string => Boolean(n)))];
 
     const toggleSort = (field: "date" | "slot") => {
         if (sortField === field) {
@@ -197,7 +197,7 @@ export default function Admin3DDBookingsPage() {
                         <select value={screenFilter} onChange={(e) => setScreenFilter(e.target.value)}
                             className="pl-9 pr-8 py-2 w-full appearance-none border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
                             <option value="All">All Screens</option>
-                            {screens.map(s => <option key={s} value={s}>{s}</option>)}
+                            {screens.map(s => <option key={s} value={s}>{(s || '').replace(/Baywatch/gi, 'Love Nest')}</option>)}
                         </select>
                         <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90" size={14} />
                     </div>
@@ -257,7 +257,7 @@ export default function Admin3DDBookingsPage() {
                                             <span className="text-[11px] font-bold text-slate-400 mt-0.5">{b.customerPhone}</span>
                                         </div>
                                     </td>
-                                    <td className="px-3 md:px-6 py-4 hidden md:table-cell"><span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">{(b.screen?.name || "—").replace(/\s*\(.*?\)/g, '')}</span></td>
+                                    <td className="px-3 md:px-6 py-4 hidden md:table-cell"><span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide rounded border border-indigo-100">{(b.screen?.name || "—").replace(/\s*\(.*?\)/g, '').replace(/Baywatch/gi, 'Love Nest')}</span></td>
                                     <td className="px-3 md:px-6 py-4">
                                         <div className="flex flex-col gap-0.5">
                                             <span className="text-sm font-bold text-slate-800">{new Date(b.bookingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
@@ -376,7 +376,7 @@ export default function Admin3DDBookingsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Screen</p>
-                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{detailBooking.screen?.name || '—'} (Digital Diaries)</p>
+                                    <p className="text-sm font-bold text-slate-800 mt-0.5">{(detailBooking.screen?.name || '—').replace(/Baywatch/gi, 'Love Nest')} (Digital Diaries)</p>
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date</p>
@@ -468,7 +468,7 @@ export default function Admin3DDBookingsPage() {
                             </div>
 
                             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
-                                <p><strong>Current Screen:</strong> {detailBooking.screen?.name || '—'}</p>
+                                <p><strong>Current Screen:</strong> {(detailBooking.screen?.name || '—').replace(/Baywatch/gi, 'Love Nest')}</p>
                                 <p><strong>Duration:</strong> {detailBooking.durationHours} hours</p>
                                 <p><strong>Package:</strong> {detailBooking.package?.name || '—'}</p>
                             </div>
@@ -480,7 +480,7 @@ export default function Admin3DDBookingsPage() {
                                     className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
                                 >
                                     {["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"].map(s => (
-                                        <option key={s} value={s}>{s}{s === detailBooking.screen?.name ? ' (current)' : ''}</option>
+                                        <option key={s} value={s}>{s === "Baywatch" ? "Love Nest" : s}{s === detailBooking.screen?.name ? ' (current)' : ''}</option>
                                     ))}
                                 </select>
                             </div>

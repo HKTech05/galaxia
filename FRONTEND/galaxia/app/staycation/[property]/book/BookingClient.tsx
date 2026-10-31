@@ -224,6 +224,12 @@ export default function BookingClient({ property }: BookingClientProps) {
     const [foodType, setFoodType] = useState<'Regular' | 'Jain'>('Regular');
     const [celebrationPreviewOpen, setCelebrationPreviewOpen] = useState(false);
 
+    // Mud Bath Add-on (Ambrose & Amstel Nest only)
+    const [mudBathAddon, setMudBathAddon] = useState(false);
+    const [mudBathPersons, setMudBathPersons] = useState<1 | 2>(1);
+    const [mudBathPreviewOpen, setMudBathPreviewOpen] = useState(false);
+    const mudBathPrice = mudBathPersons === 2 ? 2000 : 1500;
+
     // Compulsory booking attribution
     const STAYCATION_BOOKING_SOURCE_OPTIONS = [
         "Sana (Bookings manager)",
@@ -420,6 +426,21 @@ export default function BookingClient({ property }: BookingClientProps) {
         if (property.id.includes('/')) {
             const parentSlug = property.id.split('/')[0];
             return (siteImages[`${parentSlug}/celebration`] || [])[0]?.url || '';
+        }
+        return '';
+    })();
+
+    // Mud Bath add-on image for this property (uploaded via Photo Manager)
+    const mudBathImageUrl = (() => {
+        if (selectedRoom?.id) {
+            const specific = (siteImages[`${selectedRoom.id}/mud-bath`] || [])[0]?.url;
+            if (specific) return specific;
+        }
+        const direct = (siteImages[`${property.id}/mud-bath`] || [])[0]?.url;
+        if (direct) return direct;
+        if (property.id.includes('/')) {
+            const parentSlug = property.id.split('/')[0];
+            return (siteImages[`${parentSlug}/mud-bath`] || [])[0]?.url || '';
         }
         return '';
     })();
@@ -636,7 +657,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         }
     }
 
-    const addonTotal = celebrationAddon ? CELEBRATION_ADDON_PRICE : 0;
+    const addonTotal = (celebrationAddon ? CELEBRATION_ADDON_PRICE : 0) + (mudBathAddon ? mudBathPrice : 0);
     const totalAmount = Math.round((preDiscountTotal - discountAmount + addonTotal) / 10) * 10;
 
     const totalGuests = adults + kids;
@@ -927,6 +948,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             // Build addons
             const bookingAddons: any[] = [];
             if (celebrationAddon) bookingAddons.push({ name: 'Celebration Add-on', price: CELEBRATION_ADDON_PRICE, description: 'Cake, balloons, and a banner for a warm ambiance', cakeMessage: celebrationCakeMsg || '', occasion: celebrationOccasion });
+            if (mudBathAddon) bookingAddons.push({ name: 'Mud Bath', price: mudBathPrice, persons: mudBathPersons, duration: '1 hour', description: `Therapeutic mud bath for ${mudBathPersons} ${mudBathPersons === 1 ? 'person' : 'people'} (1 hour)` });
             if (isAmbrose || isAmstelNest) bookingAddons.push({ name: 'Food Preference', foodType });
 
             // Build booking payload BEFORE payment so it can be stored for webhook safety-net
@@ -1527,6 +1549,82 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         </div>
                                     )}
 
+                                    {/* Mud Bath Add-on — Ambrose & Amstel Nest only */}
+                                    {(isAmbrose || isAmstelNest) && (backendData?.configuration?.mudBathEnabled !== false) && (
+                                        <div className="mb-6 p-4 border border-amber-900/20 rounded-lg bg-amber-50/40">
+                                            <div className="flex items-start gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    id="mudbath-addon"
+                                                    checked={mudBathAddon}
+                                                    onChange={(e) => setMudBathAddon(e.target.checked)}
+                                                    className="mt-1 w-4 h-4 accent-[#B8860B] cursor-pointer"
+                                                />
+                                                <label htmlFor="mudbath-addon" className="cursor-pointer flex-1 min-w-0">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5">
+                                                        <h4 className="font-inter text-sm font-semibold text-text-primary">Mud Bath Experience</h4>
+                                                        <span className="font-cinzel text-sm font-semibold text-dark-gold whitespace-nowrap">+ ₹{mudBathPrice.toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                    <p className="font-inter text-xs text-text-secondary mt-1">Rejuvenating 1-hour therapeutic mud bath session (₹1,500 for 1 person · ₹2,000 for 2 people)</p>
+                                                </label>
+                                                {mudBathImageUrl && (
+                                                    <div className="shrink-0 flex flex-col items-center gap-1">
+                                                        <button type="button" onClick={(e) => { e.preventDefault(); setMudBathPreviewOpen(true); }} className="w-[78px] h-[78px] sm:w-[92px] sm:h-[92px] rounded-lg overflow-hidden border border-antique-gold/30 hover:border-antique-gold hover:shadow-md transition-all cursor-pointer relative group">
+                                                            <Image src={mudBathImageUrl} alt="Mud bath preview" fill className="object-cover" />
+                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                                <svg className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                                                            </div>
+                                                        </button>
+                                                        <span className="text-[9px] font-inter text-text-muted">Click to view</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {mudBathAddon && (
+                                                <div className="mt-4 space-y-3 pl-7 animate-in fade-in slide-in-from-top-2">
+                                                    <div>
+                                                        <label className="block font-inter text-xs text-text-secondary mb-1.5">Number of Guests (1 Hour Duration)</label>
+                                                        <div className="grid grid-cols-2 gap-3 max-w-xs">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setMudBathPersons(1)}
+                                                                className={`py-2 px-3 rounded-lg border text-xs font-inter font-medium text-center transition-all ${
+                                                                    mudBathPersons === 1
+                                                                        ? 'border-antique-gold bg-antique-gold/10 text-dark-gold font-semibold'
+                                                                        : 'border-border-medium bg-white text-text-secondary hover:border-antique-gold/50'
+                                                                }`}
+                                                            >
+                                                                1 Person · ₹1,500
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setMudBathPersons(2)}
+                                                                className={`py-2 px-3 rounded-lg border text-xs font-inter font-medium text-center transition-all ${
+                                                                    mudBathPersons === 2
+                                                                        ? 'border-antique-gold bg-antique-gold/10 text-dark-gold font-semibold'
+                                                                        : 'border-border-medium bg-white text-text-secondary hover:border-antique-gold/50'
+                                                                }`}
+                                                            >
+                                                                2 People · ₹2,000
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Mud Bath Image Preview Modal */}
+                                    {mudBathPreviewOpen && mudBathImageUrl && (
+                                        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setMudBathPreviewOpen(false)}>
+                                            <div className="relative max-w-lg w-full max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                                                <img src={mudBathImageUrl} alt="Mud bath preview" className="w-full h-auto max-h-[80vh] object-contain bg-white" />
+                                                <button onClick={() => setMudBathPreviewOpen(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Food Preference — Ambrose & Amstel Nest only (compulsory) */}
                                     {(isAmbrose || isAmstelNest) && (
                                         <div className="mb-6 p-4 border border-emerald-200 rounded-lg bg-emerald-50/50">
@@ -1802,6 +1900,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                     {specialDiscount > 0 && <div className="flex justify-between items-center text-emerald-600 text-xs"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                     {discountAmount > 0 && <div className="flex justify-between items-center text-green-600 text-xs"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                     {celebrationAddon && <div className="flex justify-between items-center text-xs text-amber-700"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
+                                    {mudBathAddon && <div className="flex justify-between items-center text-xs text-amber-800"><span>Mud Bath ({mudBathPersons} {mudBathPersons === 2 ? 'ppl' : 'person'})</span><span>{formatPrice(mudBathPrice)}</span></div>}
                                     <div className="flex justify-between items-center"><span>Taxes</span><span>{formatPrice(taxesAndFees)}</span></div>
                                 </div>
 
@@ -1903,6 +2002,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                             <div className="border-t border-border-light pt-4 space-y-2 font-inter text-sm">
                                 <div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span>{formatPrice(roomPrice + extraCharges)}</span></div>
                                 {celebrationAddon && <div className="flex justify-between text-amber-700 text-xs"><span>Celebration Add-on</span><span>{formatPrice(CELEBRATION_ADDON_PRICE)}</span></div>}
+                                {mudBathAddon && <div className="flex justify-between text-amber-800 text-xs"><span>Mud Bath ({mudBathPersons} {mudBathPersons === 2 ? 'ppl' : 'person'})</span><span>{formatPrice(mudBathPrice)}</span></div>}
                                 {specialDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount</span><span>-{formatPrice(specialDiscount)}</span></div>}
                                 {discountAmount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount ({appliedCoupon?.code})</span><span>-{formatPrice(discountAmount)}</span></div>}
                                 <div className="flex justify-between"><span className="text-text-secondary">Taxes ({property.gstPercent}%)</span><span>{formatPrice(taxesAndFees)}</span></div>

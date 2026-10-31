@@ -94,7 +94,7 @@ const events: Event[] = [
     { id: "EV-02", day: 0, startHour: 16, duration: 3, title: "Sandy Screen - Priya P.", color: "bg-amber-100 text-amber-900 border-amber-300", screen: "Sandy Screen", customerName: "Priya Patel", phone: "+91 87654 32109", email: "priya@example.com", dateBooked: "26 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Movie Time", amountPaid: "₹4,200 (100%)", amountToCollect: "₹0", paymentDetails: "Paid via Card on 26 Feb 2026 10:15", addOns: { balloons: true, cake: true, cakeMessage: "Happy Birthday Priya!" } },
     { id: "EV-03", day: 0, startHour: 19, duration: 3, title: "Cine Love - Rahul S.", color: "bg-green-100 text-green-700 border-green-200", screen: "Cine Love", customerName: "Rahul Sharma", phone: "+91 98765 43210", email: "rahul@example.com", dateBooked: "20 Feb, 2026", reservationDate: "28 Feb, 2026", packageType: "Celebration", occasion: "Proposal", cakeMessage: "Marry Me?", amountPaid: "₹1,750 (50%)", amountToCollect: "₹1,750", paymentDetails: "Paid via UPI on 20 Feb 2026 09:00" },
     { id: "EV-04", day: 1, startHour: 11, duration: 2, title: "Park N Watch - Amit S.", color: "bg-orange-100 text-orange-700 border-orange-200", screen: "Park N Watch", customerName: "Amit Singh", phone: "+91 91234 56780", email: "amit.s@example.com", dateBooked: "27 Feb, 2026", reservationDate: "01 Mar, 2026", packageType: "Movie Time", amountPaid: "₹1,400 (50%)", amountToCollect: "₹1,400", paymentDetails: "Paid via UPI on 27 Feb 2026 16:45", addOns: { ledBanner: true, ledBannerType: "Better Together" } },
-    { id: "EV-05", day: 2, startHour: 14, duration: 3, title: "Baywatch - Karan J.", color: "bg-blue-100 text-blue-700 border-blue-200", screen: "Baywatch", customerName: "Karan Johar", phone: "+91 99999 88888", email: "kj@example.com", dateBooked: "21 Feb, 2026", reservationDate: "02 Mar, 2026", packageType: "Celebration", occasion: "Happy Birthday", cakeMessage: "Happy Birthday Karan!", amountPaid: "₹2,500 (50%)", amountToCollect: "₹2,500", paymentDetails: "Paid via UPI on 21 Feb 2026 11:20" },
+    { id: "EV-05", day: 2, startHour: 14, duration: 3, title: "Love Nest - Karan J.", color: "bg-blue-100 text-blue-700 border-blue-200", screen: "Baywatch", customerName: "Karan Johar", phone: "+91 99999 88888", email: "kj@example.com", dateBooked: "21 Feb, 2026", reservationDate: "02 Mar, 2026", packageType: "Celebration", occasion: "Happy Birthday", cakeMessage: "Happy Birthday Karan!", amountPaid: "₹2,500 (50%)", amountToCollect: "₹2,500", paymentDetails: "Paid via UPI on 21 Feb 2026 11:20" },
 ];
 
 export default function Admin1Dashboard() {
@@ -952,7 +952,7 @@ export default function Admin1Dashboard() {
                                 <div className="flex flex-wrap items-center gap-4">
                                     <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${activeEvent.color.split(' ')[1]}`}>{activeEvent.customerName}</h1>
                                     <span className={`px-4 py-1.5 rounded-lg text-sm md:text-base font-black uppercase tracking-widest bg-white/60 border-2 shadow-sm ${activeEvent.color}`}>
-                                        {activeEvent.screen}
+                                        {activeEvent.screen === "Baywatch" ? "Love Nest" : activeEvent.screen}
                                     </span>
                                     {activeEvent.isMaintenance && (
                                         <span className="px-4 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest bg-red-100 text-red-700 border-2 border-red-200 flex items-center gap-1 shadow-sm">
@@ -1607,7 +1607,7 @@ export default function Admin1Dashboard() {
                                 </div>
 
                                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs text-slate-500 space-y-1">
-                                    <p><strong>Current Screen:</strong> {activeEvent.screen}</p>
+                                    <p><strong>Current Screen:</strong> {activeEvent.screen === "Baywatch" ? "Love Nest" : activeEvent.screen}</p>
                                     <p><strong>Duration:</strong> {activeEvent.duration} hours</p>
                                     <p><strong>Package:</strong> {activeEvent.packageType}</p>
                                 </div>
@@ -1619,7 +1619,7 @@ export default function Admin1Dashboard() {
                                         className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-400 focus:outline-none transition-colors"
                                     >
                                         {["Cine Love", "Sandy Screen", "Park N Watch", "Baywatch"].map(s => (
-                                            <option key={s} value={s}>{s}{s === activeEvent.screen ? ' (current)' : ''}</option>
+                                            <option key={s} value={s}>{s === "Baywatch" ? "Love Nest" : s}{s === activeEvent.screen ? ' (current)' : ''}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -1661,7 +1661,7 @@ export default function Admin1Dashboard() {
                                         <option value={1}>Sandy Screen</option>
                                         <option value={2}>Cine Love</option>
                                         <option value={3}>Park N Watch</option>
-                                        <option value={4}>Baywatch</option>
+                                        <option value={4}>Love Nest</option>
                                     </select>
                                 </div>
                                 {/* Package */}
@@ -1859,7 +1859,7 @@ export default function Admin1Dashboard() {
                                             <option value="Cine Love">Cine Love (Green)</option>
                                             <option value="Sandy Screen">Sandy Screen (Brown)</option>
                                             <option value="Park N Watch">Park N Watch (Orange)</option>
-                                            <option value="Baywatch">Baywatch (Blue)</option>
+                                            <option value="Baywatch">Love Nest (Blue)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
@@ -1897,7 +1897,7 @@ export default function Admin1Dashboard() {
                                             <option value="Cine Love">Cine Love (Pink)</option>
                                             <option value="Sandy Screen">Sandy Screen (Yellow)</option>
                                             <option value="Park N Watch">Park N Watch (Orange)</option>
-                                            <option value="Baywatch">Baywatch (Light Blue)</option>
+                                            <option value="Baywatch">Love Nest (Light Blue)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
@@ -2364,7 +2364,7 @@ export default function Admin1Dashboard() {
                                 </div>
                                 {screens.map((screen, i) => (
                                     <div key={i} className={`p-4 border-r border-slate-200 text-center last:border-r-0 bg-slate-50`}>
-                                        <div className="text-xs md:text-sm font-bold uppercase text-slate-800 whitespace-nowrap">{screen}</div>
+                                        <div className="text-xs md:text-sm font-bold uppercase text-slate-800 whitespace-nowrap">{screen === "Baywatch" ? "Love Nest" : screen}</div>
                                     </div>
                                 ))}
                             </div>
@@ -2438,7 +2438,7 @@ export default function Admin1Dashboard() {
                                                 <>
                                                     <div className="flex items-center gap-1 w-full">
                                                         <div className="w-1 h-1 rounded-full bg-current opacity-70 shrink-0"></div>
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider truncate">{ev.screen}</span>
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider truncate">{ev.screen === "Baywatch" ? "Love Nest" : ev.screen}</span>
                                                     </div>
                                                     <span className="text-[11px] font-bold leading-tight truncate w-full">{ev.customerName}</span>
                                                     {ev.status === 'no_show' && <span className="text-[8px] font-bold text-red-600 uppercase">No Show</span>}
@@ -2449,7 +2449,7 @@ export default function Admin1Dashboard() {
                                                 <>
                                                     <div className="flex items-center gap-1.5 mb-1">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70"></div>
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen}</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider">{ev.screen === "Baywatch" ? "Love Nest" : ev.screen}</span>
                                                     </div>
                                                     <span className="text-sm font-bold leading-tight line-clamp-2">{ev.customerName}</span>
                                                     {ev.status === 'no_show' && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-0.5 uppercase">No Show</span>}

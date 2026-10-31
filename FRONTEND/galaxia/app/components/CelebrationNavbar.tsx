@@ -9,7 +9,7 @@ const allScreenLinks = [
     { name: "Sandy Screen", href: "/celebration/movie-time/sandy-screen", slug: "sandy-screen" },
     { name: "Cine Love", href: "/celebration/movie-time/cine-love", slug: "cine-love" },
     { name: "Park N Watch", href: "/celebration/movie-time/park-n-watch", slug: "park-n-watch" },
-    { name: "Baywatch", href: "/celebration/movie-time/baywatch", slug: "baywatch" },
+    { name: "Love Nest", href: "/celebration/movie-time/baywatch", slug: "baywatch" },
 ];
 
 export default function CelebrationNavbar() {

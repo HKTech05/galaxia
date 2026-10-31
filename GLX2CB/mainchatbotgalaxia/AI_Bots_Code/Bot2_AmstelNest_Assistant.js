@@ -23,7 +23,7 @@ class AmstelNestAssistant {
     const textLower = userMessage.toLowerCase().trim();
 
     // Check if query concerns Wadala Digital Diaries private theater
-    const diariesKeywords = ["wadala", "private theater", "private screening", "movie time", "celebration package", "sandy screen", "cine love", "park n watch", "baywatch"];
+    const diariesKeywords = ["wadala", "private theater", "private screening", "movie time", "celebration package", "sandy screen", "cine love", "park n watch", "baywatch", "love nest"];
     for (const kw of diariesKeywords) {
       if (textLower.includes(kw)) {
         return {

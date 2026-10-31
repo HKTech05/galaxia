@@ -277,7 +277,7 @@ const staticMenu = {
       { label: "🏖️ Sandy Screen", value: "screen_sandy", description: "Beach theme" },
       { label: "💕 Cine Love", value: "screen_cinelove", description: "Romantic theme" },
       { label: "🚗 Park N Watch", value: "screen_parknwatch", description: "Car theme" },
-      { label: "🏛️ Baywatch", value: "screen_baywatch", description: "Greece theme" },
+      { label: "🏛️ Love Nest", value: "screen_baywatch", description: "Greece theme" },
       BACK_TO_MENU
     ]
   },
@@ -295,7 +295,7 @@ const staticMenu = {
     options: [ { label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU ]
   },
   screen_baywatch: {
-    message: MOVIE_TIME_MSG("Baywatch", "Greece Theme"),
+    message: MOVIE_TIME_MSG("Love Nest", "Greece Theme"),
     options: [ { label: "📅 Book Now", value: "book_movietime" }, BACK_TO_MENU ]
   },
 
@@ -305,7 +305,7 @@ const staticMenu = {
       { label: "💕 Cine Love", value: "deco_cinelove", description: "Romantic theme" },
       { label: "🏖️ Sandy Screen", value: "deco_sandy", description: "Beach theme" },
       { label: "🚗 Park N Watch", value: "deco_parknwatch", description: "Car theme" },
-      { label: "🏛️ Baywatch", value: "deco_baywatch", description: "Greece theme" },
+      { label: "🏛️ Love Nest", value: "deco_baywatch", description: "Greece theme" },
       BACK_TO_MENU
     ]
   },
@@ -313,7 +313,7 @@ const staticMenu = {
   deco_cinelove: { message: CELEBRATION_MSG("Cine Love", "Romantic Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
   deco_sandy: { message: CELEBRATION_MSG("Sandy Screen", "Beach Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
   deco_parknwatch: { message: CELEBRATION_MSG("Park N Watch", "Car Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
-  deco_baywatch: { message: CELEBRATION_MSG("Baywatch", "Greece Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
+  deco_baywatch: { message: CELEBRATION_MSG("Love Nest", "Greece Theme"), options: [ { label: "📅 Book Now", value: "book_deco" }, BACK_TO_MENU ] },
 
   book_movietime: { message: "🔗 *Book Movie Time Only:*\nhttps://galaxiaresorts.com/celebration/movie-time" + PAYMENT_WARNING, options: [BACK_TO_MENU] },
   book_deco: { message: "🔗 *Book Celebration Pack:*\nhttps://galaxiaresorts.com/celebration/celebration" + PAYMENT_WARNING, options: [BACK_TO_MENU] },

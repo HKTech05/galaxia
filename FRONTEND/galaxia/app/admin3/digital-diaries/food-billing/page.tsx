@@ -122,7 +122,7 @@ export default function FoodBillingPage() {
 
     // Build guest options from bookings
     const guestOptions = ddBookings.map(b => ({
-        label: `${b.customerName} — ${(b.screen?.name || "").replace(/\s*\(.*?\)/g, "")}`,
+        label: `${b.customerName} — ${(b.screen?.name || "").replace(/\s*\(.*?\)/g, "").replace(/Baywatch/gi, "Love Nest")}`,
         name: b.customerName,
         screen: (b.screen?.name || "").replace(/\s*\(.*?\)/g, ""),
     }));
@@ -250,7 +250,7 @@ export default function FoodBillingPage() {
                                         }`}
                                     >
                                         <span className={screenName ? "text-slate-800 font-semibold" : "text-slate-400"}>
-                                            {screenName || "Select Screen"}
+                                            {(screenName === "Baywatch" ? "Love Nest" : screenName) || "Select Screen"}
                                         </span>
                                         <ChevronDown size={16} className={`text-slate-400 transition-transform ${screenDropOpen ? "rotate-180" : ""}`} />
                                     </button>
@@ -266,7 +266,7 @@ export default function FoodBillingPage() {
                                                         className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
                                                             screenName === s ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-700 hover:bg-slate-50"
                                                         }`}
-                                                    >{s}</button>
+                                                    >{s === "Baywatch" ? "Love Nest" : s}</button>
                                                 ))}
                                             </div>
                                         </div>
@@ -281,7 +281,7 @@ export default function FoodBillingPage() {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Screen</label>
                             <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-sm font-bold text-indigo-700">
-                                {screenName}
+                                {screenName === "Baywatch" ? "Love Nest" : screenName}
                             </div>
                         </div>
                     )}

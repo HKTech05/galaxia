@@ -153,11 +153,11 @@ export const screens: Record<string, ScreenData> = {
     },
     baywatch: {
         id: "baywatch",
-        name: "Baywatch",
+        name: "Love Nest",
         theme: "Greece Theme",
         tagline: "Mediterranean cinema under the stars",
         description:
-            "Baywatch brings the whitewashed charm of Santorini to your screening. Blue domes, flowing drapes, and Mediterranean ambiance create a breathtaking backdrop for watching movies under starlit ceilings. A truly Grecian escape.",
+            "Love Nest brings the whitewashed charm of Santorini to your screening. Blue domes, flowing drapes, and Mediterranean ambiance create a breathtaking backdrop for watching movies under starlit ceilings. A truly Grecian escape.",
         image: "",
         gallery: [
             "",

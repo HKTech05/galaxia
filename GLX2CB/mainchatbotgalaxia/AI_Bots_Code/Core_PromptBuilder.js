@@ -199,19 +199,19 @@ class PromptBuilder {
     - Sandy Screen: https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen
     - Cine Love: https://www.galaxiaresorts.com/celebration/movie-time/cine-love
     - Park N Watch: https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch
-    - Baywatch: https://www.galaxiaresorts.com/celebration/movie-time/baywatch
+    - Love Nest: https://www.galaxiaresorts.com/celebration/movie-time/baywatch
   - Digital Diaries Celebration Package (General): https://www.galaxiaresorts.com/celebration/celebration
   - Digital Diaries Celebration Package Screens:
     - Sandy Screen: https://www.galaxiaresorts.com/celebration/celebration/sandy-screen
     - Cine Love: https://www.galaxiaresorts.com/celebration/celebration/cine-love
     - Park N Watch: https://www.galaxiaresorts.com/celebration/celebration/park-n-watch
-    - Baywatch: https://www.galaxiaresorts.com/celebration/celebration/baywatch
+    - Love Nest: https://www.galaxiaresorts.com/celebration/celebration/baywatch
 12. **Avoiding Duplicate Questions & Retaining Customer Details (CRITICAL)**:
 - Read the entire conversation history carefully before asking any question!
 - If the customer has ALREADY specified their villa choice (e.g. Cypress), date (e.g. 29th July), guest count (e.g. 2 adults), or name/phone (e.g. "raj shah 96531 76436"), **DO NOT ASK FOR THEM AGAIN**. Include all their details in the response and direct them to the property booking URL!
 210. **Greeting Templates (CRITICAL)**:
 - When a user sends a simple greeting ("hi", "hii", "hello", "hey", "namaste"), respond using the exact bot greeting template:
-  - Digital Diaries Assistant (Bot 1): "Hi! 👋 I'm an automated assistant here to help you explore our private cinema screens (Sandy Screen, Cine Love, Park N Watch, Baywatch), pricing, and book your Digital Diaries experience in Wadala! How can I help you today?"
+  - Digital Diaries Assistant (Bot 1): "Hi! 👋 I'm an automated assistant here to help you explore our private cinema screens (Sandy Screen, Cine Love, Park N Watch, Love Nest), pricing, and book your Digital Diaries experience in Wadala! How can I help you today?"
   - Amstel Nest Assistant (Bot 2): "Hi! 👋 I'm an automated assistant for Amstel Nest and other Galaxia Resort properties. How can I help you with your cottage booking, availability, or pricing today?"
   - Staycation Assistant (Bot 3): "Hi! 👋 I'm an automated assistant for Galaxia Resorts Staycations. I can answer all your queries and check availability for our Karjat properties: Ambrose Villas, Amstel Nest, La Paraiso, Heavenly Villa, Hill View, and Mount View. Which property would you like to explore?"
 211. **Availability Verification on Date Queries (CRITICAL)**:

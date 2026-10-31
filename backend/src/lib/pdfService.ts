@@ -187,7 +187,7 @@ export function generateDDBookingPDF(booking: any): Promise<Buffer> {
         doc.on("end", () => resolve(Buffer.concat(chunks)));
         doc.on("error", reject);
 
-        const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").trim();
+        const screenName = (booking.screen?.name || "Digital Diaries Screen").replace(/\s*\([^)]*\)/g, "").replace(/Baywatch/gi, "Love Nest").trim();
         const packageName = booking.package?.name || "Experience";
         const bookingDate = fmtDate(booking.bookingDate);
         const bookedOn = fmtShortDate(booking.bookedAt || new Date());
@@ -404,7 +404,7 @@ export function generateStaycationBookingPDF(booking: any): Promise<Buffer> {
                     const price = Number(a.price) || 0;
                     addonsTotal += price;
                     displayAddons.push({
-                        label: a.occasion ? `${a.name} (${a.occasion})` : a.name,
+                        label: a.occasion ? `${a.name} (${a.occasion})` : a.persons ? `${a.name} (${a.persons} ${Number(a.persons) === 2 ? 'ppl' : 'person'}, ${a.duration || '1 hr'})` : a.name,
                         price
                     });
                 }
