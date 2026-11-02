@@ -171,7 +171,11 @@ function dbToUiMessage(db: DbChatMessage): Message {
 
 function authHeaders(): Record<string, string> {
     const token = typeof window !== "undefined" ? localStorage.getItem("chatbot_token") : null;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? { 
+        Authorization: `Bearer ${token}`,
+        "x-auth-token": token,
+        "x-chatbot-token": token,
+    } : {};
 }
 
 function getAccessLabel(role: string, username: string): string {
@@ -362,10 +366,13 @@ export default function ChatbotDashboard() {
 
         // Validate token with /api/auth/chatbot-me
         fetch("/api/auth/chatbot-me", {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: authHeaders(),
         })
-            .then((r) => {
-                if (!r.ok) throw new Error("Invalid session");
+            .then(async (r) => {
+                if (!r.ok) {
+                    const data = await r.json().catch(() => ({}));
+                    throw new Error(data.error || "Invalid session");
+                }
                 return r.json();
             })
             .then((fresh) => {
@@ -377,10 +384,13 @@ export default function ChatbotDashboard() {
                 localStorage.setItem("chatbot_session", JSON.stringify(updated));
                 setSession(updated);
             })
-            .catch(() => {
-                localStorage.removeItem("chatbot_token");
-                localStorage.removeItem("chatbot_session");
-                router.replace("/chatbot");
+            .catch((err) => {
+                console.warn("Session check error:", err.message);
+                if (err.message === "Invalid credentials" || err.message === "Invalid session" || err.message === "Invalid or expired token" || err.message === "User not found") {
+                    localStorage.removeItem("chatbot_token");
+                    localStorage.removeItem("chatbot_session");
+                    router.replace("/chatbot");
+                }
             });
     }, [router]);
 
@@ -388,8 +398,12 @@ export default function ChatbotDashboard() {
     const loadChats = useCallback(async () => {
         try {
             const res = await fetch(`${BOT_API_BASE}/api/chats`);
-            if (!res.ok) return;
+            if (!res.ok) {
+                console.warn("Failed to load chats:", res.status);
+                return;
+            }
             const data: DbChatSession[] = await res.json();
+            if (!Array.isArray(data)) return;
             const whatsappSessions = data.map(dbToUiSession);
 
             setSessions(prev => {

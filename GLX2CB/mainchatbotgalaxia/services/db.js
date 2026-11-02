@@ -13,10 +13,10 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   max: 10,
-});
-
-pool.query(`ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS state JSONB DEFAULT '{}'::jsonb;`).catch(err => {
-  console.warn("[DB] Failed to run ALTER TABLE to add 'state' column:", err.message);
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  statement_timeout: 10000,
+  query_timeout: 10000,
 });
 
 /* ── Sessions ──────────────────────────────────────────── */
@@ -93,27 +93,41 @@ async function saveMessage(sessionId, role, message, isHuman = false) {
  * Optionally filter by phone_number_id.
  */
 async function getChats(phoneNumberId = null) {
-  let query = `
-    SELECT * FROM chat_sessions 
-    WHERE phone_number_id != '1015208551685641'
-      AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
-      AND session_id NOT LIKE '%_diaries'
-      AND session_id NOT LIKE '%_amstel'
-      AND session_id NOT LIKE '%_staycation'
-    ORDER BY last_message_at DESC NULLS LAST`;
+  let query = "";
   let params = [];
 
   if (phoneNumberId) {
     query = `
-      SELECT * FROM chat_sessions 
+      SELECT id, session_id, customer_phone, display_name, phone_number_id, bot_type, platform, is_human_active, tags, unread_count, last_message, last_message_at, created_at, updated_at
+      FROM chat_sessions 
       WHERE phone_number_id = $1
         AND phone_number_id != '1015208551685641'
         AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
         AND session_id NOT LIKE '%_diaries'
         AND session_id NOT LIKE '%_amstel'
         AND session_id NOT LIKE '%_staycation'
-      ORDER BY last_message_at DESC NULLS LAST`;
+      ORDER BY last_message_at DESC NULLS LAST
+      LIMIT 200`;
     params = [phoneNumberId];
+  } else {
+    query = `
+      WITH ranked_sessions AS (
+        SELECT id, session_id, customer_phone, display_name, phone_number_id, bot_type, platform, is_human_active, tags, unread_count, last_message, last_message_at, created_at, updated_at,
+               ROW_NUMBER() OVER (
+                 PARTITION BY phone_number_id 
+                 ORDER BY last_message_at DESC NULLS LAST
+               ) as rn
+        FROM chat_sessions
+        WHERE phone_number_id != '1015208551685641'
+          AND customer_phone NOT IN ('917355630009', '919867677811', '7355630009', '9867677811')
+          AND session_id NOT LIKE '%_diaries'
+          AND session_id NOT LIKE '%_amstel'
+          AND session_id NOT LIKE '%_staycation'
+      )
+      SELECT id, session_id, customer_phone, display_name, phone_number_id, bot_type, platform, is_human_active, tags, unread_count, last_message, last_message_at, created_at, updated_at
+      FROM ranked_sessions
+      WHERE rn <= 100
+      ORDER BY last_message_at DESC NULLS LAST`;
   }
 
   const result = await pool.query(query, params);
