@@ -364,6 +364,11 @@ export default function ChatbotDashboard() {
         if (!s || !token) { router.replace("/chatbot"); return; }
         setSession(s);
 
+        // Auto-select first assigned number if user does not manage Digital Diaries (to avoid empty "All" tab)
+        if (s.assignedNumbers && !s.assignedNumbers.includes("digital_diaries") && s.role !== "owner" && s.role !== "developer") {
+            setTab((prev) => prev === "all" ? (s.assignedNumbers[0] || "wa_staycation") : prev);
+        }
+
         // Validate token with /api/auth/chatbot-me
         fetch("/api/auth/chatbot-me", {
             headers: authHeaders(),
