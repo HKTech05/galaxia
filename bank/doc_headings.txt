@@ -1,0 +1,19 @@
+1. Mandatory Details for Bank Testing (Merchant Onboarding Form)
+2. Compliance with HDFC Mandatory Technical Directives
+1. Unique Customer ID per Customer: Compliant. Each checkout session dynamically generates a distinct, non-reusable customer ID (e.g. 'hdfc_test_1792821548671_coofs'). Customer IDs are never hardcoded or static.
+2. UDF2 Parameter Restriction: Compliant. Parameter 'udf2' is strictly omitted / passed as empty string ("") to ensure full compatibility with HDFC's tokenization engine. Custom correlation data is safely passed in 'udf1'.
+3. Order ID & Amount Consistency: Compliant. The Order ID ('GXMVLZNSE7BYWK') and Amount ('₹1.00') generated server-side match identically across the HDFC payment page, 3DS authorization window, Status API response, and the final merchant response page.
+4. Real-Time Response Page Display: Compliant. The merchant return callback page dynamically renders the HDFC Order ID, Amount, Transaction ID, and verified status message immediately upon browser redirection.
+5. Order ID Format Compliance: Compliant. The generated Order IDs strictly adhere to all bank constraints: length is exactly 14 characters (less than 21 chars), alphanumeric only (e.g. 'GXMVLZNSE7BYWK'), zero special characters, and non-sequential based on Base36 timestamps + pseudo-random characters.
+3. Bank Testing Security Audit Checklist (Tampering & Redirection Checks)
+4. Actual Order Status API Response Logs (Section C of Email)
+5. Step-by-Step Payment Process Flow Screenshots (Section A & B)
+Step 1: Merchant Payment Initiation Page
+Step 2: Server-Side Order Creation & Real-Time Status Monitor
+Step 3: HDFC SmartGateway Hosted Payment Page
+Step 4A: Bank 3D Secure / OTP Simulator Screen (Initiation)
+Step 4B: Bank 3D Secure Simulation (Status Captured / CHARGED)
+Step 5: Final Merchant Success Response Page (Return URL)
+Step 6: HDFC SmartGateway UAT Merchant Portal Verification
+6. Webhook & Autonomous Fulfillment Architecture
+7. Conclusion & Request for Production Activation

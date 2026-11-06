@@ -1,0 +1,95 @@
+Root Entry
+Default
+WW8Num1z0
+WW8Num1z1
+WW8Num1z2
+WW8Num2z0
+WW8Num2z1
+WW8Num2z2
+WW8Num2z3
+WW8Num2z4
+WW8Num2z5
+WW8Num2z6
+WW8Num2z7
+WW8Num2z8
+Default Paragraph Font
+WW-Default Paragraph Font
+ListLabel 1
+Heading
+Text body
+List
+Caption
+Index
+caption
+Table Contents
+Table Heading
+_GoBack
+WW8Num1
+Times New Roman
+Symbol
+Arial
+Calibri
+Bell MT
+SimSun
+Lucida Sans
+Courier New
+Wingdings
+Microsoft YaHei
+Courier New
+OMKAR SHETYE
+ASHISH MOHAN KHANVILKAR
+Non Seamless Merchant & Seamless Merchant
+Requirements for Integration
+1. URL verification.
+URL should be registered or replica of registered URL .
+2. Transaction flow verification (screen-shot of success and failure transaction where the URL should be visible in every screen-shot).
+Total transaction flow should be there from start page to end page i.e. response page where 
+Customer will get success or failure message, Amount and transaction ID as per the response provided by the HDFC .
+3. Status API implementation (in WEB integration)
+4.Confirmation from merchant / Developer for storing proper response in their data base.
+Requirements for Security Audit
+Request you to please implement the below checks at your end to avoid tampering in the security audit phase.
+Kindly confirm if you have implemented the below points to proceed ahead with security audit.
+Sr No
+Key Points
+Status ( Yes / No)
+Unique order ID generation -Order ID should be generated uniquely
+( Yes / No)
+Request Tampering-Fetching the amount values from the database or passing/validating the required parameters through session/validation parameter (Hash, Encryption, track Id)
+( Yes / No)
+Response Tampering-Encrypted Response validation with the current session/order id
+( Yes / No)
+URL redirection validation
+( Yes / No)
+Duplicate entry validation
+( Yes / No)
+Receipt Generation
+( Yes / No)
+Implementation of a valid and secure SSL (For Seamless integration)
+( Yes / No)
+Brief about the key points:
+Request Tampering:
+Merchant Website -> Request Parameters -> Payment Gateway.
+The key parameter for any e-commerce transaction is the Amount. If amount is just passing to the PG without any validation check then it is keen to get exploited. To prevent this, the amount and other relevant parameters (product quantity, check in-check out dates etc) could be fetched directly from the database to be passed to the PG If it is not feasible then validating the amount value with any other parameter (i.e. track id, session variable) would be secure.
+Request amount and response amount should be validated along with order id / track id, if both amounts are getting matched then succuss message should be display on final page.
+If both amounts are not getting matched then tampered or failure message has been display on the final page.
+Response Tampering:
+Payment Gateway-> Response from PG to Merchant site-> Final Page (Receipt)
+once the transaction is process by Payment Gateway , PG is sending encres( response ) is ending to merchant site.
+The PG response gets received in an encrypted format along with an order id parameter to be posted to the merchant's website/server. If the decrypted parameters (contains order Id) and the received order Id both are being matched/validated to complete a transaction would be a best practice.
+URL redirection validation:
+Implement generate a transaction based on the received parameters rather than validating the path it been posted to. An attacker could able to redirect the request from failure.php to success.php where the response is posted to relevant page/file the receipt is being generated.
+Duplicate entry validation:
+Duplicate entry validation, The received transaction details should be validated with the already stored database values to verify whether the entry is unique or duplicate. The duplication check should be implemented for the unique values (transaction reference Id, Order id etc. which are unique for each transaction).
+Receipt Generation:
+Most of the merchants are generating the receipt or storing a transaction successful by just checking the response code or message that has been received from the PG rather than other parameters (such as txn ref Id, order id etc.) of any previous transaction. The receipt should be generated for any transaction if the received response contains relevant parameters that belongs to that transaction.
+Implementation of a valid and secure SSL also validation of all non-seamless checks:
+( Seamless Kit)
+For all seamless model it is necessary to implement a valid strong SSL certificate to ensure the transaction flow is secure. To know more about the strength of your SSL certificate is scanning it using SSLLABS.COM and it would give a complete details about the changes that needs to be taken care of.
+Root Entry
+CompObj
+1Table
+SummaryInformation
+WordDocument
+ObjectPool
+DocumentSummaryInformation

@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "504dc4465c81063b",
+        "id": "6386a73605e136e7",
         "type": "tabs",
         "children": [
           {
-            "id": "4afff43f5e4679bb",
+            "id": "bf1395fc14bd8582",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           }
         ]
@@ -37,7 +37,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -176,7 +178,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "74719704362871bd",
+  "active": "bf1395fc14bd8582",
   "lastOpenFiles": [
     "Staycation/Staycation Index.md",
     "GALAXIA1/Staycation/Staycation Index.md",
