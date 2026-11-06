@@ -329,10 +329,15 @@ router.post("/requests", async (req, res) => {
                 ? "hospitality_hightea_order"
                 : "hospitality_housekeeping_order";
 
-            // Manager 1 (Ranjit): 7355630009, Manager 2 (Devidas): 9923500208, Chef: 9867677811, Mangesh: 8446564227, Rishab: 9296410050, 7488785199, 7307829276
+            // Manager 1 (Ranjit): 7355630009, Manager 2 (Devidas): 9923500208, Chef: 9867677811, Mangesh: 8446564227, Rishab: 9296410050
+            // 7488785199 & 7307829276 get High Tea and Normal only (not Timepass)
+            const basePhones = ["7355630009", "9923500208", "8446564227", "9296410050"];
+            const chefPhone = "9867677811";
+            const highTeaAndNormalOnly = ["7488785199", "7307829276"];
+
             const recipientPhones = isChefOrder
-                ? ["7355630009", "9923500208", "9867677811", "8446564227", "9296410050", "7488785199", "7307829276"]
-                : ["7355630009", "9923500208", "8446564227", "9296410050", "7488785199", "7307829276"];
+                ? [...basePhones, chefPhone, ...(isTimepass ? [] : highTeaAndNormalOnly)]
+                : [...basePhones, ...highTeaAndNormalOnly];
 
             for (const recipientPhone of recipientPhones) {
                 try {
