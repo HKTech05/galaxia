@@ -10,10 +10,17 @@ interface SystemLog {
     type: "info" | "success" | "warning" | "error";
 }
 
+interface SubPropertyOption {
+    id: number;
+    name: string;
+    slug: string;
+}
+
 interface PropertyOption {
     id: number;
     name: string;
     slug: string;
+    subProperties?: SubPropertyOption[];
 }
 
 interface ScreenOption {
@@ -31,6 +38,7 @@ export default function TestPaymentPage() {
     // Form selection state
     const [moduleType, setModuleType] = useState<"staycation" | "dd">("staycation");
     const [selectedPropertyId, setSelectedPropertyId] = useState<number>(1);
+    const [selectedSubPropertyId, setSelectedSubPropertyId] = useState<number | null>(null);
     const [selectedScreenId, setSelectedScreenId] = useState<number>(1);
     
     // Dates & details
@@ -50,6 +58,9 @@ export default function TestPaymentPage() {
     const [name, setName] = useState("Galaxia Tester");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+
+    // Test payment amount (variable for bank audit)
+    const [testAmount, setTestAmount] = useState("1.00");
 
     // Payment & status state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +87,12 @@ export default function TestPaymentPage() {
                     const data = await res.json();
                     if (data.properties?.length > 0) {
                         setProperties(data.properties);
-                        setSelectedPropertyId(data.properties[0].id);
+                        const firstProp = data.properties[0];
+                        setSelectedPropertyId(firstProp.id);
+                        // Auto-select first sub-property if available
+                        if (firstProp.subProperties?.length > 0) {
+                            setSelectedSubPropertyId(firstProp.subProperties[0].id);
+                        }
                     }
                     if (data.screens?.length > 0) {
                         setScreens(data.screens);
@@ -159,16 +175,21 @@ export default function TestPaymentPage() {
 
         const selectedVillaObj = properties.find((p) => p.id === selectedPropertyId);
         const selectedScreenObj = screens.find((s) => s.id === selectedScreenId);
+        // Find the sub-property name for display
+        const selectedSubProp = selectedSubPropertyId
+            ? selectedVillaObj?.subProperties?.find((sp) => sp.id === selectedSubPropertyId)
+            : null;
         const selectedName = moduleType === "staycation" 
-            ? (selectedVillaObj?.name || "Staycation Villa") 
+            ? (selectedSubProp ? `${selectedSubProp.name} (${selectedVillaObj?.name})` : (selectedVillaObj?.name || "Staycation Villa"))
             : (selectedScreenObj?.name || "DD Screen");
 
-        addLog(`1. Initializing ₹1.00 Test Payment for [${selectedName}] via HDFC SmartGateway...`, "info");
+        addLog(`1. Initializing ₹${testAmount} Test Payment for [${selectedName}] via HDFC SmartGateway...`, "info");
 
         try {
             const bookingDetails = {
                 moduleType,
                 propertyId: selectedPropertyId,
+                subPropertyId: selectedSubPropertyId,
                 screenId: selectedScreenId,
                 checkInDate,
                 checkOutDate,
@@ -188,6 +209,7 @@ export default function TestPaymentPage() {
                     customerEmail: email,
                     customerPhone: phone,
                     bookingDetails,
+                    testAmount: testAmount,
                 }),
             });
 
@@ -248,7 +270,7 @@ export default function TestPaymentPage() {
                             Live Villa & Date Booking Test
                         </h1>
                         <p className="text-sm text-gray-400 mt-2 leading-relaxed">
-                            Select any villa or screen, pick check-in dates, and pay <span className="text-[#BA9731] font-semibold">₹1.00 INR</span>. 
+                            Select any villa or screen, pick check-in dates, and pay the selected test amount. 
                             Our backend will verify the payment and create an actual test booking in your database!
                         </p>
                     </div>
@@ -294,15 +316,32 @@ export default function TestPaymentPage() {
                                 <div className="text-xs text-gray-500 py-2">Loading options...</div>
                             ) : moduleType === "staycation" ? (
                                 <select
-                                    value={selectedPropertyId}
-                                    onChange={(e) => setSelectedPropertyId(Number(e.target.value))}
+                                    value={`${selectedPropertyId}-${selectedSubPropertyId || ""}`}
+                                    onChange={(e) => {
+                                        const [propId, subId] = e.target.value.split("-");
+                                        setSelectedPropertyId(Number(propId));
+                                        setSelectedSubPropertyId(subId ? Number(subId) : null);
+                                    }}
                                     className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#BA9731] transition-colors"
                                 >
-                                    {properties.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name}
-                                        </option>
-                                    ))}
+                                    {properties.map((p) => {
+                                        if (p.subProperties && p.subProperties.length > 0) {
+                                            return (
+                                                <optgroup key={p.id} label={p.name}>
+                                                    {p.subProperties.map((sp) => (
+                                                        <option key={`${p.id}-${sp.id}`} value={`${p.id}-${sp.id}`}>
+                                                            {sp.name} ({p.name})
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            );
+                                        }
+                                        return (
+                                            <option key={p.id} value={`${p.id}-`}>
+                                                {p.name}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             ) : (
                                 <select
@@ -330,7 +369,13 @@ export default function TestPaymentPage() {
                                     required
                                     value={checkInDate}
                                     onChange={(e) => setCheckInDate(e.target.value)}
-                                    className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#BA9731]"
+                                    onClick={(e) => {
+                                        try {
+                                            e.currentTarget.showPicker();
+                                        } catch {}
+                                    }}
+                                    style={{ colorScheme: "dark" }}
+                                    className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#BA9731] cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                 />
                             </div>
                             {moduleType === "staycation" && (
@@ -341,7 +386,13 @@ export default function TestPaymentPage() {
                                         required
                                         value={checkOutDate}
                                         onChange={(e) => setCheckOutDate(e.target.value)}
-                                        className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#BA9731]"
+                                        onClick={(e) => {
+                                            try {
+                                                e.currentTarget.showPicker();
+                                            } catch {}
+                                        }}
+                                        style={{ colorScheme: "dark" }}
+                                        className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#BA9731] cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                     />
                                 </div>
                             )}
@@ -400,6 +451,26 @@ export default function TestPaymentPage() {
                             />
                         </div>
 
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Test Amount (₹)</label>
+                            <select
+                                value={testAmount}
+                                onChange={(e) => setTestAmount(e.target.value)}
+                                className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#BA9731]"
+                            >
+                                <option value="1.00">₹1.00</option>
+                                <option value="2.00">₹2.00</option>
+                                <option value="5.00">₹5.00</option>
+                                <option value="10.00">₹10.00</option>
+                                <option value="50.00">₹50.00</option>
+                                <option value="100.00">₹100.00</option>
+                                <option value="500.00">₹500.00</option>
+                                <option value="1000.00">₹1,000.00</option>
+                                <option value="2500.00">₹2,500.00</option>
+                                <option value="5000.00">₹5,000.00</option>
+                            </select>
+                        </div>
+
                         <div className="pt-2">
                             <button
                                 type="submit"
@@ -409,11 +480,11 @@ export default function TestPaymentPage() {
                                 {isSubmitting ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                                        <span>Processing ₹1.00 Test Payment...</span>
+                                        <span>Processing ₹{testAmount} Test Payment...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>Pay ₹1.00 & Create Test Booking</span>
+                                        <span>Pay ₹{testAmount} & Create Test Booking</span>
                                         <span>→</span>
                                     </>
                                 )}
@@ -526,7 +597,7 @@ export default function TestPaymentPage() {
                         <div className="bg-[#0A0A0C] border border-white/5 rounded-lg p-3 h-64 overflow-y-auto font-mono text-xs space-y-2">
                             {logs.length === 0 ? (
                                 <p className="text-gray-600 italic text-center py-8">
-                                    Select villa & dates, then click Pay ₹1.00.
+                                    Select villa & dates, then click Pay to begin test.
                                 </p>
                             ) : (
                                 logs.map((log, index) => (

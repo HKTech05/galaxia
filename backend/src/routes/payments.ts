@@ -688,7 +688,14 @@ router.get("/test-options", async (_req, res) => {
     try {
         const properties = await prisma.property.findMany({
             where: { isActive: true },
-            select: { id: true, name: true, slug: true, maxPersons: true },
+            select: {
+                id: true, name: true, slug: true, maxPersons: true,
+                subProperties: {
+                    where: { isActive: true },
+                    select: { id: true, name: true, slug: true },
+                    orderBy: { displayOrder: "asc" },
+                },
+            },
             orderBy: { displayOrder: "asc" },
         });
         const screens = await prisma.ddScreen.findMany({

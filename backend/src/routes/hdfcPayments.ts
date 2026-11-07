@@ -19,8 +19,11 @@ const HDFC_WEBHOOK_USERNAME = process.env.HDFC_WEBHOOK_USERNAME || "";
 const HDFC_WEBHOOK_PASSWORD = process.env.HDFC_WEBHOOK_PASSWORD || "";
 
 // Return URL for HDFC to redirect back to after payment
+// IMPORTANT: HDFC SmartGateway does a POST form submission after 3DS auth.
+// Next.js pages only handle GET, so we point to /testpayment/hdfc-return (a route handler)
+// which accepts POST, extracts form data, and redirects to /testpayment/callback as GET.
 const HDFC_RETURN_URL = process.env.HDFC_RETURN_URL || 
-    (process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/testpayment/callback` : "https://galaxiaresorts.com/testpayment/callback");
+    (process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/testpayment/hdfc-return` : "https://galaxiaresorts.com/testpayment/hdfc-return");
 
 // Build Basic Auth header from API key only (no password/colon)
 function getHdfcAuthHeader(): string {
@@ -113,8 +116,8 @@ async function processHdfcTestBooking(testRecord: any, hdfcTxnId: string): Promi
                 nightlyRate,
                 basePrice: totalAmount,
                 totalAmount,
-                advanceAmount: 1, // 1 INR paid via test
-                balanceAmount: Math.max(0, totalAmount - 1),
+                advanceAmount: testRecord.amount ? testRecord.amount / 100 : 1, // actual amount paid (stored in paise)
+                balanceAmount: Math.max(0, totalAmount - (testRecord.amount ? testRecord.amount / 100 : 1)),
                 advancePaid: true,
                 advanceMethod: `HDFC SmartGateway (Test): ${hdfcTxnId}`,
                 status: "confirmed",
@@ -145,8 +148,8 @@ async function processHdfcTestBooking(testRecord: any, hdfcTxnId: string): Promi
                 numGuests: parseInt(details.numGuests || "2"),
                 basePrice: price,
                 totalAmount: price,
-                amountPaid: 1, // 1 INR paid via test
-                amountToCollect: Math.max(0, price - 1),
+                amountPaid: testRecord.amount ? testRecord.amount / 100 : 1, // actual amount paid
+                amountToCollect: Math.max(0, price - (testRecord.amount ? testRecord.amount / 100 : 1)),
                 paymentMethod: "online",
                 paymentDetails: `HDFC SmartGateway (Test): ${hdfcTxnId}`,
                 paymentStatus: "partial",
@@ -167,11 +170,19 @@ async function processHdfcTestBooking(testRecord: any, hdfcTxnId: string): Promi
 // ══════════════════════════════════════════════════════════════════════
 router.post("/hdfc-test/create-order", async (req: Request, res: Response) => {
     try {
-        const { customerName, customerEmail, customerPhone, bookingDetails } = req.body;
+        const { customerName, customerEmail, customerPhone, bookingDetails, testAmount } = req.body;
 
         if (!customerName || !customerEmail || !customerPhone) {
             return res.status(400).json({ error: "Name, email, and phone are required for test payment" });
         }
+
+        // Parse and validate the test amount (default ₹1.00 if not provided)
+        const parsedAmount = parseFloat(testAmount || "1.00");
+        if (isNaN(parsedAmount) || parsedAmount <= 0 || parsedAmount > 10000) {
+            return res.status(400).json({ error: "Invalid test amount. Must be between ₹0.01 and ₹10,000." });
+        }
+        const amountStr = parsedAmount.toFixed(2); // e.g. "1.00", "100.00"
+        const amountPaise = Math.round(parsedAmount * 100); // e.g. 100, 10000
 
         const hdfcOrderId = generateHdfcOrderId();
         const paymentId = `hdfc_test_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -198,7 +209,7 @@ router.post("/hdfc-test/create-order", async (req: Request, res: Response) => {
             },
             body: JSON.stringify({
                 order_id: hdfcOrderId,
-                amount: "1.00", // 1 INR — string with 2 decimal places
+                amount: amountStr, // Variable test amount (e.g. "1.00", "100.00")
                 currency: "INR",
                 customer_id: paymentId,
                 customer_email: customerEmail,
@@ -232,7 +243,7 @@ router.post("/hdfc-test/create-order", async (req: Request, res: Response) => {
             data: {
                 paymentId,
                 razorpayOrderId: hdfcOrderId, // Reusing this column for HDFC order ID
-                amount: 100, // 1 INR = 100 paise (stored as paise for consistency)
+                amount: amountPaise, // Variable amount in paise (e.g. 100 for ₹1, 10000 for ₹100)
                 customerName,
                 customerEmail,
                 customerPhone,
@@ -246,7 +257,7 @@ router.post("/hdfc-test/create-order", async (req: Request, res: Response) => {
             paymentId,
             hdfcOrderId,
             paymentUrl,
-            amount: "1.00",
+            amount: amountStr,
             currency: "INR",
             sdkPayload: sessionData?.sdk_payload || null, // In case we want SDK integration later
         });

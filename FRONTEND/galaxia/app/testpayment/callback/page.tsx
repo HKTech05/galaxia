@@ -80,7 +80,7 @@ function CallbackContent() {
                         <div className="text-center space-y-2">
                             <div className="text-5xl">✅</div>
                             <h2 className="text-xl font-bold text-emerald-400">Payment Verified!</h2>
-                            <p className="text-sm text-gray-300">₹1.00 test payment processed successfully via HDFC SmartGateway</p>
+                            <p className="text-sm text-gray-300">Test payment processed successfully via HDFC SmartGateway</p>
                         </div>
 
                         <div className="bg-black/40 rounded-lg p-4 space-y-2 text-xs font-mono">
