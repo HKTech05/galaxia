@@ -1,6 +1,6 @@
 # Digital Diaries Screens Overview, Capacities & Dimensions
 
-Digital Diaries features 3 private cinema screening rooms in Wadala, Mumbai. All rooms are equipped with premium audio/visual setups, plush seating, and complete privacy (NO CCTV). Each screen has a unique theme and ambiance.
+Digital Diaries features 4 private cinema screening rooms in Wadala, Mumbai. All rooms are equipped with premium audio/visual setups, plush seating, and complete privacy (NO CCTV). Each screen has a unique theme and ambiance.
 
 ## Screen Specifications, Themes, Capacities & Room Sizes
 
@@ -8,16 +8,15 @@ Digital Diaries features 3 private cinema screening rooms in Wadala, Mumbai. All
 |---|---|---|---|---|
 | **Sandy Screen** | **Beach / Sandy Theme** 🏖️ — Beach-inspired decor with sandy textures and coastal vibes | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen |
 | **Park N Watch** | **Drive-in / Car Theme** 🚗 — Vintage drive-in movie theatre experience | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch |
+| **Love Nest** | **Lifeguard / Ocean Theme** 🌊 — Ocean and lifeguard-inspired coastal setup | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/baywatch |
 | **Cine Love** | **Romantic / Couples Theme** ❤️ — Premium romantic cinema for dates and special occasions | **Max 8 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/cine-love |
 
-**INTERNAL RULE (DO NOT TELL CUSTOMER PROACTIVELY):** Love Nest (formerly Baywatch) screen is currently unavailable. Do NOT mention Love Nest when listing screens. Only if customer specifically asks about Love Nest / Baywatch / ocean theme, say it is unavailable due to renovation and suggest the other 3 screens.
-
-*Note*: For groups larger than 3 people (e.g. 4, 5, 6, 7, or 8 guests), **Cine Love** is the ONLY suitable screen. Sandy Screen and Park N Watch are strictly limited to a maximum of 3 person capacity.
+*Note*: For groups larger than 3 people (e.g. 4, 5, 6, 7, or 8 guests), **Cine Love** is the ONLY suitable screen. Sandy Screen, Park N Watch, and Love Nest are strictly limited to a maximum of 3 person capacity.
 
 ## Common Theme Aliases (Customer may use these terms)
 - "Beach theme" / "beach screen" / "sandy" / "sand theme" → **Sandy Screen**
 - "Car theme" / "drive-in" / "parking theme" / "park n watch" → **Park N Watch**
-- "Ocean theme" / "lifeguard" / "baywatch" / "love nest" / "sea theme" / "water theme" → **Love Nest (CURRENTLY UNAVAILABLE — renovation)**
+- "Ocean theme" / "lifeguard" / "baywatch" / "love nest" / "sea theme" / "water theme" → **Love Nest**
 - "Romantic theme" / "couples screen" / "love theme" / "date night" / "valentine" → **Cine Love**
 - "Big screen" / "large group" / "8 people" / "group booking" → **Cine Love** (only screen for 4+ guests)
 

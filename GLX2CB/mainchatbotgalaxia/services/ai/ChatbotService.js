@@ -133,7 +133,7 @@ ${calendarTable}
 
 Allowed Property Slugs: "amstel-nest", "ambrose", "la-paraiso", "heavenly-villa", "hill-view", "mount-view".
 Sub-properties: "take-1", "alta", "santorini", "cypress", "bamboosa", "standard-cottage", "family-cottage".
-Allowed Screen Slugs: "park-n-watch", "cine-love", "sandy-screen".
+Allowed Screen Slugs: "park-n-watch", "cine-love", "sandy-screen", "baywatch".
 
 Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) with the following structure:
 {
@@ -640,6 +640,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         if (textLowerCheck.includes("sandy")) effectiveScreenSlug = "sandy-screen";
         else if (textLowerCheck.includes("cine love") || textLowerCheck.includes("cinelove")) effectiveScreenSlug = "cine-love";
         else if (textLowerCheck.includes("park n watch") || textLowerCheck.includes("park")) effectiveScreenSlug = "park-n-watch";
+        else if (textLowerCheck.includes("baywatch") || textLowerCheck.includes("love nest") || textLowerCheck.includes("lovenest")) effectiveScreenSlug = "baywatch";
 
         const effectiveDDDate = intent.ddBookingDate || intent.checkInDate || updatedState.checkInDate;
         const isDDBot = cleanType === "digital_diaries" || cleanType === "celebration" || intent.isDiariesQuery;
@@ -656,7 +657,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
             dynamicContext += `### REAL-TIME LIVE DATABASE CALENDAR AVAILABILITY (DIGITAL DIARIES SCREEN):\n${JSON.stringify(avail, null, 2)}\n*CRITICAL INSTRUCTION FOR AI*: You MUST use the above live database availability check to answer screen slot availability. Never state a slot is available if isAvailable is false!\n\n`;
           } else {
             console.log(`[ChatbotService] Performing Digital Diaries availability check for ALL screens on ${effectiveDDDate}`);
-            const screens = ["sandy-screen", "cine-love", "park-n-watch"];
+            const screens = ["sandy-screen", "cine-love", "park-n-watch", "baywatch"];
             const allAvail = [];
             for (const scr of screens) {
               const res = await dynamicDataService.checkDigitalDiariesAvailability(scr, effectiveDDDate, intent.ddStartHour, intent.ddDuration || 2);
@@ -684,7 +685,7 @@ Output ONLY a raw valid JSON object (no markdown, no backticks, no other text) w
         }
 
         console.log(`[ChatbotService] Intent null — fallback DD availability check from saved state: date=${savedDDDate}, hour=${ddHour}`);
-        const screens = ["sandy-screen", "cine-love", "park-n-watch"];
+        const screens = ["sandy-screen", "cine-love", "park-n-watch", "baywatch"];
         const allAvail = [];
         for (const scr of screens) {
           const res = await dynamicDataService.checkDigitalDiariesAvailability(scr, savedDDDate, ddHour, 2);
