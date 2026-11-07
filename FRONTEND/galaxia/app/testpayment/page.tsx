@@ -512,18 +512,8 @@ export default function TestPaymentPage() {
                             </div>
 
                             <p className="text-xs text-gray-300 leading-relaxed">
-                                This booking has been created in your backend PostgreSQL database! You can look up <strong className="text-white font-mono">{createdBookingRef}</strong> in your Admin Dashboard or database tables.
+                                This booking has been successfully recorded in the database with reference ID <strong className="text-white font-mono">{createdBookingRef}</strong>.
                             </p>
-
-                            <div className="pt-1">
-                                <Link
-                                    href={moduleType === "staycation" ? "/admin22" : "/admin1"}
-                                    target="_blank"
-                                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4"
-                                >
-                                    View in Admin Dashboard →
-                                </Link>
-                            </div>
                         </div>
                     )}
 

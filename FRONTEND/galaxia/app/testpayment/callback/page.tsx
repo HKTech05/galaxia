@@ -157,22 +157,13 @@ function CallbackContent() {
 
                 {/* Navigation Links */}
                 {!verifying && (
-                    <div className="flex items-center justify-center gap-4 pt-2">
+                    <div className="flex items-center justify-center pt-2">
                         <Link
                             href="/testpayment"
                             className="text-xs text-[#BA9731] hover:text-[#DACE84] font-semibold underline underline-offset-4 transition-colors"
                         >
                             ← Back to Test Page
                         </Link>
-                        {isSuccess && result?.createdBookingRef && (
-                            <Link
-                                href="/admin22"
-                                target="_blank"
-                                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4 transition-colors"
-                            >
-                                View in Admin Dashboard →
-                            </Link>
-                        )}
                     </div>
                 )}
             </div>
