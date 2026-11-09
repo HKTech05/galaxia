@@ -5,9 +5,12 @@ const path = require("path");
 const configManager = require("../services/ai/ConfigManager");
 const knowledgeService = require("../services/ai/KnowledgeService");
 const chatbotService = require("../services/ai/ChatbotService");
+const conversationService = require("../services/ai/ConversationService");
+const db = require("../services/db");
 
 const DEBUG_FILE = path.resolve(__dirname, "../../data/last_request_debug.json");
 const CACHE_FILE = path.resolve(__dirname, "../../data/faq_cache.json");
+const SUMMARIES_FILE = path.resolve(__dirname, "../../data/session_summaries.json");
 
 /**
  * GET /api/admin/ai/config
@@ -117,6 +120,68 @@ router.post("/cache/clear", (req, res) => {
     res.json({ success: true, message: "Cache cleared successfully." });
   } catch (err) {
     res.status(500).json({ error: "Failed to clear cache: " + err.message });
+  }
+});
+
+/**
+ * POST /api/admin/ai/conversations/clear
+ * Clear conversation history for a bot type (e.g. "diaries", "staycation", or "all").
+ * Clears: DB chat_messages, DB chat_sessions state, file summaries, in-memory caches.
+ * Query params: ?type=diaries|staycation|all (default: all)
+ */
+router.post("/conversations/clear", async (req, res) => {
+  try {
+    const type = req.body?.type || req.query?.type || "all";
+    let sessionFilter;
+    if (type === "diaries" || type === "dd") {
+      sessionFilter = "%_diaries";
+    } else if (type === "staycation") {
+      sessionFilter = "%_staycation";
+    } else {
+      sessionFilter = "%"; // all
+    }
+
+    // 1. Clear DB messages
+    const msgResult = await db.pool.query(
+      `DELETE FROM chat_messages WHERE session_id LIKE $1`,
+      [sessionFilter]
+    );
+
+    // 2. Reset DB session states
+    const sessResult = await db.pool.query(
+      `UPDATE chat_sessions SET state = '{}'::jsonb WHERE session_id LIKE $1`,
+      [sessionFilter]
+    );
+
+    // 3. Clear file-based summaries
+    try {
+      if (fs.existsSync(SUMMARIES_FILE)) {
+        if (type === "all") {
+          fs.writeFileSync(SUMMARIES_FILE, "{}", "utf8");
+        } else {
+          const summaries = JSON.parse(fs.readFileSync(SUMMARIES_FILE, "utf8"));
+          const suffix = type === "diaries" || type === "dd" ? "_diaries" : "_staycation";
+          for (const key of Object.keys(summaries)) {
+            if (key.endsWith(suffix)) delete summaries[key];
+          }
+          fs.writeFileSync(SUMMARIES_FILE, JSON.stringify(summaries, null, 2), "utf8");
+        }
+      }
+    } catch (e) { /* ignore file errors */ }
+
+    // 4. Clear in-memory caches
+    if (conversationService.summaries) conversationService.summaries = {};
+    if (conversationService.memHistory) conversationService.memHistory = {};
+    if (conversationService.sessionStates) conversationService.sessionStates = {};
+
+    res.json({
+      success: true,
+      type,
+      messagesDeleted: msgResult.rowCount,
+      sessionsReset: sessResult.rowCount
+    });
+  } catch (err) {
+    res.status(500).json({ error: `Failed to clear conversations: ${err.message}` });
   }
 });
 
