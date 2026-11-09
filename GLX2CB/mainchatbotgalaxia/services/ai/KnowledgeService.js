@@ -66,7 +66,7 @@ class KnowledgeService {
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
       if (stat.isDirectory()) {
-        if (item !== ".obsidian") {
+        if (item !== ".obsidian" && item !== "GALAXIA1" && item !== "_backups") {
           this.scanFiles(fullPath, fileList);
         }
       } else if (item.endsWith(".md")) {
@@ -113,21 +113,30 @@ class KnowledgeService {
   /**
    * Re-indexes Obsidian Vault incrementally.
    */
-  async reindexVault() {
-    console.log("[KnowledgeService] Re-indexing Obsidian Vault...");
-    const files = this.scanFiles(VAULT_PATH);
+  async reindexVault(force = false) {
+    console.log(`[KnowledgeService] Re-indexing Obsidian Vault...${force ? " (FORCE - clearing all vectors)" : ""}`);
+    const files = this.scanFiles(this.vaultPath);
     const vectorStore = VectorStoreFactory.getStore();
     const dimension = embeddingService.getDimension();
 
     // Initialize Vector DB structures
     await vectorStore.init(dimension);
 
+    // If force mode, clear all vectors and reset index
+    if (force) {
+      console.log("[KnowledgeService] Force mode: clearing entire vector store and index...");
+      await vectorStore.clear();
+      await vectorStore.init(dimension);
+      this.indexData = {};
+      this.saveIndex();
+    }
+
     const activePaths = new Set();
 
     let addedOrUpdatedCount = 0;
 
     for (const file of files) {
-      const relativePath = path.relative(VAULT_PATH, file).replace(/\\/g, "/");
+      const relativePath = path.relative(this.vaultPath, file).replace(/\\/g, "/");
       activePaths.add(relativePath);
 
       const content = fs.readFileSync(file, "utf8");

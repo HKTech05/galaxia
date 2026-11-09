@@ -65,8 +65,9 @@ router.post("/config", (req, res) => {
  */
 router.post("/reindex", async (req, res) => {
   try {
-    const stats = await knowledgeService.reindexVault();
-    res.json({ success: true, stats });
+    const force = req.body?.force === true || req.query?.force === "true";
+    const stats = await knowledgeService.reindexVault(force);
+    res.json({ success: true, force, stats });
   } catch (err) {
     res.status(500).json({ error: `Reindexing failed: ${err.message}` });
   }
