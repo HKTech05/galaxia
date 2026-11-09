@@ -116,19 +116,37 @@ class KnowledgeService {
   async reindexVault(force = false) {
     console.log(`[KnowledgeService] Re-indexing Obsidian Vault...${force ? " (FORCE - clearing all vectors)" : ""}`);
     const files = this.scanFiles(this.vaultPath);
-    const vectorStore = VectorStoreFactory.getStore();
-    const dimension = embeddingService.getDimension();
+    let vectorStore;
+    let dimension;
 
-    // Initialize Vector DB structures
-    await vectorStore.init(dimension);
+    try {
+      vectorStore = VectorStoreFactory.getStore();
+      dimension = embeddingService.getDimension();
 
-    // If force mode, clear all vectors and reset index
-    if (force) {
-      console.log("[KnowledgeService] Force mode: clearing entire vector store and index...");
-      await vectorStore.clear();
+      // Initialize Vector DB structures
       await vectorStore.init(dimension);
-      this.indexData = {};
-      this.saveIndex();
+
+      // If force mode, clear all vectors and reset index
+      if (force) {
+        console.log("[KnowledgeService] Force mode: clearing entire vector store and index...");
+        await vectorStore.clear();
+        await vectorStore.init(dimension);
+        this.indexData = {};
+        this.saveIndex();
+      }
+    } catch (storeErr) {
+      console.warn(`[KnowledgeService] Vector store unavailable (${storeErr.message}). Local file-based keyword search is active for all ${files.length} vault files.`);
+      if (force) {
+        this.indexData = {};
+        this.saveIndex();
+      }
+      return {
+        totalFilesScanned: files.length,
+        vectorStoreStatus: `offline (${storeErr.message})`,
+        localSearchActive: true,
+        files: files.map(f => path.relative(this.vaultPath, f).replace(/\\/g, "/")),
+        message: `Local BM25 search active across all ${files.length} vault files.`
+      };
     }
 
     const activePaths = new Set();
