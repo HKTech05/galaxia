@@ -8,7 +8,7 @@ Digital Diaries features 4 private cinema screening rooms in Wadala, Mumbai. All
 |---|---|---|---|---|
 | **Sandy Screen** | **Beach / Sandy Theme** 🏖️ — Beach-inspired decor with sandy textures and coastal vibes | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/sandy-screen |
 | **Park N Watch** | **Drive-in / Car Theme** 🚗 — Vintage drive-in movie theatre experience | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/park-n-watch |
-| **Love Nest** | **Lifeguard / Ocean Theme** 🌊 — Ocean and lifeguard-inspired coastal setup | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/baywatch |
+| **Love Nest** | **Rose Theme** 🌹 — Romantic rose-themed private cinema setup | **Max 3 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/baywatch |
 | **Cine Love** | **Romantic / Couples Theme** ❤️ — Premium romantic cinema for dates and special occasions | **Max 8 Person Capacity** | **15 x 8 sq ft** | https://www.galaxiaresorts.com/celebration/movie-time/cine-love |
 
 *Note*: For groups larger than 3 people (e.g. 4, 5, 6, 7, or 8 guests), **Cine Love** is the ONLY suitable screen. Sandy Screen, Park N Watch, and Love Nest are strictly limited to a maximum of 3 person capacity.
@@ -16,7 +16,7 @@ Digital Diaries features 4 private cinema screening rooms in Wadala, Mumbai. All
 ## Common Theme Aliases (Customer may use these terms)
 - "Beach theme" / "beach screen" / "sandy" / "sand theme" → **Sandy Screen**
 - "Car theme" / "drive-in" / "parking theme" / "park n watch" → **Park N Watch**
-- "Ocean theme" / "lifeguard" / "baywatch" / "love nest" / "sea theme" / "water theme" → **Love Nest**
+- "Rose theme" / "love nest" / "baywatch" / "roses" / "rose screen" → **Love Nest**
 - "Romantic theme" / "couples screen" / "love theme" / "date night" / "valentine" → **Cine Love**
 - "Big screen" / "large group" / "8 people" / "group booking" → **Cine Love** (only screen for 4+ guests)
 
