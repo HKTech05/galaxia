@@ -277,6 +277,9 @@ export default function HousekeepingPortalPage() {
         try {
             await api.delete(`/hospitality/requests/${id}`);
             fetchRequests();
+            if (fulfilledDate !== selectedDate) {
+                fetchFulfilledRequests(fulfilledDate);
+            }
         } catch (err: any) {
             alert(err.message || "Failed to delete request.");
         }
@@ -347,6 +350,9 @@ export default function HousekeepingPortalPage() {
             }
             setIsModalOpen(false);
             fetchRequests();
+            if (fulfilledDate !== selectedDate) {
+                fetchFulfilledRequests(fulfilledDate);
+            }
         } catch (err: any) {
             alert(err.message || "Something went wrong.");
         } finally {
@@ -392,6 +398,14 @@ export default function HousekeepingPortalPage() {
         return today.toISOString().split("T")[0];
     });
 
+    // Fulfilled requests independent date filter
+    const [fulfilledDate, setFulfilledDate] = useState<string>(() => {
+        const today = new Date();
+        return today.toISOString().split("T")[0];
+    });
+    const [fulfilledRequestsList, setFulfilledRequestsList] = useState<HospitalityRequest[]>([]);
+    const [loadingFulfilled, setLoadingFulfilled] = useState(false);
+
     useEffect(() => {
         // Fetch current user details to check access
         api.get("/auth/me")
@@ -423,6 +437,22 @@ export default function HousekeepingPortalPage() {
             setLoading(false);
         }
     };
+
+    const fetchFulfilledRequests = useCallback(async (targetDate: string) => {
+        setLoadingFulfilled(true);
+        try {
+            const data = await api.get<HospitalityRequest[]>(
+                `/hospitality/requests?category=Normal,Add-ons&excludeChefItems=true&date=${targetDate}&status=fulfilled`
+            );
+            if (Array.isArray(data)) {
+                setFulfilledRequestsList(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch fulfilled requests for date:", targetDate, err);
+        } finally {
+            setLoadingFulfilled(false);
+        }
+    }, []);
 
     const fetchFoodDeliveries = async () => {
         setLoadingFoodDeliveries(true);
@@ -581,6 +611,12 @@ export default function HousekeepingPortalPage() {
         }
     }, [selectedDate, userRole, fetchMealCounter]);
 
+    useEffect(() => {
+        if (userRole && fulfilledDate !== selectedDate) {
+            fetchFulfilledRequests(fulfilledDate);
+        }
+    }, [fulfilledDate, selectedDate, userRole, fetchFulfilledRequests]);
+
     const handleFulfilRequest = async (id: number) => {
         if (isTestViewer) return;
         try {
@@ -613,7 +649,9 @@ export default function HousekeepingPortalPage() {
     }
 
     const pendingRequests = requests.filter(r => r.status === "pending");
-    const fulfilledRequests = requests.filter(r => r.status === "fulfilled");
+    const fulfilledRequests = fulfilledDate === selectedDate
+        ? requests.filter(r => r.status === "fulfilled")
+        : fulfilledRequestsList;
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-16">
@@ -877,25 +915,61 @@ export default function HousekeepingPortalPage() {
                 {/* Fulfilled Requests Column */}
                 <div className="space-y-6">
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm lg:h-[550px] flex flex-col justify-between">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2 flex-wrap">
                             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                                <UserCheck size={18} className="text-slate-500" />
-                                Fulfilled Requests
+                                <UserCheck size={18} className="text-slate-500 shrink-0" />
+                                <span>Fulfilled Requests</span>
                             </h2>
-                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
-                                {fulfilledRequests.length} Done
-                            </span>
+                            <div className="flex items-center gap-2">
+                                {/* Date picker */}
+                                <div 
+                                    onClick={(e) => {
+                                        const inputEl = e.currentTarget.querySelector("input");
+                                        if (inputEl) {
+                                            try {
+                                                inputEl.showPicker();
+                                            } catch (err) {
+                                                console.error("showPicker error:", err);
+                                            }
+                                        }
+                                    }}
+                                    className="relative flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg border border-slate-200 cursor-pointer transition-colors"
+                                    title="Filter fulfilled requests by date"
+                                >
+                                    <Calendar size={13} className="text-slate-500 pointer-events-none" />
+                                    <span className="text-[11px] font-bold font-mono text-slate-700 pointer-events-none">
+                                        {fulfilledDate.split("-").reverse().join("-")}
+                                    </span>
+                                    <input
+                                        type="date"
+                                        value={fulfilledDate}
+                                        onChange={(e) => setFulfilledDate(e.target.value)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    />
+                                </div>
+                                <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center justify-center whitespace-nowrap shrink-0 text-center">
+                                    {fulfilledRequests.length} Done
+                                </span>
+                            </div>
                         </div>
 
                         <div className="flex-1 overflow-y-auto min-h-0 pr-1 mt-4">
-                            {loading ? (
+                            {(loading && fulfilledDate === selectedDate) || (loadingFulfilled && fulfilledDate !== selectedDate) ? (
                                 <div className="flex items-center justify-center h-full text-slate-400 gap-2 py-10">
                                     <RefreshCw size={16} className="animate-spin text-slate-400" />
                                     <span className="text-xs font-semibold">Loading...</span>
                                 </div>
                             ) : fulfilledRequests.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-center py-12 text-slate-400">
-                                    <p className="text-xs font-medium">No fulfilled requests yet for this day.</p>
+                                <div className="flex flex-col items-center justify-center h-full text-center py-12 text-slate-400 space-y-2">
+                                    <p className="text-xs font-medium">No fulfilled requests for {fulfilledDate.split("-").reverse().join("-")}.</p>
+                                    {fulfilledDate !== selectedDate && (
+                                        <button
+                                            onClick={() => setFulfilledDate(selectedDate)}
+                                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                        >
+                                            Reset to today
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-3">

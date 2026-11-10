@@ -3397,6 +3397,11 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
         // Filter by selected date
         const bookingsToDisplay = allMapped.filter((b: any) => b.rawDate === selectedDateStr);
 
+        // Calculate total income for non-cancelled bookings on selected date
+        const totalIncome = bookingsToDisplay
+            .filter((b: any) => b.status !== "Cancelled")
+            .reduce((sum: number, b: any) => sum + Number(b.raw?.totalAmount || 0), 0);
+
         bookingsToDisplay.forEach((b: any) => {
             const cleanScreen = (b.screen || '').replace(/\s*\(.*?\)/g, '').replace(/Baywatch/gi, "Love Nest").trim();
             if (!screenGroups[cleanScreen]) screenGroups[cleanScreen] = [];
@@ -3410,8 +3415,8 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     <CustomDatePicker date={ddViewDate} onDateChange={setDdViewDate} />
                 </div>
 
-                {/* Per-Screen Booking Counter — P C S B */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {/* Per-Screen Booking Counter — P C S B + Total + Total Income */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
                         { name: "Park N Watch", short: "P", color: "bg-orange-50 border-orange-200 text-orange-700" },
                         { name: "Cine Love", short: "C", color: "bg-green-50 border-green-200 text-green-700" },
@@ -3429,6 +3434,10 @@ export default function OwnerDashboard({ initialTab = "dashboard" }: { initialTa
                     <div className="bg-slate-800 text-white border border-slate-700 rounded-xl p-3 text-center">
                         <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">Total</p>
                         <p className="text-2xl font-black mt-0.5">{bookingsToDisplay.length}</p>
+                    </div>
+                    <div className="bg-emerald-800 text-white border border-emerald-700 rounded-xl p-3 text-center shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-200">Total Income</p>
+                        <p className="text-2xl font-black mt-0.5">₹{totalIncome.toLocaleString('en-IN')}</p>
                     </div>
                 </div>
 
