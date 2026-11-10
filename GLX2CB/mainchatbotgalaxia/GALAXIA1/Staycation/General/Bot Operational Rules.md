@@ -112,7 +112,7 @@ This document outlines the strict business logic, booking protocols, occupancy r
      - Amstel Nest (Bot 2): **+91 99877 34458** (`tel:+919987734458`)
      - All Other Staycation Properties (Bot 3): **+91 81695 19564** (`tel:+918169519564`)
 2. **Decoration Policy**:
-   - NO decoration is provided for birthdays, anniversaries, etc. For special requests, call the booking number.
+   - Decoration is available at ₹2,000 for all properties (birthdays, anniversaries, etc.). Guests can request decoration at the time of booking or by calling the booking number.
 3. **Check-in / Check-out & Late Checkout Fee Structure**:
    - Default Timings: Check-in **1:00 PM**, Check-out **10:00 AM**.
    - Late Checkout Fees:

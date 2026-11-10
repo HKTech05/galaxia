@@ -50,7 +50,7 @@ All rules, regulations, and policies for Ambrose Villas are the same as Amstel N
 - Maximum stay duration: 3 consecutive nights.
 - Alcohol/drinks allowed (guests must carry their own).
 - Hookah smoking is allowed. Call +91 81695 19564 to inquire about provision.
-- No decoration provided. Call booking number for special requests.
+- Decoration is available at ₹2,000. Guests can request decoration at the time of booking or by calling the booking number.
 - Toiletries provided: Towel, soap, shampoo, shower gel. Carry own toothbrush/toothpaste.
 - Caretaker: Ranjit (+91 73556 30009).
 - Booking phone: +91 81695 19564.
