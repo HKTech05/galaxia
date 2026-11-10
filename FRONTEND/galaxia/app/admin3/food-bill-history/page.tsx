@@ -20,6 +20,8 @@ interface FoodBill {
         customerName: string;
         assignedUnit: string | null;
         bookingRef: string;
+        checkInDate?: string | null;
+        checkOutDate?: string | null;
         property?: { name: string } | null;
         subProperty?: { name: string } | null;
     } | null;
@@ -254,13 +256,50 @@ export default function FoodHistoryPage() {
     const cashCollected = filteredBills.filter(b => b.paymentMethod === "cash").reduce((sum, b) => sum + (b.amount || 0), 0);
     const upiCollected = filteredBills.filter(b => b.paymentMethod === "upi").reduce((sum, b) => sum + (b.amount || 0), 0);
 
-    // Get audit/modification logs matching selected bill's villa
+    // Get audit/modification logs matching selected bill's villa and stay dates
     const getAuditLogsForBill = (bill: FoodBill) => {
-        const villa = (bill.booking?.assignedUnit || bill.booking?.subProperty?.name || "").toLowerCase();
-        if (!villa) return [];
+        const rawUnits = [
+            ...(bill.booking?.assignedUnit ? bill.booking.assignedUnit.split(",").map(u => u.trim().toLowerCase()) : []),
+            ...(bill.booking?.subProperty?.name && bill.booking.subProperty.name !== "Standard Cottage" ? [bill.booking.subProperty.name.trim().toLowerCase()] : [])
+        ].filter(Boolean);
+
+        if (rawUnits.length === 0) return [];
+
+        let startMs = 0;
+        let endMs = Infinity;
+
+        if (bill.booking?.checkInDate && bill.booking?.checkOutDate) {
+            const cinStr = String(bill.booking.checkInDate).slice(0, 10);
+            const coutStr = String(bill.booking.checkOutDate).slice(0, 10);
+            startMs = new Date(`${cinStr}T00:00:00.000Z`).getTime() - (6 * 3600 * 1000);
+            endMs = new Date(`${coutStr}T23:59:59.999Z`).getTime() + (6 * 3600 * 1000);
+        } else if (bill.createdAt) {
+            const billTime = new Date(bill.createdAt).getTime();
+            startMs = billTime - (24 * 3600 * 1000);
+            endMs = billTime + (24 * 3600 * 1000);
+        }
+
         return logs.filter(log => {
-            const details = log.details.toLowerCase();
-            return (log.actionType === "modify_request" || log.actionType === "delete_request") && details.includes(villa);
+            if (log.actionType !== "modify_request" && log.actionType !== "delete_request") {
+                return false;
+            }
+
+            const logTime = new Date(log.createdAt).getTime();
+            if (logTime < startMs || logTime > endMs) {
+                return false;
+            }
+
+            const match = log.details.match(/Villa\s+([^()]+?)\s*\(/i);
+            const logVilla = match ? match[1].trim().toLowerCase() : "";
+
+            if (logVilla) {
+                return rawUnits.includes(logVilla);
+            }
+
+            return rawUnits.some(u => {
+                const escaped = u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                return new RegExp(`\\b${escaped}\\b`, "i").test(log.details);
+            });
         });
     };
 
@@ -511,14 +550,14 @@ export default function FoodHistoryPage() {
                                 <div className="space-y-2">
                                     {getAuditLogsForBill(selectedBill).length === 0 ? (
                                         <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-200/50 text-center">
-                                            No deletions or modifications logged for this villa's order history.
+                                            No deletions or modifications logged during this stay.
                                         </p>
                                     ) : (
                                         getAuditLogsForBill(selectedBill).map(log => (
                                             <div key={log.id} className="bg-red-50/50 border border-red-100 rounded-xl p-3 space-y-1">
                                                 <div className="flex justify-between items-center text-[10px] font-bold text-red-700">
                                                     <span>{log.actionType === "delete_request" ? "Entire Order Deleted" : "Line Item Modified/Reduced"}</span>
-                                                    <span className="text-slate-400">{new Date(log.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                    <span className="text-slate-400">{new Date(log.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                                                 </div>
                                                 <p className="text-[11px] font-semibold text-slate-700">{log.details.split("): ")[1] || log.details}</p>
                                                 <p className="text-[9px] text-slate-400 font-bold text-right">— Performed by {log.admin?.displayName || "Staff"}</p>

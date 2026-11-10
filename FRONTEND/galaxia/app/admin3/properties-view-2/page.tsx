@@ -236,13 +236,46 @@ export default function PropertiesView2Page() {
         );
     };
 
-    // Get audit logs matching the food modal booking's villa
+    // Get audit logs matching the food modal booking's villa and stay dates
     const getAuditLogsForBooking = (b: Booking) => {
-        const villaName = (b.assignedUnit || b.subProperty?.name || "").toLowerCase();
-        if (!villaName) return [];
+        const rawUnits = [
+            ...(b.assignedUnit ? b.assignedUnit.split(",").map(u => u.trim().toLowerCase()) : []),
+            ...(b.subProperty?.name && b.subProperty.name !== "Standard Cottage" ? [b.subProperty.name.trim().toLowerCase()] : [])
+        ].filter(Boolean);
+
+        if (rawUnits.length === 0) return [];
+
+        let startMs = 0;
+        let endMs = Infinity;
+
+        if (b.checkInDate && b.checkOutDate) {
+            const cinStr = String(b.checkInDate).slice(0, 10);
+            const coutStr = String(b.checkOutDate).slice(0, 10);
+            startMs = new Date(`${cinStr}T00:00:00.000Z`).getTime() - (6 * 3600 * 1000);
+            endMs = new Date(`${coutStr}T23:59:59.999Z`).getTime() + (6 * 3600 * 1000);
+        }
+
         return logs.filter(log => {
-            const details = log.details.toLowerCase();
-            return (log.actionType === "modify_request" || log.actionType === "delete_request") && details.includes(villaName);
+            if (log.actionType !== "modify_request" && log.actionType !== "delete_request") {
+                return false;
+            }
+
+            const logTime = new Date(log.createdAt).getTime();
+            if (logTime < startMs || logTime > endMs) {
+                return false;
+            }
+
+            const match = log.details.match(/Villa\s+([^()]+?)\s*\(/i);
+            const logVilla = match ? match[1].trim().toLowerCase() : "";
+
+            if (logVilla) {
+                return rawUnits.includes(logVilla);
+            }
+
+            return rawUnits.some(u => {
+                const escaped = u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                return new RegExp(`\\b${escaped}\\b`, "i").test(log.details);
+            });
         });
     };
 
@@ -910,14 +943,14 @@ export default function PropertiesView2Page() {
                                 <div className="space-y-2">
                                     {getAuditLogsForBooking(selectedFoodBooking).length === 0 ? (
                                         <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-200/50 text-center">
-                                            No deletions or modifications logged for this villa's order history.
+                                            No deletions or modifications logged during this stay.
                                         </p>
                                     ) : (
                                         getAuditLogsForBooking(selectedFoodBooking).map(log => (
                                             <div key={log.id} className="bg-red-50/50 border border-red-100 rounded-xl p-3 space-y-1">
                                                 <div className="flex justify-between items-center text-[10px] font-bold text-red-700">
                                                     <span>{log.actionType === "delete_request" ? "Entire Order Deleted" : "Line Item Modified/Reduced"}</span>
-                                                    <span className="text-slate-400">{new Date(log.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                    <span className="text-slate-400">{new Date(log.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                                                 </div>
                                                 <p className="text-[11px] font-semibold text-slate-700">{log.details.split("): ")[1] || log.details}</p>
                                                 <p className="text-[9px] text-slate-400 font-bold text-right">— Performed by {log.admin?.displayName || "Staff"}</p>
