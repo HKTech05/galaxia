@@ -93,7 +93,12 @@ const DEFAULT_MENU_ITEMS = [
     { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "High Tea" },
     { id: "peanut_masala", name: "Peanut masala", price: 150, category: "High Tea" },
     { id: "chakna_special", name: "Chakna Special", price: 260, category: "High Tea" },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "High Tea" }
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "High Tea" },
+    // Add-ons Items
+    { id: "mud_bath_1", name: "Mud Bath (1 Person)", price: 1500, category: "Add-ons" },
+    { id: "mud_bath_2", name: "Mud Bath (2 Persons)", price: 2000, category: "Add-ons" },
+    { id: "mud_bath_3", name: "Mud Bath (3 Persons)", price: 3000, category: "Add-ons" },
+    { id: "celebration_decor", name: "Celebration decoration", price: 2000, category: "Add-ons" }
 ];
 
 export default function HousekeepingPortalPage() {
@@ -227,7 +232,7 @@ export default function HousekeepingPortalPage() {
     const [modalMode, setModalMode] = useState<"create" | "edit">("create");
     const [editingRequestId, setEditingRequestId] = useState<number | null>(null);
     const [formVilla, setFormVilla] = useState(VILLAS_LIST[0].value);
-    const [formCategory, setFormCategory] = useState<"Normal" | "High Tea" | "Timepass">("Normal");
+    const [formCategory, setFormCategory] = useState<"Normal" | "High Tea" | "Timepass" | "Add-ons">("Normal");
     const [formQuantities, setFormQuantities] = useState<Record<string, number>>({});
     const [formStatus, setFormStatus] = useState("pending");
     const [formComments, setFormComments] = useState<Record<string, string>>({});
@@ -407,7 +412,7 @@ export default function HousekeepingPortalPage() {
         setError("");
         try {
             const data = await api.get<HospitalityRequest[]>(
-                `/hospitality/requests?category=Normal&excludeChefItems=true&date=${selectedDate}`
+                `/hospitality/requests?category=Normal,Add-ons&excludeChefItems=true&date=${selectedDate}`
             );
             if (Array.isArray(data)) {
                 setRequests(data);
@@ -831,7 +836,7 @@ export default function HousekeepingPortalPage() {
                                             </div>
 
                                             <div className="pt-2 flex justify-between items-center gap-2 border-t border-slate-200/40 mt-1">
-                                                {userRole !== "housekeeping" && !["ranjit", "devi"].includes(userName.toLowerCase()) && (
+                                                {userRole !== "housekeeping" && !["ranjit", "devi", "devidas"].includes(userName.toLowerCase()) && (
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => { if (isTestViewer) return; handleOpenEditModal(req); }}
@@ -933,7 +938,7 @@ export default function HousekeepingPortalPage() {
                                                         <span className="text-slate-400 font-semibold">Unbilled</span>
                                                     )}
                                                 </div>
-                                                {userRole !== "housekeeping" && !["ranjit", "devi"].includes(userName.toLowerCase()) && (
+                                                {userRole !== "housekeeping" && !["ranjit", "devi", "devidas"].includes(userName.toLowerCase()) && (
                                                     <div className="flex items-center gap-1">
                                                         <button
                                                             onClick={() => { if (isTestViewer) return; handleOpenEditModal(req); }}
@@ -1346,7 +1351,7 @@ export default function HousekeepingPortalPage() {
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                                     Category
                                 </label>
-                                <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-xl">
+                                <div className="grid grid-cols-4 gap-2 bg-slate-100 p-1 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -1385,6 +1390,19 @@ export default function HousekeepingPortalPage() {
                                         }`}
                                     >
                                         Timepass
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFormCategory("Add-ons");
+                                        }}
+                                        className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                            formCategory === "Add-ons"
+                                                ? "bg-white text-amber-600 shadow-sm"
+                                                : "text-slate-500 hover:text-slate-800"
+                                        }`}
+                                    >
+                                        Add-ons
                                     </button>
                                 </div>
                             </div>

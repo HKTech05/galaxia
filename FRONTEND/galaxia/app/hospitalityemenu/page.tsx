@@ -9,7 +9,7 @@ interface MenuItem {
     id: string;
     name: string;
     price: number;
-    category: "Normal" | "High Tea" | "Timepass";
+    category: "Normal" | "High Tea" | "Timepass" | "Add-ons";
     stock?: number;
     hidden?: boolean;
     visible?: boolean;
@@ -44,7 +44,12 @@ const DEFAULT_MENU_ITEMS: MenuItem[] = [
     { id: "channa_masala_regular", name: "Channa masala ( Regular )", price: 160, category: "High Tea" },
     { id: "peanut_masala", name: "Peanut masala", price: 150, category: "High Tea" },
     { id: "chakna_special", name: "Chakna Special", price: 260, category: "High Tea" },
-    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "High Tea" }
+    { id: "paneer_chilly_dry", name: "Paneer chilly dry", price: 280, category: "High Tea" },
+    // Add-ons Items
+    { id: "mud_bath_1", name: "Mud Bath (1 Person)", price: 1500, category: "Add-ons" },
+    { id: "mud_bath_2", name: "Mud Bath (2 Persons)", price: 2000, category: "Add-ons" },
+    { id: "mud_bath_3", name: "Mud Bath (3 Persons)", price: 3000, category: "Add-ons" },
+    { id: "celebration_decor", name: "Celebration decoration", price: 2000, category: "Add-ons" }
 ];
 
 const VILLAS_LIST = [
@@ -164,6 +169,71 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
         setComments(prev => ({
             ...prev,
             [id]: text
+        }));
+    };
+
+    // Add-on Mud Bath selection state: 1 | 2 | 3 persons
+    const [mudBathPersons, setMudBathPersons] = useState<1 | 2 | 3>(1);
+
+    const handleSelectMudBathPersons = (persons: 1 | 2 | 3) => {
+        setMudBathPersons(persons);
+        const newId = persons === 1 ? "mud_bath_1" : persons === 2 ? "mud_bath_2" : "mud_bath_3";
+        const item = menuItems.find(m => m.id === newId);
+        const currentStock = item && typeof item.stock === "number" ? item.stock : Infinity;
+        if (currentStock <= 0) {
+            alert("Sorry, this option is currently sold out!");
+            return;
+        }
+
+        setQuantities(prev => {
+            const existingQty = prev["mud_bath_1"] || prev["mud_bath_2"] || prev["mud_bath_3"] || 1;
+            const updated = { ...prev };
+            delete updated["mud_bath_1"];
+            delete updated["mud_bath_2"];
+            delete updated["mud_bath_3"];
+            updated[newId] = existingQty;
+            return updated;
+        });
+    };
+
+    const handleToggleMudBath = () => {
+        const targetId = mudBathPersons === 1 ? "mud_bath_1" : mudBathPersons === 2 ? "mud_bath_2" : "mud_bath_3";
+        const item = menuItems.find(m => m.id === targetId);
+        const currentStock = item && typeof item.stock === "number" ? item.stock : Infinity;
+
+        setQuantities(prev => {
+            const isChecked = !!(prev["mud_bath_1"] || prev["mud_bath_2"] || prev["mud_bath_3"]);
+            const updated = { ...prev };
+            delete updated["mud_bath_1"];
+            delete updated["mud_bath_2"];
+            delete updated["mud_bath_3"];
+            if (!isChecked) {
+                if (currentStock <= 0) {
+                    alert("Sorry, this option is currently sold out!");
+                    return prev;
+                }
+                updated[targetId] = 1;
+            }
+            return updated;
+        });
+    };
+
+    const handleIncrementMudBath = () => {
+        const targetId = mudBathPersons === 1 ? "mud_bath_1" : mudBathPersons === 2 ? "mud_bath_2" : "mud_bath_3";
+        handleIncrement(targetId);
+    };
+
+    const handleDecrementMudBath = () => {
+        const targetId = mudBathPersons === 1 ? "mud_bath_1" : mudBathPersons === 2 ? "mud_bath_2" : "mud_bath_3";
+        handleDecrement(targetId);
+    };
+
+    const handleMudBathCommentChange = (text: string) => {
+        setComments(prev => ({
+            ...prev,
+            mud_bath_1: text,
+            mud_bath_2: text,
+            mud_bath_3: text
         }));
     };
 
@@ -374,6 +444,7 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
             const housekeepingNormalPayload = selectedItems.filter(i => i.category === "Normal" && !isLimeItem(i));
             const highTeaPayload = selectedItems.filter(i => i.category === "High Tea");
             const timepassPayload = selectedItems.filter(i => i.category === "Timepass");
+            const addOnsPayload = selectedItems.filter(i => i.category === "Add-ons");
 
             // Post Housekeeping Normal request
             if (housekeepingNormalPayload.length > 0) {
@@ -435,6 +506,21 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                 if (!res.ok) throw new Error("Failed to submit timepass requests");
             }
 
+            // Post Add-ons request (Mud bath, Celebration decoration, etc.)
+            if (addOnsPayload.length > 0) {
+                const res = await fetch("/api/hospitality/requests", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        villaName: selectedVilla,
+                        itemCategory: "Add-ons",
+                        items: addOnsPayload,
+                        isOwnerMode: !!isOwnerMode
+                    })
+                });
+                if (!res.ok) throw new Error("Failed to submit Add-ons requests");
+            }
+
             setSubmitSuccess(true);
             setQuantities({});
             setComments({});
@@ -450,6 +536,18 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
     const normalItems = menuItems.filter(item => item.category === "Normal" && isItemVisible(item));
     const highTeaItems = menuItems.filter(item => item.category === "High Tea" && isItemVisible(item));
     const timepassItems = menuItems.filter(item => item.category === "Timepass" && isItemVisible(item));
+    const addOnItems = menuItems.filter(item => item.category === "Add-ons" && isItemVisible(item));
+
+    const mb1 = menuItems.find(m => m.id === "mud_bath_1");
+    const mb2 = menuItems.find(m => m.id === "mud_bath_2");
+    const mb3 = menuItems.find(m => m.id === "mud_bath_3");
+    const decorItem = menuItems.find(m => m.id === "celebration_decor");
+
+    const activeMudBathId = mudBathPersons === 1 ? "mud_bath_1" : mudBathPersons === 2 ? "mud_bath_2" : "mud_bath_3";
+    const isMudBathChecked = !!(quantities["mud_bath_1"] || quantities["mud_bath_2"] || quantities["mud_bath_3"]);
+    const mudBathQty = quantities["mud_bath_1"] || quantities["mud_bath_2"] || quantities["mud_bath_3"] || 0;
+    const mudBathItem = menuItems.find(m => m.id === activeMudBathId);
+    const isMudBathSoldOut = typeof mudBathItem?.stock === "number" && mudBathItem.stock <= 0;
 
     return (
         <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -818,6 +916,254 @@ export function EMenuContent({ overrideVilla, disableTimers, isOwnerMode }: { ov
                                             <input
                                                 type="text"
                                                 placeholder="Add notes / item comments (e.g. No Sugar, Extra Spicy)..."
+                                                value={comments[item.id] || ""}
+                                                onChange={(e) => handleCommentChange(item.id, e.target.value)}
+                                                className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 bg-slate-50/50 focus:bg-white transition-all placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Add-ons Section */}
+            {(addOnItems.length > 0 || isOwnerMode) && (
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
+                    <div className="border-b border-slate-50 pb-3 flex items-center justify-between">
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                                <Sparkles size={18} className="text-amber-600" />
+                                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Add-ons</h2>
+                            </div>
+                            {normalUnlocked && (
+                                <p className="text-[11px] text-slate-400 font-medium ml-6">
+                                    Orders can be served from 8:30 AM to 12:00 AM Midnight
+                                </p>
+                            )}
+                        </div>
+
+                        {!normalUnlocked && normalTimeRemaining && (
+                            <div className="bg-red-50 text-red-700 text-xs font-extrabold px-3 py-1 rounded-full border border-red-100 flex items-center gap-1.5 font-mono">
+                                <Clock size={12} className="animate-pulse" />
+                                {normalTimeRemaining}
+                            </div>
+                        )}
+                    </div>
+
+                    {!normalUnlocked && (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 animate-in fade-in duration-200">
+                            <div className="space-y-1">
+                                <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-slate-800 uppercase tracking-wider">
+                                    <Clock size={14} className="text-amber-600 animate-pulse" />
+                                    Locked Until 8:30 AM
+                                </h3>
+                                <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                                    Add-on requests unlock automatically between 8:30 AM and 12:00 AM Midnight every day.
+                                </p>
+                            </div>
+                            <div className="shrink-0 flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500">Remaining:</span>
+                                <div className="font-mono font-black text-xs bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-sm min-w-[80px] text-center">
+                                    {normalTimeRemaining || "00:00:00"}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="divide-y divide-slate-100">
+                        {/* Mud Bath Option B Interactive Card */}
+                        {(mb1 || mb2 || mb3) && (
+                            <div className={`py-4 transition-opacity duration-200 border-b border-slate-100 ${(!normalUnlocked || isMudBathSoldOut) ? "opacity-50 select-none" : ""}`}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3.5 flex-1">
+                                        <label className="flex items-center cursor-pointer relative mt-0.5">
+                                            <input
+                                                type="checkbox"
+                                                checked={isMudBathChecked}
+                                                onChange={handleToggleMudBath}
+                                                className="sr-only peer"
+                                                disabled={!normalUnlocked || isMudBathSoldOut}
+                                            />
+                                            <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
+                                                <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
+                                            </div>
+                                        </label>
+                                        <div className="flex-1">
+                                            <div className="cursor-pointer" onClick={() => normalUnlocked && !isMudBathSoldOut && handleToggleMudBath()}>
+                                                <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                    Mud Bath
+                                                    {isMudBathSoldOut && (
+                                                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                    )}
+                                                </p>
+                                                <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                                                    Rejuvenating natural therapeutic mud bath experience.
+                                                </p>
+                                            </div>
+
+                                            {/* Person Option Pills */}
+                                            <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => normalUnlocked && handleSelectMudBathPersons(1)}
+                                                    disabled={!normalUnlocked}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                                                        mudBathPersons === 1 && isMudBathChecked
+                                                            ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                                    }`}
+                                                >
+                                                    1 Person • {isOwnerMode ? "Free" : `₹${mb1?.price ?? 1500}`}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => normalUnlocked && handleSelectMudBathPersons(2)}
+                                                    disabled={!normalUnlocked}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                                                        mudBathPersons === 2 && isMudBathChecked
+                                                            ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                                    }`}
+                                                >
+                                                    2 Persons • {isOwnerMode ? "Free" : `₹${mb2?.price ?? 2000}`}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => normalUnlocked && handleSelectMudBathPersons(3)}
+                                                    disabled={!normalUnlocked}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                                                        mudBathPersons === 3 && isMudBathChecked
+                                                            ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                                    }`}
+                                                >
+                                                    3 Persons • {isOwnerMode ? "Free" : `₹${mb3?.price ?? 3000}`}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {isMudBathChecked && !isMudBathSoldOut && (
+                                        <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1 animate-in zoom-in-95 duration-100 shrink-0">
+                                            <button onClick={handleDecrementMudBath} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">-</button>
+                                            <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{mudBathQty}</span>
+                                            <button onClick={handleIncrementMudBath} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">+</button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isMudBathChecked && (
+                                    <div className="mt-2.5 pl-9 animate-in slide-in-from-top-1 duration-100">
+                                        <input
+                                            type="text"
+                                            placeholder="Preferred time or notes (e.g. Tomorrow 10:00 AM)..."
+                                            value={comments[activeMudBathId] || ""}
+                                            onChange={(e) => handleMudBathCommentChange(e.target.value)}
+                                            className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 bg-slate-50/50 focus:bg-white transition-all placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Celebration Decoration Item */}
+                        {decorItem && (
+                            <div className={`py-4 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!normalUnlocked || (typeof decorItem.stock === "number" && decorItem.stock <= 0)) ? "opacity-50 select-none" : ""}`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3.5 flex-1">
+                                        <label className="flex items-center cursor-pointer relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={!!quantities[decorItem.id]}
+                                                onChange={() => handleCheckboxToggle(decorItem.id)}
+                                                className="sr-only peer"
+                                                disabled={!normalUnlocked || (typeof decorItem.stock === "number" && decorItem.stock <= 0)}
+                                            />
+                                            <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
+                                                <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
+                                            </div>
+                                        </label>
+                                        <div className="cursor-pointer" onClick={() => normalUnlocked && !(typeof decorItem.stock === "number" && decorItem.stock <= 0) && handleCheckboxToggle(decorItem.id)}>
+                                            <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                {decorItem.name}
+                                                {typeof decorItem.stock === "number" && decorItem.stock <= 0 && (
+                                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                )}
+                                            </p>
+                                            <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${decorItem.price}`}</p>
+                                        </div>
+                                    </div>
+
+                                    {!!quantities[decorItem.id] && !(typeof decorItem.stock === "number" && decorItem.stock <= 0) && (
+                                        <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1 animate-in zoom-in-95 duration-100">
+                                            <button onClick={() => handleDecrement(decorItem.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">-</button>
+                                            <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{quantities[decorItem.id] || 0}</span>
+                                            <button onClick={() => handleIncrement(decorItem.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">+</button>
+                                        </div>
+                                    )}
+                                </div>
+                                {!!quantities[decorItem.id] && (
+                                    <div className="mt-2.5 pl-9 animate-in slide-in-from-top-1 duration-100">
+                                        <input
+                                            type="text"
+                                            placeholder="Occasion or decoration instructions (e.g. Birthday, Anniversary setup on bed)..."
+                                            value={comments[decorItem.id] || ""}
+                                            onChange={(e) => handleCommentChange(decorItem.id, e.target.value)}
+                                            className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 bg-slate-50/50 focus:bg-white transition-all placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Any other custom add-on items added via inventory */}
+                        {addOnItems.filter(item => !item.id.startsWith("mud_bath_") && item.id !== "celebration_decor").map(item => {
+                            const isChecked = !!quantities[item.id];
+                            const qty = quantities[item.id] || 0;
+                            const isSoldOut = typeof item.stock === "number" && item.stock <= 0;
+                            return (
+                                <div key={item.id} className={`py-3.5 transition-opacity duration-200 border-b border-slate-100 last:border-0 ${(!normalUnlocked || isSoldOut) ? "opacity-50 select-none" : ""}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3.5 flex-1">
+                                            <label className="flex items-center cursor-pointer relative">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => handleCheckboxToggle(item.id)}
+                                                    className="sr-only peer"
+                                                    disabled={!normalUnlocked || isSoldOut}
+                                                />
+                                                <div className="w-5.5 h-5.5 bg-white border border-slate-300 rounded-md flex items-center justify-center peer-checked:bg-amber-600 peer-checked:border-amber-600 transition-all shadow-sm">
+                                                    <Check size={12} className="text-white scale-0 peer-checked:scale-100 transition-transform stroke-[3px]" />
+                                                </div>
+                                            </label>
+                                            <div className="cursor-pointer" onClick={() => normalUnlocked && !isSoldOut && handleCheckboxToggle(item.id)}>
+                                                <p className="font-semibold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                                                    {item.name}
+                                                    {isSoldOut && (
+                                                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 uppercase tracking-wide">Sold Out</span>
+                                                    )}
+                                                </p>
+                                                <p className="text-slate-400 font-bold text-xs font-mono mt-0.5">{isOwnerMode ? "Free" : `₹${item.price}`}</p>
+                                            </div>
+                                        </div>
+
+                                        {isChecked && !isSoldOut && (
+                                            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-1 animate-in zoom-in-95 duration-100">
+                                                <button onClick={() => handleDecrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">-</button>
+                                                <span className="w-6 text-center font-bold font-mono text-sm text-slate-800">{qty}</span>
+                                                <button onClick={() => handleIncrement(item.id)} className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">+</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isChecked && (
+                                        <div className="mt-2.5 pl-9 animate-in slide-in-from-top-1 duration-100">
+                                            <input
+                                                type="text"
+                                                placeholder="Add notes / item comments..."
                                                 value={comments[item.id] || ""}
                                                 onChange={(e) => handleCommentChange(item.id, e.target.value)}
                                                 className="w-full max-w-md border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 bg-slate-50/50 focus:bg-white transition-all placeholder:text-slate-400"

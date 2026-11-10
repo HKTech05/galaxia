@@ -61,7 +61,19 @@ const DEFAULT_MENU_ITEMS = [
     { id: "chinese_bhel", name: "Chinese bhel", price: 210, category: "High Tea", stock: 100, costPrice: 60, tracked: true },
     { id: "coca_cola_tin", name: "Coca Cola tin", price: 150, category: "High Tea", stock: 100, costPrice: 40, tracked: true },
     { id: "nimboos_masala_soda", name: "NIMBOOS MASALA SODA", price: 120, category: "High Tea", stock: 100, costPrice: 30, tracked: true },
-    { id: "makkai_butta", name: "Makkai butta", price: 100, category: "High Tea", stock: 100, costPrice: 25, tracked: true }
+    { id: "makkai_butta", name: "Makkai butta", price: 100, category: "High Tea", stock: 100, costPrice: 25, tracked: true },
+    // Add-ons Items
+    { id: "mud_bath_1", name: "Mud Bath (1 Person)", price: 1500, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true },
+    { id: "mud_bath_2", name: "Mud Bath (2 Persons)", price: 2000, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true },
+    { id: "mud_bath_3", name: "Mud Bath (3 Persons)", price: 3000, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true },
+    { id: "celebration_decor", name: "Celebration decoration", price: 2000, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true }
+];
+
+const REQUIRED_ADDONS = [
+    { id: "mud_bath_1", name: "Mud Bath (1 Person)", price: 1500, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true },
+    { id: "mud_bath_2", name: "Mud Bath (2 Persons)", price: 2000, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true },
+    { id: "mud_bath_3", name: "Mud Bath (3 Persons)", price: 3000, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true },
+    { id: "celebration_decor", name: "Celebration decoration", price: 2000, category: "Add-ons", stock: 100, tracked: false, costPrice: 0, hidden: false, visible: true }
 ];
 
 export function getMenuItems() {
@@ -85,6 +97,22 @@ export function getMenuItems() {
     } catch (err) {
         console.error("Error reading menu file:", err);
         items = JSON.parse(JSON.stringify(DEFAULT_MENU_ITEMS));
+    }
+
+    // Ensure required add-ons exist in items array
+    let addonsAdded = false;
+    for (const addon of REQUIRED_ADDONS) {
+        if (!items.some((i: any) => i.id === addon.id)) {
+            items.push(addon);
+            addonsAdded = true;
+        }
+    }
+    if (addonsAdded) {
+        try {
+            fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
+        } catch (err) {
+            console.error("Failed to auto-append required addons to menu file:", err);
+        }
     }
 
     return items;
@@ -320,10 +348,11 @@ router.post("/requests", async (req, res) => {
                 hour12: true, timeZone: "Asia/Kolkata"
             });
 
+            const isAddOns = itemCategory === "Add-ons";
             const isHighTea = itemCategory === "High Tea";
             const isTimepass = itemCategory === "Timepass";
             const hasChefItem = items.some((i: any) => isChefPreparedItem(i));
-            const isChefOrder = isHighTea || isTimepass || hasChefItem;
+            const isChefOrder = !isAddOns && (isHighTea || isTimepass || hasChefItem);
 
             const templateName = isChefOrder
                 ? "hospitality_hightea_order"
@@ -335,9 +364,11 @@ router.post("/requests", async (req, res) => {
             const chefPhone = "9867677811";
             const highTeaAndNormalOnly = ["7488785199", "7307829276"];
 
-            const recipientPhones = isChefOrder
-                ? [...basePhones, chefPhone, ...(isTimepass ? [] : highTeaAndNormalOnly)]
-                : [...basePhones, ...highTeaAndNormalOnly];
+            const recipientPhones = isAddOns
+                ? ["7355630009", "9923500208"]
+                : isChefOrder
+                    ? [...basePhones, chefPhone, ...(isTimepass ? [] : highTeaAndNormalOnly)]
+                    : [...basePhones, ...highTeaAndNormalOnly];
 
             for (const recipientPhone of recipientPhones) {
                 try {
@@ -383,7 +414,12 @@ router.get("/requests", async (req: AuthRequest, res) => {
             where.status = "prepared";
         } else {
             if (category) {
-                where.itemCategory = String(category);
+                const catStr = String(category);
+                if (catStr.includes(",")) {
+                    where.itemCategory = { in: catStr.split(",").map(c => c.trim()) };
+                } else {
+                    where.itemCategory = catStr;
+                }
             }
             if (status) {
                 where.status = String(status);
@@ -434,7 +470,7 @@ router.get("/requests", async (req: AuthRequest, res) => {
         });
 
         // Additional Chef vs Housekeeping item filtering & segregation
-        if (category === "Normal") {
+        if (category === "Normal" || (category && String(category).includes("Normal"))) {
             if (chefOnly === "true") {
                 // Chef portal Normal tab: filter items array to ONLY contain Chef items (Fresh Lime Water/Soda)
                 parsedRequests = parsedRequests
@@ -483,10 +519,10 @@ router.put("/requests/:id", async (req: AuthRequest, res) => {
         const cat = itemCategory || existing.itemCategory;
         const username = req.admin?.username || "";
         
-        // Restriction: Ranjit and Devi cannot edit housekeeping (Normal) orders (except status updates)
-        if (["ranjit", "devi"].includes(username.toLowerCase()) && (existing.itemCategory === "Normal" || cat === "Normal")) {
+        // Restriction: Ranjit and Devi/Devidas cannot edit housekeeping (Normal) or Add-ons orders (except status updates)
+        if (["ranjit", "devi", "devidas"].includes(username.toLowerCase()) && (["Normal", "Add-ons"].includes(existing.itemCategory) || ["Normal", "Add-ons"].includes(cat))) {
             if (villaName !== undefined || itemCategory !== undefined || items !== undefined) {
-                return res.status(403).json({ error: "Ranjit and Devi profiles are not permitted to edit housekeeping orders." });
+                return res.status(403).json({ error: "Ranjit and Devidas profiles are not permitted to edit housekeeping or add-on orders." });
             }
         }
         
@@ -684,9 +720,9 @@ router.delete("/requests/:id", async (req: AuthRequest, res) => {
         const userRole = req.admin?.role || "";
         const username = req.admin?.username || "";
         
-        // Restriction: Ranjit and Devi cannot delete housekeeping (Normal) orders
-        if (existing.itemCategory === "Normal" && ["ranjit", "devi"].includes(username.toLowerCase())) {
-            return res.status(403).json({ error: "Ranjit and Devi profiles are not permitted to delete housekeeping orders." });
+        // Restriction: Ranjit and Devi/Devidas cannot delete housekeeping (Normal) or Add-ons orders
+        if (["Normal", "Add-ons"].includes(existing.itemCategory) && ["ranjit", "devi", "devidas"].includes(username.toLowerCase())) {
+            return res.status(403).json({ error: "Ranjit and Devidas profiles are not permitted to delete housekeeping or add-on orders." });
         }
         
         if ((existing.itemCategory === "High Tea" || existing.itemCategory === "Timepass") && existing.status !== "fulfilled") {
@@ -798,7 +834,8 @@ router.get("/insights", async (req: AuthRequest, res) => {
         const categoryStats: Record<string, { orders: number; revenue: number; cost: number }> = {
             "Normal": { orders: 0, revenue: 0, cost: 0 },
             "High Tea": { orders: 0, revenue: 0, cost: 0 },
-            "Timepass": { orders: 0, revenue: 0, cost: 0 }
+            "Timepass": { orders: 0, revenue: 0, cost: 0 },
+            "Add-ons": { orders: 0, revenue: 0, cost: 0 }
         };
 
         for (const req of allRequests) {

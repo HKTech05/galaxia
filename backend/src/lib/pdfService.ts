@@ -881,7 +881,8 @@ export async function generateMenuPDF(menuItems: any[]): Promise<Buffer> {
         const categories: Record<string, any[]> = {
             "High Tea": [],
             "Timepass": [],
-            "Normal": []
+            "Normal": [],
+            "Add-ons": []
         };
 
         for (const item of menuItems) {
@@ -894,7 +895,8 @@ export async function generateMenuPDF(menuItems: any[]): Promise<Buffer> {
         const categoryTitles: Record<string, { label: string; icon: string }> = {
             "High Tea": { label: "HIGH TEA & SNACKS", icon: "HIGH TEA" },
             "Timepass": { label: "TIMEPASS & QUICK BITES", icon: "TIMEPASS" },
-            "Normal": { label: "BEVERAGES & REFRESHMENTS", icon: "BEVERAGES" }
+            "Normal": { label: "BEVERAGES & REFRESHMENTS", icon: "BEVERAGES" },
+            "Add-ons": { label: "ADD-ONS & EXPERIENCES", icon: "EXPERIENCES" }
         };
 
         const categoryKeys = Object.keys(categories).filter(c => categories[c].length > 0);

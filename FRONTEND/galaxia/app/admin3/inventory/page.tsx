@@ -9,7 +9,7 @@ interface MenuItem {
     id: string;
     name: string;
     price: number;
-    category: "Normal" | "High Tea" | "Timepass";
+    category: "Normal" | "High Tea" | "Timepass" | "Add-ons";
     stock?: number;
     tracked?: boolean;
     costPrice?: number;
@@ -414,7 +414,7 @@ export default function InventoryPage() {
         }
     };
 
-    const categories: MenuItem["category"][] = ["Normal", "High Tea", "Timepass"];
+    const categories: MenuItem["category"][] = ["Normal", "High Tea", "Timepass", "Add-ons"];
     const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
     return (
@@ -715,6 +715,8 @@ export default function InventoryPage() {
                                                                 ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/80"
                                                                 : item.category === "High Tea"
                                                                 ? "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100/80"
+                                                                : item.category === "Add-ons"
+                                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80"
                                                                 : "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100/80"
                                                         }`}
                                                         title="Click to change category"
@@ -724,9 +726,10 @@ export default function InventoryPage() {
                                                         {item.category === "Timepass" && (
                                                             <option value="Timepass" className="text-slate-800 bg-white font-semibold normal-case">Timepass</option>
                                                         )}
+                                                        <option value="Add-ons" className="text-slate-800 bg-white font-semibold normal-case">Add-ons</option>
                                                     </select>
                                                     <ChevronDown size={11} className={`absolute right-2 pointer-events-none opacity-60 ${
-                                                        item.category === "Normal" ? "text-amber-700" : item.category === "High Tea" ? "text-purple-700" : "text-teal-700"
+                                                        item.category === "Normal" ? "text-amber-700" : item.category === "High Tea" ? "text-purple-700" : item.category === "Add-ons" ? "text-emerald-700" : "text-teal-700"
                                                     }`} />
                                                 </div>
 
@@ -941,7 +944,7 @@ export default function InventoryPage() {
                                                             <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                                                 <td className="py-3 px-3 font-bold text-slate-800">{item.name}</td>
                                                                 <td className="py-3 px-3">
-                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.category === "Normal" ? "bg-amber-50 text-amber-700 border-amber-200" : item.category === "High Tea" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-teal-50 text-teal-700 border-teal-200"}`}>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.category === "Normal" ? "bg-amber-50 text-amber-700 border-amber-200" : item.category === "High Tea" ? "bg-purple-50 text-purple-700 border-purple-200" : item.category === "Add-ons" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-teal-50 text-teal-700 border-teal-200"}`}>
                                                                         {item.category}
                                                                     </span>
                                                                 </td>
@@ -1055,10 +1058,11 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Category</label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-3 gap-2">
                                     {[
                                         { id: "Normal" as const, name: "Normal", timing: "8:30 AM to 12:00 AM" },
-                                        { id: "High Tea" as const, name: "High Tea", timing: "4:30 PM to 6:30 PM" }
+                                        { id: "High Tea" as const, name: "High Tea", timing: "4:30 PM to 6:30 PM" },
+                                        { id: "Add-ons" as const, name: "Add-ons", timing: "8:30 AM to 12:00 AM" }
                                     ].map(cat => {
                                         const isSelected = newItemCategory === cat.id;
                                         return (

@@ -1,28 +1,30 @@
 [
   {
     "id": "water",
-    "name": "Water",
-    "price": 30,
+    "name": "Mineral water ",
+    "price": 40,
     "category": "Normal",
-    "stock": 90,
+    "stock": 55,
     "tracked": true,
-    "costPrice": 10
+    "costPrice": 10,
+    "hidden": false,
+    "visible": true
   },
   {
     "id": "fresh_lime_soda",
     "name": "Fresh lime soda",
     "price": 170,
     "category": "Normal",
-    "stock": 100,
+    "stock": 56,
     "tracked": false,
-    "costPrice": 40
+    "costPrice": 30
   },
   {
     "id": "fresh_lime_water",
     "name": "Fresh Lime Water",
     "price": 120,
     "category": "Normal",
-    "stock": 99,
+    "stock": 79,
     "tracked": false,
     "costPrice": 25
   },
@@ -31,7 +33,7 @@
     "name": "Lemon Ice tea",
     "price": 100,
     "category": "Normal",
-    "stock": 100,
+    "stock": 91,
     "tracked": false,
     "costPrice": 25
   },
@@ -40,7 +42,7 @@
     "name": "Sprite",
     "price": 70,
     "category": "Normal",
-    "stock": 100,
+    "stock": 0,
     "tracked": true,
     "costPrice": 30
   },
@@ -49,7 +51,7 @@
     "name": "Thums Up",
     "price": 70,
     "category": "Normal",
-    "stock": 99,
+    "stock": 0,
     "tracked": true,
     "costPrice": 30
   },
@@ -58,8 +60,8 @@
     "name": "Special Mocktail",
     "price": 1500,
     "category": "Normal",
-    "stock": 100,
-    "tracked": true,
+    "stock": 65,
+    "tracked": false,
     "costPrice": 400
   },
   {
@@ -67,7 +69,7 @@
     "name": "Red Bull",
     "price": 220,
     "category": "Normal",
-    "stock": 100,
+    "stock": 0,
     "tracked": true,
     "costPrice": 100
   },
@@ -76,7 +78,7 @@
     "name": "Hell Energy",
     "price": 110,
     "category": "Normal",
-    "stock": 100,
+    "stock": 7,
     "tracked": true,
     "costPrice": 60
   },
@@ -85,25 +87,25 @@
     "name": "Jimy's Cocktail",
     "price": 200,
     "category": "Normal",
-    "stock": 100,
+    "stock": 1,
     "tracked": true,
     "costPrice": 400
   },
   {
     "id": "tea",
     "name": "Tea",
-    "price": 40,
+    "price": 50,
     "category": "High Tea",
-    "stock": 98,
+    "stock": 463,
     "tracked": false,
     "costPrice": 10
   },
   {
     "id": "coffee",
     "name": "Coffee",
-    "price": 44,
+    "price": 60,
     "category": "High Tea",
-    "stock": 96,
+    "stock": 875,
     "tracked": false,
     "costPrice": 12
   },
@@ -112,25 +114,25 @@
     "name": "Milk",
     "price": 50,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 75,
     "tracked": false,
     "costPrice": 15
   },
   {
     "id": "black_coffee",
     "name": "Black coffee",
-    "price": 40,
+    "price": 60,
     "category": "High Tea",
-    "stock": 98,
+    "stock": 85,
     "tracked": false,
     "costPrice": 8
   },
   {
     "id": "cold_coffee",
     "name": "Cold Coffee",
-    "price": 90,
+    "price": 190,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 72,
     "tracked": false,
     "costPrice": 25
   },
@@ -139,7 +141,7 @@
     "name": "Cold Coffee with Vanilla",
     "price": 250,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 95,
     "tracked": false,
     "costPrice": 50
   },
@@ -148,7 +150,7 @@
     "name": "Plain Maggie",
     "price": 190,
     "category": "High Tea",
-    "stock": 97,
+    "stock": 68,
     "tracked": false,
     "costPrice": 40
   },
@@ -157,7 +159,7 @@
     "name": "Masala Maggie",
     "price": 220,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 23,
     "tracked": false,
     "costPrice": 50
   },
@@ -166,7 +168,7 @@
     "name": "Vegetable Masala Maggie",
     "price": 250,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 85,
     "tracked": false,
     "costPrice": 60
   },
@@ -175,7 +177,7 @@
     "name": "Salty French Fries",
     "price": 220,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 60,
     "tracked": false,
     "costPrice": 50
   },
@@ -184,7 +186,7 @@
     "name": "Peri peri French Fries",
     "price": 250,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 45,
     "tracked": false,
     "costPrice": 60
   },
@@ -193,7 +195,7 @@
     "name": "Cheese French Fries",
     "price": 280,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 85,
     "tracked": false,
     "costPrice": 70
   },
@@ -202,7 +204,7 @@
     "name": "Kanda Bhaji",
     "price": 210,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 31,
     "tracked": false,
     "costPrice": 40
   },
@@ -211,7 +213,7 @@
     "name": "Aloo Bhaji",
     "price": 210,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 90,
     "tracked": false,
     "costPrice": 50
   },
@@ -220,7 +222,7 @@
     "name": "Corn Bhaji",
     "price": 210,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 77,
     "tracked": false,
     "costPrice": 45
   },
@@ -229,7 +231,7 @@
     "name": "Mix Bhaji",
     "price": 280,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 66,
     "tracked": false,
     "costPrice": 70
   },
@@ -238,7 +240,7 @@
     "name": "Veg toast sandwich",
     "price": 210,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 64,
     "tracked": false,
     "costPrice": 50
   },
@@ -247,7 +249,7 @@
     "name": "Cheese Toast Sandwich",
     "price": 210,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 69,
     "tracked": false,
     "costPrice": 55
   },
@@ -256,7 +258,7 @@
     "name": "Cheese Chilly Toast",
     "price": 260,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 85,
     "tracked": false,
     "costPrice": 65
   },
@@ -265,70 +267,25 @@
     "name": "Garlic bread (4pcs)",
     "price": 180,
     "category": "High Tea",
-    "stock": 99,
+    "stock": 76,
     "tracked": false,
     "costPrice": 40
   },
   {
-    "id": "khichiya_papad",
-    "name": "Khichiya papad",
-    "price": 100,
-    "category": "High Tea",
-    "stock": 100,
-    "tracked": false,
-    "costPrice": 30
-  },
-  {
-    "id": "khichiya_fried",
-    "name": "Khichiya fried papad",
-    "price": 120,
-    "category": "High Tea",
-    "stock": 100,
-    "tracked": false,
-    "costPrice": 35
-  },
-  {
-    "id": "khichiya_masala_jain",
-    "name": "Khichiya masala papad jain",
-    "price": 160,
-    "category": "High Tea",
-    "stock": 100,
-    "tracked": false,
-    "costPrice": 45
-  },
-  {
-    "id": "khichiya_masala_regular",
-    "name": "Khichiya masala papad regular",
-    "price": 160,
-    "category": "High Tea",
-    "stock": 100,
-    "tracked": false,
-    "costPrice": 45
-  },
-  {
-    "id": "khichiya_cheese_masala",
-    "name": "Khichiya cheese masala papad",
-    "price": 180,
-    "category": "High Tea",
-    "stock": 100,
-    "tracked": false,
-    "costPrice": 55
-  },
-  {
     "id": "channa_masala_jain",
     "name": "Channa masala ( jain )",
-    "price": 160,
+    "price": 200,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 98,
     "tracked": false,
     "costPrice": 40
   },
   {
     "id": "channa_masala_regular",
     "name": "Channa masala ( Regular )",
-    "price": 160,
+    "price": 200,
     "category": "High Tea",
-    "stock": 99,
+    "stock": 87,
     "tracked": false,
     "costPrice": 40
   },
@@ -337,7 +294,7 @@
     "name": "Peanut masala",
     "price": 150,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 97,
     "tracked": false,
     "costPrice": 35
   },
@@ -346,7 +303,7 @@
     "name": "Chakna Special",
     "price": 260,
     "category": "High Tea",
-    "stock": 100,
+    "stock": 93,
     "tracked": false,
     "costPrice": 80
   },
@@ -355,8 +312,409 @@
     "name": "Paneer chilly dry",
     "price": 280,
     "category": "High Tea",
-    "stock": 99,
+    "stock": 72,
     "tracked": false,
     "costPrice": 90
+  },
+  {
+    "id": "coca_cola_tin",
+    "name": "Coca Cola tin",
+    "price": 150,
+    "category": "Normal",
+    "stock": 20,
+    "costPrice": 40,
+    "tracked": true
+  },
+  {
+    "id": "nimboos_soda",
+    "name": "NIMBOOS SODA",
+    "price": 120,
+    "category": "Normal",
+    "stock": 10,
+    "costPrice": 20,
+    "tracked": true
+  },
+  {
+    "id": "sprite_tin",
+    "name": "Sprite Tin",
+    "price": 150,
+    "category": "Normal",
+    "stock": 16,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "sweet_lassi",
+    "name": "Sweet lassi",
+    "price": 200,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 40
+  },
+  {
+    "id": "salted_lassi",
+    "name": "Salted lassi",
+    "price": 200,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 40
+  },
+  {
+    "id": "pink_pasta",
+    "name": "Pink pasta",
+    "price": 280,
+    "category": "High Tea",
+    "stock": 92,
+    "tracked": false,
+    "costPrice": 80
+  },
+  {
+    "id": "white_pasta",
+    "name": "White pasta",
+    "price": 260,
+    "category": "High Tea",
+    "stock": 90,
+    "tracked": false,
+    "costPrice": 80
+  },
+  {
+    "id": "triple_schezwan_fried_rice",
+    "name": "Triple schezwan fried rice",
+    "price": 370,
+    "category": "High Tea",
+    "stock": 95,
+    "tracked": false,
+    "costPrice": 100
+  },
+  {
+    "id": "panner_sechzwan_fried_rice",
+    "name": "Panner sechzwan fried rice",
+    "price": 450,
+    "category": "High Tea",
+    "stock": 100,
+    "tracked": false,
+    "costPrice": 140
+  },
+  {
+    "id": "chinese_bhel",
+    "name": "Chinese bhel",
+    "price": 210,
+    "category": "High Tea",
+    "stock": 88,
+    "tracked": false,
+    "costPrice": 50
+  },
+  {
+    "id": "chilly_garlic_fried_rice",
+    "name": "Chilly garlic fried rice",
+    "price": 290,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "green_salad",
+    "name": "Green salad",
+    "price": 120,
+    "category": "High Tea",
+    "stock": 97,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "curd_rice",
+    "name": "Curd rice",
+    "price": 250,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "dal_khichdi",
+    "name": "Dal khichdi",
+    "price": 250,
+    "category": "High Tea",
+    "stock": 93,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "cheese_chilly_samosa_5_pcs_",
+    "name": "Cheese chilly samosa (5 pcs )",
+    "price": 250,
+    "category": "High Tea",
+    "stock": 91,
+    "tracked": false,
+    "costPrice": 80
+  },
+  {
+    "id": "patato_cheese_shots__10pcs_",
+    "name": "Patato cheese shots ( 10Pcs )",
+    "price": 260,
+    "category": "High Tea",
+    "stock": 0,
+    "tracked": false,
+    "costPrice": 80
+  },
+  {
+    "id": "dal",
+    "name": "Dal",
+    "price": 190,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "steam_rice",
+    "name": "Steam rice",
+    "price": 150,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "masala_pav_2_pcs",
+    "name": "Masala pav 2 pcs",
+    "price": 190,
+    "category": "High Tea",
+    "stock": 100,
+    "tracked": false,
+    "costPrice": 0
+  },
+  {
+    "id": "cheese_masala_pav",
+    "name": "Cheese masala pav",
+    "price": 230,
+    "category": "High Tea",
+    "stock": 99,
+    "tracked": false,
+    "costPrice": 40
+  },
+  {
+    "id": "chilly_garlic_patato_bite__10_pcs_",
+    "name": "Chilly garlic Patato bite ( 10 pcs )",
+    "price": 270,
+    "category": "High Tea",
+    "stock": 94,
+    "tracked": false,
+    "costPrice": 40
+  },
+  {
+    "id": "veggie_nuggets__8_pcs_",
+    "name": "Veggie nuggets ( 8 pcs )",
+    "price": 260,
+    "category": "High Tea",
+    "stock": 97,
+    "tracked": false,
+    "costPrice": 50
+  },
+  {
+    "id": "italian_cheese_chilly_zig_zag_fries",
+    "name": "Italian cheese chilly zig zag fries",
+    "price": 280,
+    "category": "High Tea",
+    "stock": 92,
+    "tracked": false,
+    "costPrice": 50
+  },
+  {
+    "id": "diet_coke_time",
+    "name": "Diet Coke time",
+    "price": 160,
+    "category": "Normal",
+    "stock": 21,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "mirinda_tin",
+    "name": "Mirinda tin",
+    "price": 130,
+    "category": "Normal",
+    "stock": 4,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "bread_butter",
+    "name": "Bread butter",
+    "price": 50,
+    "category": "Normal",
+    "stock": 57,
+    "tracked": false,
+    "costPrice": 15
+  },
+  {
+    "id": "thumps_up_tin",
+    "name": "Thumps up Tin",
+    "price": 150,
+    "category": "Normal",
+    "stock": 28,
+    "tracked": true,
+    "costPrice": 37
+  },
+  {
+    "id": "aloo_paratha",
+    "name": "Aloo paratha",
+    "price": 180,
+    "category": "Normal",
+    "stock": 67,
+    "tracked": false,
+    "costPrice": 30
+  },
+  {
+    "id": "fanta",
+    "name": "Fanta",
+    "price": 150,
+    "category": "Normal",
+    "stock": 8,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "cheese_aloo_paratha",
+    "name": "Cheese aloo paratha",
+    "price": 220,
+    "category": "Normal",
+    "stock": 97,
+    "tracked": false,
+    "costPrice": 60
+  },
+  {
+    "id": "pepsi_tin",
+    "name": "Pepsi Tin",
+    "price": 150,
+    "category": "Normal",
+    "stock": 5,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "pepsi_zero_sugar_tin",
+    "name": "Pepsi zero sugar tin",
+    "price": 160,
+    "category": "Normal",
+    "stock": 6,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "appy_fizz_tin",
+    "name": "Appy fizz Tin",
+    "price": 150,
+    "category": "Normal",
+    "stock": 5,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "natural_coconut_cola_zero_sugar",
+    "name": "Natural coconut cola zero sugar",
+    "price": 160,
+    "category": "Normal",
+    "stock": 3,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "mountain_dew_tin",
+    "name": "Mountain Dew Tin",
+    "price": 130,
+    "category": "Normal",
+    "stock": 2,
+    "tracked": true,
+    "costPrice": 40
+  },
+  {
+    "id": "bisleri_soda",
+    "name": "Bisleri soda",
+    "price": 60,
+    "category": "Normal",
+    "stock": 9,
+    "tracked": true,
+    "costPrice": 20
+  },
+  {
+    "id": "chilly_garlic_potato_shots",
+    "name": "Chilly garlic potato shots",
+    "price": 240,
+    "category": "Normal",
+    "stock": 11,
+    "tracked": true,
+    "costPrice": 50,
+    "hidden": false,
+    "visible": true
+  },
+  {
+    "id": "hara_bhara_kabab",
+    "name": "Hara bhara kabab",
+    "price": 230,
+    "category": "Normal",
+    "stock": 12,
+    "tracked": true,
+    "costPrice": 50,
+    "hidden": false,
+    "visible": true
+  },
+  {
+    "id": "sabudana_wada",
+    "name": "Sabudana Wada",
+    "price": 230,
+    "category": "Normal",
+    "stock": 3,
+    "tracked": true,
+    "costPrice": 50,
+    "hidden": false,
+    "visible": true
+  },
+  {
+    "id": "mud_bath_1",
+    "name": "Mud Bath (1 Person)",
+    "price": 1500,
+    "category": "Add-ons",
+    "stock": 100,
+    "tracked": false,
+    "costPrice": 0,
+    "hidden": false,
+    "visible": true
+  },
+  {
+    "id": "mud_bath_2",
+    "name": "Mud Bath (2 Persons)",
+    "price": 2000,
+    "category": "Add-ons",
+    "stock": 100,
+    "tracked": false,
+    "costPrice": 0,
+    "hidden": false,
+    "visible": true
+  },
+  {
+    "id": "mud_bath_3",
+    "name": "Mud Bath (3 Persons)",
+    "price": 3000,
+    "category": "Add-ons",
+    "stock": 100,
+    "tracked": false,
+    "costPrice": 0,
+    "hidden": false,
+    "visible": true
+  },
+  {
+    "id": "celebration_decor",
+    "name": "Celebration decoration",
+    "price": 2000,
+    "category": "Add-ons",
+    "stock": 100,
+    "tracked": false,
+    "costPrice": 0,
+    "hidden": false,
+    "visible": true
   }
 ]
