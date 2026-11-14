@@ -59,8 +59,13 @@ export default function TestPaymentPage() {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
 
-    // Test payment amount (variable for bank audit)
-    const [testAmount, setTestAmount] = useState("1.00");
+    // Test payment amount selection (server-side whitelist IDs to prevent tampering)
+    const [testAmountId, setTestAmountId] = useState("1");
+    const testAmountLabels: Record<string, string> = {
+        "1": "₹1.00", "2": "₹2.00", "3": "₹5.00", "4": "₹10.00", "5": "₹50.00",
+        "6": "₹100.00", "7": "₹500.00", "8": "₹1,000.00", "9": "₹2,500.00", "10": "₹5,000.00",
+    };
+    const testAmountDisplay = testAmountLabels[testAmountId] || "₹1.00";
 
     // Payment & status state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,7 +188,7 @@ export default function TestPaymentPage() {
             ? (selectedSubProp ? `${selectedSubProp.name} (${selectedVillaObj?.name})` : (selectedVillaObj?.name || "Staycation Villa"))
             : (selectedScreenObj?.name || "DD Screen");
 
-        addLog(`1. Initializing ₹${testAmount} Test Payment for [${selectedName}] via HDFC SmartGateway...`, "info");
+        addLog(`1. Initializing ${testAmountDisplay} Test Payment for [${selectedName}] via HDFC SmartGateway...`, "info");
 
         try {
             const bookingDetails = {
@@ -209,7 +214,7 @@ export default function TestPaymentPage() {
                     customerEmail: email,
                     customerPhone: phone,
                     bookingDetails,
-                    testAmount: testAmount,
+                    testAmountId: testAmountId,
                 }),
             });
 
@@ -454,20 +459,13 @@ export default function TestPaymentPage() {
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1">Test Amount (₹)</label>
                             <select
-                                value={testAmount}
-                                onChange={(e) => setTestAmount(e.target.value)}
+                                value={testAmountId}
+                                onChange={(e) => setTestAmountId(e.target.value)}
                                 className="w-full bg-[#0F0F12] border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-[#BA9731]"
                             >
-                                <option value="1.00">₹1.00</option>
-                                <option value="2.00">₹2.00</option>
-                                <option value="5.00">₹5.00</option>
-                                <option value="10.00">₹10.00</option>
-                                <option value="50.00">₹50.00</option>
-                                <option value="100.00">₹100.00</option>
-                                <option value="500.00">₹500.00</option>
-                                <option value="1000.00">₹1,000.00</option>
-                                <option value="2500.00">₹2,500.00</option>
-                                <option value="5000.00">₹5,000.00</option>
+                                {Object.entries(testAmountLabels).map(([id, label]) => (
+                                    <option key={id} value={id}>{label}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -480,11 +478,11 @@ export default function TestPaymentPage() {
                                 {isSubmitting ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                                        <span>Processing ₹{testAmount} Test Payment...</span>
+                                        <span>Processing {testAmountDisplay} Test Payment...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span>Pay ₹{testAmount} & Create Test Booking</span>
+                                        <span>Pay {testAmountDisplay} & Create Test Booking</span>
                                         <span>→</span>
                                     </>
                                 )}

@@ -164,25 +164,61 @@ async function processHdfcTestBooking(testRecord: any, hdfcTxnId: string): Promi
     }
 }
 
+// ── Server-side allowed test amounts (whitelist) ──
+// The client sends a testAmountId (index), NOT the raw amount.
+// This prevents parameter tampering via proxy interception.
+const ALLOWED_TEST_AMOUNTS: { id: string; amount: number; label: string }[] = [
+    { id: "1", amount: 1.00, label: "₹1.00" },
+    { id: "2", amount: 2.00, label: "₹2.00" },
+    { id: "3", amount: 5.00, label: "₹5.00" },
+    { id: "4", amount: 10.00, label: "₹10.00" },
+    { id: "5", amount: 50.00, label: "₹50.00" },
+    { id: "6", amount: 100.00, label: "₹100.00" },
+    { id: "7", amount: 500.00, label: "₹500.00" },
+    { id: "8", amount: 1000.00, label: "₹1,000.00" },
+    { id: "9", amount: 2500.00, label: "₹2,500.00" },
+    { id: "10", amount: 5000.00, label: "₹5,000.00" },
+];
+
+// Generate HMAC signature for amount integrity verification
+function generateAmountHmac(orderId: string, amountPaise: number): string {
+    const secret = HDFC_RESPONSE_KEY || HDFC_API_KEY || "galaxia-test-payment-integrity";
+    return crypto
+        .createHmac("sha256", secret)
+        .update(`${orderId}|${amountPaise}`)
+        .digest("hex");
+}
+
+// GET endpoint to return allowed test amounts (so frontend uses IDs, not raw values)
+router.get("/hdfc-test/allowed-amounts", (_req: Request, res: Response) => {
+    return res.json({
+        amounts: ALLOWED_TEST_AMOUNTS.map(a => ({ id: a.id, label: a.label })),
+    });
+});
+
 // ══════════════════════════════════════════════════════════════════════
 // POST /api/payments/hdfc-test/create-order
-// Creates a 1 INR test order on HDFC SmartGateway & tracks in test_payments DB
+// Creates a test order on HDFC SmartGateway & tracks in test_payments DB
+// SECURITY: Amount is determined server-side from a whitelist ID.
+//           Client-supplied raw amounts are IGNORED to prevent tampering.
 // ══════════════════════════════════════════════════════════════════════
 router.post("/hdfc-test/create-order", async (req: Request, res: Response) => {
     try {
-        const { customerName, customerEmail, customerPhone, bookingDetails, testAmount } = req.body;
+        const { customerName, customerEmail, customerPhone, bookingDetails, testAmountId } = req.body;
 
         if (!customerName || !customerEmail || !customerPhone) {
             return res.status(400).json({ error: "Name, email, and phone are required for test payment" });
         }
 
-        // Parse and validate the test amount (default ₹1.00 if not provided)
-        const parsedAmount = parseFloat(testAmount || "1.00");
-        if (isNaN(parsedAmount) || parsedAmount <= 0 || parsedAmount > 10000) {
-            return res.status(400).json({ error: "Invalid test amount. Must be between ₹0.01 and ₹10,000." });
+        // SERVER-SIDE AMOUNT DETERMINATION — lookup from whitelist, never trust client amount
+        const selectedAmount = ALLOWED_TEST_AMOUNTS.find(a => a.id === String(testAmountId || "1"));
+        if (!selectedAmount) {
+            return res.status(400).json({ error: "Invalid test amount selection." });
         }
-        const amountStr = parsedAmount.toFixed(2); // e.g. "1.00", "100.00"
-        const amountPaise = Math.round(parsedAmount * 100); // e.g. 100, 10000
+        const amountStr = selectedAmount.amount.toFixed(2); // e.g. "1.00", "100.00"
+        const amountPaise = Math.round(selectedAmount.amount * 100); // e.g. 100, 10000
+
+        console.log(`[HDFC Test] Server-side amount resolved: ID=${selectedAmount.id}, Amount=${amountStr} INR (${amountPaise} paise)`);
 
         const hdfcOrderId = generateHdfcOrderId();
         const paymentId = `hdfc_test_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -239,15 +275,17 @@ router.post("/hdfc-test/create-order", async (req: Request, res: Response) => {
         }
 
         // Store payment attempt in test_payments DB with verified = false
+        // Include HMAC for amount integrity verification at callback
+        const amountHmac = generateAmountHmac(hdfcOrderId, amountPaise);
         await prisma.testPayment.create({
             data: {
                 paymentId,
                 razorpayOrderId: hdfcOrderId, // Reusing this column for HDFC order ID
-                amount: amountPaise, // Variable amount in paise (e.g. 100 for ₹1, 10000 for ₹100)
+                amount: amountPaise, // Server-determined amount in paise
                 customerName,
                 customerEmail,
                 customerPhone,
-                bookingDetails: bookingDetails || null,
+                bookingDetails: { ...(bookingDetails || {}), _amountHmac: amountHmac }, // Store HMAC for verification
                 status: "pending",
                 verified: false,
             },
@@ -354,6 +392,39 @@ router.post("/hdfc-test/verify-return", async (req: Request, res: Response) => {
 
         if (!testRecord) {
             return res.status(404).json({ error: "Test payment record not found for this order" });
+        }
+
+        // Step 3.5: AMOUNT INTEGRITY CHECK — verify HDFC charged amount matches our stored amount
+        if (isCharged) {
+            const hdfcChargedAmount = orderData.amount ? Math.round(parseFloat(orderData.amount) * 100) : null;
+            if (hdfcChargedAmount !== null && hdfcChargedAmount !== testRecord.amount) {
+                console.error(`🚨 [HDFC Test] AMOUNT MISMATCH DETECTED! Order ${order_id}: ` +
+                    `Expected ${testRecord.amount} paise, HDFC charged ${hdfcChargedAmount} paise. ` +
+                    `Possible tampering attempt! Rejecting transaction.`);
+                
+                await prisma.testPayment.update({
+                    where: { id: testRecord.id },
+                    data: { status: "failed" },
+                });
+
+                return res.status(403).json({
+                    verified: false,
+                    status: "failed",
+                    error: "Amount integrity check failed. The charged amount does not match the expected amount. Transaction rejected.",
+                    hdfcStatus,
+                    paymentId: testRecord.paymentId,
+                });
+            }
+
+            // Also verify HMAC integrity if stored
+            const storedDetails: any = testRecord.bookingDetails || {};
+            if (storedDetails._amountHmac) {
+                const expectedHmac = generateAmountHmac(order_id, testRecord.amount);
+                if (storedDetails._amountHmac !== expectedHmac) {
+                    console.error(`🚨 [HDFC Test] HMAC INTEGRITY FAILED for order ${order_id}! ` +
+                        `Stored HMAC does not match recalculated HMAC. Possible DB tampering.`);
+                }
+            }
         }
 
         if (isCharged && !testRecord.verified) {
