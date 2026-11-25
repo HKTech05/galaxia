@@ -549,6 +549,16 @@ export default function BookingClient({ property }: BookingClientProps) {
     const formatPrice = (price: number) => `₹ ${price.toLocaleString('en-IN')}`;
     const formatDateShort = (d: Date) => `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 
+    // Returns the personsLabel to display for a room, considering date override if check-in date has one
+    const getDisplayPersons = (room: any) => {
+        if (checkInDate) {
+            const ciStr = `${checkInDate.getFullYear()}-${String(checkInDate.getMonth() + 1).padStart(2, '0')}-${String(checkInDate.getDate()).padStart(2, '0')}`;
+            const ovDet = room?.dateOverrideDetails?.[ciStr];
+            if (ovDet?.personsLabel) return ovDet.personsLabel;
+        }
+        return room.persons || '2 guests';
+    };
+
     // Extra person charges — prefer sub-property DB values, then parent DB, then static config
     const spExtra = effectiveSubPropertyId ? backendData?.subPropertyPricing?.[effectiveSubPropertyId] : null;
     const liveExtraAdult = spExtra?.weekday?.extraAdult ?? spExtra?.weekend?.extraAdult ?? backendData?.pricing?.weekday?.extraAdult ?? backendData?.pricing?.weekend?.extraAdult;
@@ -562,9 +572,13 @@ export default function BookingClient({ property }: BookingClientProps) {
     const weekendPersonsNum = (selectedRoom as any)?.weekendPersonsLabel ? (parseInt((selectedRoom as any).weekendPersonsLabel.replace(/[^0-9]/g, '')) || weekdayPersons) : weekdayPersons;
     const saturdayPersonsNum = (selectedRoom as any)?.saturdayPersonsLabel ? (parseInt((selectedRoom as any).saturdayPersonsLabel.replace(/[^0-9]/g, '')) || weekendPersonsNum) : weekendPersonsNum;
 
-    // For display: use check-in day's base included
+    // For display: use check-in day's base included, but prefer date override personsLabel if the check-in date has one
     const checkInDay = checkInDate ? checkInDate.getDay() : 1;
-    const displayBasePersons = checkInDay === 6 ? saturdayPersonsNum : (checkInDay === 0 || checkInDay === 5) ? weekendPersonsNum : weekdayPersons;
+    const checkInDateStr = checkInDate ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth() + 1).padStart(2, '0')}-${String(checkInDate.getDate()).padStart(2, '0')}` : '';
+    const checkInOvDet = checkInDateStr ? (selectedRoom || roomOptions[0])?.dateOverrideDetails?.[checkInDateStr] : null;
+    const displayBasePersons = checkInOvDet?.personsLabel
+        ? (parseInt(String(checkInOvDet.personsLabel).replace(/[^0-9]/g, '')) || weekdayPersons)
+        : (checkInDay === 6 ? saturdayPersonsNum : (checkInDay === 0 || checkInDay === 5) ? weekendPersonsNum : weekdayPersons);
     const personsFromLabel = displayBasePersons;
     const baseIncludedPersons = personsFromLabel * (isAmstelNest ? unitCount : 1);
     // Adults beyond included persons are charged at adult rate
@@ -1136,7 +1150,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                 <div className="p-5 sm:p-6">
                                                     <p className="font-inter text-sm text-text-secondary leading-relaxed mb-4">{room.description}</p>
                                                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-inter text-text-secondary pb-4 border-b border-border-light">
-                                                        <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {room.persons}</div>
+                                                        <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {getDisplayPersons(room)}</div>
                                                         <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> {room.details[0]}</div>
                                                     </div>
                                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4">
@@ -1263,7 +1277,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                                                     <div className="relative w-full sm:w-[280px] h-[200px] sm:h-auto shrink-0 bg-soft-gray border-b sm:border-b-0 sm:border-r border-border-light">
                                                         <Image src={room.image} alt={room.name} fill className="object-cover" />
                                                         <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-3 py-2 border-t border-border-light/50 flex flex-wrap gap-x-4 gap-y-1 text-xs font-inter text-text-secondary">
-                                                            <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {room.persons}</div>
+                                                            <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg> {getDisplayPersons(room)}</div>
                                                             <div className="flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> {room.details[0]}</div>
                                                         </div>
                                                     </div>
@@ -1487,8 +1501,8 @@ export default function BookingClient({ property }: BookingClientProps) {
                                         )}
                                         {(extraAdults > 0 || extraKids > 0) && (
                                             <div className="mt-3 pt-3 border-t border-border-light text-[10px] font-inter text-text-muted space-y-1">
-                                                {extraAdults > 0 && <p>Extra adults: {extraAdults} × ₹{property.pricing.extraAdult}/night = ₹{(extraAdultTotal).toLocaleString("en-IN")}/night</p>}
-                                                {extraKids > 0 && <p>Extra kids: {extraKids} × ₹{kidsChargeNum.toLocaleString("en-IN")}/night = ₹{kidsTotal.toLocaleString("en-IN")}/night</p>}
+                                                {extraAdults > 0 && <p>Extra adults: {extraAdults} × ₹{(checkInOvDet?.extraAdult ?? extraAdultCharge).toLocaleString("en-IN")}/night = ₹{(extraAdultTotal).toLocaleString("en-IN")}/night</p>}
+                                                {extraKids > 0 && <p>Extra kids: {extraKids} × ₹{(checkInOvDet?.kidsPrice ?? kidsChargeNum).toLocaleString("en-IN")}/night = ₹{kidsTotal.toLocaleString("en-IN")}/night</p>}
                                             </div>
                                         )}
                                     </div>
