@@ -20,6 +20,7 @@ interface CartItem {
     weekendPrice: string;
     saturdayPrice?: string;
     dateOverrides?: Record<string, number>;
+    dateOverrideDetails?: Record<string, { price: number; extraAdult: number; kidsPrice: number; personsLabel: string | null }>;
     personsLabel?: string;
     weekendPersonsLabel?: string;
     saturdayPersonsLabel?: string;
@@ -324,7 +325,7 @@ export default function BookMultiPage() {
 
         (async () => {
             try {
-                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; personsLabel: string; weekendPersonsLabel?: string; saturdayPersonsLabel?: string; extraAdultRate?: number; kidsRate?: number }> = {};
+                const pricingMap: Record<string, { weekday: string; weekend: string; saturday: string; dateOverrides?: Record<string, number>; dateOverrideDetails?: Record<string, { price: number; extraAdult: number; kidsPrice: number; personsLabel: string | null }>; personsLabel: string; weekendPersonsLabel?: string; saturdayPersonsLabel?: string; extraAdultRate?: number; kidsRate?: number }> = {};
 
                 // Fetch Ambrose availability
                 if (ambId) {
@@ -356,6 +357,7 @@ export default function BookMultiPage() {
                                     weekend: (hasSubPricing && spPricing.weekend?.price) || ambParentWe,
                                     saturday: (hasSubPricing && spPricing.saturday?.price) || (hasSubPricing && spPricing.weekend?.price) || ambParentSa,
                                     dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (ambOverridesMap[key] || ambData.pricing?.dateOverrides || {}),
+                                    dateOverrideDetails: (hasSubPricing && spPricing.dateOverrideDetails && Object.keys(spPricing.dateOverrideDetails).length > 0) ? spPricing.dateOverrideDetails : undefined,
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || ambParentPersons,
                                     weekendPersonsLabel: (hasSubPricing && spPricing.weekend?.personsLabel) || ambParentWePersons,
                                     saturdayPersonsLabel: (hasSubPricing && spPricing.saturday?.personsLabel) || ambParentSaPersons,
@@ -390,6 +392,7 @@ export default function BookMultiPage() {
                                     weekend: (hasSubPricing && spPricing.weekend?.price) || (isFam ? "10000" : anParentWe),
                                     saturday: (hasSubPricing && spPricing.saturday?.price) || (isFam ? "12000" : anParentSa),
                                     dateOverrides: (hasSubPricing && spPricing.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? spPricing.dateOverrides : (isFam ? { "2026-08-14": 11000, "2026-08-15": 13500, "2026-10-02": 11000, "2026-10-03": 13000 } : anParentOverrides),
+                                    dateOverrideDetails: (hasSubPricing && spPricing.dateOverrideDetails && Object.keys(spPricing.dateOverrideDetails).length > 0) ? spPricing.dateOverrideDetails : undefined,
                                     personsLabel: (hasSubPricing && spPricing.weekday?.personsLabel) || anParentPersons,
                                     extraAdultRate: spPricing?.weekday?.extraAdult ?? spPricing?.weekend?.extraAdult ?? anData.pricing?.weekday?.extraAdult ?? 2000,
                                     kidsRate: spPricing?.weekday?.kidsPrice ?? spPricing?.weekend?.kidsPrice ?? anData.pricing?.weekday?.kidsPrice ?? 1000,
@@ -411,6 +414,7 @@ export default function BookMultiPage() {
                                     weekendPrice: live.weekend,
                                     saturdayPrice: live.saturday,
                                     dateOverrides: live.dateOverrides || item.dateOverrides,
+                                    dateOverrideDetails: live.dateOverrideDetails || item.dateOverrideDetails,
                                     personsLabel: live.personsLabel,
                                     weekendPersonsLabel: live.weekendPersonsLabel,
                                     saturdayPersonsLabel: live.saturdayPersonsLabel,
@@ -703,18 +707,30 @@ export default function BookMultiPage() {
         const weBase = item.weekendPersonsLabel ? (parseInt(item.weekendPersonsLabel.replace(/[^0-9]/g, '')) || wdBase) : wdBase;
         const saBase = item.saturdayPersonsLabel ? (parseInt(item.saturdayPersonsLabel.replace(/[^0-9]/g, '')) || weBase) : weBase;
         const multiplier = isAmstel ? 1 : units;
-        // Compute per-night extra charges
+        // Compute per-night extra charges (with per-date override support)
         let extraTotal = 0;
         for (let i = 0; i < Math.max(nights, 1); i++) {
             const d = checkInDate ? new Date(checkInDate) : new Date();
             d.setDate(d.getDate() + i);
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const day = d.getDay();
-            const nightBase = (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
-            const nightIncluded = isAmstel ? nightBase * units : nightBase;
-            const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
-            const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
-            const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
-            extraTotal += (nightExtraAdults * extraAdultCharge + nightExtraKids * kidsCharge) * multiplier;
+            // Check for per-date override extra charges
+            const ovDet = item.dateOverrideDetails?.[dateStr];
+            if (ovDet) {
+                const ovBase = ovDet.personsLabel ? (parseInt(String(ovDet.personsLabel).replace(/[^0-9]/g, '')) || wdBase) : (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
+                const nightIncluded = isAmstel ? ovBase * units : ovBase;
+                const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
+                const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
+                const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
+                extraTotal += (nightExtraAdults * ovDet.extraAdult + nightExtraKids * ovDet.kidsPrice) * multiplier;
+            } else {
+                const nightBase = (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
+                const nightIncluded = isAmstel ? nightBase * units : nightBase;
+                const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
+                const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
+                const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
+                extraTotal += (nightExtraAdults * extraAdultCharge + nightExtraKids * kidsCharge) * multiplier;
+            }
         }
         return extraTotal + (item.property !== 'amstel-nest' ? (petsPerVilla[item.villaId] || 0) * PET_CHARGE : 0);
     };
@@ -733,14 +749,27 @@ export default function BookMultiPage() {
         for (let i = 0; i < Math.max(nights, 1); i++) {
             const d = checkInDate ? new Date(checkInDate) : new Date();
             d.setDate(d.getDate() + i);
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const day = d.getDay();
-            const nightBase = (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
-            const nightIncluded = isAmstel ? nightBase * units : nightBase;
-            const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
-            const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
-            const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
-            totalAdult += nightExtraAdults * extraAdultRate * multiplier;
-            totalKids += nightExtraKids * kidsRate * multiplier;
+            // Check for per-date override extra charges
+            const ovDet = item.dateOverrideDetails?.[dateStr];
+            if (ovDet) {
+                const ovBase = ovDet.personsLabel ? (parseInt(String(ovDet.personsLabel).replace(/[^0-9]/g, '')) || wdBase) : (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
+                const nightIncluded = isAmstel ? ovBase * units : ovBase;
+                const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
+                const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
+                const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
+                totalAdult += nightExtraAdults * ovDet.extraAdult * multiplier;
+                totalKids += nightExtraKids * ovDet.kidsPrice * multiplier;
+            } else {
+                const nightBase = (day === 6 ? saBase : (day === 0 || day === 5) ? weBase : wdBase);
+                const nightIncluded = isAmstel ? nightBase * units : nightBase;
+                const nightExtraAdults = Math.max(0, guests.adults - nightIncluded);
+                const nightFreeKids = Math.max(0, nightIncluded - guests.adults);
+                const nightExtraKids = Math.max(0, guests.kids - nightFreeKids);
+                totalAdult += nightExtraAdults * extraAdultRate * multiplier;
+                totalKids += nightExtraKids * kidsRate * multiplier;
+            }
         }
         return {
             adultCharge: totalAdult,

@@ -114,11 +114,13 @@ export default function QuotationPage() {
                     if (p.dateOverrides && Object.keys(p.dateOverrides).length > 0) {
                         entry.dateOverrides = {} as Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
                         for (const [dateStr, price] of Object.entries(p.dateOverrides)) {
+                            const det = p.dateOverrideDetails?.[dateStr];
+                            const ovGuests = det?.personsLabel ? (parseInt(String(det.personsLabel).replace(/[^0-9]/g, '')) || entry.baseGuests) : entry.baseGuests;
                             entry.dateOverrides[dateStr] = {
                                 price: Number(price),
-                                extraAdult: entry.extraAdult,
-                                kidsCharge: entry.kidsCharge,
-                                baseGuests: entry.baseGuests,
+                                extraAdult: det?.extraAdult ?? entry.extraAdult,
+                                kidsCharge: det?.kidsPrice ?? entry.kidsCharge,
+                                baseGuests: ovGuests,
                             };
                         }
                     }

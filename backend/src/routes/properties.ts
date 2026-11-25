@@ -659,10 +659,17 @@ router.get("/:slug/availability", async (req, res) => {
         // Date overrides (property-level)
         const overrideRows = property.pricing.filter(p => p.overrideDate);
         const dateOverrides: Record<string, number> = {};
+        const dateOverrideDetails: Record<string, { price: number; extraAdult: number; kidsPrice: number; personsLabel: string | null }> = {};
         for (const o of overrideRows) {
             if (o.overrideDate) {
                 const key = o.overrideDate.toISOString().split('T')[0];
                 dateOverrides[key] = o.basePrice;
+                dateOverrideDetails[key] = {
+                    price: o.basePrice,
+                    extraAdult: o.extraAdultPrice,
+                    kidsPrice: o.kidsPrice,
+                    personsLabel: o.personsLabel,
+                };
             }
         }
 
@@ -681,10 +688,17 @@ router.get("/:slug/availability", async (req, res) => {
                 const spWe = spBase.find(p => p.dayType === 'weekend');
                 const spSa = spBase.find(p => p.dayType === 'saturday');
                 const spDateOverrides: Record<string, number> = {};
+                const spDateOverrideDetails: Record<string, { price: number; extraAdult: number; kidsPrice: number; personsLabel: string | null }> = {};
                 for (const o of spOverrides) {
                     if (o.overrideDate) {
                         const key = o.overrideDate.toISOString().split('T')[0];
                         spDateOverrides[key] = o.basePrice;
+                        spDateOverrideDetails[key] = {
+                            price: o.basePrice,
+                            extraAdult: o.extraAdultPrice,
+                            kidsPrice: o.kidsPrice,
+                            personsLabel: o.personsLabel,
+                        };
                     }
                 }
                 subPropertyPricing[sp.id] = {
@@ -692,6 +706,7 @@ router.get("/:slug/availability", async (req, res) => {
                     weekend: spWe ? { price: spWe.basePrice.toString(), extraAdult: spWe.extraAdultPrice, kidsPrice: spWe.kidsPrice, personsLabel: spWe.personsLabel } : null,
                     saturday: spSa ? { price: spSa.basePrice.toString(), extraAdult: spSa.extraAdultPrice, kidsPrice: spSa.kidsPrice, personsLabel: spSa.personsLabel } : null,
                     dateOverrides: spDateOverrides,
+                    dateOverrideDetails: spDateOverrideDetails,
                 };
             }
         }
@@ -704,6 +719,7 @@ router.get("/:slug/availability", async (req, res) => {
                 saturday: saturdayPricing ? { price: saturdayPricing.basePrice.toString(), extraAdult: saturdayPricing.extraAdultPrice, kidsPrice: saturdayPricing.kidsPrice, personsLabel: saturdayPricing.personsLabel } : null,
                 all: parentPricing,
                 dateOverrides,
+                dateOverrideDetails,
             },
             subPropertyPricing,
             subProperties: property.subProperties,

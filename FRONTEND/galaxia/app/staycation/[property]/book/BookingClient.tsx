@@ -37,6 +37,7 @@ export default function BookingClient({ property }: BookingClientProps) {
         saturdayPrice: string;
         primeDatePrice: string;
         dateOverrides?: Record<string, number>;
+        dateOverrideDetails?: Record<string, { price: number; extraAdult: number; kidsPrice: number; personsLabel: string | null }>;
         personsLabel?: string;
         weekendPersonsLabel?: string;
         saturdayPersonsLabel?: string;
@@ -482,6 +483,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 saturdayPrice: liveSa || sub.pricing?.saturday?.price || sub.pricing?.weekend?.price || property.pricing.weekend.price,
                 primeDatePrice: sub.pricing?.primeDates || property.pricing.primeDates || "",
                 dateOverrides: (spPricing?.dateOverrides && Object.keys(spPricing.dateOverrides).length > 0) ? { ...(sub.pricing?.dateOverrides || property.pricing.dateOverrides || {}), ...spPricing.dateOverrides } : (sub.pricing?.dateOverrides || property.pricing.dateOverrides || {}),
+                dateOverrideDetails: spPricing?.dateOverrideDetails || null,
                 details: sub.configuration?.slice(0, 3) || [],
                 persons: livePersons || sub.pricing?.weekday.persons || "2 guests",
                 weekendPersons: liveWePersons || sub.pricing?.weekend?.persons || livePersons || sub.pricing?.weekday?.persons || "2 guests",
@@ -496,6 +498,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             let dbWd: string | undefined, dbWe: string | undefined, dbSa: string | undefined, dbPersons: string | undefined;
             let dbWePersons: string | undefined, dbSaPersons: string | undefined;
             let dbDateOverrides: Record<string, number> | undefined;
+            let dbDateOverrideDetails: Record<string, { price: number; extraAdult: number; kidsPrice: number; personsLabel: string | null }> | undefined;
             if (property.id.includes('/') && backendData?.subPropertyPricing && backendData?.subProperties) {
                 const villaSlug = property.id.split('/').pop();
                 const dbSub = backendData.subProperties.find((sp: any) => sp.slug === villaSlug || sp.name?.toUpperCase() === property.name?.toUpperCase());
@@ -508,6 +511,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                     dbWePersons = spP.weekend?.personsLabel;
                     dbSaPersons = spP.saturday?.personsLabel;
                     if (spP.dateOverrides && Object.keys(spP.dateOverrides).length > 0) dbDateOverrides = spP.dateOverrides;
+                    if (spP.dateOverrideDetails && Object.keys(spP.dateOverrideDetails).length > 0) dbDateOverrideDetails = spP.dateOverrideDetails;
                 }
             } else if (backendData?.pricing) {
                 dbWd = backendData.pricing.weekday?.price;
@@ -517,6 +521,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 dbWePersons = backendData.pricing.weekend?.personsLabel;
                 dbSaPersons = backendData.pricing.saturday?.personsLabel;
                 if (backendData.pricing.dateOverrides && Object.keys(backendData.pricing.dateOverrides).length > 0) dbDateOverrides = backendData.pricing.dateOverrides;
+                if (backendData.pricing.dateOverrideDetails && Object.keys(backendData.pricing.dateOverrideDetails).length > 0) dbDateOverrideDetails = backendData.pricing.dateOverrideDetails;
             }
             return [{
                 id: property.id,
@@ -530,6 +535,7 @@ export default function BookingClient({ property }: BookingClientProps) {
                 saturdayPrice: dbSa || property.pricing.saturday?.price || property.pricing.weekend.price,
                 primeDatePrice: property.pricing.primeDates || "",
                 dateOverrides: dbDateOverrides ? { ...(property.pricing.dateOverrides || {}), ...dbDateOverrides } : (property.pricing.dateOverrides || {}),
+                dateOverrideDetails: dbDateOverrideDetails || null,
                 details: property.configuration.slice(0, 3),
                 persons: dbPersons || property.pricing.weekday.persons,
                 weekendPersons: dbWePersons || property.pricing.weekend?.persons || dbPersons || property.pricing.weekday?.persons,
@@ -593,19 +599,33 @@ export default function BookingClient({ property }: BookingClientProps) {
         return total * (isAmstelNest ? unitCount : 1);
     })();
     const roomPrice = computedRoomPrice;
-    // Compute extra charges per-night (day-type-aware base included persons)
+    // Compute extra charges per-night (day-type-aware base included persons, with per-date override support)
     const extraCharges = (() => {
         if (!checkInDate || nights <= 0) return (extraAdultTotal + kidsTotal) * Math.max(nights, 1);
+        const priceSource = selectedRoom || roomOptions[0];
+        const ovDetails = (priceSource as any)?.dateOverrideDetails;
         let total = 0;
         for (let i = 0; i < nights; i++) {
             const d = new Date(checkInDate);
             d.setDate(d.getDate() + i);
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const day = d.getDay();
-            const nightBase = (day === 6 ? saturdayPersonsNum : (day === 0 || day === 5) ? weekendPersonsNum : weekdayPersons) * (isAmstelNest ? unitCount : 1);
-            const nightExtraAdults = Math.max(0, adults - nightBase);
-            const nightFreeKids = Math.max(0, nightBase - adults);
-            const nightExtraKids = Math.max(0, kids - nightFreeKids);
-            total += nightExtraAdults * extraAdultCharge + nightExtraKids * kidsChargeNum;
+            // Check if this date has override-specific extra charges
+            const ovDet = ovDetails?.[dateStr];
+            if (ovDet) {
+                const ovBase = ovDet.personsLabel ? (parseInt(String(ovDet.personsLabel).replace(/[^0-9]/g, '')) || weekdayPersons) : (day === 6 ? saturdayPersonsNum : (day === 0 || day === 5) ? weekendPersonsNum : weekdayPersons);
+                const nightBase = ovBase * (isAmstelNest ? unitCount : 1);
+                const nightExtraAdults = Math.max(0, adults - nightBase);
+                const nightFreeKids = Math.max(0, nightBase - adults);
+                const nightExtraKids = Math.max(0, kids - nightFreeKids);
+                total += nightExtraAdults * ovDet.extraAdult + nightExtraKids * ovDet.kidsPrice;
+            } else {
+                const nightBase = (day === 6 ? saturdayPersonsNum : (day === 0 || day === 5) ? weekendPersonsNum : weekdayPersons) * (isAmstelNest ? unitCount : 1);
+                const nightExtraAdults = Math.max(0, adults - nightBase);
+                const nightFreeKids = Math.max(0, nightBase - adults);
+                const nightExtraKids = Math.max(0, kids - nightFreeKids);
+                total += nightExtraAdults * extraAdultCharge + nightExtraKids * kidsChargeNum;
+            }
         }
         return total;
     })();

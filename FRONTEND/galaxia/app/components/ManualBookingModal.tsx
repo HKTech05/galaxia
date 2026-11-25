@@ -112,7 +112,14 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                         if (d.pricing.dateOverrides && Object.keys(d.pricing.dateOverrides).length > 0) {
                             entry.dateOverrides = {} as Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
                             for (const [ds, price] of Object.entries(d.pricing.dateOverrides)) {
-                                entry.dateOverrides[ds] = { price: Number(price), extraAdult: entry.extraAdult, kidsCharge: entry.kidsCharge, baseGuests: entry.baseGuests };
+                                const det = d.pricing.dateOverrideDetails?.[ds];
+                                const ovGuests = det?.personsLabel ? (parseInt(String(det.personsLabel).replace(/[^0-9]/g, '')) || entry.baseGuests) : entry.baseGuests;
+                                entry.dateOverrides[ds] = {
+                                    price: Number(price),
+                                    extraAdult: det?.extraAdult ?? entry.extraAdult,
+                                    kidsCharge: det?.kidsPrice ?? entry.kidsCharge,
+                                    baseGuests: ovGuests,
+                                };
                             }
                         }
                         pm[propName] = entry;
@@ -142,7 +149,14 @@ export default function ManualBookingModal({ isOpen, onClose, onSuccess, propert
                                 if (spP.dateOverrides && Object.keys(spP.dateOverrides).length > 0) {
                                     spEntry.dateOverrides = {} as Record<string, { price: number; extraAdult: number; kidsCharge: number; baseGuests: number }>;
                                     for (const [ds, price] of Object.entries(spP.dateOverrides)) {
-                                        spEntry.dateOverrides[ds] = { price: Number(price), extraAdult: spEntry.extraAdult, kidsCharge: spEntry.kidsCharge, baseGuests: spEntry.baseGuests };
+                                        const det = spP.dateOverrideDetails?.[ds];
+                                        const ovGuests = det?.personsLabel ? (parseInt(String(det.personsLabel).replace(/[^0-9]/g, '')) || spEntry.baseGuests) : spEntry.baseGuests;
+                                        spEntry.dateOverrides[ds] = {
+                                            price: Number(price),
+                                            extraAdult: det?.extraAdult ?? spEntry.extraAdult,
+                                            kidsCharge: det?.kidsPrice ?? spEntry.kidsCharge,
+                                            baseGuests: ovGuests,
+                                        };
                                     }
                                 }
                                 pm[`${propName}/${sp.name.toUpperCase()}`] = spEntry;
