@@ -462,35 +462,46 @@ export default function PropertiesMgmtPage() {
                 }
             }
         }
-        // Collect extra adult/kid edits
-        const extraEdits: { type: string; id: string; extraGuest?: number; extraKid?: number }[] = [];
+        // Collect extra adult/kid edits per property key
+        const extraMap: Record<string, { extraGuest?: number; extraKid?: number }> = {};
         for (const key of selected) {
-            const [type, idStr] = key.split("-");
             const ea = masterOvPrices[`${key}|extraAdult`];
             const ek = masterOvPrices[`${key}|extraKid`];
             if ((ea && ea.trim() !== "") || (ek && ek.trim() !== "")) {
-                const edit: any = { type, id: idStr };
+                const edit: any = {};
                 if (ea && ea.trim() !== "") edit.extraGuest = parseInt(ea);
                 if (ek && ek.trim() !== "") edit.extraKid = parseInt(ek);
-                extraEdits.push(edit);
+                extraMap[key] = edit;
             }
         }
-        if (saves.length === 0 && extraEdits.length === 0) return alert("Enter at least one price or extra charge");
+        const hasDateOverrides = saves.length > 0;
+        const hasExtraEdits = Object.keys(extraMap).length > 0;
+        if (!hasDateOverrides && !hasExtraEdits) return alert("Enter at least one price or extra charge");
         setMasterOvSaving(true);
         try {
             let count = 0;
+            // If dates are selected, pass extra charges INTO each date-pricing call
+            // so they apply only to those override rows, NOT to base pricing
             for (const s of saves) {
                 const endpoint = s.type === "sub" ? `/properties/sub/${s.id}/date-pricing` : `/properties/${s.id}/date-pricing`;
-                await api.post(endpoint, { date: s.date, price: s.price });
+                const body: any = { date: s.date, price: s.price };
+                const extra = extraMap[`${s.type}-${s.id}`];
+                if (extra?.extraGuest !== undefined) body.extraAdult = extra.extraGuest;
+                if (extra?.extraKid !== undefined) body.extraKid = extra.extraKid;
+                await api.post(endpoint, body);
                 count++;
             }
-            for (const e of extraEdits) {
-                const endpoint = e.type === "sub" ? `/properties/sub/${e.id}/pricing` : `/properties/${e.id}/pricing`;
-                const body: any = {};
-                if (e.extraGuest !== undefined) body.extraGuest = e.extraGuest;
-                if (e.extraKid !== undefined) body.extraKid = e.extraKid;
-                await api.patch(endpoint, body);
-                count++;
+            // Only update base pricing if NO dates were selected (purely changing base extra charges)
+            if (!hasDateOverrides && hasExtraEdits) {
+                for (const [key, extra] of Object.entries(extraMap)) {
+                    const [type, idStr] = key.split("-");
+                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/pricing` : `/properties/${idStr}/pricing`;
+                    const body: any = {};
+                    if (extra.extraGuest !== undefined) body.extraGuest = extra.extraGuest;
+                    if (extra.extraKid !== undefined) body.extraKid = extra.extraKid;
+                    await api.patch(endpoint, body);
+                    count++;
+                }
             }
             setMasterOvMsg(`✓ ${count} change${count !== 1 ? "s" : ""} saved successfully`);
             await load();
@@ -721,12 +732,13 @@ export default function PropertiesMgmtPage() {
         if (selected.length === 0) return alert("Select at least one property");
         const hasDateOverrides = dates.length > 0 && delta !== 0;
         const hasExtraEdits = eaDelta !== 0 || ekDelta !== 0;
+        const hasDatesWithExtras = dates.length > 0 && hasExtraEdits;
         if (!hasDateOverrides && !hasExtraEdits) return alert("Enter at least one increase amount");
         setBulkIncSaving(true);
         try {
             let count = 0;
-            // Date-based price overrides
-            if (hasDateOverrides) {
+            // Date-based price overrides (include extra charge deltas if provided)
+            if (dates.length > 0 && delta !== 0) {
                 for (const item of selected) {
                     const [type, idStr] = item.key.split("-");
                     for (const dateStr of dates) {
@@ -735,21 +747,43 @@ export default function PropertiesMgmtPage() {
                         const newPrice = currentPrice + delta;
                         if (newPrice <= 0) continue;
                         const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
-                        await api.post(endpoint, { date: dateStr, price: newPrice });
+                        const body: any = { date: dateStr, price: newPrice };
+                        // Include extra charge deltas on the override row so they don't leak to base
+                        if (eaDelta !== 0) body.extraAdult = item.extraAdult + eaDelta;
+                        if (ekDelta !== 0) body.extraKid = item.extraKid + ekDelta;
+                        await api.post(endpoint, body);
                         count++;
                     }
                 }
             }
-            // Extra adult/kid increases
-            if (hasExtraEdits) {
-                for (const item of selected) {
-                    const [type, idStr] = item.key.split("-");
-                    const endpoint = type === "sub" ? `/properties/sub/${idStr}/pricing` : `/properties/${idStr}/pricing`;
-                    const body: any = {};
-                    if (eaDelta !== 0) body.extraGuest = item.extraAdult + eaDelta;
-                    if (ekDelta !== 0) body.extraKid = item.extraKid + ekDelta;
-                    await api.patch(endpoint, body);
-                    count++;
+            // Extra adult/kid increases — only update base rows if NO dates were selected
+            if (hasExtraEdits && !(dates.length > 0 && delta !== 0)) {
+                if (dates.length > 0) {
+                    // Dates selected but no price delta — create overrides with just extra charge changes
+                    for (const item of selected) {
+                        const [type, idStr] = item.key.split("-");
+                        for (const dateStr of dates) {
+                            const dt = getDayType(dateStr);
+                            const currentPrice = item.prices[dt.type];
+                            const endpoint = type === "sub" ? `/properties/sub/${idStr}/date-pricing` : `/properties/${idStr}/date-pricing`;
+                            const body: any = { date: dateStr, price: currentPrice };
+                            if (eaDelta !== 0) body.extraAdult = item.extraAdult + eaDelta;
+                            if (ekDelta !== 0) body.extraKid = item.extraKid + ekDelta;
+                            await api.post(endpoint, body);
+                            count++;
+                        }
+                    }
+                } else {
+                    // No dates — update base pricing rows
+                    for (const item of selected) {
+                        const [type, idStr] = item.key.split("-");
+                        const endpoint = type === "sub" ? `/properties/sub/${idStr}/pricing` : `/properties/${idStr}/pricing`;
+                        const body: any = {};
+                        if (eaDelta !== 0) body.extraGuest = item.extraAdult + eaDelta;
+                        if (ekDelta !== 0) body.extraKid = item.extraKid + ekDelta;
+                        await api.patch(endpoint, body);
+                        count++;
+                    }
                 }
             }
             const parts: string[] = [];

@@ -271,12 +271,15 @@ router.patch("/sub/:id/pricing", authMiddleware, requireRole("owner", "developer
 router.post("/sub/:id/date-pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const subId = parseInt(req.params.id as string);
-        const { date, price } = req.body;
+        const { date, price, extraAdult, extraKid } = req.body;
         if (!date || !price) return res.status(400).json({ error: "date and price required" });
         const overrideDate = new Date(date); overrideDate.setUTCHours(0, 0, 0, 0);
         const existing = await prisma.propertyPricing.findFirst({ where: { subPropertyId: subId, overrideDate, isActive: true } });
         if (existing) {
-            await prisma.propertyPricing.update({ where: { id: existing.id }, data: { basePrice: parseInt(price) } });
+            const updateData: any = { basePrice: parseInt(price) };
+            if (extraAdult !== undefined) updateData.extraAdultPrice = extraAdult;
+            if (extraKid !== undefined) updateData.kidsPrice = extraKid;
+            await prisma.propertyPricing.update({ where: { id: existing.id }, data: updateData });
         } else {
             const dow = overrideDate.getUTCDay();
             const dayType = dow === 6 ? "saturday" : (dow === 0 || dow === 5) ? "weekend" : "weekday";
@@ -292,8 +295,8 @@ router.post("/sub/:id/date-pricing", authMiddleware, requireRole("owner", "devel
                     subPropertyId: subId, propertyId: sp?.propertyId, dayType, basePrice: parseInt(price), overrideDate,
                     specialLabel: `Override ${date}`,
                     personsLabel: baseRow?.personsLabel || null,
-                    extraAdultPrice: baseRow?.extraAdultPrice || 0,
-                    kidsPrice: baseRow?.kidsPrice || 0,
+                    extraAdultPrice: extraAdult !== undefined ? extraAdult : (baseRow?.extraAdultPrice || 0),
+                    kidsPrice: extraKid !== undefined ? extraKid : (baseRow?.kidsPrice || 0),
                 },
             });
         }
@@ -350,7 +353,7 @@ router.patch("/:id/pricing", authMiddleware, requireRole("owner", "developer"), 
 router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer"), async (req: AuthRequest, res) => {
     try {
         const propertyId = parseInt(req.params.id as string);
-        const { date, price } = req.body;
+        const { date, price, extraAdult, extraKid } = req.body;
         if (!date || !price) return res.status(400).json({ error: "date and price required" });
 
         const overrideDate = new Date(date);
@@ -362,9 +365,12 @@ router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer
         });
 
         if (existing) {
+            const updateData: any = { basePrice: parseInt(price) };
+            if (extraAdult !== undefined) updateData.extraAdultPrice = extraAdult;
+            if (extraKid !== undefined) updateData.kidsPrice = extraKid;
             await prisma.propertyPricing.update({
                 where: { id: existing.id },
-                data: { basePrice: parseInt(price) },
+                data: updateData,
             });
         } else {
             // Determine day type from the date
@@ -384,8 +390,8 @@ router.post("/:id/date-pricing", authMiddleware, requireRole("owner", "developer
                     overrideDate,
                     specialLabel: `Override ${date}`,
                     personsLabel: baseRow?.personsLabel || null,
-                    extraAdultPrice: baseRow?.extraAdultPrice || 0,
-                    kidsPrice: baseRow?.kidsPrice || 0,
+                    extraAdultPrice: extraAdult !== undefined ? extraAdult : (baseRow?.extraAdultPrice || 0),
+                    kidsPrice: extraKid !== undefined ? extraKid : (baseRow?.kidsPrice || 0),
                 },
             });
         }
