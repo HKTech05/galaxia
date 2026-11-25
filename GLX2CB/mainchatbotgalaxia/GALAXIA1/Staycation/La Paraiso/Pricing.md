@@ -59,6 +59,12 @@ Booking is non refundable / non transferable.
 - **9-12 November 2026**: ₹5,960 (4 persons)
 - **13 November 2026**: ₹8,500 (4 persons)
 - **14 November 2026**: ₹8,500 (4 persons)
+
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹8,500 (Up to 4 persons). Extra Adult: ₹1,200, Kids: ₹800.
+- **31 December 2026**: Regular Thursday rate (₹4,950 for 2 persons / ₹6,500 for 4 persons Mon-Thu). No special override.
+- **1 January 2027**: ₹8,500 (Up to 4 persons). Extra Adult: ₹1,200, Kids: ₹800.
+
 Instagram: https://instagram.com/la_paraiso001
 
 ---

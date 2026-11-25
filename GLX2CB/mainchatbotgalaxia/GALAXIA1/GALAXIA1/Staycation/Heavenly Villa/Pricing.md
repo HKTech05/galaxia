@@ -30,6 +30,11 @@ Kids age 5 to 12 yrs: -500/-
 Security deposit Rs 3000/- not included in stay prices, has to be paid during check-in and refunded on check-out.
 Once the booking is done, it's non-refundable and non-transferable in any condition.
 
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹5,950 (2 persons). Extra Adult: ₹800, Kids: ₹500.
+- **31 December 2026**: Regular Thursday rate (₹3,950 for 2 persons). No special override.
+- **1 January 2027**: ₹5,950 (2 persons). Extra Adult: ₹800, Kids: ₹500.
+
 Instagram: https://www.instagram.com/heavenly_villa01?igsh=dXJmc3B5NHNoeXBt&utm_source=qr
 Google Maps: https://maps.app.goo.gl/Ja5bygsXrSRDrcNDA?g_st=ipc
 

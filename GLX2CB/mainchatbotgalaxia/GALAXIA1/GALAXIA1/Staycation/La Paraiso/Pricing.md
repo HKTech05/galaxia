@@ -39,6 +39,11 @@ Kids age 5 to 12 yrs: -800/-
 Security deposit Rs 3k not included, has to be paid during check-in and refunded on check-out.
 Booking is non refundable / non transferable.
 
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹8,500 (Up to 4 persons). Extra Adult: ₹1,200, Kids: ₹800.
+- **31 December 2026**: Regular Thursday rate (₹4,950 for 2 persons). No special override.
+- **1 January 2027**: ₹8,500 (Up to 4 persons). Extra Adult: ₹1,200, Kids: ₹800.
+
 Instagram: https://instagram.com/la_paraiso001
 
 ---

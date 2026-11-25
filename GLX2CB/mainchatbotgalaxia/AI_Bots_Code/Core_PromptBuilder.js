@@ -145,7 +145,7 @@ class PromptBuilder {
     Apartment includes: 1 room with queen bed, 1 room with single sofa cum bed, private bathtub, open mountain balcony, kitchen with basic utensils, 2 washrooms, Smart TV, music player, Induction, 2 ACs, Invertor, WiFi/Free parking.
     Check-in: 2 PM | Check-out: 10 AM
     RENT: PRIME DATES: 5950/- for 2 Person | MON to THUR: 3000/- pn for 2 person + 5% | FRI-SUN & PUBLIC HOLIDAYS: 4000/- for 2 person + 5% | Extra person after 2: 800/- | Kids (5-12 yrs): 500/-
-    30 Dec: 5450/- | 31 Dec: 10000/- (Extra person Dec 31st: 2500/-). Food excluded (nearby veg/non-veg restaurant available).
+    Christmas/NYE: 25 Dec: 5000/- (2p) | 31 Dec (NYE Premium): 10000/- (2p, Extra person: 2500/-) | 1 Jan: 5000/- (2p). Food excluded (nearby veg/non-veg restaurant available).
     Sec deposit Rs 3000/- (refunded within 24 hrs of check-out). Non-refundable / non-transferable. Maps: https://maps.app.goo.gl/1v6azy
   - **Heavenly Villa**:
     *HEAVENLY VILLA*

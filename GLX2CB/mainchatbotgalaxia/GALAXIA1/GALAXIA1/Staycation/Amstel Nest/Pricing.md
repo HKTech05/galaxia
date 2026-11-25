@@ -10,6 +10,11 @@ Amstel Nest features 14 Standard Cottages and 1 Family Cottage with private indo
 - Kids (5–12 yrs): *₹1,000* per kid/night (meals included)
 - Kids under 5: Complimentary / Free (meals included)
 
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: Standard Cottage: ₹6,950 (2p with meals) | Family Cottage: ₹11,000 (4p with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+- **31 December 2026 (NYE Premium)**: Standard Cottage: ₹12,000 (2p with meals) | Family Cottage: ₹24,000 (4p with meals). Extra Adult: ₹5,000, Kids: ₹3,000.
+- **1 January 2027**: Standard Cottage: ₹6,950 (2p with meals) | Family Cottage: ₹11,000 (4p with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+
 ---
 ## Related Notes & Navigation
 - [[Amenities|Amstel Nest Amenities & Private Pool]]

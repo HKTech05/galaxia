@@ -45,6 +45,22 @@ Security deposit Rs 3000/- (not included), returned within 24 hours of check-out
 
 Instagram Highlights: https://instagram.com/ambrose_villas?igshid=YmMyMTA2M2Y=
 
+## Christmas & New Year Pricing (Excl. 5% GST)
+**Take-1 / Alta / Santorini:**
+- **25 December 2026**: ₹11,500 for 4 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+- **31 December 2026 (NYE Premium)**: ₹24,000 for 4 Persons (with meals). Extra Adult: ₹5,000, Kids: ₹3,000.
+- **1 January 2027**: ₹11,500 for 4 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+
+**Cypress:**
+- **25 December 2026**: ₹7,500 for 2 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+- **31 December 2026 (NYE Premium)**: ₹13,000 for 2 Persons (with meals). Extra Adult: ₹5,000, Kids: ₹3,000.
+- **1 January 2027**: ₹7,500 for 2 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+
+**Bamboosa:**
+- **25 December 2026**: ₹12,500 for 4 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+- **31 December 2026 (NYE Premium)**: ₹30,000 for 4 Persons (with meals). Extra Adult: ₹5,000, Kids: ₹3,000.
+- **1 January 2027**: ₹12,500 for 4 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+
 ---
 
 *CYPRESS*

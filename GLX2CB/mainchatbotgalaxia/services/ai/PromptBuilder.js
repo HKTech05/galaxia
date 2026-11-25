@@ -322,6 +322,25 @@ ${calendarTable}
     - **Hill View**: 9-12 Nov *₹3,000*, 6/8/13 Nov *₹4,000*, 7/14 Nov *₹4,000*.
     - **Mount View**: 9-12 Nov *₹4,000*, 6/8/13 Nov *₹5,000*, 7/14 Nov *₹5,000*.
     - **Heavenly Villa**: 9-12 Nov *₹4,950*, 6/8/13 Nov *₹5,950*, 7/14 Nov *₹5,950*.
+30C. **Christmas & New Year Prime Date Pricing (25 Dec 2026, 31 Dec 2026, 1 Jan 2027) — CRITICAL: Override base rates (Excl. 5% GST)**:
+    - **25 December 2026 (Fri) & 1 January 2027 (Fri) — IDENTICAL PRICING**:
+      - **Amstel Nest**: Standard *₹6,950* (2p with meals), Family *₹11,000* (4p with meals). Extra Adult *₹2,000*, Kids *₹1,000*.
+      - **Ambrose Take-1 / Alta / Santorini**: *₹11,500* (4p with meals). Extra Adult *₹2,000*, Kids *₹1,000*.
+      - **Ambrose Cypress**: *₹7,500* (2p with meals). Extra Adult *₹2,000*, Kids *₹1,000*.
+      - **Ambrose Bamboosa**: *₹12,500* (4p with meals). Extra Adult *₹2,000*, Kids *₹1,000*.
+      - **La Paraiso**: *₹8,500* (up to 4p, food not included). Extra Adult *₹1,200*, Kids *₹800*.
+      - **Mount View**: *₹5,000* (2p, food not included). Extra Adult *₹800*, Kids *₹500*.
+      - **Hill View**: *₹4,000* (2p, food not included). Extra Adult *₹600*, Kids *₹400*.
+      - **Heavenly Villa**: *₹5,950* (2p, food not included). Extra Adult *₹800*, Kids *₹500*.
+    - **31 December 2026 (Thu) — NEW YEAR'S EVE PREMIUM PRICING**:
+      - **Amstel Nest**: Standard *₹12,000* (2p with meals), Family *₹24,000* (4p with meals). Extra Adult *₹5,000*, Kids *₹3,000*.
+      - **Ambrose Take-1 / Alta / Santorini**: *₹24,000* (4p with meals). Extra Adult *₹5,000*, Kids *₹3,000*.
+      - **Ambrose Cypress**: *₹13,000* (2p with meals). Extra Adult *₹5,000*, Kids *₹3,000*.
+      - **Ambrose Bamboosa**: *₹30,000* (4p with meals). Extra Adult *₹5,000*, Kids *₹3,000*.
+      - **Mount View**: *₹10,000* (2p, food not included). Extra Adult *₹2,500*.
+      - **La Paraiso**: Regular Thursday rate (*₹4,950* for 2p / *₹6,500* for 4p Mon-Thu rate). No override.
+      - **Hill View**: Regular Thursday rate (*₹2,000* for 2p). No override.
+      - **Heavenly Villa**: Regular Thursday rate (*₹3,950* for 2p). No override.
 31. **Digital Diaries Specific Operational & Policy Rules**:
     - **Staycation Redirect Rule**: Digital Diaries handles ONLY Wadala private cinema screening bookings. If asked about staycation, answer: "For staycation/resort bookings, please visit our staycation contact page for all details and contact numbers: https://www.galaxiaresorts.com/staycation/contact".
     - **Location (CRITICAL)**: Digital Diaries is located in *Wadala West*, Mumbai. When asked "east or west?", ALWAYS answer *Wadala West*. NEVER say just "Wadala" without "West" when east/west is asked.

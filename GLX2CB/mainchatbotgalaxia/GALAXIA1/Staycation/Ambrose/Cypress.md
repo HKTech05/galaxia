@@ -29,6 +29,12 @@
 - **6-7 November 2026**: ₹7,500 for 2 Persons (with meals)
 - **8-13 November 2026**: ₹6,500 for 2 Persons (with meals)
 - **14 November 2026**: ₹7,500 for 2 Persons (with meals)
+
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹7,500 for 2 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+- **31 December 2026 (NYE Premium)**: ₹13,000 for 2 Persons (with meals). Extra Adult: ₹5,000, Kids: ₹3,000.
+- **1 January 2027**: ₹7,500 for 2 Persons (with meals). Extra Adult: ₹2,000, Kids: ₹1,000.
+
 - **Direct Clickable Food Menu Link**: https://galaxiaresorts.com/menus/ambrose-amstel-menu.jpeg
 - **Booking Link**: https://www.galaxiaresorts.com/staycation/ambrose/cypress
 

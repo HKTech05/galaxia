@@ -54,6 +54,12 @@ Security deposit Rs 2k not included in stay prices, pay during check-in, refunde
 - **9-12 November 2026**: ₹3,000 (2 persons)
 - **13 November 2026**: ₹4,000 (2 persons)
 - **14 November 2026**: ₹4,000 (2 persons)
+
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹4,000 (2 persons). Extra Adult: ₹600, Kids: ₹400.
+- **31 December 2026**: Regular Thursday rate (₹2,000 for 2 persons). No special override.
+- **1 January 2027**: ₹4,000 (2 persons). Extra Adult: ₹600, Kids: ₹400.
+
 ---
 ## Related Notes & Navigation
 - [[Amenities|Hill View Amenities & Society Pool]]

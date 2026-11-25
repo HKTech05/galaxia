@@ -40,10 +40,6 @@ Food is excluded.
 800/- per person extra after 2
 Kids age 5 to 12 yrs: -500/-
 
-30 Dec: 5450/-
-31 Dec (New Year): 10000/-
-Extra person on Dec 31st: 2500/-
-
 Security deposit Rs 3000/- not included in stay prices, has to be paid during check-in and refunded within 24 hrs of check-out.
 Once the booking is done, it's non-refundable and non-transferable in any condition.
 
@@ -58,6 +54,12 @@ Once the booking is done, it's non-refundable and non-transferable in any condit
 - **9-12 November 2026**: ₹4,000 (2 persons)
 - **13 November 2026**: ₹5,000 (2 persons)
 - **14 November 2026**: ₹5,000 (2 persons)
+
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹5,000 (2 persons). Extra Adult: ₹800, Kids: ₹500.
+- **31 December 2026 (NYE Premium)**: ₹10,000 (2 persons). Extra Adult: ₹2,500.
+- **1 January 2027**: ₹5,000 (2 persons). Extra Adult: ₹800, Kids: ₹500.
+
 Google Maps: https://maps.app.goo.gl/1v6azy
 
 ---

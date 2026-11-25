@@ -47,6 +47,12 @@ Once the booking is done, it's non-refundable and non-transferable in any condit
 - **9-12 November 2026**: ₹4,950 (2 persons)
 - **13 November 2026**: ₹5,950 (2 persons)
 - **14 November 2026**: ₹5,950 (2 persons)
+
+## Christmas & New Year Pricing (Excl. 5% GST)
+- **25 December 2026**: ₹5,950 (2 persons). Extra Adult: ₹800, Kids: ₹500.
+- **31 December 2026**: Regular Thursday rate (₹3,950 for 2 persons). No special override.
+- **1 January 2027**: ₹5,950 (2 persons). Extra Adult: ₹800, Kids: ₹500.
+
 Instagram: https://www.instagram.com/heavenly_villa01?igsh=dXJmc3B5NHNoeXBt&utm_source=qr
 Google Maps: https://maps.app.goo.gl/Ja5bygsXrSRDrcNDA?g_st=ipc
 
