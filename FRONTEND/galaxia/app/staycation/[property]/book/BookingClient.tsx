@@ -755,6 +755,9 @@ export default function BookingClient({ property }: BookingClientProps) {
             currentDateOverrides = { ...currentDateOverrides, ...backendData.pricing.dateOverrides };
         }
 
+        // Merge dateOverrideDetails: per-date extra charges and personsLabel from API
+        const currentDateOverrideDetails = room.dateOverrideDetails || spPricing?.dateOverrideDetails || (!room.id?.includes('/') ? backendData?.pricing?.dateOverrideDetails : null) || null;
+
         setSelectedRoom({
             id: room.id,
             name: room.name,
@@ -768,6 +771,7 @@ export default function BookingClient({ property }: BookingClientProps) {
             saturdayPrice: currentSaturdayPrice,
             primeDatePrice: room.primeDatePrice,
             dateOverrides: currentDateOverrides,
+            dateOverrideDetails: currentDateOverrideDetails,
             personsLabel: currentPersonsLabel,
             weekendPersonsLabel: room.weekendPersons || currentPersonsLabel,
             saturdayPersonsLabel: room.saturdayPersons || room.weekendPersons || currentPersonsLabel,
